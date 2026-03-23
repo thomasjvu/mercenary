@@ -6,12 +6,22 @@ Boss Raid is a multi-agent execution layer.
 
 Mercenary is the orchestrator agent inside Boss Raid. One request goes in, Mercenary splits it into scoped workstreams, routes HTTP providers, evaluates outputs, synthesizes one result, and settles only approved contributors. Successful providers split payout equally.
 
+## Submission Story
+
+- Live demo: `https://bossraid-web.pages.dev/`
+- Native ingress: `POST /v1/raid`
+- Main public proof: `/receipt`, `GET /v1/agent.json`, and `GET /v1/raids/:raidId/agent_log.json?token=...`
+- Hackathon track map: [`docs/hackathon.md`](docs/hackathon.md)
+- ERC-8004 claim boundary: [`docs/synthesis-registration.md`](docs/synthesis-registration.md)
+
+Boss Raid is the platform. Mercenary is the agent. The core story is consistent across all tracks: a developer or another agent sends one task through MCP, the native raid route, or the OpenAI-compatible surface; Mercenary decomposes the work into scoped specialist raids, routes eligible providers, verifies outputs, returns one canonical result, and exposes receipt plus run-log proof.
+
 ## What Ships
 
 - Native public route: `POST /v1/raid`
 - OpenAI-compatible compatibility route: `POST /v1/chat/completions`
 - MCP adapter with `bossraid_delegate`, `bossraid_receipt`, `bossraid_status`, and `bossraid_result`
-- Public web routes at `/`, `/raiders`, and `/receipt`
+- Public web routes at `/`, `/demo`, `/raiders`, and `/receipt`
 - Provider registry and discovery at `/agents/register`, `/agents/heartbeat`, and `/agents/discover`
 - Public proof surfaces at `/receipt`, `GET /v1/agent.json`, and `GET /v1/raids/:raidId/agent_log.json?token=...`
 - Optional TEE proof routes at `GET /v1/attested-runtime` and `GET /v1/raid/:raidId/attested-result`
@@ -25,7 +35,7 @@ Mercenary is the orchestrator agent inside Boss Raid. One request goes in, Merce
 - `apps/provider-agent`: HTTP provider worker runtime
 - `apps/evaluator`: isolated runtime probe service
 - `apps/mcp-server`: MCP adapter over the API
-- `apps/web`: landing page, raider directory, and public receipt
+- `apps/web`: landing page, live demo chat, raider directory, and public receipt
 - `apps/ops`: internal ops surface
 - `apps/video`: Remotion promo render
 
@@ -97,7 +107,8 @@ export BOSSRAID_API_ORIGIN=https://api.example.com
 pnpm deploy:web:cloudflare
 ```
 
-`pnpm deploy:web:cloudflare` builds `apps/web`, keeps browser API reads on same-origin `/api`, syncs the Pages `BOSSRAID_API_ORIGIN` secret for the proxy function, and deploys `/`, `/raiders`, and `/receipt` to Cloudflare Pages.
+`pnpm deploy:web:cloudflare` builds `apps/web`, keeps browser API reads on same-origin `/api`, syncs the Pages `BOSSRAID_API_ORIGIN` secret for the proxy function, and deploys `/`, `/demo`, `/raiders`, and `/receipt` to Cloudflare Pages.
+If `BOSSRAID_API_ORIGIN` is a bare IPv4 host, the deploy script rewrites it to a `nip.io` hostname so Cloudflare Pages Functions can proxy it.
 
 ## Docs
 

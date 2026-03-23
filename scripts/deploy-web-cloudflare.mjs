@@ -54,11 +54,18 @@ function normalizeOptionalEnv(name) {
 
 function normalizeApiOrigin(value) {
   const origin = new URL(value);
+  if (isIpv4Address(origin.hostname)) {
+    origin.hostname = `${origin.hostname}.nip.io`;
+  }
   const pathname = origin.pathname.endsWith("/") ? origin.pathname.slice(0, -1) : origin.pathname;
   origin.pathname = pathname || "/";
   origin.search = "";
   origin.hash = "";
   return origin.toString().replace(/\/$/, pathname === "/" ? "" : pathname);
+}
+
+function isIpv4Address(value) {
+  return /^\d{1,3}(?:\.\d{1,3}){3}$/.test(value);
 }
 
 function runCommand(command, args, options) {

@@ -38,6 +38,12 @@ pnpm dev:evaluator
 pnpm dev:mcp
 ```
 
+When running only the web app against a hosted API, point the dev proxy at that Boss Raid API origin:
+
+```bash
+BOSSRAID_API_ORIGIN=http://35.198.249.153:8080/api pnpm --filter @bossraid/web dev
+```
+
 ## Key Environment Variables
 
 - `BOSSRAID_STORAGE_BACKEND`: `sqlite` by default
@@ -81,4 +87,5 @@ pnpm eigencompute:build
 - The public write path is `POST /v1/raid`.
 - The OpenAI-compatible path is a compatibility layer over the same raid engine.
 - `pnpm deploy:web:cloudflare` deploys `apps/web` to Cloudflare Pages and keeps `/api/*` same-origin through a Pages proxy function.
+- `pnpm deploy:web:cloudflare` rewrites bare IPv4 `BOSSRAID_API_ORIGIN` values to `nip.io` hostnames because Cloudflare Pages Functions will not proxy direct IP origins.
 - Runtime execution is opt-in.

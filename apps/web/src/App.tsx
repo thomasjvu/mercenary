@@ -5,11 +5,12 @@ import { BOSSRAID_DOCS_URL } from "@bossraid/ui";
 import useSWR from "swr";
 import { bindAsciiRipple } from "./ascii-ripple";
 import { fetchJson, type Provider, type ProviderHealth } from "./api";
+import { DemoPage } from "./pages/DemoPage";
 import { LandingPage } from "./pages/LandingPage";
 import { ReceiptPage } from "./pages/ReceiptPage";
 import { RaidersPage } from "./pages/RaidersPage";
 
-type AppRoute = "/" | "/raiders" | "/receipt";
+type AppRoute = "/" | "/demo" | "/raiders" | "/receipt";
 type LandingTheme = "light" | "dark";
 
 const LANDING_THEME_STORAGE_KEY = "bossraid.landing-theme";
@@ -21,15 +22,17 @@ export function App() {
   const pathname = useSyncExternalStore(subscribeToLocation, getCurrentRoute, () => "/");
   const [landingTheme, setLandingTheme] = useState<LandingTheme>(() => getInitialLandingTheme());
   const isLandingRoute = pathname === "/";
+  const isDemoRoute = pathname === "/demo";
   const isRaidersRoute = pathname === "/raiders";
   const isReceiptRoute = pathname === "/receipt";
-  const usesDirectoryLayout = isRaidersRoute || isReceiptRoute;
+  const usesDirectoryLayout = isDemoRoute || isRaidersRoute || isReceiptRoute;
 
-  const providers = useSWR<Provider[]>(isRaidersRoute ? "/v1/providers" : null, (path: string) => fetchJson(path), {
+  const shouldLoadProviderData = isDemoRoute || isRaidersRoute;
+  const providers = useSWR<Provider[]>(shouldLoadProviderData ? "/v1/providers" : null, (path: string) => fetchJson(path), {
     refreshInterval: 10_000,
   });
   const providerHealth = useSWR<ProviderHealth[]>(
-    isRaidersRoute ? "/v1/providers/health" : null,
+    shouldLoadProviderData ? "/v1/providers/health" : null,
     (path: string) => fetchJson(path),
     { refreshInterval: 10_000 },
   );
@@ -76,6 +79,12 @@ export function App() {
           providerHealth={providerHealth.data ?? []}
           onNavigate={navigate}
         />
+      ) : isDemoRoute ? (
+        <DemoPage
+          onNavigate={navigate}
+          providerHealth={providerHealth.data ?? []}
+          providers={providers.data ?? []}
+        />
       ) : isReceiptRoute ? (
         <ReceiptPage onNavigate={navigate} />
       ) : (
@@ -105,6 +114,7 @@ export function App() {
             </>
           ) : null}
           <RouteLink active={pathname === "/"} label="home" onNavigate={navigate} path="/" />
+          <RouteLink active={pathname === "/demo"} label="demo" onNavigate={navigate} path="/demo" />
           <RouteLink active={pathname === "/raiders"} label="raiders" onNavigate={navigate} path="/raiders" />
           <RouteLink active={pathname === "/receipt"} label="receipt" onNavigate={navigate} path="/receipt" />
           <a className="footer__docs-link" href={BOSSRAID_DOCS_URL} target="_blank" rel="noreferrer">
@@ -113,11 +123,8 @@ export function App() {
           <a href="https://github.com/thomasjvu/mercenary" target="_blank" rel="noreferrer" aria-label="GitHub">
             <Icon className="icon icon--pixel" icon="pixel:github" />
           </a>
-          <a href="https://x.com" target="_blank" rel="noreferrer" aria-label="X">
+          <a href="https://x.com/ultima_gg" target="_blank" rel="noreferrer" aria-label="X">
             <Icon className="icon icon--pixel" icon="pixel:x" />
-          </a>
-          <a href="https://discord.com" target="_blank" rel="noreferrer" aria-label="Discord">
-            <Icon className="icon icon--pixel" icon="pixel:discord" />
           </a>
         </div>
       </footer>
@@ -162,6 +169,9 @@ function RouteLink({
 }
 
 function normalizePathname(pathname: string): AppRoute {
+  if (pathname === "/demo" || pathname === "/demo/") {
+    return "/demo";
+  }
   if (pathname === "/raiders" || pathname === "/raiders/") {
     return "/raiders";
   }

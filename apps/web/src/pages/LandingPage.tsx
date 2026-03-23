@@ -1,18 +1,16 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
-import { BOSSRAID_DOCS_URL, DocsButton } from "@bossraid/ui";
-import heroImage from "../../../../assets/hero.png";
+import { BOSSRAID_DOCS_URL } from "@bossraid/ui";
+import heroImage from "../../../../assets/hero.webp";
 
-const API_BASE = normalizePublicApiBase(
+const PUBLIC_API_BASE = normalizePublicApiBase(
   (import.meta.env.VITE_BOSSRAID_API_BASE as string | undefined) ??
     (import.meta.env.VITE_BOSSRAID_WEB_API_BASE as string | undefined) ??
     "$BOSSRAID_API_BASE",
 );
-const RAID_LIFECYCLE_DOCS_URL = `${BOSSRAID_DOCS_URL}/docs/platform/raid-lifecycle`;
-
 const PANELS = ["chat", "raid", "mcp"] as const;
 
-const CHAT_EXAMPLE = `curl -X POST ${API_BASE}/v1/chat/completions \\
+const CHAT_EXAMPLE = `curl -X POST ${PUBLIC_API_BASE}/v1/chat/completions \\
   -H "content-type: application/json" \\
   -d '{
     "model": "mercenary-v1",
@@ -29,7 +27,7 @@ const CHAT_EXAMPLE = `curl -X POST ${API_BASE}/v1/chat/completions \\
     }
   }'`;
 
-const RAID_EXAMPLE = `curl -X POST ${API_BASE}/v1/raid \\
+const RAID_EXAMPLE = `curl -X POST ${PUBLIC_API_BASE}/v1/raid \\
   -H "content-type: application/json" \\
   -d '{
     "agent": "mercenary-v1",
@@ -50,7 +48,7 @@ const MCP_EXAMPLE = `{
     "bossraid": {
       "command": "pnpm",
       "args": ["dev:mcp"],
-      "env": { "BOSSRAID_API_BASE": "${API_BASE}" }
+      "env": { "BOSSRAID_API_BASE": "${PUBLIC_API_BASE}" }
     }
   }
 }
@@ -82,8 +80,10 @@ const WORKFLOW_ROWS = [
   },
 ] as const;
 
+type AppRoute = "/" | "/demo" | "/raiders" | "/receipt";
+
 type LandingPageProps = {
-  onNavigate: (path: "/" | "/raiders" | "/receipt") => void;
+  onNavigate: (path: AppRoute) => void;
 };
 
 function normalizePublicApiBase(value: string): string {
@@ -138,18 +138,18 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             </span>
             <span className="hero__headline-line">One verified result out.</span>
           </h1>
-          <p className="lede">Make one request from Claude Code, Codex, MCP, or native HTTP.</p>
+          <p className="lede">Use `/demo` for the live judge flow, `/raiders` for the provider snapshot, and `/receipt` for proof.</p>
           <div className="hero__actions">
             <a
               className="button button--primary"
-              href="/raiders"
+              href="/demo"
               onClick={(event) => {
                 event.preventDefault();
-                onNavigate("/raiders");
+                onNavigate("/demo");
               }}
             >
               <Icon className="icon icon--pixel" icon="pixel:sparkles-solid" />
-              browse raiders
+              open live demo
             </a>
             <a className="button" href={BOSSRAID_DOCS_URL} rel="noreferrer" target="_blank">
               <Icon className="icon icon--pixel" icon="pixel:sparkles-solid" />
@@ -251,11 +251,16 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 </div>
               ))}
             </div>
-            <DocsButton
+            <a
               className="button button--primary info-panel__cta"
-              href={RAID_LIFECYCLE_DOCS_URL}
-              label="how it works"
-            />
+              href="/demo"
+              onClick={(event) => {
+                event.preventDefault();
+                onNavigate("/demo");
+              }}
+            >
+              start raid
+            </a>
             <p className="info-panel__footnote">* Pricing: set the budget. Buyer charge = budget + a small route surcharge.</p>
           </section>
         </aside>

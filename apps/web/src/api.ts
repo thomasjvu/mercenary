@@ -281,6 +281,22 @@ export type ApiResponse<T> = {
   headers: Record<string, string>;
 };
 
+export type RaidSpawnOutput = {
+  raidId: string;
+  raidAccessToken: string;
+  receiptPath: string;
+  status: string;
+  selectedExperts: number;
+  reserveExperts: number;
+  estimatedFirstResultSec: number;
+  sanitization: {
+    riskTier: string;
+    redactedSecrets: number;
+    redactedIdentifiers: number;
+    trimmedFiles: number;
+  };
+};
+
 export const API_BASE =
   (import.meta.env.VITE_BOSSRAID_WEB_API_BASE as string | undefined) ?? "/api";
 export const RAID_ACCESS_TOKEN_HEADER = "x-bossraid-raid-token";
@@ -342,6 +358,16 @@ export async function requestJsonDetailed<T>(path: string, init?: RequestInit): 
     error: error ?? (response.ok ? undefined : `Request failed: ${response.status}`),
     headers,
   };
+}
+
+export async function spawnRaid(payload: unknown): Promise<ApiResponse<RaidSpawnOutput>> {
+  return requestJsonDetailed<RaidSpawnOutput>("/v1/raid", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
 }
 
 export function raidTokenHeaders(raidAccessToken: string): Record<string, string> {

@@ -58,6 +58,7 @@ Providers can return `text`, `patch`, `json`, `image`, `video`, and `bundle` art
 ## Web Routes
 
 - `/`: landing page
+- `/demo`: live hosted raid chat demo
 - `/raiders`: public provider directory
 - `/receipt`: token-gated public proof page
 

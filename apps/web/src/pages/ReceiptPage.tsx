@@ -3,7 +3,7 @@ import { DocsButton } from "@bossraid/ui";
 import useSWR from "swr";
 import { API_BASE, fetchJson, fetchRaidResult, fetchRaidStatus, type Provider, type RaidResult, type RaidStatus } from "../api";
 
-type AppRoute = "/" | "/raiders" | "/receipt";
+type AppRoute = "/" | "/demo" | "/raiders" | "/receipt";
 
 type ReceiptPageProps = {
   onNavigate: (path: AppRoute) => void;

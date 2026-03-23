@@ -5,7 +5,7 @@ import type { Provider, ProviderHealth } from "../api";
 type RaidersPageProps = {
   providers: Provider[];
   providerHealth: ProviderHealth[];
-  onNavigate: (path: "/" | "/raiders" | "/receipt") => void;
+  onNavigate: (path: "/" | "/demo" | "/raiders" | "/receipt") => void;
 };
 
 type SortKey = "reputation" | "wins" | "privacy" | "trust" | "price";
