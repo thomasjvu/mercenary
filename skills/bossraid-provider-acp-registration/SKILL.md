@@ -14,8 +14,8 @@ Use this skill when a task involves:
 
 ## Read First
 
-- [docs/base-mainnet-demo-checklist.md](/Users/area/Desktop/boss-raid/docs/base-mainnet-demo-checklist.md)
-- [docs/virtuals-acp-bossraid-mapping.md](/Users/area/Desktop/boss-raid/docs/virtuals-acp-bossraid-mapping.md)
+- [docs/synthesis-registration.md](/Users/area/Desktop/boss-raid/docs/synthesis-registration.md)
+- [docs/hackathon.md](/Users/area/Desktop/boss-raid/docs/hackathon.md)
 - [examples/provider-registration.base-mainnet.example.json](/Users/area/Desktop/boss-raid/examples/provider-registration.base-mainnet.example.json)
 - [references/provider-specializations.md](/Users/area/Desktop/boss-raid/skills/bossraid-provider-acp-registration/references/provider-specializations.md)
 

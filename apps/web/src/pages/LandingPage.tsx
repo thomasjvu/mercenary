@@ -3,7 +3,11 @@ import { Icon } from "@iconify/react";
 import { BOSSRAID_DOCS_URL, DocsButton } from "@bossraid/ui";
 import heroImage from "../../../../assets/hero.png";
 
-const API_BASE = "$BOSSRAID_API_BASE";
+const API_BASE = normalizePublicApiBase(
+  (import.meta.env.VITE_BOSSRAID_API_BASE as string | undefined) ??
+    (import.meta.env.VITE_BOSSRAID_WEB_API_BASE as string | undefined) ??
+    "$BOSSRAID_API_BASE",
+);
 const RAID_LIFECYCLE_DOCS_URL = `${BOSSRAID_DOCS_URL}/docs/platform/raid-lifecycle`;
 
 const PANELS = ["chat", "raid", "mcp"] as const;
@@ -81,6 +85,10 @@ const WORKFLOW_ROWS = [
 type LandingPageProps = {
   onNavigate: (path: "/" | "/raiders" | "/receipt") => void;
 };
+
+function normalizePublicApiBase(value: string): string {
+  return value.endsWith("/") ? value.slice(0, -1) : value;
+}
 
 export function LandingPage({ onNavigate }: LandingPageProps) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
