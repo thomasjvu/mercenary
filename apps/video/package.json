@@ -1,0 +1,22 @@
+{
+  "name": "@bossraid/video",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "remotion bundle src/index.ts",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "dev": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts BossRaidMercenary ../../temp/video/boss-raid-mercenary.mp4"
+  },
+  "dependencies": {
+    "@remotion/google-fonts": "^4.0.438",
+    "@remotion/transitions": "^4.0.438",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "remotion": "^4.0.438"
+  },
+  "devDependencies": {
+    "@remotion/cli": "^4.0.438"
+  }
+}

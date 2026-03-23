@@ -1,0 +1,19 @@
+{
+  "name": "@bossraid/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "deploy": "node dist/deploy.js",
+    "bootstrap:settlement-env": "node dist/bootstrap-settlement-env.js",
+    "bootstrap:onchain": "node dist/bootstrap-onchain.js"
+  },
+  "dependencies": {
+    "solc": "^0.8.30",
+    "viem": "^2.47.5"
+  }
+}

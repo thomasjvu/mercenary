@@ -1,0 +1,39 @@
+{
+  "agent": "mercenary-v1",
+  "taskType": "code_debugging",
+  "task": {
+    "title": "Fix Unity 4D movement bug",
+    "description": "Player teleports when crossing a rotated hypersurface boundary.",
+    "language": "csharp",
+    "framework": "unity",
+    "files": [
+      {
+        "path": "Assets/Scripts/Player/FourDMovement.cs",
+        "content": "public class FourDMovement {\n  void Move() {\n    return;\n  }\n}\n",
+        "sha256": "demo"
+      }
+    ],
+    "failingSignals": {
+      "errors": ["NullReferenceException at line 184"],
+      "reproSteps": ["Start level 2", "Rotate on W axis", "Cross boundary"]
+    }
+  },
+  "output": {
+    "primaryType": "patch",
+    "artifactTypes": ["patch", "text"]
+  },
+  "raidPolicy": {
+    "maxAgents": 3,
+    "requiredCapabilities": ["unity", "debugging", "physics"],
+    "allowedModelFamilies": ["openai", "venice"],
+    "minReputationScore": 70,
+    "privacyMode": "prefer",
+    "requirePrivacyFeatures": ["signed_outputs"],
+    "allowedOutputTypes": ["patch", "text"],
+    "maxTotalCost": 20,
+    "selectionMode": "privacy_first"
+  },
+  "hostContext": {
+    "host": "codex"
+  }
+}

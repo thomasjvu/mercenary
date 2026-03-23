@@ -1,0 +1,31 @@
+{
+  "name": "@bossraid/orchestrator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/apps/orchestrator/src/index.js",
+  "types": "dist/apps/orchestrator/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/apps/orchestrator/src/index.d.ts",
+      "default": "./dist/apps/orchestrator/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx src/index.ts",
+    "settle": "node dist/apps/orchestrator/src/settle-raid.js",
+    "test": "node --import tsx --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@bossraid/evaluation": "workspace:*",
+    "@bossraid/persistence": "workspace:*",
+    "@bossraid/persistence-sqlite": "workspace:*",
+    "@bossraid/provider-registry": "workspace:*",
+    "@bossraid/provider-sdk": "workspace:*",
+    "@bossraid/raid-core": "workspace:*",
+    "@bossraid/shared-types": "workspace:*",
+    "viem": "^2.47.5"
+  }
+}

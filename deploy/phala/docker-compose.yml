@@ -1,0 +1,282 @@
+services:
+  gateway:
+    image: ${BOSSRAID_IMAGE}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=256m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    command: ["node", "scripts/serve-gateway.mjs"]
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      PORT: "8080"
+      BOSSRAID_GATEWAY_HOST: "0.0.0.0"
+      BOSSRAID_API_ORIGIN: "http://api:8787"
+    ports:
+      - "8080:8080"
+    networks:
+      - bossraid-edge
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  api:
+    image: ${BOSSRAID_IMAGE}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=256m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    command: ["node", "apps/api/dist/apps/api/src/index.js"]
+    environment:
+      PORT: "8787"
+      BOSSRAID_DEPLOY_TARGET: "phala-cvm"
+      BOSSRAID_API_HOST: "0.0.0.0"
+      BOSSRAID_STORAGE_BACKEND: "sqlite"
+      BOSSRAID_SQLITE_FILE: "/data/bossraid-state.sqlite"
+      BOSSRAID_PROVIDERS_FILE: "${BOSSRAID_PROVIDERS_FILE:-/app/examples/providers.compose.json}"
+      BOSSRAID_ADMIN_TOKEN: "${BOSSRAID_ADMIN_TOKEN}"
+      BOSSRAID_REGISTRY_TOKEN: "${BOSSRAID_REGISTRY_TOKEN:-}"
+      BOSSRAID_API_BODY_LIMIT_BYTES: "${BOSSRAID_API_BODY_LIMIT_BYTES:-524288}"
+      BOSSRAID_PUBLIC_RATE_LIMIT_MAX: "${BOSSRAID_PUBLIC_RATE_LIMIT_MAX:-60}"
+      BOSSRAID_PUBLIC_RATE_LIMIT_WINDOW_MS: "${BOSSRAID_PUBLIC_RATE_LIMIT_WINDOW_MS:-60000}"
+      BOSSRAID_OPS_SESSION_RATE_LIMIT_MAX: "${BOSSRAID_OPS_SESSION_RATE_LIMIT_MAX:-10}"
+      BOSSRAID_OPS_SESSION_RATE_LIMIT_WINDOW_MS: "${BOSSRAID_OPS_SESSION_RATE_LIMIT_WINDOW_MS:-300000}"
+      BOSSRAID_OPS_SESSION_TTL_SEC: "${BOSSRAID_OPS_SESSION_TTL_SEC:-43200}"
+      BOSSRAID_PROVIDER_HEALTH_TIMEOUT_MS: "${BOSSRAID_PROVIDER_HEALTH_TIMEOUT_MS:-5000}"
+      BOSSRAID_EVAL_RUNTIME_EXECUTION: "${BOSSRAID_EVAL_RUNTIME_EXECUTION:-true}"
+      BOSSRAID_EVAL_SANDBOX_MODE: "${BOSSRAID_EVAL_SANDBOX_MODE:-socket}"
+      BOSSRAID_EVAL_SANDBOX_SOCKET: "${BOSSRAID_EVAL_SANDBOX_SOCKET:-/socket/evaluator.sock}"
+      BOSSRAID_EVAL_SANDBOX_TOKEN: "${BOSSRAID_EVAL_SANDBOX_TOKEN}"
+      BOSSRAID_EVAL_SANDBOX_TIMEOUT_MS: "${BOSSRAID_EVAL_SANDBOX_TIMEOUT_MS:-30000}"
+      BOSSRAID_EVAL_JOB_ISOLATION: "${BOSSRAID_EVAL_JOB_ISOLATION:-container}"
+      BOSSRAID_EVAL_JOB_CONTAINER_IMAGE: "${BOSSRAID_EVAL_JOB_CONTAINER_IMAGE}"
+      BOSSRAID_EVAL_DOCKER_SOCKET_PATH: "${BOSSRAID_EVAL_DOCKER_SOCKET_PATH:-/var/run/docker.sock}"
+      BOSSRAID_EVAL_ALLOW_UNSAFE_HOST_EXECUTION: "${BOSSRAID_EVAL_ALLOW_UNSAFE_HOST_EXECUTION:-false}"
+      BOSSRAID_TRUST_PROXY: "true"
+      BOSSRAID_TEE_PLATFORM: "phala"
+      BOSSRAID_TEE_SOCKET_PATH: "${BOSSRAID_TEE_SOCKET_PATH}"
+      BOSSRAID_ERC8004_AGENT_ID: "${BOSSRAID_ERC8004_AGENT_ID:-}"
+      BOSSRAID_ERC8004_OPERATOR_WALLET: "${BOSSRAID_ERC8004_OPERATOR_WALLET:-}"
+      BOSSRAID_ERC8004_REGISTRATION_TX: "${BOSSRAID_ERC8004_REGISTRATION_TX:-}"
+      BOSSRAID_ERC8004_IDENTITY_REGISTRY: "${BOSSRAID_ERC8004_IDENTITY_REGISTRY:-}"
+      BOSSRAID_ERC8004_REPUTATION_REGISTRY: "${BOSSRAID_ERC8004_REPUTATION_REGISTRY:-}"
+      BOSSRAID_ERC8004_VALIDATION_REGISTRY: "${BOSSRAID_ERC8004_VALIDATION_REGISTRY:-}"
+      BOSSRAID_ERC8004_VALIDATION_TXS: "${BOSSRAID_ERC8004_VALIDATION_TXS:-}"
+      BOSSRAID_ERC8004_LAST_VERIFIED_AT: "${BOSSRAID_ERC8004_LAST_VERIFIED_AT:-}"
+      BOSSRAID_PROVIDER_A_TOKEN: "${BOSSRAID_PROVIDER_A_TOKEN}"
+      BOSSRAID_PROVIDER_B_TOKEN: "${BOSSRAID_PROVIDER_B_TOKEN}"
+      BOSSRAID_PROVIDER_C_TOKEN: "${BOSSRAID_PROVIDER_C_TOKEN}"
+      BOSSRAID_X402_ENABLED: "${BOSSRAID_X402_ENABLED:-false}"
+      BOSSRAID_X402_VERIFY_HMAC_SECRET: "${BOSSRAID_X402_VERIFY_HMAC_SECRET:-}"
+      BOSSRAID_X402_PAY_TO: "${BOSSRAID_X402_PAY_TO:-}"
+      BOSSRAID_X402_FACILITATOR_URL: "${BOSSRAID_X402_FACILITATOR_URL:-}"
+      BOSSRAID_X402_NETWORK: "${BOSSRAID_X402_NETWORK:-}"
+      BOSSRAID_X402_ASSET: "${BOSSRAID_X402_ASSET:-}"
+      BOSSRAID_X402_ASSET_NAME: "${BOSSRAID_X402_ASSET_NAME:-}"
+      BOSSRAID_X402_ASSET_VERSION: "${BOSSRAID_X402_ASSET_VERSION:-}"
+      BOSSRAID_X402_RAID_PRICE_USD: "${BOSSRAID_X402_RAID_PRICE_USD:-}"
+      BOSSRAID_X402_CHAT_PRICE_USD: "${BOSSRAID_X402_CHAT_PRICE_USD:-}"
+      PAYAI_API_KEY_ID: "${PAYAI_API_KEY_ID:-}"
+      PAYAI_API_KEY_SECRET: "${PAYAI_API_KEY_SECRET:-}"
+      CDP_API_KEY_ID: "${CDP_API_KEY_ID:-}"
+      CDP_API_KEY_SECRET: "${CDP_API_KEY_SECRET:-}"
+    volumes:
+      - bossraid-data:/data
+      - bossraid-evaluator-socket:/socket
+      - ${BOSSRAID_TEE_SOCKET_PATH}:${BOSSRAID_TEE_SOCKET_PATH}
+    depends_on:
+      evaluator:
+        condition: service_healthy
+      provider-a:
+        condition: service_healthy
+      provider-b:
+        condition: service_healthy
+      provider-c:
+        condition: service_healthy
+    networks:
+      - bossraid-edge
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8787/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  evaluator:
+    image: ${BOSSRAID_EVALUATOR_IMAGE}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=512m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    command: ["node", "apps/evaluator/dist/apps/evaluator/src/index.js"]
+    group_add:
+      - "0"
+      - "${BOSSRAID_DOCKER_SOCKET_GID:-65532}"
+    environment:
+      PORT: "8790"
+      BOSSRAID_EVAL_SOCKET_PATH: "${BOSSRAID_EVAL_SOCKET_PATH:-/socket/evaluator.sock}"
+      BOSSRAID_EVAL_SANDBOX_TOKEN: "${BOSSRAID_EVAL_SANDBOX_TOKEN}"
+      BOSSRAID_EVAL_JOB_ISOLATION: "${BOSSRAID_EVAL_JOB_ISOLATION:-container}"
+      BOSSRAID_EVAL_JOB_CONTAINER_IMAGE: "${BOSSRAID_EVAL_JOB_CONTAINER_IMAGE}"
+      BOSSRAID_EVAL_DOCKER_SOCKET_PATH: "${BOSSRAID_EVAL_DOCKER_SOCKET_PATH:-/var/run/docker.sock}"
+      BOSSRAID_EVAL_BODY_LIMIT_BYTES: "${BOSSRAID_EVAL_BODY_LIMIT_BYTES:-2097152}"
+      BOSSRAID_EVAL_JOB_TIMEOUT_MS: "${BOSSRAID_EVAL_JOB_TIMEOUT_MS:-45000}"
+      BOSSRAID_EVAL_JOB_CONTAINER_TMPFS_MB: "${BOSSRAID_EVAL_JOB_CONTAINER_TMPFS_MB:-512}"
+      BOSSRAID_EVAL_JOB_CONTAINER_MEMORY_MB: "${BOSSRAID_EVAL_JOB_CONTAINER_MEMORY_MB:-1024}"
+      BOSSRAID_EVAL_JOB_CONTAINER_CPUS: "${BOSSRAID_EVAL_JOB_CONTAINER_CPUS:-1}"
+      BOSSRAID_EVAL_JOB_CONTAINER_PIDS_LIMIT: "${BOSSRAID_EVAL_JOB_CONTAINER_PIDS_LIMIT:-256}"
+      BOSSRAID_EVAL_MAX_CONCURRENT_JOBS: "${BOSSRAID_EVAL_MAX_CONCURRENT_JOBS:-2}"
+      BOSSRAID_EVAL_MAX_FILES: "${BOSSRAID_EVAL_MAX_FILES:-256}"
+      BOSSRAID_EVAL_MAX_TOTAL_BYTES: "${BOSSRAID_EVAL_MAX_TOTAL_BYTES:-1048576}"
+      BOSSRAID_EVAL_MAX_FILE_BYTES: "${BOSSRAID_EVAL_MAX_FILE_BYTES:-262144}"
+      BOSSRAID_EVAL_MAX_PATH_LENGTH: "${BOSSRAID_EVAL_MAX_PATH_LENGTH:-240}"
+    volumes:
+      - bossraid-evaluator-socket:/socket
+      - ${BOSSRAID_DOCKER_SOCKET_SOURCE:-/var/run/docker.sock}:${BOSSRAID_EVAL_DOCKER_SOCKET_PATH:-/var/run/docker.sock}
+    network_mode: none
+    pids_limit: 256
+    mem_limit: 1g
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD", "node", "-e", "const http=require('node:http');const req=http.request({socketPath:'/socket/evaluator.sock',path:'/health'},(res)=>process.exit(res.statusCode===200?0:1));req.on('error',()=>process.exit(1));req.end();"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  provider-a:
+    image: ${BOSSRAID_IMAGE}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=256m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    command: ["node", "apps/provider-agent/dist/apps/provider-agent/src/index.js"]
+    environment:
+      PORT: "9001"
+      BOSSRAID_PROVIDER_HOST: "0.0.0.0"
+      BOSSRAID_PROVIDER_ID: "${BOSSRAID_PROVIDER_A_ID:-dottie}"
+      BOSSRAID_PROVIDER_NAME: "${BOSSRAID_PROVIDER_A_NAME:-Dottie}"
+      BOSSRAID_PROVIDER_TOKEN: "${BOSSRAID_PROVIDER_A_TOKEN}"
+      BOSSRAID_CALLBACK_TOKEN: "${BOSSRAID_PROVIDER_A_TOKEN}"
+      BOSSRAID_CALLBACK_BASE: "http://api:8787"
+      BOSSRAID_PROVIDER_INSTRUCTIONS: "${BOSSRAID_PROVIDER_A_INSTRUCTIONS:-Specialize in pixel-art asset packs, spritesheets, UI frames, and compact retro palettes.}"
+      BOSSRAID_PROVIDER_MODE: "${BOSSRAID_PROVIDER_A_MODE:-pixel_art}"
+      BOSSRAID_MODEL_API_KEY: "${BOSSRAID_PROVIDER_A_MODEL_API_KEY}"
+      BOSSRAID_MODEL_API_BASE: "${BOSSRAID_PROVIDER_A_MODEL_API_BASE:-https://api.openai.com/v1}"
+      BOSSRAID_MODEL: "${BOSSRAID_PROVIDER_A_MODEL}"
+      BOSSRAID_MODEL_REASONING_EFFORT: "${BOSSRAID_PROVIDER_A_MODEL_REASONING_EFFORT:-medium}"
+    networks:
+      - bossraid-edge
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:9001/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  provider-b:
+    image: ${BOSSRAID_IMAGE}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=256m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    command: ["node", "apps/provider-agent/dist/apps/provider-agent/src/index.js"]
+    environment:
+      PORT: "9002"
+      BOSSRAID_PROVIDER_HOST: "0.0.0.0"
+      BOSSRAID_PROVIDER_ID: "${BOSSRAID_PROVIDER_B_ID:-riko}"
+      BOSSRAID_PROVIDER_NAME: "${BOSSRAID_PROVIDER_B_NAME:-Riko}"
+      BOSSRAID_PROVIDER_TOKEN: "${BOSSRAID_PROVIDER_B_TOKEN}"
+      BOSSRAID_CALLBACK_TOKEN: "${BOSSRAID_PROVIDER_B_TOKEN}"
+      BOSSRAID_CALLBACK_BASE: "http://api:8787"
+      BOSSRAID_PROVIDER_INSTRUCTIONS: "${BOSSRAID_PROVIDER_B_INSTRUCTIONS:-Specialize in game marketing videos, teaser hooks, launch copy, and Remotion-ready promo bundles.}"
+      BOSSRAID_PROVIDER_MODE: "${BOSSRAID_PROVIDER_B_MODE:-remotion}"
+      BOSSRAID_MODEL_API_KEY: "${BOSSRAID_PROVIDER_B_MODEL_API_KEY}"
+      BOSSRAID_MODEL_API_BASE: "${BOSSRAID_PROVIDER_B_MODEL_API_BASE:-https://api.openai.com/v1}"
+      BOSSRAID_MODEL: "${BOSSRAID_PROVIDER_B_MODEL}"
+      BOSSRAID_MODEL_REASONING_EFFORT: "${BOSSRAID_PROVIDER_B_MODEL_REASONING_EFFORT:-medium}"
+    networks:
+      - bossraid-edge
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:9002/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  provider-c:
+    image: ${BOSSRAID_IMAGE}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=256m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    command: ["node", "apps/provider-agent/dist/apps/provider-agent/src/index.js"]
+    environment:
+      PORT: "9003"
+      BOSSRAID_PROVIDER_HOST: "0.0.0.0"
+      BOSSRAID_PROVIDER_ID: "${BOSSRAID_PROVIDER_C_ID:-gamma}"
+      BOSSRAID_PROVIDER_NAME: "${BOSSRAID_PROVIDER_C_NAME:-Gamma}"
+      BOSSRAID_PROVIDER_TOKEN: "${BOSSRAID_PROVIDER_C_TOKEN}"
+      BOSSRAID_CALLBACK_TOKEN: "${BOSSRAID_PROVIDER_C_TOKEN}"
+      BOSSRAID_CALLBACK_BASE: "http://api:8787"
+      BOSSRAID_PROVIDER_INSTRUCTIONS: "${BOSSRAID_PROVIDER_C_INSTRUCTIONS:-Specialize in small game-development slices, gameplay logic, and minimal repo patches that keep one clear hook.}"
+      BOSSRAID_PROVIDER_MODE: "${BOSSRAID_PROVIDER_C_MODE:-gbstudio}"
+      BOSSRAID_MODEL_API_KEY: "${BOSSRAID_PROVIDER_C_MODEL_API_KEY}"
+      BOSSRAID_MODEL_API_BASE: "${BOSSRAID_PROVIDER_C_MODEL_API_BASE:-https://api.openai.com/v1}"
+      BOSSRAID_MODEL: "${BOSSRAID_PROVIDER_C_MODEL}"
+      BOSSRAID_MODEL_REASONING_EFFORT: "${BOSSRAID_PROVIDER_C_MODEL_REASONING_EFFORT:-medium}"
+    networks:
+      - bossraid-edge
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:9003/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  bossraid-data:
+  bossraid-evaluator-socket:
+
+networks:
+  bossraid-edge:

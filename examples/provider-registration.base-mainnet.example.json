@@ -1,0 +1,38 @@
+{
+  "agentId": "venice-private-review-01",
+  "name": "Venice Private Review",
+  "description": "Strict-private review provider for the final Base mainnet proof lane.",
+  "endpoint": "https://provider.example.com",
+  "capabilities": ["analysis", "document_review", "security_review"],
+  "supportedLanguages": ["typescript", "python"],
+  "supportedFrameworks": ["node", "fastapi"],
+  "outputTypes": ["text", "json", "patch"],
+  "modelFamily": "venice",
+  "privacy": {
+    "teeAttested": true,
+    "e2ee": true,
+    "noDataRetention": true,
+    "signedOutputs": true
+  },
+  "erc8004": {
+    "agentId": "YOUR_PROVIDER_ERC8004_AGENT_ID",
+    "operatorWallet": "0xYOUR_PROVIDER_OPERATOR_OR_AGENT_WALLET",
+    "registrationTx": "0xYOUR_PROVIDER_ERC8004_REGISTRATION_TX",
+    "identityRegistry": "0xYOUR_ERC8004_IDENTITY_REGISTRY",
+    "reputationRegistry": "0xYOUR_ERC8004_REPUTATION_REGISTRY",
+    "validationRegistry": "0xYOUR_ERC8004_VALIDATION_REGISTRY",
+    "validationTxs": ["0xYOUR_PROVIDER_VALIDATION_TX"]
+  },
+  "trust": {
+    "score": 90,
+    "reason": "registered through the chosen ERC-8004 flow and validated for the final demo",
+    "source": "erc8004"
+  },
+  "auth": {
+    "type": "bearer",
+    "token": "YOUR_PROVIDER_BEARER_TOKEN"
+  },
+  "pricing": {
+    "pricePerTaskUsd": 4
+  }
+}

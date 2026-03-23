@@ -1,0 +1,58 @@
+FROM --platform=linux/amd64 node:22-bookworm-slim AS build
+
+ENV PNPM_HOME=/pnpm
+ENV PATH=$PNPM_HOME:$PATH
+
+RUN corepack enable
+WORKDIR /app
+
+COPY . .
+RUN pnpm install --frozen-lockfile
+RUN pnpm turbo run build --filter=@bossraid/api... --filter=@bossraid/evaluator... --filter=@bossraid/provider-agent... --filter=@bossraid/web... --filter=@bossraid/ops...
+
+FROM docker:28-cli AS dockercli
+
+FROM --platform=linux/amd64 node:22-bookworm-slim AS runtime-base
+
+ENV NODE_ENV=production
+ENV PATH=/app/node_modules/.bin:$PATH
+ENV HOME=/root
+
+RUN mkdir -p /app /data /socket /tmp
+WORKDIR /app
+
+FROM runtime-base AS runtime
+
+COPY --from=dockercli /usr/local/bin/docker /usr/local/bin/docker
+
+COPY --from=build /app /app
+
+EXPOSE 8080
+
+CMD ["node", "scripts/serve-eigencompute.mjs"]
+
+FROM runtime-base AS evaluator-job
+
+ENV HOME=/tmp
+
+COPY --from=dockercli /usr/local/bin/docker /usr/local/bin/docker
+COPY --from=build /app/package.json /app/package.json
+COPY --from=build /app/node_modules /app/node_modules
+COPY --from=build /app/apps/evaluator/package.json /app/apps/evaluator/package.json
+COPY --from=build /app/apps/evaluator/node_modules /app/apps/evaluator/node_modules
+COPY --from=build /app/apps/evaluator/dist /app/apps/evaluator/dist
+COPY --from=build /app/packages/shared-types/package.json /app/packages/shared-types/package.json
+COPY --from=build /app/packages/shared-types/dist /app/packages/shared-types/dist
+COPY --from=build /app/packages/provider-registry/package.json /app/packages/provider-registry/package.json
+COPY --from=build /app/packages/provider-registry/node_modules /app/packages/provider-registry/node_modules
+COPY --from=build /app/packages/provider-registry/dist /app/packages/provider-registry/dist
+COPY --from=build /app/packages/raid-core/package.json /app/packages/raid-core/package.json
+COPY --from=build /app/packages/raid-core/node_modules /app/packages/raid-core/node_modules
+COPY --from=build /app/packages/raid-core/dist /app/packages/raid-core/dist
+COPY --from=build /app/packages/sandbox-runner/package.json /app/packages/sandbox-runner/package.json
+COPY --from=build /app/packages/sandbox-runner/node_modules /app/packages/sandbox-runner/node_modules
+COPY --from=build /app/packages/sandbox-runner/dist /app/packages/sandbox-runner/dist
+
+CMD ["node", "/app/apps/evaluator/dist/apps/evaluator/src/job-worker.js"]
+
+FROM runtime AS final

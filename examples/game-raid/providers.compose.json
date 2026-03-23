@@ -1,0 +1,165 @@
+[
+  {
+    "providerId": "dottie",
+    "displayName": "Dottie",
+    "description": "Pixel-art asset pack provider for the game raid demo.",
+    "endpointType": "http",
+    "endpoint": "http://provider-a:9001",
+    "specializations": ["pixel-art", "sprites", "tileset", "title-card"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": [],
+    "modelFamily": "venice",
+    "outputTypes": ["image", "text", "bundle"],
+    "pricePerTaskUsd": 1,
+    "maxConcurrency": 2,
+    "status": "available",
+    "privacy": {
+      "signedOutputs": true,
+      "noDataRetention": true,
+      "e2ee": true,
+      "teeAttested": true
+    },
+    "erc8004": {
+      "agentId": "${DOTTIE_ERC8004_AGENT_ID:-8004-dottie}",
+      "operatorWallet": "${DOTTIE_ERC8004_OPERATOR_WALLET:-0x1111111111111111111111111111111111111111}",
+      "registrationTx": "${DOTTIE_ERC8004_REGISTRATION_TX:-0xdottieregistration}",
+      "identityRegistry": "${DOTTIE_ERC8004_IDENTITY_REGISTRY:-0xidentityregistry}",
+      "reputationRegistry": "${DOTTIE_ERC8004_REPUTATION_REGISTRY:-0xreputationregistry}",
+      "validationRegistry": "${DOTTIE_ERC8004_VALIDATION_REGISTRY:-0xvalidationregistry}"
+    },
+    "trust": {
+      "score": 86,
+      "reason": "identity, reputation, and validation registries linked",
+      "source": "erc8004"
+    },
+    "auth": {
+      "type": "bearer",
+      "token": "${BOSSRAID_PROVIDER_A_TOKEN}"
+    },
+    "reputation": {
+      "globalScore": 0.82,
+      "responsivenessScore": 0.8,
+      "validityScore": 0.79,
+      "qualityScore": 0.81,
+      "timeoutRate": 0.08,
+      "duplicateRate": 0.02,
+      "specializationScores": {
+        "pixel-art": 0.93,
+        "sprites": 0.9
+      },
+      "p50LatencyMs": 12000,
+      "p95LatencyMs": 26000,
+      "totalRaids": 12,
+      "totalSuccessfulRaids": 4
+    }
+  },
+  {
+    "providerId": "riko",
+    "displayName": "Riko",
+    "description": "Game marketing video specialist for the game raid demo.",
+    "endpointType": "http",
+    "endpoint": "http://provider-b:9002",
+    "specializations": ["game-marketing", "video-marketing", "trailer", "remotion"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["remotion"],
+    "modelFamily": "venice",
+    "outputTypes": ["video", "text", "bundle"],
+    "pricePerTaskUsd": 3,
+    "maxConcurrency": 2,
+    "status": "available",
+    "privacy": {
+      "signedOutputs": true,
+      "noDataRetention": true,
+      "e2ee": true,
+      "teeAttested": true
+    },
+    "erc8004": {
+      "agentId": "${RIKO_ERC8004_AGENT_ID:-8004-riko}",
+      "operatorWallet": "${RIKO_ERC8004_OPERATOR_WALLET:-0x2222222222222222222222222222222222222222}",
+      "registrationTx": "${RIKO_ERC8004_REGISTRATION_TX:-0xrikoregistration}",
+      "identityRegistry": "${RIKO_ERC8004_IDENTITY_REGISTRY:-0xidentityregistry}",
+      "reputationRegistry": "${RIKO_ERC8004_REPUTATION_REGISTRY:-0xreputationregistry}",
+      "validationRegistry": "${RIKO_ERC8004_VALIDATION_REGISTRY:-0xvalidationregistry}"
+    },
+    "trust": {
+      "score": 88,
+      "reason": "identity, reputation, and validation registries linked",
+      "source": "erc8004"
+    },
+    "auth": {
+      "type": "bearer",
+      "token": "${BOSSRAID_PROVIDER_B_TOKEN}"
+    },
+    "reputation": {
+      "globalScore": 0.8,
+      "responsivenessScore": 0.84,
+      "validityScore": 0.78,
+      "qualityScore": 0.8,
+      "timeoutRate": 0.09,
+      "duplicateRate": 0.03,
+      "specializationScores": {
+        "game-marketing": 0.9,
+        "remotion": 0.88
+      },
+      "p50LatencyMs": 10500,
+      "p95LatencyMs": 24000,
+      "totalRaids": 19,
+      "totalSuccessfulRaids": 5
+    }
+  },
+  {
+    "providerId": "gamma",
+    "displayName": "Gamma",
+    "description": "Game development specialist for the game raid demo.",
+    "endpointType": "http",
+    "endpoint": "http://provider-c:9003",
+    "specializations": ["game-development", "gameplay", "gb-studio", "systems-design"],
+    "supportedLanguages": ["typescript"],
+    "supportedFrameworks": ["gb-studio"],
+    "modelFamily": "venice",
+    "outputTypes": ["patch", "text", "bundle"],
+    "pricePerTaskUsd": 5,
+    "maxConcurrency": 2,
+    "status": "available",
+    "privacy": {
+      "signedOutputs": true,
+      "noDataRetention": true,
+      "e2ee": true,
+      "teeAttested": true
+    },
+    "erc8004": {
+      "agentId": "${GAMMA_ERC8004_AGENT_ID:-8004-gamma}",
+      "operatorWallet": "${GAMMA_ERC8004_OPERATOR_WALLET:-0x3333333333333333333333333333333333333333}",
+      "registrationTx": "${GAMMA_ERC8004_REGISTRATION_TX:-0xgammaregistration}",
+      "identityRegistry": "${GAMMA_ERC8004_IDENTITY_REGISTRY:-0xidentityregistry}",
+      "reputationRegistry": "${GAMMA_ERC8004_REPUTATION_REGISTRY:-0xreputationregistry}",
+      "validationRegistry": "${GAMMA_ERC8004_VALIDATION_REGISTRY:-0xvalidationregistry}",
+      "validationTxs": ["${GAMMA_ERC8004_VALIDATION_TX_1:-0xvalidationproof2}", "${GAMMA_ERC8004_VALIDATION_TX_2:-0xvalidationproof3}"]
+    },
+    "trust": {
+      "score": 92,
+      "reason": "identity, reputation, and validation registries linked",
+      "source": "erc8004"
+    },
+    "auth": {
+      "type": "bearer",
+      "token": "${BOSSRAID_PROVIDER_C_TOKEN}"
+    },
+    "reputation": {
+      "globalScore": 0.85,
+      "responsivenessScore": 0.81,
+      "validityScore": 0.85,
+      "qualityScore": 0.88,
+      "timeoutRate": 0.05,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "game-development": 0.94,
+        "gameplay": 0.91
+      },
+      "p50LatencyMs": 14000,
+      "p95LatencyMs": 29000,
+      "totalRaids": 25,
+      "totalSuccessfulRaids": 9
+    }
+  }
+]

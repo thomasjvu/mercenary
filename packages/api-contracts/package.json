@@ -1,0 +1,22 @@
+{
+  "name": "@bossraid/api-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/api-contracts/src/index.js",
+  "types": "dist/api-contracts/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/api-contracts/src/index.d.ts",
+      "default": "./dist/api-contracts/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@bossraid/shared-types": "workspace:*"
+  }
+}

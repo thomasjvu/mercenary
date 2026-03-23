@@ -1,0 +1,76 @@
+{
+  "gamma": {
+    "raidId": "raid_demo_game",
+    "providerRunId": "run_gamma",
+    "patchUnifiedDiff": "--- a/game/project.gbsproj\n+++ b/game/project.gbsproj\n@@\n-{\"name\":\"Boss Raid Slime Panic\",\"engine\":\"gb-studio\",\"sceneCount\":1}\n+{\"name\":\"Boss Raid Slime Panic\",\"engine\":\"gb-studio\",\"sceneCount\":2}\n--- a/game/scripts/encounter.ts\n+++ b/game/scripts/encounter.ts\n@@\n export const bossRaidPitch = {\n   title: \"Boss Raid: Slime Panic\",\n   loop: \"Collect the vault key, dodge slimes, and hit the exit before the timer expires.\",\n   palette: [\"#0f1c2e\", \"#ffda47\", \"#f65d5d\", \"#77f6c5\"]\n };\n+\n+export const levelScript = {\n+  timerSeconds: 30,\n+  enemyCount: 3,\n+  winCondition: \"key_then_exit\"\n+};\n",
+    "answerText": "Implemented the playable one-room loop and linked the gameplay branch to the shared visual brief.",
+    "explanation": "Added the core room flow, timer, enemy count, and key-to-exit win condition in a patch-friendly form so Mercenary can keep the gameplay diff as the canonical result.",
+    "confidence": 0.88,
+    "contributionRole": {
+      "id": "gb-studio-builder",
+      "label": "GB Studio Builder",
+      "workstreamId": "gameplay",
+      "workstreamLabel": "Gameplay",
+      "workstreamObjective": "Produce the playable GB Studio build."
+    },
+    "filesTouched": ["game/project.gbsproj", "game/scripts/encounter.ts"]
+  },
+  "dottie": {
+    "raidId": "raid_demo_game",
+    "providerRunId": "run_dottie",
+    "answerText": "Palette, sprites, HUD, and title card exports are aligned to the gameplay branch naming and enemy design.",
+    "artifacts": [
+      {
+        "outputType": "image",
+        "label": "slime-panic-sprite-sheet",
+        "uri": "https://cdn.example.com/slime-panic/spritesheet.png",
+        "mimeType": "image/png",
+        "description": "Player, slime, key, exit, HUD icons, and title glyph strip exported on a 16x16 grid.",
+        "sha256": "demo-spritesheet-sha"
+      },
+      {
+        "outputType": "bundle",
+        "label": "slime-panic-art-pack",
+        "uri": "https://cdn.example.com/slime-panic/art-pack.zip",
+        "mimeType": "application/zip",
+        "description": "Sprite sheet, title card, palette swatches, tile refs, and export naming notes.",
+        "sha256": "demo-art-pack-sha"
+      }
+    ],
+    "explanation": "Returned real image and bundle artifact refs so the receipt can show the actual art pack instead of a text-only brief.",
+    "confidence": 0.9,
+    "contributionRole": {
+      "id": "pixel-artist",
+      "label": "Pixel Artist",
+      "workstreamId": "pixel-art",
+      "workstreamLabel": "Pixel Art",
+      "workstreamObjective": "Define the pixel-art pack that the build needs."
+    },
+    "filesTouched": []
+  },
+  "riko": {
+    "raidId": "raid_demo_game",
+    "providerRunId": "run_riko",
+    "answerText": "Hook: escape the slime vault in 30 seconds. CTA: play the build, share your best clear time, and challenge a friend.",
+    "artifacts": [
+      {
+        "outputType": "video",
+        "label": "slime-panic-teaser",
+        "uri": "https://cdn.example.com/slime-panic/teaser.mp4",
+        "mimeType": "video/mp4",
+        "description": "12-second teaser assembled in Remotion from gameplay capture frames, title card, and CTA end slate.",
+        "sha256": "demo-teaser-sha"
+      }
+    ],
+    "explanation": "Returned the teaser clip as a typed video artifact plus the launch copy in answerText so Mercenary can surface both in the synthesized result.",
+    "confidence": 0.84,
+    "contributionRole": {
+      "id": "video-marketer",
+      "label": "Video Marketer",
+      "workstreamId": "video-marketing",
+      "workstreamLabel": "Video Marketing",
+      "workstreamObjective": "Turn the build into a trailer and launch angle."
+    },
+    "filesTouched": []
+  }
+}

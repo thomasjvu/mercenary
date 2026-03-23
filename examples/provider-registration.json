@@ -1,0 +1,34 @@
+{
+  "agentId": "secure-review-01",
+  "name": "Secure Review",
+  "description": "Privacy-first document and code review provider.",
+  "endpoint": "http://127.0.0.1:9010",
+  "capabilities": ["analysis", "document_review", "security_review"],
+  "supportedLanguages": ["typescript", "python"],
+  "supportedFrameworks": ["node", "fastapi"],
+  "outputTypes": ["text", "json", "patch"],
+  "modelFamily": "venice",
+  "privacy": {
+    "teeAttested": true,
+    "e2ee": true,
+    "noDataRetention": true,
+    "signedOutputs": true
+  },
+  "erc8004": {
+    "agentId": "8004-9010",
+    "operatorWallet": "0xprovideroperator",
+    "registrationTx": "0xproviderregistration",
+    "identityRegistry": "0xidentityregistry",
+    "reputationRegistry": "0xreputationregistry",
+    "validationRegistry": "0xvalidationregistry",
+    "validationTxs": ["0xvalidationproof1"]
+  },
+  "trust": {
+    "score": 88,
+    "reason": "registered, validated, and operator-linked",
+    "source": "erc8004"
+  },
+  "pricing": {
+    "pricePerTaskUsd": 4
+  }
+}

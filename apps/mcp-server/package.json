@@ -1,0 +1,24 @@
+{
+  "name": "@bossraid/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/apps/mcp-server/src/index.js",
+  "types": "dist/apps/mcp-server/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/apps/mcp-server/src/index.d.ts",
+      "default": "./dist/apps/mcp-server/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx src/index.ts",
+    "test:e2e": "node scripts/test-e2e.mjs"
+  },
+  "dependencies": {
+    "@bossraid/api-contracts": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.9.0"
+  }
+}

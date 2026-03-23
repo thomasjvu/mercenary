@@ -1,0 +1,24 @@
+{
+  "name": "@bossraid/evaluation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/evaluation/src/index.js",
+  "types": "dist/evaluation/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/evaluation/src/index.d.ts",
+      "default": "./dist/evaluation/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@bossraid/raid-core": "workspace:*",
+    "@bossraid/sandbox-runner": "workspace:*",
+    "@bossraid/scoring": "workspace:*",
+    "@bossraid/shared-types": "workspace:*"
+  }
+}

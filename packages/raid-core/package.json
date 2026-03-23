@@ -1,0 +1,22 @@
+{
+  "name": "@bossraid/raid-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/raid-core/src/index.js",
+  "types": "dist/raid-core/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/raid-core/src/index.d.ts",
+      "default": "./dist/raid-core/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@bossraid/provider-registry": "workspace:*",
+    "@bossraid/shared-types": "workspace:*"
+  }
+}

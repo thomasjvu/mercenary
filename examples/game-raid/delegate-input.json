@@ -1,0 +1,44 @@
+{
+  "title": "Build a GB Studio microgame and launch package",
+  "description": "Use Mercenary as the coordinator for one playable GB Studio slice plus the matching art pack and teaser.",
+  "prompt": "Build a tiny GB Studio game called Boss Raid: Slime Panic. Make one playable room where the player grabs a key, dodges slimes, and reaches the exit before the timer expires. Split the work into gameplay, pixel art, and video marketing. The gameplay branch must return a repo patch. The art branch must return real artifact refs for the sprite sheet, title card, and any zipped art pack. The video branch must return a teaser clip artifact ref plus launch copy. Keep all three outputs visually and narratively aligned.",
+  "language": "typescript",
+  "framework": "gb-studio",
+  "files": [
+    {
+      "path": "game/project.gbsproj",
+      "content": "{\"name\":\"Boss Raid Slime Panic\",\"engine\":\"gb-studio\",\"sceneCount\":1}\n"
+    },
+    {
+      "path": "game/scripts/encounter.ts",
+      "content": "export const bossRaidPitch = {\n  title: \"Boss Raid: Slime Panic\",\n  loop: \"Collect the vault key, dodge slimes, and hit the exit before the timer expires.\",\n  palette: [\"#0f1c2e\", \"#ffda47\", \"#f65d5d\", \"#77f6c5\"]\n};\n"
+    },
+    {
+      "path": "marketing/creative-brief.md",
+      "content": "# Slime Panic\n\nTone: playful pressure.\nAudience: people who like tiny retro challenge games.\nDeliverables: playable patch, sprite pack, 12-second teaser, launch copy.\n"
+    }
+  ],
+  "reproSteps": [
+    "Open the supplied GB Studio repo snapshot",
+    "Implement one playable room with key, slime, and exit loop",
+    "Return the gameplay patch plus supporting art and trailer artifacts"
+  ],
+  "expectedBehavior": "The returned raid receipt should contain synthesizedOutput.patchUnifiedDiff for gameplay plus synthesizedOutput.artifacts for the art pack and teaser.",
+  "output": {
+    "primaryType": "patch",
+    "artifactTypes": ["patch", "image", "video", "text", "bundle"]
+  },
+  "maxAgents": 3,
+  "maxTotalCost": 18,
+  "allowedModelFamilies": ["openai", "venice"],
+  "allowedOutputTypes": ["patch", "image", "video", "text", "bundle"],
+  "minReputationScore": 60,
+  "privacyMode": "prefer",
+  "requirePrivacyFeatures": ["signed_outputs"],
+  "selectionMode": "diverse_mix",
+  "hostContext": {
+    "host": "codex",
+    "repoRootHint": "/workspace/slime-panic"
+  },
+  "timeoutSec": 90
+}

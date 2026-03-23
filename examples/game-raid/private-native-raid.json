@@ -1,0 +1,56 @@
+{
+  "agent": "mercenary-v1",
+  "taskType": "game_build",
+  "task": {
+    "title": "Build a private GB Studio microgame and launch package",
+    "description": "Create a one-room GB Studio microgame called Boss Raid: Slime Panic. Mercenary should split this into gameplay, pixel art, and video marketing. The gameplay branch must patch the supplied repo. The pixel-art branch must return real artifact refs for the sprite sheet and title card. The video branch must return a teaser clip artifact ref plus launch copy. Keep the three branches aligned around the same core hook, palette, and enemy design. Treat the creative brief as private and keep the raw brief contents inside Venice-backed providers.",
+    "language": "typescript",
+    "framework": "gb-studio",
+    "files": [
+      {
+        "path": "game/project.gbsproj",
+        "content": "{\"name\":\"Boss Raid Slime Panic\",\"engine\":\"gb-studio\",\"sceneCount\":1}\n",
+        "sha256": "demo-gbstudio-project"
+      },
+      {
+        "path": "game/scripts/encounter.ts",
+        "content": "export const bossRaidPitch = {\n  title: \"Boss Raid: Slime Panic\",\n  loop: \"Collect the vault key, dodge slimes, and hit the exit before the timer expires.\",\n  palette: [\"#0f1c2e\", \"#ffda47\", \"#f65d5d\", \"#77f6c5\"]\n};\n",
+        "sha256": "demo-encounter-script"
+      },
+      {
+        "path": "marketing/creative-brief.md",
+        "content": "# Slime Panic\n\nPrivate note: keep the exact hook language and teaser beats inside the private provider lane.\nAudience: people who like tiny retro challenge games.\nDeliverables: playable patch, sprite pack, 12-second teaser, launch copy.\n",
+        "sha256": "demo-private-creative-brief"
+      }
+    ],
+    "failingSignals": {
+      "errors": [],
+      "reproSteps": [
+        "Open the supplied GB Studio repo snapshot",
+        "Implement one playable room with key, slime, and exit loop",
+        "Return the gameplay patch plus supporting art and trailer artifacts without echoing the raw private brief"
+      ],
+      "expectedBehavior": "The final raid result should include a playable GB Studio patch in patchUnifiedDiff plus synthesized image and video artifacts. The output should summarize the hook without copying the raw private brief verbatim."
+    }
+  },
+  "output": {
+    "primaryType": "patch",
+    "artifactTypes": ["patch", "image", "video", "text", "bundle"]
+  },
+  "raidPolicy": {
+    "maxAgents": 3,
+    "allowedModelFamilies": ["venice"],
+    "minReputationScore": 60,
+    "requireErc8004": true,
+    "minTrustScore": 80,
+    "privacyMode": "strict",
+    "requirePrivacyFeatures": ["tee_attested", "e2ee", "no_data_retention", "signed_outputs"],
+    "allowedOutputTypes": ["patch", "image", "video", "text", "bundle"],
+    "maxTotalCost": 18,
+    "selectionMode": "privacy_first"
+  },
+  "hostContext": {
+    "host": "codex",
+    "repoRootHint": "/workspace/slime-panic"
+  }
+}

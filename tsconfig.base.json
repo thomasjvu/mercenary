@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "paths": {
+      "@bossraid/shared-types": ["packages/shared-types/src/index.ts"],
+      "@bossraid/api-contracts": ["packages/api-contracts/src/index.ts"],
+      "@bossraid/persistence": ["packages/persistence/src/index.ts"],
+      "@bossraid/persistence-sqlite": ["packages/persistence-sqlite/src/index.ts"],
+      "@bossraid/evaluation": ["packages/evaluation/src/index.ts"],
+      "@bossraid/provider-registry": ["packages/provider-registry/src/index.ts"],
+      "@bossraid/raid-core": ["packages/raid-core/src/index.ts"],
+      "@bossraid/sandbox-runner": ["packages/sandbox-runner/src/index.ts"],
+      "@bossraid/scoring": ["packages/scoring/src/index.ts"],
+      "@bossraid/provider-sdk": ["packages/provider-sdk/src/index.ts"],
+      "@bossraid/orchestrator": ["apps/orchestrator/src/index.ts"],
+      "@bossraid/ui": ["packages/ui/src/index.tsx"]
+    },
+    "strict": true,
+    "declaration": true,
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true
+  }
+}

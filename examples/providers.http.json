@@ -1,0 +1,155 @@
+[
+  {
+    "providerId": "dottie",
+    "displayName": "Dottie",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9001",
+    "specializations": ["pixel-art", "sprites", "tileset", "title-card"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": [],
+    "modelFamily": "openai",
+    "outputTypes": ["image", "text", "bundle"],
+    "pricePerTaskUsd": 3,
+    "maxConcurrency": 2,
+    "status": "available",
+    "privacy": {
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "erc8004": {
+      "agentId": "8004-dottie",
+      "operatorWallet": "0x1111111111111111111111111111111111111111",
+      "registrationTx": "0xdottieregistration",
+      "identityRegistry": "0xidentityregistry",
+      "reputationRegistry": "0xreputationregistry"
+    },
+    "trust": {
+      "score": 74,
+      "reason": "identity and reputation registries linked",
+      "source": "erc8004"
+    },
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-provider-a"
+    },
+    "reputation": {
+      "globalScore": 0.82,
+      "responsivenessScore": 0.8,
+      "validityScore": 0.79,
+      "qualityScore": 0.81,
+      "timeoutRate": 0.08,
+      "duplicateRate": 0.02,
+      "specializationScores": {
+        "pixel-art": 0.93,
+        "sprites": 0.9
+      },
+      "p50LatencyMs": 12000,
+      "p95LatencyMs": 26000,
+      "totalRaids": 12,
+      "totalSuccessfulRaids": 4
+    }
+  },
+  {
+    "providerId": "riko",
+    "displayName": "Riko",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9002",
+    "specializations": ["game-marketing", "video-marketing", "trailer", "remotion"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["remotion"],
+    "modelFamily": "openai",
+    "outputTypes": ["video", "text", "bundle"],
+    "pricePerTaskUsd": 2.6,
+    "maxConcurrency": 2,
+    "status": "available",
+    "privacy": {
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "erc8004": {
+      "agentId": "8004-riko",
+      "operatorWallet": "0x2222222222222222222222222222222222222222",
+      "registrationTx": "0xrikoregistration",
+      "identityRegistry": "0xidentityregistry"
+    },
+    "trust": {
+      "score": 61,
+      "reason": "identity registry only",
+      "source": "erc8004"
+    },
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-provider-b"
+    },
+    "reputation": {
+      "globalScore": 0.8,
+      "responsivenessScore": 0.84,
+      "validityScore": 0.78,
+      "qualityScore": 0.8,
+      "timeoutRate": 0.09,
+      "duplicateRate": 0.03,
+      "specializationScores": {
+        "game-marketing": 0.9,
+        "remotion": 0.88
+      },
+      "p50LatencyMs": 10500,
+      "p95LatencyMs": 24000,
+      "totalRaids": 19,
+      "totalSuccessfulRaids": 5
+    }
+  },
+  {
+    "providerId": "gamma",
+    "displayName": "Gamma",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9003",
+    "specializations": ["game-development", "gameplay", "gb-studio", "systems-design"],
+    "supportedLanguages": ["typescript"],
+    "supportedFrameworks": ["gb-studio"],
+    "modelFamily": "openai",
+    "outputTypes": ["patch", "text", "bundle"],
+    "pricePerTaskUsd": 3.1,
+    "maxConcurrency": 2,
+    "status": "available",
+    "privacy": {
+      "signedOutputs": true,
+      "noDataRetention": true,
+      "e2ee": true,
+      "teeAttested": true
+    },
+    "erc8004": {
+      "agentId": "8004-gamma",
+      "operatorWallet": "0x3333333333333333333333333333333333333333",
+      "registrationTx": "0xgammaregistration",
+      "identityRegistry": "0xidentityregistry",
+      "reputationRegistry": "0xreputationregistry",
+      "validationRegistry": "0xvalidationregistry",
+      "validationTxs": ["0xvalidationproof2", "0xvalidationproof3"]
+    },
+    "trust": {
+      "score": 91,
+      "reason": "identity, reputation, and validation registries linked",
+      "source": "erc8004"
+    },
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-provider-c"
+    },
+    "reputation": {
+      "globalScore": 0.85,
+      "responsivenessScore": 0.81,
+      "validityScore": 0.85,
+      "qualityScore": 0.88,
+      "timeoutRate": 0.05,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "game-development": 0.93,
+        "gameplay": 0.91
+      },
+      "p50LatencyMs": 14000,
+      "p95LatencyMs": 29000,
+      "totalRaids": 25,
+      "totalSuccessfulRaids": 9
+    }
+  }
+]

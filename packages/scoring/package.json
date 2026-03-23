@@ -1,0 +1,22 @@
+{
+  "name": "@bossraid/scoring",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/scoring/src/index.js",
+  "types": "dist/scoring/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/scoring/src/index.d.ts",
+      "default": "./dist/scoring/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@bossraid/raid-core": "workspace:*",
+    "@bossraid/shared-types": "workspace:*"
+  }
+}

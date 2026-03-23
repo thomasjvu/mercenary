@@ -1,0 +1,25 @@
+{
+  "model": "mercenary-v1",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Be concise. Focus on decision risk."
+    },
+    {
+      "role": "user",
+      "content": "Review this agent-orchestration pitch and summarize the main product risks."
+    }
+  ],
+  "raid_policy": {
+    "maxAgents": 3,
+    "requiredCapabilities": ["analysis"],
+    "allowedModelFamilies": ["openai", "venice"],
+    "minReputationScore": 70,
+    "requireErc8004": true,
+    "minTrustScore": 75,
+    "privacyMode": "prefer",
+    "requirePrivacyFeatures": ["signed_outputs"],
+    "maxTotalCost": 12,
+    "selectionMode": "privacy_first"
+  }
+}

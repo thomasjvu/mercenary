@@ -1,0 +1,25 @@
+{
+  "name": "@bossraid/evaluator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/apps/evaluator/src/index.js",
+  "types": "dist/apps/evaluator/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/apps/evaluator/src/index.d.ts",
+      "default": "./dist/apps/evaluator/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx src/index.ts",
+    "test": "node --import tsx --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@bossraid/sandbox-runner": "workspace:*",
+    "@bossraid/shared-types": "workspace:*",
+    "fastify": "^5.2.1"
+  }
+}

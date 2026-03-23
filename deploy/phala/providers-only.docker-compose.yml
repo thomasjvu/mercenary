@@ -1,0 +1,108 @@
+services:
+  provider-a:
+    image: ${BOSSRAID_IMAGE}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=256m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    command: ["node", "apps/provider-agent/dist/apps/provider-agent/src/index.js"]
+    environment:
+      PORT: "9001"
+      BOSSRAID_PROVIDER_HOST: "0.0.0.0"
+      BOSSRAID_PROVIDER_ID: "${BOSSRAID_PROVIDER_A_ID:-dottie}"
+      BOSSRAID_PROVIDER_NAME: "${BOSSRAID_PROVIDER_A_NAME:-Dottie}"
+      BOSSRAID_PROVIDER_TOKEN: "${BOSSRAID_PROVIDER_A_TOKEN}"
+      BOSSRAID_CALLBACK_TOKEN: "${BOSSRAID_PROVIDER_A_TOKEN}"
+      BOSSRAID_CALLBACK_BASE: "${BOSSRAID_CALLBACK_BASE:-http://34.59.138.65:8080/api}"
+      BOSSRAID_PROVIDER_INSTRUCTIONS: "${BOSSRAID_PROVIDER_A_INSTRUCTIONS:-Specialize in pixel-art asset packs, spritesheets, UI frames, and compact retro palettes.}"
+      BOSSRAID_PROVIDER_MODE: "${BOSSRAID_PROVIDER_A_MODE:-pixel_art}"
+      BOSSRAID_MODEL_API_KEY: "${BOSSRAID_PROVIDER_A_MODEL_API_KEY}"
+      BOSSRAID_MODEL_API_BASE: "${BOSSRAID_PROVIDER_A_MODEL_API_BASE:-https://api.openai.com/v1}"
+      BOSSRAID_MODEL: "${BOSSRAID_PROVIDER_A_MODEL}"
+      BOSSRAID_MODEL_REASONING_EFFORT: "${BOSSRAID_PROVIDER_A_MODEL_REASONING_EFFORT:-medium}"
+    ports:
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:9001/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  provider-b:
+    image: ${BOSSRAID_IMAGE}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=256m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    command: ["node", "apps/provider-agent/dist/apps/provider-agent/src/index.js"]
+    environment:
+      PORT: "9002"
+      BOSSRAID_PROVIDER_HOST: "0.0.0.0"
+      BOSSRAID_PROVIDER_ID: "${BOSSRAID_PROVIDER_B_ID:-riko}"
+      BOSSRAID_PROVIDER_NAME: "${BOSSRAID_PROVIDER_B_NAME:-Riko}"
+      BOSSRAID_PROVIDER_TOKEN: "${BOSSRAID_PROVIDER_B_TOKEN}"
+      BOSSRAID_CALLBACK_TOKEN: "${BOSSRAID_PROVIDER_B_TOKEN}"
+      BOSSRAID_CALLBACK_BASE: "${BOSSRAID_CALLBACK_BASE:-http://34.59.138.65:8080/api}"
+      BOSSRAID_PROVIDER_INSTRUCTIONS: "${BOSSRAID_PROVIDER_B_INSTRUCTIONS:-Specialize in game marketing videos, teaser hooks, launch copy, and Remotion-ready promo bundles.}"
+      BOSSRAID_PROVIDER_MODE: "${BOSSRAID_PROVIDER_B_MODE:-remotion}"
+      BOSSRAID_MODEL_API_KEY: "${BOSSRAID_PROVIDER_B_MODEL_API_KEY}"
+      BOSSRAID_MODEL_API_BASE: "${BOSSRAID_PROVIDER_B_MODEL_API_BASE:-https://api.openai.com/v1}"
+      BOSSRAID_MODEL: "${BOSSRAID_PROVIDER_B_MODEL}"
+      BOSSRAID_MODEL_REASONING_EFFORT: "${BOSSRAID_PROVIDER_B_MODEL_REASONING_EFFORT:-medium}"
+    ports:
+      - "9002:9002"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:9002/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  provider-c:
+    image: ${BOSSRAID_IMAGE}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=256m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    command: ["node", "apps/provider-agent/dist/apps/provider-agent/src/index.js"]
+    environment:
+      PORT: "9003"
+      BOSSRAID_PROVIDER_HOST: "0.0.0.0"
+      BOSSRAID_PROVIDER_ID: "${BOSSRAID_PROVIDER_C_ID:-gamma}"
+      BOSSRAID_PROVIDER_NAME: "${BOSSRAID_PROVIDER_C_NAME:-Gamma}"
+      BOSSRAID_PROVIDER_TOKEN: "${BOSSRAID_PROVIDER_C_TOKEN}"
+      BOSSRAID_CALLBACK_TOKEN: "${BOSSRAID_PROVIDER_C_TOKEN}"
+      BOSSRAID_CALLBACK_BASE: "${BOSSRAID_CALLBACK_BASE:-http://34.59.138.65:8080/api}"
+      BOSSRAID_PROVIDER_INSTRUCTIONS: "${BOSSRAID_PROVIDER_C_INSTRUCTIONS:-Specialize in small game-development slices, gameplay logic, and minimal repo patches that keep one clear hook.}"
+      BOSSRAID_PROVIDER_MODE: "${BOSSRAID_PROVIDER_C_MODE:-gbstudio}"
+      BOSSRAID_MODEL_API_KEY: "${BOSSRAID_PROVIDER_C_MODEL_API_KEY}"
+      BOSSRAID_MODEL_API_BASE: "${BOSSRAID_PROVIDER_C_MODEL_API_BASE:-https://api.openai.com/v1}"
+      BOSSRAID_MODEL: "${BOSSRAID_PROVIDER_C_MODEL}"
+      BOSSRAID_MODEL_REASONING_EFFORT: "${BOSSRAID_PROVIDER_C_MODEL_REASONING_EFFORT:-medium}"
+    ports:
+      - "9003:9003"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:9003/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

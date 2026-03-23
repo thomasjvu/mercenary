@@ -1,0 +1,78 @@
+services:
+  gamma:
+    image: ${BOSSRAID_ACP_SELLER_IMAGE}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=256m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    command: ["node_modules/.bin/tsx", "src/seller/runtime/seller.ts"]
+    environment:
+      NODE_ENV: "production"
+      ACP_DISABLE_PID_TRACKING: "1"
+      ACP_DISABLE_CONFIG_WRITES: "1"
+      ACP_SOCKET_URL: "${ACP_SOCKET_URL:-https://acpx.virtuals.io}"
+      ACP_BUILDER_CODE: "${ACP_BUILDER_CODE:-}"
+      LITE_AGENT_API_KEY: "${ACP_GAMMA_API_KEY}"
+      VENICE_API_KEY: "${VENICE_API_KEY_GAMMA:-}"
+      VENICE_API_BASE: "${VENICE_API_BASE:-https://api.venice.ai/api/v1}"
+      VENICE_MODEL: "${VENICE_MODEL:-minimax-m27}"
+      VENICE_MODEL_GAMMA: "${VENICE_MODEL_GAMMA:-minimax-m27}"
+      VENICE_REASONING_EFFORT: "${VENICE_REASONING_EFFORT:-medium}"
+
+  riko:
+    image: ${BOSSRAID_ACP_SELLER_IMAGE}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=256m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    command: ["node_modules/.bin/tsx", "src/seller/runtime/seller.ts"]
+    environment:
+      NODE_ENV: "production"
+      ACP_DISABLE_PID_TRACKING: "1"
+      ACP_DISABLE_CONFIG_WRITES: "1"
+      ACP_SOCKET_URL: "${ACP_SOCKET_URL:-https://acpx.virtuals.io}"
+      ACP_BUILDER_CODE: "${ACP_BUILDER_CODE:-}"
+      LITE_AGENT_API_KEY: "${ACP_RIKO_API_KEY}"
+      VENICE_API_KEY: "${VENICE_API_KEY_RIKO:-}"
+      VENICE_API_BASE: "${VENICE_API_BASE:-https://api.venice.ai/api/v1}"
+      VENICE_MODEL: "${VENICE_MODEL:-minimax-m27}"
+      VENICE_MODEL_RIKO: "${VENICE_MODEL_RIKO:-minimax-m27}"
+      VENICE_REASONING_EFFORT: "${VENICE_REASONING_EFFORT:-medium}"
+
+  dottie:
+    image: ${BOSSRAID_ACP_SELLER_IMAGE}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 15s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=256m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    command: ["node_modules/.bin/tsx", "src/seller/runtime/seller.ts"]
+    environment:
+      NODE_ENV: "production"
+      ACP_DISABLE_PID_TRACKING: "1"
+      ACP_DISABLE_CONFIG_WRITES: "1"
+      ACP_SOCKET_URL: "${ACP_SOCKET_URL:-https://acpx.virtuals.io}"
+      ACP_BUILDER_CODE: "${ACP_BUILDER_CODE:-}"
+      LITE_AGENT_API_KEY: "${ACP_DOTTIE_API_KEY}"
+      VENICE_API_KEY: "${VENICE_API_KEY_DOTTIE:-}"
+      VENICE_API_BASE: "${VENICE_API_BASE:-https://api.venice.ai/api/v1}"
+      VENICE_MODEL: "${VENICE_MODEL:-minimax-m27}"
+      VENICE_MODEL_DOTTIE: "${VENICE_MODEL_DOTTIE:-minimax-m27}"
+      VENICE_REASONING_EFFORT: "${VENICE_REASONING_EFFORT:-medium}"

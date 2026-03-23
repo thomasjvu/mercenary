@@ -1,0 +1,167 @@
+[
+  {
+    "providerId": "private-incident-analyst-a",
+    "displayName": "Sentinel",
+    "description": "Strict-private incident analyst for sensitive summaries, root-cause review, and executive-safe output.",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9001",
+    "specializations": ["analysis", "safety", "incident-response", "privacy-review"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": [],
+    "modelFamily": "venice",
+    "modelApiKeyEnv": "VENICE_API_KEY_GAMMA",
+    "outputTypes": ["text"],
+    "pricePerTaskUsd": 4,
+    "maxConcurrency": 2,
+    "status": "available",
+    "privacy": {
+      "signedOutputs": true,
+      "noDataRetention": true,
+      "e2ee": true,
+      "teeAttested": true
+    },
+    "erc8004": {
+      "agentId": "8004-sentinel",
+      "operatorWallet": "0x4444444444444444444444444444444444444444",
+      "registrationTx": "0xsentinelregistration",
+      "identityRegistry": "0xidentityregistry",
+      "reputationRegistry": "0xreputationregistry",
+      "validationRegistry": "0xvalidationregistry"
+    },
+    "trust": {
+      "score": 93,
+      "reason": "identity, reputation, and validation registries linked",
+      "source": "erc8004"
+    },
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-provider-strict-a"
+    },
+    "reputation": {
+      "globalScore": 0.87,
+      "responsivenessScore": 0.84,
+      "validityScore": 0.88,
+      "qualityScore": 0.86,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "analysis": 0.95,
+        "safety": 0.93
+      },
+      "p50LatencyMs": 9000,
+      "p95LatencyMs": 18000,
+      "totalRaids": 21,
+      "totalSuccessfulRaids": 15
+    }
+  },
+  {
+    "providerId": "private-incident-analyst-b",
+    "displayName": "Cipher",
+    "description": "Strict-private risk analyst for incident summaries, issue triage, and redaction-safe explanations.",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9002",
+    "specializations": ["analysis", "safety", "risk-review", "privacy-review"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": [],
+    "modelFamily": "venice",
+    "modelApiKeyEnv": "VENICE_API_KEY_RIKO",
+    "outputTypes": ["text"],
+    "pricePerTaskUsd": 3,
+    "maxConcurrency": 2,
+    "status": "available",
+    "privacy": {
+      "signedOutputs": true,
+      "noDataRetention": true,
+      "e2ee": true,
+      "teeAttested": true
+    },
+    "erc8004": {
+      "agentId": "8004-cipher",
+      "operatorWallet": "0x5555555555555555555555555555555555555555",
+      "registrationTx": "0xcipherregistration",
+      "identityRegistry": "0xidentityregistry",
+      "reputationRegistry": "0xreputationregistry",
+      "validationRegistry": "0xvalidationregistry"
+    },
+    "trust": {
+      "score": 89,
+      "reason": "identity, reputation, and validation registries linked",
+      "source": "erc8004"
+    },
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-provider-strict-b"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.85,
+      "qualityScore": 0.83,
+      "timeoutRate": 0.05,
+      "duplicateRate": 0.02,
+      "specializationScores": {
+        "analysis": 0.91,
+        "safety": 0.9
+      },
+      "p50LatencyMs": 8500,
+      "p95LatencyMs": 17000,
+      "totalRaids": 18,
+      "totalSuccessfulRaids": 12
+    }
+  },
+  {
+    "providerId": "private-incident-analyst-c",
+    "displayName": "Prism",
+    "description": "Strict-private summary analyst for executive-safe incident recaps and root-cause framing.",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9003",
+    "specializations": ["analysis", "safety", "executive-summary", "root-cause"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": [],
+    "modelFamily": "venice",
+    "modelApiKeyEnv": "VENICE_API_KEY_DOTTIE",
+    "outputTypes": ["text"],
+    "pricePerTaskUsd": 2,
+    "maxConcurrency": 2,
+    "status": "available",
+    "privacy": {
+      "signedOutputs": true,
+      "noDataRetention": true,
+      "e2ee": true,
+      "teeAttested": true
+    },
+    "erc8004": {
+      "agentId": "8004-prism",
+      "operatorWallet": "0x6666666666666666666666666666666666666666",
+      "registrationTx": "0xprismregistration",
+      "identityRegistry": "0xidentityregistry",
+      "reputationRegistry": "0xreputationregistry",
+      "validationRegistry": "0xvalidationregistry"
+    },
+    "trust": {
+      "score": 84,
+      "reason": "identity, reputation, and validation registries linked",
+      "source": "erc8004"
+    },
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-provider-strict-c"
+    },
+    "reputation": {
+      "globalScore": 0.81,
+      "responsivenessScore": 0.82,
+      "validityScore": 0.83,
+      "qualityScore": 0.8,
+      "timeoutRate": 0.06,
+      "duplicateRate": 0.02,
+      "specializationScores": {
+        "analysis": 0.88,
+        "safety": 0.87
+      },
+      "p50LatencyMs": 8000,
+      "p95LatencyMs": 16000,
+      "totalRaids": 14,
+      "totalSuccessfulRaids": 9
+    }
+  }
+]

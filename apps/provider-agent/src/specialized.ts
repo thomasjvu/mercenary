@@ -1,0 +1,881 @@
+import { createHash, randomUUID } from "node:crypto";
+import { spawnSync } from "node:child_process";
+import type { ProviderTaskPackage, SubmissionArtifact, TaskFile } from "@bossraid/shared-types";
+import { providerConfig } from "./config.js";
+import { ArtifactBuilder, createBundleArtifact, createFileArtifact, joinArtifactPath } from "./artifacts.js";
+import { Bitmap, encodePng, parseHexColor, type RgbaColor } from "./bitmap.js";
+import { generateStructuredWithVenice } from "./venice.js";
+import type { ModelSubmission } from "./types.js";
+
+type ProviderMode = "generic" | "gbstudio" | "pixel_art" | "remotion";
+
+type GbStudioPlan = {
+  title: string;
+  genre: string;
+  tone: string;
+  coreMechanic: string;
+  sceneName: string;
+  npcName: string;
+  npcLine: string;
+  palette: string[];
+  conceptSummary: string;
+  milestonePlan: string[];
+  roomPlan: string[];
+  assetPlan: string[];
+  patchSummary: string;
+  gameplayChanges: string[];
+};
+
+type PixelPlan = {
+  artDirection: string;
+  palette: string[];
+  assetList: string[];
+  notes: string[];
+  summary: string;
+};
+
+type VideoPlan = {
+  projectTitle: string;
+  format: string;
+  durationSec: number;
+  visualStyle: string;
+  musicMood: string;
+  scriptSummary: string;
+  beatSheet: string[];
+  compositionPlan: string[];
+  renderNotes: string[];
+  palette: string[];
+  launchCopy: string[];
+};
+
+type TextPlan = {
+  answerText: string;
+  explanation: string;
+  confidence: number;
+};
+
+function normalizeName(value: string, fallback: string): string {
+  const safe = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return safe || fallback;
+}
+
+function toHex(color: string): string {
+  return color.replace("#", "").toUpperCase();
+}
+
+function buildPalette(colors: string[]): RgbaColor[] {
+  return colors.map((color) => parseHexColor(color));
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values.filter((value) => value.trim().length > 0))];
+}
+
+function extractPalette(task: ProviderTaskPackage, fallback: string[]): string[] {
+  const matches = `${task.task.description}\n${task.artifacts.files.map((file) => file.content).join("\n")}`.match(
+    /#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})/g,
+  );
+  const palette = unique((matches ?? []).map((value) => value.toUpperCase()));
+  return palette.length >= 4 ? palette.slice(0, 4) : fallback;
+}
+
+function extractGameTitle(task: ProviderTaskPackage): string {
+  return task.task.title.trim() || "Boss Raid Microgame";
+}
+
+function shortText(value: string, fallback: string): string {
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : fallback;
+}
+
+function firstFile(task: ProviderTaskPackage, predicate: (file: TaskFile) => boolean): TaskFile | undefined {
+  return task.artifacts.files.find(predicate);
+}
+
+function quotedList(values: string[]): string {
+  return values.map((value) => `- ${value}`).join("\n");
+}
+
+function buildUnifiedDiff(path: string, before: string, after: string): string {
+  const beforeLines = before.split(/\r?\n/);
+  const afterLines = after.split(/\r?\n/);
+  const beforeCount = beforeLines.length;
+  const afterCount = afterLines.length;
+  const beforeBody = beforeLines.map((line) => `-${line}`).join("\n");
+  const afterBody = afterLines.map((line) => `+${line}`).join("\n");
+  return [`--- a/${path}`, `+++ b/${path}`, `@@ -1,${beforeCount} +1,${afterCount} @@`, beforeBody, afterBody].join("\n");
+}
+
+function createSimpleSprite(
+  width: number,
+  height: number,
+  colors: RgbaColor[],
+  kind: "hero" | "npc" | "coin" | "monster" | "tree" | "ui",
+  variant: number,
+): Bitmap {
+  const bitmap = new Bitmap(width, height, { r: 0, g: 0, b: 0, a: 0 });
+  const outline = colors[3] ?? parseHexColor("1F2A44");
+  const primary = colors[2] ?? parseHexColor("4F8FBA");
+  const secondary = colors[1] ?? parseHexColor("9FD6C2");
+  const light = colors[0] ?? parseHexColor("F8F0E0");
+
+  if (kind === "hero" || kind === "npc") {
+    bitmap.fillRect(5, 1, 6, 4, light);
+    bitmap.fillRect(4, 5, 8, 5, primary);
+    bitmap.fillRect(5, 10, 2, 4, outline);
+    bitmap.fillRect(9, 10, 2, 4, outline);
+    bitmap.fillRect(2 + (variant % 2), 6, 2, 5, secondary);
+    bitmap.fillRect(12 - (variant % 2), 6, 2, 5, secondary);
+    bitmap.strokeRect(4, 5, 8, 5, outline);
+    bitmap.strokeRect(5, 1, 6, 4, outline);
+  } else if (kind === "coin") {
+    bitmap.fillRect(4, 3, 8, 10, primary);
+    bitmap.fillRect(5, 4, 6, 8, secondary);
+    bitmap.strokeRect(4, 3, 8, 10, outline);
+  } else if (kind === "monster") {
+    bitmap.fillRect(3, 4, 10, 8, primary);
+    bitmap.fillRect(5, 6, 2, 2, light);
+    bitmap.fillRect(9, 6, 2, 2, light);
+    bitmap.fillRect(4, 12, 2, 2, outline);
+    bitmap.fillRect(10, 12, 2, 2, outline);
+  } else if (kind === "tree") {
+    bitmap.fillRect(6, 10, 4, 5, outline);
+    bitmap.fillRect(3, 3, 10, 8, primary);
+    bitmap.fillRect(5, 5, 6, 4, secondary);
+  } else if (kind === "ui") {
+    bitmap.fillRect(1, 1, width - 2, height - 2, secondary);
+    bitmap.strokeRect(1, 1, width - 2, height - 2, outline);
+    bitmap.fillRect(3, 3, width - 6, 3, primary);
+  }
+
+  return bitmap;
+}
+
+function inferAssetKind(name: string): "hero" | "npc" | "coin" | "monster" | "tree" | "ui" {
+  const lower = name.toLowerCase();
+  if (lower.includes("coin") || lower.includes("gem") || lower.includes("pickup") || lower.includes("key")) {
+    return "coin";
+  }
+  if (lower.includes("tree") || lower.includes("plant") || lower.includes("bush")) {
+    return "tree";
+  }
+  if (lower.includes("ui") || lower.includes("button") || lower.includes("panel") || lower.includes("title")) {
+    return "ui";
+  }
+  if (lower.includes("monster") || lower.includes("enemy") || lower.includes("slime")) {
+    return "monster";
+  }
+  if (lower.includes("npc") || lower.includes("guide")) {
+    return "npc";
+  }
+  return "hero";
+}
+
+function drawTileBackground(width: number, height: number, colors: RgbaColor[], motif: string): Bitmap {
+  const bitmap = new Bitmap(width, height, colors[0]);
+  const groundY = Math.floor(height * 0.72);
+  bitmap.fillRect(0, groundY, width, height - groundY, colors[1]);
+  for (let x = 0; x < width; x += 8) {
+    bitmap.fillRect(x, groundY - 8, 8, 8, x % 16 === 0 ? colors[2] : colors[1]);
+  }
+  if (motif.toLowerCase().includes("cave")) {
+    bitmap.fillRect(16, 24, width - 32, 56, colors[2]);
+    bitmap.fillRect(24, 32, width - 48, 40, colors[3]);
+  } else {
+    bitmap.fillRect(24, groundY - 40, 48, 32, colors[2]);
+    bitmap.fillRect(40, groundY - 52, 16, 12, colors[3]);
+    bitmap.fillRect(width - 56, groundY - 32, 24, 24, colors[2]);
+  }
+  return bitmap;
+}
+
+function renderStoryFrame(
+  width: number,
+  height: number,
+  palette: string[],
+  headline: string,
+  subhead: string,
+  accent: string,
+  frameIndex: number,
+): Bitmap {
+  const colors = buildPalette(palette);
+  const bitmap = new Bitmap(width, height, colors[0]);
+  bitmap.fillRect(0, 0, width, 20, colors[3]);
+  bitmap.fillRect(0, height - 28, width, 28, colors[2]);
+  bitmap.fillRect(18, 32, width - 36, height - 86, colors[1]);
+  bitmap.strokeRect(18, 32, width - 36, height - 86, colors[3]);
+  bitmap.fillRect(32 + frameIndex * 6, 52, 54, 54, colors[2]);
+  bitmap.fillRect(width - 110, 54, 62, 42, colors[3]);
+  bitmap.fillRect(width - 102, 62, 46, 6, colors[0]);
+  bitmap.fillRect(width - 102, 74, 38, 6, colors[0]);
+  bitmap.fillRect(width - 102, 86, 52, 6, colors[0]);
+  bitmap.drawText(headline, 16, 5, colors[0], { scale: 2, maxWidth: width - 32, lineHeight: 18 });
+  bitmap.drawText(subhead, 16, height - 24, colors[0], { scale: 1, maxWidth: width - 32, lineHeight: 10 });
+  bitmap.drawText(accent, 30, 116, colors[3], { scale: 1, maxWidth: width - 60 });
+  return bitmap;
+}
+
+function tryRunFfmpeg(args: string[]): boolean {
+  const result = spawnSync("ffmpeg", args, { stdio: "ignore" });
+  return result.status === 0;
+}
+
+function readVeniceRuntime() {
+  if (!providerConfig.modelApiKey || !providerConfig.modelName || !providerConfig.modelApiBase.includes("venice")) {
+    return undefined;
+  }
+
+  return {
+    apiBase: providerConfig.modelApiBase,
+    apiKey: providerConfig.modelApiKey,
+    model: providerConfig.modelName,
+    reasoningEffort: providerConfig.modelReasoningEffort,
+  };
+}
+
+async function planWithVenice<T>(
+  schema: Record<string, unknown>,
+  systemPrompt: string,
+  userPrompt: string,
+): Promise<T | undefined> {
+  const runtime = readVeniceRuntime();
+  if (!runtime) {
+    return undefined;
+  }
+
+  return generateStructuredWithVenice<T>(runtime, {
+    systemPrompt,
+    userPrompt,
+    schema,
+    maxCompletionTokens: 900,
+    temperature: 0.4,
+  });
+}
+
+function fallbackGbStudioPlan(task: ProviderTaskPackage): GbStudioPlan {
+  const title = extractGameTitle(task);
+  const hook = shortText(task.task.description.split(".")[0] ?? "", "Escape the room before the timer expires.");
+  return {
+    title,
+    genre: "retro action-puzzle",
+    tone: "playful pressure",
+    coreMechanic: hook,
+    sceneName: "Vault Room",
+    npcName: "Guide Bot",
+    npcLine: "Grab the key, dodge the slime, and hit the exit before time runs out.",
+    palette: extractPalette(task, ["#0F1C2E", "#FFDA47", "#F65D5D", "#77F6C5"]),
+    conceptSummary: `${title} is a one-room microgame about reading slime paths, taking the key, and escaping under pressure.`,
+    milestonePlan: [
+      "Lock the smallest playable one-room loop.",
+      "Add one slime pattern and one clear escape condition.",
+      "Align the art and trailer hook with the same timer-pressure story.",
+    ],
+    roomPlan: [
+      "Spawn the player near the room entrance.",
+      "Place the key behind one slime patrol lane.",
+      "Open the exit only after the key is collected.",
+    ],
+    assetPlan: ["hero sprite", "slime enemy", "vault key", "exit door", "title card"],
+    patchSummary: "Expand the project metadata and encounter config so the repo reflects the one-room key-slime-exit loop.",
+    gameplayChanges: [
+      "Add scene metadata for the vault-room loop.",
+      "Record the key, slime, and exit goals in the encounter config.",
+      "Align the creative brief to the same timer-pressure hook.",
+    ],
+  };
+}
+
+async function buildGbStudioPlan(task: ProviderTaskPackage): Promise<GbStudioPlan> {
+  const fallback = fallbackGbStudioPlan(task);
+  const planned = await planWithVenice<GbStudioPlan>(
+    {
+      name: "gamma_gbstudio_plan",
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "title",
+          "genre",
+          "tone",
+          "coreMechanic",
+          "sceneName",
+          "npcName",
+          "npcLine",
+          "palette",
+          "conceptSummary",
+          "milestonePlan",
+          "roomPlan",
+          "assetPlan",
+          "patchSummary",
+          "gameplayChanges",
+        ],
+        properties: {
+          title: { type: "string" },
+          genre: { type: "string" },
+          tone: { type: "string" },
+          coreMechanic: { type: "string" },
+          sceneName: { type: "string" },
+          npcName: { type: "string" },
+          npcLine: { type: "string" },
+          palette: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 4 },
+          conceptSummary: { type: "string" },
+          milestonePlan: { type: "array", items: { type: "string" }, minItems: 3, maxItems: 5 },
+          roomPlan: { type: "array", items: { type: "string" }, minItems: 3, maxItems: 5 },
+          assetPlan: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 8 },
+          patchSummary: { type: "string" },
+          gameplayChanges: { type: "array", items: { type: "string" }, minItems: 3, maxItems: 6 },
+        },
+      },
+    },
+    "You are Gamma, a game developer inside Boss Raid. Plan one small playable game slice. Keep the plan concrete and consistent with the supplied repo context.",
+    JSON.stringify(
+      {
+        task: task.task,
+        synthesis: task.synthesis,
+        files: task.artifacts.files.map((file) => ({ path: file.path, content: file.content })),
+      },
+      null,
+      2,
+    ),
+  ).catch(() => undefined);
+  return planned ?? fallback;
+}
+
+function produceGbStudioBundle(plan: GbStudioPlan) {
+  const builder = new ArtifactBuilder("gamma");
+  const palette = plan.palette.length >= 4 ? plan.palette : ["#0F1C2E", "#FFDA47", "#F65D5D", "#77F6C5"];
+  const colors = buildPalette(palette);
+  const sceneSlug = normalizeName(plan.sceneName, "scene-one");
+  const backgroundId = randomUUID();
+  const sceneId = randomUUID();
+  const spriteId = randomUUID();
+
+  const background = drawTileBackground(160, 144, colors, plan.genre);
+  const playerSheet = new Bitmap(48, 16, { r: 0, g: 0, b: 0, a: 0 });
+  for (let frame = 0; frame < 3; frame += 1) {
+    playerSheet.blit(createSimpleSprite(16, 16, colors, "hero", frame), frame * 16, 0);
+  }
+
+  builder.writeBinary(joinArtifactPath("game", "assets", "backgrounds", `${sceneSlug}.png`), encodePng(background), "image/png");
+  builder.writeBinary(joinArtifactPath("game", "assets", "sprites", "player.png"), encodePng(playerSheet), "image/png");
+  builder.writeJson(joinArtifactPath("game", "project.gbsproj"), {
+    _resourceType: "project",
+    name: plan.title,
+    author: "Boss Raid / Gamma",
+    notes: plan.conceptSummary,
+    scenes: [{ id: sceneId, name: plan.sceneName, backgroundId }],
+    spriteSheets: [{ id: spriteId, name: "player", filename: "player.png" }],
+    backgrounds: [{ id: backgroundId, name: plan.sceneName, filename: `${sceneSlug}.png` }],
+    palettes: [
+      { id: "default-bg-1", name: "Default BG 1", colors: palette.map(toHex) },
+      { id: "default-sprite", name: "Default Sprites", colors: palette.map(toHex) },
+    ],
+  });
+  builder.writeJson(joinArtifactPath("game", "design", "notes.json"), {
+    title: plan.title,
+    genre: plan.genre,
+    tone: plan.tone,
+    coreMechanic: plan.coreMechanic,
+    sceneName: plan.sceneName,
+    npcName: plan.npcName,
+    npcLine: plan.npcLine,
+    roomPlan: plan.roomPlan,
+    assetPlan: plan.assetPlan,
+  });
+  builder.writeText(
+    joinArtifactPath("game", "README.md"),
+    `# ${plan.title}\n\n${plan.conceptSummary}\n\n## Core Mechanic\n${plan.coreMechanic}\n\n## Milestones\n${plan.milestonePlan
+      .map((item, index) => `${index + 1}. ${item}`)
+      .join("\n")}\n`,
+  );
+
+  return builder.inlineAll();
+}
+
+function buildGbStudioPatch(task: ProviderTaskPackage, plan: GbStudioPlan): { patch: string; filesTouched: string[] } {
+  const filesTouched: string[] = [];
+  const diffParts: string[] = [];
+
+  const projectFile = firstFile(task, (file) => file.path.endsWith(".gbsproj"));
+  if (projectFile) {
+    let parsed: Record<string, unknown> = {};
+    try {
+      parsed = JSON.parse(projectFile.content) as Record<string, unknown>;
+    } catch {
+      parsed = {};
+    }
+    const updated = {
+      ...parsed,
+      name: plan.title,
+      engine: parsed.engine ?? "gb-studio",
+      sceneCount: 1,
+      bossRaid: {
+        sceneName: plan.sceneName,
+        coreMechanic: plan.coreMechanic,
+        palette: plan.palette,
+        milestones: plan.milestonePlan,
+      },
+    };
+    const nextContent = JSON.stringify(updated, null, 2) + "\n";
+    diffParts.push(buildUnifiedDiff(projectFile.path, projectFile.content, nextContent));
+    filesTouched.push(projectFile.path);
+  }
+
+  const encounterFile = firstFile(task, (file) => file.path.includes("encounter"));
+  if (encounterFile) {
+    const nextContent = [
+      "export const bossRaidPitch = {",
+      `  title: ${JSON.stringify(plan.title)},`,
+      `  loop: ${JSON.stringify(plan.coreMechanic)},`,
+      `  sceneName: ${JSON.stringify(plan.sceneName)},`,
+      `  npcName: ${JSON.stringify(plan.npcName)},`,
+      `  npcLine: ${JSON.stringify(plan.npcLine)},`,
+      `  palette: ${JSON.stringify(plan.palette)},`,
+      `  goals: ${JSON.stringify(plan.roomPlan)},`,
+      `  assetPlan: ${JSON.stringify(plan.assetPlan)}`,
+      "};",
+      "",
+    ].join("\n");
+    diffParts.push(buildUnifiedDiff(encounterFile.path, encounterFile.content, nextContent));
+    filesTouched.push(encounterFile.path);
+  }
+
+  const briefFile = firstFile(task, (file) => file.path.endsWith("creative-brief.md"));
+  if (briefFile) {
+    const nextContent = [
+      `# ${plan.title}`,
+      "",
+      `Tone: ${plan.tone}.`,
+      "Audience: players who like tiny retro challenge games.",
+      `Deliverables: gameplay patch, pixel pack, teaser clip, launch copy.`,
+      "",
+      "## Shared Hook",
+      plan.coreMechanic,
+      "",
+      "## Room Plan",
+      quotedList(plan.roomPlan),
+      "",
+      "## Asset Plan",
+      quotedList(plan.assetPlan),
+      "",
+    ].join("\n");
+    diffParts.push(buildUnifiedDiff(briefFile.path, briefFile.content, nextContent));
+    filesTouched.push(briefFile.path);
+  }
+
+  return {
+    patch: diffParts.join("\n\n"),
+    filesTouched,
+  };
+}
+
+function fallbackPixelPlan(task: ProviderTaskPackage): PixelPlan {
+  const title = extractGameTitle(task);
+  return {
+    artDirection: `${title} should read as clean Game Boy pixel art with one warm accent color.`,
+    palette: extractPalette(task, ["#0F1C2E", "#FFDA47", "#F65D5D", "#77F6C5"]),
+    assetList: ["player", "slime enemy", "vault key", "exit door", "title card"],
+    notes: [
+      "Keep the silhouettes readable at 16x16.",
+      "Reuse the same palette across gameplay, art, and trailer.",
+    ],
+    summary: `Deliver a compact pixel pack for ${title} with a player, slime, pickup, exit, and title treatment.`,
+  };
+}
+
+async function buildPixelPlan(task: ProviderTaskPackage): Promise<PixelPlan> {
+  const fallback = fallbackPixelPlan(task);
+  const planned = await planWithVenice<PixelPlan>(
+    {
+      name: "dottie_pixel_plan",
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["artDirection", "palette", "assetList", "notes", "summary"],
+        properties: {
+          artDirection: { type: "string" },
+          palette: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 4 },
+          assetList: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 8 },
+          notes: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 6 },
+          summary: { type: "string" },
+        },
+      },
+    },
+    "You are Dottie, a pixel artist inside Boss Raid. Turn the request into a compact asset pack plan with a coherent palette and only the assets the build actually needs.",
+    JSON.stringify({ task: task.task, synthesis: task.synthesis }, null, 2),
+  ).catch(() => undefined);
+  return planned ?? fallback;
+}
+
+function producePixelBundle(plan: PixelPlan) {
+  const builder = new ArtifactBuilder("dottie");
+  const palette = plan.palette.length >= 4 ? plan.palette : ["#0F1C2E", "#FFDA47", "#F65D5D", "#77F6C5"];
+  const colors = buildPalette(palette);
+  const assets = plan.assetList.map((asset, index) => {
+    const bitmap = createSimpleSprite(16, 16, colors, inferAssetKind(asset), index);
+    const relativePath = joinArtifactPath("pixel-pack", `${normalizeName(asset, `asset-${index + 1}`)}.png`);
+    builder.writeBinary(relativePath, encodePng(bitmap), "image/png");
+    return { name: asset, relativePath };
+  });
+
+  const sheet = new Bitmap(assets.length * 20 + 4, 24, colors[0]);
+  assets.forEach((asset, index) => {
+    const sprite = createSimpleSprite(16, 16, colors, inferAssetKind(asset.name), index);
+    sheet.blit(sprite, 4 + index * 20, 4);
+  });
+  builder.writeBinary(joinArtifactPath("pixel-pack", "spritesheet.png"), encodePng(sheet), "image/png");
+  builder.writeJson(joinArtifactPath("pixel-pack", "metadata.json"), {
+    artDirection: plan.artDirection,
+    palette: palette.map(toHex),
+    assets,
+    notes: plan.notes,
+  });
+  builder.writeText(joinArtifactPath("pixel-pack", "README.md"), `# Dottie Pixel Pack\n\n${plan.summary}\n`);
+  return builder.inlineAll();
+}
+
+function fallbackVideoPlan(task: ProviderTaskPackage): VideoPlan {
+  const title = extractGameTitle(task);
+  return {
+    projectTitle: title,
+    format: "12-second teaser",
+    durationSec: 12,
+    visualStyle: "retro kinetic typography over chunky gameplay stills",
+    musicMood: "urgent chiptune pulse",
+    scriptSummary: `Sell ${title} as a fast, readable microgame with a key, a slime, and a timer.`,
+    beatSheet: [
+      "Find the key before the slime closes the lane.",
+      "Read the pattern, move clean, and open the exit.",
+      "Boss Raid: Slime Panic. Clear the room before the clock wins.",
+    ],
+    compositionPlan: [
+      "Open on the timer and the room layout.",
+      "Cut to the slime lane and key pickup.",
+      "Land on the title card and CTA.",
+    ],
+    renderNotes: ["Keep captions readable in one glance.", "Use the same palette as the gameplay and art pack."],
+    palette: extractPalette(task, ["#0F1C2E", "#FFDA47", "#F65D5D", "#77F6C5"]),
+    launchCopy: ["A one-room Game Boy microgame with timer pressure.", "Dodge the slime. Grab the key. Hit the exit."],
+  };
+}
+
+async function buildVideoPlan(task: ProviderTaskPackage): Promise<VideoPlan> {
+  const fallback = fallbackVideoPlan(task);
+  const planned = await planWithVenice<VideoPlan>(
+    {
+      name: "riko_video_plan",
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "projectTitle",
+          "format",
+          "durationSec",
+          "visualStyle",
+          "musicMood",
+          "scriptSummary",
+          "beatSheet",
+          "compositionPlan",
+          "renderNotes",
+          "palette",
+          "launchCopy",
+        ],
+        properties: {
+          projectTitle: { type: "string" },
+          format: { type: "string" },
+          durationSec: { type: "number" },
+          visualStyle: { type: "string" },
+          musicMood: { type: "string" },
+          scriptSummary: { type: "string" },
+          beatSheet: { type: "array", items: { type: "string" }, minItems: 3, maxItems: 5 },
+          compositionPlan: { type: "array", items: { type: "string" }, minItems: 3, maxItems: 5 },
+          renderNotes: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 6 },
+          palette: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 4 },
+          launchCopy: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 5 },
+        },
+      },
+    },
+    "You are Riko, a video marketer inside Boss Raid. Turn the request into a short teaser plan, beat sheet, and launch copy that match the supplied game brief.",
+    JSON.stringify({ task: task.task, synthesis: task.synthesis }, null, 2),
+  ).catch(() => undefined);
+  return planned ?? fallback;
+}
+
+function produceVideoBundle(plan: VideoPlan) {
+  const builder = new ArtifactBuilder("riko");
+  const palette = plan.palette.length >= 4 ? plan.palette : ["#0F1C2E", "#FFDA47", "#F65D5D", "#77F6C5"];
+  const framePaths: string[] = [];
+
+  plan.beatSheet.slice(0, 3).forEach((beat, index) => {
+    const bitmap = renderStoryFrame(320, 180, palette, `${plan.projectTitle} ${index + 1}`, beat, plan.visualStyle, index);
+    const relativePath = joinArtifactPath("video-preview", "frames", `frame-${String(index + 1).padStart(2, "0")}.png`);
+    builder.writeBinary(relativePath, encodePng(bitmap), "image/png");
+    framePaths.push(relativePath);
+  });
+
+  const storyboard = new Bitmap(320 * 3, 180, parseHexColor(palette[0]));
+  framePaths.forEach((_, index) => {
+    storyboard.blit(
+      renderStoryFrame(320, 180, palette, `${index + 1}`, plan.beatSheet[index] ?? "", plan.visualStyle, index),
+      index * 320,
+      0,
+    );
+  });
+  builder.writeBinary(joinArtifactPath("video-preview", "storyboard.png"), encodePng(storyboard), "image/png");
+  builder.writeText(
+    joinArtifactPath("video-preview", "captions.srt"),
+    plan.beatSheet
+      .slice(0, 3)
+      .map((beat, index) => `${index + 1}\n00:00:0${index * 2},000 --> 00:00:0${index * 2 + 2},000\n${beat}\n`)
+      .join("\n"),
+    "application/x-subrip",
+  );
+  builder.writeJson(joinArtifactPath("video-preview", "plan.json"), plan);
+  builder.writeText(
+    joinArtifactPath("video-preview", "remotion", "package.json"),
+    JSON.stringify(
+      {
+        name: normalizeName(plan.projectTitle, "riko-remotion"),
+        private: true,
+        scripts: { render: "remotion render src/index.ts Promo out/promo.mp4" },
+        dependencies: {
+          remotion: "^4.0.0",
+          react: "^19.0.0",
+          "react-dom": "^19.0.0",
+        },
+      },
+      null,
+      2,
+    ) + "\n",
+    "application/json",
+  );
+  builder.writeText(
+    joinArtifactPath("video-preview", "remotion", "src", "Promo.tsx"),
+    `import React from "react";\nimport { AbsoluteFill, Sequence, useCurrentFrame, interpolate } from "remotion";\n\nconst beats = ${JSON.stringify(plan.beatSheet, null, 2)};\n\nexport const Promo: React.FC = () => {\n  const frame = useCurrentFrame();\n  return (\n    <AbsoluteFill style={{ backgroundColor: "${plan.palette[0]}", color: "${plan.palette[3]}", fontFamily: "sans-serif", justifyContent: "center", alignItems: "center" }}>\n      {beats.map((beat, index) => (\n        <Sequence key={index} from={index * 60} durationInFrames={60}>\n          <div style={{ opacity: interpolate(frame, [index * 60, index * 60 + 15], [0, 1], { extrapolateRight: "clamp" }), width: "80%", fontSize: 42, textAlign: "center" }}>{beat}</div>\n        </Sequence>\n      ))}\n    </AbsoluteFill>\n  );\n};\n`,
+  );
+  builder.writeText(
+    joinArtifactPath("video-preview", "remotion", "src", "Root.tsx"),
+    `import React from "react";\nimport { Composition } from "remotion";\nimport { Promo } from "./Promo";\n\nexport const RemotionRoot: React.FC = () => (\n  <Composition id="Promo" component={Promo} width={1280} height={720} fps={30} durationInFrames={${Math.max(
+      90,
+      plan.beatSheet.length * 60,
+    )}} defaultProps={{}} />\n);\n`,
+  );
+  builder.writeText(
+    joinArtifactPath("video-preview", "remotion", "src", "index.ts"),
+    `import { registerRoot } from "remotion";\nimport { RemotionRoot } from "./Root";\n\nregisterRoot(RemotionRoot);\n`,
+  );
+
+  const frameGlob = `${builder.root}/video-preview/frames/frame-%02d.png`;
+  const mp4Output = `${builder.root}/video-preview/preview.mp4`;
+  if (
+    tryRunFfmpeg([
+      "-y",
+      "-framerate",
+      "1",
+      "-i",
+      frameGlob,
+      "-vf",
+      "scale=640:360:flags=neighbor,format=yuv420p",
+      "-t",
+      "6",
+      mp4Output,
+    ])
+  ) {
+    const mp4Buffer = spawnSync("cat", [mp4Output], { encoding: null }).stdout;
+    if (mp4Buffer) {
+      builder.writeBinary(joinArtifactPath("video-preview", "preview.mp4"), mp4Buffer, "video/mp4");
+    }
+  }
+
+  builder.writeText(joinArtifactPath("video-preview", "README.md"), `# ${plan.projectTitle}\n\n${plan.scriptSummary}\n`);
+  return builder.inlineAll();
+}
+
+async function buildGenericTextPlan(task: ProviderTaskPackage): Promise<TextPlan> {
+  const fallback: TextPlan = {
+    answerText: `Mercenary asked ${providerConfig.displayName} for a scoped contribution. ${task.task.description}`,
+    explanation: "Produced a constrained text answer from the supplied task package and workstream scope.",
+    confidence: 0.66,
+  };
+
+  const planned = await planWithVenice<TextPlan>(
+    {
+      name: "generic_text_answer",
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["answerText", "explanation", "confidence"],
+        properties: {
+          answerText: { type: "string" },
+          explanation: { type: "string" },
+          confidence: { type: "number" },
+        },
+      },
+    },
+    "You are a specialist provider inside Boss Raid. Give one concise contribution for Mercenary to synthesize. Do not mention hidden chain-of-thought.",
+    JSON.stringify({ task: task.task, synthesis: task.synthesis, artifacts: task.artifacts }, null, 2),
+  ).catch(() => undefined);
+  return planned ?? fallback;
+}
+
+function domainMatchesMode(mode: ProviderMode, task: ProviderTaskPackage): boolean {
+  const haystack = [
+    task.task.framework ?? "",
+    task.task.description,
+    task.synthesis?.workstreamLabel ?? "",
+    task.synthesis?.roleLabel ?? "",
+  ]
+    .join("\n")
+    .toLowerCase();
+
+  if (mode === "gbstudio") {
+    return haystack.includes("gb-studio") || haystack.includes("gameplay");
+  }
+  if (mode === "pixel_art") {
+    return haystack.includes("pixel") || haystack.includes("sprite") || haystack.includes("art");
+  }
+  if (mode === "remotion") {
+    return haystack.includes("remotion") || haystack.includes("promo") || haystack.includes("video");
+  }
+  return false;
+}
+
+function describeBundleArtifacts(
+  bundle: ReturnType<ArtifactBuilder["inlineAll"]>,
+  prefix: string,
+): SubmissionArtifact[] {
+  const files = bundle.files;
+  const videoHighlights: SubmissionArtifact[] = [];
+  const imageHighlights: SubmissionArtifact[] = [];
+
+  for (const file of files) {
+    if (file.mimeType.startsWith("video/")) {
+      videoHighlights.push(createFileArtifact("video", `${prefix} preview`, "Generated video artifact.", file));
+      continue;
+    }
+    if (file.mimeType.startsWith("image/")) {
+      imageHighlights.push(createFileArtifact("image", `${prefix} ${file.relativePath}`, "Generated image artifact.", file));
+    }
+  }
+
+  return uniqueArtifacts([
+    ...videoHighlights.slice(0, 1),
+    ...imageHighlights.slice(0, 3),
+    createBundleArtifact(bundle, `${prefix} bundle`, `Inline bundle with ${bundle.files.length} generated files.`),
+  ]);
+}
+
+function uniqueArtifacts(artifacts: SubmissionArtifact[]): SubmissionArtifact[] {
+  const seen = new Set<string>();
+  const output: SubmissionArtifact[] = [];
+  for (const artifact of artifacts) {
+    const key = `${artifact.outputType}:${artifact.uri}`;
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    output.push(artifact);
+  }
+  return output;
+}
+
+export async function maybeRequestSpecializedSubmission(
+  task: ProviderTaskPackage,
+): Promise<ModelSubmission | undefined> {
+  const mode = providerConfig.providerMode as ProviderMode;
+  if (mode === "generic") {
+    return undefined;
+  }
+
+  if (!domainMatchesMode(mode, task) && task.desiredOutput.primaryType === "text") {
+    const generic = await buildGenericTextPlan(task);
+    return {
+      answerText: generic.answerText,
+      explanation: generic.explanation,
+      confidence: generic.confidence,
+      filesTouched: [],
+      artifacts: [],
+    };
+  }
+
+  if (mode === "gbstudio") {
+    const plan = await buildGbStudioPlan(task);
+    const bundle = produceGbStudioBundle(plan);
+    const patch = buildGbStudioPatch(task, plan);
+    return {
+      patchUnifiedDiff: task.desiredOutput.primaryType === "patch" ? patch.patch : undefined,
+      answerText:
+        task.desiredOutput.primaryType === "text"
+          ? `${plan.conceptSummary}\n\nGameplay scope:\n${plan.gameplayChanges.map((item) => `- ${item}`).join("\n")}`
+          : undefined,
+      artifacts: describeBundleArtifacts(bundle, "Gamma"),
+      explanation: `${plan.patchSummary} Mercenary can use the inline GB Studio bundle for receipt proof and downstream handoff.`,
+      confidence: 0.82,
+      filesTouched: task.desiredOutput.primaryType === "patch" ? patch.filesTouched : [],
+    };
+  }
+
+  if (mode === "pixel_art") {
+    const plan = await buildPixelPlan(task);
+    const bundle = producePixelBundle(plan);
+    return {
+      answerText:
+        task.desiredOutput.primaryType === "text"
+          ? `${plan.summary}\n\nAsset list:\n${plan.assetList.map((item) => `- ${item}`).join("\n")}`
+          : undefined,
+      artifacts: describeBundleArtifacts(bundle, "Dottie"),
+      explanation: `${plan.summary} Included inline pixel-art files, a spritesheet, and bundle metadata.`,
+      confidence: 0.8,
+      filesTouched: [],
+    };
+  }
+
+  if (mode === "remotion") {
+    const plan = await buildVideoPlan(task);
+    const bundle = produceVideoBundle(plan);
+    return {
+      answerText:
+        task.desiredOutput.primaryType === "text"
+          ? `${plan.scriptSummary}\n\nLaunch copy:\n${plan.launchCopy.map((item) => `- ${item}`).join("\n")}`
+          : undefined,
+      artifacts: describeBundleArtifacts(bundle, "Riko"),
+      explanation: `${plan.scriptSummary} Included storyboard frames, captions, Remotion source, and preview render when ffmpeg was available.`,
+      confidence: 0.8,
+      filesTouched: [],
+    };
+  }
+
+  return undefined;
+}
+
+export function attachContributionRole(submission: ModelSubmission, task: ProviderTaskPackage): ModelSubmission {
+  if (task.synthesis == null) {
+    return submission;
+  }
+
+  return {
+    ...submission,
+    contributionRole: {
+      id: task.synthesis.roleId,
+      label: task.synthesis.roleLabel,
+      objective: task.synthesis.roleObjective,
+      workstreamId: task.synthesis.workstreamId,
+      workstreamLabel: task.synthesis.workstreamLabel,
+      workstreamObjective: task.synthesis.workstreamObjective,
+    },
+  };
+}
+
+export function submissionSupportsRequestedOutput(submission: ModelSubmission, task: ProviderTaskPackage): boolean {
+  const primaryType = task.desiredOutput.primaryType;
+  if (primaryType === "patch") {
+    return typeof submission.patchUnifiedDiff === "string" && submission.patchUnifiedDiff.length > 0;
+  }
+  if (primaryType === "text" || primaryType === "json") {
+    return typeof submission.answerText === "string" && submission.answerText.length > 0;
+  }
+  return Array.isArray(submission.artifacts) && submission.artifacts.length > 0;
+}
