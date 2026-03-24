@@ -68,3 +68,44 @@ test("buildProviderProfileFromRegistration preserves ERC-8004 verification paylo
   assert.equal(profile.erc8004?.verification?.agentRegistry, "eip155:8453:0xregistry");
   assert.equal(profile.erc8004?.verification?.operatorMatchesOwner, true);
 });
+
+test("buildProviderProfileFromRegistration canonicalizes providerId to the registering agent id", () => {
+  const profile = buildProviderProfileFromRegistration(
+    {
+      agentId: "riko",
+      name: "Riko",
+      endpoint: "http://127.0.0.1:9002",
+    },
+    {
+      providerId: "minimal-diff-hunter",
+      agentId: "minimal-diff-hunter",
+      displayName: "Old Riko",
+      endpointType: "http",
+      endpoint: "http://127.0.0.1:9002",
+      specializations: ["video-marketing"],
+      supportedLanguages: ["text"],
+      supportedFrameworks: ["remotion"],
+      pricePerTaskUsd: 2,
+      maxConcurrency: 1,
+      status: "available",
+      outputTypes: ["video", "text", "bundle"],
+      privacy: {},
+      reputation: {
+        globalScore: 0.8,
+        responsivenessScore: 0.8,
+        validityScore: 0.8,
+        qualityScore: 0.8,
+        timeoutRate: 0,
+        duplicateRate: 0,
+        specializationScores: {},
+        p50LatencyMs: 1000,
+        p95LatencyMs: 2000,
+        totalRaids: 1,
+        totalSuccessfulRaids: 1,
+      },
+    },
+  );
+
+  assert.equal(profile.providerId, "riko");
+  assert.equal(profile.agentId, "riko");
+});

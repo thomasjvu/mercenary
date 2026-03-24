@@ -118,6 +118,22 @@ export class InvalidRaidLaunchReservationError extends Error {
   }
 }
 
+function normalizeProviderEndpoint(endpoint: string | undefined): string | undefined {
+  if (!endpoint) {
+    return undefined;
+  }
+
+  try {
+    const url = new URL(endpoint);
+    url.hash = "";
+    url.search = "";
+    const normalized = url.toString();
+    return normalized.endsWith("/") ? normalized.slice(0, -1) : normalized;
+  } catch {
+    return endpoint.trim().replace(/\/+$/, "");
+  }
+}
+
 type ProviderHealthProbe = typeof probeProviderHealth;
 
 type PreparedLeafRaid = {
@@ -185,6 +201,7 @@ function settlementExecutionEquals(
 export class BossRaidOrchestrator {
   private readonly providers = new Map<string, ProviderProfile>();
   private readonly providerRuntimes = new Map<string, RaidProvider>();
+  private readonly seededProviderIds = new Set<string>();
   private readonly raids = new Map<string, RaidRecord>();
   private readonly launchReservations = new Map<string, RaidLaunchReservationRecord>();
   private readonly timers = new ProviderTimerRegistry();
@@ -210,6 +227,7 @@ export class BossRaidOrchestrator {
     this.persistence = persistence;
     this.settlementExecutor = settlementExecutor;
     for (const provider of seedProviders) {
+      this.seededProviderIds.add(provider.profile.providerId);
       this.registerProvider(provider);
     }
   }
@@ -223,12 +241,17 @@ export class BossRaidOrchestrator {
   upsertRegisteredProvider(input: ProviderRegistrationInput): ProviderProfile {
     const existing =
       this.providers.get(input.agentId) ??
-      [...this.providers.values()].find((provider) => provider.agentId === input.agentId);
+      [...this.providers.values()].find(
+        (provider) =>
+          provider.agentId === input.agentId ||
+          normalizeProviderEndpoint(provider.endpoint) === normalizeProviderEndpoint(input.endpoint),
+      );
     const profile = buildProviderProfileFromRegistration(input, existing);
     profile.status = "available";
     profile.lastSeenAt = new Date().toISOString();
 
     this.registerProvider(createProviderFromProfile(profile));
+    this.dropProviderAliases(profile, { preserveSeededProvider: false });
     void this.queuePersist();
     return profile;
   }
@@ -762,12 +785,26 @@ export class BossRaidOrchestrator {
     return raid.settlementExecution;
   }
 
-  restoreState(snapshot: BossRaidPersistenceSnapshot): void {
+  restoreState(snapshot: BossRaidPersistenceSnapshot): boolean {
+    let normalized = false;
+
     for (const persisted of snapshot.providers) {
-      const existing = this.providers.get(persisted.providerId);
+      const existing =
+        this.providers.get(persisted.providerId) ??
+        (persisted.agentId
+          ? [...this.providers.values()].find((provider) => provider.agentId === persisted.agentId)
+          : undefined) ??
+        [...this.providers.values()].find(
+          (provider) =>
+            normalizeProviderEndpoint(provider.endpoint) === normalizeProviderEndpoint(persisted.endpoint),
+        );
       if (!existing) {
         this.registerProvider(createProviderFromProfile(persisted));
         continue;
+      }
+
+      if (existing.providerId !== persisted.providerId) {
+        normalized = true;
       }
 
       existing.status = persisted.status;
@@ -777,6 +814,7 @@ export class BossRaidOrchestrator {
       existing.outputTypes = persisted.outputTypes;
       existing.lastSeenAt = persisted.lastSeenAt;
       refreshProviderScores(existing);
+      normalized = this.dropProviderAliases(existing, { preserveSeededProvider: true }) || normalized;
     }
 
     for (const raid of snapshot.raids) {
@@ -800,6 +838,11 @@ export class BossRaidOrchestrator {
     }
 
     this.pruneLaunchReservations();
+    return normalized;
+  }
+
+  async persistState(): Promise<void> {
+    await this.queuePersist();
   }
 
   getStatus(raidId: string): BossRaidStatusOutput {
@@ -2221,6 +2264,42 @@ export class BossRaidOrchestrator {
 
     this.refreshProviderLiveness();
   }
+
+  private dropProviderAliases(
+    provider: ProviderProfile,
+    options: { preserveSeededProvider: boolean },
+  ): boolean {
+    const providerEndpoint = normalizeProviderEndpoint(provider.endpoint);
+    let changed = false;
+
+    for (const candidate of [...this.providers.values()]) {
+      if (candidate.providerId === provider.providerId) {
+        continue;
+      }
+
+      const sameAgentId = provider.agentId != null && candidate.agentId === provider.agentId;
+      const sameEndpoint =
+        providerEndpoint != null &&
+        normalizeProviderEndpoint(candidate.endpoint) === providerEndpoint;
+      if (!sameAgentId && !sameEndpoint) {
+        continue;
+      }
+
+      if (
+        options.preserveSeededProvider &&
+        this.seededProviderIds.has(candidate.providerId) &&
+        !this.seededProviderIds.has(provider.providerId)
+      ) {
+        continue;
+      }
+
+      this.providers.delete(candidate.providerId);
+      this.providerRuntimes.delete(candidate.providerId);
+      changed = true;
+    }
+
+    return changed;
+  }
 }
 
 export async function createDefaultOrchestrator(
@@ -2258,7 +2337,9 @@ export async function createDefaultOrchestrator(
     persistence,
     settlementExecutor,
   );
-  orchestrator.restoreState(snapshot);
+  if (orchestrator.restoreState(snapshot)) {
+    await orchestrator.persistState();
+  }
   return orchestrator;
 }
 

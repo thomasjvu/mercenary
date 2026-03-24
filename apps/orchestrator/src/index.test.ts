@@ -1402,6 +1402,99 @@ test("sqlite persistence saves and reloads snapshot state", async () => {
   }
 });
 
+test("restoreState merges persisted provider aliases into seeded providers by endpoint", () => {
+  const orchestrator = new BossRaidOrchestrator([
+    {
+      profile: createProviderProfile("riko", {
+        agentId: "riko",
+        displayName: "Riko",
+        endpoint: "http://provider-b:9002",
+        specializations: ["video-marketing", "remotion"],
+        outputTypes: ["video", "text", "bundle"],
+      }),
+      async accept(): Promise<ProviderAcceptance> {
+        return {
+          accepted: true,
+          providerRunId: "run-riko",
+        };
+      },
+      async run(): Promise<void> {
+        return;
+      },
+    },
+  ]);
+
+  const normalized = orchestrator.restoreState({
+    version: 1,
+    savedAt: new Date().toISOString(),
+    raids: [],
+    providers: [
+      createProviderProfile("minimal-diff-hunter", {
+        agentId: "minimal-diff-hunter",
+        displayName: "Riko",
+        endpoint: "http://provider-b:9002/",
+        specializations: ["video-marketing", "remotion", "launch-copy"],
+        outputTypes: ["video", "text", "bundle"],
+        reputation: {
+          globalScore: 0.77,
+          responsivenessScore: 0.81,
+          validityScore: 0.75,
+          qualityScore: 0.8,
+          timeoutRate: 0.09,
+          duplicateRate: 0.03,
+          specializationScores: { remotion: 0.9 },
+          p50LatencyMs: 10_500,
+          p95LatencyMs: 24_000,
+          totalRaids: 21,
+          totalSuccessfulRaids: 5,
+        },
+      }),
+    ],
+    launchReservations: [],
+  });
+
+  const providers = orchestrator.listProviders();
+  assert.equal(normalized, true);
+  assert.equal(providers.length, 1);
+  assert.equal(providers[0]?.providerId, "riko");
+  assert.equal(providers[0]?.displayName, "Riko");
+  assert.equal(providers[0]?.reputation.totalRaids, 21);
+});
+
+test("upsertRegisteredProvider replaces aliased providers with the canonical agent id", () => {
+  const orchestrator = new BossRaidOrchestrator([
+    {
+      profile: createProviderProfile("minimal-diff-hunter", {
+        agentId: "minimal-diff-hunter",
+        displayName: "Riko",
+        endpoint: "http://provider-b:9002",
+        outputTypes: ["video", "text", "bundle"],
+      }),
+      async accept(): Promise<ProviderAcceptance> {
+        return {
+          accepted: true,
+          providerRunId: "run-riko",
+        };
+      },
+      async run(): Promise<void> {
+        return;
+      },
+    },
+  ]);
+
+  const provider = orchestrator.upsertRegisteredProvider({
+    agentId: "riko",
+    name: "Riko",
+    endpoint: "http://provider-b:9002/",
+    outputTypes: ["video", "text", "bundle"],
+  });
+
+  const providers = orchestrator.listProviders();
+  assert.equal(provider.providerId, "riko");
+  assert.equal(providers.length, 1);
+  assert.equal(providers[0]?.providerId, "riko");
+});
+
 test("updateSettlementExecution persists refreshed settlement proof state", async () => {
   const dir = await mkdtemp(join(tmpdir(), "bossraid-sqlite-settlement-"));
   const persistence = new SqliteBossRaidPersistence(join(dir, "state.sqlite"));

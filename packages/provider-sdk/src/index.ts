@@ -286,7 +286,7 @@ export function buildProviderProfileFromRegistration(
   existing?: ProviderProfile,
 ): ProviderProfile {
   return normalizeProviderProfile({
-    providerId: existing?.providerId ?? input.agentId,
+    providerId: input.agentId,
     agentId: input.agentId,
     displayName: input.name,
     description: input.description ?? existing?.description,
