@@ -118,11 +118,13 @@ export function buildProviderAgentServer() {
     await sleep(providerConfig.acceptDelayMs);
     const providerRunId = `run_${randomUUID()}`;
     console.info(`[provider-agent] ${providerConfig.providerId} accept acknowledged raid=${body.raidId} run=${providerRunId}`);
-    setImmediate(() => {
+    // Yield one full timer turn so Fastify can flush the accept response
+    // before any model or artifact work starts on the same event loop.
+    setTimeout(() => {
       void runProviderJob(app, body, providerRunId).catch((error) => {
         app.log.error(error);
       });
-    });
+    }, 25);
 
     return {
       accepted: true,

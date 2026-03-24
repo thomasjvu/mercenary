@@ -14,6 +14,7 @@ import type {
 
 const HMAC_TIMESTAMP_MAX_SKEW_MS = 5 * 60_000;
 const DEFAULT_PROVIDER_HEALTH_TIMEOUT_MS = 5_000;
+const DEFAULT_PROVIDER_ACCEPT_TIMEOUT_MS = 20_000;
 
 export interface RaidProvider {
   readonly profile: ProviderProfile;
@@ -155,7 +156,7 @@ async function postJson<TResponse>(
   const url = new URL(path, profile.endpoint).toString();
   const startedAt = Date.now();
   const controller = new AbortController();
-  const timeoutMs = 9_000;
+  const timeoutMs = readProviderAcceptTimeoutMs();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   console.info(`[provider-http] ${profile.providerId} POST ${path} start`);
@@ -194,6 +195,16 @@ async function postJson<TResponse>(
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function readProviderAcceptTimeoutMs(env: NodeJS.ProcessEnv = process.env): number {
+  const raw = env.BOSSRAID_INVITE_ACCEPT_MS;
+  if (!raw) {
+    return DEFAULT_PROVIDER_ACCEPT_TIMEOUT_MS;
+  }
+
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_PROVIDER_ACCEPT_TIMEOUT_MS;
 }
 
 export async function probeProviderHealth(profile: ProviderProfile): Promise<ProviderHealthStatus> {

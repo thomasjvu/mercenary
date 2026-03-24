@@ -3,7 +3,12 @@ import assert from "node:assert/strict";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildProviderProfileFromRegistration, loadProviderProfilesFromFile } from "./index.js";
+import {
+  HttpRaidProvider,
+  buildProviderProfileFromRegistration,
+  loadProviderProfilesFromFile,
+} from "./index.js";
+import type { ProviderTaskPackage } from "@bossraid/shared-types";
 
 test("loadProviderProfilesFromFile expands env placeholders with default values", async () => {
   const tempDir = await mkdtemp(join(tmpdir(), "bossraid-provider-sdk-"));
@@ -108,4 +113,117 @@ test("buildProviderProfileFromRegistration canonicalizes providerId to the regis
 
   assert.equal(profile.providerId, "riko");
   assert.equal(profile.agentId, "riko");
+});
+
+async function withInviteTimeoutEnv<T>(inviteAcceptMs: string, fn: () => Promise<T>): Promise<T> {
+  const previous = process.env.BOSSRAID_INVITE_ACCEPT_MS;
+  process.env.BOSSRAID_INVITE_ACCEPT_MS = inviteAcceptMs;
+  try {
+    return await fn();
+  } finally {
+    if (previous == null) {
+      delete process.env.BOSSRAID_INVITE_ACCEPT_MS;
+    } else {
+      process.env.BOSSRAID_INVITE_ACCEPT_MS = previous;
+    }
+  }
+}
+
+async function withMockedAcceptFetch<T>(responseDelayMs: number, fn: () => Promise<T>): Promise<T> {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    assert.equal(url, "http://provider.test/v1/raid/accept");
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(resolve, responseDelayMs);
+      const onAbort = () => {
+        clearTimeout(timer);
+        reject(new DOMException("The operation was aborted.", "AbortError"));
+      };
+
+      if (init?.signal?.aborted) {
+        onAbort();
+        return;
+      }
+
+      init?.signal?.addEventListener("abort", onAbort, { once: true });
+    });
+    return new Response(JSON.stringify({ accepted: true, providerRunId: "run-test" }), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+      },
+    });
+  }) as typeof fetch;
+
+  try {
+    return await fn();
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
+function createTestProvider(): HttpRaidProvider {
+  return new HttpRaidProvider(
+    buildProviderProfileFromRegistration({
+      agentId: "probe-provider",
+      name: "Probe Provider",
+      endpoint: "http://provider.test",
+      auth: {
+        type: "none",
+      },
+    }),
+  );
+}
+
+function createTestTask(): ProviderTaskPackage {
+  return {
+    raidId: "raid-test",
+    submissionFormat: "text_answer_plus_explanation",
+    desiredOutput: {
+      primaryType: "text",
+      artifactTypes: ["text"],
+    },
+    task: {
+      title: "Probe task",
+      description: "Verify provider accept timeout behavior.",
+      language: "text",
+    },
+    artifacts: {
+      files: [],
+      errors: [],
+      reproSteps: [],
+      tests: [],
+    },
+    constraints: {
+      maxChangedFiles: 1,
+      maxDiffLines: 1,
+      forbidPaths: [],
+      mustNot: [],
+    },
+    deadlineUnix: Math.floor(Date.now() / 1000) + 60,
+  };
+}
+
+test("HttpRaidProvider accept honors BOSSRAID_INVITE_ACCEPT_MS when the provider is slow", async () => {
+  await withMockedAcceptFetch(100, async () => {
+    await withInviteTimeoutEnv("50", async () => {
+      const provider = createTestProvider();
+      await assert.rejects(
+        () => provider.accept(createTestTask()),
+        /request timed out after 50 ms/,
+      );
+    });
+  });
+});
+
+test("HttpRaidProvider accept succeeds when BOSSRAID_INVITE_ACCEPT_MS exceeds provider latency", async () => {
+  await withMockedAcceptFetch(50, async () => {
+    await withInviteTimeoutEnv("250", async () => {
+      const provider = createTestProvider();
+      const acceptance = await provider.accept(createTestTask());
+      assert.equal(acceptance.accepted, true);
+      assert.equal(acceptance.providerRunId, "run-test");
+    });
+  });
 });
