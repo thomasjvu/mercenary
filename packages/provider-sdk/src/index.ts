@@ -152,20 +152,48 @@ async function postJson<TResponse>(
   payload: unknown,
 ): Promise<TResponse> {
   const body = JSON.stringify(payload);
-  const response = await fetch(new URL(path, profile.endpoint).toString(), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      ...buildProviderAuthHeaders(profile.auth, profile.providerId, "POST", path, body),
-    },
-    body,
-  });
+  const url = new URL(path, profile.endpoint).toString();
+  const startedAt = Date.now();
+  const controller = new AbortController();
+  const timeoutMs = 9_000;
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-  if (!response.ok) {
-    throw new Error(`${profile.providerId} request failed: ${response.status}`);
+  console.info(`[provider-http] ${profile.providerId} POST ${path} start`);
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...buildProviderAuthHeaders(profile.auth, profile.providerId, "POST", path, body),
+      },
+      body,
+      signal: controller.signal,
+    });
+
+    console.info(
+      `[provider-http] ${profile.providerId} POST ${path} status=${response.status} elapsed_ms=${Date.now() - startedAt}`,
+    );
+
+    if (!response.ok) {
+      throw new Error(`${profile.providerId} request failed: ${response.status}`);
+    }
+
+    return response.json() as Promise<TResponse>;
+  } catch (error) {
+    const message =
+      error instanceof Error && error.name === "AbortError"
+        ? `${profile.providerId} request timed out after ${timeoutMs} ms`
+        : error instanceof Error
+          ? error.message
+          : String(error);
+    console.error(
+      `[provider-http] ${profile.providerId} POST ${path} failed elapsed_ms=${Date.now() - startedAt} error=${message}`,
+    );
+    throw new Error(message);
+  } finally {
+    clearTimeout(timeout);
   }
-
-  return response.json() as Promise<TResponse>;
 }
 
 export async function probeProviderHealth(profile: ProviderProfile): Promise<ProviderHealthStatus> {

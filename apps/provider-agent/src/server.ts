@@ -22,6 +22,7 @@ async function runProviderJob(
   body: AcceptBody,
   providerRunId: string,
 ): Promise<void> {
+  console.info(`[provider-agent] ${providerConfig.providerId} run start raid=${body.raidId} run=${providerRunId}`);
   let heartbeatCount = 0;
   const heartbeatTimer = setInterval(() => {
     heartbeatCount += 1;
@@ -39,6 +40,7 @@ async function runProviderJob(
   try {
     const submission = await requestModelSubmission(body.task, body.deadlineUnix);
     clearInterval(heartbeatTimer);
+    console.info(`[provider-agent] ${providerConfig.providerId} submit raid=${body.raidId} run=${providerRunId}`);
     await callback(`/v1/providers/${body.providerId}/submit`, {
       raidId: body.raidId,
       providerRunId,
@@ -54,6 +56,11 @@ async function runProviderJob(
     });
   } catch (error) {
     clearInterval(heartbeatTimer);
+    console.error(
+      `[provider-agent] ${providerConfig.providerId} failure raid=${body.raidId} run=${providerRunId} error=${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
     await reportFailure(app.log, body, providerRunId, error);
   }
 }
@@ -74,6 +81,7 @@ export function buildProviderAgentServer() {
   });
 
   app.post("/v1/raid/accept", async (request, reply) => {
+    console.info(`[provider-agent] ${providerConfig.providerId} accept received`);
     if (
       !verifyProviderAuth({
       auth: providerConfig.providerAuth,
@@ -109,6 +117,7 @@ export function buildProviderAgentServer() {
 
     await sleep(providerConfig.acceptDelayMs);
     const providerRunId = `run_${randomUUID()}`;
+    console.info(`[provider-agent] ${providerConfig.providerId} accept acknowledged raid=${body.raidId} run=${providerRunId}`);
     setImmediate(() => {
       void runProviderJob(app, body, providerRunId).catch((error) => {
         app.log.error(error);
