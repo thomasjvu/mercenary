@@ -1,4 +1,3 @@
-import { createHash, randomUUID } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import type { ProviderTaskPackage, SubmissionArtifact, TaskFile } from "@bossraid/shared-types";
 import { providerConfig } from "./config.js";
@@ -109,64 +108,155 @@ function buildUnifiedDiff(path: string, before: string, after: string): string {
   return [`--- a/${path}`, `+++ b/${path}`, `@@ -1,${beforeCount} +1,${afterCount} @@`, beforeBody, afterBody].join("\n");
 }
 
+type SpriteKind =
+  | "hero"
+  | "npc"
+  | "key"
+  | "slime"
+  | "tree"
+  | "ui"
+  | "door"
+  | "floor_tile"
+  | "wall_tile";
+
+type DungeonBlueprint = {
+  name: string;
+  width: number;
+  height: number;
+  playerSpawn: { x: number; y: number };
+  bossSpawn: { x: number; y: number };
+  keySpawn: { x: number; y: number };
+  exitDoor: { x: number; y: number };
+  patrolRoute: Array<{ x: number; y: number }>;
+  tilemap: string[];
+};
+
 function createSimpleSprite(
   width: number,
   height: number,
   colors: RgbaColor[],
-  kind: "hero" | "npc" | "coin" | "monster" | "tree" | "ui",
+  kind: SpriteKind,
   variant: number,
 ): Bitmap {
   const bitmap = new Bitmap(width, height, { r: 0, g: 0, b: 0, a: 0 });
-  const outline = colors[3] ?? parseHexColor("1F2A44");
-  const primary = colors[2] ?? parseHexColor("4F8FBA");
-  const secondary = colors[1] ?? parseHexColor("9FD6C2");
-  const light = colors[0] ?? parseHexColor("F8F0E0");
+  const floorBase = colors[0] ?? parseHexColor("0F1C2E");
+  const wallBase = colors[1] ?? parseHexColor("FFDA47");
+  const accent = colors[2] ?? parseHexColor("F65D5D");
+  const outline = colors[3] ?? parseHexColor("77F6C5");
+  const light = parseHexColor("F4F1D8");
 
   if (kind === "hero" || kind === "npc") {
+    const armOffset = variant % 2;
     bitmap.fillRect(5, 1, 6, 4, light);
-    bitmap.fillRect(4, 5, 8, 5, primary);
+    bitmap.fillRect(4, 5, 8, 5, accent);
     bitmap.fillRect(5, 10, 2, 4, outline);
     bitmap.fillRect(9, 10, 2, 4, outline);
-    bitmap.fillRect(2 + (variant % 2), 6, 2, 5, secondary);
-    bitmap.fillRect(12 - (variant % 2), 6, 2, 5, secondary);
+    bitmap.fillRect(2 + armOffset, 6, 2, 5, wallBase);
+    bitmap.fillRect(12 - armOffset, 6, 2, 5, wallBase);
+    bitmap.setPixel(6, 3, outline);
+    bitmap.setPixel(9, 3, outline);
+    bitmap.fillRect(6, 4, 3, 1, outline);
     bitmap.strokeRect(4, 5, 8, 5, outline);
     bitmap.strokeRect(5, 1, 6, 4, outline);
-  } else if (kind === "coin") {
-    bitmap.fillRect(4, 3, 8, 10, primary);
-    bitmap.fillRect(5, 4, 6, 8, secondary);
-    bitmap.strokeRect(4, 3, 8, 10, outline);
-  } else if (kind === "monster") {
-    bitmap.fillRect(3, 4, 10, 8, primary);
-    bitmap.fillRect(5, 6, 2, 2, light);
-    bitmap.fillRect(9, 6, 2, 2, light);
-    bitmap.fillRect(4, 12, 2, 2, outline);
-    bitmap.fillRect(10, 12, 2, 2, outline);
+  } else if (kind === "key") {
+    const sparkleOffset = variant % 2;
+    bitmap.fillRect(3, 6, 7, 3, wallBase);
+    bitmap.fillRect(10, 5, 2, 5, wallBase);
+    bitmap.fillRect(11, 3, 3, 2, wallBase);
+    bitmap.fillRect(11, 9, 2, 2, wallBase);
+    bitmap.fillRect(8, 8, 2, 3, accent);
+    bitmap.fillRect(3 + sparkleOffset, 2, 1, 3, outline);
+    bitmap.fillRect(2 + sparkleOffset, 3, 3, 1, outline);
+    bitmap.strokeRect(2, 5, 10, 5, outline);
+  } else if (kind === "slime") {
+    const bounce = variant % 2;
+    bitmap.fillRect(3, 5 - bounce, 10, 6, accent);
+    bitmap.fillRect(4, 11 - bounce, 8, 2, accent);
+    bitmap.fillRect(5, 6 - bounce, 2, 2, light);
+    bitmap.fillRect(9, 6 - bounce, 2, 2, light);
+    bitmap.fillRect(6, 8 - bounce, 1, 1, outline);
+    bitmap.fillRect(10, 8 - bounce, 1, 1, outline);
+    bitmap.fillRect(6, 10 - bounce, 4, 1, outline);
+    bitmap.fillRect(4, 12 - bounce, 2, 1, outline);
+    bitmap.fillRect(10, 12 - bounce, 2, 1, outline);
+  } else if (kind === "door") {
+    const isOpen = variant % 2 === 1;
+    bitmap.fillRect(3, 1, 10, 14, wallBase);
+    bitmap.fillRect(5, 3, 6, 10, floorBase);
+    bitmap.fillRect(8 + (isOpen ? 3 : 0), 8, 1, 1, accent);
+    bitmap.strokeRect(3, 1, 10, 14, outline);
+    if (height > 16) {
+      bitmap.fillRect(5, 16, 6, height - 16, wallBase);
+      bitmap.strokeRect(3, 15, 10, height - 15, outline);
+    }
+  } else if (kind === "floor_tile") {
+    bitmap.fillRect(0, 0, width, height, floorBase);
+    for (let y = 2; y < height; y += 4) {
+      for (let x = (y / 2) % 4 === 0 ? 1 : 3; x < width; x += 4) {
+        bitmap.fillRect(x, y, 2, 1, outline);
+      }
+    }
+    bitmap.strokeRect(0, 0, width, height, outline);
+  } else if (kind === "wall_tile") {
+    bitmap.fillRect(0, 0, width, height, wallBase);
+    for (let y = 2; y < height; y += 4) {
+      bitmap.fillRect(2, y, width - 4, 1, accent);
+    }
+    bitmap.strokeRect(0, 0, width, height, outline);
   } else if (kind === "tree") {
     bitmap.fillRect(6, 10, 4, 5, outline);
-    bitmap.fillRect(3, 3, 10, 8, primary);
-    bitmap.fillRect(5, 5, 6, 4, secondary);
+    bitmap.fillRect(3, 3, 10, 8, accent);
+    bitmap.fillRect(5, 5, 6, 4, wallBase);
   } else if (kind === "ui") {
-    bitmap.fillRect(1, 1, width - 2, height - 2, secondary);
+    bitmap.fillRect(1, 1, width - 2, height - 2, floorBase);
     bitmap.strokeRect(1, 1, width - 2, height - 2, outline);
-    bitmap.fillRect(3, 3, width - 6, 3, primary);
+    bitmap.fillRect(3, 3, width - 6, 3, wallBase);
+    bitmap.fillRect(3, 8, width - 6, 2, accent);
+  } else {
+    bitmap.fillRect(4, 3, 8, 10, accent);
+    bitmap.fillRect(5, 4, 6, 8, wallBase);
+    bitmap.strokeRect(4, 3, 8, 10, outline);
   }
 
   return bitmap;
 }
 
-function inferAssetKind(name: string): "hero" | "npc" | "coin" | "monster" | "tree" | "ui" {
+function createSpriteSheet(
+  frameWidth: number,
+  frameHeight: number,
+  colors: RgbaColor[],
+  kind: SpriteKind,
+  frameCount: number,
+): Bitmap {
+  const sheet = new Bitmap(frameWidth * frameCount, frameHeight, { r: 0, g: 0, b: 0, a: 0 });
+  for (let frame = 0; frame < frameCount; frame += 1) {
+    sheet.blit(createSimpleSprite(frameWidth, frameHeight, colors, kind, frame), frame * frameWidth, 0);
+  }
+  return sheet;
+}
+
+function inferAssetKind(name: string): SpriteKind {
   const lower = name.toLowerCase();
+  if (lower.includes("floor")) {
+    return "floor_tile";
+  }
+  if (lower.includes("wall")) {
+    return "wall_tile";
+  }
   if (lower.includes("coin") || lower.includes("gem") || lower.includes("pickup") || lower.includes("key")) {
-    return "coin";
+    return "key";
   }
   if (lower.includes("tree") || lower.includes("plant") || lower.includes("bush")) {
     return "tree";
+  }
+  if (lower.includes("door") || lower.includes("exit")) {
+    return "door";
   }
   if (lower.includes("ui") || lower.includes("button") || lower.includes("panel") || lower.includes("title")) {
     return "ui";
   }
   if (lower.includes("monster") || lower.includes("enemy") || lower.includes("slime")) {
-    return "monster";
+    return "slime";
   }
   if (lower.includes("npc") || lower.includes("guide")) {
     return "npc";
@@ -174,22 +264,281 @@ function inferAssetKind(name: string): "hero" | "npc" | "coin" | "monster" | "tr
   return "hero";
 }
 
-function drawTileBackground(width: number, height: number, colors: RgbaColor[], motif: string): Bitmap {
-  const bitmap = new Bitmap(width, height, colors[0]);
-  const groundY = Math.floor(height * 0.72);
-  bitmap.fillRect(0, groundY, width, height - groundY, colors[1]);
-  for (let x = 0; x < width; x += 8) {
-    bitmap.fillRect(x, groundY - 8, 8, 8, x % 16 === 0 ? colors[2] : colors[1]);
-  }
-  if (motif.toLowerCase().includes("cave")) {
-    bitmap.fillRect(16, 24, width - 32, 56, colors[2]);
-    bitmap.fillRect(24, 32, width - 48, 40, colors[3]);
-  } else {
-    bitmap.fillRect(24, groundY - 40, 48, 32, colors[2]);
-    bitmap.fillRect(40, groundY - 52, 16, 12, colors[3]);
-    bitmap.fillRect(width - 56, groundY - 32, 24, 24, colors[2]);
-  }
+function buildDungeonBlueprint(plan: GbStudioPlan): DungeonBlueprint {
+  return {
+    name: plan.sceneName,
+    width: 20,
+    height: 18,
+    playerSpawn: { x: 2, y: 9 },
+    bossSpawn: { x: 10, y: 8 },
+    keySpawn: { x: 3, y: 3 },
+    exitDoor: { x: 17, y: 13 },
+    patrolRoute: [
+      { x: 9, y: 6 },
+      { x: 12, y: 6 },
+      { x: 12, y: 10 },
+      { x: 9, y: 10 },
+    ],
+    tilemap: [
+      "####################",
+      "#........##........#",
+      "#.###....##....###.#",
+      "#..K.....##........#",
+      "#........##..###...#",
+      "#..####......###...#",
+      "#........SS........#",
+      "#........SS........#",
+      "#..###........###..#",
+      "#..###........###..#",
+      "#........##........#",
+      "#...###..##..###...#",
+      "#........##........#",
+      "#........##.....D..#",
+      "#..####........###.#",
+      "#........##........#",
+      "#........##........#",
+      "####################",
+    ],
+  };
+}
+
+function drawDungeonRoomPreview(blueprint: DungeonBlueprint, colors: RgbaColor[]): Bitmap {
+  const tileSize = 8;
+  const bitmap = new Bitmap(blueprint.width * tileSize, blueprint.height * tileSize, colors[0]);
+  const floor = colors[0] ?? parseHexColor("0F1C2E");
+  const wall = colors[1] ?? parseHexColor("FFDA47");
+  const danger = colors[2] ?? parseHexColor("F65D5D");
+  const accent = colors[3] ?? parseHexColor("77F6C5");
+
+  blueprint.tilemap.forEach((row, rowIndex) => {
+    [...row].forEach((cell, columnIndex) => {
+      const x = columnIndex * tileSize;
+      const y = rowIndex * tileSize;
+      bitmap.fillRect(x, y, tileSize, tileSize, floor);
+
+      if (cell === "#") {
+        bitmap.fillRect(x, y, tileSize, tileSize, wall);
+        bitmap.fillRect(x + 1, y + 1, tileSize - 2, tileSize - 2, floor);
+        bitmap.fillRect(x + 2, y + 2, tileSize - 4, 1, accent);
+        return;
+      }
+
+      if ((columnIndex + rowIndex) % 2 === 0) {
+        bitmap.fillRect(x + 1, y + 1, 2, 2, accent);
+        bitmap.fillRect(x + 5, y + 5, 1, 1, accent);
+      }
+
+      if (cell === "K") {
+        bitmap.blit(createSimpleSprite(8, 8, colors, "key", 0), x, y);
+      } else if (cell === "D") {
+        bitmap.blit(createSimpleSprite(8, 8, colors, "door", 0), x, y);
+      } else if (cell === "S") {
+        bitmap.fillRect(x + 1, y + 1, tileSize - 2, tileSize - 2, danger);
+      }
+    });
+  });
+
+  bitmap.fillRect(blueprint.playerSpawn.x * tileSize + 2, blueprint.playerSpawn.y * tileSize + 2, 4, 4, accent);
+  bitmap.drawText("30", 8, 8, wall, { scale: 1 });
+  bitmap.drawText("KEY", 116, 8, wall, { scale: 1 });
   return bitmap;
+}
+
+function buildGbStudioProjectDocument(plan: GbStudioPlan, blueprint: DungeonBlueprint, sceneSlug: string) {
+  return {
+    _resourceType: "project",
+    name: plan.title,
+    author: "Boss Raid / Gamma",
+    notes: plan.conceptSummary,
+    engine: "gb-studio",
+    scenes: [
+      {
+        id: `${sceneSlug}-scene`,
+        name: blueprint.name,
+        background: `${sceneSlug}.png`,
+        playerSpawn: blueprint.playerSpawn,
+        bossSpawn: blueprint.bossSpawn,
+      },
+    ],
+    spriteSheets: [
+      { id: `${sceneSlug}-player`, name: "player", filename: "player.png", frames: 4 },
+      { id: `${sceneSlug}-slime`, name: "slime-king", filename: "slime-king.png", frames: 2 },
+      { id: `${sceneSlug}-key`, name: "vault-key", filename: "vault-key.png", frames: 2 },
+      { id: `${sceneSlug}-door`, name: "exit-door", filename: "exit-door.png", frames: 2 },
+    ],
+    backgrounds: [{ id: `${sceneSlug}-background`, name: blueprint.name, filename: `${sceneSlug}.png` }],
+    palettes: [
+      { id: "default-bg-1", name: "Default BG 1", colors: plan.palette.map(toHex) },
+      { id: "default-sprite", name: "Default Sprites", colors: plan.palette.map(toHex) },
+    ],
+  };
+}
+
+function buildEncounterModule(plan: GbStudioPlan, blueprint: DungeonBlueprint): string {
+  return [
+    "export const bossRaidPitch = {",
+    `  title: ${JSON.stringify(plan.title)},`,
+    `  loop: ${JSON.stringify(plan.coreMechanic)},`,
+    `  sceneName: ${JSON.stringify(plan.sceneName)},`,
+    `  npcName: ${JSON.stringify(plan.npcName)},`,
+    `  npcLine: ${JSON.stringify(plan.npcLine)},`,
+    `  palette: ${JSON.stringify(plan.palette)},`,
+    `  goals: ${JSON.stringify(plan.roomPlan)},`,
+    `  assetPlan: ${JSON.stringify(plan.assetPlan)},`,
+    `  playerSpawn: ${JSON.stringify(blueprint.playerSpawn)},`,
+    `  bossSpawn: ${JSON.stringify(blueprint.bossSpawn)},`,
+    `  keySpawn: ${JSON.stringify(blueprint.keySpawn)},`,
+    `  exitDoor: ${JSON.stringify(blueprint.exitDoor)}`,
+    "};",
+    "",
+  ].join("\n");
+}
+
+function buildTimerModule(): string {
+  return [
+    "export const slimePanicTimer = {",
+    "  totalSeconds: 30,",
+    "  warningSeconds: 10,",
+    "  loseState: \"timer-expired\"",
+    "};",
+    "",
+    "export function stepEncounterTimer(secondsRemaining: number, deltaSeconds: number): number {",
+    "  return Math.max(0, Number((secondsRemaining - deltaSeconds).toFixed(2)));",
+    "}",
+    "",
+    "export function shouldTriggerWarning(secondsRemaining: number): boolean {",
+    "  return secondsRemaining <= slimePanicTimer.warningSeconds;",
+    "}",
+    "",
+  ].join("\n");
+}
+
+function buildSlimeKingModule(plan: GbStudioPlan, blueprint: DungeonBlueprint): string {
+  return [
+    "export type GridPoint = { x: number; y: number };",
+    "",
+    "export type SlimeKingState = {",
+    "  patrolRoute: GridPoint[];",
+    "  routeIndex: number;",
+    "  detectionRadius: number;",
+    "  speed: number;",
+    "};",
+    "",
+    "export const defaultSlimeKingState: SlimeKingState = {",
+    `  patrolRoute: ${JSON.stringify(blueprint.patrolRoute)},`,
+    "  routeIndex: 0,",
+    "  detectionRadius: 5,",
+    "  speed: 1",
+    "};",
+    "",
+    "export function chooseSlimeKingTarget(state: SlimeKingState, player: GridPoint, hasKey: boolean): GridPoint {",
+    "  if (hasKey) {",
+    "    return player;",
+    "  }",
+    "",
+    "  return state.patrolRoute[state.routeIndex] ?? player;",
+    "}",
+    "",
+    "export function buildSlimeKingTaunt(): string {",
+    `  return ${JSON.stringify(plan.npcLine)};`,
+    "}",
+    "",
+  ].join("\n");
+}
+
+function buildExitDoorModule(blueprint: DungeonBlueprint): string {
+  return [
+    "export type ExitGateState = {",
+    "  locked: boolean;",
+    "  prompt: string;",
+    "  location: { x: number; y: number };",
+    "};",
+    "",
+    "export function resolveExitGateState(hasKey: boolean, timerExpired: boolean): ExitGateState {",
+    "  if (timerExpired) {",
+    `    return { locked: true, prompt: "Too late. Restart the room.", location: ${JSON.stringify(blueprint.exitDoor)} };`,
+    "  }",
+    "",
+    "  if (!hasKey) {",
+    `    return { locked: true, prompt: "Find the vault key first.", location: ${JSON.stringify(blueprint.exitDoor)} };`,
+    "  }",
+    "",
+    `  return { locked: false, prompt: "Exit unlocked. Move.", location: ${JSON.stringify(blueprint.exitDoor)} };`,
+    "}",
+    "",
+  ].join("\n");
+}
+
+function buildSceneDocument(plan: GbStudioPlan, blueprint: DungeonBlueprint) {
+  return {
+    name: blueprint.name,
+    objective: plan.coreMechanic,
+    size: { width: blueprint.width, height: blueprint.height },
+    playerSpawn: blueprint.playerSpawn,
+    bossSpawn: blueprint.bossSpawn,
+    keySpawn: blueprint.keySpawn,
+    exitDoor: blueprint.exitDoor,
+    patrolRoute: blueprint.patrolRoute,
+    tilemap: blueprint.tilemap,
+  };
+}
+
+function buildHudDocument(blueprint: DungeonBlueprint) {
+  return {
+    timer: {
+      anchor: "top-left",
+      format: "00:30",
+      warningThreshold: 10,
+    },
+    keyIcon: {
+      anchor: "top-right",
+      emptyState: "outline",
+      filledState: "filled",
+    },
+    prompts: {
+      start: "Get the key. Reach the exit.",
+      fail: "The vault resets.",
+      exit: `Door at ${blueprint.exitDoor.x},${blueprint.exitDoor.y}`,
+    },
+  };
+}
+
+function buildCreativeBrief(plan: GbStudioPlan): string {
+  return [
+    `# ${plan.title}`,
+    "",
+    `Tone: ${plan.tone}.`,
+    "Audience: players who like tiny retro challenge games.",
+    "Deliverables: gameplay patch, pixel pack, teaser clip, and launch copy.",
+    "",
+    "## Shared Hook",
+    plan.coreMechanic,
+    "",
+    "## Room Plan",
+    quotedList(plan.roomPlan),
+    "",
+    "## Asset Plan",
+    quotedList(plan.assetPlan),
+    "",
+  ].join("\n");
+}
+
+function buildGameplayReadme(plan: GbStudioPlan): string {
+  return [
+    `# ${plan.title}`,
+    "",
+    plan.conceptSummary,
+    "",
+    "## Core Mechanic",
+    plan.coreMechanic,
+    "",
+    "## Milestones",
+    ...plan.milestonePlan.map((item, index) => `${index + 1}. ${item}`),
+    "",
+    "## Gameplay Changes",
+    ...plan.gameplayChanges.map((item) => `- ${item}`),
+    "",
+  ].join("\n");
 }
 
 function renderStoryFrame(
@@ -263,27 +612,27 @@ function fallbackGbStudioPlan(task: ProviderTaskPackage): GbStudioPlan {
     genre: "retro action-puzzle",
     tone: "playful pressure",
     coreMechanic: hook,
-    sceneName: "Vault Room",
-    npcName: "Guide Bot",
-    npcLine: "Grab the key, dodge the slime, and hit the exit before time runs out.",
+    sceneName: "Dungeon Vault",
+    npcName: "Slime King",
+    npcLine: "No one leaves the vault without the key.",
     palette: extractPalette(task, ["#0F1C2E", "#FFDA47", "#F65D5D", "#77F6C5"]),
     conceptSummary: `${title} is a one-room microgame about reading slime paths, taking the key, and escaping under pressure.`,
     milestonePlan: [
-      "Lock the smallest playable one-room loop.",
-      "Add one slime pattern and one clear escape condition.",
-      "Align the art and trailer hook with the same timer-pressure story.",
+      "Lock the Dungeon Vault room layout with one readable patrol lane.",
+      "Wire timer pressure, key pickup, and exit unlock into one complete run.",
+      "Align the art pack and teaser to the same one-room escape story.",
     ],
     roomPlan: [
-      "Spawn the player near the room entrance.",
-      "Place the key behind one slime patrol lane.",
-      "Open the exit only after the key is collected.",
+      "Place the player on the left lane, the key at the upper pressure point, and the exit at the lower-right vault door.",
+      "Keep the Slime King in the center patrol box until the key is collected, then switch to chase pressure.",
+      "Show the timer and key state in the HUD so the win condition reads in one glance.",
     ],
-    assetPlan: ["hero sprite", "slime enemy", "vault key", "exit door", "title card"],
-    patchSummary: "Expand the project metadata and encounter config so the repo reflects the one-room key-slime-exit loop.",
+    assetPlan: ["player walk sheet", "slime king bounce sheet", "vault key pickup sprite", "exit door open and closed sprite", "dungeon floor tile", "dungeon wall tile", "timer and key HUD icons"],
+    patchSummary: "Replace the thin demo scaffold with a concrete Dungeon Vault room package, gameplay scripts, and supporting GB Studio data files.",
     gameplayChanges: [
-      "Add scene metadata for the vault-room loop.",
-      "Record the key, slime, and exit goals in the encounter config.",
-      "Align the creative brief to the same timer-pressure hook.",
+      "Update the project manifest with concrete scene, background, and sprite sheet entries.",
+      "Implement timer, Slime King target selection, exit gating, and room blueprint data.",
+      "Align the creative brief to the same concrete room layout and asset list.",
     ],
   };
 }
@@ -349,31 +698,31 @@ function produceGbStudioBundle(plan: GbStudioPlan) {
   const palette = plan.palette.length >= 4 ? plan.palette : ["#0F1C2E", "#FFDA47", "#F65D5D", "#77F6C5"];
   const colors = buildPalette(palette);
   const sceneSlug = normalizeName(plan.sceneName, "scene-one");
-  const backgroundId = randomUUID();
-  const sceneId = randomUUID();
-  const spriteId = randomUUID();
-
-  const background = drawTileBackground(160, 144, colors, plan.genre);
-  const playerSheet = new Bitmap(48, 16, { r: 0, g: 0, b: 0, a: 0 });
-  for (let frame = 0; frame < 3; frame += 1) {
-    playerSheet.blit(createSimpleSprite(16, 16, colors, "hero", frame), frame * 16, 0);
-  }
+  const blueprint = buildDungeonBlueprint(plan);
+  const background = drawDungeonRoomPreview(blueprint, colors);
+  const playerSheet = createSpriteSheet(16, 16, colors, "hero", 4);
+  const slimeSheet = createSpriteSheet(16, 16, colors, "slime", 2);
+  const keySheet = createSpriteSheet(16, 16, colors, "key", 2);
+  const doorSheet = createSpriteSheet(16, 32, colors, "door", 2);
+  const floorTile = createSimpleSprite(16, 16, colors, "floor_tile", 0);
+  const wallTile = createSimpleSprite(16, 16, colors, "wall_tile", 0);
+  const hudIcons = createSpriteSheet(16, 16, colors, "ui", 2);
 
   builder.writeBinary(joinArtifactPath("game", "assets", "backgrounds", `${sceneSlug}.png`), encodePng(background), "image/png");
   builder.writeBinary(joinArtifactPath("game", "assets", "sprites", "player.png"), encodePng(playerSheet), "image/png");
-  builder.writeJson(joinArtifactPath("game", "project.gbsproj"), {
-    _resourceType: "project",
-    name: plan.title,
-    author: "Boss Raid / Gamma",
-    notes: plan.conceptSummary,
-    scenes: [{ id: sceneId, name: plan.sceneName, backgroundId }],
-    spriteSheets: [{ id: spriteId, name: "player", filename: "player.png" }],
-    backgrounds: [{ id: backgroundId, name: plan.sceneName, filename: `${sceneSlug}.png` }],
-    palettes: [
-      { id: "default-bg-1", name: "Default BG 1", colors: palette.map(toHex) },
-      { id: "default-sprite", name: "Default Sprites", colors: palette.map(toHex) },
-    ],
-  });
+  builder.writeBinary(joinArtifactPath("game", "assets", "sprites", "slime-king.png"), encodePng(slimeSheet), "image/png");
+  builder.writeBinary(joinArtifactPath("game", "assets", "sprites", "vault-key.png"), encodePng(keySheet), "image/png");
+  builder.writeBinary(joinArtifactPath("game", "assets", "sprites", "exit-door.png"), encodePng(doorSheet), "image/png");
+  builder.writeBinary(joinArtifactPath("game", "assets", "tiles", "floor-tile.png"), encodePng(floorTile), "image/png");
+  builder.writeBinary(joinArtifactPath("game", "assets", "tiles", "wall-tile.png"), encodePng(wallTile), "image/png");
+  builder.writeBinary(joinArtifactPath("game", "assets", "ui", "hud-icons.png"), encodePng(hudIcons), "image/png");
+  builder.writeJson(joinArtifactPath("game", "project.gbsproj"), buildGbStudioProjectDocument(plan, blueprint, sceneSlug));
+  builder.writeText(joinArtifactPath("game", "scripts", "encounter.ts"), buildEncounterModule(plan, blueprint));
+  builder.writeText(joinArtifactPath("game", "scripts", "timer.ts"), buildTimerModule());
+  builder.writeText(joinArtifactPath("game", "scripts", "slime-king.ts"), buildSlimeKingModule(plan, blueprint));
+  builder.writeText(joinArtifactPath("game", "scripts", "exit-door.ts"), buildExitDoorModule(blueprint));
+  builder.writeJson(joinArtifactPath("game", "data", "dungeon-vault.scene.json"), buildSceneDocument(plan, blueprint));
+  builder.writeJson(joinArtifactPath("game", "data", "ui-hud.json"), buildHudDocument(blueprint));
   builder.writeJson(joinArtifactPath("game", "design", "notes.json"), {
     title: plan.title,
     genre: plan.genre,
@@ -384,12 +733,12 @@ function produceGbStudioBundle(plan: GbStudioPlan) {
     npcLine: plan.npcLine,
     roomPlan: plan.roomPlan,
     assetPlan: plan.assetPlan,
+    gameplayChanges: plan.gameplayChanges,
   });
+  builder.writeText(joinArtifactPath("game", "README.md"), buildGameplayReadme(plan));
   builder.writeText(
-    joinArtifactPath("game", "README.md"),
-    `# ${plan.title}\n\n${plan.conceptSummary}\n\n## Core Mechanic\n${plan.coreMechanic}\n\n## Milestones\n${plan.milestonePlan
-      .map((item, index) => `${index + 1}. ${item}`)
-      .join("\n")}\n`,
+    joinArtifactPath("marketing", "launch-copy.md"),
+    `# Launch Copy\n\n${plan.title}\n\n${plan.coreMechanic}\n\n- Dodge the ${plan.npcName.toLowerCase()}.\n- Grab the key.\n- Reach the door before the clock wins.\n`,
   );
 
   return builder.inlineAll();
@@ -398,6 +747,8 @@ function produceGbStudioBundle(plan: GbStudioPlan) {
 function buildGbStudioPatch(task: ProviderTaskPackage, plan: GbStudioPlan): { patch: string; filesTouched: string[] } {
   const filesTouched: string[] = [];
   const diffParts: string[] = [];
+  const blueprint = buildDungeonBlueprint(plan);
+  const sceneSlug = normalizeName(plan.sceneName, "scene-one");
 
   const projectFile = firstFile(task, (file) => file.path.endsWith(".gbsproj"));
   if (projectFile) {
@@ -409,14 +760,14 @@ function buildGbStudioPatch(task: ProviderTaskPackage, plan: GbStudioPlan): { pa
     }
     const updated = {
       ...parsed,
-      name: plan.title,
-      engine: parsed.engine ?? "gb-studio",
-      sceneCount: 1,
+      ...buildGbStudioProjectDocument(plan, blueprint, sceneSlug),
       bossRaid: {
         sceneName: plan.sceneName,
         coreMechanic: plan.coreMechanic,
         palette: plan.palette,
         milestones: plan.milestonePlan,
+        roomPlan: plan.roomPlan,
+        assetPlan: plan.assetPlan,
       },
     };
     const nextContent = JSON.stringify(updated, null, 2) + "\n";
@@ -426,42 +777,49 @@ function buildGbStudioPatch(task: ProviderTaskPackage, plan: GbStudioPlan): { pa
 
   const encounterFile = firstFile(task, (file) => file.path.includes("encounter"));
   if (encounterFile) {
-    const nextContent = [
-      "export const bossRaidPitch = {",
-      `  title: ${JSON.stringify(plan.title)},`,
-      `  loop: ${JSON.stringify(plan.coreMechanic)},`,
-      `  sceneName: ${JSON.stringify(plan.sceneName)},`,
-      `  npcName: ${JSON.stringify(plan.npcName)},`,
-      `  npcLine: ${JSON.stringify(plan.npcLine)},`,
-      `  palette: ${JSON.stringify(plan.palette)},`,
-      `  goals: ${JSON.stringify(plan.roomPlan)},`,
-      `  assetPlan: ${JSON.stringify(plan.assetPlan)}`,
-      "};",
-      "",
-    ].join("\n");
+    const nextContent = buildEncounterModule(plan, blueprint);
     diffParts.push(buildUnifiedDiff(encounterFile.path, encounterFile.content, nextContent));
     filesTouched.push(encounterFile.path);
   }
 
+  const timerFile = firstFile(task, (file) => file.path.endsWith("timer.ts"));
+  if (timerFile) {
+    const nextContent = buildTimerModule();
+    diffParts.push(buildUnifiedDiff(timerFile.path, timerFile.content, nextContent));
+    filesTouched.push(timerFile.path);
+  }
+
+  const slimeKingFile = firstFile(task, (file) => file.path.endsWith("slime-king.ts"));
+  if (slimeKingFile) {
+    const nextContent = buildSlimeKingModule(plan, blueprint);
+    diffParts.push(buildUnifiedDiff(slimeKingFile.path, slimeKingFile.content, nextContent));
+    filesTouched.push(slimeKingFile.path);
+  }
+
+  const exitDoorFile = firstFile(task, (file) => file.path.endsWith("exit-door.ts"));
+  if (exitDoorFile) {
+    const nextContent = buildExitDoorModule(blueprint);
+    diffParts.push(buildUnifiedDiff(exitDoorFile.path, exitDoorFile.content, nextContent));
+    filesTouched.push(exitDoorFile.path);
+  }
+
+  const sceneFile = firstFile(task, (file) => file.path.endsWith("dungeon-vault.scene.json"));
+  if (sceneFile) {
+    const nextContent = JSON.stringify(buildSceneDocument(plan, blueprint), null, 2) + "\n";
+    diffParts.push(buildUnifiedDiff(sceneFile.path, sceneFile.content, nextContent));
+    filesTouched.push(sceneFile.path);
+  }
+
+  const hudFile = firstFile(task, (file) => file.path.endsWith("ui-hud.json"));
+  if (hudFile) {
+    const nextContent = JSON.stringify(buildHudDocument(blueprint), null, 2) + "\n";
+    diffParts.push(buildUnifiedDiff(hudFile.path, hudFile.content, nextContent));
+    filesTouched.push(hudFile.path);
+  }
+
   const briefFile = firstFile(task, (file) => file.path.endsWith("creative-brief.md"));
   if (briefFile) {
-    const nextContent = [
-      `# ${plan.title}`,
-      "",
-      `Tone: ${plan.tone}.`,
-      "Audience: players who like tiny retro challenge games.",
-      `Deliverables: gameplay patch, pixel pack, teaser clip, launch copy.`,
-      "",
-      "## Shared Hook",
-      plan.coreMechanic,
-      "",
-      "## Room Plan",
-      quotedList(plan.roomPlan),
-      "",
-      "## Asset Plan",
-      quotedList(plan.assetPlan),
-      "",
-    ].join("\n");
+    const nextContent = buildCreativeBrief(plan);
     diffParts.push(buildUnifiedDiff(briefFile.path, briefFile.content, nextContent));
     filesTouched.push(briefFile.path);
   }
@@ -477,12 +835,12 @@ function fallbackPixelPlan(task: ProviderTaskPackage): PixelPlan {
   return {
     artDirection: `${title} should read as clean Game Boy pixel art with one warm accent color.`,
     palette: extractPalette(task, ["#0F1C2E", "#FFDA47", "#F65D5D", "#77F6C5"]),
-    assetList: ["player", "slime enemy", "vault key", "exit door", "title card"],
+    assetList: ["player", "slime enemy", "vault key", "exit door", "floor tile", "wall tile", "hud icons"],
     notes: [
       "Keep the silhouettes readable at 16x16.",
       "Reuse the same palette across gameplay, art, and trailer.",
     ],
-    summary: `Deliver a compact pixel pack for ${title} with a player, slime, pickup, exit, and title treatment.`,
+    summary: `Deliver a compact pixel pack for ${title} with gameplay sprites, tiles, and HUD support art.`,
   };
 }
 
@@ -750,6 +1108,10 @@ function describeBundleArtifacts(
   const files = bundle.files;
   const videoHighlights: SubmissionArtifact[] = [];
   const imageHighlights: SubmissionArtifact[] = [];
+  const fallbackVideoFile =
+    files.find((file) => file.relativePath.endsWith("storyboard.png")) ??
+    files.find((file) => file.relativePath.endsWith("frames/frame-01.png")) ??
+    files.find((file) => file.mimeType.startsWith("image/"));
 
   for (const file of files) {
     if (file.mimeType.startsWith("video/")) {
@@ -761,9 +1123,24 @@ function describeBundleArtifacts(
     }
   }
 
+  if (videoHighlights.length === 0 && fallbackVideoFile) {
+    videoHighlights.push(
+      createFileArtifact(
+        "video",
+        `${prefix} storyboard preview`,
+        "Storyboard fallback used when encoded video output was unavailable.",
+        fallbackVideoFile,
+      ),
+    );
+  }
+
+  const visibleImages = fallbackVideoFile
+    ? imageHighlights.filter((artifact) => artifact.uri !== `data:${fallbackVideoFile.mimeType};base64,${fallbackVideoFile.data}`)
+    : imageHighlights;
+
   return uniqueArtifacts([
     ...videoHighlights.slice(0, 1),
-    ...imageHighlights.slice(0, 3),
+    ...visibleImages.slice(0, 5),
     createBundleArtifact(bundle, `${prefix} bundle`, `Inline bundle with ${bundle.files.length} generated files.`),
   ]);
 }
@@ -877,5 +1254,8 @@ export function submissionSupportsRequestedOutput(submission: ModelSubmission, t
   if (primaryType === "text" || primaryType === "json") {
     return typeof submission.answerText === "string" && submission.answerText.length > 0;
   }
-  return Array.isArray(submission.artifacts) && submission.artifacts.length > 0;
+  return (
+    Array.isArray(submission.artifacts) &&
+    submission.artifacts.some((artifact) => artifact.outputType === primaryType)
+  );
 }
