@@ -568,7 +568,12 @@ function renderStoryFrame(
 }
 
 function tryRunFfmpeg(args: string[]): boolean {
-  const result = spawnSync("ffmpeg", args, { stdio: "ignore" });
+  // Keep the optional mp4 preview from blocking provider heartbeats on slow hosts.
+  const result = spawnSync("ffmpeg", args, {
+    stdio: "ignore",
+    timeout: 1_500,
+    killSignal: "SIGKILL",
+  });
   return result.status === 0;
 }
 

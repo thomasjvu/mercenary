@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdtemp, chmod, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import type { ProviderTaskPackage } from "@bossraid/shared-types";
 
@@ -119,5 +122,33 @@ test("Riko remotion fallback still returns a video artifact when ffmpeg is unava
     assert.equal(submissionSupportsRequestedOutput(submission, task), true);
   } finally {
     process.env.PATH = originalPath;
+  }
+});
+
+test("Riko remotion fallback does not block on a slow ffmpeg binary", async () => {
+  const { maybeRequestSpecializedSubmission, submissionSupportsRequestedOutput } = await loadSpecializedModule();
+  const task = createVideoTask();
+  const originalPath = process.env.PATH;
+  const fakeBinDir = await mkdtemp(join(tmpdir(), "bossraid-riko-ffmpeg-"));
+  const fakeFfmpegPath = join(fakeBinDir, "ffmpeg");
+
+  await writeFile(fakeFfmpegPath, "#!/bin/sh\nsleep 5\nexit 1\n");
+  await chmod(fakeFfmpegPath, 0o755);
+
+  process.env.PATH = originalPath ? `${fakeBinDir}:${originalPath}` : fakeBinDir;
+
+  try {
+    const startedAt = Date.now();
+    const submission = await maybeRequestSpecializedSubmission(task);
+    const elapsedMs = Date.now() - startedAt;
+    const previewArtifact = submission?.artifacts?.find((artifact) => artifact.outputType === "video");
+
+    assert.ok(submission);
+    assert.ok(elapsedMs < 3_000, `expected slow ffmpeg fallback in under 3000ms, got ${elapsedMs}ms`);
+    assert.equal(previewArtifact?.mimeType, "image/gif");
+    assert.equal(submissionSupportsRequestedOutput(submission, task), true);
+  } finally {
+    process.env.PATH = originalPath;
+    await rm(fakeBinDir, { recursive: true, force: true });
   }
 });
