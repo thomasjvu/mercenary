@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import type { ProviderTaskPackage, SubmissionArtifact, TaskFile } from "@bossraid/shared-types";
 import { providerConfig } from "./config.js";
 import { ArtifactBuilder, createBundleArtifact, createFileArtifact, joinArtifactPath } from "./artifacts.js";
-import { Bitmap, encodePng, parseHexColor, type RgbaColor } from "./bitmap.js";
+import { Bitmap, encodeGifAnimation, encodePng, parseHexColor, type RgbaColor } from "./bitmap.js";
 import { generateStructuredWithVenice } from "./venice.js";
 import type { ModelSubmission } from "./types.js";
 
@@ -965,24 +965,30 @@ async function buildVideoPlan(task: ProviderTaskPackage): Promise<VideoPlan> {
 function produceVideoBundle(plan: VideoPlan) {
   const builder = new ArtifactBuilder("riko");
   const palette = plan.palette.length >= 4 ? plan.palette : ["#0F1C2E", "#FFDA47", "#F65D5D", "#77F6C5"];
+  const frames = plan.beatSheet.slice(0, 3).map((beat, index) =>
+    renderStoryFrame(320, 180, palette, `${plan.projectTitle} ${index + 1}`, beat, plan.visualStyle, index),
+  );
   const framePaths: string[] = [];
 
-  plan.beatSheet.slice(0, 3).forEach((beat, index) => {
-    const bitmap = renderStoryFrame(320, 180, palette, `${plan.projectTitle} ${index + 1}`, beat, plan.visualStyle, index);
+  frames.forEach((bitmap, index) => {
     const relativePath = joinArtifactPath("video-preview", "frames", `frame-${String(index + 1).padStart(2, "0")}.png`);
     builder.writeBinary(relativePath, encodePng(bitmap), "image/png");
     framePaths.push(relativePath);
   });
 
   const storyboard = new Bitmap(320 * 3, 180, parseHexColor(palette[0]));
-  framePaths.forEach((_, index) => {
-    storyboard.blit(
-      renderStoryFrame(320, 180, palette, `${index + 1}`, plan.beatSheet[index] ?? "", plan.visualStyle, index),
-      index * 320,
-      0,
-    );
+  frames.forEach((frame, index) => {
+    storyboard.blit(frame, index * 320, 0);
   });
   builder.writeBinary(joinArtifactPath("video-preview", "storyboard.png"), encodePng(storyboard), "image/png");
+  builder.writeBinary(
+    joinArtifactPath("video-preview", "preview.gif"),
+    encodeGifAnimation(frames, {
+      delayCs: Math.max(60, Math.round((Math.max(3, plan.durationSec) * 100) / Math.max(1, frames.length))),
+      loopCount: 0,
+    }),
+    "image/gif",
+  );
   builder.writeText(
     joinArtifactPath("video-preview", "captions.srt"),
     plan.beatSheet
@@ -1109,6 +1115,7 @@ function describeBundleArtifacts(
   const videoHighlights: SubmissionArtifact[] = [];
   const imageHighlights: SubmissionArtifact[] = [];
   const fallbackVideoFile =
+    files.find((file) => file.relativePath.endsWith("preview.gif")) ??
     files.find((file) => file.relativePath.endsWith("storyboard.png")) ??
     files.find((file) => file.relativePath.endsWith("frames/frame-01.png")) ??
     files.find((file) => file.mimeType.startsWith("image/"));
@@ -1219,7 +1226,7 @@ export async function maybeRequestSpecializedSubmission(
           ? `${plan.scriptSummary}\n\nLaunch copy:\n${plan.launchCopy.map((item) => `- ${item}`).join("\n")}`
           : undefined,
       artifacts: describeBundleArtifacts(bundle, "Riko"),
-      explanation: `${plan.scriptSummary} Included storyboard frames, captions, Remotion source, and preview render when ffmpeg was available.`,
+      explanation: `${plan.scriptSummary} Included storyboard frames, captions, Remotion source, and a playable preview render with MP4 preferred and animated GIF fallback.`,
       confidence: 0.8,
       filesTouched: [],
     };

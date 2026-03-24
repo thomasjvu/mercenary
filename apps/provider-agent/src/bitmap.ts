@@ -228,3 +228,210 @@ export function encodePng(bitmap: Bitmap): Buffer {
     chunk("IEND", Buffer.alloc(0)),
   ]);
 }
+
+function nextGifTableSize(colorCount: number): number {
+  let size = 2;
+  while (size < colorCount && size < 256) {
+    size <<= 1;
+  }
+  return size;
+}
+
+function colorKey(r: number, g: number, b: number, a: number): string {
+  return `${r},${g},${b},${a}`;
+}
+
+function collectGifPalette(frames: Bitmap[]): { palette: RgbaColor[]; indices: Map<string, number> } {
+  const palette: RgbaColor[] = [];
+  const indices = new Map<string, number>();
+
+  for (const frame of frames) {
+    for (let offset = 0; offset < frame.data.length; offset += 4) {
+      const r = frame.data[offset];
+      const g = frame.data[offset + 1];
+      const b = frame.data[offset + 2];
+      const a = frame.data[offset + 3];
+      const key = colorKey(r, g, b, a);
+      if (indices.has(key) || palette.length >= 256) {
+        continue;
+      }
+      indices.set(key, palette.length);
+      palette.push({ r, g, b, a });
+    }
+  }
+
+  if (palette.length === 0) {
+    palette.push({ r: 0, g: 0, b: 0, a: 255 });
+    indices.set(colorKey(0, 0, 0, 255), 0);
+  }
+
+  return { palette, indices };
+}
+
+function findNearestPaletteIndex(color: RgbaColor, palette: RgbaColor[]): number {
+  let bestIndex = 0;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < palette.length; index += 1) {
+    const candidate = palette[index];
+    const dr = color.r - candidate.r;
+    const dg = color.g - candidate.g;
+    const db = color.b - candidate.b;
+    const da = (color.a ?? 255) - (candidate.a ?? 255);
+    const distance = dr * dr + dg * dg + db * db + da * da;
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestIndex = index;
+    }
+  }
+  return bestIndex;
+}
+
+function mapFrameToGifIndices(bitmap: Bitmap, palette: RgbaColor[], paletteIndices: Map<string, number>): Uint8Array {
+  const output = new Uint8Array(bitmap.width * bitmap.height);
+  for (let pixel = 0; pixel < bitmap.width * bitmap.height; pixel += 1) {
+    const offset = pixel * 4;
+    const r = bitmap.data[offset];
+    const g = bitmap.data[offset + 1];
+    const b = bitmap.data[offset + 2];
+    const a = bitmap.data[offset + 3];
+    const key = colorKey(r, g, b, a);
+    const exact = paletteIndices.get(key);
+    output[pixel] =
+      exact ??
+      findNearestPaletteIndex(
+        {
+          r,
+          g,
+          b,
+          a,
+        },
+        palette,
+      );
+  }
+  return output;
+}
+
+function encodeGifSubBlocks(bytes: Uint8Array): Buffer {
+  const blocks: Buffer[] = [];
+  for (let offset = 0; offset < bytes.length; offset += 255) {
+    const chunkLength = Math.min(255, bytes.length - offset);
+    blocks.push(Buffer.from([chunkLength]));
+    blocks.push(Buffer.from(bytes.subarray(offset, offset + chunkLength)));
+  }
+  blocks.push(Buffer.from([0]));
+  return Buffer.concat(blocks);
+}
+
+function encodeGifImageData(indices: Uint8Array, minCodeSize: number): Buffer {
+  const clearCode = 1 << minCodeSize;
+  const endCode = clearCode + 1;
+  let codeSize = minCodeSize + 1;
+  let nextCode = endCode + 1;
+  let emittedSinceClear = 0;
+  let bitBuffer = 0;
+  let bitCount = 0;
+  const bytes: number[] = [];
+
+  const flushCode = (code: number) => {
+    bitBuffer |= code << bitCount;
+    bitCount += codeSize;
+    while (bitCount >= 8) {
+      bytes.push(bitBuffer & 0xff);
+      bitBuffer >>>= 8;
+      bitCount -= 8;
+    }
+  };
+
+  const resetTable = () => {
+    flushCode(clearCode);
+    codeSize = minCodeSize + 1;
+    nextCode = endCode + 1;
+    emittedSinceClear = 0;
+  };
+
+  resetTable();
+  for (const index of indices) {
+    flushCode(index);
+    if (emittedSinceClear > 0) {
+      nextCode += 1;
+      if (nextCode === 1 << codeSize && codeSize < 12) {
+        codeSize += 1;
+      }
+    }
+    emittedSinceClear += 1;
+    if (emittedSinceClear >= 512 || nextCode >= 4095) {
+      resetTable();
+    }
+  }
+
+  flushCode(endCode);
+  if (bitCount > 0) {
+    bytes.push(bitBuffer & 0xff);
+  }
+
+  return Buffer.concat([Buffer.from([minCodeSize]), encodeGifSubBlocks(Uint8Array.from(bytes))]);
+}
+
+export function encodeGifAnimation(
+  frames: Bitmap[],
+  options: { delayCs?: number; loopCount?: number } = {},
+): Buffer {
+  if (frames.length === 0) {
+    throw new Error("encodeGifAnimation requires at least one frame.");
+  }
+
+  const width = frames[0].width;
+  const height = frames[0].height;
+  for (const frame of frames) {
+    if (frame.width !== width || frame.height !== height) {
+      throw new Error("encodeGifAnimation requires frames to share the same dimensions.");
+    }
+  }
+
+  const { palette, indices: paletteIndices } = collectGifPalette(frames);
+  const tableSize = nextGifTableSize(palette.length);
+  const minCodeSize = Math.max(2, Math.ceil(Math.log2(Math.max(2, palette.length))));
+  const delayCs = Math.max(2, Math.round(options.delayCs ?? 100));
+  const loopCount = Math.max(0, options.loopCount ?? 0);
+
+  const header = Buffer.from("GIF89a", "ascii");
+  const logicalScreenDescriptor = Buffer.alloc(7);
+  logicalScreenDescriptor.writeUInt16LE(width, 0);
+  logicalScreenDescriptor.writeUInt16LE(height, 2);
+  logicalScreenDescriptor[4] = 0x80 | 0x70 | Math.max(0, Math.log2(tableSize) - 1);
+  logicalScreenDescriptor[5] = 0;
+  logicalScreenDescriptor[6] = 0;
+
+  const globalColorTable = Buffer.alloc(tableSize * 3, 0);
+  palette.forEach((color, index) => {
+    const offset = index * 3;
+    globalColorTable[offset] = color.r;
+    globalColorTable[offset + 1] = color.g;
+    globalColorTable[offset + 2] = color.b;
+  });
+
+  const applicationExtension = Buffer.concat([
+    Buffer.from([0x21, 0xff, 0x0b]),
+    Buffer.from("NETSCAPE2.0", "ascii"),
+    Buffer.from([0x03, 0x01, loopCount & 0xff, (loopCount >> 8) & 0xff, 0x00]),
+  ]);
+
+  const parts: Buffer[] = [header, logicalScreenDescriptor, globalColorTable, applicationExtension];
+
+  for (const frame of frames) {
+    parts.push(Buffer.from([0x21, 0xf9, 0x04, 0x08, delayCs & 0xff, (delayCs >> 8) & 0xff, 0x00, 0x00]));
+
+    const imageDescriptor = Buffer.alloc(10);
+    imageDescriptor[0] = 0x2c;
+    imageDescriptor.writeUInt16LE(0, 1);
+    imageDescriptor.writeUInt16LE(0, 3);
+    imageDescriptor.writeUInt16LE(width, 5);
+    imageDescriptor.writeUInt16LE(height, 7);
+    imageDescriptor[9] = 0x00;
+    parts.push(imageDescriptor);
+    parts.push(encodeGifImageData(mapFrameToGifIndices(frame, palette, paletteIndices), minCodeSize));
+  }
+
+  parts.push(Buffer.from([0x3b]));
+  return Buffer.concat(parts);
+}

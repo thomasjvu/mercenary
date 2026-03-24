@@ -103,8 +103,17 @@ test("Riko remotion fallback still returns a video artifact when ffmpeg is unava
   try {
     const submission = await maybeRequestSpecializedSubmission(task);
     assert.ok(submission);
+    const previewArtifact = submission.artifacts?.find((artifact) => artifact.outputType === "video");
     assert.equal(
-      submission.artifacts?.some((artifact) => artifact.outputType === "video"),
+      previewArtifact?.outputType,
+      "video",
+    );
+    assert.equal(
+      previewArtifact?.mimeType,
+      "image/gif",
+    );
+    assert.equal(
+      previewArtifact?.uri.startsWith("data:image/gif;base64,"),
       true,
     );
     assert.equal(submissionSupportsRequestedOutput(submission, task), true);
