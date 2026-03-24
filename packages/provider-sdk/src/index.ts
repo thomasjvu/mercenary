@@ -324,6 +324,7 @@ export function buildProviderProfileFromRegistration(
         validationRegistry: merged.validationRegistry,
         validationTxs: merged.validationTxs,
         lastVerifiedAt: merged.lastVerifiedAt,
+        verification: merged.verification,
       };
     })(),
     trust:

@@ -404,6 +404,20 @@ test("parseProviderRegistrationInput keeps ERC-8004 identity and trust metadata"
       validationRegistry: "0xvalidation",
       validationTxs: ["0xval1", "0xval2"],
       lastVerifiedAt: "2026-03-22T00:00:00.000Z",
+      verification: {
+        status: "verified",
+        checked_at: "2026-03-23T00:00:00.000Z",
+        chain_id: "8453",
+        agent_registry: "eip155:8453:0xidentity",
+        owner: "0xowner",
+        agent_uri: "ipfs://provider-identity",
+        registration_tx_found: true,
+        operator_matches_owner: true,
+        identity_registry_reachable: true,
+        reputation_registry_reachable: true,
+        validation_registry_reachable: true,
+        notes: ["verified against chain data"],
+      },
     },
     trust: {
       score: 88,
@@ -415,6 +429,9 @@ test("parseProviderRegistrationInput keeps ERC-8004 identity and trust metadata"
   assert.equal(registration.erc8004?.agentId, "8004-77");
   assert.equal(registration.erc8004?.operatorWallet, "0xabc");
   assert.deepEqual(registration.erc8004?.validationTxs, ["0xval1", "0xval2"]);
+  assert.equal(registration.erc8004?.verification?.status, "verified");
+  assert.equal(registration.erc8004?.verification?.chainId, "8453");
+  assert.equal(registration.erc8004?.verification?.operatorMatchesOwner, true);
   assert.equal(registration.trust?.score, 88);
   assert.equal(registration.trust?.source, "erc8004");
 });

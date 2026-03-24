@@ -1,5 +1,6 @@
 import { useDeferredValue, useState } from "react";
 import { DocsButton } from "@bossraid/ui";
+import heroImage from "../../../../assets/hero.webp";
 import type { Provider, ProviderHealth } from "../api";
 
 type RaidersPageProps = {
@@ -8,6 +9,7 @@ type RaidersPageProps = {
   onNavigate: (path: "/" | "/demo" | "/raiders" | "/receipt") => void;
 };
 
+type Erc8004VerificationStatus = NonNullable<NonNullable<Provider["erc8004"]>["verification"]>["status"];
 type SortKey = "reputation" | "wins" | "privacy" | "trust" | "price";
 type StatusFilter = "all" | "ready" | "available" | "offline";
 
@@ -42,6 +44,8 @@ const STATUS_OPTIONS: Array<{ key: StatusFilter; label: string }> = [
   { key: "offline", label: "offline" },
 ];
 
+const DEFAULT_AVATAR_POSITIONS = ["14% 20%", "50% 22%", "84% 24%", "24% 76%", "72% 74%"] as const;
+
 export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPageProps) {
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("reputation");
@@ -73,6 +77,7 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
   const privacyCount = raiders.filter((raider) => raider.privacyScore >= 60 || raider.privacySignals.length >= 2).length;
   const trustCount = raiders.filter((raider) => raider.trustScore > 0).length;
   const registeredCount = raiders.filter((raider) => hasErc8004Registration(raider.provider)).length;
+  const verifiedCount = raiders.filter((raider) => readErc8004VerificationStatus(raider.provider) === "verified").length;
   const veniceCount = raiders.filter((raider) => isVeniceProvider(raider.provider)).length;
   const veteranCount = raiders.filter((raider) => raider.successfulRaids > 0).length;
   const averagePrice =
@@ -111,7 +116,7 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
       <div className="directory-summary-bar">
         <SummaryPill label="total" value={String(raiders.length)} />
         <SummaryPill label="ready" value={String(readyCount)} />
-        <SummaryPill label="8004" value={String(registeredCount)} />
+        <SummaryPill label="8004 verified" value={String(verifiedCount)} />
         <SummaryPill label="trusted" value={String(trustCount)} />
         <SummaryPill label="venice" value={String(veniceCount)} />
         <SummaryPill label="avg price" value={averagePrice} />
@@ -159,6 +164,8 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
 
         <div className="directory-main__summary">
           <span>{filteredRaiders.length} shown</span>
+          <span>{registeredCount} registered</span>
+          <span>{verifiedCount} verified</span>
           <span>{privacyCount} privacy-ready</span>
           <span>{trustCount} trust-scored</span>
           <span>{veteranCount} veterans</span>
@@ -199,15 +206,28 @@ function SummaryPill({ label, value }: { label: string; value: string }) {
 function RaiderRow({ raider, rank }: { raider: RaiderRecord; rank: number }) {
   const privacyLabel = raider.privacySignals.length > 0 ? raider.privacySignals.join(" / ") : "standard";
   const registered = hasErc8004Registration(raider.provider);
+  const verificationStatus = readErc8004VerificationStatus(raider.provider);
   const venice = isVeniceProvider(raider.provider);
+  const avatarPosition = selectAvatarPosition(raider.provider.providerId, rank);
+  const erc8004Tone =
+    verificationStatus === "verified" || verificationStatus === "partial" || (verificationStatus == null && registered)
+      ? "proof"
+      : "muted";
 
   return (
     <article className="raider-row">
       <div className="raider-row__primary">
         <div className="raider-row__identity">
           <div className="raider-row__title">
-            <span className="raider-row__rank">#{rank.toString().padStart(2, "0")}</span>
+            <img
+              alt={`${raider.provider.displayName} profile`}
+              className="raider-row__avatar"
+              loading="lazy"
+              src={heroImage}
+              style={{ objectPosition: avatarPosition }}
+            />
             <div className="raider-row__name">
+              <span className="raider-row__rank">#{rank.toString().padStart(2, "0")}</span>
               <strong>{raider.provider.displayName}</strong>
               <p className="raider-row__provider-id">{raider.provider.providerId}</p>
             </div>
@@ -218,7 +238,7 @@ function RaiderRow({ raider, rank }: { raider: RaiderRecord; rank: number }) {
         {raider.provider.description ? <p className="raider-row__description">{raider.provider.description}</p> : null}
 
         <div className="signal-strip">
-          <SignalChip tone={registered ? "proof" : "muted"}>{registered ? "erc8004 registered" : "erc8004 pending"}</SignalChip>
+          <SignalChip tone={erc8004Tone}>{buildErc8004StatusLabel(verificationStatus, registered)}</SignalChip>
           <SignalChip tone={raider.trustScore > 0 ? "proof" : "muted"}>
             {raider.trustScore > 0 ? `trust ${raider.trustScore}` : "no trust score"}
           </SignalChip>
@@ -253,7 +273,7 @@ function RaiderRow({ raider, rank }: { raider: RaiderRecord; rank: number }) {
       <div className="raider-row__meta">
         <span>model {raider.modelLabel}</span>
         <span>agent {raider.provider.agentId ?? "pending"}</span>
-        <span>8004 {raider.provider.erc8004?.registrationTx ? "registered" : "pending"}</span>
+        <span>8004 {buildErc8004StatusValue(verificationStatus, registered)}</span>
         <span>trust {raider.trustScore}</span>
         <span>last seen {raider.lastSeenLabel}</span>
         <span>privacy {privacyLabel}</span>
@@ -307,6 +327,9 @@ function buildRaiderRecord(provider: Provider, health: ProviderHealth | undefine
       provider.description,
       provider.erc8004?.agentId,
       provider.erc8004?.operatorWallet,
+      provider.erc8004?.verification?.status,
+      provider.erc8004?.verification?.agentRegistry,
+      provider.erc8004?.verification?.agentUri,
       provider.trust?.reason,
       provider.specializations.join(" "),
       provider.outputTypes?.join(" "),
@@ -336,6 +359,56 @@ function compareRaiders(left: RaiderRecord, right: RaiderRecord, sortKey: SortKe
 
 function hasErc8004Registration(provider: Provider): boolean {
   return typeof provider.erc8004?.registrationTx === "string" && provider.erc8004.registrationTx.length > 0;
+}
+
+function readErc8004VerificationStatus(provider: Provider): Erc8004VerificationStatus | undefined {
+  return provider.erc8004?.verification?.status;
+}
+
+function buildErc8004StatusLabel(
+  verificationStatus: Erc8004VerificationStatus | undefined,
+  registered: boolean,
+): string {
+  switch (verificationStatus) {
+    case "verified":
+      return "erc8004 verified";
+    case "partial":
+      return "erc8004 partial";
+    case "failed":
+      return "erc8004 failed";
+    case "error":
+      return "erc8004 error";
+    default:
+      return registered ? "erc8004 registered" : "erc8004 pending";
+  }
+}
+
+function buildErc8004StatusValue(
+  verificationStatus: Erc8004VerificationStatus | undefined,
+  registered: boolean,
+): string {
+  switch (verificationStatus) {
+    case "verified":
+      return "verified";
+    case "partial":
+      return "partial";
+    case "failed":
+      return "failed";
+    case "error":
+      return "error";
+    default:
+      return registered ? "registered" : "pending";
+  }
+}
+
+function selectAvatarPosition(providerId: string, rank: number): string {
+  let hash = rank;
+
+  for (const char of providerId) {
+    hash = (hash * 31 + char.charCodeAt(0)) % 2_147_483_647;
+  }
+
+  return DEFAULT_AVATAR_POSITIONS[hash % DEFAULT_AVATAR_POSITIONS.length];
 }
 
 function isVeniceProvider(provider: Provider): boolean {

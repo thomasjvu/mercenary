@@ -7,6 +7,10 @@ export default defineConfig(({ mode }) => {
   const packageEnv = loadEnv(mode, process.cwd(), "");
   const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
   const rootEnv = loadEnv(mode, repoRoot, "");
+  const demoProxyToken =
+    process.env.BOSSRAID_DEMO_PROXY_TOKEN ||
+    packageEnv.BOSSRAID_DEMO_PROXY_TOKEN ||
+    rootEnv.BOSSRAID_DEMO_PROXY_TOKEN;
   const apiTarget =
     process.env.VITE_BOSSRAID_API_BASE ||
     process.env.BOSSRAID_API_ORIGIN ||
@@ -31,6 +35,18 @@ export default defineConfig(({ mode }) => {
           target: apiTarget,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ""),
+          configure(proxy) {
+            proxy.on("proxyReq", (proxyReq, request) => {
+              if (!demoProxyToken) {
+                return;
+              }
+
+              const requestPath = typeof request.url === "string" ? request.url.replace(/^\/api/, "") : "";
+              if (request.method === "POST" && requestPath.replace(/\/+$/, "") === "/v1/demo/raid") {
+                proxyReq.setHeader("x-bossraid-demo-token", demoProxyToken);
+              }
+            });
+          },
         },
       },
     },

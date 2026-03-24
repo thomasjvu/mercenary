@@ -70,10 +70,17 @@ export function providerIsVeniceBacked(provider: ProviderProfile): boolean {
 }
 
 export function erc8004IdentityIsRegistered(identity: Erc8004Identity | undefined): boolean {
+  if (identity?.verification?.status === "failed") {
+    return false;
+  }
   return Boolean(identity?.agentId && identity.registrationTx);
 }
 
 export function computeTrustScore(provider: ProviderProfile): number {
+  if (provider.erc8004?.verification?.status === "failed") {
+    return 0;
+  }
+
   if (typeof provider.trust?.score === "number" && Number.isFinite(provider.trust.score)) {
     return Math.max(0, Math.min(100, provider.trust.score));
   }

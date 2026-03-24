@@ -1,22 +1,21 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { DocsButton } from "@bossraid/ui";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import {
   API_BASE,
   fetchRaidResult,
   fetchRaidStatus,
-  spawnRaid,
+  spawnDemoRaid,
   type Provider,
   type ProviderHealth,
   type RaidResult,
   type RaidSpawnOutput,
   type RaidStatus as RaidStatusSnapshot,
 } from "../api";
-import { buildLiveDemoPayload, DEFAULT_LIVE_DEMO_BRIEF } from "../default-payload";
+import { buildLiveDemoPayload } from "../default-payload";
+import heroImage from "../../../../assets/hero.webp";
 
-type AppRoute = "/" | "/demo" | "/raiders" | "/receipt";
+type SpecialistTone = "ready" | "available" | "offline" | "working";
 
 type DemoPageProps = {
-  onNavigate: (path: AppRoute) => void;
   providers: Provider[];
   providerHealth: ProviderHealth[];
 };
@@ -29,13 +28,13 @@ type LiveRaidRun = {
   pollError?: string | null;
 };
 
-type LiveProviderRecord = {
+type ConversationSpecialistRecord = {
   providerId: string;
   displayName: string;
-  modelLabel: string;
   statusLabel: string;
-  statusTone: "ready" | "available" | "offline";
+  statusTone: SpecialistTone;
   note: string;
+  meta: string;
 };
 
 const LIVE_POLL_INTERVAL_MS = 3_000;
@@ -46,20 +45,23 @@ const DEMO_PROMPTS = [
   "Ship a tiny arcade challenge with one enemy loop, one reward prop, and a trailer that matches the palette and hook.",
 ] as const;
 
-export function DemoPage({ onNavigate, providers, providerHealth }: DemoPageProps) {
-  const [liveDemoBrief, setLiveDemoBrief] = useState(DEFAULT_LIVE_DEMO_BRIEF);
+export function DemoPage({ providers, providerHealth }: DemoPageProps) {
+  const [liveDemoBrief, setLiveDemoBrief] = useState("");
   const [lastSubmittedBrief, setLastSubmittedBrief] = useState<string | null>(null);
   const [liveRaidRun, setLiveRaidRun] = useState<LiveRaidRun | null>(null);
   const [isLaunching, setIsLaunching] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [launchError, setLaunchError] = useState<string | null>(null);
   const [receiptCopied, setReceiptCopied] = useState(false);
+  const threadRef = useRef<HTMLDivElement | null>(null);
 
+  const providerById = new Map(providers.map((provider) => [provider.providerId, provider]));
   const healthByProviderId = new Map(providerHealth.map((entry) => [entry.providerId, entry]));
-  const liveProviderRecords = buildLiveProviderRecords(providers, providerHealth, healthByProviderId);
   const readyProviderCount = providerHealth.filter((entry) => entry.reachable && entry.ready).length;
   const hostedProviderCount = providerHealth.length > 0 ? providerHealth.length : providers.length;
+  const availabilityLabel =
+    hostedProviderCount > 0 ? `${readyProviderCount}/${hostedProviderCount} specialists ready` : "Checking specialists";
   const canLaunchLiveRaid = providerHealth.length === 0 || readyProviderCount > 0;
+  const canSendBrief = canLaunchLiveRaid && liveDemoBrief.trim().length > 0 && !isLaunching;
   const activeRaidStatus = liveRaidRun?.status?.status ?? liveRaidRun?.spawn.status;
   const raidIsTerminal = activeRaidStatus ? isTerminalRaidStatus(activeRaidStatus) : false;
   const liveResultText = selectResultText(liveRaidRun?.result);
@@ -68,13 +70,37 @@ export function DemoPage({ onNavigate, providers, providerHealth }: DemoPageProp
   const liveArtifacts = selectArtifacts(liveRaidRun?.result);
   const liveWorkstreams = liveRaidRun?.result?.synthesizedOutput?.workstreams ?? [];
   const activeExperts = liveRaidRun?.status?.experts ?? [];
+  const conversationSpecialists = buildConversationSpecialistRecords(
+    activeExperts,
+    liveRaidRun?.result,
+    providerById,
+    healthByProviderId,
+  );
+  const sidebarSpecialists =
+    conversationSpecialists.length > 0
+      ? conversationSpecialists
+      : buildHostedSpecialistRecords(providers, providerHealth, healthByProviderId);
+  const hasConversation = Boolean(lastSubmittedBrief || liveRaidRun || launchError);
+  const conversationSignature = [
+    lastSubmittedBrief ?? "",
+    isLaunching ? "launching" : "idle",
+    launchError ?? "",
+    liveRaidRun?.spawn.raidId ?? "",
+    activeRaidStatus ?? "",
+    conversationSpecialists.map((specialist) => `${specialist.providerId}:${specialist.statusLabel}:${specialist.note}`).join("|"),
+    liveWorkstreams.map((workstream) => `${workstream.id}:${workstream.summary}`).join("|"),
+    liveResultText ?? "",
+    liveExplanation ?? "",
+    String(liveArtifacts.length),
+    livePatch ?? "",
+  ].join("::");
 
   useEffect(() => {
     if (!receiptCopied) {
       return;
     }
 
-    const timer = window.setTimeout(() => setReceiptCopied(false), 1200);
+    const timer = window.setTimeout(() => setReceiptCopied(false), 1_200);
     return () => window.clearTimeout(timer);
   }, [receiptCopied]);
 
@@ -83,25 +109,52 @@ export function DemoPage({ onNavigate, providers, providerHealth }: DemoPageProp
       return;
     }
 
+    const spawn = liveRaidRun.spawn;
     const pollTimer = window.setInterval(() => {
-      void refreshLiveRaid(liveRaidRun.spawn, true);
+      void refreshLiveRaid(spawn);
     }, LIVE_POLL_INTERVAL_MS);
 
     return () => window.clearInterval(pollTimer);
-  }, [liveRaidRun, raidIsTerminal]);
+  }, [liveRaidRun?.spawn.raidId, raidIsTerminal]);
+
+  useEffect(() => {
+    const thread = threadRef.current;
+    if (!thread) {
+      return;
+    }
+
+    thread.scrollTo({
+      top: thread.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [conversationSignature]);
 
   async function launchLiveRaid() {
-    const submittedBrief = liveDemoBrief.trim() || DEFAULT_LIVE_DEMO_BRIEF;
+    const submittedBrief = liveDemoBrief.trim();
+    if (!submittedBrief || isLaunching || !canLaunchLiveRaid) {
+      return;
+    }
+
     setIsLaunching(true);
     setLaunchError(null);
     setLastSubmittedBrief(submittedBrief);
+    setLiveRaidRun(null);
+    setReceiptCopied(false);
 
     try {
-      const response = await spawnRaid(buildLiveDemoPayload(submittedBrief));
+      const response = await spawnDemoRaid(buildLiveDemoPayload(submittedBrief));
       if (!response.ok || !response.data) {
+        if (response.status === 404) {
+          throw new Error("Free demo raid is not enabled on this host. The paid native route stays at POST /v1/raid.");
+        }
+
+        if (response.status === 401) {
+          throw new Error("Free demo raid is enabled, but the proxy is missing a valid demo token.");
+        }
+
         if ((response.error ?? "").toLowerCase().includes("payment required")) {
           throw new Error(
-            "Payment required. Set BOSSRAID_X402_ENABLED=false on the judge demo API, or route /demo to a non-x402 demo control plane.",
+            "This host sent /demo to the paid lane. The paid native route stays at POST /v1/raid.",
           );
         }
 
@@ -115,7 +168,7 @@ export function DemoPage({ onNavigate, providers, providerHealth }: DemoPageProp
         pollError: null,
       });
 
-      await refreshLiveRaid(spawn, false);
+      await refreshLiveRaid(spawn);
     } catch (error) {
       setLaunchError(readErrorMessage(error));
     } finally {
@@ -123,45 +176,35 @@ export function DemoPage({ onNavigate, providers, providerHealth }: DemoPageProp
     }
   }
 
-  async function refreshLiveRaid(spawn: RaidSpawnOutput, quiet: boolean) {
-    if (!quiet) {
-      setIsRefreshing(true);
-    }
+  async function refreshLiveRaid(spawn: RaidSpawnOutput) {
+    const [statusResult, resultResult] = await Promise.allSettled([
+      fetchRaidStatus(spawn.raidId, spawn.raidAccessToken),
+      fetchRaidResult(spawn.raidId, spawn.raidAccessToken),
+    ]);
 
-    try {
-      const [statusResult, resultResult] = await Promise.allSettled([
-        fetchRaidStatus(spawn.raidId, spawn.raidAccessToken),
-        fetchRaidResult(spawn.raidId, spawn.raidAccessToken),
-      ]);
-
-      setLiveRaidRun((current) => {
-        if (!current || current.spawn.raidId !== spawn.raidId) {
-          return current;
-        }
-
-        const nextStatus = statusResult.status === "fulfilled" ? statusResult.value : current.status;
-        const nextResult = resultResult.status === "fulfilled" ? resultResult.value : current.result;
-        const nextRaidStatus = nextStatus?.status ?? current.spawn.status;
-        const pollError =
-          statusResult.status === "rejected"
-            ? readErrorMessage(statusResult.reason)
-            : resultResult.status === "rejected" && isTerminalRaidStatus(nextRaidStatus)
-              ? readErrorMessage(resultResult.reason)
-              : null;
-
-        return {
-          ...current,
-          status: nextStatus,
-          result: nextResult,
-          lastUpdatedAt: new Date().toISOString(),
-          pollError,
-        };
-      });
-    } finally {
-      if (!quiet) {
-        setIsRefreshing(false);
+    setLiveRaidRun((current) => {
+      if (!current || current.spawn.raidId !== spawn.raidId) {
+        return current;
       }
-    }
+
+      const nextStatus = statusResult.status === "fulfilled" ? statusResult.value : current.status;
+      const nextResult = resultResult.status === "fulfilled" ? resultResult.value : current.result;
+      const nextRaidStatus = nextStatus?.status ?? current.spawn.status;
+      const pollError =
+        statusResult.status === "rejected"
+          ? readErrorMessage(statusResult.reason)
+          : resultResult.status === "rejected" && isTerminalRaidStatus(nextRaidStatus)
+            ? readErrorMessage(resultResult.reason)
+            : null;
+
+      return {
+        ...current,
+        status: nextStatus,
+        result: nextResult,
+        lastUpdatedAt: new Date().toISOString(),
+        pollError,
+      };
+    });
   }
 
   async function copyReceiptLink() {
@@ -177,232 +220,160 @@ export function DemoPage({ onNavigate, providers, providerHealth }: DemoPageProp
     }
   }
 
+  function resetConversation() {
+    if (isLaunching) {
+      return;
+    }
+
+    setLiveDemoBrief("");
+    setLastSubmittedBrief(null);
+    setLiveRaidRun(null);
+    setLaunchError(null);
+    setReceiptCopied(false);
+  }
+
+  function handleComposerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key !== "Enter" || event.shiftKey) {
+      return;
+    }
+
+    event.preventDefault();
+    void launchLiveRaid();
+  }
+
   return (
-    <section className="demo-shell" id="demo">
-      <div className="demo-shell__header">
-        <div className="demo-shell__copy">
-          <p className="eyebrow">live demo</p>
-          <h1>Mercenary chat</h1>
-          <p className="lede">Hosted raid orchestration, live provider status, and public proof links in one workspace.</p>
+    <section className="mercenary-demo" id="demo">
+      <article className="mercenary-chat">
+        <div className="mercenary-chat__topbar">
+          <div className="mercenary-chat__identity">
+            <strong>Mercenary</strong>
+            <span>{liveRaidRun ? `${humanizeStatus(activeRaidStatus ?? "queued")} · ${availabilityLabel}` : availabilityLabel}</span>
+          </div>
+
+          <div className="mercenary-chat__topbar-actions">
+            <StatusPill tone={liveRaidRun ? (raidIsTerminal ? "ready" : "working") : canLaunchLiveRaid ? "ready" : "offline"}>
+              {liveRaidRun ? humanizeStatus(activeRaidStatus ?? "queued") : availabilityLabel}
+            </StatusPill>
+            {hasConversation ? (
+              <button className="button" disabled={isLaunching} onClick={resetConversation} type="button">
+                new chat
+              </button>
+            ) : null}
+          </div>
         </div>
 
-        <div className="demo-shell__actions">
-          <a
-            className="button"
-            href="/"
-            onClick={(event) => {
-              event.preventDefault();
-              onNavigate("/");
-            }}
-          >
-            landing
-          </a>
-          <a
-            className="button"
-            href="/raiders"
-            onClick={(event) => {
-              event.preventDefault();
-              onNavigate("/raiders");
-            }}
-          >
-            raiders
-          </a>
-          <a
-            className="button"
-            href="/receipt"
-            onClick={(event) => {
-              event.preventDefault();
-              onNavigate("/receipt");
-            }}
-          >
-            receipt
-          </a>
-          <DocsButton className="button button--primary" label="docs" />
-        </div>
-      </div>
+        <div aria-live="polite" className="mercenary-chat__thread" ref={threadRef}>
+          <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant">
+            <p>Tell me what you want built. I’ll hire specialists in the background and return one final product here.</p>
+          </ChatMessage>
 
-      <div className="demo-layout">
-        <aside className="demo-sidebar">
-          <section className="demo-rail-card demo-rail-card--primary">
-            <p className="eyebrow">raid runtime</p>
-            <div className="demo-rail-card__metric">
-              <strong>{providerHealth.length > 0 ? `${readyProviderCount}/${providerHealth.length}` : "loading"}</strong>
-              <span>hosted providers ready</span>
-            </div>
-            <p className="info-panel__note">The demo UI calls the public Boss Raid API. The API then checks and routes the hosted Phala workers.</p>
-          </section>
+          {lastSubmittedBrief ? (
+            <ChatMessage label="You" role="user">
+              <p>{lastSubmittedBrief}</p>
+            </ChatMessage>
+          ) : null}
 
-          <section className="demo-rail-card">
-            <p className="eyebrow">proof model</p>
-            <p className="demo-rail-card__copy">One submitted mission brief creates one raid and one receipt.</p>
-            <p className="demo-rail-card__copy">If you submit a second mission, that should become a second raid with a second receipt.</p>
-          </section>
+          {isLaunching ? (
+            <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant">
+              <p>Reviewing the request and opening a raid.</p>
+              <TypingDots />
+            </ChatMessage>
+          ) : null}
 
-          <section className="demo-rail-card">
-            <p className="eyebrow">hosted workers</p>
-            <div className="demo-provider-list">
-              {liveProviderRecords.length > 0 ? (
-                liveProviderRecords.map((provider) => (
-                  <div className="demo-provider-row" key={provider.providerId}>
-                    <div>
-                      <strong>{provider.displayName}</strong>
-                      <p>{provider.note}</p>
-                    </div>
-                    <div className="demo-provider-meta">
-                      <StatusPill tone={provider.statusTone}>{provider.statusLabel}</StatusPill>
-                      <span>{provider.modelLabel}</span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="info-panel__note">Waiting for the public registry response.</p>
-              )}
-            </div>
-          </section>
+          {launchError ? (
+            <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant" tone="error">
+              <p>I could not start the raid.</p>
+              <p>{launchError}</p>
+            </ChatMessage>
+          ) : null}
 
-          <section className="demo-rail-card">
-            <p className="eyebrow">proof links</p>
-            {liveRaidRun ? (
-              <div className="proof-link-list">
-                <div className="proof-link-row">
-                  <span>receipt</span>
-                  <strong>
-                    <a href={liveRaidRun.spawn.receiptPath}>public receipt for this raid</a>
-                  </strong>
-                  <p>{liveRaidRun.spawn.receiptPath}</p>
-                </div>
-                <div className="proof-link-row">
-                  <span>agent log</span>
-                  <strong>
-                    <a href={buildAgentLogPath(liveRaidRun)} rel="noreferrer" target="_blank">
-                      token-gated execution log
-                    </a>
-                  </strong>
-                  <p>{buildAgentLogPath(liveRaidRun)}</p>
-                </div>
-                <div className="demo-sidebar__actions">
-                  <button className="button" onClick={() => void copyReceiptLink()} type="button">
-                    {receiptCopied ? "receipt copied" : "copy receipt"}
-                  </button>
-                  <a className="button button--primary" href={liveRaidRun.spawn.receiptPath}>
-                    open receipt
-                  </a>
-                </div>
+          {liveRaidRun ? (
+            <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant">
+              <p>{buildRaidStatusCopy(liveRaidRun)}</p>
+              <div className="mercenary-pill-row">
+                <StatusPill tone={raidIsTerminal ? "ready" : "working"}>{`status ${humanizeStatus(activeRaidStatus ?? "queued")}`}</StatusPill>
+                <StatusPill tone="available">{`${liveRaidRun.spawn.selectedExperts} specialists invited`}</StatusPill>
+                <StatusPill tone="available">{`eta ${liveRaidRun.spawn.estimatedFirstResultSec}s`}</StatusPill>
               </div>
-            ) : (
-              <p className="info-panel__note">Launch one raid to populate the receipt and agent-log links here.</p>
-            )}
-          </section>
-        </aside>
+              <p className="mercenary-message__note">{`Updated ${formatTimestamp(liveRaidRun.lastUpdatedAt)}`}</p>
+              {liveRaidRun.pollError ? <p className="mercenary-message__note">Last refresh error: {liveRaidRun.pollError}</p> : null}
+            </ChatMessage>
+          ) : null}
 
-        <article className="demo-chat-shell">
-          <div className="demo-chat__head">
-            <div className="demo-chat__copy">
-              <p className="eyebrow">chat surface</p>
-              <h2>Submit a raid brief.</h2>
-              <p className="demo-chat__subcopy">Mercenary will fan it out to the hosted gameplay, art, and trailer workers and keep the latest raid state in-thread.</p>
-            </div>
-            <div className="demo-chat__badges">
-              <StatusChip tone={canLaunchLiveRaid ? "proof" : "private"}>
-                {providerHealth.length > 0 ? `ready ${readyProviderCount}/${providerHealth.length}` : "checking health"}
-              </StatusChip>
-              <StatusChip tone="muted">POST /v1/raid</StatusChip>
-              <StatusChip tone="muted">{`providers ${hostedProviderCount || "loading"}`}</StatusChip>
-            </div>
-          </div>
-
-          <div aria-live="polite" className="demo-chat__log">
-            <DemoMessage label="Mercenary" role="system">
-              <p>
-                This page launches the real game-build raid payload through the public Boss Raid route and keeps the
-                latest receipt path visible after launch.
-              </p>
-            </DemoMessage>
-
-            <DemoMessage label="Boss Raid" role="assistant">
-              <p>
-                {providerHealth.length > 0
-                  ? `${readyProviderCount} of ${providerHealth.length} hosted providers are ready right now.`
-                  : "Loading the hosted provider health snapshot."}
-              </p>
-              <p>Start with the default GB Studio mission or paste a more specific launch brief below.</p>
-            </DemoMessage>
-
-            {lastSubmittedBrief ? (
-              <DemoMessage label="You" role="user">
-                <p>{lastSubmittedBrief}</p>
-              </DemoMessage>
-            ) : null}
-
-            {launchError ? (
-              <DemoMessage label="Boss Raid" role="assistant" tone="error">
-                <p>{launchError}</p>
-              </DemoMessage>
-            ) : null}
-
-            {liveRaidRun ? (
-              <DemoMessage label="Mercenary" role="assistant">
-                <p>{buildRaidStatusCopy(liveRaidRun)}</p>
-                <div className="demo-message__row">
-                  <StatusChip tone={raidIsTerminal ? "proof" : "private"}>{`status ${activeRaidStatus ?? "queued"}`}</StatusChip>
-                  <StatusChip tone="proof">{`${liveRaidRun.spawn.selectedExperts} providers invited`}</StatusChip>
-                  <StatusChip tone="muted">{`eta ${liveRaidRun.spawn.estimatedFirstResultSec}s`}</StatusChip>
-                  <StatusChip tone="muted">{`risk ${liveRaidRun.spawn.sanitization.riskTier}`}</StatusChip>
-                </div>
-              </DemoMessage>
-            ) : null}
-
-            {activeExperts.length > 0 ? (
-              <DemoMessage label="Mercenary" role="assistant">
-                <p>Current provider branches:</p>
-                <div className="demo-status-list">
-                  {activeExperts.map((expert) => (
-                    <div className="demo-status-row" key={expert.providerId}>
-                      <strong>{expert.providerId}</strong>
-                      <span>{expert.status}</span>
-                      <small>{expert.message ?? "Mercenary is coordinating this branch."}</small>
+          {conversationSpecialists.length > 0 ? (
+            <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant">
+              <p>I hired these specialists for the current run.</p>
+              <div className="mercenary-list">
+                {conversationSpecialists.map((specialist) => (
+                  <div className="mercenary-list__item" key={specialist.providerId}>
+                    <div className="mercenary-list__copy">
+                      <strong>{specialist.displayName}</strong>
+                      <p>{specialist.note}</p>
+                      {specialist.meta ? <small>{specialist.meta}</small> : null}
                     </div>
-                  ))}
-                </div>
-              </DemoMessage>
-            ) : null}
+                    <StatusPill tone={specialist.statusTone}>{specialist.statusLabel}</StatusPill>
+                  </div>
+                ))}
+              </div>
+            </ChatMessage>
+          ) : null}
 
-            {liveWorkstreams.length > 0 ? (
-              <DemoMessage label="Boss Raid" role="assistant">
-                <p>Synthesized branches currently published for this raid:</p>
-                <div className="demo-status-list">
-                  {liveWorkstreams.map((workstream) => (
-                    <div className="demo-status-row" key={workstream.id}>
+          {liveWorkstreams.length > 0 ? (
+            <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant">
+              <p>These scoped deliverables are coming back from the raid.</p>
+              <div className="mercenary-list">
+                {liveWorkstreams.map((workstream) => (
+                  <div className="mercenary-list__item" key={workstream.id}>
+                    <div className="mercenary-list__copy">
                       <strong>{workstream.label}</strong>
-                      <span>{workstream.primaryType}</span>
-                      <small>{workstream.summary}</small>
+                      <p>{workstream.summary}</p>
                     </div>
+                    <span className="mercenary-list__meta">{workstream.primaryType}</span>
+                  </div>
+                ))}
+              </div>
+            </ChatMessage>
+          ) : null}
+
+          {liveResultText || liveArtifacts.length > 0 || livePatch ? (
+            <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant" tone="success">
+              {liveResultText ? <p className="mercenary-final__answer">{liveResultText}</p> : <p>Final delivery is ready.</p>}
+              {liveExplanation ? <p>{liveExplanation}</p> : null}
+
+              {liveArtifacts.length > 0 ? (
+                <div className="mercenary-link-list">
+                  {liveArtifacts.map((artifact) => (
+                    <a
+                      className="mercenary-link"
+                      href={artifact.uri}
+                      key={`${artifact.outputType}:${artifact.label}:${artifact.uri}`}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      <strong>{artifact.label}</strong>
+                      <span>{artifact.outputType}</span>
+                    </a>
                   ))}
                 </div>
-              </DemoMessage>
-            ) : null}
+              ) : null}
 
-            {liveResultText ? (
-              <DemoMessage label="Boss Raid" role="assistant">
-                <p>{liveResultText}</p>
-                {liveExplanation ? <p>{liveExplanation}</p> : null}
-                {livePatch ? <pre className="code-panel demo-message__code">{livePatch}</pre> : null}
-              </DemoMessage>
-            ) : null}
+              {livePatch ? <pre className="code-panel mercenary-final__code">{livePatch}</pre> : null}
+            </ChatMessage>
+          ) : null}
 
-            {liveRaidRun && raidIsTerminal && !liveResultText ? (
-              <DemoMessage label="Boss Raid" role="assistant" tone="error">
-                <p>No approved provider output was published for this raid.</p>
-                <p>Open the receipt and agent log from the side panel to inspect the failed run.</p>
-              </DemoMessage>
-            ) : null}
-          </div>
+          {liveRaidRun && raidIsTerminal && !liveResultText && liveArtifacts.length === 0 && !livePatch ? (
+            <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant" tone="error">
+              <p>The raid finalized without an approved deliverable.</p>
+            </ChatMessage>
+          ) : null}
+        </div>
 
-          <div className="demo-composer">
-            <div className="demo-suggestion-row">
+        <div className="mercenary-composer">
+          {!hasConversation ? (
+            <div className="mercenary-composer__suggestions">
               {DEMO_PROMPTS.map((prompt) => (
                 <button
-                  className={`demo-suggestion ${liveDemoBrief === prompt ? "demo-suggestion--active" : ""}`}
+                  className={`mercenary-suggestion ${liveDemoBrief === prompt ? "mercenary-suggestion--active" : ""}`}
                   key={prompt}
                   onClick={() => setLiveDemoBrief(prompt)}
                   type="button"
@@ -411,124 +382,280 @@ export function DemoPage({ onNavigate, providers, providerHealth }: DemoPageProp
                 </button>
               ))}
             </div>
+          ) : null}
 
-            <label className="receipt-field demo-composer__field">
-              <span>mission brief</span>
-              <textarea
-                className="receipt-field__input demo-composer__textarea"
-                onChange={(event) => setLiveDemoBrief(event.target.value)}
-                placeholder="Describe the raid you want Mercenary to coordinate."
-                spellCheck={false}
-                value={liveDemoBrief}
-              />
-            </label>
+          <label className="mercenary-composer__field">
+            <textarea
+              className="mercenary-composer__textarea"
+              onChange={(event) => setLiveDemoBrief(event.target.value)}
+              onKeyDown={handleComposerKeyDown}
+              placeholder="Message Mercenary..."
+              spellCheck={false}
+              value={liveDemoBrief}
+            />
+          </label>
 
-            <div className="demo-composer__actions">
-              <button className="button" onClick={() => setLiveDemoBrief(DEFAULT_LIVE_DEMO_BRIEF)} type="button">
-                reset brief
+          <div className="mercenary-composer__footer">
+            <p>Enter sends. Shift+Enter adds a line break.</p>
+            <div className="mercenary-action-row">
+              <button className="button button--primary" disabled={!canSendBrief} onClick={() => void launchLiveRaid()} type="button">
+                {isLaunching ? "sending..." : "send"}
               </button>
-              <div className="demo-composer__action-group">
-                {liveRaidRun ? (
-                  <button
-                    className="button"
-                    disabled={isRefreshing}
-                    onClick={() => void refreshLiveRaid(liveRaidRun.spawn, false)}
-                    type="button"
-                  >
-                    {isRefreshing ? "refreshing..." : "refresh"}
-                  </button>
-                ) : null}
-                <button
-                  className="button button--primary"
-                  disabled={isLaunching || !canLaunchLiveRaid}
-                  onClick={() => void launchLiveRaid()}
-                  type="button"
-                >
-                  {isLaunching ? "launching..." : "launch live raid"}
-                </button>
-              </div>
             </div>
           </div>
-        </article>
-      </div>
+        </div>
+      </article>
+
+      <aside className="mercenary-sidebar">
+        <section className="mercenary-sidebar__panel">
+          <div className="mercenary-sidebar__head">
+            <div>
+              <span className="mercenary-sidebar__eyebrow">Run</span>
+              <strong>Live state</strong>
+            </div>
+            <StatusPill tone={liveRaidRun ? (raidIsTerminal ? "ready" : "working") : canLaunchLiveRaid ? "ready" : "offline"}>
+              {liveRaidRun ? humanizeStatus(activeRaidStatus ?? "queued") : "idle"}
+            </StatusPill>
+          </div>
+
+          <div className="mercenary-sidebar__links">
+            {liveRaidRun ? (
+              <>
+                <a className="mercenary-sidebar__link" href={liveRaidRun.spawn.receiptPath}>
+                  <span>proof</span>
+                  <strong>Receipt</strong>
+                </a>
+                <a className="mercenary-sidebar__link" href={buildAgentLogPath(liveRaidRun)} rel="noreferrer" target="_blank">
+                  <span>trace</span>
+                  <strong>Agent log</strong>
+                </a>
+                <button className="mercenary-sidebar__link mercenary-sidebar__link--button" onClick={() => void copyReceiptLink()} type="button">
+                  <span>share</span>
+                  <strong>{receiptCopied ? "Copied" : "Copy link"}</strong>
+                </button>
+              </>
+            ) : (
+              <p className="mercenary-sidebar__note">Mercenary will add proof links here after the first run starts.</p>
+            )}
+          </div>
+
+          <div className="mercenary-sidebar__statline">
+            <SidebarRow label="Ready" value={availabilityLabel} />
+            <SidebarRow label="Invited" value={liveRaidRun ? String(liveRaidRun.spawn.selectedExperts) : "0"} />
+            <SidebarRow label="Outputs" value={`${liveWorkstreams.length} / ${liveArtifacts.length}`} />
+            <SidebarRow label="Updated" value={formatTimestamp(liveRaidRun?.lastUpdatedAt)} />
+          </div>
+        </section>
+
+        <section className="mercenary-sidebar__panel">
+          <div className="mercenary-sidebar__head">
+            <div>
+              <span className="mercenary-sidebar__eyebrow">Specialists</span>
+              <strong>Roster</strong>
+            </div>
+          </div>
+
+          <div className="mercenary-sidebar__specialists">
+            {sidebarSpecialists.slice(0, 6).map((specialist) => (
+              <div className="mercenary-sidebar__specialist" key={specialist.providerId}>
+                <div className="mercenary-sidebar__specialist-copy">
+                  <div className="mercenary-sidebar__specialist-label">
+                    <span className={`mercenary-sidebar__dot mercenary-sidebar__dot--${specialist.statusTone}`} />
+                    <strong>{specialist.displayName}</strong>
+                  </div>
+                  {specialist.meta ? <small>{specialist.meta}</small> : null}
+                </div>
+                <a className="mercenary-sidebar__micro-link" href="/raiders">
+                  view
+                </a>
+              </div>
+            ))}
+
+            {sidebarSpecialists.length === 0 ? <p className="mercenary-sidebar__note">Waiting for provider registry data.</p> : null}
+          </div>
+        </section>
+      </aside>
     </section>
   );
 }
 
-function DemoMessage({
+function ChatMessage({
+  avatarSrc,
   children,
   label,
   role,
   tone = "default",
 }: {
+  avatarSrc?: string;
   children: ReactNode;
   label: string;
-  role: "assistant" | "system" | "user";
-  tone?: "default" | "error";
+  role: "assistant" | "user";
+  tone?: "default" | "error" | "success";
 }) {
   return (
-    <article className={`demo-message demo-message--${role} ${tone === "error" ? "demo-message--error" : ""}`}>
-      <span className="demo-message__meta">{label}</span>
-      <div className="demo-message__bubble">{children}</div>
+    <article
+      className={`mercenary-message mercenary-message--${role} ${
+        tone === "error" ? "mercenary-message--error" : tone === "success" ? "mercenary-message--success" : ""
+      }`}
+    >
+      {role === "assistant" && avatarSrc ? <img alt={label} className="mercenary-message__avatar" src={avatarSrc} /> : null}
+      <div className="mercenary-message__body">
+        <div className="mercenary-message__bubble">{children}</div>
+      </div>
     </article>
   );
 }
 
-function StatusChip({ children, tone }: { children: string; tone: "proof" | "private" | "muted" }) {
-  return <span className={`signal-chip signal-chip--${tone}`}>{children}</span>;
+function SidebarRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="mercenary-sidebar__metric">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
 }
 
-function StatusPill({ children, tone }: { children: string; tone: "ready" | "available" | "offline" }) {
-  return <span className={`status-chip status-chip--${tone}`}>{children}</span>;
+function StatusPill({
+  children,
+  tone,
+}: {
+  children: string;
+  tone: SpecialistTone;
+}) {
+  return <span className={`mercenary-status mercenary-status--${tone}`}>{children}</span>;
 }
 
-function buildLiveProviderRecords(
+function TypingDots() {
+  return (
+    <div className="mercenary-typing" aria-label="Mercenary is typing">
+      <span />
+      <span />
+      <span />
+    </div>
+  );
+}
+
+function buildConversationSpecialistRecords(
+  activeExperts: RaidStatusSnapshot["experts"],
+  result: RaidResult | undefined,
+  providerById: Map<string, Provider>,
+  healthByProviderId: Map<string, ProviderHealth>,
+): ConversationSpecialistRecord[] {
+  if (activeExperts.length > 0) {
+    return activeExperts.map((expert) => {
+      const provider = providerById.get(expert.providerId);
+      const health = healthByProviderId.get(expert.providerId);
+      const meta = [provider?.modelFamily ?? health?.model ?? "", formatProgress(expert.progress), formatLatency(expert.latencyMs)]
+        .filter((value): value is string => Boolean(value))
+        .join(" • ");
+
+      return {
+        providerId: expert.providerId,
+        displayName: provider?.displayName ?? health?.providerName ?? expert.providerId,
+        statusLabel: humanizeStatus(expert.status),
+        statusTone: mapStatusTone(expert.status),
+        note: expert.message ?? buildProviderNote(provider, health),
+        meta,
+      };
+    });
+  }
+
+  const routingProviders = result?.routingProof?.providers ?? [];
+  if (routingProviders.length === 0) {
+    return [];
+  }
+
+  const approvedProviderIds = new Set(selectApprovedProviderIds(result));
+  const droppedProviderIds = new Set(result?.synthesizedOutput?.droppedProviderIds ?? []);
+  const primaryProviders = routingProviders.some((entry) => entry.phase === "primary")
+    ? routingProviders.filter((entry) => entry.phase === "primary")
+    : routingProviders;
+
+  return primaryProviders.map((entry) => {
+    const provider = providerById.get(entry.providerId);
+    const health = healthByProviderId.get(entry.providerId);
+    const resolvedStatus = approvedProviderIds.has(entry.providerId)
+      ? "approved"
+      : droppedProviderIds.has(entry.providerId)
+        ? "dropped"
+        : entry.phase === "reserve"
+          ? "reserve"
+          : "invited";
+    const meta = [provider?.modelFamily ?? entry.modelFamily ?? health?.model ?? "", entry.matchedSpecializations.slice(0, 2).join(" / ")]
+      .filter((value): value is string => Boolean(value))
+      .join(" • ");
+
+    return {
+      providerId: entry.providerId,
+      displayName: provider?.displayName ?? health?.providerName ?? entry.providerId,
+      statusLabel: humanizeStatus(resolvedStatus),
+      statusTone: mapStatusTone(resolvedStatus),
+      note: entry.roleLabel ?? entry.workstreamLabel ?? entry.reasons[0] ?? buildProviderNote(provider, health),
+      meta,
+    };
+  });
+}
+
+function buildHostedSpecialistRecords(
   providers: Provider[],
   providerHealth: ProviderHealth[],
   healthByProviderId: Map<string, ProviderHealth>,
-): LiveProviderRecord[] {
+): ConversationSpecialistRecord[] {
   if (providers.length === 0) {
     return providerHealth.map((entry) => ({
       providerId: entry.providerId,
       displayName: entry.providerName ?? entry.providerId,
-      modelLabel: entry.model ?? "model pending",
-      statusLabel: entry.ready ? "ready" : entry.reachable ? "available" : "offline",
+      statusLabel: entry.ready ? "ready" : entry.reachable ? "reachable" : "offline",
       statusTone: entry.ready ? "ready" : entry.reachable ? "available" : "offline",
       note: entry.error ?? entry.endpoint ?? "Waiting for provider metadata.",
+      meta: entry.model ?? "",
     }));
   }
 
   return providers.map((provider) => {
     const health = healthByProviderId.get(provider.providerId);
-    const statusTone = health?.ready ? "ready" : health?.reachable ? "available" : "offline";
+    const statusLabel = health?.ready ? "ready" : health?.reachable ? "reachable" : humanizeStatus(provider.status || "available");
+    const statusTone = health?.ready ? "ready" : health?.reachable ? "available" : provider.status === "offline" ? "offline" : "available";
 
     return {
       providerId: provider.providerId,
       displayName: provider.displayName,
-      modelLabel: provider.modelFamily ?? health?.model ?? "model pending",
-      statusLabel: health?.ready ? "ready" : health?.reachable ? "reachable" : "offline",
+      statusLabel,
       statusTone,
-      note:
-        provider.specializations.length > 0
-          ? provider.specializations.slice(0, 3).join(" / ")
-          : health?.error ?? "Waiting for specialization metadata.",
+      note: buildProviderNote(provider, health),
+      meta: provider.modelFamily ?? health?.model ?? "",
     };
   });
 }
 
+function buildProviderNote(provider: Provider | undefined, health: ProviderHealth | undefined): string {
+  if (provider?.specializations.length) {
+    return provider.specializations.slice(0, 3).join(" / ");
+  }
+
+  return provider?.description ?? health?.error ?? health?.endpoint ?? "Specialization pending.";
+}
+
 function buildRaidStatusCopy(run: LiveRaidRun): string {
   const status = run.status?.status ?? run.spawn.status;
-  const expertCount = run.spawn.selectedExperts;
+
+  if (status === "queued") {
+    return "I accepted the request and I’m matching it to live specialists.";
+  }
+
+  if (status === "running") {
+    return "The raid is live. I’m collecting scoped specialist output and filtering weak branches.";
+  }
 
   if (status === "final" && run.result?.synthesizedOutput) {
-    return `Raid ${shortValue(run.spawn.raidId)} finalized with one synthesized result assembled from ${expertCount} invited providers.`;
+    return "The raid is final. I merged the strongest specialist outputs into one delivery.";
   }
 
   if (status === "final") {
-    return `Raid ${shortValue(run.spawn.raidId)} reached final state without approved output. Check the receipt and agent log.`;
+    return "The raid is final, but no approved output was published.";
   }
 
-  return `Raid ${shortValue(run.spawn.raidId)} is ${status}. Mercenary is still coordinating the hosted provider branches.`;
+  return `The raid is ${humanizeStatus(status)}.`;
 }
 
 function buildAgentLogPath(run: LiveRaidRun): string {
@@ -563,12 +690,20 @@ function selectArtifacts(result: RaidResult | undefined) {
   return result?.synthesizedOutput?.artifacts ?? result?.primarySubmission?.submission.artifacts ?? [];
 }
 
-function shortValue(value: string): string {
-  if (value.length <= 18) {
-    return value;
+function selectApprovedProviderIds(result: RaidResult | undefined): string[] {
+  if (!result) {
+    return [];
   }
 
-  return `${value.slice(0, 10)}...${value.slice(-6)}`;
+  if (result.settlementExecution?.successfulProviderIds.length) {
+    return uniqueStrings(result.settlementExecution.successfulProviderIds);
+  }
+
+  if (result.synthesizedOutput?.contributingProviderIds.length) {
+    return uniqueStrings(result.synthesizedOutput.contributingProviderIds);
+  }
+
+  return uniqueStrings((result.approvedSubmissions ?? []).map((entry) => entry.submission.providerId));
 }
 
 function formatTimestamp(value: string | undefined): string {
@@ -588,6 +723,69 @@ function formatTimestamp(value: string | undefined): string {
   });
 }
 
+function humanizeStatus(status: string): string {
+  return status.replace(/[_-]+/g, " ").trim();
+}
+
+function formatProgress(progress: number | undefined): string | null {
+  if (typeof progress !== "number" || Number.isNaN(progress)) {
+    return null;
+  }
+
+  const percentage = progress <= 1 ? progress * 100 : progress;
+  const clamped = Math.max(0, Math.min(100, percentage));
+  return `${Math.round(clamped)}%`;
+}
+
+function formatLatency(latencyMs: number | undefined): string | null {
+  if (typeof latencyMs !== "number" || Number.isNaN(latencyMs)) {
+    return null;
+  }
+
+  return `${Math.round(latencyMs)}ms`;
+}
+
+function mapStatusTone(status: string): SpecialistTone {
+  const normalizedStatus = status.toLowerCase();
+
+  if (
+    normalizedStatus.includes("approved") ||
+    normalizedStatus.includes("complete") ||
+    normalizedStatus.includes("submitted") ||
+    normalizedStatus.includes("final")
+  ) {
+    return "ready";
+  }
+
+  if (
+    normalizedStatus.includes("failed") ||
+    normalizedStatus.includes("error") ||
+    normalizedStatus.includes("cancelled") ||
+    normalizedStatus.includes("expired") ||
+    normalizedStatus.includes("rejected") ||
+    normalizedStatus.includes("dropped") ||
+    normalizedStatus.includes("offline")
+  ) {
+    return "offline";
+  }
+
+  if (
+    normalizedStatus.includes("queued") ||
+    normalizedStatus.includes("pending") ||
+    normalizedStatus.includes("reserve") ||
+    normalizedStatus.includes("invited") ||
+    normalizedStatus.includes("waiting")
+  ) {
+    return "available";
+  }
+
+  return "working";
+}
+
 function readErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Unexpected error";
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values.filter((value) => value.trim().length > 0))];
 }

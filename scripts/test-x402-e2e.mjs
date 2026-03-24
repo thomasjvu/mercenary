@@ -2,8 +2,9 @@ import { createHmac } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { decodePaymentResponseHeader, wrapFetchWithPaymentFromConfig } from "@x402/fetch";
+import { decodePaymentResponseHeader, x402Client, x402HTTPClient } from "@x402/fetch";
 import { ExactEvmScheme } from "@x402/evm";
+import { ExactEvmSchemeV1 } from "@x402/evm/v1";
 import { privateKeyToAccount } from "viem/accounts";
 import { loadLocalEnv } from "./env.mjs";
 
@@ -51,7 +52,7 @@ if (!existsSync(payloadFile)) {
   throw new Error(`Payload file not found: ${payloadFile}`);
 }
 
-const url = new URL(route === "chat" ? "/v1/chat/completions" : "/v1/raid", apiBase);
+const url = buildApiUrl(apiBase, route === "chat" ? "v1/chat/completions" : "v1/raid");
 const payload = JSON.parse(readFileSync(payloadFile, "utf8"));
 
 console.log(
@@ -99,7 +100,7 @@ console.log(
 
 const paidResponse = mode === "hmac"
   ? await runHmacPayment(url, payload, paymentRequired)
-  : await runWalletPayment(url, payload);
+  : await runWalletPayment(url, payload, paymentRequired);
 
 const paymentResponseHeader = paidResponse.headers.get("payment-response");
 const settlement = paymentResponseHeader ? decodePaymentResponseHeader(paymentResponseHeader) : undefined;
@@ -155,7 +156,7 @@ async function runHmacPayment(url, payload, paymentRequired) {
   });
 }
 
-async function runWalletPayment(url, payload) {
+async function runWalletPayment(url, payload, paymentRequired) {
   const rawPrivateKey =
     process.env.BOSSRAID_X402_BUYER_PRIVATE_KEY ?? process.env.EVM_PRIVATE_KEY;
   if (!rawPrivateKey) {
@@ -165,19 +166,32 @@ async function runWalletPayment(url, payload) {
   }
 
   const account = privateKeyToAccount(normalizeHexPrivateKey(rawPrivateKey));
-  const fetchWithPayment = wrapFetchWithPaymentFromConfig(fetch, {
+  const client = x402Client.fromConfig({
     schemes: [
+      ...["base-sepolia", "base", "sepolia", "ethereum"].map((network) => ({
+        x402Version: 1,
+        network,
+        client: new ExactEvmSchemeV1(account),
+      })),
       {
         network: "eip155:*",
         client: new ExactEvmScheme(account),
       },
     ],
   });
+  const httpClient = new x402HTTPClient(client);
+  const paymentPayload = await client.createPaymentPayload(paymentRequired);
+  const reservationId = paymentRequired.accepts?.[0]?.extra?.reservationId;
+  if (typeof reservationId !== "string" || reservationId.length === 0) {
+    throw new Error("PAYMENT-REQUIRED did not include a reservationId.");
+  }
 
-  return fetchWithPayment(url, {
+  return fetch(url, {
     method: "POST",
     headers: {
       "content-type": "application/json",
+      "x-bossraid-launch-reservation": reservationId,
+      ...httpClient.encodePaymentSignatureHeader(paymentPayload),
     },
     body: JSON.stringify(payload),
   });
@@ -213,6 +227,14 @@ function encodeBase64Json(value) {
 
 function decodeBase64Json(value) {
   return JSON.parse(Buffer.from(value, "base64").toString("utf8"));
+}
+
+function buildApiUrl(base, relativePath) {
+  const url = new URL(base);
+  url.pathname = url.pathname.endsWith("/") ? url.pathname : `${url.pathname}/`;
+  url.search = "";
+  url.hash = "";
+  return new URL(relativePath.replace(/^\/+/, ""), url);
 }
 
 function normalizeHexPrivateKey(value) {

@@ -24,6 +24,7 @@
     "@bossraid/provider-sdk": "workspace:*",
     "@bossraid/sandbox-runner": "workspace:*",
     "@payai/facilitator": "^2.3.4",
-    "fastify": "^5.2.1"
+    "fastify": "^5.2.1",
+    "viem": "^2.47.5"
   }
 }

@@ -51,6 +51,7 @@ import type {
   ReservedSelectedProviders,
   SanitizedTaskSpec,
   SelectedProviders,
+  SettlementExecutionRecord,
 } from "@bossraid/shared-types";
 import {
   applyReputationEventToProvider,
@@ -168,6 +169,17 @@ function createRaidAccessToken(): string {
 
 function hashRaidAccessToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
+}
+
+function settlementExecutionEquals(
+  left: SettlementExecutionRecord | undefined,
+  right: SettlementExecutionRecord | undefined,
+): boolean {
+  if (left === right) {
+    return true;
+  }
+
+  return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
 }
 
 export class BossRaidOrchestrator {
@@ -729,6 +741,25 @@ export class BossRaidOrchestrator {
 
   getRaid(raidId: string): RaidRecord | undefined {
     return this.raids.get(raidId);
+  }
+
+  async updateSettlementExecution(
+    raidId: string,
+    settlementExecution: SettlementExecutionRecord,
+  ): Promise<SettlementExecutionRecord | undefined> {
+    const raid = this.raids.get(raidId);
+    if (!raid) {
+      return undefined;
+    }
+
+    if (settlementExecutionEquals(raid.settlementExecution, settlementExecution)) {
+      return raid.settlementExecution;
+    }
+
+    raid.settlementExecution = settlementExecution;
+    raid.updatedAt = new Date().toISOString();
+    await this.queuePersist();
+    return raid.settlementExecution;
   }
 
   restoreState(snapshot: BossRaidPersistenceSnapshot): void {

@@ -11,7 +11,7 @@ import { ReceiptPage } from "./pages/ReceiptPage";
 import { RaidersPage } from "./pages/RaidersPage";
 
 type AppRoute = "/" | "/demo" | "/raiders" | "/receipt";
-type LandingTheme = "light" | "dark";
+type AppTheme = "light" | "dark";
 
 const LANDING_THEME_STORAGE_KEY = "bossraid.landing-theme";
 
@@ -20,7 +20,7 @@ addCollection(pixelIcons);
 export function App() {
   const appShellRef = useRef<HTMLElement | null>(null);
   const pathname = useSyncExternalStore(subscribeToLocation, getCurrentRoute, () => "/");
-  const [landingTheme, setLandingTheme] = useState<LandingTheme>(() => getInitialLandingTheme());
+  const [appTheme, setAppTheme] = useState<AppTheme>(() => getInitialTheme());
   const isLandingRoute = pathname === "/";
   const isDemoRoute = pathname === "/demo";
   const isRaidersRoute = pathname === "/raiders";
@@ -51,8 +51,8 @@ export function App() {
       return;
     }
 
-    window.localStorage.setItem(LANDING_THEME_STORAGE_KEY, landingTheme);
-  }, [landingTheme]);
+    window.localStorage.setItem(LANDING_THEME_STORAGE_KEY, appTheme);
+  }, [appTheme]);
 
   function navigate(path: AppRoute) {
     if (getCurrentRoute() === path) {
@@ -68,7 +68,7 @@ export function App() {
 
   return (
     <main
-      className={`app-shell ${isLandingRoute ? `app-shell--landing app-shell--theme-${landingTheme}` : ""} ${usesDirectoryLayout ? "app-shell--directory" : ""}`}
+      className={`app-shell app-shell--theme-${appTheme} ${isLandingRoute ? "app-shell--landing" : ""} ${usesDirectoryLayout ? "app-shell--directory" : ""} ${isDemoRoute ? "app-shell--demo-route" : ""}`}
       ref={appShellRef}
     >
       <div className="bg-grid" aria-hidden="true" />
@@ -81,7 +81,6 @@ export function App() {
         />
       ) : isDemoRoute ? (
         <DemoPage
-          onNavigate={navigate}
           providerHealth={providerHealth.data ?? []}
           providers={providers.data ?? []}
         />
@@ -99,20 +98,16 @@ export function App() {
           </a>
         </span>
         <div className="footer__links">
-          {isLandingRoute ? (
-            <>
-              <button
-                className="footer__theme-toggle"
-                onClick={() => setLandingTheme((current) => (current === "dark" ? "light" : "dark"))}
-                type="button"
-              >
-                {landingTheme === "dark" ? "light mode" : "dark mode"}
-              </button>
-              <span aria-hidden="true" className="footer__separator">
-                |
-              </span>
-            </>
-          ) : null}
+          <button
+            className="footer__theme-toggle"
+            onClick={() => setAppTheme((current) => (current === "dark" ? "light" : "dark"))}
+            type="button"
+          >
+            {appTheme === "dark" ? "light mode" : "dark mode"}
+          </button>
+          <span aria-hidden="true" className="footer__separator">
+            |
+          </span>
           <RouteLink active={pathname === "/"} label="home" onNavigate={navigate} path="/" />
           <RouteLink active={pathname === "/demo"} label="demo" onNavigate={navigate} path="/demo" />
           <RouteLink active={pathname === "/raiders"} label="raiders" onNavigate={navigate} path="/raiders" />
@@ -194,7 +189,7 @@ function subscribeToLocation(onStoreChange: () => void) {
   return () => window.removeEventListener("popstate", onStoreChange);
 }
 
-function getInitialLandingTheme(): LandingTheme {
+function getInitialTheme(): AppTheme {
   if (typeof window === "undefined") {
     return "light";
   }

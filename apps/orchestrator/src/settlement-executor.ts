@@ -94,6 +94,36 @@ const escrowAbi = [
     outputs: [],
   },
   {
+    type: "function",
+    name: "submit",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "jobId", type: "uint256" },
+      { name: "deliverableHash", type: "bytes32" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "complete",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "jobId", type: "uint256" },
+      { name: "reason", type: "bytes32" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "reject",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "jobId", type: "uint256" },
+      { name: "reason", type: "bytes32" },
+    ],
+    outputs: [],
+  },
+  {
     type: "event",
     name: "JobCreated",
     inputs: [
@@ -117,6 +147,7 @@ type SettlementArtifact = {
   raidId: string;
   executedAt: string;
   mode: "file" | "onchain";
+  lifecycleStatus: "synthetic" | "partial" | "terminal";
   registryRaidRef: string;
   taskHash: string;
   evaluationHash: string;
@@ -143,19 +174,33 @@ type SettlementArtifact = {
     providerAddress?: string | null;
     role: string;
     status: string;
+    requestedAction: "complete" | "reject";
+    lifecycleStatus: "synthetic" | "open" | "funded" | "submitted" | "completed" | "rejected" | "expired";
     budgetUsd: number;
     budgetAtomic?: string;
     submitResultHash: string | null;
     completionPolicy: string;
+    nextAction?: string | null;
     syntheticJobId?: string;
     jobId?: string;
     createTxHash?: string;
     linkTxHash?: string;
     budgetTxHash?: string;
     fundTxHash?: string;
+    submitTxHash?: string;
+    completeTxHash?: string;
+    rejectTxHash?: string;
   }>;
+  finalizeTxHash?: string;
   transactionHashes?: string[];
   jobIds?: string[];
+  warnings?: string[];
+};
+
+type WalletActor = {
+  account: ReturnType<typeof privateKeyToAccount>;
+  client: ReturnType<typeof createWalletClient>;
+  address: Address;
 };
 
 class NoopSettlementExecutor implements SettlementExecutor {
@@ -219,6 +264,36 @@ function parseAtomicMultiplier(value: string | undefined): bigint {
   return BigInt(value);
 }
 
+function createWalletActor(config: { privateKey: Hex; chain?: ReturnType<typeof defineChain>; rpcUrl: string }): WalletActor {
+  const account = privateKeyToAccount(config.privateKey);
+  return {
+    account,
+    address: account.address,
+    client: createWalletClient({
+      account,
+      chain: config.chain,
+      transport: http(config.rpcUrl),
+    }),
+  };
+}
+
+function parseProviderPrivateKeyMap(value: string | undefined): Record<string, Hex> {
+  if (!value) {
+    return {};
+  }
+
+  const parsed = JSON.parse(value) as Record<string, string>;
+  return Object.fromEntries(
+    Object.entries(parsed).map(([providerId, privateKey]) => [providerId, normalizePrivateKey(privateKey)]),
+  );
+}
+
+function isTerminalChildJobStatus(
+  status: SettlementArtifact["childJobs"][number]["lifecycleStatus"],
+): boolean {
+  return status === "completed" || status === "rejected" || status === "expired";
+}
+
 function toAtomicAmount(amount: number, multiplier: bigint): bigint {
   const micros = BigInt(Math.round(amount * 1_000_000));
   return (micros * multiplier) / 1_000_000n;
@@ -251,6 +326,7 @@ function buildFileArtifact(
     raidId: raid.id,
     executedAt: payload.executedAt,
     mode: "file",
+    lifecycleStatus: "synthetic",
     registryRaidRef: raid.id,
     taskHash: payload.taskHash,
     evaluationHash: payload.evaluationHash,
@@ -276,14 +352,18 @@ function buildFileArtifact(
       providerId: allocation.providerId,
       role: allocation.role,
       status: allocation.status,
+      requestedAction: allocation.status,
+      lifecycleStatus: "synthetic",
       budgetUsd: allocation.totalAmount,
       submitResultHash: allocation.deliverableHash ?? null,
       completionPolicy:
         allocation.status === "complete"
           ? "complete child job and release payout"
           : "reject child job and refund allocation",
+      nextAction: "Switch to onchain settlement mode to create ERC-8183 child jobs.",
       syntheticJobId: `${raid.id}-job-${index + 1}`,
     })),
+    warnings: ["Settlement proof is synthetic in file mode."],
   };
 }
 
@@ -313,6 +393,7 @@ class FileSettlementExecutor implements SettlementExecutor {
     return {
       mode: "file",
       proofStandard: "erc8183_aligned",
+      lifecycleStatus: artifact.lifecycleStatus,
       executedAt: payload.executedAt,
       artifactPath,
       registryRaidRef: artifact.registryRaidRef,
@@ -323,18 +404,21 @@ class FileSettlementExecutor implements SettlementExecutor {
       contracts: artifact.contracts,
       registryCall: artifact.registryCall,
       childJobs: artifact.childJobs,
+      warnings: artifact.warnings,
     };
   }
 }
 
 class OnchainSettlementExecutor implements SettlementExecutor {
   private readonly publicClient;
-  private readonly walletClient;
-  private readonly account;
+  private readonly clientActor;
+  private readonly evaluatorActor?: WalletActor;
+  private readonly providerActors: Record<string, WalletActor>;
   private readonly chain;
   private readonly jobExpirySec: number;
   private readonly atomicMultiplier: bigint;
   private readonly fundJobs: boolean;
+  private readonly requireTerminalJobs: boolean;
   private readonly providerAddressMap: Record<string, Address>;
   private readonly clientAddress: Address;
 
@@ -352,10 +436,11 @@ class OnchainSettlementExecutor implements SettlementExecutor {
       atomicMultiplier?: string;
       fundJobs?: string;
       providerAddressMapJson?: string;
+      evaluatorPrivateKey?: string;
+      providerPrivateKeysJson?: string;
+      requireTerminalJobs?: string;
     },
   ) {
-    this.account = privateKeyToAccount(config.privateKey);
-    this.clientAddress = this.account.address;
     this.chain = config.chainId
       ? defineChain({
           id: Number(config.chainId),
@@ -376,15 +461,27 @@ class OnchainSettlementExecutor implements SettlementExecutor {
       chain: this.chain,
       transport: http(config.rpcUrl),
     });
-    this.walletClient = createWalletClient({
-      account: this.account,
+    this.clientActor = createWalletActor({
+      privateKey: config.privateKey,
       chain: this.chain,
-      transport: http(config.rpcUrl),
+      rpcUrl: config.rpcUrl,
     });
+    this.clientAddress = this.clientActor.address;
     this.jobExpirySec = Number(config.jobExpirySec ?? "86400");
     this.atomicMultiplier = parseAtomicMultiplier(config.atomicMultiplier);
     this.fundJobs = parseBoolean(config.fundJobs);
+    this.requireTerminalJobs = parseBoolean(config.requireTerminalJobs);
     this.providerAddressMap = parseProviderAddressMap(config.providerAddressMapJson);
+    this.providerActors = parseProviderActors(config.providerPrivateKeysJson, {
+      chain: this.chain,
+      rpcUrl: config.rpcUrl,
+      providerAddressMap: this.providerAddressMap,
+    });
+    this.evaluatorActor = resolveEvaluatorActor(config, {
+      chain: this.chain,
+      rpcUrl: config.rpcUrl,
+      clientActor: this.clientActor,
+    });
   }
 
   async execute(raid: RaidRecord): Promise<SettlementExecutionRecord | undefined> {
@@ -395,13 +492,15 @@ class OnchainSettlementExecutor implements SettlementExecutor {
 
     const transactionHashes: string[] = [];
     const childJobs: SettlementArtifact["childJobs"] = [];
+    const warnings: string[] = [];
 
-    const createRaidHash = await this.walletClient.writeContract({
+    const createRaidHash = await this.clientActor.client.writeContract({
+      chain: this.chain,
       address: this.config.registryAddress,
       abi: registryAbi,
       functionName: "createRaid",
       args: [payload.taskHash],
-      account: this.account,
+      account: this.clientActor.account,
     });
     transactionHashes.push(createRaidHash);
 
@@ -418,11 +517,13 @@ class OnchainSettlementExecutor implements SettlementExecutor {
 
     const jobIds: string[] = [];
     for (const allocation of payload.allocations) {
-      const providerAddress = this.providerAddressMap[allocation.providerId] ?? zeroAddress;
+      const providerActor = this.providerActors[allocation.providerId];
+      const providerAddress = providerActor?.address ?? this.providerAddressMap[allocation.providerId] ?? zeroAddress;
       const expiresAt = BigInt(Math.floor(Date.now() / 1000) + this.jobExpirySec);
       const budgetAtomic = toAtomicAmount(allocation.totalAmount, this.atomicMultiplier);
 
-      const createJobHash = await this.walletClient.writeContract({
+      const createJobHash = await this.clientActor.client.writeContract({
+        chain: this.chain,
         address: this.config.escrowAddress,
         abi: escrowAbi,
         functionName: "createJob",
@@ -432,7 +533,7 @@ class OnchainSettlementExecutor implements SettlementExecutor {
           expiresAt,
           `${raid.id}:${allocation.providerId}:${allocation.role}`,
         ],
-        account: this.account,
+        account: this.clientActor.account,
       });
       transactionHashes.push(createJobHash);
 
@@ -451,77 +552,182 @@ class OnchainSettlementExecutor implements SettlementExecutor {
 
       let budgetTxHash: Hash | undefined;
       let fundTxHash: Hash | undefined;
+      let submitTxHash: Hash | undefined;
+      let completeTxHash: Hash | undefined;
+      let rejectTxHash: Hash | undefined;
 
-      if (budgetAtomic > 0n) {
-        budgetTxHash = await this.walletClient.writeContract({
-          address: this.config.escrowAddress,
-          abi: escrowAbi,
-          functionName: "setBudget",
-          args: [jobId, budgetAtomic],
-          account: this.account,
-        });
-        transactionHashes.push(budgetTxHash);
-        await this.waitForReceipt(budgetTxHash);
-
-        if (this.fundJobs && providerAddress !== zeroAddress) {
-          fundTxHash = await this.walletClient.writeContract({
-            address: this.config.escrowAddress,
-            abi: escrowAbi,
-            functionName: "fund",
-            args: [jobId, budgetAtomic],
-            account: this.account,
-          });
-          transactionHashes.push(fundTxHash);
-          await this.waitForReceipt(fundTxHash);
-        }
-      }
-
-      const linkTxHash = await this.walletClient.writeContract({
-        address: this.config.registryAddress,
-        abi: registryAbi,
-        functionName: "linkChildJob",
-        args: [raidId, jobId],
-        account: this.account,
-      });
-      transactionHashes.push(linkTxHash);
-      await this.waitForReceipt(linkTxHash);
-
-      childJobs.push({
+      const childJob: SettlementArtifact["childJobs"][number] = {
         jobRef: `${raid.id}:${allocation.providerId}`,
         providerId: allocation.providerId,
         providerAddress,
         role: allocation.role,
         status: allocation.status,
+        requestedAction: allocation.status,
+        lifecycleStatus: "open",
         budgetUsd: allocation.totalAmount,
         budgetAtomic: budgetAtomic.toString(),
         submitResultHash: allocation.deliverableHash ?? null,
         completionPolicy:
           allocation.status === "complete"
-            ? "submit and complete child job"
-            : "reject child job",
+            ? "submit deliverable and complete child job"
+            : "reject child job from the open state",
+        nextAction: null,
         jobId: jobId.toString(),
         createTxHash: createJobHash,
-        budgetTxHash,
-        fundTxHash,
-        linkTxHash,
+      };
+
+      if (allocation.status === "complete" && budgetAtomic > 0n) {
+        budgetTxHash = await this.clientActor.client.writeContract({
+          chain: this.chain,
+          address: this.config.escrowAddress,
+          abi: escrowAbi,
+          functionName: "setBudget",
+          args: [jobId, budgetAtomic],
+          account: this.clientActor.account,
+        });
+        transactionHashes.push(budgetTxHash);
+        await this.waitForReceipt(budgetTxHash);
+        childJob.budgetTxHash = budgetTxHash;
+
+        if (this.fundJobs && providerAddress !== zeroAddress) {
+          fundTxHash = await this.clientActor.client.writeContract({
+            chain: this.chain,
+            address: this.config.escrowAddress,
+            abi: escrowAbi,
+            functionName: "fund",
+            args: [jobId, budgetAtomic],
+            account: this.clientActor.account,
+          });
+          transactionHashes.push(fundTxHash);
+          await this.waitForReceipt(fundTxHash);
+          childJob.fundTxHash = fundTxHash;
+          childJob.lifecycleStatus = "funded";
+        }
+      }
+
+      const linkTxHash = await this.clientActor.client.writeContract({
+        chain: this.chain,
+        address: this.config.registryAddress,
+        abi: registryAbi,
+        functionName: "linkChildJob",
+        args: [raidId, jobId],
+        account: this.clientActor.account,
       });
+      transactionHashes.push(linkTxHash);
+      await this.waitForReceipt(linkTxHash);
+      childJob.linkTxHash = linkTxHash;
+
+      if (allocation.status === "reject") {
+        rejectTxHash = await this.clientActor.client.writeContract({
+          chain: this.chain,
+          address: this.config.escrowAddress,
+          abi: escrowAbi,
+          functionName: "reject",
+          args: [jobId, payload.evaluationHash],
+          account: this.clientActor.account,
+        });
+        transactionHashes.push(rejectTxHash);
+        await this.waitForReceipt(rejectTxHash);
+        childJob.rejectTxHash = rejectTxHash;
+        childJob.lifecycleStatus = "rejected";
+        childJobs.push(childJob);
+        continue;
+      }
+
+      if (budgetAtomic <= 0n) {
+        childJob.nextAction = "Successful child job has zero budget and cannot be funded.";
+        warnings.push(`${allocation.providerId}: successful child job has zero budget.`);
+        childJobs.push(childJob);
+        continue;
+      }
+
+      if (!this.fundJobs) {
+        childJob.nextAction = "Enable BOSSRAID_SETTLEMENT_FUND_JOBS to escrow successful child jobs.";
+        warnings.push(`${allocation.providerId}: successful child job was left open because funding is disabled.`);
+        childJobs.push(childJob);
+        continue;
+      }
+
+      if (providerAddress === zeroAddress) {
+        childJob.nextAction = "Configure a provider onchain address or private key before funding successful child jobs.";
+        warnings.push(`${allocation.providerId}: successful child job is missing a provider address.`);
+        childJobs.push(childJob);
+        continue;
+      }
+
+      if (!fundTxHash) {
+        childJob.nextAction = "Client funding failed before the provider could submit.";
+        warnings.push(`${allocation.providerId}: successful child job did not reach Funded state.`);
+        childJobs.push(childJob);
+        continue;
+      }
+
+      if (!providerActor) {
+        childJob.nextAction = "Provider submit is still required from the provider wallet.";
+        warnings.push(`${allocation.providerId}: successful child job is funded but still awaiting provider submit.`);
+        childJobs.push(childJob);
+        continue;
+      }
+
+      submitTxHash = await providerActor.client.writeContract({
+        chain: this.chain,
+        address: this.config.escrowAddress,
+        abi: escrowAbi,
+        functionName: "submit",
+        args: [jobId, allocation.deliverableHash ? toBytes32(allocation.deliverableHash) : payload.evaluationHash],
+        account: providerActor.account,
+      });
+      transactionHashes.push(submitTxHash);
+      await this.waitForReceipt(submitTxHash);
+      childJob.submitTxHash = submitTxHash;
+      childJob.lifecycleStatus = "submitted";
+
+      if (!this.evaluatorActor) {
+        childJob.nextAction = "Evaluator completion is still required from the configured evaluator wallet.";
+        warnings.push(`${allocation.providerId}: successful child job is submitted but still awaiting evaluator completion.`);
+        childJobs.push(childJob);
+        continue;
+      }
+
+      completeTxHash = await this.evaluatorActor.client.writeContract({
+        chain: this.chain,
+        address: this.config.escrowAddress,
+        abi: escrowAbi,
+        functionName: "complete",
+        args: [jobId, payload.evaluationHash],
+        account: this.evaluatorActor.account,
+      });
+      transactionHashes.push(completeTxHash);
+      await this.waitForReceipt(completeTxHash);
+      childJob.completeTxHash = completeTxHash;
+      childJob.lifecycleStatus = "completed";
+      childJobs.push(childJob);
     }
 
-    const finalizeHash = await this.walletClient.writeContract({
-      address: this.config.registryAddress,
-      abi: registryAbi,
-      functionName: "finalizeRaid",
-      args: [raidId, payload.evaluationHash],
-      account: this.account,
-    });
-    transactionHashes.push(finalizeHash);
-    await this.waitForReceipt(finalizeHash);
+    const allChildJobsTerminal = childJobs.every((childJob) => isTerminalChildJobStatus(childJob.lifecycleStatus));
+    let finalizeTxHash: Hash | undefined;
+
+    if (allChildJobsTerminal || !this.requireTerminalJobs) {
+      finalizeTxHash = await this.clientActor.client.writeContract({
+        chain: this.chain,
+        address: this.config.registryAddress,
+        abi: registryAbi,
+        functionName: "finalizeRaid",
+        args: [raidId, payload.evaluationHash],
+        account: this.clientActor.account,
+      });
+      transactionHashes.push(finalizeTxHash);
+      await this.waitForReceipt(finalizeTxHash);
+    } else {
+      warnings.push("Parent raid was not finalized because at least one child job is not terminal.");
+    }
 
     const artifactPath = buildArtifactPath(this.outputDir, raid.id);
     const artifact: SettlementArtifact = {
       raidId: raid.id,
       executedAt: payload.executedAt,
       mode: "onchain",
+      lifecycleStatus: allChildJobsTerminal && finalizeTxHash ? "terminal" : "partial",
       registryRaidRef: raidId.toString(),
       taskHash: payload.taskHash,
       evaluationHash: payload.evaluationHash,
@@ -543,14 +749,17 @@ class OnchainSettlementExecutor implements SettlementExecutor {
         args: [raidId.toString(), payload.evaluationHash],
       },
       childJobs,
+      finalizeTxHash,
       transactionHashes,
       jobIds,
+      warnings: warnings.length > 0 ? warnings : undefined,
     };
     await writeArtifactFile(artifactPath, artifact);
 
     return {
       mode: "onchain",
       proofStandard: "erc8183_aligned",
+      lifecycleStatus: artifact.lifecycleStatus,
       executedAt: payload.executedAt,
       artifactPath,
       registryRaidRef: raidId.toString(),
@@ -561,8 +770,10 @@ class OnchainSettlementExecutor implements SettlementExecutor {
       contracts: artifact.contracts,
       registryCall: artifact.registryCall,
       childJobs: artifact.childJobs,
+      finalizeTxHash,
       transactionHashes,
       jobIds,
+      warnings: artifact.warnings,
     };
   }
 
@@ -600,6 +811,66 @@ function parseProviderAddressMap(value: string | undefined): Record<string, Addr
   );
 }
 
+function parseProviderActors(
+  value: string | undefined,
+  options: {
+    chain?: ReturnType<typeof defineChain>;
+    rpcUrl: string;
+    providerAddressMap: Record<string, Address>;
+  },
+): Record<string, WalletActor> {
+  const privateKeys = parseProviderPrivateKeyMap(value);
+  return Object.fromEntries(
+    Object.entries(privateKeys).map(([providerId, privateKey]) => {
+      const actor = createWalletActor({
+        privateKey,
+        chain: options.chain,
+        rpcUrl: options.rpcUrl,
+      });
+      const mappedAddress = options.providerAddressMap[providerId];
+      if (mappedAddress && mappedAddress !== actor.address) {
+        throw new Error(
+          `Provider signing key for ${providerId} does not match BOSSRAID_PROVIDER_ADDRESS_MAP_JSON (${mappedAddress} != ${actor.address}).`,
+        );
+      }
+      return [providerId, actor];
+    }),
+  );
+}
+
+function resolveEvaluatorActor(
+  config: {
+    rpcUrl: string;
+    evaluatorAddress: Address;
+    evaluatorPrivateKey?: string;
+  },
+  options: {
+    chain?: ReturnType<typeof defineChain>;
+    rpcUrl: string;
+    clientActor: WalletActor;
+  },
+): WalletActor | undefined {
+  if (config.evaluatorAddress === options.clientActor.address) {
+    return options.clientActor;
+  }
+
+  if (!config.evaluatorPrivateKey) {
+    return undefined;
+  }
+
+  const actor = createWalletActor({
+    privateKey: normalizePrivateKey(config.evaluatorPrivateKey),
+    chain: options.chain,
+    rpcUrl: options.rpcUrl,
+  });
+  if (actor.address !== config.evaluatorAddress) {
+    throw new Error(
+      `BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY does not match BOSSRAID_EVALUATOR_ADDRESS (${actor.address} != ${config.evaluatorAddress}).`,
+    );
+  }
+  return actor;
+}
+
 function getSuccessfulProviderIds(
   allocations: ReturnType<typeof buildSettlementAllocations>,
 ): string[] {
@@ -631,6 +902,9 @@ export function createSettlementExecutor(
       atomicMultiplier: env.BOSSRAID_SETTLEMENT_ATOMIC_MULTIPLIER,
       fundJobs: env.BOSSRAID_SETTLEMENT_FUND_JOBS,
       providerAddressMapJson: env.BOSSRAID_PROVIDER_ADDRESS_MAP_JSON,
+      evaluatorPrivateKey: env.BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY,
+      providerPrivateKeysJson: env.BOSSRAID_SETTLEMENT_PROVIDER_PRIVATE_KEYS_JSON,
+      requireTerminalJobs: env.BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS,
     });
   }
 

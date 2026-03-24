@@ -4,12 +4,13 @@ Boss Raid is the Synthesis demo surface for Mercenary.
 
 ## One-Line Story
 
-Boss Raid lets a developer or another agent submit one task through `POST /v1/raid`, MCP, or the OpenAI-compatible chat surface; Mercenary breaks it into scoped workstreams, routes the right HTTP providers, verifies the outputs, returns one canonical result, and publishes proof.
+Boss Raid lets a developer or another agent submit one task through `POST /v1/raid`, optional `POST /v1/demo/raid`, MCP, or the OpenAI-compatible chat surface; Mercenary breaks it into scoped workstreams, routes the right HTTP providers, verifies the outputs, returns one canonical result, and publishes proof.
 
 ## Review Links
 
 - live demo: `https://bossraid-web.pages.dev/`
 - native route: `POST /v1/raid`
+- free demo route: `POST /v1/demo/raid` when enabled
 - public receipt: `/receipt`
 - manifest: `GET /v1/agent.json`
 - run log: `GET /v1/raids/:raidId/agent_log.json?token=<raidAccessToken>`
@@ -29,7 +30,7 @@ Boss Raid lets a developer or another agent submit one task through `POST /v1/ra
 
 ## Cohesive Demo Flow
 
-1. Start at `/demo` or `POST /v1/raid`.
+1. Start at `/demo`, `POST /v1/demo/raid`, or `POST /v1/raid`.
 2. Show that Mercenary turns one task into scoped workstreams and routes real HTTP providers.
 3. Open `/receipt` to show one canonical result, routing proof, and settlement proof.
 4. Open `GET /v1/agent.json` to show Mercenary's manifest.

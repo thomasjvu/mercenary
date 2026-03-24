@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { generateKeyPairSync } from "node:crypto";
 import test from "node:test";
-import { readX402Config, requireX402Payment } from "./x402.js";
+import { buildX402PaymentRequired, readX402Config, requireX402Payment } from "./x402.js";
 
 function encodeBase64Json(value: unknown): string {
   return Buffer.from(JSON.stringify(value), "utf8").toString("base64");
@@ -44,6 +44,28 @@ test("x402 can be disabled explicitly", () => {
   });
 
   assert.equal(config.enabled, false);
+});
+
+test("x402 resource URLs preserve a configured path prefix", () => {
+  const paymentRequired = buildX402PaymentRequired({
+    route: "raid",
+    env: {
+      BOSSRAID_X402_RESOURCE_BASE_URL: "http://35.198.249.153:8080/api",
+    },
+  });
+
+  assert.equal(paymentRequired.accepts[0]?.resource, "http://35.198.249.153:8080/api/v1/raid");
+});
+
+test("x402 payment requirements use v1 network aliases for evm chains", () => {
+  const paymentRequired = buildX402PaymentRequired({
+    route: "raid",
+    env: {
+      BOSSRAID_X402_NETWORK: "eip155:84532",
+    },
+  });
+
+  assert.equal(paymentRequired.accepts[0]?.network, "base-sepolia");
 });
 
 test("CDP facilitator requests include bearer auth and EVM asset metadata", async () => {
@@ -127,6 +149,7 @@ test("CDP facilitator requests include bearer auth and EVM asset metadata", asyn
     }
 
     const paymentRequirements = requests[0]?.body.paymentRequirements as Record<string, unknown>;
+    assert.equal(paymentRequirements.network, "base-sepolia");
     assert.equal(paymentRequirements.asset, "0x036CbD53842c5426634e7929541eC2318f3dCF7e");
     assert.deepEqual(paymentRequirements.extra, {
       name: "USDC",
@@ -206,6 +229,7 @@ test("PayAI facilitator is the default and uses merchant auth when keys are conf
     }
 
     const paymentRequirements = requests[0]?.body.paymentRequirements as Record<string, unknown>;
+    assert.equal(paymentRequirements.network, "base-sepolia");
     assert.equal(paymentRequirements.maxAmountRequired, "3502000");
     assert.equal(paymentRequirements.price, "$3.502");
   } finally {

@@ -2,7 +2,7 @@
 
 These contracts are the Solidity base for Mercenary's ERC-8183-aligned settlement layer.
 
-- `BossJobEscrow.sol` models per-provider child jobs with evaluator-gated completion or rejection.
+- `BossJobEscrow.sol` models per-provider child jobs with client-side open rejection, provider submit, evaluator completion or rejection, and expiry refunds.
 - `RaidRegistry.sol` tracks parent raid metadata, linked child jobs, and final evaluation commitments.
 
 Boss Raid surfaces that settlement proof directly on the live result and receipt paths. When a parent raid settles, the runtime exposes:
@@ -46,6 +46,9 @@ Role definitions:
 - `BOSSRAID_CLIENT_PRIVATE_KEY`: hot wallet used later for onchain raid settlement txs
 - `BOSSRAID_EVALUATOR_ADDRESS`: address recorded on each child job as the evaluator
 - `BOSSRAID_PROVIDER_ADDRESS_MAP_JSON`: provider-id to provider-address map used when child jobs are created
+- `BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY`: optional evaluator signer for auto-complete and funded-job reject flows
+- `BOSSRAID_SETTLEMENT_PROVIDER_PRIVATE_KEYS_JSON`: optional provider-id to private-key map for auto-submit flows
+- `BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS`: block parent finalize until every child job is terminal
 
 `BOSSRAID_RPC_URL` is required for deployment and onchain settlement. It is not required for x402 by itself.
 
@@ -65,6 +68,7 @@ pnpm bootstrap:settlement-env -- \
 This writes `temp/contracts/settlement.env` unless `--out` or `BOSSRAID_SETTLEMENT_ENV_OUT` is set.
 
 Use `--evaluator-address` for the address that should appear onchain as the evaluator for every child job in the demo.
+If you also set `BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY` and `BOSSRAID_SETTLEMENT_PROVIDER_PRIVATE_KEYS_JSON`, the runtime can auto-advance child jobs through submit and complete or reject.
 
 ## Full Bootstrap
 
@@ -88,6 +92,7 @@ This deploys both contracts, writes the deployment manifest, writes the settleme
 - contract tests
 - token allowance/bootstrap flow for funded jobs
 - deployment verification
+- resume tooling for partially settled child-job batches
 - chain-specific config presets
 
 Future tests should cover:

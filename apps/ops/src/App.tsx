@@ -17,7 +17,10 @@ import {
 import { DEFAULT_SPAWN_PAYLOAD } from "./default-payload";
 
 type RoutingDecision = NonNullable<RaidResult["routingProof"]>["providers"][number];
+type SettlementExecution = NonNullable<RaidResult["settlementExecution"]>;
+type SettlementChildJob = SettlementExecution["childJobs"][number];
 type SubmissionArtifact = NonNullable<NonNullable<RaidResult["synthesizedOutput"]>["artifacts"]>[number];
+type Erc8004VerificationStatus = NonNullable<NonNullable<Provider["erc8004"]>["verification"]>["status"];
 
 function formatMs(value?: number): string {
   return value == null ? "n/a" : `${value} ms`;
@@ -264,6 +267,10 @@ export function App() {
   const settlementExecution = raidResult.data?.settlementExecution;
   const reputationEvents = raidResult.data?.reputationEvents ?? [];
   const erc8004ProviderCount = countUniqueProviders(routingDecisions, (decision) => decision.erc8004Registered);
+  const verifiedErc8004ProviderCount = countUniqueProviders(
+    routingDecisions,
+    (decision) => decision.erc8004VerificationStatus === "verified",
+  );
   const veniceProviderCount = countUniqueProviders(routingDecisions, (decision) => decision.veniceBacked);
   const trustScoredProviderCount = countUniqueProviders(routingDecisions, (decision) => decision.trustScore > 0);
   const authMessage = authError ?? (opsSession.error instanceof Error ? opsSession.error.message : null);
@@ -553,15 +560,19 @@ export function App() {
             />
             <ReceiptRow label="venice routed" value={String(veniceProviderCount)} />
             <ReceiptRow label="8004 routed" value={String(erc8004ProviderCount)} />
+            <ReceiptRow label="8004 verified" value={String(verifiedErc8004ProviderCount)} />
             <ReceiptRow label="trust scored" value={String(trustScoredProviderCount)} />
             <ReceiptRow label="mode" value={settlementExecution?.mode ?? "pending"} />
             <ReceiptRow label="proof" value={settlementExecution?.proofStandard ?? "pending"} />
+            <ReceiptRow label="lifecycle" value={buildSettlementLifecycleLabel(settlementExecution?.lifecycleStatus)} />
             <ReceiptRow label="artifact" value={settlementExecution?.artifactPath ?? "pending"} />
             <ReceiptRow label="registry" value={settlementExecution?.registryRaidRef ?? "pending"} />
             <ReceiptRow label="registry contract" value={settlementExecution?.contracts.registryAddress ?? "pending"} />
             <ReceiptRow label="escrow contract" value={settlementExecution?.contracts.escrowAddress ?? "pending"} />
             <ReceiptRow label="task hash" value={settlementExecution?.taskHash ?? "pending"} />
             <ReceiptRow label="evaluation hash" value={settlementExecution?.evaluationHash ?? "pending"} />
+            <ReceiptRow label="finalize tx" value={shortValue(settlementExecution?.finalizeTxHash ?? "pending")} />
+            <ReceiptRow label="warnings" value={String(settlementExecution?.warnings?.length ?? 0)} />
           </div>
 
           <div className="receipt-list">
@@ -613,14 +624,26 @@ export function App() {
             </div>
 
             <div className="receipt-list__section">
+              <strong>warnings</strong>
+              {settlementExecution?.warnings?.length ? (
+                settlementExecution.warnings.map((warning) => (
+                  <div className="receipt-row" key={warning}>
+                    <span>warn</span>
+                    <span>{warning}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="quiet-note">No settlement warnings recorded.</p>
+              )}
+            </div>
+
+            <div className="receipt-list__section">
               <strong>child jobs</strong>
               {settlementExecution?.childJobs.length ? (
                 settlementExecution.childJobs.map((job) => (
                   <div className="receipt-row" key={job.jobRef}>
                     <span>{job.providerId}</span>
-                    <span>
-                      {job.role} · {job.status} · {job.jobId ?? job.syntheticJobId ?? "pending"}
-                    </span>
+                    <span>{buildChildJobSummary(job)}</span>
                   </div>
                 ))
               ) : (
@@ -726,8 +749,10 @@ function buildRoutingDecisionSummary(decision: RoutingDecision): string {
     ? `${decision.workstreamLabel} / ${decision.roleLabel}`
     : decision.workstreamLabel ?? decision.roleLabel ?? "root raid";
   const privacySignals = [
+    buildErc8004ProofLabel(decision.erc8004VerificationStatus, decision.erc8004Registered),
+    decision.registrationTxFound === false ? "reg tx missing" : null,
+    decision.operatorMatchesOwner === false ? "owner mismatch" : null,
     decision.veniceBacked ? "venice" : null,
-    decision.erc8004Registered ? "8004" : "8004 pending",
     decision.registrationTx ? `reg ${shortValue(decision.registrationTx)}` : null,
     decision.trustScore > 0 ? `trust ${decision.trustScore}` : null,
     decision.privacyFeatures.includes("no_data_retention") ? "no-retention" : null,
@@ -921,6 +946,69 @@ function isRenderableVideoArtifact(artifact: SubmissionArtifact): boolean {
   return artifact.outputType === "video" || (artifact.mimeType?.startsWith("video/") ?? false);
 }
 
+function hasErc8004Registration(provider: Provider): boolean {
+  return typeof provider.erc8004?.registrationTx === "string" && provider.erc8004.registrationTx.length > 0;
+}
+
+function buildErc8004ProofLabel(
+  verificationStatus: Erc8004VerificationStatus | undefined,
+  registered: boolean,
+): string {
+  switch (verificationStatus) {
+    case "verified":
+      return "8004 verified";
+    case "partial":
+      return "8004 partial";
+    case "failed":
+      return "8004 failed";
+    case "error":
+      return "8004 error";
+    default:
+      return registered ? "8004 registered" : "8004 pending";
+  }
+}
+
+function buildSettlementLifecycleLabel(lifecycleStatus: SettlementExecution["lifecycleStatus"] | undefined): string {
+  switch (lifecycleStatus) {
+    case "terminal":
+      return "terminal";
+    case "partial":
+      return "partial";
+    case "synthetic":
+      return "synthetic";
+    default:
+      return "pending";
+  }
+}
+
+function findLatestChildJobTxHash(job: SettlementChildJob): string | undefined {
+  return (
+    job.completeTxHash ??
+    job.rejectTxHash ??
+    job.submitTxHash ??
+    job.fundTxHash ??
+    job.budgetTxHash ??
+    job.linkTxHash ??
+    job.createTxHash
+  );
+}
+
+function buildChildJobSummary(job: SettlementChildJob): string {
+  const txHash = findLatestChildJobTxHash(job);
+
+  return [
+    job.role,
+    job.status,
+    job.lifecycleStatus,
+    `action ${job.requestedAction}`,
+    job.jobId ?? job.syntheticJobId ?? "pending",
+    job.nextAction ? `next ${job.nextAction}` : null,
+    txHash ? shortValue(txHash) : null,
+  ]
+    .filter((value): value is string => value != null)
+    .join(" · ");
+}
+
 function ProviderRow({
   provider,
   health,
@@ -929,18 +1017,20 @@ function ProviderRow({
   health: ProviderHealth | undefined;
 }) {
   const readyState = health?.ready ? "ready" : health?.reachable ? "warm" : "down";
+  const erc8004Label = buildErc8004ProofLabel(provider.erc8004?.verification?.status, hasErc8004Registration(provider));
 
   return (
     <div className="provider-row">
       <div className="provider-row__main">
         <strong>{provider.displayName}</strong>
         <span>
-          {provider.modelFamily ?? "unknown"} · {provider.outputTypes?.join(" / ") || "n/a"}
+          {provider.modelFamily ?? "unknown"} · {provider.outputTypes?.join(" / ") || "n/a"} · {erc8004Label}
         </span>
       </div>
       <div className="provider-row__scores">
         <span>rep {provider.scores?.reputationScore ?? 0}</span>
         <span>priv {provider.scores?.privacyScore ?? 0}</span>
+        <span>trust {provider.trust?.score ?? 0}</span>
         <span className={`status-dot status-dot--${readyState}`}>{readyState}</span>
       </div>
     </div>

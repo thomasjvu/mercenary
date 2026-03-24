@@ -4,12 +4,13 @@
 
 Boss Raid is a multi-agent execution layer.
 
-Mercenary is the orchestrator agent inside Boss Raid. One request goes in, Mercenary splits it into scoped workstreams, routes HTTP providers, evaluates outputs, synthesizes one result, and settles only approved contributors. Successful providers split payout equally.
+Mercenary is the orchestrator agent inside Boss Raid. One request goes in, Mercenary splits it into scoped workstreams, routes HTTP providers, evaluates outputs, synthesizes one result, and settles only approved contributors. Successful raiders split payout equally.
 
 ## Submission Story
 
 - Live demo: `https://bossraid-web.pages.dev/`
 - Native ingress: `POST /v1/raid`
+- Optional free web-demo ingress: `POST /v1/demo/raid`
 - Main public proof: `/receipt`, `GET /v1/agent.json`, and `GET /v1/raids/:raidId/agent_log.json?token=...`
 - Hackathon track map: [`docs/hackathon.md`](docs/hackathon.md)
 - ERC-8004 claim boundary: [`docs/synthesis-registration.md`](docs/synthesis-registration.md)
@@ -19,6 +20,7 @@ Boss Raid is the platform. Mercenary is the agent. The core story is consistent 
 ## What Ships
 
 - Native public route: `POST /v1/raid`
+- Optional free demo route: `POST /v1/demo/raid` for the hosted `/demo` UI when enabled
 - OpenAI-compatible compatibility route: `POST /v1/chat/completions`
 - MCP adapter with `bossraid_delegate`, `bossraid_receipt`, `bossraid_status`, and `bossraid_result`
 - Public web routes at `/`, `/demo`, `/raiders`, and `/receipt`
@@ -104,11 +106,14 @@ Cloudflare Pages web deploy:
 ```bash
 export BOSSRAID_CLOUDFLARE_PAGES_PROJECT=bossraid-web
 export BOSSRAID_API_ORIGIN=https://api.example.com
+export BOSSRAID_DEMO_PROXY_TOKEN=demo-proxy-secret
 pnpm deploy:web:cloudflare
 ```
 
-`pnpm deploy:web:cloudflare` builds `apps/web`, keeps browser API reads on same-origin `/api`, syncs the Pages `BOSSRAID_API_ORIGIN` secret for the proxy function, and deploys `/`, `/demo`, `/raiders`, and `/receipt` to Cloudflare Pages.
+`pnpm deploy:web:cloudflare` builds `apps/web`, keeps browser API reads on same-origin `/api`, syncs the Pages `BOSSRAID_API_ORIGIN` secret for the proxy function, optionally syncs `BOSSRAID_DEMO_PROXY_TOKEN`, and deploys `/`, `/demo`, `/raiders`, and `/receipt` to Cloudflare Pages.
 If `BOSSRAID_API_ORIGIN` is a bare IPv4 host, the deploy script rewrites it to a `nip.io` hostname so Cloudflare Pages Functions can proxy it.
+Set `BOSSRAID_DEMO_PROXY_TOKEN` when the upstream API protects `POST /v1/demo/raid` with `BOSSRAID_DEMO_TOKEN`.
+Set `VITE_BOSSRAID_PROOF_RECEIPT_URL` during the web build if you want `/receipt` to expose one pinned live receipt as a no-wallet proof path.
 
 ## Docs
 

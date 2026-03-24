@@ -16,6 +16,7 @@ import type {
   ProviderTaskPackage,
   RaidRecord,
   RankedSubmission,
+  SettlementExecutionRecord,
 } from "@bossraid/shared-types";
 import { computeRewards, sanitizeTask, selectProviders } from "@bossraid/raid-core";
 import { BossRaidOrchestrator, NoEligibleProvidersError } from "./index.js";
@@ -383,7 +384,7 @@ test("absolute raid deadline disqualifies non-responding providers and penalizes
     [provider],
     {
       inviteAcceptMs: 1_000,
-      firstHeartbeatMs: 1_000,
+      firstHeartbeatMs: 5_000,
       hardExecutionMs: 5_000,
       raidAbsoluteMs: 50,
     },
@@ -1396,6 +1397,118 @@ test("sqlite persistence saves and reloads snapshot state", async () => {
     await persistence.saveState(snapshot);
     const loaded = await persistence.loadState();
     assert.deepEqual(loaded, snapshot);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("updateSettlementExecution persists refreshed settlement proof state", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bossraid-sqlite-settlement-"));
+  const persistence = new SqliteBossRaidPersistence(join(dir, "state.sqlite"));
+  const provider = {
+    profile: createProviderProfile("provider-alpha"),
+    async accept(_task: ProviderTaskPackage): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: "run-alpha",
+      };
+    },
+    async run(
+      task: ProviderTaskPackage,
+      callbacks: {
+        onHeartbeat: (heartbeat: ProviderHeartbeat) => void | Promise<void>;
+        onSubmit: (submission: ProviderSubmission) => void | Promise<void>;
+        onFailure: (error: Error) => void | Promise<void>;
+      },
+    ): Promise<void> {
+      await callbacks.onSubmit({
+        raidId: task.raidId,
+        providerId: "provider-alpha",
+        providerRunId: "run-alpha",
+        explanation: "Fixed the disabled state.",
+        confidence: 0.91,
+        filesTouched: ["src/components/Form.tsx"],
+        patchUnifiedDiff: "--- a/src/components/Form.tsx",
+        submittedAt: new Date().toISOString(),
+      });
+    },
+  };
+  const orchestrator = new BossRaidOrchestrator(
+    [provider],
+    {
+      inviteAcceptMs: 1_000,
+      firstHeartbeatMs: 1_000,
+      hardExecutionMs: 1_000,
+      raidAbsoluteMs: 1_000,
+    },
+    persistence,
+    undefined,
+    async (profile) => readyHealth(profile.providerId),
+  );
+
+  try {
+    const spawn = await orchestrator.spawnRaid(createSpawnInput());
+    await waitFor(() => orchestrator.getStatus(spawn.raidId).status === "final");
+
+    const settlementExecution: SettlementExecutionRecord = {
+      mode: "onchain",
+      proofStandard: "erc8183_aligned",
+      lifecycleStatus: "partial",
+      executedAt: new Date().toISOString(),
+      artifactPath: join(dir, "raid_1.settlement.json"),
+      registryRaidRef: "7",
+      taskHash: "0xtaskhash",
+      evaluationHash: "0xevaluationhash",
+      successfulProviderIds: ["provider-alpha"],
+      allocations: [
+        {
+          providerId: "provider-alpha",
+          role: "successful",
+          status: "complete",
+          totalAmount: 10,
+        },
+      ],
+      contracts: {
+        registryAddress: "0x0000000000000000000000000000000000000101",
+        escrowAddress: "0x0000000000000000000000000000000000000102",
+        tokenAddress: "0x0000000000000000000000000000000000000103",
+        clientAddress: "0x0000000000000000000000000000000000000104",
+        evaluatorAddress: "0x0000000000000000000000000000000000000105",
+        chainId: "8453",
+        rpcUrl: "https://rpc.example",
+      },
+      registryCall: {
+        method: "finalizeRaid",
+        args: ["7", "0xevaluationhash"],
+      },
+      childJobs: [
+        {
+          jobRef: `${spawn.raidId}:provider-alpha`,
+          providerId: "provider-alpha",
+          providerAddress: "0x0000000000000000000000000000000000000106",
+          role: "successful",
+          status: "complete",
+          requestedAction: "complete",
+          lifecycleStatus: "submitted",
+          budgetUsd: 10,
+          budgetAtomic: "10000000",
+          submitResultHash: "0xsubmissionhash",
+          completionPolicy: "submit and complete child job",
+          nextAction: "Evaluator completion is still required from the configured evaluator wallet.",
+          jobId: "9",
+        },
+      ],
+      warnings: ["awaiting evaluator completion"],
+    };
+
+    await orchestrator.updateSettlementExecution(spawn.raidId, settlementExecution);
+
+    const snapshot = await persistence.loadState();
+    const persistedRaid = snapshot.raids.find((raid) => raid.id === spawn.raidId);
+    assert.equal(persistedRaid?.settlementExecution?.mode, "onchain");
+    assert.equal(persistedRaid?.settlementExecution?.lifecycleStatus, "partial");
+    assert.equal(persistedRaid?.settlementExecution?.childJobs[0]?.lifecycleStatus, "submitted");
+    assert.equal(persistedRaid?.settlementExecution?.warnings?.[0], "awaiting evaluator completion");
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

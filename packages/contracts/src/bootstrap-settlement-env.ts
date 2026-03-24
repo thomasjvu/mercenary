@@ -85,11 +85,15 @@ export async function writeSettlementEnv(
     "BOSSRAID_SETTLEMENT_JOB_EXPIRY_SEC=86400",
     "BOSSRAID_SETTLEMENT_ATOMIC_MULTIPLIER=1000000",
     "BOSSRAID_SETTLEMENT_FUND_JOBS=false",
+    "# BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS=true",
     providerAddressMap
       ? `BOSSRAID_PROVIDER_ADDRESS_MAP_JSON='${JSON.stringify(providerAddressMap)}'`
       : null,
     "# Set this before running on-chain settlement:",
     "# BOSSRAID_CLIENT_PRIVATE_KEY=0x...",
+    "# Optional full-lifecycle automation:",
+    "# BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY=0x...",
+    "# BOSSRAID_SETTLEMENT_PROVIDER_PRIVATE_KEYS_JSON='{\"provider-id\":\"0x...\"}'",
   ].filter((value): value is string => Boolean(value));
 
   await mkdir(dirname(options.outPath), { recursive: true });

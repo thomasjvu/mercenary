@@ -8,6 +8,7 @@ const webDir = resolve(repoRoot, "apps/web");
 const pagesProject = readRequiredEnv("BOSSRAID_CLOUDFLARE_PAGES_PROJECT");
 const apiOrigin = normalizeApiOrigin(readRequiredEnv("BOSSRAID_API_ORIGIN"));
 const pagesBranch = normalizeOptionalEnv("BOSSRAID_CLOUDFLARE_PAGES_BRANCH");
+const demoProxyToken = normalizeOptionalEnv("BOSSRAID_DEMO_PROXY_TOKEN");
 
 await runCommand("npx", ["wrangler", "whoami"], { cwd: repoRoot });
 await runCommand("pnpm", ["--filter", "@bossraid/web", "build"], {
@@ -26,6 +27,16 @@ await runCommand(
     input: apiOrigin,
   },
 );
+if (demoProxyToken) {
+  await runCommand(
+    "npx",
+    ["wrangler", "pages", "secret", "put", "BOSSRAID_DEMO_PROXY_TOKEN", "--project-name", pagesProject],
+    {
+      cwd: webDir,
+      input: demoProxyToken,
+    },
+  );
+}
 
 const deployArgs = ["wrangler", "pages", "deploy", "dist", "--project-name", pagesProject];
 if (pagesBranch) {

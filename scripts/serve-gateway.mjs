@@ -5,6 +5,7 @@ import { extname, resolve, sep } from "node:path";
 const host = process.env.BOSSRAID_GATEWAY_HOST ?? process.env.HOST ?? "0.0.0.0";
 const port = Number(process.env.PORT ?? "8080");
 const apiOrigin = process.env.BOSSRAID_API_ORIGIN ?? "http://127.0.0.1:8787";
+const demoProxyToken = process.env.BOSSRAID_DEMO_PROXY_TOKEN?.trim() || undefined;
 const webDistDir = resolve(process.cwd(), process.env.BOSSRAID_WEB_DIST_DIR ?? "apps/web/dist");
 const opsDistDir = resolve(process.cwd(), process.env.BOSSRAID_OPS_DIST_DIR ?? "apps/ops/dist");
 
@@ -94,7 +95,7 @@ async function handleGatewayHealth(response) {
 async function proxyRequest(request, response, upstreamPathname, search) {
   const target = new URL(`${upstreamPathname}${search}`, apiOrigin);
   const body = request.method === "GET" || request.method === "HEAD" ? undefined : await readRequestBody(request);
-  const headers = buildProxyRequestHeaders(request);
+  const headers = buildProxyRequestHeaders(request, upstreamPathname);
   const upstream = await fetch(target, {
     method: request.method,
     headers,
@@ -124,7 +125,7 @@ async function proxyRequest(request, response, upstreamPathname, search) {
   response.end(Buffer.from(arrayBuffer));
 }
 
-function buildProxyRequestHeaders(request) {
+function buildProxyRequestHeaders(request, upstreamPathname) {
   const headers = {};
   for (const [key, value] of Object.entries(request.headers)) {
     const normalized = normalizeHeaderValue(value);
@@ -135,6 +136,11 @@ function buildProxyRequestHeaders(request) {
   delete headers.connection;
   delete headers.host;
   delete headers["content-length"];
+  delete headers["x-bossraid-demo-token"];
+
+  if (demoProxyToken && request.method === "POST" && upstreamPathname.replace(/\/+$/, "") === "/v1/demo/raid") {
+    headers["x-bossraid-demo-token"] = demoProxyToken;
+  }
 
   const remoteAddress = request.socket.remoteAddress ?? "";
   const forwardedFor = typeof headers["x-forwarded-for"] === "string" && headers["x-forwarded-for"].length > 0

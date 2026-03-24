@@ -95,8 +95,5 @@ export function buildLiveDemoPayload(brief: string) {
       maxTotalCost: 18,
       selectionMode: "diverse_mix",
     },
-    hostContext: {
-      host: "bossraid-web",
-    },
   };
 }

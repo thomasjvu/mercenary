@@ -97,6 +97,12 @@ export type RaidResult = {
       trustReason?: string;
       operatorWallet?: string;
       registrationTx?: string;
+      erc8004VerificationStatus?: "not_checked" | "verified" | "partial" | "failed" | "error";
+      erc8004VerificationCheckedAt?: string;
+      agentRegistry?: string;
+      agentUri?: string;
+      registrationTxFound?: boolean;
+      operatorMatchesOwner?: boolean;
       privacyFeatures: string[];
       matchedSpecializations: string[];
       reasons: string[];
@@ -162,6 +168,7 @@ export type RaidResult = {
   settlementExecution?: {
     mode: "file" | "onchain";
     proofStandard: "erc8183_aligned";
+    lifecycleStatus: "synthetic" | "partial" | "terminal";
     executedAt: string;
     artifactPath: string;
     registryRaidRef: string;
@@ -187,19 +194,27 @@ export type RaidResult = {
       providerAddress?: string | null;
       role: string;
       status: string;
+      requestedAction: "complete" | "reject";
+      lifecycleStatus: "synthetic" | "open" | "funded" | "submitted" | "completed" | "rejected" | "expired";
       budgetUsd: number;
       budgetAtomic?: string;
       submitResultHash: string | null;
       completionPolicy: string;
+      nextAction?: string | null;
       syntheticJobId?: string;
       jobId?: string;
       createTxHash?: string;
       linkTxHash?: string;
       budgetTxHash?: string;
       fundTxHash?: string;
+      submitTxHash?: string;
+      completeTxHash?: string;
+      rejectTxHash?: string;
     }>;
+    finalizeTxHash?: string;
     transactionHashes?: string[];
     jobIds?: string[];
+    warnings?: string[];
     allocations: Array<{
       providerId: string;
       role: string;
@@ -241,6 +256,20 @@ export type Provider = {
     validationRegistry?: string;
     validationTxs?: string[];
     lastVerifiedAt?: string;
+    verification?: {
+      status: "not_checked" | "verified" | "partial" | "failed" | "error";
+      checkedAt: string;
+      chainId?: string;
+      agentRegistry?: string;
+      owner?: string;
+      agentUri?: string;
+      registrationTxFound?: boolean;
+      operatorMatchesOwner?: boolean;
+      identityRegistryReachable?: boolean;
+      reputationRegistryReachable?: boolean;
+      validationRegistryReachable?: boolean;
+      notes?: string[];
+    };
   };
   trust?: {
     score?: number;

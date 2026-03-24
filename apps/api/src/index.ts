@@ -50,6 +50,12 @@ import {
   requireX402Payment,
 } from "./x402.js";
 import { buildAgentLog, buildAgentManifest } from "./agent-artifacts.js";
+import { createErc8004Verifier } from "./erc8004.js";
+import {
+  createSettlementProofRefresher,
+  persistSettlementExecutionArtifact,
+  settlementExecutionChanged,
+} from "./settlement-proof.js";
 
 interface AttestedRuntimePayload {
   version: 1;
@@ -85,6 +91,8 @@ export function buildApiServer(
   env: NodeJS.ProcessEnv = process.env,
 ) {
   const adminToken = env.BOSSRAID_ADMIN_TOKEN;
+  const demoRouteEnabled = readBooleanEnv(env.BOSSRAID_DEMO_ROUTE_ENABLED);
+  const demoToken = env.BOSSRAID_DEMO_TOKEN?.trim() || undefined;
   const apiBodyLimitBytes = readPositiveInteger(env.BOSSRAID_API_BODY_LIMIT_BYTES, 524_288);
   const opsSessionTtlSec = readPositiveInteger(env.BOSSRAID_OPS_SESSION_TTL_SEC, 43_200);
   const publicRateLimitMax = readPositiveInteger(env.BOSSRAID_PUBLIC_RATE_LIMIT_MAX, 60);
@@ -97,7 +105,7 @@ export function buildApiServer(
   const providerHealthTimeoutMs = readPositiveInteger(env.BOSSRAID_PROVIDER_HEALTH_TIMEOUT_MS, 5_000);
   const evaluatorMaxConcurrentJobs = readPositiveInteger(env.BOSSRAID_EVAL_MAX_CONCURRENT_JOBS, 2);
   const registryToken = env.BOSSRAID_REGISTRY_TOKEN;
-  const mercenaryIdentity = readMercenaryErc8004Identity(env);
+  let mercenaryIdentity = readMercenaryErc8004Identity(env);
   const trustProxy =
     env.BOSSRAID_TRUST_PROXY === "1" ||
     env.BOSSRAID_TRUST_PROXY === "true" ||
@@ -108,6 +116,8 @@ export function buildApiServer(
     bodyLimit: apiBodyLimitBytes,
     trustProxy,
   });
+  const erc8004Verifier = createErc8004Verifier(env);
+  const settlementProofRefresher = createSettlementProofRefresher(env);
   const opsSessions = new Map<string, number>();
   const rateLimits = new Map<string, { count: number; resetAt: number }>();
   const workerIsolation = env.BOSSRAID_EVAL_JOB_ISOLATION === "container" ? "per_job_container" : "per_job_process";
@@ -230,6 +240,41 @@ export function buildApiServer(
     if (!adminIsAuthorized(headers)) {
       reply.code(401);
       return { error: "unauthorized" };
+    }
+
+    return undefined;
+  }
+
+  function demoRouteIsAuthorized(headers: Record<string, string | string[] | undefined>): boolean {
+    if (adminIsAuthorized(headers)) {
+      return true;
+    }
+
+    if (!demoToken) {
+      return true;
+    }
+
+    return safeEqualString(asSingleHeader(headers["x-bossraid-demo-token"]), demoToken);
+  }
+
+  function requireDemoRouteAccess(
+    reply: FastifyReply,
+    headers: Record<string, string | string[] | undefined>,
+  ): { error: string; message?: string } | undefined {
+    if (!demoRouteEnabled) {
+      reply.code(404);
+      return {
+        error: "not_found",
+        message: "Demo raid route is not enabled.",
+      };
+    }
+
+    if (!demoRouteIsAuthorized(headers)) {
+      reply.code(401);
+      return {
+        error: "unauthorized",
+        message: "Demo raid route requires a valid x-bossraid-demo-token header.",
+      };
     }
 
     return undefined;
@@ -362,6 +407,40 @@ export function buildApiServer(
       scores: provider.scores,
       lastSeenAt: provider.lastSeenAt,
     };
+  }
+
+  async function ensureErc8004ProofState(options: {
+    includeMercenary?: boolean;
+    providers?: ProviderProfile[];
+  } = {}): Promise<void> {
+    if (!erc8004Verifier.enabled) {
+      return;
+    }
+
+    const providers = options.providers ?? orchestrator.listProviders();
+    await erc8004Verifier.verifyProviders(providers);
+    if (options.includeMercenary !== false) {
+      mercenaryIdentity = await erc8004Verifier.verifyIdentity(mercenaryIdentity);
+    }
+  }
+
+  async function ensureSettlementProofState(raidId: string): Promise<void> {
+    const raid = orchestrator.getRaid(raidId);
+    if (!raid?.settlementExecution) {
+      return;
+    }
+
+    const refreshed = await settlementProofRefresher.refresh(raid.settlementExecution);
+    if (!refreshed || !settlementExecutionChanged(raid.settlementExecution, refreshed)) {
+      return;
+    }
+
+    await orchestrator.updateSettlementExecution(raidId, refreshed);
+    try {
+      await persistSettlementExecutionArtifact(refreshed);
+    } catch (error) {
+      console.error("Mercenary settlement artifact sync error", error);
+    }
   }
 
   function serializeProviderHealth(
@@ -603,6 +682,9 @@ export function buildApiServer(
     request: FastifyRequest,
     reply: FastifyReply,
     parseInput: (value: unknown) => BossRaidSpawnInput,
+    options: {
+      requirePayment?: boolean;
+    } = {},
   ) {
     const rateLimitError = requireRateLimit(
       request,
@@ -616,7 +698,8 @@ export function buildApiServer(
     }
 
     const input = parseInput(request.body);
-    const payment = await requireReservedLaunchPayment("raid", request, input);
+    await ensureErc8004ProofState({ includeMercenary: false });
+    const payment = options.requirePayment === false ? {} : await requireReservedLaunchPayment("raid", request, input);
     const response =
       payment.reservationId && payment.requestKey
         ? await orchestrator.spawnReservedRaid(payment.reservationId, payment.requestKey)
@@ -645,6 +728,7 @@ export function buildApiServer(
         return authorizationError;
       }
 
+      await ensureSettlementProofState(raidId);
       return orchestrator.getResult(raidId);
     });
 
@@ -666,6 +750,8 @@ export function buildApiServer(
       }
 
       reply.header("cache-control", "private, no-store");
+      await ensureSettlementProofState(raidId);
+      await ensureErc8004ProofState({ includeMercenary: false });
       return buildAgentLog(raid, {
         getRaid: (currentRaidId) => orchestrator.getRaid(currentRaidId),
         getProvider: (providerId) => orchestrator.getProviderProfile(providerId),
@@ -690,6 +776,7 @@ export function buildApiServer(
         };
       }
 
+      await ensureSettlementProofState(raidId);
       const result = orchestrator.getResult(raidId);
       const payload = buildAttestedRaidResultPayload(env, result, workerIsolation);
       const message = buildAttestedRaidResultMessage(payload);
@@ -729,8 +816,9 @@ export function buildApiServer(
     };
   });
 
-  app.get("/v1/agent.json", async () =>
-    buildAgentManifest(orchestrator, {
+  app.get("/v1/agent.json", async () => {
+    await ensureErc8004ProofState();
+    return buildAgentManifest(orchestrator, {
       runtimeExecutionRequested: readBooleanEnv(env.BOSSRAID_EVAL_RUNTIME_EXECUTION),
       runtimeExecutionEnabled: runtimeExecutionEnabled(env),
       evaluatorTransport: runtimeExecutionTransport(env),
@@ -738,8 +826,8 @@ export function buildApiServer(
       maxEvaluatorJobs: evaluatorMaxConcurrentJobs,
       teeWalletAddress: teeSigner.account?.address ?? null,
       mercenaryIdentity,
-    }),
-  );
+    });
+  });
 
   app.get("/v1/attested-runtime", async (_request, reply) => {
     if (!teeSigner.account) {
@@ -944,6 +1032,7 @@ export function buildApiServer(
     const chatRequest = parseChatCompletionRequest(request.body);
     const raidRequest =
       chatRequest.raidRequest ?? parseBossRaidRequest(buildBossRaidRequestFromChatCompletion(chatRequest));
+    await ensureErc8004ProofState({ includeMercenary: false });
     const payment = await requireReservedLaunchPayment("chat", request, raidRequest);
     const spawn =
       payment.reservationId && payment.requestKey
@@ -1000,6 +1089,16 @@ export function buildApiServer(
   });
   app.post("/v1/raid", async (request, reply) => {
     return spawnParsedRaid(request, reply, parseBossRaidRequest);
+  });
+  app.post("/v1/demo/raid", async (request, reply) => {
+    const demoAccessError = requireDemoRouteAccess(reply, request.headers);
+    if (demoAccessError) {
+      return demoAccessError;
+    }
+
+    return spawnParsedRaid(request, reply, parseBossRaidRequest, {
+      requirePayment: false,
+    });
   });
   app.post("/v1/raids", async (request, reply) => {
     return spawnParsedRaid(request, reply, parseBossRaidSpawnInput);
@@ -1090,9 +1189,11 @@ export function buildApiServer(
     }
     return orchestrator.recordProviderFailure(failure.raidId, params.providerId, failure);
   });
-  app.get("/v1/providers", async () =>
-    orchestrator.listProviders().map((provider) => serializeProviderProfile(provider)),
-  );
+  app.get("/v1/providers", async () => {
+    const providers = orchestrator.listProviders();
+    await ensureErc8004ProofState({ includeMercenary: false, providers });
+    return providers.map((provider) => serializeProviderProfile(provider));
+  });
   app.get("/v1/providers/health", async () =>
     (await Promise.all(orchestrator.listProviders().map((provider) => probeProviderHealth(provider)))).map((health) =>
       serializeProviderHealth(health),
@@ -1110,6 +1211,7 @@ export function buildApiServer(
       reply.code(404);
       return { error: "not_found" };
     }
+    await ensureErc8004ProofState({ includeMercenary: false, providers: [provider] });
     return serializeProviderProfile(provider, { includeEndpoint: true });
   });
 
@@ -1122,10 +1224,9 @@ export function buildApiServer(
       reply.code(401);
       return { error: "unauthorized" };
     }
-    return serializeProviderProfile(
-      orchestrator.upsertRegisteredProvider(parseProviderRegistrationInput(request.body)),
-      { includeEndpoint: true },
-    );
+    const provider = orchestrator.upsertRegisteredProvider(parseProviderRegistrationInput(request.body));
+    await ensureErc8004ProofState({ includeMercenary: false, providers: [provider] });
+    return serializeProviderProfile(provider, { includeEndpoint: true });
   });
   app.post("/agents/heartbeat", async (request, reply) => {
     if (!registryToken) {
@@ -1141,13 +1242,15 @@ export function buildApiServer(
       reply.code(404);
       return { error: "not_found" };
     }
+    await ensureErc8004ProofState({ includeMercenary: false, providers: [provider] });
     return serializeProviderProfile(provider, { includeEndpoint: true });
   });
-  app.get("/agents/discover", async (request) =>
-    (await orchestrator.discoverProviders(parseProviderDiscoveryQuery(request.query))).map((provider) =>
+  app.get("/agents/discover", async (request) => {
+    await ensureErc8004ProofState({ includeMercenary: false });
+    return (await orchestrator.discoverProviders(parseProviderDiscoveryQuery(request.query))).map((provider) =>
       serializeProviderProfile(provider),
-    ),
-  );
+    );
+  });
 
   return app;
 }

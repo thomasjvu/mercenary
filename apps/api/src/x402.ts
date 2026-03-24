@@ -172,6 +172,25 @@ function decodeHeaderValue<T>(value: string | undefined, label: string): T {
   }
 }
 
+function buildResourceUrl(resourceBaseUrl: string, resourcePath: string): string {
+  const baseUrl = new URL(resourceBaseUrl);
+  baseUrl.pathname = baseUrl.pathname.endsWith("/") ? baseUrl.pathname : `${baseUrl.pathname}/`;
+  baseUrl.search = "";
+  baseUrl.hash = "";
+  return new URL(resourcePath.replace(/^\/+/, ""), baseUrl).toString();
+}
+
+function formatPaymentRequirementNetwork(network: string): string {
+  const v1Aliases: Record<string, string> = {
+    "eip155:1": "ethereum",
+    "eip155:8453": "base",
+    "eip155:84532": "base-sepolia",
+    "eip155:11155111": "sepolia",
+  };
+
+  return v1Aliases[network] ?? network;
+}
+
 function buildPaymentRequired(
   config: X402Config,
   route: X402RouteName,
@@ -190,12 +209,12 @@ function buildPaymentRequired(
     accepts: [
       {
         scheme: "exact",
-        network: config.network,
+        network: formatPaymentRequirementNetwork(config.network),
         maxAmountRequired:
           route === "raid" && config.maxAmountRequired && budgetUsd <= 0
             ? config.maxAmountRequired
             : usdToAtomicUsdc(priceUsd),
-        resource: new URL(resourcePath, config.resourceBaseUrl).toString(),
+        resource: buildResourceUrl(config.resourceBaseUrl, resourcePath),
         description:
           route === "chat"
             ? "Boss Raid chat completion request"

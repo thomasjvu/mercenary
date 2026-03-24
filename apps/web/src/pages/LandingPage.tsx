@@ -78,6 +78,10 @@ const WORKFLOW_ROWS = [
     label: "STEP 04",
     value: "Keep one verified result with receipt and settlement proof.",
   },
+  {
+    label: "STEP 05",
+    value: "Successful raiders split payout equally.",
+  },
 ] as const;
 
 type AppRoute = "/" | "/demo" | "/raiders" | "/receipt";
@@ -138,7 +142,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             </span>
             <span className="hero__headline-line">One verified result out.</span>
           </h1>
-          <p className="lede">Use `/demo` for the live judge flow, `/raiders` for the provider snapshot, and `/receipt` for proof.</p>
+          <p className="lede">Make live raids from Claude Code, Codex, MCP, or native HTTP.</p>
           <div className="hero__actions">
             <a
               className="button button--primary"
@@ -152,7 +156,6 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               open live demo
             </a>
             <a className="button" href={BOSSRAID_DOCS_URL} rel="noreferrer" target="_blank">
-              <Icon className="icon icon--pixel" icon="pixel:sparkles-solid" />
               read docs
             </a>
           </div>

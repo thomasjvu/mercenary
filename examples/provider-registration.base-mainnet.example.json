@@ -15,7 +15,7 @@
     "signedOutputs": true
   },
   "erc8004": {
-    "agentId": "YOUR_PROVIDER_ERC8004_AGENT_ID",
+    "agentId": "22",
     "operatorWallet": "0xYOUR_PROVIDER_OPERATOR_OR_AGENT_WALLET",
     "registrationTx": "0xYOUR_PROVIDER_ERC8004_REGISTRATION_TX",
     "identityRegistry": "0xYOUR_ERC8004_IDENTITY_REGISTRY",

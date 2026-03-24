@@ -1,7 +1,20 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { DocsButton } from "@bossraid/ui";
 import useSWR from "swr";
-import { API_BASE, fetchJson, fetchRaidResult, fetchRaidStatus, type Provider, type RaidResult, type RaidStatus } from "../api";
+import {
+  API_BASE,
+  fetchAttestedRaidResult,
+  fetchAttestedRuntime,
+  fetchJson,
+  fetchRaidResult,
+  fetchRaidStatus,
+  type AttestedEnvelope,
+  type AttestedRaidResultPayload,
+  type AttestedRuntimePayload,
+  type Provider,
+  type RaidResult,
+  type RaidStatus,
+} from "../api";
 
 type AppRoute = "/" | "/demo" | "/raiders" | "/receipt";
 
@@ -15,9 +28,14 @@ type ReceiptQuery = {
 };
 
 type RoutingDecision = NonNullable<RaidResult["routingProof"]>["providers"][number];
+type SettlementExecution = NonNullable<RaidResult["settlementExecution"]>;
+type SettlementChildJob = SettlementExecution["childJobs"][number];
 type SubmissionArtifact = NonNullable<NonNullable<RaidResult["synthesizedOutput"]>["artifacts"]>[number];
+type Erc8004VerificationStatus = NonNullable<NonNullable<Provider["erc8004"]>["verification"]>["status"];
 
 const TERMINAL_STATUSES = new Set(["final", "cancelled", "expired"]);
+const PINNED_PROOF_RECEIPT_URL =
+  (import.meta.env.VITE_BOSSRAID_PROOF_RECEIPT_URL as string | undefined)?.trim() ?? "";
 
 export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
   const initialQuery = useMemo(readReceiptQuery, []);
@@ -49,6 +67,21 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
   const providers = useSWR<Provider[]>(activeQuery ? "/v1/providers" : null, (path: string) => fetchJson(path), {
     revalidateOnFocus: false,
   });
+  const attestedRuntime = useSWR<AttestedEnvelope<AttestedRuntimePayload>>(
+    "receipt-attested-runtime",
+    () => fetchAttestedRuntime(),
+    {
+      revalidateOnFocus: false,
+    },
+  );
+  const attestedResult = useSWR<AttestedEnvelope<AttestedRaidResultPayload>>(
+    activeQuery ? (["receipt-attested-result", activeQuery.raidId, activeQuery.token] as const) : null,
+    ([, raidId, token]: readonly [string, string, string]) => fetchAttestedRaidResult(raidId, token),
+    {
+      refreshInterval: () => (activeQuery && !statusIsTerminal ? 2_000 : 0),
+      revalidateOnFocus: true,
+    },
+  );
 
   useEffect(() => {
     if (!shareCopied) {
@@ -120,37 +153,61 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
     ...(settlementExecution?.childJobs.map((job) => job.providerId) ?? []),
   ]);
   const erc8004ProviderCount = countProvidersWithSignal(routingDecisionMap, (decision) => decision.erc8004Registered);
+  const verifiedErc8004ProviderCount = countProvidersWithSignal(
+    routingDecisionMap,
+    (decision) => decision.erc8004VerificationStatus === "verified",
+  );
+  const partialErc8004ProviderCount = countProvidersWithSignal(
+    routingDecisionMap,
+    (decision) => decision.erc8004VerificationStatus === "partial",
+  );
   const trustScoredProviderCount = countProvidersWithSignal(routingDecisionMap, (decision) => decision.trustScore > 0);
   const veniceProviderCount = countProvidersWithSignal(routingDecisionMap, (decision) => decision.veniceBacked);
   const veniceProviderNames = routedProviderIds
     .filter((providerId) => routingDecisionMap.get(providerId)?.some((decision) => decision.veniceBacked))
     .map((providerId) => providerMap.get(providerId)?.displayName ?? providerId);
+  const runtimeAttestationStatus = attestedRuntime.data ? "live" : attestedRuntime.error ? "unavailable" : "loading";
+  const resultAttestationStatus = attestedResult.data ? "live" : attestedResult.error ? "unavailable" : activeQuery ? "loading" : "pending";
+  const attestationTarget = attestedResult.data?.payload.deploymentTarget ?? attestedRuntime.data?.payload.deploymentTarget ?? "pending";
+  const attestationTee = attestedResult.data?.payload.teePlatform ?? attestedRuntime.data?.payload.teePlatform ?? "pending";
+  const attestationCardTitle = attestedResult.data
+    ? "runtime + result proof loaded"
+    : attestedRuntime.data
+      ? "runtime proof loaded"
+      : attestedRuntime.error
+        ? "attestation unavailable"
+        : "attestation pending";
+  const attestationCardCopy =
+    attestedRuntime.data || attestedResult.data
+      ? `${attestationTarget} / ${attestationTee}`
+      : "Load a receipt to fetch the public runtime proof and the token-gated attested result.";
 
   return (
     <section className="receipt-shell" id="receipt">
       <div className="receipt-shell__header">
         <div className="receipt-shell__copy">
-          <p className="eyebrow">public receipt</p>
+          <p className="eyebrow">shareable receipt</p>
           <h1>
             <span className="directory-hero__headline-line">Open one raid receipt.</span>
             <span className="directory-hero__headline-line">Keep the proof surface shareable.</span>
           </h1>
           <p className="lede receipt-shell__lede">
-            Use the `raidId` and `raidAccessToken` returned by `POST /v1/raid` or `bossraid_delegate`. The token is a
-            capability link for this one raid only.
+            This route reads the same persisted proof that <code>/demo</code> shows inline, but packages it as one
+            capability URL you can hand to someone else. Use the `raidId` and `raidAccessToken` returned by
+            `POST /v1/raid` or `bossraid_delegate`.
           </p>
         </div>
 
         <div className="directory-shell__actions">
           <a
             className="button"
-            href="/"
+            href="/demo"
             onClick={(event) => {
               event.preventDefault();
-              onNavigate("/");
+              onNavigate("/demo");
             }}
           >
-            landing
+            demo
           </a>
           <a
             className="button"
@@ -200,9 +257,9 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
       </form>
 
       <div className="receipt-proof-note">
-        <strong>How it works:</strong> this page reads the existing public raid status and result routes with the
-        per-raid access token sent as `x-bossraid-raid-token`. Current reads come from Boss Raid's normal persisted
-        state and settlement artifacts.
+        <strong>How it works:</strong> this route does not rerun the raid. It reads the existing status and result with
+        the per-raid access token sent as `x-bossraid-raid-token`, then renders the same persisted proof and settlement
+        artifacts that the app can already show inline.
       </div>
 
       {!activeQuery ? (
@@ -211,6 +268,38 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
           <h2>Load a receipt with the per-raid access token.</h2>
           <p>Start a raid, keep the returned `raidId` and `raidAccessToken`, then open:</p>
           <pre className="code-panel receipt-empty__code">/receipt?raidId=&lt;raidId&gt;&amp;token=&lt;raidAccessToken&gt;</pre>
+          <div className="demo-sidebar__actions">
+            {PINNED_PROOF_RECEIPT_URL ? (
+              <a className="button button--primary" href={PINNED_PROOF_RECEIPT_URL}>
+                open pinned live receipt
+              </a>
+            ) : null}
+            <a
+              className="button"
+              href="/demo"
+              onClick={(event) => {
+                event.preventDefault();
+                onNavigate("/demo");
+              }}
+            >
+              open live demo
+            </a>
+            <a className="button" href={buildAttestedRuntimeUrl()} rel="noreferrer" target="_blank">
+              open attested runtime
+            </a>
+          </div>
+          <p>
+            {PINNED_PROOF_RECEIPT_URL
+              ? "Use the pinned live receipt for a no-wallet proof path, or open /demo to launch a new hosted raid and share its proof."
+              : "Set VITE_BOSSRAID_PROOF_RECEIPT_URL to pin one recent live receipt for judges, then use /demo to launch a new hosted raid and share its proof."}
+          </p>
+          <p>
+            {attestedRuntime.data
+              ? `Runtime proof live on ${attestedRuntime.data.payload.deploymentTarget ?? "unknown"} / ${attestedRuntime.data.payload.teePlatform ?? "unknown"}.`
+              : attestedRuntime.error
+                ? readQueryErrorMessage(attestedRuntime.error)
+                : "Loading runtime attestation."}
+          </p>
         </article>
       ) : null}
 
@@ -228,30 +317,29 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
             <SummaryPill label="raid" value={shortValue(activeQuery.raidId)} />
             <SummaryPill label="status" value={status.data?.status ?? "loading"} />
             <SummaryPill label="approved" value={String(approvedProviders.length)} />
-            <SummaryPill
-              label="8183"
-              value={settlementExecution?.proofStandard === "erc8183_aligned" ? "active" : "pending"}
-            />
-            <SummaryPill label="8004" value={`${erc8004ProviderCount}/${routedProviderIds.length || 0}`} />
+            <SummaryPill label="8183" value={buildSettlementLifecycleLabel(settlementExecution?.lifecycleStatus)} />
+            <SummaryPill label="8004 verified" value={String(verifiedErc8004ProviderCount)} />
             <SummaryPill label="venice" value={String(veniceProviderCount)} />
           </div>
 
           <div className="proof-grid proof-grid--compact">
             <ProofCard
               label="erc-8183 settlement"
-              title={settlementExecution?.proofStandard === "erc8183_aligned" ? "child-job settlement live" : "settlement proof pending"}
-              copy={
-                settlementExecution?.childJobs.length
-                  ? `${settlementExecution.childJobs.length} child jobs linked to the parent raid receipt.`
-                  : "No child-job linkage has been recorded on this receipt yet."
-              }
+              title={buildSettlementProofTitle(settlementExecution)}
+              copy={buildSettlementProofCopy(settlementExecution)}
             />
             <ProofCard
               label="erc-8004 routing"
-              title={`${erc8004ProviderCount}/${routedProviderIds.length || 0} routed providers registered`}
+              title={
+                erc8004ProviderCount > 0
+                  ? `${verifiedErc8004ProviderCount}/${erc8004ProviderCount} registered providers verified`
+                  : `${erc8004ProviderCount}/${routedProviderIds.length || 0} routed providers registered`
+              }
               copy={
                 routingProof?.policy.requireErc8004
-                  ? "ERC-8004 registration was required in this routing policy."
+                  ? partialErc8004ProviderCount > 0
+                    ? `${partialErc8004ProviderCount} routed providers only partially verified against chain data.`
+                    : "ERC-8004 registration was required in this routing policy."
                   : trustScoredProviderCount
                     ? `${trustScoredProviderCount} routed providers carry trust scores.`
                     : "No routed provider trust score has been exposed yet."
@@ -280,9 +368,9 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
               copy="Judges should be able to open Mercenary's manifest and this raid's execution log without internal ops access."
             />
             <ProofCard
-              label="attested result"
-              title="header-gated attestation route"
-              copy="Use the raid token with the attested-result route to prove the final output under the public receipt."
+              label="eigencompute attestation"
+              title={attestationCardTitle}
+              copy={attestationCardCopy}
             />
           </div>
 
@@ -353,6 +441,12 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                 </div>
                 <div className="proof-link-list">
                   <ProofLinkRow href={buildAgentManifestUrl()} label="manifest" note="public Mercenary manifest" value="GET /v1/agent.json" />
+                  <ProofLinkRow
+                    href={buildAttestedRuntimeUrl()}
+                    label="attested runtime"
+                    note="public signed runtime proof for the active deployment"
+                    value="GET /v1/attested-runtime"
+                  />
                   {activeQuery ? (
                     <ProofLinkRow
                       href={buildAgentLogUrl(activeQuery)}
@@ -364,10 +458,93 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                   {activeQuery ? (
                     <ProofLinkRow
                       label="attested result"
-                      note="send x-bossraid-raid-token to this route"
+                      note={
+                        attestedResult.data
+                          ? `loaded below · hash ${shortValue(attestedResult.data.messageHash)}`
+                          : "fetched below with x-bossraid-raid-token"
+                      }
                       value={`GET /v1/raid/${activeQuery.raidId}/attested-result`}
                     />
                   ) : null}
+                </div>
+              </article>
+
+              <article className="receipt-panel">
+                <div className="receipt-panel__head">
+                  <div>
+                    <p className="eyebrow">attestation</p>
+                    <h2>EigenCompute proof</h2>
+                  </div>
+                </div>
+                <div className="receipt-card-grid receipt-card-grid--compact">
+                  <ReceiptMetricCard label="runtime proof" value={runtimeAttestationStatus} />
+                  <ReceiptMetricCard label="result proof" value={resultAttestationStatus} />
+                  <ReceiptMetricCard label="target" value={attestationTarget} />
+                  <ReceiptMetricCard label="tee" value={attestationTee} />
+                  <ReceiptMetricCard label="runtime signer" value={shortValue(attestedRuntime.data?.signer ?? "pending")} />
+                  <ReceiptMetricCard label="result hash" value={shortValue(attestedResult.data?.payload.resultHash ?? "pending")} />
+                </div>
+
+                <div className="receipt-list">
+                  <div className="receipt-list__section">
+                    <strong>runtime proof</strong>
+                    {attestedRuntime.data ? (
+                      <>
+                        <div className="receipt-list__row">
+                          <span>signer</span>
+                          <span>{attestedRuntime.data.signer}</span>
+                        </div>
+                        <div className="receipt-list__row receipt-list__row--hash">
+                          <span>message hash</span>
+                          <span>{attestedRuntime.data.messageHash}</span>
+                        </div>
+                        <div className="receipt-list__row receipt-list__row--hash">
+                          <span>signature</span>
+                          <span>{attestedRuntime.data.signature}</span>
+                        </div>
+                        <div className="receipt-list__row">
+                          <span>timestamp</span>
+                          <span>{formatTimestamp(attestedRuntime.data.payload.timestamp)}</span>
+                        </div>
+                      </>
+                    ) : attestedRuntime.error ? (
+                      <p className="receipt-panel__muted">{readQueryErrorMessage(attestedRuntime.error)}</p>
+                    ) : (
+                      <p className="receipt-panel__muted">Loading runtime attestation.</p>
+                    )}
+                  </div>
+
+                  <div className="receipt-list__section">
+                    <strong>result proof</strong>
+                    {attestedResult.data ? (
+                      <>
+                        <div className="receipt-list__row">
+                          <span>signer</span>
+                          <span>{attestedResult.data.signer}</span>
+                        </div>
+                        <div className="receipt-list__row">
+                          <span>status</span>
+                          <span>{attestedResult.data.payload.status}</span>
+                        </div>
+                        <div className="receipt-list__row">
+                          <span>approved</span>
+                          <span>{String(attestedResult.data.payload.approvedSubmissionCount)}</span>
+                        </div>
+                        <div className="receipt-list__row receipt-list__row--hash">
+                          <span>result hash</span>
+                          <span>{attestedResult.data.payload.resultHash}</span>
+                        </div>
+                        <div className="receipt-list__row receipt-list__row--hash">
+                          <span>message hash</span>
+                          <span>{attestedResult.data.messageHash}</span>
+                        </div>
+                      </>
+                    ) : attestedResult.error ? (
+                      <p className="receipt-panel__muted">{readQueryErrorMessage(attestedResult.error)}</p>
+                    ) : (
+                      <p className="receipt-panel__muted">Loading attested raid result.</p>
+                    )}
+                  </div>
                 </div>
               </article>
 
@@ -394,7 +571,8 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                     value={routingProof?.policy.minTrustScore == null ? "none" : String(routingProof.policy.minTrustScore)}
                   />
                   <ReceiptMetricCard label="venice routed" value={String(veniceProviderCount)} />
-                  <ReceiptMetricCard label="8004 routed" value={String(erc8004ProviderCount)} />
+                  <ReceiptMetricCard label="8004 registered" value={String(erc8004ProviderCount)} />
+                  <ReceiptMetricCard label="8004 verified" value={String(verifiedErc8004ProviderCount)} />
                   <ReceiptMetricCard label="trust scored" value={String(trustScoredProviderCount)} />
                   <ReceiptMetricCard label="risk tier" value={status.data?.sanitization.riskTier ?? "pending"} />
                   <ReceiptMetricCard label="redacted secrets" value={String(status.data?.sanitization.redactedSecrets ?? 0)} />
@@ -532,6 +710,11 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                 </div>
                 <div className="receipt-card-grid receipt-card-grid--compact">
                   <ReceiptMetricCard label="proof" value={settlementExecution?.proofStandard ?? "pending"} />
+                  <ReceiptMetricCard label="mode" value={settlementExecution?.mode ?? "pending"} />
+                  <ReceiptMetricCard
+                    label="lifecycle"
+                    value={buildSettlementLifecycleLabel(settlementExecution?.lifecycleStatus)}
+                  />
                   <ReceiptMetricCard label="registry" value={settlementExecution?.registryRaidRef ?? "pending"} />
                   <ReceiptMetricCard label="task hash" value={shortValue(settlementExecution?.taskHash ?? "pending")} />
                   <ReceiptMetricCard
@@ -546,7 +729,14 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                     label="escrow contract"
                     value={shortValue(settlementExecution?.contracts.escrowAddress ?? "pending")}
                   />
+                  <ReceiptMetricCard
+                    label="finalize tx"
+                    value={shortValue(settlementExecution?.finalizeTxHash ?? "pending")}
+                  />
                   <ReceiptMetricCard label="split" value={formatUsd(result.data?.settlement?.payoutPerSuccessfulProvider)} />
+                </div>
+                <div className="receipt-proof-note">
+                  <strong>Payout rule:</strong> Successful raiders split payout equally.
                 </div>
 
                 <div className="receipt-list">
@@ -581,15 +771,26 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                   </div>
 
                   <div className="receipt-list__section">
+                    <strong>warnings</strong>
+                    {settlementExecution?.warnings?.length ? (
+                      settlementExecution.warnings.map((warning) => (
+                        <div className="receipt-list__row" key={warning}>
+                          <span>warn</span>
+                          <span>{warning}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="receipt-panel__muted">No settlement warnings recorded.</p>
+                    )}
+                  </div>
+
+                  <div className="receipt-list__section">
                     <strong>child jobs</strong>
                     {settlementExecution?.childJobs.length ? (
                       settlementExecution.childJobs.map((job) => (
                         <div className="receipt-list__row" key={job.jobRef}>
                           <span>{job.providerId}</span>
-                          <span>
-                            {job.role} · {job.status} · {job.jobId ?? job.syntheticJobId ?? "pending"}
-                            {job.createTxHash ? ` · ${shortValue(job.createTxHash)}` : ""}
-                          </span>
+                          <span>{buildChildJobReceiptSummary(job)}</span>
                         </div>
                       ))
                     ) : (
@@ -852,6 +1053,102 @@ function matchRoutingDecision(
   return decisions.find((decision) => decision.phase === "primary") ?? decisions[0];
 }
 
+function buildSettlementLifecycleLabel(lifecycleStatus: SettlementExecution["lifecycleStatus"] | undefined): string {
+  switch (lifecycleStatus) {
+    case "terminal":
+      return "terminal";
+    case "partial":
+      return "partial";
+    case "synthetic":
+      return "synthetic";
+    default:
+      return "pending";
+  }
+}
+
+function buildSettlementProofTitle(settlementExecution: SettlementExecution | undefined): string {
+  if (!settlementExecution) {
+    return "settlement proof pending";
+  }
+
+  switch (settlementExecution.lifecycleStatus) {
+    case "terminal":
+      return "terminal child-job settlement";
+    case "partial":
+      return "partial child-job settlement";
+    case "synthetic":
+      return "synthetic settlement record";
+    default:
+      return "child-job settlement live";
+  }
+}
+
+function buildSettlementProofCopy(settlementExecution: SettlementExecution | undefined): string {
+  if (!settlementExecution) {
+    return "No child-job linkage has been recorded on this receipt yet.";
+  }
+
+  const notes = [`${settlementExecution.childJobs.length} child jobs linked to the parent raid receipt.`];
+  if (settlementExecution.lifecycleStatus === "terminal") {
+    notes.push("Recorded jobs reached terminal chain states.");
+  } else if (settlementExecution.lifecycleStatus === "partial") {
+    notes.push("More onchain job actions are still pending.");
+  } else if (settlementExecution.lifecycleStatus === "synthetic") {
+    notes.push("This receipt is still backed by the file settlement path.");
+  }
+  if (settlementExecution.warnings?.length) {
+    notes.push(`${settlementExecution.warnings.length} operator warnings remain open.`);
+  }
+
+  return notes.join(" ");
+}
+
+function buildErc8004ProofLabel(
+  verificationStatus: Erc8004VerificationStatus | undefined,
+  registered: boolean,
+): string {
+  switch (verificationStatus) {
+    case "verified":
+      return "8004 verified";
+    case "partial":
+      return "8004 partial";
+    case "failed":
+      return "8004 failed";
+    case "error":
+      return "8004 error";
+    default:
+      return registered ? "8004 registered" : "8004 pending";
+  }
+}
+
+function findLatestChildJobTxHash(job: SettlementChildJob): string | undefined {
+  return (
+    job.completeTxHash ??
+    job.rejectTxHash ??
+    job.submitTxHash ??
+    job.fundTxHash ??
+    job.budgetTxHash ??
+    job.linkTxHash ??
+    job.createTxHash
+  );
+}
+
+function buildChildJobReceiptSummary(job: SettlementChildJob): string {
+  const txHash = findLatestChildJobTxHash(job);
+
+  return [
+    job.role,
+    job.status,
+    job.lifecycleStatus,
+    `action ${job.requestedAction}`,
+    job.jobId ?? job.syntheticJobId ?? "pending",
+    job.nextAction ? `next ${job.nextAction}` : null,
+    txHash ? shortValue(txHash) : null,
+  ]
+    .filter((value): value is string => value != null)
+    .join(" · ");
+}
+
 function buildProviderProofNote(decision: RoutingDecision | undefined, provider: Provider | undefined): string {
   const privacyFeatures = new Set<string>(decision?.privacyFeatures ?? []);
   if (provider?.privacy?.noDataRetention) {
@@ -867,9 +1164,15 @@ function buildProviderProofNote(decision: RoutingDecision | undefined, provider:
   const trustScore =
     decision?.trustScore ??
     (typeof provider?.trust?.score === "number" ? provider.trust.score : undefined);
+  const verificationStatus = decision?.erc8004VerificationStatus ?? provider?.erc8004?.verification?.status;
+  const registered = decision?.erc8004Registered ?? (provider ? hasErc8004Registration(provider) : false);
   const registrationTx = decision?.registrationTx ?? provider?.erc8004?.registrationTx;
+  const registrationTxFound = decision?.registrationTxFound ?? provider?.erc8004?.verification?.registrationTxFound;
+  const operatorMatchesOwner = decision?.operatorMatchesOwner ?? provider?.erc8004?.verification?.operatorMatchesOwner;
   const parts = [
-    decision?.erc8004Registered ?? (provider ? hasErc8004Registration(provider) : false) ? "8004 registered" : "8004 pending",
+    buildErc8004ProofLabel(verificationStatus, registered),
+    registrationTxFound === false ? "reg tx missing" : null,
+    operatorMatchesOwner === false ? "owner mismatch" : null,
     registrationTx ? `reg ${shortValue(registrationTx)}` : null,
     typeof trustScore === "number" && trustScore > 0 ? `trust ${trustScore}` : null,
     decision?.veniceBacked ?? (provider ? isVeniceProvider(provider) : false) ? "venice" : null,
@@ -924,6 +1227,10 @@ function buildAgentManifestUrl(): string {
   return `${API_BASE}/v1/agent.json`;
 }
 
+function buildAttestedRuntimeUrl(): string {
+  return `${API_BASE}/v1/attested-runtime`;
+}
+
 function buildAgentLogUrl(query: ReceiptQuery): string {
   return `${API_BASE}/v1/raids/${encodeURIComponent(query.raidId)}/agent_log.json?token=${encodeURIComponent(query.token)}`;
 }
@@ -954,4 +1261,8 @@ function readReceiptQuery(): ReceiptQuery | null {
   }
 
   return { raidId, token };
+}
+
+function readQueryErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Request failed.";
 }

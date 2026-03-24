@@ -241,6 +241,7 @@ function buildRoutingDecision(
     typeof task.constraints.minTrustScore === "number";
   const veniceBacked = providerIsVeniceBacked(provider);
   const requiredPrivacyFeatures = task.constraints.requirePrivacyFeatures ?? [];
+  const verification = provider.erc8004?.verification;
   const privacyFeatureMatch =
     requiredPrivacyFeatures.length === 0 ||
     requiredPrivacyFeatures.every((feature) => providerHasPrivacyFeature(provider, feature));
@@ -279,6 +280,12 @@ function buildRoutingDecision(
     trustReason: provider.trust?.reason,
     operatorWallet: provider.erc8004?.operatorWallet,
     registrationTx: provider.erc8004?.registrationTx,
+    erc8004VerificationStatus: verification?.status,
+    erc8004VerificationCheckedAt: verification?.checkedAt,
+    agentRegistry: verification?.agentRegistry ?? provider.erc8004?.identityRegistry,
+    agentUri: verification?.agentUri,
+    registrationTxFound: verification?.registrationTxFound,
+    operatorMatchesOwner: verification?.operatorMatchesOwner,
     privacyFeatures: readProviderPrivacyFeatures(provider),
     matchedSpecializations: collectMatchedSpecializations(provider, task),
     reasons,

@@ -710,6 +710,14 @@ test("per-raid agent log route accepts the raid access token as a query paramete
         agentId: "erc8004-agent-log",
         registrationTx: "0xagentlog",
         operatorWallet: "0xoperator",
+        verification: {
+          status: "verified",
+          checkedAt: "2026-03-23T00:00:00.000Z",
+          agentRegistry: "0xidentityregistry",
+          agentUri: "ipfs://erc8004-agent-log",
+          registrationTxFound: true,
+          operatorMatchesOwner: true,
+        },
       },
       trust: {
         score: 88,
@@ -792,6 +800,8 @@ test("per-raid agent log route accepts the raid access token as a query paramete
     assert.equal(body.routing.policy.venicePrivateLane, true);
     assert.equal(body.routing.providers[0].veniceBacked, true);
     assert.equal(body.routing.providers[0].erc8004Registered, true);
+    assert.equal(body.routing.providers[0].erc8004VerificationStatus, "verified");
+    assert.equal(body.routing.providers[0].agentRegistry, "0xidentityregistry");
     assert.equal(body.routing.providers[0].registrationTx, "0xagentlog");
     assert.equal(body.finalOutput.routingPolicy.requireErc8004, true);
   } finally {
@@ -865,6 +875,7 @@ test("raid result exposes ERC-8183-aligned settlement proof data", async () => {
   raid.settlementExecution = {
     mode: "file",
     proofStandard: "erc8183_aligned",
+    lifecycleStatus: "synthetic",
     executedAt: new Date().toISOString(),
     artifactPath: "temp/settlements/mock.json",
     registryRaidRef: "1",
@@ -898,13 +909,17 @@ test("raid result exposes ERC-8183-aligned settlement proof data", async () => {
         providerAddress: "0x0000000000000000000000000000000000000106",
         role: "analysis",
         status: "complete",
+        requestedAction: "complete",
+        lifecycleStatus: "synthetic",
         budgetUsd: 10,
         budgetAtomic: "10000000",
         submitResultHash: "0xsubmissionhash",
         completionPolicy: "submit and complete child job",
+        nextAction: "Switch to onchain settlement mode to create ERC-8183 child jobs.",
         syntheticJobId: "job_1",
       },
     ],
+    warnings: ["synthetic settlement record"],
     transactionHashes: ["0xsettlementtx"],
     jobIds: ["1"],
   };
@@ -922,12 +937,15 @@ test("raid result exposes ERC-8183-aligned settlement proof data", async () => {
     assert.equal(response.statusCode, 200);
     const body = response.json();
     assert.equal(body.settlementExecution.proofStandard, "erc8183_aligned");
+    assert.equal(body.settlementExecution.lifecycleStatus, "synthetic");
     assert.equal(body.settlementExecution.registryRaidRef, "1");
     assert.deepEqual(body.settlementExecution.registryCall.args, ["1", "0xevaluationhash"]);
     assert.equal(body.settlementExecution.contracts.registryAddress.length > 0, true);
     assert.equal(body.settlementExecution.contracts.escrowAddress.length > 0, true);
     assert.equal(body.settlementExecution.childJobs.length, 1);
     assert.equal(body.settlementExecution.childJobs[0].providerId, "provider-settlement-proof");
+    assert.equal(body.settlementExecution.childJobs[0].requestedAction, "complete");
+    assert.equal(body.settlementExecution.warnings[0], "synthetic settlement record");
     assert.equal(body.routingProof.providers[0].providerId, "provider-settlement-proof");
   } finally {
     await app.close();
@@ -2010,6 +2028,150 @@ test("x402 returns a payment challenge before paid routes execute", async () => 
 
     assert.equal(paid.statusCode, 200);
     assert.equal(typeof paid.headers["payment-response"], "string");
+  } finally {
+    await app.close();
+  }
+});
+
+test("demo raid route can stay free while native raid stays paid", async () => {
+  const providers = ["provider-demo-free-a", "provider-demo-free-b"].map((providerId) => ({
+    profile: createProviderProfile(providerId),
+    async accept(_task: ProviderTaskPackage): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: `run-${providerId}`,
+      };
+    },
+    async run(): Promise<void> {
+      return;
+    },
+  }));
+  const env = {
+    BOSSRAID_DEMO_ROUTE_ENABLED: "true",
+    BOSSRAID_X402_ENABLED: "true",
+    BOSSRAID_X402_VERIFY_HMAC_SECRET: "local-x402-secret",
+    BOSSRAID_X402_PAY_TO: "0xabc",
+  };
+
+  const demoApp = buildApiServer(
+    new BossRaidOrchestrator(providers, {}, undefined, undefined, async (profile) => readyHealth(profile.providerId)),
+    env,
+  );
+  const paidApp = buildApiServer(
+    new BossRaidOrchestrator(providers, {}, undefined, undefined, async (profile) => readyHealth(profile.providerId)),
+    env,
+  );
+
+  try {
+    const demoResponse = await demoApp.inject({
+      method: "POST",
+      url: "/v1/demo/raid",
+      payload: createRaidRequestBody(),
+    });
+
+    assert.equal(demoResponse.statusCode, 200);
+    assert.equal(demoResponse.headers["payment-required"], undefined);
+
+    const paidResponse = await paidApp.inject({
+      method: "POST",
+      url: "/v1/raid",
+      payload: createRaidRequestBody(),
+    });
+
+    assert.equal(paidResponse.statusCode, 402);
+  } finally {
+    await demoApp.close();
+    await paidApp.close();
+  }
+});
+
+test("demo raid route returns 404 when disabled", async () => {
+  const provider = {
+    profile: createProviderProfile("provider-demo-disabled"),
+    async accept(_task: ProviderTaskPackage): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: "run-demo-disabled",
+      };
+    },
+    async run(): Promise<void> {
+      return;
+    },
+  };
+
+  const app = buildApiServer(
+    new BossRaidOrchestrator([provider], {}, undefined, undefined, async (profile) => readyHealth(profile.providerId)),
+    {
+      BOSSRAID_X402_ENABLED: "true",
+      BOSSRAID_X402_VERIFY_HMAC_SECRET: "local-x402-secret",
+    },
+  );
+
+  try {
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/demo/raid",
+      payload: createRaidRequestBody(),
+    });
+
+    assert.equal(response.statusCode, 404);
+    assert.deepEqual(response.json(), {
+      error: "not_found",
+      message: "Demo raid route is not enabled.",
+    });
+  } finally {
+    await app.close();
+  }
+});
+
+test("demo raid route can require a dedicated demo token", async () => {
+  const provider = {
+    profile: createProviderProfile("provider-demo-token"),
+    async accept(_task: ProviderTaskPackage): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: "run-demo-token",
+      };
+    },
+    async run(): Promise<void> {
+      return;
+    },
+  };
+
+  const app = buildApiServer(
+    new BossRaidOrchestrator([provider], {}, undefined, undefined, async (profile) => readyHealth(profile.providerId)),
+    {
+      BOSSRAID_DEMO_ROUTE_ENABLED: "true",
+      BOSSRAID_DEMO_TOKEN: "demo-secret",
+      BOSSRAID_X402_ENABLED: "true",
+      BOSSRAID_X402_VERIFY_HMAC_SECRET: "local-x402-secret",
+    },
+  );
+
+  try {
+    const unauthorized = await app.inject({
+      method: "POST",
+      url: "/v1/demo/raid",
+      payload: createRaidRequestBody(),
+    });
+
+    assert.equal(unauthorized.statusCode, 401);
+    assert.deepEqual(unauthorized.json(), {
+      error: "unauthorized",
+      message: "Demo raid route requires a valid x-bossraid-demo-token header.",
+    });
+
+    const authorized = await app.inject({
+      method: "POST",
+      url: "/v1/demo/raid",
+      headers: {
+        "x-bossraid-demo-token": "demo-secret",
+      },
+      payload: createRaidRequestBody(),
+    });
+
+    assert.equal(authorized.statusCode, 200);
+    assert.equal(authorized.headers["payment-required"], undefined);
   } finally {
     await app.close();
   }

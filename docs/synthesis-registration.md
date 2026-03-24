@@ -6,6 +6,8 @@ This repo can surface registration proof. It does not create ERC-8004 registrati
 
 - Mercenary identity fields on `GET /v1/agent.json`
 - Provider `erc8004` identity metadata on registry and discovery records
+- Optional ERC-8004 verification against chain data when `BOSSRAID_ERC8004_VERIFY` is enabled
+- Routing proof snapshots that preserve ERC-8004 verification state, registry refs, and tx ownership checks when known
 - Separate provider `trust` metadata on registry and discovery records
 - Routing filters with `requireErc8004` and `minTrustScore`
 
@@ -15,8 +17,9 @@ For Protocol Labs and Virtuals, the honest story is:
 
 - Boss Raid can already consume real ERC-8004 references for Mercenary and providers.
 - Those fields already matter at runtime because routing can require ERC-8004 presence and minimum trust.
-- The public proof surfaces already expose the resulting manifest, routing proof, receipt, and run log.
+- The public proof surfaces already expose the resulting manifest, routing proof, receipt, and run log, and they now distinguish registered vs verified vs partial or failed ERC-8004 state.
 - The missing piece is registration origination, not proof display. Real ERC-8004 tx refs still need to come from ACP or another external registration flow.
+- When real chain data is available, Boss Raid can now verify owner, `tokenURI`, registry contract reachability, and registration tx presence before exposing those proofs.
 
 ## Mercenary Identity Env
 
@@ -30,6 +33,17 @@ Set these on the API runtime if you want Mercenary identity proof to appear in t
 - `BOSSRAID_ERC8004_VALIDATION_REGISTRY`
 - `BOSSRAID_ERC8004_VALIDATION_TXS`
 - `BOSSRAID_ERC8004_LAST_VERIFIED_AT`
+- `BOSSRAID_ERC8004_VERIFY`
+
+## Verification Rule
+
+If you want the repo to prove that the ERC-8004 data is real instead of merely present, all of these need to be true:
+
+- `BOSSRAID_ERC8004_VERIFY=true`
+- `BOSSRAID_RPC_URL` points at the target chain
+- `BOSSRAID_CHAIN_ID` matches that chain
+- `erc8004.agentId` is the numeric ERC-721 token id, not a demo label
+- the registry and transaction hash fields point at real deployed contracts and real txs
 
 ## Provider Registration Note
 
@@ -37,13 +51,15 @@ Provider registration is still the Boss Raid HTTP provider path.
 
 If you use ACP or another external registration flow, Boss Raid consumes the resulting identity and trust references, but Mercenary still routes live work to HTTP providers registered in Boss Raid.
 
+If that external flow already verified ERC-8004 onchain state, `POST /agents/register` can now accept an `erc8004.verification` object so Boss Raid does not have to rely only on raw registry addresses and tx hashes.
+
 ## Final-Lane Rule
 
 Do not claim a final ERC-8004 lane unless these are real:
 
-- Mercenary `agentId`
+- Mercenary numeric `agentId`
 - Mercenary `registrationTx`
-- provider `erc8004.agentId`
+- provider numeric `erc8004.agentId`
 - provider `erc8004.registrationTx`
 - the registry addresses judges can inspect later
 

@@ -185,6 +185,22 @@ export interface Erc8004Identity {
   validationRegistry?: string;
   validationTxs?: string[];
   lastVerifiedAt?: string;
+  verification?: Erc8004Verification;
+}
+
+export interface Erc8004Verification {
+  status: "not_checked" | "verified" | "partial" | "failed" | "error";
+  checkedAt: string;
+  chainId?: string;
+  agentRegistry?: string;
+  owner?: string;
+  agentUri?: string;
+  registrationTxFound?: boolean;
+  operatorMatchesOwner?: boolean;
+  identityRegistryReachable?: boolean;
+  reputationRegistryReachable?: boolean;
+  validationRegistryReachable?: boolean;
+  notes?: string[];
 }
 
 export interface ProviderTrust {
@@ -330,6 +346,12 @@ export interface BossRaidRoutingDecision {
   trustReason?: string;
   operatorWallet?: string;
   registrationTx?: string;
+  erc8004VerificationStatus?: Erc8004Verification["status"];
+  erc8004VerificationCheckedAt?: string;
+  agentRegistry?: string;
+  agentUri?: string;
+  registrationTxFound?: boolean;
+  operatorMatchesOwner?: boolean;
   privacyFeatures: PrivacyFeatureKey[];
   matchedSpecializations: string[];
   reasons: string[];
@@ -715,21 +737,28 @@ export interface SettlementChildJobProof {
   providerAddress?: string | null;
   role: string;
   status: string;
+  requestedAction: "complete" | "reject";
+  lifecycleStatus: "synthetic" | "open" | "funded" | "submitted" | "completed" | "rejected" | "expired";
   budgetUsd: number;
   budgetAtomic?: string;
   submitResultHash: string | null;
   completionPolicy: string;
+  nextAction?: string | null;
   syntheticJobId?: string;
   jobId?: string;
   createTxHash?: string;
   linkTxHash?: string;
   budgetTxHash?: string;
   fundTxHash?: string;
+  submitTxHash?: string;
+  completeTxHash?: string;
+  rejectTxHash?: string;
 }
 
 export interface SettlementExecutionRecord {
   mode: "file" | "onchain";
   proofStandard: "erc8183_aligned";
+  lifecycleStatus: "synthetic" | "partial" | "terminal";
   executedAt: string;
   artifactPath: string;
   registryRaidRef: string;
@@ -740,8 +769,10 @@ export interface SettlementExecutionRecord {
   contracts: SettlementContractsProof;
   registryCall: SettlementRegistryCallProof;
   childJobs: SettlementChildJobProof[];
+  finalizeTxHash?: string;
   transactionHashes?: string[];
   jobIds?: string[];
+  warnings?: string[];
 }
 
 export interface BossRaidSynthesizedOutputContribution {

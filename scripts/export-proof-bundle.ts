@@ -4,9 +4,14 @@ import { FileBossRaidPersistence, type BossRaidPersistence } from "@bossraid/per
 import { SqliteBossRaidPersistence } from "@bossraid/persistence-sqlite";
 import { BossRaidOrchestrator } from "@bossraid/orchestrator";
 import { runtimeExecutionEnabled, runtimeExecutionTransport } from "@bossraid/sandbox-runner";
-import type { RaidRecord } from "@bossraid/shared-types";
+import type { BossRaidPersistenceSnapshot, RaidRecord } from "@bossraid/shared-types";
 import { mnemonicToAccount } from "viem/accounts";
 import { buildAgentLog, buildAgentManifest } from "../apps/api/src/agent-artifacts.ts";
+import {
+  createSettlementProofRefresher,
+  persistSettlementExecutionArtifact,
+  settlementExecutionChanged,
+} from "../apps/api/src/settlement-proof.ts";
 
 type CliArgs = {
   raidId?: string;
@@ -25,6 +30,14 @@ async function main(): Promise<void> {
   orchestrator.restoreState(snapshot);
 
   const raid = selectRaid(orchestrator, args.raidId);
+  const settlementProofRefresher = createSettlementProofRefresher(process.env);
+  await refreshPersistedSettlementProof({
+    raid,
+    orchestrator,
+    snapshot,
+    persistence,
+    settlementProofRefresher,
+  });
   const outDir = resolve(args.outDir ?? `./temp/proof-bundles/${raid.id}`);
   const mercenaryIdentity = readMercenaryErc8004Identity(process.env);
   const teeWalletAddress = readTeeWalletAddress(process.env);
@@ -192,6 +205,33 @@ function selectRaid(orchestrator: BossRaidOrchestrator, raidId?: string): RaidRe
     throw new Error("No root raids exist in the loaded persistence snapshot.");
   }
   return latestRootRaid;
+}
+
+async function refreshPersistedSettlementProof(input: {
+  raid: RaidRecord;
+  orchestrator: BossRaidOrchestrator;
+  snapshot: BossRaidPersistenceSnapshot;
+  persistence: BossRaidPersistence;
+  settlementProofRefresher: ReturnType<typeof createSettlementProofRefresher>;
+}): Promise<void> {
+  const current = input.raid.settlementExecution;
+  if (!current) {
+    return;
+  }
+
+  const refreshed = await input.settlementProofRefresher.refresh(current);
+  if (!refreshed || !settlementExecutionChanged(current, refreshed)) {
+    return;
+  }
+
+  await input.orchestrator.updateSettlementExecution(input.raid.id, refreshed);
+  input.raid.settlementExecution = refreshed;
+  await input.persistence.saveState({
+    ...input.snapshot,
+    savedAt: new Date().toISOString(),
+    raids: input.snapshot.raids.map((raid) => (raid.id === input.raid.id ? { ...raid, settlementExecution: refreshed } : raid)),
+  });
+  await persistSettlementExecutionArtifact(refreshed);
 }
 
 function readBooleanEnv(value: string | undefined): boolean {

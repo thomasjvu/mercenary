@@ -62,6 +62,9 @@ importers:
       fastify:
         specifier: ^5.2.1
         version: 5.8.2
+      viem:
+        specifier: ^2.47.5
+        version: 2.47.5(typescript@5.9.3)(zod@4.3.6)
 
   apps/evaluator:
     dependencies:

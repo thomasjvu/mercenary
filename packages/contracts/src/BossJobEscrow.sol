@@ -37,7 +37,7 @@ contract BossJobEscrow {
     event JobFunded(uint256 indexed jobId, uint256 amount);
     event JobSubmitted(uint256 indexed jobId, address indexed provider, bytes32 deliverableHash);
     event JobCompleted(uint256 indexed jobId, address indexed evaluator, bytes32 reason);
-    event JobRejected(uint256 indexed jobId, address indexed evaluator, bytes32 reason);
+    event JobRejected(uint256 indexed jobId, address indexed rejector, bytes32 reason);
     event PaymentReleased(uint256 indexed jobId, address indexed provider, uint256 amount);
     event Refunded(uint256 indexed jobId, address indexed client, uint256 amount);
 
@@ -93,6 +93,7 @@ contract BossJobEscrow {
         Job storage job = jobs[jobId];
         require(msg.sender == job.client, "only client");
         require(job.status == Status.Open, "not open");
+        require(job.budget > 0, "budget missing");
         require(job.provider != address(0), "provider missing");
         require(job.budget == expectedBudget, "budget changed");
         require(token.transferFrom(msg.sender, address(this), job.budget), "transfer failed");
@@ -124,6 +125,13 @@ contract BossJobEscrow {
 
     function reject(uint256 jobId, bytes32 reason) external {
         Job storage job = jobs[jobId];
+        if (job.status == Status.Open) {
+            require(msg.sender == job.client, "only client");
+            job.status = Status.Rejected;
+            emit JobRejected(jobId, msg.sender, reason);
+            return;
+        }
+
         require(msg.sender == job.evaluator, "only evaluator");
         require(job.status == Status.Funded || job.status == Status.Submitted, "bad status");
 
@@ -136,7 +144,7 @@ contract BossJobEscrow {
     function claimRefund(uint256 jobId) external {
         Job storage job = jobs[jobId];
         require(block.timestamp >= job.expiresAt, "not expired");
-        require(job.status == Status.Open || job.status == Status.Funded, "bad status");
+        require(job.status == Status.Funded || job.status == Status.Submitted, "bad status");
 
         job.status = Status.Expired;
         if (job.budget > 0) {
@@ -145,4 +153,3 @@ contract BossJobEscrow {
         }
     }
 }
-

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadProviderProfilesFromFile } from "./index.js";
+import { buildProviderProfileFromRegistration, loadProviderProfilesFromFile } from "./index.js";
 
 test("loadProviderProfilesFromFile expands env placeholders with default values", async () => {
   const tempDir = await mkdtemp(join(tmpdir(), "bossraid-provider-sdk-"));
@@ -43,4 +43,28 @@ test("loadProviderProfilesFromFile expands env placeholders with default values"
   assert.equal(profile.erc8004?.agentId, "8004-provider-defaults");
   assert.equal(profile.erc8004?.operatorWallet, "0x1111111111111111111111111111111111111111");
   assert.equal(profile.erc8004?.registrationTx, "0xproviderregistration");
+});
+
+test("buildProviderProfileFromRegistration preserves ERC-8004 verification payloads", () => {
+  const profile = buildProviderProfileFromRegistration({
+    agentId: "provider-verified",
+    name: "Provider Verified",
+    endpoint: "http://127.0.0.1:9001",
+    erc8004: {
+      agentId: "8004-verified",
+      registrationTx: "0xverified",
+      verification: {
+        status: "verified",
+        checkedAt: "2026-03-23T00:00:00.000Z",
+        chainId: "8453",
+        agentRegistry: "eip155:8453:0xregistry",
+        registrationTxFound: true,
+        operatorMatchesOwner: true,
+      },
+    },
+  });
+
+  assert.equal(profile.erc8004?.verification?.status, "verified");
+  assert.equal(profile.erc8004?.verification?.agentRegistry, "eip155:8453:0xregistry");
+  assert.equal(profile.erc8004?.verification?.operatorMatchesOwner, true);
 });

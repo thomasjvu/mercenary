@@ -3,6 +3,7 @@ import { computeTrustScore, erc8004IdentityIsRegistered, providerHasErc8004Ident
 import type {
   BossRaidRoutingProof,
   Erc8004Identity,
+  Erc8004Verification,
   OutputType,
   PrivacyFeatureKey,
   ProviderProfile,
@@ -26,6 +27,10 @@ export interface BossRaidAgentManifest {
       identityRegistry: string | null;
       reputationRegistry: string | null;
       validationRegistry: string | null;
+      agentRegistry?: string | null;
+      agentUri?: string | null;
+      verificationStatus?: Erc8004Verification["status"] | null;
+      verificationCheckedAt?: string | null;
       status: "registered" | "unconfigured";
     };
   };
@@ -62,6 +67,7 @@ export interface BossRaidAgentManifest {
     modelFamilies: string[];
     privacyFeatures: string[];
     erc8004RegisteredProviders: number;
+    erc8004VerifiedProviders: number;
     trustScoredProviders: number;
     averageTrustScore: number;
   };
@@ -185,6 +191,7 @@ export function buildAgentManifest(
   const providers = orchestrator.listProviders();
   const mercenaryIdentity = options.mercenaryIdentity;
   const mercenaryRegistered = erc8004IdentityIsRegistered(mercenaryIdentity);
+  const verifiedProviders = providers.filter((provider) => provider.erc8004?.verification?.status === "verified");
   const providerTrustScores = providers.map((provider) => computeTrustScore(provider)).filter((score) => score > 0);
   return {
     schemaVersion: "bossraid-agent-manifest/v1",
@@ -203,6 +210,10 @@ export function buildAgentManifest(
         identityRegistry: mercenaryIdentity?.identityRegistry ?? null,
         reputationRegistry: mercenaryIdentity?.reputationRegistry ?? null,
         validationRegistry: mercenaryIdentity?.validationRegistry ?? null,
+        agentRegistry: mercenaryIdentity?.verification?.agentRegistry ?? null,
+        agentUri: mercenaryIdentity?.verification?.agentUri ?? null,
+        verificationStatus: mercenaryIdentity?.verification?.status ?? null,
+        verificationCheckedAt: mercenaryIdentity?.verification?.checkedAt ?? null,
         status: mercenaryRegistered ? "registered" : "unconfigured",
       },
     },
@@ -239,6 +250,7 @@ export function buildAgentManifest(
       modelFamilies: uniqueSorted(providers.map((provider) => provider.modelFamily).filter((value): value is string => Boolean(value))),
       privacyFeatures: uniqueSorted(providers.flatMap(readProviderPrivacyFeatures)),
       erc8004RegisteredProviders: providers.filter((provider) => providerHasErc8004Identity(provider)).length,
+      erc8004VerifiedProviders: verifiedProviders.length,
       trustScoredProviders: providerTrustScores.length,
       averageTrustScore:
         providerTrustScores.length > 0
@@ -250,6 +262,9 @@ export function buildAgentManifest(
       mercenaryRegistered
         ? "Mercenary ERC-8004 identity is configured and exposed as a load-bearing routing proof."
         : "Mercenary ERC-8004 identity remains unconfigured until real onchain registration is wired.",
+      mercenaryIdentity?.verification
+        ? `Mercenary ERC-8004 verification status: ${mercenaryIdentity.verification.status}.`
+        : "Mercenary ERC-8004 onchain verification is disabled.",
       "Use the per-raid agent_log.json route to inspect one autonomous run end to end.",
     ],
   };
@@ -533,10 +548,13 @@ function buildToolCallLog(rootRaid: RaidRecord, executionRaids: RaidRecord[]) {
       details: {
         mode: rootRaid.settlementExecution.mode,
         proofStandard: rootRaid.settlementExecution.proofStandard,
+        lifecycleStatus: rootRaid.settlementExecution.lifecycleStatus,
         registryAddress: rootRaid.settlementExecution.contracts.registryAddress,
         escrowAddress: rootRaid.settlementExecution.contracts.escrowAddress,
         registryRaidRef: rootRaid.settlementExecution.registryRaidRef,
+        finalizeTxHash: rootRaid.settlementExecution.finalizeTxHash,
         transactionHashes: rootRaid.settlementExecution.transactionHashes ?? [],
+        warnings: rootRaid.settlementExecution.warnings ?? [],
       },
     });
   }
@@ -622,6 +640,12 @@ function buildProviderTrustRecord(providerId: string, provider: ProviderProfile 
     trustReason: provider?.trust?.reason,
     operatorWallet: provider?.erc8004?.operatorWallet,
     registrationTx: provider?.erc8004?.registrationTx,
+    erc8004VerificationStatus: provider?.erc8004?.verification?.status,
+    erc8004VerificationCheckedAt: provider?.erc8004?.verification?.checkedAt,
+    agentRegistry: provider?.erc8004?.verification?.agentRegistry ?? provider?.erc8004?.identityRegistry,
+    agentUri: provider?.erc8004?.verification?.agentUri,
+    registrationTxFound: provider?.erc8004?.verification?.registrationTxFound,
+    operatorMatchesOwner: provider?.erc8004?.verification?.operatorMatchesOwner,
   };
 }
 
@@ -685,6 +709,12 @@ function buildFallbackRoutingDecision(
     trustReason: trustRecord.trustReason,
     operatorWallet: trustRecord.operatorWallet,
     registrationTx: trustRecord.registrationTx,
+    erc8004VerificationStatus: trustRecord.erc8004VerificationStatus,
+    erc8004VerificationCheckedAt: trustRecord.erc8004VerificationCheckedAt,
+    agentRegistry: trustRecord.agentRegistry,
+    agentUri: trustRecord.agentUri,
+    registrationTxFound: trustRecord.registrationTxFound,
+    operatorMatchesOwner: trustRecord.operatorMatchesOwner,
     privacyFeatures: provider ? readProviderPrivacyFeatures(provider) : ([] as PrivacyFeatureKey[]),
     matchedSpecializations: [],
     reasons: [

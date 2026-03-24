@@ -96,6 +96,12 @@ export type RaidResult = {
       trustReason?: string;
       operatorWallet?: string;
       registrationTx?: string;
+      erc8004VerificationStatus?: "not_checked" | "verified" | "partial" | "failed" | "error";
+      erc8004VerificationCheckedAt?: string;
+      agentRegistry?: string;
+      agentUri?: string;
+      registrationTxFound?: boolean;
+      operatorMatchesOwner?: boolean;
       privacyFeatures: string[];
       matchedSpecializations: string[];
       reasons: string[];
@@ -160,6 +166,7 @@ export type RaidResult = {
   settlementExecution?: {
     mode: "file" | "onchain";
     proofStandard: "erc8183_aligned";
+    lifecycleStatus: "synthetic" | "partial" | "terminal";
     executedAt: string;
     artifactPath: string;
     registryRaidRef: string;
@@ -185,19 +192,27 @@ export type RaidResult = {
       providerAddress?: string | null;
       role: string;
       status: string;
+      requestedAction: "complete" | "reject";
+      lifecycleStatus: "synthetic" | "open" | "funded" | "submitted" | "completed" | "rejected" | "expired";
       budgetUsd: number;
       budgetAtomic?: string;
       submitResultHash: string | null;
       completionPolicy: string;
+      nextAction?: string | null;
       syntheticJobId?: string;
       jobId?: string;
       createTxHash?: string;
       linkTxHash?: string;
       budgetTxHash?: string;
       fundTxHash?: string;
+      submitTxHash?: string;
+      completeTxHash?: string;
+      rejectTxHash?: string;
     }>;
+    finalizeTxHash?: string;
     transactionHashes?: string[];
     jobIds?: string[];
+    warnings?: string[];
     allocations: Array<{
       providerId: string;
       role: string;
@@ -211,6 +226,43 @@ export type RaidResult = {
     type: string;
     timestamp: string;
   }>;
+};
+
+export type AttestedEnvelope<TPayload> = {
+  signer: string;
+  message: string;
+  messageHash: string;
+  signature: string;
+  payload: TPayload;
+};
+
+export type AttestedRuntimePayload = {
+  version: number;
+  nonce: string;
+  timestamp: string;
+  deploymentTarget: string | null;
+  teePlatform: string | null;
+  storageBackend: string;
+  providers: number;
+  readyProviders: number;
+  raids: number;
+  evaluatorTransport: string;
+  workerIsolation: string;
+};
+
+export type AttestedRaidResultPayload = {
+  version: number;
+  nonce: string;
+  timestamp: string;
+  deploymentTarget: string | null;
+  teePlatform: string | null;
+  evaluatorTransport: string;
+  workerIsolation: string;
+  raidId: string;
+  status: string;
+  approvedSubmissionCount: number;
+  resultHash: string;
+  result: RaidResult;
 };
 
 export type Provider = {
@@ -239,6 +291,20 @@ export type Provider = {
     validationRegistry?: string;
     validationTxs?: string[];
     lastVerifiedAt?: string;
+    verification?: {
+      status: "not_checked" | "verified" | "partial" | "failed" | "error";
+      checkedAt: string;
+      chainId?: string;
+      agentRegistry?: string;
+      owner?: string;
+      agentUri?: string;
+      registrationTxFound?: boolean;
+      operatorMatchesOwner?: boolean;
+      identityRegistryReachable?: boolean;
+      reputationRegistryReachable?: boolean;
+      validationRegistryReachable?: boolean;
+      notes?: string[];
+    };
   };
   trust?: {
     score?: number;
@@ -370,6 +436,16 @@ export async function spawnRaid(payload: unknown): Promise<ApiResponse<RaidSpawn
   });
 }
 
+export async function spawnDemoRaid(payload: unknown): Promise<ApiResponse<RaidSpawnOutput>> {
+  return requestJsonDetailed<RaidSpawnOutput>("/v1/demo/raid", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
 export function raidTokenHeaders(raidAccessToken: string): Record<string, string> {
   return {
     [RAID_ACCESS_TOKEN_HEADER]: raidAccessToken,
@@ -384,6 +460,19 @@ export async function fetchRaidStatus(raidId: string, raidAccessToken: string): 
 
 export async function fetchRaidResult(raidId: string, raidAccessToken: string): Promise<RaidResult> {
   return fetchJson<RaidResult>(`/v1/raids/${encodeURIComponent(raidId)}/result`, {
+    headers: raidTokenHeaders(raidAccessToken),
+  });
+}
+
+export async function fetchAttestedRuntime(): Promise<AttestedEnvelope<AttestedRuntimePayload>> {
+  return fetchJson<AttestedEnvelope<AttestedRuntimePayload>>("/v1/attested-runtime");
+}
+
+export async function fetchAttestedRaidResult(
+  raidId: string,
+  raidAccessToken: string,
+): Promise<AttestedEnvelope<AttestedRaidResultPayload>> {
+  return fetchJson<AttestedEnvelope<AttestedRaidResultPayload>>(`/v1/raid/${encodeURIComponent(raidId)}/attested-result`, {
     headers: raidTokenHeaders(raidAccessToken),
   });
 }
