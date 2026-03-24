@@ -1141,6 +1141,108 @@ test("provider callbacks accept custom bearer header names", async () => {
   }
 });
 
+test("provider submissions accept larger artifact callbacks than the public API body limit", async () => {
+  const provider = {
+    profile: createProviderProfile("provider-large-submit", {
+      outputTypes: ["text", "bundle"],
+    }),
+    async accept(_task: ProviderTaskPackage): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: "run-large-submit",
+      };
+    },
+    async run(): Promise<void> {
+      return;
+    },
+  };
+
+  const orchestrator = new BossRaidOrchestrator(
+    [provider],
+    {
+      inviteAcceptMs: 1_000,
+      firstHeartbeatMs: 1_000,
+      hardExecutionMs: 1_000,
+      raidAbsoluteMs: 1_000,
+    },
+    undefined,
+    undefined,
+    async (profile) => readyHealth(profile.providerId),
+  );
+
+  const spawn = await orchestrator.spawnRaid({
+    taskTitle: "Summarize the memo",
+    taskDescription: "Review the memo and summarize the main risks.",
+    language: "text",
+    files: [],
+    failingSignals: {
+      errors: [],
+    },
+    output: {
+      primaryType: "text",
+      artifactTypes: ["text", "bundle"],
+    },
+    constraints: {
+      numExperts: 1,
+      maxBudgetUsd: 10,
+      maxLatencySec: 10,
+      allowExternalSearch: false,
+      requireSpecializations: ["analysis"],
+      minReputation: 0,
+      allowedOutputTypes: ["text", "bundle"],
+      privacyMode: "prefer",
+    },
+    rewardPolicy: {
+      splitStrategy: "equal_success_only",
+    },
+    privacyMode: {
+      redactSecrets: true,
+      redactIdentifiers: true,
+      allowFullRepo: false,
+    },
+    hostContext: {
+      host: "codex",
+    },
+  });
+
+  await waitFor(() =>
+    orchestrator.getRaid(spawn.raidId)?.assignments["provider-large-submit"]?.providerRunId === "run-large-submit",
+  );
+
+  const app = buildApiServer(orchestrator, {
+    BOSSRAID_API_BODY_LIMIT_BYTES: "512",
+  });
+
+  try {
+    const largePayload = Buffer.from("x".repeat(4_096), "utf8").toString("base64");
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/providers/provider-large-submit/submit",
+      payload: {
+        raidId: spawn.raidId,
+        providerRunId: "run-large-submit",
+        answerText: "Main risk is stale provider state.",
+        explanation: "The memo points to stale routing state as the main system risk.",
+        confidence: 0.8,
+        filesTouched: [],
+        artifacts: [
+          {
+            outputType: "bundle",
+            label: "Large inline bundle",
+            uri: `data:application/json;base64,${largePayload}`,
+            mimeType: "application/json",
+          },
+        ],
+      },
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().status, "final");
+  } finally {
+    await app.close();
+  }
+});
+
 test("registry write routes require the configured registry token", async () => {
   const app = buildApiServer(new BossRaidOrchestrator(), {
     BOSSRAID_REGISTRY_TOKEN: "registry-secret",

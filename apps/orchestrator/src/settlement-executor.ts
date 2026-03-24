@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { dirname, isAbsolute, resolve } from "node:path";
 import { sha256 } from "@bossraid/raid-core";
 import type { RaidRecord, SettlementExecutionRecord } from "@bossraid/shared-types";
 import {
@@ -886,7 +887,7 @@ export function createSettlementExecutor(
     return new NoopSettlementExecutor();
   }
 
-  const outputDir = resolve(workspaceRoot, env.BOSSRAID_SETTLEMENT_DIR ?? "temp/settlements");
+  const outputDir = resolveSettlementOutputDir(workspaceRoot, env.BOSSRAID_SETTLEMENT_DIR);
   if (mode === "onchain") {
     return new OnchainSettlementExecutor(outputDir, {
       rpcUrl: requireEnv(env.BOSSRAID_RPC_URL, "BOSSRAID_RPC_URL"),
@@ -917,6 +918,14 @@ export function createSettlementExecutor(
     chainId: env.BOSSRAID_CHAIN_ID,
     rpcUrl: env.BOSSRAID_RPC_URL,
   });
+}
+
+function resolveSettlementOutputDir(workspaceRoot: string, configuredDir: string | undefined): string {
+  if (configuredDir && configuredDir.trim().length > 0) {
+    return isAbsolute(configuredDir) ? configuredDir : resolve(workspaceRoot, configuredDir);
+  }
+
+  return resolve(tmpdir(), "bossraid", "settlements");
 }
 
 function requireEnv(value: string | undefined, name: string): string {

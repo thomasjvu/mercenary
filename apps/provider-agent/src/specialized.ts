@@ -1110,15 +1110,20 @@ function domainMatchesMode(mode: ProviderMode, task: ProviderTaskPackage): boole
 function describeBundleArtifacts(
   bundle: ReturnType<ArtifactBuilder["inlineAll"]>,
   prefix: string,
+  options: {
+    allowVideoFallback?: boolean;
+  } = {},
 ): SubmissionArtifact[] {
   const files = bundle.files;
   const videoHighlights: SubmissionArtifact[] = [];
   const imageHighlights: SubmissionArtifact[] = [];
   const fallbackVideoFile =
-    files.find((file) => file.relativePath.endsWith("preview.gif")) ??
-    files.find((file) => file.relativePath.endsWith("storyboard.png")) ??
-    files.find((file) => file.relativePath.endsWith("frames/frame-01.png")) ??
-    files.find((file) => file.mimeType.startsWith("image/"));
+    options.allowVideoFallback
+      ? files.find((file) => file.relativePath.endsWith("preview.gif")) ??
+        files.find((file) => file.relativePath.endsWith("storyboard.png")) ??
+        files.find((file) => file.relativePath.endsWith("frames/frame-01.png")) ??
+        files.find((file) => file.mimeType.startsWith("image/"))
+      : undefined;
 
   for (const file of files) {
     if (file.mimeType.startsWith("video/")) {
@@ -1225,7 +1230,7 @@ export async function maybeRequestSpecializedSubmission(
         task.desiredOutput.primaryType === "text"
           ? `${plan.scriptSummary}\n\nLaunch copy:\n${plan.launchCopy.map((item) => `- ${item}`).join("\n")}`
           : undefined,
-      artifacts: describeBundleArtifacts(bundle, "Riko"),
+      artifacts: describeBundleArtifacts(bundle, "Riko", { allowVideoFallback: true }),
       explanation: `${plan.scriptSummary} Included storyboard frames, captions, Remotion source, and a playable preview render with MP4 preferred and animated GIF fallback.`,
       confidence: 0.8,
       filesTouched: [],

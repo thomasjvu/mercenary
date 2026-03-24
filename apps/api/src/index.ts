@@ -94,6 +94,7 @@ export function buildApiServer(
   const demoRouteEnabled = readBooleanEnv(env.BOSSRAID_DEMO_ROUTE_ENABLED);
   const demoToken = env.BOSSRAID_DEMO_TOKEN?.trim() || undefined;
   const apiBodyLimitBytes = readPositiveInteger(env.BOSSRAID_API_BODY_LIMIT_BYTES, 524_288);
+  const providerSubmissionBodyLimitBytes = Math.max(apiBodyLimitBytes, 8 * 1024 * 1024);
   const opsSessionTtlSec = readPositiveInteger(env.BOSSRAID_OPS_SESSION_TTL_SEC, 43_200);
   const publicRateLimitMax = readPositiveInteger(env.BOSSRAID_PUBLIC_RATE_LIMIT_MAX, 60);
   const publicRateLimitWindowMs = readPositiveInteger(env.BOSSRAID_PUBLIC_RATE_LIMIT_WINDOW_MS, 60_000);
@@ -1138,7 +1139,7 @@ export function buildApiServer(
     }
     return orchestrator.recordProviderHeartbeat(heartbeat.raidId, params.providerId, heartbeat);
   });
-  app.post("/v1/providers/:providerId/submit", async (request, reply) => {
+  app.post("/v1/providers/:providerId/submit", { bodyLimit: providerSubmissionBodyLimitBytes }, async (request, reply) => {
     const params = request.params as { providerId: string };
     if (
       !providerIsAuthorized(params.providerId, {
