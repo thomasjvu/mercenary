@@ -109,7 +109,11 @@ export function buildProviderAgentServer() {
 
     await sleep(providerConfig.acceptDelayMs);
     const providerRunId = `run_${randomUUID()}`;
-    void runProviderJob(app, body, providerRunId);
+    setImmediate(() => {
+      void runProviderJob(app, body, providerRunId).catch((error) => {
+        app.log.error(error);
+      });
+    });
 
     return {
       accepted: true,
