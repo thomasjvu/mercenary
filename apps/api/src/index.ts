@@ -1063,11 +1063,10 @@ export function buildApiServer(
       return;
     }
 
-    const outcome = await waitForRaidOutput(
+    const outcome = await waitForTerminalRaidOutput(
       orchestrator,
       spawn.raidId,
       Math.max(raidRequest.constraints.maxLatencySec * 1000, 1_000),
-      Math.min(Math.max(raidRequest.constraints.numExperts, 1), Math.max(spawn.selectedExperts, 1)),
     );
     const response = buildChatCompletionResponse(chatRequest, spawn, outcome, created);
     applyX402Headers(reply, {
@@ -1693,6 +1692,8 @@ function buildChatCompletionResponse(
   };
 }
 
+const CHAT_TERMINAL_SETTLE_GRACE_MS = 5_000;
+
 async function streamChatCompletionResponse(
   reply: FastifyReply,
   orchestrator: BossRaidOrchestrator,
@@ -1735,22 +1736,19 @@ async function streamChatCompletionResponse(
       });
 
       const deadline = Date.now() + Math.max(input.raidRequest.constraints.maxLatencySec * 1000, 1_000);
-      const minApprovedSubmissions = Math.min(
-        Math.max(input.raidRequest.constraints.numExperts, 1),
-        Math.max(input.spawn.selectedExperts, 1),
-      );
+      const settleDeadline = deadline + CHAT_TERMINAL_SETTLE_GRACE_MS;
       let lastKeepAliveAt = Date.now();
       let outcome = {
         status: orchestrator.getStatus(input.spawn.raidId),
         result: orchestrator.getResult(input.spawn.raidId),
       };
 
-      while (Date.now() < deadline) {
+      while (Date.now() < settleDeadline) {
         outcome = {
           status: orchestrator.getStatus(input.spawn.raidId),
           result: orchestrator.getResult(input.spawn.raidId),
         };
-        if (isChatOutcomeReady(outcome, minApprovedSubmissions)) {
+        if (isTerminalChatOutcome(outcome)) {
           break;
         }
 
@@ -1761,7 +1759,7 @@ async function streamChatCompletionResponse(
         await new Promise((resolve) => setTimeout(resolve, 250));
       }
 
-      const finalOutcome = isChatOutcomeReady(outcome, minApprovedSubmissions)
+      const finalOutcome = isTerminalChatOutcome(outcome)
         ? outcome
         : {
             status: orchestrator.getStatus(input.spawn.raidId),
@@ -1889,45 +1887,39 @@ function writeSseData(stream: PassThrough, payload: unknown): void {
   stream.write(`data: ${JSON.stringify(payload)}\n\n`);
 }
 
-function isChatOutcomeReady(
+function isTerminalChatOutcome(
   outcome: {
     status: BossRaidStatusOutput;
     result: BossRaidResultOutput;
   },
-  minApprovedSubmissions: number,
 ): boolean {
-  const approvedCount = outcome.result.approvedSubmissions?.length ?? 0;
-  return (
-    (outcome.result.synthesizedOutput && approvedCount >= Math.max(minApprovedSubmissions, 1)) ||
-    ["final", "cancelled", "expired"].includes(outcome.status.status)
-  );
+  return ["final", "cancelled", "expired"].includes(outcome.status.status);
 }
 
-async function waitForRaidOutput(
+async function waitForTerminalRaidOutput(
   orchestrator: BossRaidOrchestrator,
   raidId: string,
   timeoutMs: number,
-  minApprovedSubmissions = 1,
 ) {
   const deadline = Date.now() + Math.max(timeoutMs, 1_000);
+  const settleDeadline = deadline + CHAT_TERMINAL_SETTLE_GRACE_MS;
+  let latest = {
+    status: orchestrator.getStatus(raidId),
+    result: orchestrator.getResult(raidId),
+  };
 
-  while (Date.now() < deadline) {
-    const status = orchestrator.getStatus(raidId);
-    const result = orchestrator.getResult(raidId);
-    const approvedCount = result.approvedSubmissions?.length ?? 0;
-    if (
-      (result.synthesizedOutput && approvedCount >= Math.max(minApprovedSubmissions, 1)) ||
-      ["final", "cancelled", "expired"].includes(status.status)
-    ) {
-      return { status, result };
+  while (Date.now() < settleDeadline) {
+    latest = {
+      status: orchestrator.getStatus(raidId),
+      result: orchestrator.getResult(raidId),
+    };
+    if (isTerminalChatOutcome(latest)) {
+      return latest;
     }
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
 
-  return {
-    status: orchestrator.getStatus(raidId),
-    result: orchestrator.getResult(raidId),
-  };
+  return latest;
 }
 
 async function main() {

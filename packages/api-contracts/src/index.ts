@@ -559,7 +559,13 @@ export function parseBossRaidRequest(value: unknown): BossRaidSpawnInput {
             ? (raidPolicy.max_agents as number)
             : 3,
       maxBudgetUsd: maxTotalCost,
-      maxLatencySec: 60,
+      maxLatencySec:
+        raidPolicy.maxLatencySec == null && raidPolicy.max_latency_sec == null
+          ? 60
+          : ensureFiniteNumberLike(
+              raidPolicy.maxLatencySec ?? raidPolicy.max_latency_sec,
+              "raid_policy.max_latency_sec",
+            ),
       allowExternalSearch: false,
       requireSpecializations:
         raidPolicy.requiredCapabilities == null && raidPolicy.required_capabilities == null
@@ -687,6 +693,13 @@ export function buildBossRaidRequestFromChatCompletion(
     maxTotalCostValue,
     "chat_completion_request.raid_policy.max_total_cost",
   );
+  const maxLatencySec =
+    rawRaidPolicy?.maxLatencySec == null && rawRaidPolicy?.max_latency_sec == null
+      ? undefined
+      : ensureFiniteNumberLike(
+          rawRaidPolicy?.maxLatencySec ?? rawRaidPolicy?.max_latency_sec,
+          "chat_completion_request.raid_policy.max_latency_sec",
+        );
   const requiredCapabilitiesValue =
     rawRaidPolicy?.requiredCapabilities ?? rawRaidPolicy?.required_capabilities;
   const requiredCapabilities =
@@ -716,6 +729,7 @@ export function buildBossRaidRequestFromChatCompletion(
     },
     raidPolicy: {
       maxAgents,
+      maxLatencySec,
       maxTotalCost,
       requiredCapabilities,
       minReputationScore:

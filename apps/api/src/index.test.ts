@@ -620,6 +620,104 @@ test("POST /v1/chat/completions supports streaming on the v1 route", async () =>
   }
 });
 
+test("POST /v1/chat/completions waits for a terminal raid state instead of replying with first_valid", async () => {
+  const fastProvider: RaidProvider = {
+    profile: createProviderProfile("provider-chat-fast", {
+      outputTypes: ["text", "json"],
+      supportedLanguages: ["text"],
+    }),
+    async accept(_task: ProviderTaskPackage): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: "run-chat-fast",
+      };
+    },
+    async run(task, callbacks): Promise<void> {
+      await callbacks.onSubmit({
+        raidId: task.raidId,
+        providerId: "provider-chat-fast",
+        providerRunId: "run-chat-fast",
+        answerText: "The helper subtracts instead of adding.",
+        explanation: "Swap subtraction back to addition.",
+        confidence: 0.94,
+        filesTouched: [],
+        submittedAt: new Date().toISOString(),
+      });
+    },
+  };
+
+  const slowProvider: RaidProvider = {
+    profile: createProviderProfile("provider-chat-slow", {
+      outputTypes: ["text", "json"],
+      supportedLanguages: ["text"],
+    }),
+    async accept(_task: ProviderTaskPackage): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: "run-chat-slow",
+      };
+    },
+    async run(task, callbacks): Promise<void> {
+      await new Promise((resolve) => setTimeout(resolve, 2_500));
+      await callbacks.onSubmit({
+        raidId: task.raidId,
+        providerId: "provider-chat-slow",
+        providerRunId: "run-chat-slow",
+        answerText: "Second opinion confirms the same arithmetic bug.",
+        explanation: "The return expression is inverted.",
+        confidence: 0.8,
+        filesTouched: [],
+        submittedAt: new Date().toISOString(),
+      });
+    },
+  };
+
+  const orchestrator = new BossRaidOrchestrator(
+    [fastProvider, slowProvider],
+    {
+      inviteAcceptMs: 1_000,
+      firstHeartbeatMs: 2_000,
+      hardExecutionMs: 5_000,
+      raidAbsoluteMs: 5_000,
+    },
+    undefined,
+    undefined,
+    async (profile) => readyHealth(profile.providerId),
+  );
+  const app = buildApiServer(orchestrator);
+
+  try {
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/chat/completions",
+      payload: {
+        model: "mercenary-v1",
+        messages: [
+          {
+            role: "user",
+            content: "Explain the bug.",
+          },
+        ],
+        raid_policy: {
+          max_agents: 2,
+          max_total_cost: 8,
+          max_latency_sec: 1,
+        },
+      },
+    });
+
+    assert.equal(response.statusCode, 200);
+    const body = response.json();
+    assert.equal(body.raid.status, "final");
+    assert.equal(body.raid.agents_invited, 2);
+    assert.equal(body.raid.agents_succeeded, 1);
+    assert.deepEqual(body.raid.successful_agents, ["provider-chat-fast"]);
+    assert.doesNotMatch(body.choices[0]?.message.content, /Raid .* started/);
+  } finally {
+    await app.close();
+  }
+});
+
 test("unknown raid routes return 404 for authorized readers", async () => {
   const app = buildApiServer(new BossRaidOrchestrator(), {
     BOSSRAID_ADMIN_TOKEN: "admin-secret",

@@ -607,6 +607,7 @@ export interface BossRaidRequest {
   };
   raidPolicy?: {
     maxAgents?: number;
+    maxLatencySec?: number;
     requiredCapabilities?: string[];
     allowedModelFamilies?: string[];
     minReputationScore?: number;

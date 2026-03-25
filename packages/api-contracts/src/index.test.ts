@@ -102,6 +102,7 @@ test("buildBossRaidRequestFromChatCompletion synthesizes the shared chat raid sh
       ],
       raidPolicy: {
         maxAgents: "2",
+        maxLatencySec: "45",
         maxTotalCost: "4.5",
         minReputationScore: "65",
         requireErc8004: true,
@@ -132,6 +133,7 @@ test("buildBossRaidRequestFromChatCompletion synthesizes the shared chat raid sh
   });
   assert.deepEqual(request.raidPolicy, {
     maxAgents: 2,
+    maxLatencySec: 45,
     maxTotalCost: 4.5,
     requiredCapabilities: undefined,
     minReputationScore: 65,
@@ -185,6 +187,18 @@ test("buildBossRaidRequestFromChatCompletion accepts a server-side default payou
   assert.equal(request.raidPolicy?.maxTotalCost, 6);
   assert.equal(request.raidPolicy?.requiredCapabilities, undefined);
   assert.equal(request.raidPolicy?.selectionMode, "best_match");
+});
+
+test("parseBossRaidRequest honors raid_policy.max_latency_sec", () => {
+  const parsed = parseBossRaidRequest({
+    ...createBossRaidRequestPayload(),
+    raidPolicy: {
+      ...createBossRaidRequestPayload().raidPolicy,
+      maxLatencySec: 42,
+    },
+  });
+
+  assert.equal(parsed.constraints.maxLatencySec, 42);
 });
 
 test("parseChatCompletionRequest rejects unsupported message roles", () => {
