@@ -82,10 +82,15 @@ type SpecialistTraceRecord = {
 const LIVE_POLL_INTERVAL_MS = 3_000;
 const TERMINAL_RAID_STATUSES = new Set(["final", "cancelled", "expired"]);
 const V1_CHAT_MODEL = "gpt-4.1-mini";
-const DEMO_PROMPTS = [
+const RAID_DEMO_PROMPTS = [
+  "Hi Mercenary. What can you actually help me with here?",
+  "How do you decide when a request needs specialists instead of a direct answer?",
   "Build a one-room GB Studio microgame with one boss, one key, one exit, and a matching 12-second trailer.",
-  "Create a fast retro launch package with a gameplay patch, pixel-art title card, sprite pack, and teaser copy.",
-  "Ship a tiny arcade challenge with one enemy loop, one reward prop, and a trailer that matches the palette and hook.",
+] as const;
+const CHAT_V1_DEMO_PROMPTS = [
+  "Hi Mercenary. Give me a short intro to how this compatibility route works.",
+  "Explain how v1 completions differs from the native raid path.",
+  "Summarize how you would hire gameplay, art, and promo specialists for a small game launch.",
 ] as const;
 
 export function DemoPage({ providers, providerHealth }: DemoPageProps) {
@@ -142,6 +147,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
   const teeAttestedSpecialistCount = countTeeAttestedSpecialists(sidebarSpecialists);
   const signedSpecialistCount = countProofTag(sidebarSpecialists, "signed");
   const hasConversation = Boolean(lastSubmittedBrief || liveRaidRun || launchError);
+  const promptSuggestions = demoMode === "raid" ? RAID_DEMO_PROMPTS : CHAT_V1_DEMO_PROMPTS;
   const conversationSignature = [
     demoMode,
     lastSubmittedBrief ?? "",
@@ -428,7 +434,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
           <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant">
             <p>
               {demoMode === "raid"
-                ? "Tell me what you want built. I’ll open a native raid, hire specialists in the background, and return one final product here."
+                ? "Talk to Mercenary directly here. I’ll answer normally, and if you ask for real scoped work I’ll open a native raid and hire specialists in the background."
                 : "Tell me what you want and I’ll route it through v1 chat completions so you can compare the compatibility layer against the native raid path."}
             </p>
           </ChatMessage>
@@ -499,7 +505,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
         <div className="mercenary-composer">
           {!hasConversation ? (
             <div className="mercenary-composer__suggestions">
-              {DEMO_PROMPTS.map((prompt) => (
+              {promptSuggestions.map((prompt) => (
                 <button
                   className={`mercenary-suggestion ${liveDemoBrief === prompt ? "mercenary-suggestion--active" : ""}`}
                   key={prompt}

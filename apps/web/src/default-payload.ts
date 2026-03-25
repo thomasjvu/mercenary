@@ -41,6 +41,32 @@ export const DEFAULT_SPAWN_PAYLOAD = `{
 export const DEFAULT_LIVE_DEMO_BRIEF =
   "Create a one-room GB Studio microgame called Boss Raid: Slime Panic. Mercenary should split this into gameplay, pixel art, and trailer work, keep the creative direction consistent, and return one verified receipt-backed result.";
 
+const NATIVE_CHAT_SYSTEM_PROMPT =
+  "You are Mercenary in the native Boss Raid demo. Reply directly and concisely. If the user is greeting you or asking what you can do, answer conversationally and do not pretend a build already happened. Only treat the request as a real seeded GB Studio build when the user explicitly asks for that game package.";
+
+const SEEDED_GAME_BUILD_SIGNALS = [
+  /\bgb studio\b/,
+  /\bmicrogame\b/,
+  /\bpixel art\b/,
+  /\bsprite(?:s|sheet)?\b/,
+  /\btrailer\b/,
+  /\bteaser\b/,
+  /\bone-room\b/,
+  /\bslime\b/,
+  /\bdungeon\b/,
+  /\blaunch package\b/,
+  /\barcade challenge\b/,
+  /\bkey\b/,
+  /\bboss\b/,
+];
+
+const EXPLICIT_WORK_SIGNALS = [
+  /^(build|create|make|ship|design|generate|draft|produce|implement)\b/,
+  /\b(can you|could you|please|help me|i want you to|i need you to)\s+(build|create|make|ship|design|generate|draft|produce|implement)\b/,
+  /\bmake me\b/,
+  /\bcreate me\b/,
+];
+
 function buildLiveDemoFiles(normalizedBrief: string) {
   return [
     {
@@ -236,9 +262,7 @@ Collect key -> dodge boss slime -> reach exit before timer runs out
   ];
 }
 
-export function buildLiveDemoPayload(brief: string) {
-  const normalizedBrief = brief.trim() || DEFAULT_LIVE_DEMO_BRIEF;
-
+function buildSeededGameDemoPayload(normalizedBrief: string) {
   return {
     agent: "mercenary-v1",
     taskType: "game_build",
@@ -274,4 +298,65 @@ export function buildLiveDemoPayload(brief: string) {
       selectionMode: "diverse_mix",
     },
   };
+}
+
+function buildNativeChatDemoPayload(normalizedBrief: string) {
+  const title = normalizedBrief.slice(0, 80) || "Mercenary native chat";
+
+  return {
+    agent: "mercenary-v1",
+    taskType: "analysis",
+    task: {
+      title,
+      description: `System:\n${NATIVE_CHAT_SYSTEM_PROMPT}\n\nUser:\n${normalizedBrief}`,
+      language: "text",
+      files: [],
+      failingSignals: {
+        errors: [],
+        reproSteps: [
+          "Read the user message",
+          "Reply directly as Mercenary",
+          "If the user is only chatting, keep the response conversational instead of fabricating a shipped deliverable",
+        ],
+        expectedBehavior:
+          "Return one clean Mercenary answer. Do not claim a build or artifact package exists unless the user explicitly asked for the seeded GB Studio demo build.",
+      },
+    },
+    output: {
+      primaryType: "text",
+      artifactTypes: ["text", "json"],
+    },
+    raidPolicy: {
+      maxAgents: 3,
+      maxLatencySec: 45,
+      allowedModelFamilies: ["openai", "venice"],
+      minReputationScore: 60,
+      privacyMode: "prefer",
+      requirePrivacyFeatures: ["signed_outputs"],
+      allowedOutputTypes: ["text", "json"],
+      maxTotalCost: 12,
+      selectionMode: "best_match",
+    },
+    hostContext: {
+      host: "web_demo",
+    },
+  };
+}
+
+function isSeededGameBuildRequest(brief: string): boolean {
+  const normalizedBrief = brief.trim().toLowerCase();
+  if (normalizedBrief.length === 0) {
+    return false;
+  }
+
+  const hasWorkSignal = EXPLICIT_WORK_SIGNALS.some((pattern) => pattern.test(normalizedBrief));
+  const hasSeededGameSignal = SEEDED_GAME_BUILD_SIGNALS.some((pattern) => pattern.test(normalizedBrief));
+  return hasWorkSignal && hasSeededGameSignal;
+}
+
+export function buildLiveDemoPayload(brief: string) {
+  const normalizedBrief = brief.trim() || DEFAULT_LIVE_DEMO_BRIEF;
+  return isSeededGameBuildRequest(normalizedBrief)
+    ? buildSeededGameDemoPayload(normalizedBrief)
+    : buildNativeChatDemoPayload(normalizedBrief);
 }
