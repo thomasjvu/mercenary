@@ -24,17 +24,24 @@ async function runProviderJob(
 ): Promise<void> {
   console.info(`[provider-agent] ${providerConfig.providerId} run start raid=${body.raidId} run=${providerRunId}`);
   let heartbeatCount = 0;
-  const heartbeatTimer = setInterval(() => {
-    heartbeatCount += 1;
-    const progress = Math.min(0.9, heartbeatCount * 0.15);
+  const sendHeartbeat = (progress: number, message: string): void => {
     void callback(`/v1/providers/${body.providerId}/heartbeat`, {
       raidId: body.raidId,
       providerRunId,
       progress,
-      message: `${providerConfig.displayName} analyzing ${body.task.artifacts.files.length} file(s)`,
+      message,
     }).catch((error) => {
       app.log.error(error);
     });
+  };
+
+  sendHeartbeat(0.05, `${providerConfig.displayName} accepted and is starting the run`);
+  const heartbeatTimer = setInterval(() => {
+    heartbeatCount += 1;
+    sendHeartbeat(
+      Math.min(0.9, 0.05 + heartbeatCount * 0.15),
+      `${providerConfig.displayName} analyzing ${body.task.artifacts.files.length} file(s)`,
+    );
   }, providerConfig.heartbeatIntervalMs);
 
   try {

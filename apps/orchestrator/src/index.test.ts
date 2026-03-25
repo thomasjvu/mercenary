@@ -1172,6 +1172,41 @@ test("Mercenary uses nested game-specific workstream families for larger game sw
   assert.equal(promoNode?.task.language, "text");
 });
 
+test("text-first game chats bias answer, constraints, and risk toward gameplay, art, and promo specialists", () => {
+  const graph = buildHierarchicalRaidGraph(
+    sanitizeTask({
+      ...createSpawnInput(),
+      taskTitle: "Plan a one-room GB Studio microgame launch package",
+      taskDescription: "Return a direct build summary for a playable GB Studio microgame with matching pixel-art and trailer support.",
+      language: "text",
+      framework: undefined,
+      files: [],
+      failingSignals: {
+        errors: [],
+        expectedBehavior: "Keep the answer scoped to the playable build, art pack, and trailer handoff.",
+      },
+      output: {
+        primaryType: "text",
+        artifactTypes: ["text", "json"],
+      },
+      constraints: {
+        ...createSpawnInput().constraints,
+        numExperts: 3,
+        allowedOutputTypes: ["text", "json"],
+        selectionMode: "best_match",
+      },
+    }),
+  );
+
+  const answerNode = graph.children?.find((child) => child.contributionPlan?.workstreamLabel === "Answer");
+  const constraintsNode = graph.children?.find((child) => child.contributionPlan?.workstreamLabel === "Constraints");
+  const riskNode = graph.children?.find((child) => child.contributionPlan?.workstreamLabel === "Risk");
+
+  assert.deepEqual(answerNode?.task.constraints.requireSpecializations, ["gb-studio"]);
+  assert.deepEqual(constraintsNode?.task.constraints.requireSpecializations, ["pixel-art"]);
+  assert.deepEqual(riskNode?.task.constraints.requireSpecializations, ["remotion"]);
+});
+
 test("Mercenary can revise the raid graph with an adaptive repair child raid", async () => {
   const receivedTasks: ProviderTaskPackage[] = [];
   const input = {

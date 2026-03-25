@@ -1142,6 +1142,7 @@ function authorContributionFamilyWorkstreams(
   return workstreams.map((workstream) => ({
     ...workstream,
     objective: authorWorkstreamObjective(workstream, context),
+    routeSpecializations: authorRouteSpecializations(task, workstream),
     roles: workstream.roles.map((role) => ({
       ...role,
       objective: authorRoleObjective(role.id, context, role.objective),
@@ -1162,6 +1163,33 @@ function buildTaskPlanningContext(task: SanitizedTaskSpec): TaskPlanningContext 
     surfacePhrase: buildSurfacePhrase(task),
     signalLabel: signalCandidate == null ? undefined : trimSentence(signalCandidate, 100),
   };
+}
+
+function authorRouteSpecializations(
+  task: SanitizedTaskSpec,
+  workstream: ContributionWorkstreamTemplate,
+): string[] | undefined {
+  const inherited = workstream.routeSpecializations ?? [];
+  if ((task.output?.primaryType ?? "patch") !== "text" || !isGameTask(task)) {
+    return inherited;
+  }
+
+  const id = workstream.id;
+  let preferred: string[] = [];
+
+  if (id === "answer" || id.startsWith("answer-") || id === "execution" || id.startsWith("execution-")) {
+    preferred = ["gb-studio"];
+  } else if (id === "constraints" || id.startsWith("constraints-")) {
+    preferred = ["pixel-art"];
+  } else if (id === "risk" || id.startsWith("risk-")) {
+    preferred = ["remotion"];
+  }
+
+  return uniqueRouteSpecializations([...inherited, ...preferred]);
+}
+
+function uniqueRouteSpecializations(values: string[]): string[] {
+  return [...new Set(values.filter((value) => value.length > 0))];
 }
 
 function taskCanRouteThroughGameWorkstreams(task: SanitizedTaskSpec): boolean {
