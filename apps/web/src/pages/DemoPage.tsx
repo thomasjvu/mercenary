@@ -2,10 +2,15 @@ import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, 
 import type { SubmissionArtifact } from "@bossraid/shared-types";
 import {
   API_BASE,
+  fetchAttestedRuntime,
   fetchRaidAgentLog,
   fetchRaidResult,
   fetchRaidStatus,
+  requestChatCompletion,
   spawnDemoRaid,
+  type AttestedEnvelope,
+  type AttestedRuntimePayload,
+  type ChatCompletionResponse,
   type Provider,
   type RaidAgentLog,
   type ProviderHealth,
@@ -17,6 +22,7 @@ import { buildLiveDemoPayload } from "../default-payload";
 import heroImage from "../../../../assets/hero.webp";
 
 type SpecialistTone = "ready" | "available" | "offline" | "working";
+type DemoRequestMode = "raid" | "chat_v1";
 
 type DemoPageProps = {
   providers: Provider[];
@@ -24,7 +30,9 @@ type DemoPageProps = {
 };
 
 type LiveRaidRun = {
+  requestMode: DemoRequestMode;
   spawn: RaidSpawnOutput;
+  chatCompletion?: ChatCompletionResponse;
   status?: RaidStatusSnapshot;
   result?: RaidResult;
   agentLog?: RaidAgentLog;
@@ -40,6 +48,7 @@ type ConversationSpecialistRecord = {
   note: string;
   meta: string;
   progressValue: number | null;
+  proofTags: string[];
 };
 
 type BundleArtifactFile = {
@@ -72,6 +81,7 @@ type SpecialistTraceRecord = {
 
 const LIVE_POLL_INTERVAL_MS = 3_000;
 const TERMINAL_RAID_STATUSES = new Set(["final", "cancelled", "expired"]);
+const V1_CHAT_MODEL = "gpt-4.1-mini";
 const DEMO_PROMPTS = [
   "Build a one-room GB Studio microgame with one boss, one key, one exit, and a matching 12-second trailer.",
   "Create a fast retro launch package with a gameplay patch, pixel-art title card, sprite pack, and teaser copy.",
@@ -79,6 +89,7 @@ const DEMO_PROMPTS = [
 ] as const;
 
 export function DemoPage({ providers, providerHealth }: DemoPageProps) {
+  const [demoMode, setDemoMode] = useState<DemoRequestMode>("raid");
   const [liveDemoBrief, setLiveDemoBrief] = useState("");
   const [lastSubmittedBrief, setLastSubmittedBrief] = useState<string | null>(null);
   const [liveRaidRun, setLiveRaidRun] = useState<LiveRaidRun | null>(null);
@@ -86,6 +97,8 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
   const [launchError, setLaunchError] = useState<string | null>(null);
   const [receiptCopied, setReceiptCopied] = useState(false);
   const [expandedArtifact, setExpandedArtifact] = useState<SubmissionArtifact | null>(null);
+  const [runtimeAttestation, setRuntimeAttestation] = useState<AttestedEnvelope<AttestedRuntimePayload> | null>(null);
+  const [runtimeAttestationError, setRuntimeAttestationError] = useState<string | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
 
   const providerById = new Map(providers.map((provider) => [provider.providerId, provider]));
@@ -98,7 +111,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
   const canSendBrief = canLaunchLiveRaid && liveDemoBrief.trim().length > 0 && !isLaunching;
   const activeRaidStatus = liveRaidRun?.status?.status ?? liveRaidRun?.spawn.status;
   const raidIsTerminal = activeRaidStatus ? isTerminalRaidStatus(activeRaidStatus) : false;
-  const liveResultText = selectResultText(liveRaidRun?.result);
+  const liveResultText = selectResultText(liveRaidRun?.result) ?? selectChatCompletionText(liveRaidRun?.chatCompletion);
   const liveExplanation = selectResultExplanation(liveRaidRun?.result);
   const livePatch = selectResultPatch(liveRaidRun?.result);
   const liveArtifacts = selectArtifacts(liveRaidRun?.result);
@@ -122,8 +135,15 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
     conversationSpecialists.length > 0
       ? conversationSpecialists
       : buildHostedSpecialistRecords(providers, providerHealth, healthByProviderId);
+  const runtimeAttestationStatus = runtimeAttestation ? "live" : runtimeAttestationError ? "unavailable" : "loading";
+  const runtimeAttestationTarget = runtimeAttestation?.payload.deploymentTarget ?? "pending";
+  const runtimeAttestationTee = runtimeAttestation?.payload.teePlatform ?? "pending";
+  const runtimeAttestationLabel = buildRuntimeAttestationLabel(runtimeAttestationTarget, runtimeAttestationTee);
+  const teeAttestedSpecialistCount = countTeeAttestedSpecialists(sidebarSpecialists);
+  const signedSpecialistCount = countProofTag(sidebarSpecialists, "signed");
   const hasConversation = Boolean(lastSubmittedBrief || liveRaidRun || launchError);
   const conversationSignature = [
+    demoMode,
     lastSubmittedBrief ?? "",
     isLaunching ? "launching" : "idle",
     launchError ?? "",
@@ -137,6 +157,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
     liveExplanation ?? "",
     String(liveArtifacts.length),
     livePatch ?? "",
+    liveRaidRun?.chatCompletion?.id ?? "",
   ].join("::");
 
   useEffect(() => {
@@ -147,6 +168,30 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
     const timer = window.setTimeout(() => setReceiptCopied(false), 1_200);
     return () => window.clearTimeout(timer);
   }, [receiptCopied]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void fetchAttestedRuntime()
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+        setRuntimeAttestation(response);
+        setRuntimeAttestationError(null);
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+        setRuntimeAttestation(null);
+        setRuntimeAttestationError(readErrorMessage(error));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!liveRaidRun || raidIsTerminal) {
@@ -188,7 +233,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [expandedArtifact]);
 
-  async function launchLiveRaid() {
+  async function launchConversation() {
     const submittedBrief = liveDemoBrief.trim();
     if (!submittedBrief || isLaunching || !canLaunchLiveRaid) {
       return;
@@ -201,14 +246,25 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
     setReceiptCopied(false);
 
     try {
-      const response = await spawnDemoRaid(buildLiveDemoPayload(submittedBrief));
+      const response =
+        demoMode === "raid"
+          ? await spawnDemoRaid(buildLiveDemoPayload(submittedBrief))
+          : await requestChatCompletion(buildDemoChatCompletionPayload(submittedBrief));
       if (!response.ok || !response.data) {
         if (response.status === 404) {
-          throw new Error("Free demo raid is not enabled on this host. The paid native route stays at POST /v1/raid.");
+          throw new Error(
+            demoMode === "raid"
+              ? "Free demo raid is not enabled on this host. The paid native route stays at POST /v1/raid."
+              : "The v1 chat-completions route is not enabled on this host.",
+          );
         }
 
         if (response.status === 401) {
-          throw new Error("Free demo raid is enabled, but the proxy is missing a valid demo token.");
+          throw new Error(
+            demoMode === "raid"
+              ? "Free demo raid is enabled, but the proxy is missing a valid demo token."
+              : "The v1 chat-completions route rejected the request.",
+          );
         }
 
         if ((response.error ?? "").toLowerCase().includes("payment required")) {
@@ -220,9 +276,18 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
         throw new Error(response.error ?? `Raid launch failed with status ${response.status}.`);
       }
 
-      const spawn = response.data;
+      const spawn =
+        demoMode === "raid"
+          ? (response.data as RaidSpawnOutput)
+          : buildSpawnFromChatCompletion(response.data as ChatCompletionResponse);
+      if (!spawn) {
+        throw new Error("Mercenary returned a chat completion without raid metadata.");
+      }
+
       setLiveRaidRun({
+        requestMode: demoMode,
         spawn,
+        chatCompletion: demoMode === "chat_v1" ? (response.data as ChatCompletionResponse) : undefined,
         lastUpdatedAt: new Date().toISOString(),
         pollError: null,
       });
@@ -295,13 +360,26 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
     setExpandedArtifact(null);
   }
 
+  function handleModeChange(nextMode: DemoRequestMode) {
+    if (isLaunching || nextMode === demoMode) {
+      return;
+    }
+
+    setDemoMode(nextMode);
+    setLastSubmittedBrief(null);
+    setLiveRaidRun(null);
+    setLaunchError(null);
+    setReceiptCopied(false);
+    setExpandedArtifact(null);
+  }
+
   function handleComposerKeyDown(event: ReactKeyboardEvent<HTMLTextAreaElement>) {
     if (event.key !== "Enter" || event.shiftKey) {
       return;
     }
 
     event.preventDefault();
-    void launchLiveRaid();
+    void launchConversation();
   }
 
   return (
@@ -310,7 +388,28 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
         <div className="mercenary-chat__topbar">
           <div className="mercenary-chat__identity">
             <strong>Mercenary</strong>
-            <span>{liveRaidRun ? `${humanizeStatus(activeRaidStatus ?? "queued")} · ${availabilityLabel}` : availabilityLabel}</span>
+            <span>
+              {`${buildDemoModeLabel(demoMode)} · ${
+                liveRaidRun ? `${humanizeStatus(activeRaidStatus ?? "queued")} · ${availabilityLabel}` : availabilityLabel
+              }`}
+            </span>
+          </div>
+
+          <div className="mercenary-mode-switch" role="tablist" aria-label="Demo transport mode">
+            <button
+              className={`mercenary-mode-chip ${demoMode === "raid" ? "mercenary-mode-chip--active" : ""}`}
+              onClick={() => handleModeChange("raid")}
+              type="button"
+            >
+              raid chat
+            </button>
+            <button
+              className={`mercenary-mode-chip ${demoMode === "chat_v1" ? "mercenary-mode-chip--active" : ""}`}
+              onClick={() => handleModeChange("chat_v1")}
+              type="button"
+            >
+              v1 completions
+            </button>
           </div>
 
           <div className="mercenary-chat__topbar-actions">
@@ -327,7 +426,11 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
 
         <div aria-live="polite" className="mercenary-chat__thread" ref={threadRef}>
           <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant">
-            <p>Tell me what you want built. I’ll hire specialists in the background and return one final product here.</p>
+            <p>
+              {demoMode === "raid"
+                ? "Tell me what you want built. I’ll open a native raid, hire specialists in the background, and return one final product here."
+                : "Tell me what you want and I’ll route it through v1 chat completions so you can compare the compatibility layer against the native raid path."}
+            </p>
           </ChatMessage>
 
           {lastSubmittedBrief ? (
@@ -338,7 +441,11 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
 
           {isLaunching ? (
             <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant">
-              <p>Reviewing the request and opening a raid.</p>
+              <p>
+                {demoMode === "raid"
+                  ? "Reviewing the request and opening a native raid."
+                  : "Reviewing the request and running it through /v1/chat/completions."}
+              </p>
               <TypingDots />
             </ChatMessage>
           ) : null}
@@ -354,9 +461,12 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
             <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant">
               <p>{buildRaidStatusCopy(liveRaidRun)}</p>
               <div className="mercenary-pill-row">
+                <StatusPill tone="available">{buildDemoModeLabel(liveRaidRun.requestMode)}</StatusPill>
                 <StatusPill tone={raidIsTerminal ? "ready" : "working"}>{`status ${humanizeStatus(activeRaidStatus ?? "queued")}`}</StatusPill>
                 <StatusPill tone="available">{`${liveRaidRun.spawn.selectedExperts} specialists invited`}</StatusPill>
-                <StatusPill tone="available">{`eta ${liveRaidRun.spawn.estimatedFirstResultSec}s`}</StatusPill>
+                {liveRaidRun.spawn.estimatedFirstResultSec > 0 ? (
+                  <StatusPill tone="available">{`eta ${liveRaidRun.spawn.estimatedFirstResultSec}s`}</StatusPill>
+                ) : null}
               </div>
               <p className="mercenary-message__note">{`Updated ${formatTimestamp(liveRaidRun.lastUpdatedAt)}`}</p>
               {liveRaidRun.pollError ? <p className="mercenary-message__note">Last refresh error: {liveRaidRun.pollError}</p> : null}
@@ -367,6 +477,9 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
             <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant" tone="success">
               {liveResultText ? <p className="mercenary-final__answer">{liveResultText}</p> : <p>Final delivery is ready.</p>}
               {liveExplanation && !liveResultText ? <p>{liveExplanation}</p> : null}
+              {liveRaidRun?.requestMode === "chat_v1" ? (
+                <p className="mercenary-message__note">Returned through `/v1/chat/completions` and linked back to the same raid receipt and trace.</p>
+              ) : null}
 
               {liveArtifacts.length > 0 ? (
                 <ArtifactGallery artifacts={liveArtifacts} onOpenArtifact={setExpandedArtifact} />
@@ -413,7 +526,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
           <div className="mercenary-composer__footer">
             <p>Enter sends. Shift+Enter adds a line break.</p>
             <div className="mercenary-action-row">
-              <button className="button button--primary" disabled={!canSendBrief} onClick={() => void launchLiveRaid()} type="button">
+              <button className="button button--primary" disabled={!canSendBrief} onClick={() => void launchConversation()} type="button">
                 {isLaunching ? "sending..." : "send"}
               </button>
             </div>
@@ -455,11 +568,61 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
           </div>
 
           <div className="mercenary-sidebar__statline">
+            <SidebarRow label="Mode" value={buildDemoModeLabel(liveRaidRun?.requestMode ?? demoMode)} />
             <SidebarRow label="Ready" value={availabilityLabel} />
             <SidebarRow label="Invited" value={liveRaidRun ? String(liveRaidRun.spawn.selectedExperts) : "0"} />
             <SidebarRow label="Outputs" value={`${liveWorkstreams.length} / ${liveArtifacts.length}`} />
             <SidebarRow label="Updated" value={formatTimestamp(liveRaidRun?.lastUpdatedAt)} />
           </div>
+        </section>
+
+        <section className="mercenary-sidebar__panel">
+          <div className="mercenary-sidebar__head">
+            <div>
+              <span className="mercenary-sidebar__eyebrow">Attestation</span>
+              <strong>{runtimeAttestationLabel}</strong>
+            </div>
+            <StatusPill tone={runtimeAttestation ? "ready" : runtimeAttestationError ? "offline" : "working"}>
+              {runtimeAttestationStatus}
+            </StatusPill>
+          </div>
+
+          <div className="mercenary-sidebar__statline">
+            <SidebarRow label="Runtime" value={runtimeAttestationTee} />
+            <SidebarRow label="Target" value={runtimeAttestationTarget} />
+            <SidebarRow
+              label="TEE agents"
+              value={`${teeAttestedSpecialistCount}/${sidebarSpecialists.length || hostedProviderCount || 0}`}
+            />
+            <SidebarRow
+              label="Signed"
+              value={`${signedSpecialistCount}/${sidebarSpecialists.length || hostedProviderCount || 0}`}
+            />
+          </div>
+
+          <div className="mercenary-sidebar__links">
+            <a className="mercenary-sidebar__link" href={buildAttestedRuntimePath()} rel="noreferrer" target="_blank">
+              <span>runtime proof</span>
+              <strong>{runtimeAttestation ? `${runtimeAttestationLabel} proof` : "Open runtime attestation"}</strong>
+            </a>
+            {liveRaidRun ? (
+              <a
+                className="mercenary-sidebar__link"
+                href={buildAttestedResultPath(liveRaidRun)}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <span>result proof</span>
+                <strong>Signed attested raid result</strong>
+              </a>
+            ) : null}
+          </div>
+
+          <p className="mercenary-sidebar__note">
+            {runtimeAttestation
+              ? `Mercenary runtime proof says this host is attested on ${runtimeAttestationTarget} / ${runtimeAttestationTee}. Specialist badges reflect routed provider privacy features and provider registry proofs.`
+              : runtimeAttestationError ?? "Loading runtime attestation."}
+          </p>
         </section>
 
         <section className="mercenary-sidebar__panel">
@@ -479,6 +642,15 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
                     <strong>{specialist.displayName}</strong>
                   </div>
                   {specialist.meta ? <small>{specialist.meta}</small> : null}
+                  {specialist.proofTags.length > 0 ? (
+                    <div className="mercenary-sidebar__prooftags">
+                      {specialist.proofTags.map((tag) => (
+                        <span className="mercenary-proof-chip" key={`${specialist.providerId}:${tag}`}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
                 <div className="mercenary-sidebar__specialist-side">
                   {specialist.progressValue != null ? (
@@ -778,6 +950,7 @@ function buildConversationSpecialistRecords(
     return activeExperts.map((expert) => {
       const provider = providerById.get(expert.providerId);
       const health = healthByProviderId.get(expert.providerId);
+      const routingDecision = result?.routingProof?.providers.find((entry) => entry.providerId === expert.providerId);
       const meta = [provider?.modelFamily ?? health?.model ?? "", formatProgress(expert.progress), formatLatency(expert.latencyMs)]
         .filter((value): value is string => Boolean(value))
         .join(" • ");
@@ -790,6 +963,7 @@ function buildConversationSpecialistRecords(
         note: expert.message ?? buildProviderNote(provider, health),
         meta,
         progressValue: resolveSpecialistProgress(expert.status, expert.progress),
+        proofTags: buildProviderProofTags(provider, routingDecision),
       };
     });
   }
@@ -827,6 +1001,7 @@ function buildConversationSpecialistRecords(
       note: entry.roleLabel ?? entry.workstreamLabel ?? entry.reasons[0] ?? buildProviderNote(provider, health),
       meta,
       progressValue: resolveSpecialistProgress(resolvedStatus),
+      proofTags: buildProviderProofTags(provider, entry),
     };
   });
 }
@@ -918,6 +1093,7 @@ function buildHostedSpecialistRecords(
       note: entry.error ?? entry.endpoint ?? "Waiting for provider metadata.",
       meta: entry.model ?? "",
       progressValue: null,
+      proofTags: [],
     }));
   }
 
@@ -934,6 +1110,7 @@ function buildHostedSpecialistRecords(
       note: buildProviderNote(provider, health),
       meta: provider.modelFamily ?? health?.model ?? "",
       progressValue: null,
+      proofTags: buildProviderProofTags(provider),
     };
   });
 }
@@ -948,28 +1125,41 @@ function buildProviderNote(provider: Provider | undefined, health: ProviderHealt
 
 function buildRaidStatusCopy(run: LiveRaidRun): string {
   const status = run.status?.status ?? run.spawn.status;
+  const routeLabel = run.requestMode === "chat_v1" ? "v1 chat completion" : "native raid";
 
   if (status === "queued") {
-    return "I accepted the request and I’m matching it to live specialists.";
+    return `I accepted the request and I’m matching the ${routeLabel} to live specialists.`;
   }
 
   if (status === "running") {
-    return "The raid is live. I’m collecting scoped specialist output and filtering weak branches.";
+    return run.requestMode === "chat_v1"
+      ? "The v1 completion is live. Mercenary is still opening scoped specialist workstreams behind the compatibility layer."
+      : "The raid is live. I’m collecting scoped specialist output and filtering weak branches.";
   }
 
   if (status === "final" && run.result?.synthesizedOutput) {
-    return "The raid is final. I merged the strongest specialist outputs into one delivery.";
+    return run.requestMode === "chat_v1"
+      ? "The v1 completion is final. Mercenary merged the strongest specialist outputs into one clean assistant answer."
+      : "The raid is final. I merged the strongest specialist outputs into one delivery.";
   }
 
   if (status === "final") {
-    return "The raid is final, but no approved output was published.";
+    return `${routeLabel} is final, but no approved output was published.`;
   }
 
-  return `The raid is ${humanizeStatus(status)}.`;
+  return `The ${routeLabel} is ${humanizeStatus(status)}.`;
 }
 
 function buildAgentLogPath(run: LiveRaidRun): string {
   return `${API_BASE}/v1/raids/${encodeURIComponent(run.spawn.raidId)}/agent_log.json?token=${encodeURIComponent(run.spawn.raidAccessToken)}`;
+}
+
+function buildAttestedRuntimePath(): string {
+  return `${API_BASE}/v1/attested-runtime`;
+}
+
+function buildAttestedResultPath(run: LiveRaidRun): string {
+  return `${API_BASE}/v1/raid/${encodeURIComponent(run.spawn.raidId)}/attested-result?token=${encodeURIComponent(run.spawn.raidAccessToken)}`;
 }
 
 function humanizeToolCall(tool: string): string {
@@ -1029,6 +1219,10 @@ function isTerminalRaidStatus(status: string): boolean {
 
 function selectResultText(result: RaidResult | undefined): string | undefined {
   return result?.synthesizedOutput?.answerText ?? result?.primarySubmission?.submission.answerText;
+}
+
+function selectChatCompletionText(chatCompletion: ChatCompletionResponse | undefined): string | undefined {
+  return chatCompletion?.choices[0]?.message?.content;
 }
 
 function selectResultExplanation(result: RaidResult | undefined): string | undefined {
@@ -1191,6 +1385,101 @@ function selectApprovedProviderIds(result: RaidResult | undefined): string[] {
   }
 
   return uniqueStrings((result.approvedSubmissions ?? []).map((entry) => entry.submission.providerId));
+}
+
+function buildDemoChatCompletionPayload(brief: string) {
+  return {
+    model: V1_CHAT_MODEL,
+    messages: [
+      {
+        role: "system",
+        content: "You are Mercenary. Be concise and return one clean final answer.",
+      },
+      {
+        role: "user",
+        content: brief,
+      },
+    ],
+    raid_policy: {
+      max_agents: 3,
+      max_latency_sec: 60,
+    },
+  };
+}
+
+function buildSpawnFromChatCompletion(chatCompletion: ChatCompletionResponse): RaidSpawnOutput | null {
+  if (!chatCompletion.raid) {
+    return null;
+  }
+
+  return {
+    raidId: chatCompletion.raid.raid_id,
+    raidAccessToken: chatCompletion.raid.raid_access_token,
+    receiptPath: chatCompletion.raid.receipt_path,
+    status: chatCompletion.raid.status ?? "queued",
+    selectedExperts: chatCompletion.raid.agents_invited,
+    reserveExperts: 0,
+    estimatedFirstResultSec: 0,
+    sanitization: {
+      riskTier: "safe",
+      redactedSecrets: 0,
+      redactedIdentifiers: 0,
+      trimmedFiles: 0,
+    },
+  };
+}
+
+function buildDemoModeLabel(mode: DemoRequestMode): string {
+  return mode === "chat_v1" ? "v1 completions" : "raid chat";
+}
+
+function buildRuntimeAttestationLabel(target: string, teePlatform: string): string {
+  const haystack = `${target} ${teePlatform}`.toLowerCase();
+  if (haystack.includes("phala")) {
+    return "Phala TEE attested";
+  }
+  if (haystack.includes("eigen")) {
+    return "EigenCompute TEE attested";
+  }
+  if (teePlatform !== "pending" && teePlatform.trim().length > 0) {
+    return `${teePlatform} TEE attested`;
+  }
+  return "TEE attestation";
+}
+
+function buildProviderProofTags(
+  provider: Provider | undefined,
+  routingDecision?: NonNullable<RaidResult["routingProof"]>["providers"][number],
+): string[] {
+  const tags: string[] = [];
+  const privacyFeatures = new Set<string>(routingDecision?.privacyFeatures ?? []);
+  if (provider?.privacy?.teeAttested) {
+    privacyFeatures.add("tee_attested");
+  }
+  if (provider?.privacy?.signedOutputs) {
+    privacyFeatures.add("signed_outputs");
+  }
+  if ((routingDecision?.erc8004VerificationStatus ?? provider?.erc8004?.verification?.status) === "verified") {
+    tags.push("8004");
+  }
+  if (privacyFeatures.has("tee_attested")) {
+    tags.push("TEE");
+  }
+  if (privacyFeatures.has("signed_outputs")) {
+    tags.push("signed");
+  }
+  if (privacyFeatures.has("e2ee")) {
+    tags.push("E2EE");
+  }
+  return uniqueStrings(tags).slice(0, 3);
+}
+
+function countTeeAttestedSpecialists(specialists: ConversationSpecialistRecord[]): number {
+  return specialists.filter((specialist) => specialist.proofTags.includes("TEE")).length;
+}
+
+function countProofTag(specialists: ConversationSpecialistRecord[], tag: string): number {
+  return specialists.filter((specialist) => specialist.proofTags.includes(tag)).length;
 }
 
 function formatTimestamp(value: string | undefined): string {

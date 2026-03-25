@@ -416,6 +416,38 @@ export type RaidSpawnOutput = {
   };
 };
 
+export type ChatCompletionResponse = {
+  id: string;
+  object: string;
+  created: number;
+  model: string;
+  system_fingerprint?: string;
+  choices: Array<{
+    index: number;
+    message: {
+      role: string;
+      content: string;
+    };
+    finish_reason: string | null;
+  }>;
+  raid?: {
+    raid_id: string;
+    raid_access_token: string;
+    receipt_path: string;
+    agents_invited: number;
+    agents_succeeded: number;
+    successful_agents: string[];
+    synthesized_from_agents?: string[];
+    base_agent?: string;
+    status?: string;
+  };
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+};
+
 export const API_BASE =
   (import.meta.env.VITE_BOSSRAID_WEB_API_BASE as string | undefined) ?? "/api";
 export const RAID_ACCESS_TOKEN_HEADER = "x-bossraid-raid-token";
@@ -491,6 +523,16 @@ export async function spawnRaid(payload: unknown): Promise<ApiResponse<RaidSpawn
 
 export async function spawnDemoRaid(payload: unknown): Promise<ApiResponse<RaidSpawnOutput>> {
   return requestJsonDetailed<RaidSpawnOutput>("/v1/demo/raid", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function requestChatCompletion(payload: unknown): Promise<ApiResponse<ChatCompletionResponse>> {
+  return requestJsonDetailed<ChatCompletionResponse>("/v1/chat/completions", {
     method: "POST",
     headers: {
       "content-type": "application/json",

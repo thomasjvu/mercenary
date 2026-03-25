@@ -163,10 +163,19 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
     (decision) => decision.erc8004VerificationStatus === "verified",
   );
   const veniceProviderCount = countProvidersWithSignal(routingDecisionMap, (decision) => decision.veniceBacked);
+  const teeProviderCount = countProvidersWithSignal(
+    routingDecisionMap,
+    (decision) => decision.privacyFeatures.includes("tee_attested"),
+  );
+  const signedProviderCount = countProvidersWithSignal(
+    routingDecisionMap,
+    (decision) => decision.privacyFeatures.includes("signed_outputs"),
+  );
   const runtimeAttestationStatus = attestedRuntime.data ? "live" : attestedRuntime.error ? "unavailable" : "loading";
   const resultAttestationStatus = attestedResult.data ? "live" : attestedResult.error ? "unavailable" : activeQuery ? "loading" : "pending";
   const attestationTarget = attestedResult.data?.payload.deploymentTarget ?? attestedRuntime.data?.payload.deploymentTarget ?? "pending";
   const attestationTee = attestedResult.data?.payload.teePlatform ?? attestedRuntime.data?.payload.teePlatform ?? "pending";
+  const attestationSurfaceLabel = buildAttestationSurfaceLabel(attestationTarget, attestationTee);
   const currentReceiptStatus = result.data?.status ?? status.data?.status ?? "loading";
   const canonicalSummary = summarizeCanonicalOutput(result.data);
   const previewArtifacts = pickPreviewArtifacts(synthesizedArtifacts);
@@ -293,7 +302,10 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
           </p>
           <p>
             {attestedRuntime.data
-              ? `Runtime proof live on ${attestedRuntime.data.payload.deploymentTarget ?? "unknown"} / ${attestedRuntime.data.payload.teePlatform ?? "unknown"}.`
+              ? `${buildAttestationSurfaceLabel(
+                  attestedRuntime.data.payload.deploymentTarget ?? "unknown",
+                  attestedRuntime.data.payload.teePlatform ?? "unknown",
+                )} runtime proof is live.`
               : attestedRuntime.error
                 ? readQueryErrorMessage(attestedRuntime.error)
                 : "Loading runtime attestation."}
@@ -379,12 +391,22 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                 <ReceiptStat label="result" value={resultAttestationStatus} />
                 <ReceiptStat label="target" value={attestationTarget} />
                 <ReceiptStat label="tee" value={attestationTee} />
+                <ReceiptStat label="tee providers" value={`${teeProviderCount}/${routedProviderIds.length || 0}`} />
+                <ReceiptStat label="signed" value={`${signedProviderCount}/${routedProviderIds.length || 0}`} />
+              </div>
+              <div className="receipt-proof-note receipt-proof-note--inline">
+                <strong>TEE proof:</strong> {`${attestationSurfaceLabel} runtime proof and signed raid result proof are exposed here when the host signer is configured.`}
               </div>
               <div className="receipt-link-list">
                 <ReceiptLinkItem
                   href={buildAttestedRuntimeUrl()}
                   label="runtime attestation"
-                  note="public EigenCompute runtime proof"
+                  note={`${attestationSurfaceLabel} runtime proof`}
+                />
+                <ReceiptLinkItem
+                  href={buildAttestedResultUrl(activeQuery)}
+                  label="result attestation"
+                  note={`${attestationSurfaceLabel} result proof`}
                 />
                 <ReceiptLinkItem href={buildAgentLogUrl(activeQuery)} label="agent log" note="token-gated run log" />
                 <ReceiptLinkItem
@@ -758,7 +780,7 @@ function buildProviderProofNote(decision: RoutingDecision | undefined, provider:
     decision?.veniceBacked ?? (provider ? isVeniceProvider(provider) : false) ? "venice" : null,
     privacyFeatures.has("no_data_retention") ? "no-retention" : null,
     privacyFeatures.has("signed_outputs") ? "signed outputs" : null,
-    privacyFeatures.has("tee_attested") ? "tee" : null,
+    privacyFeatures.has("tee_attested") ? "tee attested" : null,
   ].filter((value): value is string => value != null);
 
   return parts.join(" · ");
@@ -811,8 +833,26 @@ function buildAttestedRuntimeUrl(): string {
   return `${API_BASE}/v1/attested-runtime`;
 }
 
+function buildAttestedResultUrl(query: ReceiptQuery): string {
+  return `${API_BASE}/v1/raid/${encodeURIComponent(query.raidId)}/attested-result?token=${encodeURIComponent(query.token)}`;
+}
+
 function buildAgentLogUrl(query: ReceiptQuery): string {
   return `${API_BASE}/v1/raids/${encodeURIComponent(query.raidId)}/agent_log.json?token=${encodeURIComponent(query.token)}`;
+}
+
+function buildAttestationSurfaceLabel(target: string | null | undefined, teePlatform: string | null | undefined): string {
+  const haystack = `${target ?? ""} ${teePlatform ?? ""}`.toLowerCase();
+  if (haystack.includes("phala")) {
+    return "Phala TEE-attested";
+  }
+  if (haystack.includes("eigen")) {
+    return "EigenCompute TEE-attested";
+  }
+  if (teePlatform != null && teePlatform.trim().length > 0) {
+    return `${teePlatform} TEE-attested`;
+  }
+  return "TEE-attested";
 }
 
 function buildReceiptUrl(query: ReceiptQuery): string {
