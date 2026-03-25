@@ -129,7 +129,7 @@ pnpm render:video
 - `BOSSRAID_STATE_FILE`: file backend state path when `BOSSRAID_STORAGE_BACKEND=file`
 - `BOSSRAID_PROVIDERS_FILE`: provider seed and registry snapshot loaded at boot
 - `BOSSRAID_PROVIDER_FRESH_MS`: provider freshness window for routing
-- `BOSSRAID_INVITE_ACCEPT_MS`, `BOSSRAID_FIRST_HEARTBEAT_MS`, `BOSSRAID_HEARTBEAT_STALE_MS`, `BOSSRAID_HARD_EXECUTION_MS`, `BOSSRAID_RAID_ABSOLUTE_MS`: orchestrator timing controls; `BOSSRAID_INVITE_ACCEPT_MS` also bounds the API-side HTTP invite request window to providers
+- `BOSSRAID_INVITE_ACCEPT_MS`, `BOSSRAID_FIRST_HEARTBEAT_MS`, `BOSSRAID_HEARTBEAT_STALE_MS`, `BOSSRAID_HARD_EXECUTION_MS`, `BOSSRAID_RAID_ABSOLUTE_MS`: orchestrator timing controls; `BOSSRAID_INVITE_ACCEPT_MS` also bounds the API-side HTTP invite request window to providers and the v1 chat terminal settle grace, with a floor of `5s` and a cap of `30s`
 - `PORT`: listener port for the API, evaluator, provider, or gateway process
 - `BOSSRAID_API_HOST`, `BOSSRAID_EVAL_HOST`, `BOSSRAID_PROVIDER_HOST`, `BOSSRAID_GATEWAY_HOST`: host bindings for each listener
 - `BOSSRAID_DEPLOY_TARGET`: optional deployment label surfaced in runtime proof

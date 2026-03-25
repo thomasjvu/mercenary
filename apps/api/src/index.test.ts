@@ -11,7 +11,7 @@ import type {
 } from "@bossraid/shared-types";
 import { BossRaidOrchestrator } from "@bossraid/orchestrator";
 import type { RaidProvider } from "@bossraid/provider-sdk";
-import { buildApiServer } from "./index.js";
+import { buildApiServer, resolveChatTerminalSettleGraceMs } from "./index.js";
 
 const TEST_MNEMONIC = "test test test test test test test test test test test junk";
 process.env.BOSSRAID_X402_ENABLED = "false";
@@ -716,6 +716,13 @@ test("POST /v1/chat/completions waits for a terminal raid state instead of reply
   } finally {
     await app.close();
   }
+});
+
+test("resolveChatTerminalSettleGraceMs honors BOSSRAID_INVITE_ACCEPT_MS with floor and cap", () => {
+  assert.equal(resolveChatTerminalSettleGraceMs({}), 5_000);
+  assert.equal(resolveChatTerminalSettleGraceMs({ BOSSRAID_INVITE_ACCEPT_MS: "2000" } as NodeJS.ProcessEnv), 5_000);
+  assert.equal(resolveChatTerminalSettleGraceMs({ BOSSRAID_INVITE_ACCEPT_MS: "7000" } as NodeJS.ProcessEnv), 7_000);
+  assert.equal(resolveChatTerminalSettleGraceMs({ BOSSRAID_INVITE_ACCEPT_MS: "45000" } as NodeJS.ProcessEnv), 30_000);
 });
 
 test("unknown raid routes return 404 for authorized readers", async () => {

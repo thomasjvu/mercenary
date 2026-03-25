@@ -108,6 +108,7 @@ export function buildApiServer(
   );
   const providerHealthTimeoutMs = readPositiveInteger(env.BOSSRAID_PROVIDER_HEALTH_TIMEOUT_MS, 5_000);
   const chatDefaultMaxTotalCost = readPositiveNumber(env.BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST);
+  const chatTerminalSettleGraceMs = resolveChatTerminalSettleGraceMs(env);
   const evaluatorMaxConcurrentJobs = readPositiveInteger(env.BOSSRAID_EVAL_MAX_CONCURRENT_JOBS, 2);
   const registryToken = env.BOSSRAID_REGISTRY_TOKEN;
   let mercenaryIdentity = readMercenaryErc8004Identity(env);
@@ -1059,6 +1060,7 @@ export function buildApiServer(
         raidRequest,
         spawn,
         created,
+        settleGraceMs: chatTerminalSettleGraceMs,
       });
       return;
     }
@@ -1067,6 +1069,7 @@ export function buildApiServer(
       orchestrator,
       spawn.raidId,
       Math.max(raidRequest.constraints.maxLatencySec * 1000, 1_000),
+      chatTerminalSettleGraceMs,
     );
     const response = buildChatCompletionResponse(chatRequest, spawn, outcome, created);
     applyX402Headers(reply, {
@@ -1358,6 +1361,14 @@ function readPositiveNumber(value: string | undefined): number | undefined {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+export function resolveChatTerminalSettleGraceMs(env: NodeJS.ProcessEnv): number {
+  const inviteAcceptMs = readPositiveInteger(env.BOSSRAID_INVITE_ACCEPT_MS, 3_000);
+  return Math.min(
+    CHAT_TERMINAL_SETTLE_GRACE_CAP_MS,
+    Math.max(CHAT_TERMINAL_SETTLE_GRACE_FLOOR_MS, inviteAcceptMs),
+  );
 }
 
 function readBooleanEnv(value: string | undefined): boolean {
@@ -1692,7 +1703,8 @@ function buildChatCompletionResponse(
   };
 }
 
-const CHAT_TERMINAL_SETTLE_GRACE_MS = 5_000;
+const CHAT_TERMINAL_SETTLE_GRACE_FLOOR_MS = 5_000;
+const CHAT_TERMINAL_SETTLE_GRACE_CAP_MS = 30_000;
 
 async function streamChatCompletionResponse(
   reply: FastifyReply,
@@ -1707,6 +1719,7 @@ async function streamChatCompletionResponse(
       selectedExperts: number;
     };
     created: number;
+    settleGraceMs: number;
   },
 ) {
   const stream = new PassThrough();
@@ -1736,7 +1749,7 @@ async function streamChatCompletionResponse(
       });
 
       const deadline = Date.now() + Math.max(input.raidRequest.constraints.maxLatencySec * 1000, 1_000);
-      const settleDeadline = deadline + CHAT_TERMINAL_SETTLE_GRACE_MS;
+      const settleDeadline = deadline + input.settleGraceMs;
       let lastKeepAliveAt = Date.now();
       let outcome = {
         status: orchestrator.getStatus(input.spawn.raidId),
@@ -1900,9 +1913,10 @@ async function waitForTerminalRaidOutput(
   orchestrator: BossRaidOrchestrator,
   raidId: string,
   timeoutMs: number,
+  settleGraceMs: number,
 ) {
   const deadline = Date.now() + Math.max(timeoutMs, 1_000);
-  const settleDeadline = deadline + CHAT_TERMINAL_SETTLE_GRACE_MS;
+  const settleDeadline = deadline + Math.max(settleGraceMs, CHAT_TERMINAL_SETTLE_GRACE_FLOOR_MS);
   let latest = {
     status: orchestrator.getStatus(raidId),
     result: orchestrator.getResult(raidId),
