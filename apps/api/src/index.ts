@@ -1,5 +1,6 @@
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { stat } from "node:fs/promises";
+import { PassThrough } from "node:stream";
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import { mnemonicToAccount } from "viem/accounts";
 import {
@@ -25,7 +26,10 @@ import {
 } from "@bossraid/orchestrator";
 import { probeProviderHealth, verifyProviderAuth } from "@bossraid/provider-sdk";
 import {
+  type ChatCompletionRequest,
+  type BossRaidSynthesizedWorkstream,
   type BossRaidResultOutput,
+  type BossRaidStatusOutput,
   type BossRaidSpawnInput,
   type Erc8004Identity,
   type ProviderHealthStatus,
@@ -104,6 +108,7 @@ export function buildApiServer(
     300_000,
   );
   const providerHealthTimeoutMs = readPositiveInteger(env.BOSSRAID_PROVIDER_HEALTH_TIMEOUT_MS, 5_000);
+  const chatDefaultMaxTotalCost = readPositiveNumber(env.BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST);
   const evaluatorMaxConcurrentJobs = readPositiveInteger(env.BOSSRAID_EVAL_MAX_CONCURRENT_JOBS, 2);
   const registryToken = env.BOSSRAID_REGISTRY_TOKEN;
   let mercenaryIdentity = readMercenaryErc8004Identity(env);
@@ -1032,57 +1037,40 @@ export function buildApiServer(
 
     const chatRequest = parseChatCompletionRequest(request.body);
     const raidRequest =
-      chatRequest.raidRequest ?? parseBossRaidRequest(buildBossRaidRequestFromChatCompletion(chatRequest));
+      chatRequest.raidRequest ??
+      parseBossRaidRequest(
+        buildBossRaidRequestFromChatCompletion(chatRequest, {
+          defaultMaxTotalCost: chatDefaultMaxTotalCost,
+        }),
+      );
     await ensureErc8004ProofState({ includeMercenary: false });
     const payment = await requireReservedLaunchPayment("chat", request, raidRequest);
     const spawn =
       payment.reservationId && payment.requestKey
         ? await orchestrator.spawnReservedRaid(payment.reservationId, payment.requestKey)
         : await orchestrator.spawnRaid(raidRequest);
+    const created = Math.floor(Date.now() / 1000);
+
+    if (chatRequest.stream) {
+      applyX402Headers(reply, {
+        settlement: payment.settlement,
+      });
+      await streamChatCompletionResponse(reply, orchestrator, {
+        chatRequest,
+        raidRequest,
+        spawn,
+        created,
+      });
+      return;
+    }
+
     const outcome = await waitForRaidOutput(
       orchestrator,
       spawn.raidId,
       Math.min(raidRequest.constraints.maxLatencySec * 1000, 15_000),
       Math.min(Math.max(raidRequest.constraints.numExperts, 1), Math.max(spawn.selectedExperts, 1)),
     );
-
-    const approved = outcome.result?.approvedSubmissions ?? [];
-    const synthesized = outcome.result?.synthesizedOutput;
-    const primary = outcome.result?.primarySubmission;
-    const content =
-      synthesized?.answerText ??
-      synthesized?.explanation ??
-      primary?.submission.answerText ??
-      primary?.submission.explanation ??
-      (outcome.status.status === "final"
-        ? "Raid finished without an approved provider output."
-        : `Raid ${spawn.raidId} started. No approved provider output yet.`);
-
-    const response = {
-      id: `chatcmpl_${spawn.raidId}`,
-      object: "chat.completion",
-      model: chatRequest.model,
-      choices: [
-        {
-          index: 0,
-          message: {
-            role: "assistant",
-            content,
-          },
-          finish_reason: "stop",
-        },
-      ],
-      raid: {
-        raid_id: spawn.raidId,
-        raid_access_token: spawn.raidAccessToken,
-        receipt_path: spawn.receiptPath,
-        agents_invited: spawn.selectedExperts,
-        agents_succeeded: synthesized?.contributingProviderIds.length ?? approved.length,
-        successful_agents: approved.map((entry) => entry.submission.providerId),
-        synthesized_from_agents: synthesized?.contributingProviderIds,
-        base_agent: synthesized?.baseSubmissionProviderId,
-      },
-    };
+    const response = buildChatCompletionResponse(chatRequest, spawn, outcome, created);
     applyX402Headers(reply, {
       settlement: payment.settlement,
     });
@@ -1363,6 +1351,15 @@ function readPositiveInteger(value: string | undefined, fallback: number): numbe
 
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+}
+
+function readPositiveNumber(value: string | undefined): number | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function readBooleanEnv(value: string | undefined): boolean {
@@ -1658,6 +1655,307 @@ function parseOpsSessionInput(value: unknown): { token: string } {
   return {
     token: token.trim(),
   };
+}
+
+function buildChatCompletionResponse(
+  chatRequest: ChatCompletionRequest,
+  spawn: {
+    raidId: string;
+    raidAccessToken: string;
+    receiptPath: string;
+    selectedExperts: number;
+  },
+  outcome: {
+    status: BossRaidStatusOutput;
+    result: BossRaidResultOutput;
+  },
+  created: number,
+) {
+  const content = buildUserFacingChatContent(spawn.raidId, outcome);
+
+  return {
+    id: `chatcmpl_${spawn.raidId}`,
+    object: "chat.completion",
+    created,
+    model: normalizeChatCompletionModel(chatRequest.model),
+    system_fingerprint: "mercenary-v1",
+    choices: [
+      {
+        index: 0,
+        message: {
+          role: "assistant",
+          content,
+        },
+        finish_reason: "stop",
+      },
+    ],
+    raid: buildChatRaidMetadata(spawn, outcome),
+    usage: estimateChatUsage(chatRequest.messages, content),
+  };
+}
+
+async function streamChatCompletionResponse(
+  reply: FastifyReply,
+  orchestrator: BossRaidOrchestrator,
+  input: {
+    chatRequest: ChatCompletionRequest;
+    raidRequest: BossRaidSpawnInput;
+    spawn: {
+      raidId: string;
+      raidAccessToken: string;
+      receiptPath: string;
+      selectedExperts: number;
+    };
+    created: number;
+  },
+) {
+  const stream = new PassThrough();
+  reply.code(200);
+  reply.header("content-type", "text/event-stream; charset=utf-8");
+  reply.header("cache-control", "no-cache, no-transform");
+  reply.header("connection", "keep-alive");
+  reply.header("x-accel-buffering", "no");
+  void (async () => {
+    try {
+      writeSseData(stream, {
+        id: `chatcmpl_${input.spawn.raidId}`,
+        object: "chat.completion.chunk",
+        created: input.created,
+        model: normalizeChatCompletionModel(input.chatRequest.model),
+        system_fingerprint: "mercenary-v1",
+        choices: [
+          {
+            index: 0,
+            delta: {
+              role: "assistant",
+            },
+            finish_reason: null,
+          },
+        ],
+        raid: buildChatRaidMetadata(input.spawn),
+      });
+
+      const deadline = Date.now() + Math.max(input.raidRequest.constraints.maxLatencySec * 1000, 1_000);
+      const minApprovedSubmissions = Math.min(
+        Math.max(input.raidRequest.constraints.numExperts, 1),
+        Math.max(input.spawn.selectedExperts, 1),
+      );
+      let lastKeepAliveAt = Date.now();
+      let outcome = {
+        status: orchestrator.getStatus(input.spawn.raidId),
+        result: orchestrator.getResult(input.spawn.raidId),
+      };
+
+      while (Date.now() < deadline) {
+        outcome = {
+          status: orchestrator.getStatus(input.spawn.raidId),
+          result: orchestrator.getResult(input.spawn.raidId),
+        };
+        if (isChatOutcomeReady(outcome, minApprovedSubmissions)) {
+          break;
+        }
+
+        if (Date.now() - lastKeepAliveAt >= 5_000) {
+          stream.write(": keep-alive\n\n");
+          lastKeepAliveAt = Date.now();
+        }
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+
+      const finalOutcome = isChatOutcomeReady(outcome, minApprovedSubmissions)
+        ? outcome
+        : {
+            status: orchestrator.getStatus(input.spawn.raidId),
+            result: orchestrator.getResult(input.spawn.raidId),
+          };
+      const content = buildUserFacingChatContent(input.spawn.raidId, finalOutcome);
+
+      if (content.length > 0) {
+        writeSseData(stream, {
+          id: `chatcmpl_${input.spawn.raidId}`,
+          object: "chat.completion.chunk",
+          created: input.created,
+          model: normalizeChatCompletionModel(input.chatRequest.model),
+          system_fingerprint: "mercenary-v1",
+          choices: [
+            {
+              index: 0,
+              delta: {
+                content,
+              },
+              finish_reason: null,
+            },
+          ],
+          raid: buildChatRaidMetadata(input.spawn, finalOutcome),
+        });
+      }
+
+      writeSseData(stream, {
+        id: `chatcmpl_${input.spawn.raidId}`,
+        object: "chat.completion.chunk",
+        created: input.created,
+        model: normalizeChatCompletionModel(input.chatRequest.model),
+        system_fingerprint: "mercenary-v1",
+        choices: [
+          {
+            index: 0,
+            delta: {},
+            finish_reason: "stop",
+          },
+        ],
+        raid: buildChatRaidMetadata(input.spawn, finalOutcome),
+      });
+      stream.write("data: [DONE]\n\n");
+    } finally {
+      stream.end();
+    }
+  })();
+
+  return reply.send(stream);
+}
+
+function buildChatRaidMetadata(
+  spawn: {
+    raidId: string;
+    raidAccessToken: string;
+    receiptPath: string;
+    selectedExperts: number;
+  },
+  outcome?: {
+    status: BossRaidStatusOutput;
+    result: BossRaidResultOutput;
+  },
+) {
+  const approved = outcome?.result.approvedSubmissions ?? [];
+  const synthesized = outcome?.result.synthesizedOutput;
+
+  return {
+    raid_id: spawn.raidId,
+    raid_access_token: spawn.raidAccessToken,
+    receipt_path: spawn.receiptPath,
+    agents_invited: spawn.selectedExperts,
+    agents_succeeded: synthesized?.contributingProviderIds.length ?? approved.length,
+    successful_agents: approved.map((entry) => entry.submission.providerId),
+    synthesized_from_agents: synthesized?.contributingProviderIds,
+    base_agent: synthesized?.baseSubmissionProviderId,
+    status: outcome?.status.status,
+  };
+}
+
+function buildUserFacingChatContent(
+  raidId: string,
+  outcome: {
+    status: BossRaidStatusOutput;
+    result: BossRaidResultOutput;
+  },
+): string {
+  const synthesized = outcome.result.synthesizedOutput;
+  const primary = outcome.result.primarySubmission;
+  const workstreams = synthesized?.workstreams ?? [];
+
+  if (workstreams.length > 0) {
+    const baseWorkstream =
+      workstreams.find((item) => item.baseSubmissionProviderId === synthesized?.baseSubmissionProviderId) ??
+      workstreams[0];
+    const sections: string[] = [];
+    const baseText = cleanChatSection(baseWorkstream.answerText ?? baseWorkstream.summary);
+    if (baseText) {
+      sections.push(baseText);
+    }
+
+    const constraint = findChatSupportWorkstream(workstreams, "constraints", /constraint/i);
+    if (constraint) {
+      sections.push(`Constraint: ${cleanChatSection(constraint.summary)}`);
+    }
+
+    const risk = findChatSupportWorkstream(workstreams, "risk", /risk/i);
+    if (risk) {
+      sections.push(`Risk: ${cleanChatSection(risk.summary)}`);
+    }
+
+    const execution = findChatSupportWorkstream(workstreams, "execution", /execution|next step|delivery/i);
+    if (execution) {
+      sections.push(`Next step: ${cleanChatSection(execution.summary)}`);
+    }
+
+    const uniqueSections = [...new Set(sections.filter(Boolean))];
+    if (uniqueSections.length > 0) {
+      return uniqueSections.join("\n\n");
+    }
+  }
+
+  return (
+    synthesized?.answerText ??
+    synthesized?.explanation ??
+    primary?.submission.answerText ??
+    primary?.submission.explanation ??
+    (outcome.status.status === "final"
+      ? "Raid finished without an approved provider output."
+      : `Raid ${raidId} started. No approved provider output yet.`)
+  );
+}
+
+function findChatSupportWorkstream(
+  workstreams: BossRaidSynthesizedWorkstream[],
+  id: string,
+  labelPattern: RegExp,
+): BossRaidSynthesizedWorkstream | undefined {
+  return workstreams.find(
+    (item) => item.id === id || labelPattern.test(item.label) || labelPattern.test(item.objective),
+  );
+}
+
+function cleanChatSection(value: string | undefined): string {
+  if (!value) {
+    return "";
+  }
+
+  return value
+    .replace(/^Supporting workstreams:\s*/im, "")
+    .replace(/\n- /g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeChatCompletionModel(_model: string): string {
+  return "mercenary-v1";
+}
+
+function estimateChatUsage(messages: ChatCompletionRequest["messages"], content: string) {
+  const promptTokens = messages.reduce((total, message) => total + estimateTokenCount(message.content), 0);
+  const completionTokens = estimateTokenCount(content);
+  return {
+    prompt_tokens: promptTokens,
+    completion_tokens: completionTokens,
+    total_tokens: promptTokens + completionTokens,
+  };
+}
+
+function estimateTokenCount(value: string): number {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return 0;
+  }
+
+  return trimmed.split(/\s+/).length;
+}
+
+function writeSseData(stream: PassThrough, payload: unknown): void {
+  stream.write(`data: ${JSON.stringify(payload)}\n\n`);
+}
+
+function isChatOutcomeReady(
+  outcome: {
+    status: BossRaidStatusOutput;
+    result: BossRaidResultOutput;
+  },
+  minApprovedSubmissions: number,
+): boolean {
+  const approvedCount = outcome.result.approvedSubmissions?.length ?? 0;
+  return (
+    (outcome.result.synthesizedOutput && approvedCount >= Math.max(minApprovedSubmissions, 1)) ||
+    ["final", "cancelled", "expired"].includes(outcome.status.status)
+  );
 }
 
 async function waitForRaidOutput(

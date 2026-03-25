@@ -119,7 +119,7 @@ test("buildBossRaidRequestFromChatCompletion synthesizes the shared chat raid sh
   assert.equal(request.task.title, "Explain the bug.");
   assert.equal(
     request.task.description,
-    "Return one short sentence.\n\nInspect src/math.ts.\n\nExplain the bug.",
+    "System:\nReturn one short sentence.\n\nUser:\nInspect src/math.ts.\n\nAssistant:\nignored\n\nUser:\nExplain the bug.",
   );
   assert.equal(request.task.language, "text");
   assert.deepEqual(request.task.failingSignals, {
@@ -163,6 +163,43 @@ test("buildBossRaidRequestFromChatCompletion requires an explicit payout budget"
     (error: unknown) =>
       error instanceof ApiContractError &&
       error.message === "Expected finite number for chat_completion_request.raid_policy.max_total_cost.",
+  );
+});
+
+test("buildBossRaidRequestFromChatCompletion accepts a server-side default payout budget", () => {
+  const request = buildBossRaidRequestFromChatCompletion(
+    parseChatCompletionRequest({
+      model: "mercenary-v1",
+      messages: [
+        {
+          role: "user",
+          content: "Explain the bug.",
+        },
+      ],
+    }),
+    {
+      defaultMaxTotalCost: 6,
+    },
+  );
+
+  assert.equal(request.raidPolicy?.maxTotalCost, 6);
+});
+
+test("parseChatCompletionRequest rejects unsupported message roles", () => {
+  assert.throws(
+    () =>
+      parseChatCompletionRequest({
+        model: "mercenary-v1",
+        messages: [
+          {
+            role: "tool",
+            content: "not supported",
+          },
+        ],
+      }),
+    (error: unknown) =>
+      error instanceof ApiContractError &&
+      error.message === "Unsupported chat message role for chat_completion_request.messages[0].role.",
   );
 });
 

@@ -627,8 +627,10 @@ export interface ChatCompletionMessage {
 }
 
 export interface ChatCompletionRequest {
-  model: "mercenary-v1";
+  model: string;
   messages: ChatCompletionMessage[];
+  stream?: boolean;
+  user?: string;
   raidRequest?: BossRaidSpawnInput;
   raidPolicy?: BossRaidRequest["raidPolicy"];
 }

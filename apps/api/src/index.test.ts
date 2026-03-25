@@ -286,6 +286,61 @@ test("chat completion requests require an explicit payout budget", async () => {
   }
 });
 
+test("chat completion requests can use a server-side default payout budget", async () => {
+  const provider: RaidProvider = {
+    profile: createProviderProfile("provider-chat-default-budget", {
+      outputTypes: ["text", "json"],
+      supportedLanguages: ["text"],
+    }),
+    async accept(_task: ProviderTaskPackage): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: "run-chat-default-budget",
+      };
+    },
+    async run(task, callbacks): Promise<void> {
+      await callbacks.onSubmit({
+        raidId: task.raidId,
+        providerId: "provider-chat-default-budget",
+        providerRunId: "run-chat-default-budget",
+        answerText: "The helper subtracts instead of adding.",
+        explanation: "Change subtraction back to addition.",
+        confidence: 0.93,
+        filesTouched: [],
+        submittedAt: new Date().toISOString(),
+      });
+    },
+  };
+  const orchestrator = new BossRaidOrchestrator([provider], undefined, undefined, undefined, async (profile) =>
+    readyHealth(profile.providerId),
+  );
+  const app = buildApiServer(orchestrator, {
+    ...process.env,
+    BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: "6",
+  });
+
+  try {
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/chat/completions",
+      payload: {
+        model: "mercenary-v1",
+        messages: [
+          {
+            role: "user",
+            content: "Explain the bug.",
+          },
+        ],
+      },
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().model, "mercenary-v1");
+  } finally {
+    await app.close();
+  }
+});
+
 test("POST /v1/chat/completions synthesizes a text raid and returns a multi-provider answer", async () => {
   const receivedTasks: ProviderTaskPackage[] = [];
 
@@ -397,12 +452,14 @@ test("POST /v1/chat/completions synthesizes a text raid and returns a multi-prov
     assert.equal(orchestrator.getRaid(receivedTasks[1]!.raidId)?.parentRaidId, body.raid.raid_id);
     assert.match(body.id, /^chatcmpl_/);
     assert.equal(body.object, "chat.completion");
-    assert.equal(body.model, "gpt-4.1-mini");
+    assert.equal(typeof body.created, "number");
+    assert.equal(body.model, "mercenary-v1");
+    assert.equal(body.system_fingerprint, "mercenary-v1");
     assert.equal(body.choices[0]?.index, 0);
     assert.equal(body.choices[0]?.message.role, "assistant");
     assert.match(body.choices[0]?.message.content, /subtracts instead of adding|returns a - b/);
-    assert.match(body.choices[0]?.message.content, /Supporting workstreams:/);
     assert.match(body.choices[0]?.message.content, /Risk:/);
+    assert.doesNotMatch(body.choices[0]?.message.content, /Supporting workstreams:/);
     assert.equal(body.choices[0]?.finish_reason, "stop");
     assert.match(body.raid.raid_id, /^raid_/);
     assert.equal(typeof body.raid.raid_access_token, "string");
@@ -412,6 +469,10 @@ test("POST /v1/chat/completions synthesizes a text raid and returns a multi-prov
     assert.equal(body.raid.agents_succeeded, 2);
     assert.deepEqual([...body.raid.successful_agents].sort(), ["provider-chat-a", "provider-chat-b"]);
     assert.deepEqual([...body.raid.synthesized_from_agents].sort(), ["provider-chat-a", "provider-chat-b"]);
+    assert.equal(body.raid.status, "final");
+    assert.ok(body.usage.prompt_tokens > 0);
+    assert.ok(body.usage.completion_tokens > 0);
+    assert.equal(body.usage.total_tokens, body.usage.prompt_tokens + body.usage.completion_tokens);
   } finally {
     await app.close();
   }
@@ -493,7 +554,67 @@ test("POST /v1/chat/completions can recurse into nested child raids for larger e
     assert.equal(body.raid.agents_succeeded, 5);
     assert.equal(body.raid.successful_agents.length, 5);
     assert.equal(body.raid.synthesized_from_agents.length, 5);
-    assert.match(body.choices[0]?.message.content, /Supporting workstreams:/);
+    assert.equal(body.model, "mercenary-v1");
+  } finally {
+    await app.close();
+  }
+});
+
+test("POST /v1/chat/completions supports streaming on the v1 route", async () => {
+  const provider: RaidProvider = {
+    profile: createProviderProfile("provider-chat-stream", {
+      outputTypes: ["text", "json"],
+      supportedLanguages: ["text"],
+    }),
+    async accept(_task: ProviderTaskPackage): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: "run-chat-stream",
+      };
+    },
+    async run(task, callbacks): Promise<void> {
+      await callbacks.onSubmit({
+        raidId: task.raidId,
+        providerId: "provider-chat-stream",
+        providerRunId: "run-chat-stream",
+        answerText: "The add helper subtracts instead of adding.",
+        explanation: "Switch the arithmetic operator back to addition.",
+        confidence: 0.94,
+        filesTouched: [],
+        submittedAt: new Date().toISOString(),
+      });
+    },
+  };
+  const orchestrator = new BossRaidOrchestrator([provider], undefined, undefined, undefined, async (profile) =>
+    readyHealth(profile.providerId),
+  );
+  const app = buildApiServer(orchestrator);
+
+  try {
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/chat/completions",
+      payload: {
+        model: "mercenary-v1",
+        stream: true,
+        messages: [
+          {
+            role: "user",
+            content: "Explain the bug.",
+          },
+        ],
+        raid_policy: {
+          max_total_cost: 6,
+        },
+      },
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.match(response.headers["content-type"] ?? "", /text\/event-stream/);
+    assert.match(response.payload, /chat\.completion\.chunk/);
+    assert.match(response.payload, /mercenary-v1/);
+    assert.match(response.payload, /The add helper subtracts instead of adding\./);
+    assert.match(response.payload, /\[DONE\]/);
   } finally {
     await app.close();
   }

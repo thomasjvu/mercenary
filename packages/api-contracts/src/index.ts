@@ -48,6 +48,7 @@ const PRIVACY_FEATURES = new Set<PrivacyFeatureKey>([
 const HOSTS = new Set<HostContext["host"]>(["codex", "claude_code"]);
 const PROVIDER_AUTH_TYPES = new Set<ProviderAuthConfig["type"]>(["bearer", "hmac", "none"]);
 const PROVIDER_STATUSES = new Set<ProviderStatus>(["available", "degraded", "offline"]);
+const CHAT_MESSAGE_ROLES = new Set<ChatCompletionMessage["role"]>(["system", "user", "assistant"]);
 
 export class ApiContractError extends Error {
   readonly statusCode: number;
@@ -253,15 +254,27 @@ function ensureProviderStatus(value: unknown, label: string): ProviderStatus {
   return normalized;
 }
 
+function ensureChatMessageRole(value: unknown, label: string): ChatCompletionMessage["role"] {
+  const normalized = ensureString(value, label) as ChatCompletionMessage["role"];
+  if (!CHAT_MESSAGE_ROLES.has(normalized)) {
+    throw new ApiContractError(`Unsupported chat message role for ${label}.`);
+  }
+
+  return normalized;
+}
+
 function ensureMessageArray(value: unknown, label: string): ChatCompletionMessage[] {
   if (!Array.isArray(value)) {
     throw new ApiContractError(`Expected array for ${label}.`);
+  }
+  if (value.length === 0) {
+    throw new ApiContractError(`Expected non-empty array for ${label}.`);
   }
 
   return value.map((item, index) => {
     const message = ensureRecord(item, `${label}[${index}]`);
     return {
-      role: ensureString(message.role, `${label}[${index}].role`) as ChatCompletionMessage["role"],
+      role: ensureChatMessageRole(message.role, `${label}[${index}].role`),
       content: ensureString(message.content, `${label}[${index}].content`),
     };
   });
@@ -628,6 +641,11 @@ export function parseChatCompletionRequest(value: unknown): ChatCompletionReques
   return {
     model: ensureString(input.model, "chat_completion_request.model") as ChatCompletionRequest["model"],
     messages: ensureMessageArray(input.messages, "chat_completion_request.messages"),
+    stream:
+      input.stream == null
+        ? undefined
+        : ensureBooleanLike(input.stream, "chat_completion_request.stream"),
+    user: ensureOptionalString(input.user, "chat_completion_request.user"),
     raidRequest:
       input.raidRequest == null && input.raid_request == null
         ? undefined
@@ -644,25 +662,29 @@ export function parseChatCompletionRequest(value: unknown): ChatCompletionReques
 
 export function buildBossRaidRequestFromChatCompletion(
   input: ChatCompletionRequest,
+  options?: {
+    defaultMaxTotalCost?: number;
+  },
 ): BossRaidRequest {
-  const userMessages = input.messages
-    .filter((message) => message.role === "user")
-    .map((message) => message.content.trim())
-    .filter(Boolean);
-  const systemMessages = input.messages
-    .filter((message) => message.role === "system")
-    .map((message) => message.content.trim())
-    .filter(Boolean);
+  const trimmedMessages = input.messages
+    .map((message) => ({
+      role: message.role,
+      content: message.content.trim(),
+    }))
+    .filter((message) => message.content.length > 0);
+  const userMessages = trimmedMessages.filter((message) => message.role === "user").map((message) => message.content);
   const primaryPrompt =
     userMessages[userMessages.length - 1] ??
-    input.messages[input.messages.length - 1]?.content ??
+    trimmedMessages[trimmedMessages.length - 1]?.content ??
     "Chat completion request";
   const title = primaryPrompt.slice(0, 80);
   const rawRaidPolicy = ensureOptionalRecord(input.raidPolicy, "chat_completion_request.raid_policy");
   const maxAgentsValue = rawRaidPolicy?.maxAgents ?? rawRaidPolicy?.max_agents;
   const maxAgents = maxAgentsValue == null ? 2 : ensurePositiveIntegerLike(maxAgentsValue, "chat_completion_request.raid_policy.max_agents");
+  const maxTotalCostValue =
+    rawRaidPolicy?.maxTotalCost ?? rawRaidPolicy?.max_total_cost ?? options?.defaultMaxTotalCost;
   const maxTotalCost = ensureFiniteNumberLike(
-    rawRaidPolicy?.maxTotalCost ?? rawRaidPolicy?.max_total_cost,
+    maxTotalCostValue,
     "chat_completion_request.raid_policy.max_total_cost",
   );
   const requiredCapabilitiesValue =
@@ -677,7 +699,10 @@ export function buildBossRaidRequestFromChatCompletion(
     taskType: "analysis",
     task: {
       title: title || "Chat completion request",
-      description: [...systemMessages, ...userMessages].filter(Boolean).join("\n\n") || primaryPrompt,
+      description:
+        trimmedMessages
+          .map((message) => `${formatChatRoleLabel(message.role)}:\n${message.content}`)
+          .join("\n\n") || primaryPrompt,
       language: "text",
       files: [],
       failingSignals: {
@@ -748,6 +773,18 @@ export function buildBossRaidRequestFromChatCompletion(
       host: "codex",
     },
   };
+}
+
+function formatChatRoleLabel(role: ChatCompletionMessage["role"]): string {
+  switch (role) {
+    case "system":
+      return "System";
+    case "assistant":
+      return "Assistant";
+    case "user":
+    default:
+      return "User";
+  }
 }
 
 export function buildBossRaidRequestFromDelegateInput(
