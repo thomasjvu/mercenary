@@ -133,7 +133,7 @@ test("buildBossRaidRequestFromChatCompletion synthesizes the shared chat raid sh
   assert.deepEqual(request.raidPolicy, {
     maxAgents: 2,
     maxTotalCost: 4.5,
-    requiredCapabilities: ["analysis"],
+    requiredCapabilities: undefined,
     minReputationScore: 65,
     requireErc8004: true,
     minTrustScore: 72,
@@ -183,6 +183,7 @@ test("buildBossRaidRequestFromChatCompletion accepts a server-side default payou
   );
 
   assert.equal(request.raidPolicy?.maxTotalCost, 6);
+  assert.equal(request.raidPolicy?.requiredCapabilities, undefined);
 });
 
 test("parseChatCompletionRequest rejects unsupported message roles", () => {

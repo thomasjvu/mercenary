@@ -691,7 +691,7 @@ export function buildBossRaidRequestFromChatCompletion(
     rawRaidPolicy?.requiredCapabilities ?? rawRaidPolicy?.required_capabilities;
   const requiredCapabilities =
     requiredCapabilitiesValue == null
-      ? ["analysis"]
+      ? undefined
       : ensureStringArray(requiredCapabilitiesValue, "chat_completion_request.raid_policy.required_capabilities");
 
   return {
