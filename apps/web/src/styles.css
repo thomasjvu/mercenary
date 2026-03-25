@@ -4454,7 +4454,7 @@ h2 {
 
 .mercenary-sidebar__panel {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   padding: 0 0 14px;
   border-bottom: 1px solid rgba(17, 17, 17, 0.08);
   background: transparent;
@@ -4483,7 +4483,7 @@ h2 {
 }
 
 .mercenary-sidebar__eyebrow,
-.mercenary-sidebar__metric span,
+.mercenary-sidebar__signal span,
 .mercenary-sidebar__specialist-copy small,
 .mercenary-sidebar__note {
   color: var(--muted);
@@ -4497,14 +4497,16 @@ h2 {
 }
 
 .mercenary-sidebar__links,
-.mercenary-sidebar__statline,
+.mercenary-sidebar__signal-strip,
 .mercenary-sidebar__specialists {
   display: grid;
   gap: 10px;
 }
 
-.mercenary-sidebar__statline {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.mercenary-sidebar__signal-strip,
+.mercenary-sidebar__actionstrip {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -4518,16 +4520,18 @@ h2 {
   border-top: 0;
 }
 
-.mercenary-sidebar__metric {
+.mercenary-sidebar__signal {
+  flex: 1 1 108px;
   display: grid;
-  gap: 4px;
+  gap: 3px;
   padding: 10px 12px;
   border-radius: 14px;
   background: rgba(17, 17, 17, 0.035);
+  min-width: 0;
 }
 
-.mercenary-sidebar__metric strong {
-  font-size: 0.9rem;
+.mercenary-sidebar__signal strong {
+  font-size: 0.84rem;
   line-height: 1.35;
 }
 
@@ -4572,6 +4576,10 @@ h2 {
   align-items: center;
   gap: 10px;
   flex: 0 0 auto;
+}
+
+.mercenary-sidebar__specialist-status {
+  text-transform: lowercase;
 }
 
 .mercenary-sidebar__dot {
@@ -4640,10 +4648,71 @@ h2 {
   background: var(--meter-fill);
 }
 
+.mercenary-sidebar__disclosure {
+  display: grid;
+  gap: 10px;
+}
+
+.mercenary-sidebar__disclosure-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(17, 17, 17, 0.08);
+  cursor: pointer;
+}
+
+.mercenary-sidebar__disclosure-summary::-webkit-details-marker {
+  display: none;
+}
+
+.mercenary-sidebar__disclosure-summary strong {
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.mercenary-sidebar__disclosure-summary span {
+  color: var(--muted);
+  font-family:
+    "IBM Plex Mono",
+    ui-monospace,
+    Menlo,
+    monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mercenary-sidebar__actionchip,
 .mercenary-sidebar__link,
 .mercenary-sidebar__micro-link {
   color: inherit;
   text-decoration: none;
+}
+
+.mercenary-sidebar__actionchip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(17, 17, 17, 0.045);
+  font-family:
+    "IBM Plex Mono",
+    ui-monospace,
+    Menlo,
+    monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mercenary-sidebar__actionchip--button {
+  cursor: pointer;
 }
 
 .mercenary-sidebar__link {
@@ -4677,6 +4746,7 @@ h2 {
 }
 
 .mercenary-sidebar__link:hover strong,
+.mercenary-sidebar__actionchip:hover,
 .mercenary-sidebar__micro-link:hover {
   color: var(--rx-blue);
 }
@@ -4790,10 +4860,6 @@ h2 {
     grid-template-columns: 1fr;
   }
 
-  .mercenary-sidebar__statline {
-    grid-template-columns: 1fr;
-  }
-
   .mercenary-message {
     max-width: 100%;
   }
@@ -4825,7 +4891,8 @@ h2 {
 .app-shell--theme-dark .mercenary-chat__topbar,
 .app-shell--theme-dark .mercenary-composer__textarea,
 .app-shell--theme-dark .mercenary-suggestion,
-.app-shell--theme-dark .mercenary-sidebar__metric,
+.app-shell--theme-dark .mercenary-sidebar__signal,
+.app-shell--theme-dark .mercenary-sidebar__actionchip,
 .app-shell--theme-dark .mercenary-mode-switch {
   background: rgba(17, 20, 28, 0.92);
   border-color: var(--mercenary-border);
@@ -4842,11 +4909,13 @@ h2 {
 .app-shell--theme-dark .mercenary-list__copy p,
 .app-shell--theme-dark .mercenary-link span,
 .app-shell--theme-dark .mercenary-sidebar__eyebrow,
-.app-shell--theme-dark .mercenary-sidebar__metric span,
+.app-shell--theme-dark .mercenary-sidebar__signal span,
 .app-shell--theme-dark .mercenary-sidebar__specialist-copy small,
 .app-shell--theme-dark .mercenary-sidebar__specialist-copy p,
 .app-shell--theme-dark .mercenary-sidebar__note,
+.app-shell--theme-dark .mercenary-sidebar__disclosure-summary span,
 .app-shell--theme-dark .mercenary-sidebar__link span,
+.app-shell--theme-dark .mercenary-sidebar__actionchip,
 .app-shell--theme-dark .mercenary-sidebar__micro-link {
   color: rgba(212, 216, 228, 0.78);
 }
@@ -4897,12 +4966,16 @@ h2 {
 
 .app-shell--theme-dark .mercenary-sidebar,
 .app-shell--theme-dark .mercenary-sidebar__panel,
+.app-shell--theme-dark .mercenary-sidebar__signal,
+.app-shell--theme-dark .mercenary-sidebar__actionchip,
 .app-shell--theme-dark .mercenary-sidebar__specialist,
-.app-shell--theme-dark .mercenary-sidebar__link {
+.app-shell--theme-dark .mercenary-sidebar__link,
+.app-shell--theme-dark .mercenary-sidebar__disclosure-summary {
   border-color: rgba(241, 244, 251, 0.08);
 }
 
 .app-shell--theme-dark .mercenary-sidebar__link:hover strong,
+.app-shell--theme-dark .mercenary-sidebar__actionchip:hover,
 .app-shell--theme-dark .mercenary-sidebar__micro-link:hover {
   color: #c7d8ff;
 }

@@ -161,6 +161,53 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
   const elapsedLabel = liveRaidRun ? formatElapsedMs(liveRaidRun.startedAtMs, liveRaidRun.completedAtMs) : "n/a";
   const teeAttestedSpecialistCount = countTeeAttestedSpecialists(sidebarSpecialists);
   const signedSpecialistCount = countProofTag(sidebarSpecialists, "signed");
+  const compactAvailabilityLabel = hostedProviderCount > 0 ? `${readyProviderCount}/${hostedProviderCount} ready` : "checking";
+  const specialistRosterCount = sidebarSpecialists.length || hostedProviderCount || 0;
+  const highlightedSidebarSpecialists = liveRaidRun && !liveRaidRun.directResponse
+    ? (
+        sidebarSpecialists.filter((specialist) => specialist.statusTone !== "available" || specialist.progressValue != null).length > 0
+          ? sidebarSpecialists.filter((specialist) => specialist.statusTone !== "available" || specialist.progressValue != null)
+          : sidebarSpecialists
+      ).slice(0, 4)
+    : [];
+  const traceEventCount =
+    mercenaryDecisionTrace.length + specialistTraces.reduce((total, trace) => total + trace.events.length, 0);
+  const showTracePanel = traceEventCount > 0;
+  const showReceiptLinks = Boolean(liveRaidRun && !liveRaidRun.directResponse && raidIsTerminal && liveRaidRun.spawn.receiptPath);
+  const showTraceLink = Boolean(liveRaidRun && !liveRaidRun.directResponse);
+  const showResultProofLink = Boolean(liveRaidRun && !liveRaidRun.directResponse && raidIsTerminal && liveRaidRun.spawn.raidAccessToken);
+  const runtimeSummaryValue = runtimeAttestation
+    ? runtimeAttestationTee
+    : runtimeAttestationSignerDisabled
+      ? "signer off"
+      : runtimeAttestationStatus;
+  const runSignals: Array<{ label: string; value: string }> = liveRaidRun
+    ? liveRaidRun.directResponse
+      ? [
+          { label: "mode", value: buildDemoModeLabel(liveRaidRun.requestMode) },
+          { label: "time", value: elapsedLabel },
+          { label: "route", value: "direct" },
+        ]
+      : [
+          { label: "mode", value: buildDemoModeLabel(liveRaidRun.requestMode) },
+          { label: "time", value: elapsedLabel },
+          { label: "invited", value: String(liveRaidRun.spawn.selectedExperts) },
+          {
+            label: raidIsTerminal ? "outputs" : "status",
+            value: raidIsTerminal ? `${liveWorkstreams.length}/${liveArtifacts.length}` : humanizeStatus(activeRaidStatus ?? "queued"),
+          },
+        ]
+    : [
+        { label: "mode", value: buildDemoModeLabel(demoMode) },
+        { label: "ready", value: compactAvailabilityLabel },
+        { label: "runtime", value: runtimeSummaryValue },
+      ];
+  const attestationSignals = [
+    { label: "runtime", value: runtimeSummaryValue },
+    { label: "target", value: runtimeAttestationTarget },
+    { label: "tee", value: `${teeAttestedSpecialistCount}/${specialistRosterCount}` },
+    { label: "sig", value: `${signedSpecialistCount}/${specialistRosterCount}` },
+  ];
   const hasConversation = Boolean(lastSubmittedBrief || liveRaidRun || launchError);
   const promptSuggestions = demoMode === "raid" ? RAID_DEMO_PROMPTS : CHAT_V1_DEMO_PROMPTS;
   const conversationSignature = [
@@ -580,44 +627,44 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
           <div className="mercenary-sidebar__head">
             <div>
               <span className="mercenary-sidebar__eyebrow">Run</span>
-              <strong>Live state</strong>
+              <strong>{liveRaidRun?.directResponse ? "Direct reply" : liveRaidRun ? "Live state" : "Standby"}</strong>
             </div>
             <StatusPill tone={liveRaidRun ? (raidIsTerminal ? "ready" : "working") : canLaunchLiveRaid ? "ready" : "offline"}>
               {liveRaidRun ? humanizeStatus(activeRaidStatus ?? "queued") : "idle"}
             </StatusPill>
           </div>
 
-          <div className="mercenary-sidebar__links">
-            {liveRaidRun && !liveRaidRun.directResponse && liveRaidRun.spawn.receiptPath ? (
-              <>
-                <a className="mercenary-sidebar__link" href={liveRaidRun.spawn.receiptPath}>
-                  <span>proof</span>
-                  <strong>Receipt</strong>
-                </a>
-                <a className="mercenary-sidebar__link" href={buildAgentLogPath(liveRaidRun)} rel="noreferrer" target="_blank">
-                  <span>trace</span>
-                  <strong>Agent log</strong>
-                </a>
-                <button className="mercenary-sidebar__link mercenary-sidebar__link--button" onClick={() => void copyReceiptLink()} type="button">
-                  <span>share</span>
-                  <strong>{receiptCopied ? "Copied" : "Copy link"}</strong>
-                </button>
-              </>
-            ) : liveRaidRun?.directResponse ? (
-              <p className="mercenary-sidebar__note">Mercenary answered directly on the v1 route, so there is no raid receipt or trace for this turn.</p>
-            ) : (
-              <p className="mercenary-sidebar__note">Mercenary will add proof links here after the first run starts.</p>
-            )}
+          <div className="mercenary-sidebar__signal-strip">
+            {runSignals.map((signal) => (
+              <SidebarRow key={`run:${signal.label}`} label={signal.label} value={signal.value} />
+            ))}
           </div>
 
-          <div className="mercenary-sidebar__statline">
-            <SidebarRow label="Mode" value={buildDemoModeLabel(liveRaidRun?.requestMode ?? demoMode)} />
-            <SidebarRow label="Ready" value={availabilityLabel} />
-            <SidebarRow label="Invited" value={liveRaidRun ? String(liveRaidRun.spawn.selectedExperts) : "0"} />
-            <SidebarRow label="Time" value={elapsedLabel} />
-            <SidebarRow label="Outputs" value={`${liveWorkstreams.length} / ${liveArtifacts.length}`} />
-            <SidebarRow label="Updated" value={formatTimestamp(liveRaidRun?.lastUpdatedAt)} />
-          </div>
+          {liveRaidRun?.lastUpdatedAt ? <p className="mercenary-sidebar__note">{`Updated ${formatTimestamp(liveRaidRun.lastUpdatedAt)}`}</p> : null}
+
+          {showReceiptLinks || showTraceLink ? (
+            <div className="mercenary-sidebar__actionstrip">
+              {showReceiptLinks ? (
+                <a className="mercenary-sidebar__actionchip" href={liveRaidRun?.spawn.receiptPath}>
+                  receipt
+                </a>
+              ) : null}
+              {showTraceLink ? (
+                <a className="mercenary-sidebar__actionchip" href={buildAgentLogPath(liveRaidRun!)} rel="noreferrer" target="_blank">
+                  trace
+                </a>
+              ) : null}
+              {showReceiptLinks ? (
+                <button className="mercenary-sidebar__actionchip mercenary-sidebar__actionchip--button" onClick={() => void copyReceiptLink()} type="button">
+                  {receiptCopied ? "copied" : "copy link"}
+                </button>
+              ) : null}
+            </div>
+          ) : liveRaidRun?.directResponse ? (
+            <p className="mercenary-sidebar__note">Direct v1 reply. Mercenary did not open a raid for this turn.</p>
+          ) : (
+            <p className="mercenary-sidebar__note">Proof and trace stay hidden until Mercenary opens a real run.</p>
+          )}
         </section>
 
         <section className="mercenary-sidebar__panel">
@@ -631,151 +678,142 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
             </StatusPill>
           </div>
 
-          <div className="mercenary-sidebar__statline">
-            <SidebarRow label="Runtime" value={runtimeAttestationTee} />
-            <SidebarRow label="Target" value={runtimeAttestationTarget} />
-            <SidebarRow
-              label="TEE agents"
-              value={`${teeAttestedSpecialistCount}/${sidebarSpecialists.length || hostedProviderCount || 0}`}
-            />
-            <SidebarRow
-              label="Signed"
-              value={`${signedSpecialistCount}/${sidebarSpecialists.length || hostedProviderCount || 0}`}
-            />
+          <div className="mercenary-sidebar__signal-strip">
+            {attestationSignals.map((signal) => (
+              <SidebarRow key={`attest:${signal.label}`} label={signal.label} value={signal.value} />
+            ))}
           </div>
 
-          <div className="mercenary-sidebar__links">
-            <a className="mercenary-sidebar__link" href={buildAttestedRuntimePath()} rel="noreferrer" target="_blank">
-              <span>runtime proof</span>
-              <strong>
-                {runtimeAttestation
-                  ? `${runtimeAttestationLabel} proof`
-                  : runtimeAttestationSignerDisabled
-                    ? "Signer required"
-                    : "Open runtime attestation"}
-              </strong>
-            </a>
-            {liveRaidRun && !liveRaidRun.directResponse && liveRaidRun.spawn.raidAccessToken ? (
-              <a
-                className="mercenary-sidebar__link"
-                href={buildAttestedResultPath(liveRaidRun)}
-                rel="noreferrer"
-                target="_blank"
-              >
-                <span>result proof</span>
-                <strong>Signed attested raid result</strong>
+          <details className="mercenary-sidebar__disclosure">
+            <summary className="mercenary-sidebar__disclosure-summary">
+              <span>proof detail</span>
+              <strong>{runtimeAttestation ? "open" : runtimeAttestationSignerDisabled ? "signer off" : "inspect"}</strong>
+            </summary>
+
+            <div className="mercenary-sidebar__actionstrip">
+              <a className="mercenary-sidebar__actionchip" href={buildAttestedRuntimePath()} rel="noreferrer" target="_blank">
+                runtime proof
               </a>
-            ) : null}
-          </div>
+              {showResultProofLink ? (
+                <a className="mercenary-sidebar__actionchip" href={buildAttestedResultPath(liveRaidRun!)} rel="noreferrer" target="_blank">
+                  result proof
+                </a>
+              ) : null}
+            </div>
 
-          <p className="mercenary-sidebar__note">
-            {runtimeAttestation
-              ? `Mercenary runtime proof says this host is attested on ${runtimeAttestationTarget} / ${runtimeAttestationTee}. Specialist badges reflect routed provider privacy features and provider registry proofs.`
-              : runtimeAttestationSignerDisabled
-                ? "This host is not publishing signed runtime or result envelopes because the attestation signer is not configured. The TEE and signed specialist badges still come from routed provider privacy proofs and registry data."
-                : runtimeAttestationError ?? "Loading runtime attestation."}
-          </p>
+            <p className="mercenary-sidebar__note">
+              {runtimeAttestation
+                ? `Runtime is attested on ${runtimeAttestationTarget} / ${runtimeAttestationTee}. Specialist TEE and signed badges come from routed provider privacy proofs and registry data.`
+                : runtimeAttestationSignerDisabled
+                  ? "This host is not publishing signed runtime or result envelopes because the attestation signer is not configured."
+                  : runtimeAttestationError ?? "Loading runtime attestation."}
+            </p>
+          </details>
         </section>
 
         <section className="mercenary-sidebar__panel">
           <div className="mercenary-sidebar__head">
             <div>
               <span className="mercenary-sidebar__eyebrow">Specialists</span>
-              <strong>Roster</strong>
+              <strong>{liveRaidRun?.directResponse ? "Not opened" : liveRaidRun ? "Live roster" : "Roster"}</strong>
             </div>
           </div>
 
-          <div className="mercenary-sidebar__specialists">
-            {sidebarSpecialists.slice(0, 6).map((specialist) => (
-              <div className="mercenary-sidebar__specialist" key={specialist.providerId}>
-                <div className="mercenary-sidebar__specialist-copy">
-                  <div className="mercenary-sidebar__specialist-label">
-                    <span className={`mercenary-sidebar__dot mercenary-sidebar__dot--${specialist.statusTone}`} />
-                    <strong>{specialist.displayName}</strong>
-                  </div>
-                  {specialist.meta ? <small>{specialist.meta}</small> : null}
-                  {specialist.proofTags.length > 0 ? (
-                    <div className="mercenary-sidebar__prooftags">
-                      {specialist.proofTags.map((tag) => (
-                        <span className="mercenary-proof-chip" key={`${specialist.providerId}:${tag}`}>
-                          {tag}
-                        </span>
-                      ))}
+          {liveRaidRun?.directResponse ? (
+            <p className="mercenary-sidebar__note">Mercenary answered directly, so specialists stayed idle for this turn.</p>
+          ) : liveRaidRun ? (
+            <div className="mercenary-sidebar__specialists">
+              {highlightedSidebarSpecialists.map((specialist) => (
+                <div className="mercenary-sidebar__specialist mercenary-sidebar__specialist--compact" key={specialist.providerId}>
+                  <div className="mercenary-sidebar__specialist-copy">
+                    <div className="mercenary-sidebar__specialist-label">
+                      <span className={`mercenary-sidebar__dot mercenary-sidebar__dot--${specialist.statusTone}`} />
+                      <strong>{specialist.displayName}</strong>
                     </div>
-                  ) : null}
+                    <small className="mercenary-sidebar__specialist-status">{specialist.statusLabel}</small>
+                  </div>
+                  <div className="mercenary-sidebar__specialist-side">
+                    {specialist.progressValue != null ? <SpecialistProgressMeter progressValue={specialist.progressValue} tone={specialist.statusTone} /> : null}
+                  </div>
                 </div>
-                <div className="mercenary-sidebar__specialist-side">
-                  {specialist.progressValue != null ? (
-                    <SpecialistProgressMeter progressValue={specialist.progressValue} tone={specialist.statusTone} />
-                  ) : null}
-                  <a className="mercenary-sidebar__micro-link" href="/raiders">
-                    view
-                  </a>
-                </div>
-              </div>
-            ))}
+              ))}
 
-            {sidebarSpecialists.length === 0 ? <p className="mercenary-sidebar__note">Waiting for provider registry data.</p> : null}
+              {highlightedSidebarSpecialists.length === 0 ? <p className="mercenary-sidebar__note">Waiting for specialist state.</p> : null}
+            </div>
+          ) : (
+            <div className="mercenary-sidebar__signal-strip">
+              <SidebarRow label="roster" value={`${specialistRosterCount} listed`} />
+              <SidebarRow label="ready" value={compactAvailabilityLabel} />
+            </div>
+          )}
+
+          <div className="mercenary-sidebar__actionstrip">
+            <a className="mercenary-sidebar__actionchip" href="/raiders">
+              open raiders
+            </a>
           </div>
         </section>
 
-        {mercenaryDecisionTrace.length > 0 || specialistTraces.length > 0 ? (
+        {showTracePanel ? (
           <section className="mercenary-sidebar__panel">
-            <div className="mercenary-sidebar__head">
-              <div>
-                <span className="mercenary-sidebar__eyebrow">Trace</span>
-                <strong>Process</strong>
+            <details className="mercenary-sidebar__disclosure" open={!raidIsTerminal}>
+              <summary className="mercenary-sidebar__disclosure-summary">
+                <div className="mercenary-sidebar__specialist-copy">
+                  <span className="mercenary-sidebar__eyebrow">Trace</span>
+                  <strong>{raidIsTerminal ? "Closed process trace" : "Live process trace"}</strong>
+                </div>
+                <StatusPill tone={raidIsTerminal ? "ready" : "working"}>{`${traceEventCount} events`}</StatusPill>
+              </summary>
+
+              <div className="mercenary-trace-list">
+                {mercenaryDecisionTrace.length > 0 ? (
+                  <details className="mercenary-trace" open={!raidIsTerminal}>
+                    <summary className="mercenary-trace__summary">
+                      <div>
+                        <strong>Mercenary</strong>
+                        <span>{`${mercenaryDecisionTrace.length} planning decisions`}</span>
+                      </div>
+                      <StatusPill tone={raidIsTerminal ? "ready" : "working"}>{raidIsTerminal ? "finalized" : "planning"}</StatusPill>
+                    </summary>
+                    <div className="mercenary-trace__events">
+                      {mercenaryDecisionTrace.map((decision, index) => (
+                        <div className="mercenary-trace__event" key={`${decision.type}:${decision.at}:${index}`}>
+                          <div className="mercenary-trace__event-meta">
+                            <strong>{humanizeStatus(decision.type)}</strong>
+                            <span>{formatTimestamp(decision.at)}</span>
+                          </div>
+                          <p>{decision.summary}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                ) : null}
+
+                {specialistTraces.map((trace) => (
+                  <details className="mercenary-trace" key={trace.providerId}>
+                    <summary className="mercenary-trace__summary">
+                      <div>
+                        <strong>{trace.displayName}</strong>
+                        <span>{trace.scope || "specialist trace"}</span>
+                      </div>
+                      <StatusPill tone={trace.statusTone}>{trace.statusLabel}</StatusPill>
+                    </summary>
+                    <div className="mercenary-trace__events">
+                      {trace.outcome ? <p className="mercenary-trace__outcome">{trace.outcome}</p> : null}
+                      {trace.events.map((event) => (
+                        <div className="mercenary-trace__event" key={event.id}>
+                          <div className="mercenary-trace__event-meta">
+                            <strong>{event.label}</strong>
+                            <span>{formatTimestamp(event.at)}</span>
+                          </div>
+                          <p>{event.note}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                ))}
               </div>
-            </div>
-
-            <div className="mercenary-trace-list">
-              {mercenaryDecisionTrace.length > 0 ? (
-                <details className="mercenary-trace" open={!raidIsTerminal}>
-                  <summary className="mercenary-trace__summary">
-                    <div>
-                      <strong>Mercenary</strong>
-                      <span>{`${mercenaryDecisionTrace.length} planning decisions`}</span>
-                    </div>
-                    <StatusPill tone={raidIsTerminal ? "ready" : "working"}>{raidIsTerminal ? "finalized" : "planning"}</StatusPill>
-                  </summary>
-                  <div className="mercenary-trace__events">
-                    {mercenaryDecisionTrace.map((decision, index) => (
-                      <div className="mercenary-trace__event" key={`${decision.type}:${decision.at}:${index}`}>
-                        <div className="mercenary-trace__event-meta">
-                          <strong>{humanizeStatus(decision.type)}</strong>
-                          <span>{formatTimestamp(decision.at)}</span>
-                        </div>
-                        <p>{decision.summary}</p>
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              ) : null}
-
-              {specialistTraces.map((trace) => (
-                <details className="mercenary-trace" key={trace.providerId}>
-                  <summary className="mercenary-trace__summary">
-                    <div>
-                      <strong>{trace.displayName}</strong>
-                      <span>{trace.scope || "specialist trace"}</span>
-                    </div>
-                    <StatusPill tone={trace.statusTone}>{trace.statusLabel}</StatusPill>
-                  </summary>
-                  <div className="mercenary-trace__events">
-                    {trace.outcome ? <p className="mercenary-trace__outcome">{trace.outcome}</p> : null}
-                    {trace.events.map((event) => (
-                      <div className="mercenary-trace__event" key={event.id}>
-                        <div className="mercenary-trace__event-meta">
-                          <strong>{event.label}</strong>
-                          <span>{formatTimestamp(event.at)}</span>
-                        </div>
-                        <p>{event.note}</p>
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              ))}
-            </div>
+            </details>
           </section>
         ) : null}
       </aside>
@@ -816,7 +854,7 @@ function ChatMessage({
 
 function SidebarRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="mercenary-sidebar__metric">
+    <div className="mercenary-sidebar__signal">
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
