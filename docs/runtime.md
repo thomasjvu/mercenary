@@ -140,7 +140,7 @@ pnpm render:video
 - `BOSSRAID_REGISTRY_TOKEN`: auth for `POST /agents/register` and `POST /agents/heartbeat`
 - `BOSSRAID_DEMO_ROUTE_ENABLED`: enables free `POST /v1/demo/raid`
 - `BOSSRAID_DEMO_TOKEN`: optional `x-bossraid-demo-token` required by that route
-- `BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST`: fallback budget for `POST /v1/chat/completions` when clients omit `raid_policy.max_total_cost`; the Phala compose stack defaults it to `6`
+- `BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST`: fallback budget for `POST /v1/chat/completions` when clients omit `raid_policy.max_total_cost`; the Phala compose stack defaults it to `15` so Dottie, Riko, and Gamma can all clear a three-specialist raid
 - `BOSSRAID_API_BODY_LIMIT_BYTES`: public Fastify body limit; provider submission callbacks use a higher internal limit so inline artifact bundles can complete
 - `BOSSRAID_PUBLIC_RATE_LIMIT_MAX` and `BOSSRAID_PUBLIC_RATE_LIMIT_WINDOW_MS`: public spawn and chat rate limits
 - `BOSSRAID_OPS_SESSION_TTL_SEC`, `BOSSRAID_OPS_SESSION_RATE_LIMIT_MAX`, and `BOSSRAID_OPS_SESSION_RATE_LIMIT_WINDOW_MS`: ops session lifetime and login throttling

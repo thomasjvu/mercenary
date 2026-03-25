@@ -1067,7 +1067,7 @@ export function buildApiServer(
     const outcome = await waitForRaidOutput(
       orchestrator,
       spawn.raidId,
-      Math.min(raidRequest.constraints.maxLatencySec * 1000, 15_000),
+      Math.max(raidRequest.constraints.maxLatencySec * 1000, 1_000),
       Math.min(Math.max(raidRequest.constraints.numExperts, 1), Math.max(spawn.selectedExperts, 1)),
     );
     const response = buildChatCompletionResponse(chatRequest, spawn, outcome, created);

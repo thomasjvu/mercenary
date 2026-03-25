@@ -316,7 +316,7 @@ test("chat completion requests can use a server-side default payout budget", asy
   );
   const app = buildApiServer(orchestrator, {
     ...process.env,
-    BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: "6",
+    BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: "15",
   });
 
   try {
