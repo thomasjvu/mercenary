@@ -67,6 +67,13 @@ const EXPLICIT_WORK_SIGNALS = [
   /\bcreate me\b/,
 ];
 
+const LOW_SIGNAL_CHAT_PATTERNS = [
+  /^(hi|hello|hey|yo|sup|hiya|howdy)\b/,
+  /^what'?s up\b/,
+  /^who are you\b/,
+  /^what can you do\b/,
+];
+
 function buildLiveDemoFiles(normalizedBrief: string) {
   return [
     {
@@ -302,6 +309,7 @@ function buildSeededGameDemoPayload(normalizedBrief: string) {
 
 function buildNativeChatDemoPayload(normalizedBrief: string) {
   const title = normalizedBrief.slice(0, 80) || "Mercenary native chat";
+  const lowSignalChat = isLowSignalChatPrompt(normalizedBrief);
 
   return {
     agent: "mercenary-v1",
@@ -327,8 +335,8 @@ function buildNativeChatDemoPayload(normalizedBrief: string) {
       artifactTypes: ["text", "json"],
     },
     raidPolicy: {
-      maxAgents: 3,
-      maxLatencySec: 45,
+      maxAgents: lowSignalChat ? 1 : 3,
+      maxLatencySec: lowSignalChat ? 20 : 45,
       allowedModelFamilies: ["openai", "venice"],
       minReputationScore: 60,
       privacyMode: "prefer",
@@ -352,6 +360,11 @@ function isSeededGameBuildRequest(brief: string): boolean {
   const hasWorkSignal = EXPLICIT_WORK_SIGNALS.some((pattern) => pattern.test(normalizedBrief));
   const hasSeededGameSignal = SEEDED_GAME_BUILD_SIGNALS.some((pattern) => pattern.test(normalizedBrief));
   return hasWorkSignal && hasSeededGameSignal;
+}
+
+function isLowSignalChatPrompt(brief: string): boolean {
+  const normalizedBrief = brief.trim().toLowerCase();
+  return normalizedBrief.length > 0 && LOW_SIGNAL_CHAT_PATTERNS.some((pattern) => pattern.test(normalizedBrief));
 }
 
 export function buildLiveDemoPayload(brief: string) {

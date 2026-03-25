@@ -33,6 +33,8 @@ type LiveRaidRun = {
   requestMode: DemoRequestMode;
   spawn: RaidSpawnOutput;
   chatCompletion?: ChatCompletionResponse;
+  startedAtMs: number;
+  completedAtMs?: number;
   status?: RaidStatusSnapshot;
   result?: RaidResult;
   agentLog?: RaidAgentLog;
@@ -155,6 +157,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
     : runtimeAttestationSignerDisabled
       ? "Runtime proof not published"
       : buildRuntimeAttestationLabel(runtimeAttestationTarget, runtimeAttestationTee);
+  const elapsedLabel = liveRaidRun ? formatElapsedMs(liveRaidRun.startedAtMs, liveRaidRun.completedAtMs) : "n/a";
   const teeAttestedSpecialistCount = countTeeAttestedSpecialists(sidebarSpecialists);
   const signedSpecialistCount = countProofTag(sidebarSpecialists, "signed");
   const hasConversation = Boolean(lastSubmittedBrief || liveRaidRun || launchError);
@@ -255,6 +258,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
     if (!submittedBrief || isLaunching || !canLaunchLiveRaid) {
       return;
     }
+    const startedAtMs = Date.now();
 
     setIsLaunching(true);
     setLaunchError(null);
@@ -305,6 +309,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
         requestMode: demoMode,
         spawn,
         chatCompletion: demoMode === "chat_v1" ? (response.data as ChatCompletionResponse) : undefined,
+        startedAtMs,
         lastUpdatedAt: new Date().toISOString(),
         pollError: null,
       });
@@ -342,6 +347,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
 
       return {
         ...current,
+        completedAtMs: current.completedAtMs ?? (isTerminalRaidStatus(nextRaidStatus) ? Date.now() : undefined),
         status: nextStatus,
         result: nextResult,
         agentLog: nextAgentLog,
@@ -448,6 +454,9 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
                 ? "Talk to Mercenary directly here. I’ll answer normally, and if you ask for real scoped work I’ll open a native raid and hire specialists in the background."
                 : "Tell me what you want and I’ll route it through v1 chat completions so you can compare the compatibility layer against the native raid path."}
             </p>
+            <p className="mercenary-message__note">
+              Mercenary can be wrong, hallucinate, or merge weak specialist output. Verify important claims, code, and proofs before you rely on them.
+            </p>
           </ChatMessage>
 
           {lastSubmittedBrief ? (
@@ -481,6 +490,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
                 <StatusPill tone="available">{buildDemoModeLabel(liveRaidRun.requestMode)}</StatusPill>
                 <StatusPill tone={raidIsTerminal ? "ready" : "working"}>{`status ${humanizeStatus(activeRaidStatus ?? "queued")}`}</StatusPill>
                 <StatusPill tone="available">{`${liveRaidRun.spawn.selectedExperts} specialists invited`}</StatusPill>
+                <StatusPill tone="available">{elapsedLabel}</StatusPill>
                 {liveRaidRun.spawn.estimatedFirstResultSec > 0 ? (
                   <StatusPill tone="available">{`eta ${liveRaidRun.spawn.estimatedFirstResultSec}s`}</StatusPill>
                 ) : null}
@@ -588,6 +598,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
             <SidebarRow label="Mode" value={buildDemoModeLabel(liveRaidRun?.requestMode ?? demoMode)} />
             <SidebarRow label="Ready" value={availabilityLabel} />
             <SidebarRow label="Invited" value={liveRaidRun ? String(liveRaidRun.spawn.selectedExperts) : "0"} />
+            <SidebarRow label="Time" value={elapsedLabel} />
             <SidebarRow label="Outputs" value={`${liveWorkstreams.length} / ${liveArtifacts.length}`} />
             <SidebarRow label="Updated" value={formatTimestamp(liveRaidRun?.lastUpdatedAt)} />
           </div>
@@ -1413,6 +1424,8 @@ function selectApprovedProviderIds(result: RaidResult | undefined): string[] {
 }
 
 function buildDemoChatCompletionPayload(brief: string) {
+  const lowSignalChat = isLowSignalChatPrompt(brief);
+
   return {
     model: V1_CHAT_MODEL,
     messages: [
@@ -1426,8 +1439,8 @@ function buildDemoChatCompletionPayload(brief: string) {
       },
     ],
     raid_policy: {
-      max_agents: 3,
-      max_latency_sec: 60,
+      max_agents: lowSignalChat ? 1 : 3,
+      max_latency_sec: lowSignalChat ? 20 : 60,
     },
   };
 }
@@ -1474,6 +1487,29 @@ function buildRuntimeAttestationLabel(target: string, teePlatform: string): stri
 
 function isAttestationSignerUnavailable(error: string | null | undefined): boolean {
   return typeof error === "string" && error.includes("MNEMONIC environment variable is required");
+}
+
+function isLowSignalChatPrompt(brief: string): boolean {
+  const normalizedBrief = brief.trim().toLowerCase();
+  if (normalizedBrief.length === 0) {
+    return false;
+  }
+
+  return (
+    /^(hi|hello|hey|yo|sup|hiya|howdy)\b/.test(normalizedBrief) ||
+    /^what'?s up\b/.test(normalizedBrief) ||
+    /^who are you\b/.test(normalizedBrief) ||
+    /^what can you do\b/.test(normalizedBrief)
+  );
+}
+
+function formatElapsedMs(startedAtMs: number, completedAtMs?: number): string {
+  const endMs = completedAtMs ?? Date.now();
+  const durationMs = Math.max(endMs - startedAtMs, 0);
+  if (durationMs < 1_000) {
+    return `${durationMs}ms`;
+  }
+  return `${(durationMs / 1_000).toFixed(durationMs >= 10_000 ? 0 : 1)}s`;
 }
 
 function buildProviderProofTags(

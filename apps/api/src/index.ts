@@ -1680,7 +1680,7 @@ function buildChatCompletionResponse(
   },
   created: number,
 ) {
-  const content = buildUserFacingChatContent(spawn.raidId, outcome);
+  const content = buildUserFacingChatContent(spawn.raidId, outcome, chatRequest);
 
   return {
     id: `chatcmpl_${spawn.raidId}`,
@@ -1778,7 +1778,7 @@ async function streamChatCompletionResponse(
             status: orchestrator.getStatus(input.spawn.raidId),
             result: orchestrator.getResult(input.spawn.raidId),
           };
-      const content = buildUserFacingChatContent(input.spawn.raidId, finalOutcome);
+      const content = buildUserFacingChatContent(input.spawn.raidId, finalOutcome, input.chatRequest);
 
       if (content.length > 0) {
         writeSseData(stream, {
@@ -1858,18 +1858,63 @@ function buildUserFacingChatContent(
     status: BossRaidStatusOutput;
     result: BossRaidResultOutput;
   },
+  chatRequest?: ChatCompletionRequest,
 ): string {
   const synthesized = outcome.result.synthesizedOutput;
   const primary = outcome.result.primarySubmission;
+  const fallback = buildChatCompletionFallback(raidId, outcome.status.status, chatRequest);
 
   return (
     synthesized?.answerText ??
     synthesized?.explanation ??
     primary?.submission.answerText ??
     primary?.submission.explanation ??
-    (outcome.status.status === "final"
-      ? "Raid finished without an approved provider output."
-      : `Raid ${raidId} started. No approved provider output yet.`)
+    fallback
+  );
+}
+
+function buildChatCompletionFallback(
+  raidId: string,
+  status: BossRaidStatusOutput["status"],
+  chatRequest?: ChatCompletionRequest,
+): string {
+  const prompt = selectPrimaryChatPrompt(chatRequest);
+
+  if (isLowSignalChatPrompt(prompt)) {
+    return "Mercenary here. Ask a question or give me a concrete task and I’ll answer directly or open specialists when it helps.";
+  }
+
+  if (status === "final") {
+    return "Mercenary did not get an approved specialist answer for this run. Rephrase the request more concretely, or use raid chat if you want a scoped build workflow.";
+  }
+
+  return `Raid ${raidId} started. Mercenary is still waiting for approved specialist output.`;
+}
+
+function selectPrimaryChatPrompt(chatRequest?: ChatCompletionRequest): string {
+  if (!chatRequest) {
+    return "";
+  }
+
+  const userMessages = chatRequest.messages
+    .filter((message) => message.role === "user")
+    .map((message) => message.content.trim())
+    .filter((message) => message.length > 0);
+
+  return userMessages[userMessages.length - 1] ?? "";
+}
+
+function isLowSignalChatPrompt(prompt: string): boolean {
+  const normalizedPrompt = prompt.trim().toLowerCase();
+  if (normalizedPrompt.length === 0) {
+    return false;
+  }
+
+  return (
+    /^(hi|hello|hey|yo|sup|hiya|howdy)\b/.test(normalizedPrompt) ||
+    /^what'?s up\b/.test(normalizedPrompt) ||
+    /^who are you\b/.test(normalizedPrompt) ||
+    /^what can you do\b/.test(normalizedPrompt)
   );
 }
 
