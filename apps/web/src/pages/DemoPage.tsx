@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import type { SubmissionArtifact } from "@bossraid/shared-types";
 import {
   API_BASE,
+  fetchRaidAgentLog,
   fetchRaidResult,
   fetchRaidStatus,
   spawnDemoRaid,
   type Provider,
+  type RaidAgentLog,
   type ProviderHealth,
   type RaidResult,
   type RaidSpawnOutput,
@@ -24,6 +27,7 @@ type LiveRaidRun = {
   spawn: RaidSpawnOutput;
   status?: RaidStatusSnapshot;
   result?: RaidResult;
+  agentLog?: RaidAgentLog;
   lastUpdatedAt?: string;
   pollError?: string | null;
 };
@@ -35,6 +39,35 @@ type ConversationSpecialistRecord = {
   statusTone: SpecialistTone;
   note: string;
   meta: string;
+  progressValue: number | null;
+};
+
+type BundleArtifactFile = {
+  relativePath: string;
+  mimeType: string;
+  bytes: number;
+  sha256: string;
+  uri: string;
+};
+
+type BundleArtifactPreview = {
+  artifactId: string;
+  files: BundleArtifactFile[];
+};
+
+type SpecialistTraceRecord = {
+  providerId: string;
+  displayName: string;
+  statusLabel: string;
+  statusTone: SpecialistTone;
+  scope: string;
+  outcome: string;
+  events: Array<{
+    id: string;
+    at: string;
+    label: string;
+    note: string;
+  }>;
 };
 
 const LIVE_POLL_INTERVAL_MS = 3_000;
@@ -52,6 +85,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
   const [isLaunching, setIsLaunching] = useState(false);
   const [launchError, setLaunchError] = useState<string | null>(null);
   const [receiptCopied, setReceiptCopied] = useState(false);
+  const [expandedArtifact, setExpandedArtifact] = useState<SubmissionArtifact | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
 
   const providerById = new Map(providers.map((provider) => [provider.providerId, provider]));
@@ -70,6 +104,14 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
   const liveArtifacts = selectArtifacts(liveRaidRun?.result);
   const liveWorkstreams = liveRaidRun?.result?.synthesizedOutput?.workstreams ?? [];
   const activeExperts = liveRaidRun?.status?.experts ?? [];
+  const specialistTraces = buildSpecialistTraceRecords(
+    liveRaidRun?.agentLog,
+    liveRaidRun?.result,
+    activeExperts,
+    providerById,
+    healthByProviderId,
+  );
+  const mercenaryDecisionTrace = liveRaidRun?.agentLog?.decisions ?? [];
   const conversationSpecialists = buildConversationSpecialistRecords(
     activeExperts,
     liveRaidRun?.result,
@@ -89,6 +131,8 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
     activeRaidStatus ?? "",
     conversationSpecialists.map((specialist) => `${specialist.providerId}:${specialist.statusLabel}:${specialist.note}`).join("|"),
     liveWorkstreams.map((workstream) => `${workstream.id}:${workstream.summary}`).join("|"),
+    mercenaryDecisionTrace.map((decision) => `${decision.type}:${decision.status}:${decision.summary}`).join("|"),
+    specialistTraces.map((trace) => `${trace.providerId}:${trace.statusLabel}:${trace.events.length}`).join("|"),
     liveResultText ?? "",
     liveExplanation ?? "",
     String(liveArtifacts.length),
@@ -128,6 +172,21 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
       behavior: "smooth",
     });
   }, [conversationSignature]);
+
+  useEffect(() => {
+    if (!expandedArtifact) {
+      return;
+    }
+
+    function handleKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") {
+        setExpandedArtifact(null);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [expandedArtifact]);
 
   async function launchLiveRaid() {
     const submittedBrief = liveDemoBrief.trim();
@@ -177,9 +236,10 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
   }
 
   async function refreshLiveRaid(spawn: RaidSpawnOutput) {
-    const [statusResult, resultResult] = await Promise.allSettled([
+    const [statusResult, resultResult, agentLogResult] = await Promise.allSettled([
       fetchRaidStatus(spawn.raidId, spawn.raidAccessToken),
       fetchRaidResult(spawn.raidId, spawn.raidAccessToken),
+      fetchRaidAgentLog(spawn.raidId, spawn.raidAccessToken),
     ]);
 
     setLiveRaidRun((current) => {
@@ -189,6 +249,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
 
       const nextStatus = statusResult.status === "fulfilled" ? statusResult.value : current.status;
       const nextResult = resultResult.status === "fulfilled" ? resultResult.value : current.result;
+      const nextAgentLog = agentLogResult.status === "fulfilled" ? agentLogResult.value : current.agentLog;
       const nextRaidStatus = nextStatus?.status ?? current.spawn.status;
       const pollError =
         statusResult.status === "rejected"
@@ -201,6 +262,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
         ...current,
         status: nextStatus,
         result: nextResult,
+        agentLog: nextAgentLog,
         lastUpdatedAt: new Date().toISOString(),
         pollError,
       };
@@ -230,9 +292,10 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
     setLiveRaidRun(null);
     setLaunchError(null);
     setReceiptCopied(false);
+    setExpandedArtifact(null);
   }
 
-  function handleComposerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+  function handleComposerKeyDown(event: ReactKeyboardEvent<HTMLTextAreaElement>) {
     if (event.key !== "Enter" || event.shiftKey) {
       return;
     }
@@ -335,26 +398,67 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
             </ChatMessage>
           ) : null}
 
+          {mercenaryDecisionTrace.length > 0 || specialistTraces.length > 0 ? (
+            <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant">
+              <p>Here is the live process trace for this run.</p>
+              <div className="mercenary-trace-list">
+                {mercenaryDecisionTrace.length > 0 ? (
+                  <details className="mercenary-trace" open={!raidIsTerminal}>
+                    <summary className="mercenary-trace__summary">
+                      <div>
+                        <strong>Mercenary</strong>
+                        <span>{`${mercenaryDecisionTrace.length} planning decisions`}</span>
+                      </div>
+                      <StatusPill tone={raidIsTerminal ? "ready" : "working"}>{raidIsTerminal ? "finalized" : "planning"}</StatusPill>
+                    </summary>
+                    <div className="mercenary-trace__events">
+                      {mercenaryDecisionTrace.map((decision, index) => (
+                        <div className="mercenary-trace__event" key={`${decision.type}:${decision.at}:${index}`}>
+                          <div className="mercenary-trace__event-meta">
+                            <strong>{humanizeStatus(decision.type)}</strong>
+                            <span>{formatTimestamp(decision.at)}</span>
+                          </div>
+                          <p>{decision.summary}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                ) : null}
+
+                {specialistTraces.map((trace) => (
+                  <details className="mercenary-trace" key={trace.providerId} open={raidIsTerminal && trace.statusTone === "ready"}>
+                    <summary className="mercenary-trace__summary">
+                      <div>
+                        <strong>{trace.displayName}</strong>
+                        <span>{trace.scope || "specialist trace"}</span>
+                      </div>
+                      <StatusPill tone={trace.statusTone}>{trace.statusLabel}</StatusPill>
+                    </summary>
+                    <div className="mercenary-trace__events">
+                      {trace.outcome ? <p className="mercenary-trace__outcome">{trace.outcome}</p> : null}
+                      {trace.events.map((event) => (
+                        <div className="mercenary-trace__event" key={event.id}>
+                          <div className="mercenary-trace__event-meta">
+                            <strong>{event.label}</strong>
+                            <span>{formatTimestamp(event.at)}</span>
+                          </div>
+                          <p>{event.note}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </ChatMessage>
+          ) : null}
+
           {liveResultText || liveArtifacts.length > 0 || livePatch ? (
             <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant" tone="success">
               {liveResultText ? <p className="mercenary-final__answer">{liveResultText}</p> : <p>Final delivery is ready.</p>}
               {liveExplanation ? <p>{liveExplanation}</p> : null}
 
               {liveArtifacts.length > 0 ? (
-                <div className="mercenary-link-list">
-                  {liveArtifacts.map((artifact) => (
-                    <a
-                      className="mercenary-link"
-                      href={artifact.uri}
-                      key={`${artifact.outputType}:${artifact.label}:${artifact.uri}`}
-                      rel="noreferrer"
-                      target="_blank"
-                    >
-                      <strong>{artifact.label}</strong>
-                      <span>{artifact.outputType}</span>
-                    </a>
-                  ))}
-                </div>
+                <ArtifactGallery artifacts={liveArtifacts} onOpenArtifact={setExpandedArtifact} />
               ) : null}
 
               {livePatch ? <pre className="code-panel mercenary-final__code">{livePatch}</pre> : null}
@@ -465,9 +569,14 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
                   </div>
                   {specialist.meta ? <small>{specialist.meta}</small> : null}
                 </div>
-                <a className="mercenary-sidebar__micro-link" href="/raiders">
-                  view
-                </a>
+                <div className="mercenary-sidebar__specialist-side">
+                  {specialist.progressValue != null ? (
+                    <SpecialistProgressMeter progressValue={specialist.progressValue} tone={specialist.statusTone} />
+                  ) : null}
+                  <a className="mercenary-sidebar__micro-link" href="/raiders">
+                    view
+                  </a>
+                </div>
               </div>
             ))}
 
@@ -475,6 +584,10 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
           </div>
         </section>
       </aside>
+
+      {expandedArtifact ? (
+        <ArtifactLightbox artifact={expandedArtifact} onClose={() => setExpandedArtifact(null)} />
+      ) : null}
     </section>
   );
 }
@@ -525,12 +638,161 @@ function StatusPill({
   return <span className={`mercenary-status mercenary-status--${tone}`}>{children}</span>;
 }
 
+function SpecialistProgressMeter({
+  progressValue,
+  tone,
+}: {
+  progressValue: number;
+  tone: SpecialistTone;
+}) {
+  const filledBars = Math.max(1, Math.min(10, Math.round(progressValue * 10)));
+
+  return (
+    <div
+      aria-hidden="true"
+      className={`mercenary-sidebar__meter mercenary-sidebar__meter--${tone}`}
+      title={`${Math.round(progressValue * 100)}%`}
+    >
+      {Array.from({ length: 10 }).map((_, index) => (
+        <span
+          className={`mercenary-sidebar__meter-bar ${index < filledBars ? "mercenary-sidebar__meter-bar--filled" : ""}`}
+          key={index}
+        />
+      ))}
+    </div>
+  );
+}
+
 function TypingDots() {
   return (
     <div className="mercenary-typing" aria-label="Mercenary is typing">
       <span />
       <span />
       <span />
+    </div>
+  );
+}
+
+function ArtifactGallery({
+  artifacts,
+  onOpenArtifact,
+}: {
+  artifacts: SubmissionArtifact[];
+  onOpenArtifact: (artifact: SubmissionArtifact) => void;
+}) {
+  return (
+    <div className="mercenary-artifact-grid">
+      {artifacts.map((artifact) => (
+        <ArtifactCard artifact={artifact} key={`${artifact.outputType}:${artifact.label}:${artifact.uri}`} onOpenArtifact={onOpenArtifact} />
+      ))}
+    </div>
+  );
+}
+
+function ArtifactCard({
+  artifact,
+  onOpenArtifact,
+}: {
+  artifact: SubmissionArtifact;
+  onOpenArtifact: (artifact: SubmissionArtifact) => void;
+}) {
+  const isImage = isRenderableImageArtifact(artifact);
+  const isVideo = isRenderableVideoArtifact(artifact);
+  const bundle = parseBundleArtifact(artifact);
+  const bundlePreviewFiles = bundle?.files.slice(0, 5) ?? [];
+  const bundleImageFiles = bundle?.files.filter((file) => file.mimeType.startsWith("image/")).slice(0, 3) ?? [];
+
+  return (
+    <article className={`mercenary-artifact mercenary-artifact--${artifact.outputType}`}>
+      {isImage ? (
+        <button className="mercenary-artifact__preview" onClick={() => onOpenArtifact(artifact)} type="button">
+          <img alt={artifact.label} loading="lazy" src={artifact.uri} />
+        </button>
+      ) : null}
+
+      {isVideo ? (
+        <div className="mercenary-artifact__preview mercenary-artifact__preview--video">
+          <video controls preload="metadata" src={artifact.uri} />
+        </div>
+      ) : null}
+
+      {bundle ? (
+        <div className="mercenary-artifact__bundle">
+          {bundleImageFiles.length > 0 ? (
+            <div className="mercenary-artifact__bundle-strip">
+              {bundleImageFiles.map((file) => (
+                <img alt={file.relativePath} key={file.relativePath} loading="lazy" src={file.uri} />
+              ))}
+            </div>
+          ) : null}
+          <p>{`${bundle.files.length} generated files`}</p>
+          <div className="mercenary-artifact__bundle-files">
+            {bundlePreviewFiles.map((file) => (
+              <a
+                className="mercenary-artifact__bundle-file"
+                download={buildBundleFileDownloadName(file.relativePath)}
+                href={file.uri}
+                key={file.relativePath}
+              >
+                {file.relativePath}
+              </a>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="mercenary-artifact__meta">
+        <span>{artifactKindLabel(artifact)}</span>
+        <strong>{artifact.label}</strong>
+        {artifact.description ? <p>{artifact.description}</p> : null}
+      </div>
+
+      <div className="mercenary-artifact__actions">
+        {(isImage || isVideo) && !artifact.uri.startsWith("data:application/json") ? (
+          <button className="mercenary-artifact__action" onClick={() => onOpenArtifact(artifact)} type="button">
+            open
+          </button>
+        ) : null}
+        <a className="mercenary-artifact__action" download={buildArtifactDownloadName(artifact)} href={artifact.uri}>
+          download
+        </a>
+      </div>
+    </article>
+  );
+}
+
+function ArtifactLightbox({
+  artifact,
+  onClose,
+}: {
+  artifact: SubmissionArtifact;
+  onClose: () => void;
+}) {
+  const isImage = isRenderableImageArtifact(artifact);
+  const isVideo = isRenderableVideoArtifact(artifact);
+
+  if (!isImage && !isVideo) {
+    return null;
+  }
+
+  return (
+    <div className="mercenary-lightbox" onClick={onClose} role="presentation">
+      <div className="mercenary-lightbox__dialog" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true">
+        <div className="mercenary-lightbox__head">
+          <div>
+            <span>{artifactKindLabel(artifact)}</span>
+            <strong>{artifact.label}</strong>
+          </div>
+          <button className="mercenary-lightbox__close" onClick={onClose} type="button">
+            close
+          </button>
+        </div>
+
+        <div className="mercenary-lightbox__body">
+          {isImage ? <img alt={artifact.label} src={artifact.uri} /> : null}
+          {isVideo ? <video controls preload="metadata" src={artifact.uri} /> : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -556,6 +818,7 @@ function buildConversationSpecialistRecords(
         statusTone: mapStatusTone(expert.status),
         note: expert.message ?? buildProviderNote(provider, health),
         meta,
+        progressValue: resolveSpecialistProgress(expert.status, expert.progress),
       };
     });
   }
@@ -592,8 +855,82 @@ function buildConversationSpecialistRecords(
       statusTone: mapStatusTone(resolvedStatus),
       note: entry.roleLabel ?? entry.workstreamLabel ?? entry.reasons[0] ?? buildProviderNote(provider, health),
       meta,
+      progressValue: resolveSpecialistProgress(resolvedStatus),
     };
   });
+}
+
+function buildSpecialistTraceRecords(
+  agentLog: RaidAgentLog | undefined,
+  result: RaidResult | undefined,
+  activeExperts: RaidStatusSnapshot["experts"],
+  providerById: Map<string, Provider>,
+  healthByProviderId: Map<string, ProviderHealth>,
+): SpecialistTraceRecord[] {
+  const providerIds = uniqueStrings([
+    ...activeExperts.map((expert) => expert.providerId),
+    ...(result?.synthesizedOutput?.contributingProviderIds ?? []),
+    ...(result?.synthesizedOutput?.droppedProviderIds ?? []),
+    ...(agentLog?.workstreams.flatMap((workstream) => [...workstream.providers, ...workstream.approvedProviders]) ?? []),
+    ...(agentLog?.toolCalls.map((call) => call.target ?? "").filter((value) => value.length > 0) ?? []),
+    ...(agentLog?.failures.map((failure) => failure.providerId ?? "").filter((value) => value.length > 0) ?? []),
+  ]);
+
+  return providerIds
+    .map((providerId) => {
+      const provider = providerById.get(providerId);
+      const health = healthByProviderId.get(providerId);
+      const expert = activeExperts.find((entry) => entry.providerId === providerId);
+      const routingDecision = result?.routingProof?.providers.find((entry) => entry.providerId === providerId);
+      const contribution = result?.synthesizedOutput?.contributions.find((entry) => entry.providerId === providerId);
+      const approvedSubmission = result?.approvedSubmissions?.find((entry) => entry.submission.providerId === providerId);
+      const workstream = agentLog?.workstreams.find(
+        (entry) => entry.providers.includes(providerId) || entry.approvedProviders.includes(providerId),
+      );
+      const dropped = result?.synthesizedOutput?.droppedProviderIds.includes(providerId) ?? false;
+      const approved = result?.synthesizedOutput?.contributingProviderIds.includes(providerId) ?? false;
+      const resolvedStatus = expert?.status ?? (approved ? "approved" : dropped ? "dropped" : workstream?.status ?? "invited");
+      const outcome = approvedSubmission?.breakdown.summary ?? expert?.message ?? "";
+      const scope =
+        [workstream?.workstreamLabel, workstream?.roleLabel, routingDecision?.roleLabel ?? contribution?.roleLabel]
+          .filter((value): value is string => Boolean(value))
+          .join(" / ") ||
+        buildProviderNote(provider, health);
+
+      const events = [
+        ...(agentLog?.toolCalls
+          .filter((call) => call.target === providerId)
+          .map((call, index) => ({
+            id: `${providerId}:${call.tool}:${call.at}:${index}`,
+            at: call.at,
+            label: humanizeToolCall(call.tool),
+            note: buildToolCallTrace(call),
+          })) ?? []),
+        ...(agentLog?.failures
+          .filter((failure) => failure.providerId === providerId)
+          .map((failure, index) => ({
+            id: `${providerId}:failure:${failure.at}:${index}`,
+            at: failure.at,
+            label: humanizeStatus(failure.stage),
+            note: failure.summary,
+          })) ?? []),
+      ].sort((left, right) => Date.parse(left.at) - Date.parse(right.at));
+
+      if (events.length === 0 && !outcome) {
+        return null;
+      }
+
+      return {
+        providerId,
+        displayName: provider?.displayName ?? health?.providerName ?? providerId,
+        statusLabel: humanizeStatus(resolvedStatus),
+        statusTone: mapStatusTone(resolvedStatus),
+        scope,
+        outcome,
+        events,
+      };
+    })
+    .filter((trace): trace is SpecialistTraceRecord => trace != null);
 }
 
 function buildHostedSpecialistRecords(
@@ -609,6 +946,7 @@ function buildHostedSpecialistRecords(
       statusTone: entry.ready ? "ready" : entry.reachable ? "available" : "offline",
       note: entry.error ?? entry.endpoint ?? "Waiting for provider metadata.",
       meta: entry.model ?? "",
+      progressValue: null,
     }));
   }
 
@@ -624,6 +962,7 @@ function buildHostedSpecialistRecords(
       statusTone,
       note: buildProviderNote(provider, health),
       meta: provider.modelFamily ?? health?.model ?? "",
+      progressValue: null,
     };
   });
 }
@@ -662,6 +1001,49 @@ function buildAgentLogPath(run: LiveRaidRun): string {
   return `${API_BASE}/v1/raids/${encodeURIComponent(run.spawn.raidId)}/agent_log.json?token=${encodeURIComponent(run.spawn.raidAccessToken)}`;
 }
 
+function humanizeToolCall(tool: string): string {
+  switch (tool) {
+    case "provider_http_invite":
+      return "Invited";
+    case "provider_http_accept":
+      return "Accepted";
+    case "provider_http_run":
+      return "Running";
+    case "evaluate_submission":
+      return "Evaluated";
+    default:
+      return humanizeStatus(tool);
+  }
+}
+
+function buildToolCallTrace(call: RaidAgentLog["toolCalls"][number]): string {
+  if (call.tool === "provider_http_invite") {
+    const workstream = typeof call.details?.workstream === "string" ? call.details.workstream : null;
+    const role = typeof call.details?.role === "string" ? call.details.role : null;
+    return [workstream, role].filter((value): value is string => Boolean(value)).join(" / ") || "Mercenary opened the assignment.";
+  }
+
+  if (call.tool === "provider_http_accept") {
+    return typeof call.details?.providerRunId === "string"
+      ? `Run id ${call.details.providerRunId}.`
+      : "Specialist accepted the assignment.";
+  }
+
+  if (call.tool === "provider_http_run") {
+    const latency =
+      typeof call.details?.latencyMs === "number" && Number.isFinite(call.details.latencyMs)
+        ? `${Math.round(call.details.latencyMs)}ms`
+        : null;
+    return latency ? `Specialist started execution. ${latency}.` : "Specialist started execution.";
+  }
+
+  if (call.tool === "evaluate_submission") {
+    return "Mercenary scored the submitted deliverable.";
+  }
+
+  return call.status;
+}
+
 function buildAbsolutePath(path: string): string {
   if (typeof window === "undefined") {
     return path;
@@ -686,8 +1068,142 @@ function selectResultPatch(result: RaidResult | undefined): string | undefined {
   return result?.synthesizedOutput?.patchUnifiedDiff ?? result?.primarySubmission?.submission.patchUnifiedDiff;
 }
 
-function selectArtifacts(result: RaidResult | undefined) {
-  return result?.synthesizedOutput?.artifacts ?? result?.primarySubmission?.submission.artifacts ?? [];
+function selectArtifacts(result: RaidResult | undefined): SubmissionArtifact[] {
+  return (result?.synthesizedOutput?.artifacts ?? result?.primarySubmission?.submission.artifacts ?? []) as SubmissionArtifact[];
+}
+
+function artifactKindLabel(artifact: SubmissionArtifact): string {
+  return artifact.mimeType ? `${artifact.outputType} · ${artifact.mimeType}` : artifact.outputType;
+}
+
+function isRenderableImageArtifact(artifact: SubmissionArtifact): boolean {
+  if (artifact.mimeType?.startsWith("image/")) {
+    return true;
+  }
+
+  return artifact.mimeType == null && artifact.outputType === "image";
+}
+
+function isRenderableVideoArtifact(artifact: SubmissionArtifact): boolean {
+  if (artifact.mimeType?.startsWith("video/")) {
+    return true;
+  }
+
+  return artifact.mimeType == null && artifact.outputType === "video";
+}
+
+function parseBundleArtifact(artifact: SubmissionArtifact): BundleArtifactPreview | null {
+  if (artifact.outputType !== "bundle") {
+    return null;
+  }
+
+  const payload = decodeArtifactPayload(artifact.uri);
+  if (!payload) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(payload) as {
+      artifactId?: string;
+      files?: Array<{
+        relativePath?: string;
+        mimeType?: string;
+        bytes?: number;
+        sha256?: string;
+        data?: string;
+      }>;
+    };
+    const files = Array.isArray(parsed.files)
+      ? parsed.files
+          .filter(
+            (file): file is {
+              relativePath: string;
+              mimeType: string;
+              bytes: number;
+              sha256: string;
+              data: string;
+            } =>
+              typeof file?.relativePath === "string" &&
+              typeof file?.mimeType === "string" &&
+              typeof file?.bytes === "number" &&
+              typeof file?.sha256 === "string" &&
+              typeof file?.data === "string",
+          )
+          .map((file) => ({
+            relativePath: file.relativePath,
+            mimeType: file.mimeType,
+            bytes: file.bytes,
+            sha256: file.sha256,
+            uri: `data:${file.mimeType};base64,${file.data}`,
+          }))
+      : [];
+
+    return {
+      artifactId: typeof parsed.artifactId === "string" ? parsed.artifactId : artifact.label,
+      files,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function decodeArtifactPayload(uri: string): string | null {
+  const match = uri.match(/^data:([^;,]+)?(?:;charset=[^;,]+)?(;base64)?,(.*)$/s);
+  if (!match) {
+    return null;
+  }
+
+  const [, , isBase64, body] = match;
+  try {
+    return isBase64 ? atob(body) : decodeURIComponent(body);
+  } catch {
+    return null;
+  }
+}
+
+function buildArtifactDownloadName(artifact: SubmissionArtifact): string {
+  const extension = extensionForMimeType(artifact.mimeType, artifact.outputType);
+  return `${slugifyLabel(artifact.label, artifact.outputType)}.${extension}`;
+}
+
+function buildBundleFileDownloadName(path: string): string {
+  const clean = path.trim().replace(/^\/+/, "");
+  return clean.length > 0 ? clean.split("/").pop() ?? clean : "artifact";
+}
+
+function extensionForMimeType(mimeType: string | undefined, fallback: string): string {
+  switch (mimeType) {
+    case "image/gif":
+      return "gif";
+    case "image/png":
+      return "png";
+    case "image/jpeg":
+      return "jpg";
+    case "image/webp":
+      return "webp";
+    case "image/svg+xml":
+      return "svg";
+    case "video/mp4":
+      return "mp4";
+    case "video/webm":
+      return "webm";
+    case "application/json":
+      return "json";
+    case "application/x-subrip":
+      return "srt";
+    case "text/markdown; charset=utf-8":
+      return "md";
+    default:
+      return fallback === "bundle" ? "json" : "txt";
+  }
+}
+
+function slugifyLabel(value: string, fallback: string): string {
+  const normalized = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return normalized || fallback;
 }
 
 function selectApprovedProviderIds(result: RaidResult | undefined): string[] {
@@ -743,6 +1259,50 @@ function formatLatency(latencyMs: number | undefined): string | null {
   }
 
   return `${Math.round(latencyMs)}ms`;
+}
+
+function resolveSpecialistProgress(status: string, progress?: number): number | null {
+  if (typeof progress === "number" && Number.isFinite(progress)) {
+    const normalized = progress <= 1 ? progress : progress / 100;
+    return Math.max(0, Math.min(1, normalized));
+  }
+
+  const normalizedStatus = status.toLowerCase();
+  if (
+    normalizedStatus.includes("approved") ||
+    normalizedStatus.includes("submitted") ||
+    normalizedStatus.includes("complete") ||
+    normalizedStatus.includes("final") ||
+    normalizedStatus.includes("paid")
+  ) {
+    return 1;
+  }
+  if (normalizedStatus.includes("running")) {
+    return 0.72;
+  }
+  if (normalizedStatus.includes("accepted")) {
+    return 0.46;
+  }
+  if (
+    normalizedStatus.includes("invited") ||
+    normalizedStatus.includes("selected") ||
+    normalizedStatus.includes("queued") ||
+    normalizedStatus.includes("pending") ||
+    normalizedStatus.includes("reserve")
+  ) {
+    return 0.18;
+  }
+  if (
+    normalizedStatus.includes("failed") ||
+    normalizedStatus.includes("dropped") ||
+    normalizedStatus.includes("invalid") ||
+    normalizedStatus.includes("timed") ||
+    normalizedStatus.includes("disqualified")
+  ) {
+    return 0.08;
+  }
+
+  return null;
 }
 
 function mapStatusTone(status: string): SpecialistTone {

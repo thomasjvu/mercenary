@@ -11,7 +11,7 @@ Mercenary is the orchestrator agent inside Boss Raid. One request goes in, Merce
 - Live demo: `https://bossraid-web.pages.dev/`
 - Native ingress: `POST /v1/raid`
 - Optional free web-demo ingress: `POST /v1/demo/raid`
-- Main public proof: `/receipt`, `GET /v1/agent.json`, and `GET /v1/raids/:raidId/agent_log.json?token=...`
+- Main public proof: `/receipt`, `GET /v1/agent.json`, and `GET /v1/raid/:raidId/agent_log.json?token=...` plus the `/v1/raids/:raidId/agent_log.json` alias
 - Hackathon track map: [`docs/hackathon.md`](docs/hackathon.md)
 - ERC-8004 claim boundary: [`docs/synthesis-registration.md`](docs/synthesis-registration.md)
 
@@ -22,10 +22,11 @@ Boss Raid is the platform. Mercenary is the agent. The core story is consistent 
 - Native public route: `POST /v1/raid`
 - Optional free demo route: `POST /v1/demo/raid` for the hosted `/demo` UI when enabled
 - OpenAI-compatible compatibility route: `POST /v1/chat/completions`
-- MCP adapter with `bossraid_delegate`, `bossraid_receipt`, `bossraid_status`, and `bossraid_result`
+- MCP adapter with `bossraid_delegate`, `bossraid_receipt`, `bossraid_capabilities`, `bossraid_spawn`, `bossraid_status`, `bossraid_result`, `bossraid_abort`, `bossraid_replay`, and `bossraid_provider_stats`
 - Public web routes at `/`, `/demo`, `/raiders`, and `/receipt`
+- Ops shell at `/ops/` with session-backed admin auth routes at `GET|POST|DELETE /v1/ops/session`
 - Provider registry and discovery at `/agents/register`, `/agents/heartbeat`, and `/agents/discover`
-- Public proof surfaces at `/receipt`, `GET /v1/agent.json`, and `GET /v1/raids/:raidId/agent_log.json?token=...`
+- Public proof surfaces at `/receipt`, `GET /v1/agent.json`, and `GET /v1/raid/:raidId/agent_log.json?token=...` plus the `/v1/raids/:raidId/agent_log.json` alias
 - Optional TEE proof routes at `GET /v1/attested-runtime` and `GET /v1/raid/:raidId/attested-result`
 
 ## Repo Layout
@@ -82,6 +83,14 @@ pnpm dev:evaluator
 pnpm dev:mcp
 ```
 
+Built shell and gateway:
+
+```bash
+pnpm serve:gateway
+```
+
+`pnpm serve:gateway` serves `/`, `/ops/`, `/api/*`, `/ops-api/*`, and `/healthz` from one origin once `apps/web` and `apps/ops` are built.
+
 ## Example Flows
 
 - OpenAI-compatible text raid: [`examples/chat-completion-request.json`](examples/chat-completion-request.json)
@@ -96,7 +105,13 @@ Useful commands:
 pnpm test:game-raid:e2e
 pnpm test:private-game-raid:e2e
 pnpm test:strict-private:e2e
+pnpm test:mcp:e2e
+pnpm test:evaluator:e2e
+pnpm test:x402:e2e
 pnpm demo:rehearse
+pnpm export:proof-bundle -- --raid-id <raidId>
+pnpm verify:attestation
+pnpm serve:gateway
 pnpm deploy:web:cloudflare
 pnpm render:video
 ```

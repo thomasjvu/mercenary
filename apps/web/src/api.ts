@@ -228,6 +228,58 @@ export type RaidResult = {
   }>;
 };
 
+export type RaidAgentLog = {
+  schemaVersion: string;
+  generatedAt: string;
+  run: {
+    raidId: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    childRaidCount: number;
+    host: "codex" | "claude_code" | null;
+    receiptPath?: string;
+  };
+  workstreams: Array<{
+    raidId: string;
+    workstreamId?: string;
+    workstreamLabel?: string;
+    workstreamObjective?: string;
+    roleId?: string;
+    roleLabel?: string;
+    roleObjective?: string;
+    status: string;
+    providers: string[];
+    approvedProviders: string[];
+  }>;
+  decisions: Array<{
+    at: string;
+    type: string;
+    status: "complete" | "pending";
+    summary: string;
+    data?: Record<string, unknown>;
+  }>;
+  toolCalls: Array<{
+    at: string;
+    tool: string;
+    kind: "internal" | "http" | "evaluation" | "settlement";
+    status: string;
+    target?: string;
+    details?: Record<string, unknown>;
+  }>;
+  retries: Array<{
+    at: string;
+    type: string;
+    summary: string;
+  }>;
+  failures: Array<{
+    at: string;
+    stage: string;
+    providerId?: string;
+    summary: string;
+  }>;
+};
+
 export type AttestedEnvelope<TPayload> = {
   signer: string;
   message: string;
@@ -462,6 +514,10 @@ export async function fetchRaidResult(raidId: string, raidAccessToken: string): 
   return fetchJson<RaidResult>(`/v1/raids/${encodeURIComponent(raidId)}/result`, {
     headers: raidTokenHeaders(raidAccessToken),
   });
+}
+
+export async function fetchRaidAgentLog(raidId: string, raidAccessToken: string): Promise<RaidAgentLog> {
+  return fetchJson<RaidAgentLog>(`/v1/raids/${encodeURIComponent(raidId)}/agent_log.json?token=${encodeURIComponent(raidAccessToken)}`);
 }
 
 export async function fetchAttestedRuntime(): Promise<AttestedEnvelope<AttestedRuntimePayload>> {

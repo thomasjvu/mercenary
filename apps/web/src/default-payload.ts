@@ -41,6 +41,201 @@ export const DEFAULT_SPAWN_PAYLOAD = `{
 export const DEFAULT_LIVE_DEMO_BRIEF =
   "Create a one-room GB Studio microgame called Boss Raid: Slime Panic. Mercenary should split this into gameplay, pixel art, and trailer work, keep the creative direction consistent, and return one verified receipt-backed result.";
 
+function buildLiveDemoFiles(normalizedBrief: string) {
+  return [
+    {
+      path: "game/project.gbsproj",
+      content: `{
+  "name": "Boss Raid: Slime Panic",
+  "engine": "gb-studio",
+  "sceneCount": 1,
+  "scenes": [
+    {
+      "name": "Dungeon Vault",
+      "background": "dungeon-vault",
+      "actors": ["player", "slime-king", "vault-key", "exit-door"]
+    }
+  ],
+  "notes": "One-room microgame scaffold for Mercenary live demo."
+}
+`,
+      sha256: "demo-gbstudio-project",
+    },
+    {
+      path: "game/scripts/encounter.ts",
+      content: `export const bossRaidPitch = {
+  title: "Boss Raid: Slime Panic",
+  loop: "Collect the vault key, dodge the slime king, and reach the exit before the timer expires.",
+  sceneName: "Dungeon Vault",
+  npcName: "Slime King",
+  npcLine: "No one leaves the vault without the key.",
+  palette: ["#0f1c2e", "#ffda47", "#f65d5d", "#77f6c5"],
+  goals: [
+    "Build one readable room with a key lane, chase pressure, and an exit check.",
+    "Make the room fully playable inside a 30-second run.",
+    "Keep the art, gameplay, and trailer aligned to the same hook."
+  ],
+  assetPlan: [
+    "player walk sheet",
+    "slime king bounce sheet",
+    "vault key pickup sprite",
+    "exit door open/closed sprite",
+    "dungeon floor + wall tiles",
+    "timer and key HUD icons"
+  ]
+};
+`,
+      sha256: "demo-encounter-script",
+    },
+    {
+      path: "game/scripts/timer.ts",
+      content: `export const slimePanicTimer = {
+  totalSeconds: 30,
+  warningSeconds: 10,
+  loseState: "timer-expired"
+};
+
+export function stepEncounterTimer(secondsRemaining: number, deltaSeconds: number): number {
+  return Math.max(0, Number((secondsRemaining - deltaSeconds).toFixed(2)));
+}
+`,
+      sha256: "demo-timer-script",
+    },
+    {
+      path: "game/scripts/slime-king.ts",
+      content: `export type GridPoint = { x: number; y: number };
+
+export type SlimeKingState = {
+  patrolRoute: GridPoint[];
+  routeIndex: number;
+  detectionRadius: number;
+};
+
+export const defaultSlimeKingState: SlimeKingState = {
+  patrolRoute: [
+    { x: 9, y: 6 },
+    { x: 12, y: 6 },
+    { x: 12, y: 10 },
+    { x: 9, y: 10 }
+  ],
+  routeIndex: 0,
+  detectionRadius: 4
+};
+
+export function chooseSlimeKingTarget(state: SlimeKingState, player: GridPoint, hasKey: boolean): GridPoint {
+  if (hasKey) {
+    return player;
+  }
+
+  return state.patrolRoute[state.routeIndex] ?? player;
+}
+`,
+      sha256: "demo-slime-king-script",
+    },
+    {
+      path: "game/scripts/exit-door.ts",
+      content: `export type ExitGateState = {
+  locked: boolean;
+  prompt: string;
+};
+
+export function resolveExitGateState(hasKey: boolean, timerExpired: boolean): ExitGateState {
+  if (timerExpired) {
+    return { locked: true, prompt: "Too late. Restart the room." };
+  }
+
+  if (!hasKey) {
+    return { locked: true, prompt: "Find the vault key first." };
+  }
+
+  return { locked: false, prompt: "Exit unlocked. Move." };
+}
+`,
+      sha256: "demo-exit-door-script",
+    },
+    {
+      path: "game/data/dungeon-vault.scene.json",
+      content: `{
+  "name": "Dungeon Vault",
+  "size": { "width": 20, "height": 18 },
+  "playerSpawn": { "x": 2, "y": 9 },
+  "bossSpawn": { "x": 10, "y": 8 },
+  "keySpawn": { "x": 3, "y": 3 },
+  "exitDoor": { "x": 17, "y": 14 },
+  "tilemap": [
+    "####################",
+    "#........##........#",
+    "#.###....##....###.#",
+    "#..K.....##........#",
+    "#........##..###...#",
+    "#..####......###...#",
+    "#........SS........#",
+    "#........SS........#",
+    "#..###........###..#",
+    "#..###........###..#",
+    "#........##........#",
+    "#...###..##..###...#",
+    "#........##........#",
+    "#........##.....D..#",
+    "#..####........###.#",
+    "#........##........#",
+    "#........##........#",
+    "####################"
+  ]
+}
+`,
+      sha256: "demo-scene-json",
+    },
+    {
+      path: "game/data/ui-hud.json",
+      content: `{
+  "timer": {
+    "anchor": "top-left",
+    "format": "00:30",
+    "warningThreshold": 10
+  },
+  "keyIcon": {
+    "anchor": "top-right",
+    "emptyState": "outline",
+    "filledState": "filled"
+  },
+  "statusText": "Get the key. Reach the exit."
+}
+`,
+      sha256: "demo-ui-hud-json",
+    },
+    {
+      path: "marketing/creative-brief.md",
+      content: `# Boss Raid: Slime Panic
+
+Tone: Tense, retro-cute, readable in one glance.
+Audience: players who like tiny retro challenge games.
+Mission: ${normalizedBrief}
+Deliverables: gameplay patch, pixel pack, teaser clip, and launch copy.
+
+## Shared Hook
+Collect key -> dodge boss slime -> reach exit before timer runs out
+
+## Room Plan
+- One 20x18 dungeon room with a readable patrol lane
+- Key spawn at top-left pressure point
+- Slime King patrols center, then chases once the key is taken
+- Exit door opens only after the key pickup
+- Timer and key status visible in the HUD
+
+## Asset Plan
+- Player walk sheet
+- Slime King bounce sheet
+- Vault key pickup sprite
+- Exit door open and closed sprite
+- Dungeon floor and wall tiles
+- Timer and key HUD icons
+`,
+      sha256: "demo-creative-brief",
+    },
+  ];
+}
+
 export function buildLiveDemoPayload(brief: string) {
   const normalizedBrief = brief.trim() || DEFAULT_LIVE_DEMO_BRIEF;
 
@@ -52,33 +247,16 @@ export function buildLiveDemoPayload(brief: string) {
       description: normalizedBrief,
       language: "typescript",
       framework: "gb-studio",
-      files: [
-        {
-          path: "game/project.gbsproj",
-          content: "{\"name\":\"Boss Raid Slime Panic\",\"engine\":\"gb-studio\",\"sceneCount\":1}\n",
-          sha256: "demo-gbstudio-project",
-        },
-        {
-          path: "game/scripts/encounter.ts",
-          content:
-            "export const bossRaidPitch = {\n  title: \"Boss Raid: Slime Panic\",\n  loop: \"Collect the vault key, dodge slimes, and hit the exit before the timer expires.\",\n  palette: [\"#0f1c2e\", \"#ffda47\", \"#f65d5d\", \"#77f6c5\"]\n};\n",
-          sha256: "demo-encounter-script",
-        },
-        {
-          path: "marketing/creative-brief.md",
-          content: `# Boss Raid: Slime Panic\n\nMission: ${normalizedBrief}\n\nDeliverables: playable patch, sprite pack, 12-second teaser, and launch copy.\n`,
-          sha256: "demo-creative-brief",
-        },
-      ],
+      files: buildLiveDemoFiles(normalizedBrief),
       failingSignals: {
         errors: [],
         reproSteps: [
           "Open the supplied GB Studio repo snapshot",
-          "Implement one playable room with key, slime, and exit loop",
-          "Return the gameplay patch plus supporting art and trailer artifacts",
+          "Implement the Dungeon Vault room, timer loop, boss pressure, and exit unlock flow",
+          "Return gameplay changes plus supporting art and trailer artifacts",
         ],
         expectedBehavior:
-          "The final raid result should include a playable GB Studio patch, image artifacts for the art pack, a teaser clip, and synthesized launch copy.",
+          "The final raid result should include a concrete room layout, timer and boss behavior logic, supporting pixel assets, a teaser preview, and synthesized launch copy.",
       },
     },
     output: {

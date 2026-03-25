@@ -1469,6 +1469,264 @@ h2 {
   color: var(--rx-blue);
 }
 
+.receipt-rail {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.receipt-dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
+  gap: clamp(18px, 1.6vw, 24px);
+  align-items: start;
+}
+
+.receipt-surface {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.receipt-surface--wide {
+  grid-row: span 3;
+}
+
+.receipt-surface__head,
+.receipt-outcome,
+.receipt-outcome__copy,
+.receipt-stat-grid,
+.receipt-detail-list,
+.receipt-link-list,
+.receipt-provider-list,
+.receipt-preview-stack,
+.receipt-provider-row {
+  display: grid;
+}
+
+.receipt-surface__head {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.receipt-surface__head h2 {
+  font-size: 1rem;
+  line-height: 1.1;
+}
+
+.receipt-state,
+.receipt-kicker,
+.receipt-stat span,
+.receipt-detail-row span,
+.receipt-link-item span,
+.receipt-link-item small,
+.receipt-provider-row__state {
+  font-family:
+    "IBM Plex Mono",
+    ui-monospace,
+    Menlo,
+    monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.receipt-state,
+.receipt-provider-row__state {
+  color: var(--muted);
+}
+
+.receipt-outcome {
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 0.72fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.receipt-outcome__copy {
+  gap: 10px;
+  min-width: 0;
+}
+
+.receipt-kicker {
+  color: var(--text);
+}
+
+.receipt-panel__text--clamped {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.receipt-stat-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+}
+
+.receipt-stat {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.receipt-stat span,
+.receipt-detail-row span,
+.receipt-link-item span,
+.receipt-link-item small {
+  color: var(--muted);
+}
+
+.receipt-stat strong,
+.receipt-detail-row strong,
+.receipt-link-item strong {
+  font-size: 0.95rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.receipt-workstream-list,
+.receipt-disclosure {
+  display: grid;
+  gap: 10px;
+}
+
+.receipt-workstream-list {
+  padding-top: 4px;
+}
+
+.receipt-workstream-row {
+  display: grid;
+  gap: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.receipt-workstream-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.receipt-workstream-row span,
+.receipt-disclosure summary {
+  color: var(--muted);
+  font-family:
+    "IBM Plex Mono",
+    ui-monospace,
+    Menlo,
+    monospace;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+}
+
+.receipt-disclosure {
+  padding-top: 4px;
+}
+
+.receipt-disclosure summary {
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.receipt-detail-row,
+.receipt-link-item,
+.receipt-provider-row {
+  gap: 6px;
+  min-width: 0;
+  padding: 10px 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.receipt-detail-row:first-child,
+.receipt-link-item:first-child,
+.receipt-provider-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.receipt-detail-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.42fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.receipt-link-item {
+  color: inherit;
+  text-decoration: none;
+}
+
+.receipt-link-item:hover strong {
+  color: var(--accent);
+}
+
+.receipt-provider-row__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.receipt-provider-row p,
+.receipt-provider-row small {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.receipt-preview-stack {
+  gap: 10px;
+}
+
+.receipt-preview-media,
+.receipt-preview-fallback {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--line-soft);
+  background: var(--bg);
+}
+
+.receipt-preview-media {
+  display: block;
+  object-fit: cover;
+}
+
+.receipt-preview-fallback {
+  display: grid;
+  align-content: end;
+  gap: 6px;
+  padding: 12px;
+}
+
+.receipt-preview-fallback span {
+  color: var(--muted);
+  font-family:
+    "IBM Plex Mono",
+    ui-monospace,
+    Menlo,
+    monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.receipt-proof-note--inline {
+  padding: 10px 0 0;
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+  background: transparent;
+}
+
+.receipt-empty__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .directory-list {
   display: grid;
   gap: 10px;
@@ -2963,7 +3221,9 @@ h2 {
   .raider-row,
   .directory-hero,
   .directory-layout,
-  .receipt-layout {
+  .receipt-layout,
+  .receipt-dashboard,
+  .receipt-outcome {
     grid-template-columns: 1fr;
   }
 
@@ -2984,6 +3244,10 @@ h2 {
 
   .directory-summary-bar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .receipt-rail {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .receipt-form,
@@ -3053,8 +3317,10 @@ h2 {
   .directory-kpi-grid,
   .directory-leaderboards,
   .directory-summary-bar,
+  .receipt-rail,
   .receipt-card-grid,
   .receipt-card-grid--compact,
+  .receipt-stat-grid,
   .raider-row__stats,
   .raider-card__metrics {
     grid-template-columns: 1fr;
@@ -3073,6 +3339,11 @@ h2 {
   .summary-pill {
     padding-left: 16px;
     padding-right: 16px;
+  }
+
+  .receipt-detail-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 
   .terminal-stack {
@@ -3468,6 +3739,8 @@ h2 {
 
 .app-shell--demo-route .footer {
   margin-top: 0;
+  position: relative;
+  z-index: 3;
 }
 
 .mercenary-demo {
@@ -3481,12 +3754,13 @@ h2 {
   --mercenary-user-bg: #1f3559;
   --mercenary-user-border: rgba(31, 53, 89, 0.82);
   --mercenary-user-text: #f7f8fb;
-  height: 100%;
+  height: auto;
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: clamp(18px, 2vw, 28px);
   align-items: stretch;
+  overflow: hidden;
 }
 
 .mercenary-chat {
@@ -3732,6 +4006,273 @@ h2 {
   border-color: rgba(44, 82, 179, 0.24);
 }
 
+.mercenary-artifact-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.mercenary-trace-list {
+  display: grid;
+  gap: 10px;
+}
+
+.mercenary-trace {
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+}
+
+.mercenary-trace[open] {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.mercenary-trace__summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.mercenary-trace__summary::-webkit-details-marker {
+  display: none;
+}
+
+.mercenary-trace__summary div,
+.mercenary-trace__event-meta {
+  display: grid;
+  gap: 3px;
+}
+
+.mercenary-trace__summary span,
+.mercenary-trace__event-meta span {
+  color: var(--muted);
+  font-family:
+    "IBM Plex Mono",
+    ui-monospace,
+    Menlo,
+    monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.mercenary-trace__summary strong,
+.mercenary-trace__event-meta strong {
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.mercenary-trace__events {
+  display: grid;
+  gap: 10px;
+  padding: 0 14px 14px;
+}
+
+.mercenary-trace__outcome,
+.mercenary-trace__event p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.mercenary-trace__event {
+  display: grid;
+  gap: 5px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(17, 17, 17, 0.08);
+}
+
+.mercenary-trace__event:first-of-type {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.mercenary-artifact {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.mercenary-artifact__preview {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(17, 17, 17, 0.04);
+  cursor: pointer;
+}
+
+.mercenary-artifact__preview img,
+.mercenary-artifact__preview video,
+.mercenary-lightbox__body img,
+.mercenary-lightbox__body video {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.mercenary-artifact__preview--video {
+  cursor: default;
+}
+
+.mercenary-artifact__bundle {
+  display: grid;
+  gap: 10px;
+}
+
+.mercenary-artifact__bundle p,
+.mercenary-artifact__meta p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.mercenary-artifact__bundle-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mercenary-artifact__bundle-strip img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 12px;
+  background: rgba(17, 17, 17, 0.05);
+}
+
+.mercenary-artifact__bundle-files {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mercenary-artifact__bundle-file {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(17, 17, 17, 0.05);
+  color: inherit;
+  text-decoration: none;
+  font-family:
+    "IBM Plex Mono",
+    ui-monospace,
+    Menlo,
+    monospace;
+  font-size: 0.68rem;
+  line-height: 1.3;
+}
+
+.mercenary-artifact__bundle-file:hover,
+.mercenary-artifact__action:hover {
+  background: rgba(44, 82, 179, 0.1);
+  color: var(--rx-blue);
+}
+
+.mercenary-artifact__meta {
+  display: grid;
+  gap: 4px;
+}
+
+.mercenary-artifact__meta span,
+.mercenary-lightbox__head span {
+  color: var(--muted);
+  font-family:
+    "IBM Plex Mono",
+    ui-monospace,
+    Menlo,
+    monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mercenary-artifact__meta strong,
+.mercenary-lightbox__head strong {
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.mercenary-artifact__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mercenary-artifact__action,
+.mercenary-lightbox__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(17, 17, 17, 0.06);
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  font-family:
+    "IBM Plex Mono",
+    ui-monospace,
+    Menlo,
+    monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mercenary-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(6, 10, 18, 0.7);
+  backdrop-filter: blur(10px);
+}
+
+.mercenary-lightbox__dialog {
+  width: min(920px, 100%);
+  max-height: calc(100dvh - 48px);
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 28px;
+  background: rgba(248, 249, 252, 0.98);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.18),
+    0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.mercenary-lightbox__head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mercenary-lightbox__head div {
+  display: grid;
+  gap: 4px;
+}
+
+.mercenary-lightbox__body {
+  min-height: 0;
+  overflow: auto;
+  border-radius: 20px;
+  background: rgba(17, 17, 17, 0.04);
+}
+
 .mercenary-final__answer {
   font-size: 1rem;
   line-height: 1.68;
@@ -3815,6 +4356,7 @@ h2 {
   align-content: start;
   padding-left: clamp(12px, 1.4vw, 18px);
   border-left: 1px solid var(--mercenary-border);
+  overflow: hidden;
 }
 
 .mercenary-sidebar__panel {
@@ -3899,12 +4441,20 @@ h2 {
 .mercenary-sidebar__specialist-copy {
   display: grid;
   gap: 4px;
+  min-width: 0;
 }
 
 .mercenary-sidebar__specialist-label {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.mercenary-sidebar__specialist-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
 }
 
 .mercenary-sidebar__dot {
@@ -3936,6 +4486,41 @@ h2 {
   margin: 0;
   color: var(--muted);
   line-height: 1.55;
+}
+
+.mercenary-sidebar__meter {
+  --meter-fill: rgba(17, 17, 17, 0.28);
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 22px;
+}
+
+.mercenary-sidebar__meter--ready {
+  --meter-fill: var(--rx-blue);
+}
+
+.mercenary-sidebar__meter--working {
+  --meter-fill: #a1491f;
+}
+
+.mercenary-sidebar__meter--available {
+  --meter-fill: rgba(17, 17, 17, 0.42);
+}
+
+.mercenary-sidebar__meter--offline {
+  --meter-fill: #b2262f;
+}
+
+.mercenary-sidebar__meter-bar {
+  width: 3px;
+  height: 100%;
+  border-radius: 999px;
+  background: rgba(17, 17, 17, 0.08);
+}
+
+.mercenary-sidebar__meter-bar--filled {
+  background: var(--meter-fill);
 }
 
 .mercenary-sidebar__link,
@@ -4067,7 +4652,8 @@ h2 {
   .mercenary-link,
   .mercenary-sidebar__head,
   .mercenary-sidebar__actions,
-  .mercenary-sidebar__specialist {
+  .mercenary-sidebar__specialist,
+  .mercenary-sidebar__specialist-side {
     display: grid;
     gap: 10px;
   }
@@ -4153,9 +4739,33 @@ h2 {
 
 .app-shell--theme-dark .mercenary-message__bubble,
 .app-shell--theme-dark .mercenary-list__item,
-.app-shell--theme-dark .mercenary-link {
+.app-shell--theme-dark .mercenary-link,
+.app-shell--theme-dark .mercenary-artifact,
+.app-shell--theme-dark .mercenary-lightbox__dialog,
+.app-shell--theme-dark .mercenary-trace {
   background: rgba(17, 20, 28, 0.82);
   color: var(--text);
+}
+
+.app-shell--theme-dark .mercenary-artifact,
+.app-shell--theme-dark .mercenary-artifact__preview,
+.app-shell--theme-dark .mercenary-artifact__bundle-file,
+.app-shell--theme-dark .mercenary-artifact__action,
+.app-shell--theme-dark .mercenary-lightbox__body,
+.app-shell--theme-dark .mercenary-lightbox__close {
+  border-color: var(--mercenary-border);
+  background: rgba(17, 20, 28, 0.9);
+}
+
+.app-shell--theme-dark .mercenary-artifact__bundle-strip img {
+  background: rgba(241, 244, 251, 0.06);
+}
+
+.app-shell--theme-dark .mercenary-trace__outcome,
+.app-shell--theme-dark .mercenary-trace__event p,
+.app-shell--theme-dark .mercenary-trace__summary span,
+.app-shell--theme-dark .mercenary-trace__event-meta span {
+  color: rgba(212, 216, 228, 0.78);
 }
 
 .app-shell--theme-dark .mercenary-message--success .mercenary-message__bubble {
@@ -4181,6 +4791,26 @@ h2 {
 
 .app-shell--theme-dark .mercenary-sidebar__dot--available {
   background: rgba(241, 244, 251, 0.36);
+}
+
+.app-shell--theme-dark .mercenary-sidebar__meter {
+  --meter-fill: rgba(241, 244, 251, 0.36);
+}
+
+.app-shell--theme-dark .mercenary-sidebar__meter--ready {
+  --meter-fill: #c7d8ff;
+}
+
+.app-shell--theme-dark .mercenary-sidebar__meter--working {
+  --meter-fill: #ffd4be;
+}
+
+.app-shell--theme-dark .mercenary-sidebar__meter--offline {
+  --meter-fill: #ff8f97;
+}
+
+.app-shell--theme-dark .mercenary-sidebar__meter-bar {
+  background: rgba(241, 244, 251, 0.08);
 }
 
 .app-shell--theme-dark .mercenary-status--ready {
