@@ -1043,13 +1043,24 @@ export function buildApiServer(
           defaultMaxTotalCost: chatDefaultMaxTotalCost,
         }),
       );
+    const created = Math.floor(Date.now() / 1000);
+    const directResponse = buildDirectChatCompletionResponse(chatRequest, created);
+
+    if (directResponse) {
+      if (chatRequest.stream) {
+        await streamDirectChatCompletionResponse(reply, directResponse);
+        return;
+      }
+
+      return directResponse;
+    }
+
     await ensureErc8004ProofState({ includeMercenary: false });
     const payment = await requireReservedLaunchPayment("chat", request, raidRequest);
     const spawn =
       payment.reservationId && payment.requestKey
         ? await orchestrator.spawnReservedRaid(payment.reservationId, payment.requestKey)
         : await orchestrator.spawnRaid(raidRequest);
-    const created = Math.floor(Date.now() / 1000);
 
     if (chatRequest.stream) {
       applyX402Headers(reply, {
@@ -1703,8 +1714,109 @@ function buildChatCompletionResponse(
   };
 }
 
+function buildDirectChatCompletionResponse(chatRequest: ChatCompletionRequest, created: number) {
+  if (chatRequest.raidRequest) {
+    return null;
+  }
+
+  const prompt = selectPrimaryChatPrompt(chatRequest);
+  if (!isLowSignalChatPrompt(prompt)) {
+    return null;
+  }
+
+  const content = buildDirectMercenaryChatReply(prompt);
+
+  return {
+    id: `chatcmpl_${randomUUID()}`,
+    object: "chat.completion",
+    created,
+    model: normalizeChatCompletionModel(chatRequest.model),
+    system_fingerprint: "mercenary-v1",
+    choices: [
+      {
+        index: 0,
+        message: {
+          role: "assistant",
+          content,
+        },
+        finish_reason: "stop",
+      },
+    ],
+    usage: estimateChatUsage(chatRequest.messages, content),
+  };
+}
+
 const CHAT_TERMINAL_SETTLE_GRACE_FLOOR_MS = 5_000;
 const CHAT_TERMINAL_SETTLE_GRACE_CAP_MS = 30_000;
+
+async function streamDirectChatCompletionResponse(
+  reply: FastifyReply,
+  response: NonNullable<ReturnType<typeof buildDirectChatCompletionResponse>>,
+) {
+  const stream = new PassThrough();
+  reply.code(200);
+  reply.header("content-type", "text/event-stream; charset=utf-8");
+  reply.header("cache-control", "no-cache, no-transform");
+  reply.header("connection", "keep-alive");
+  reply.header("x-accel-buffering", "no");
+  void (async () => {
+    try {
+      writeSseData(stream, {
+        id: response.id,
+        object: "chat.completion.chunk",
+        created: response.created,
+        model: response.model,
+        system_fingerprint: response.system_fingerprint,
+        choices: [
+          {
+            index: 0,
+            delta: {
+              role: "assistant",
+            },
+            finish_reason: null,
+          },
+        ],
+      });
+
+      writeSseData(stream, {
+        id: response.id,
+        object: "chat.completion.chunk",
+        created: response.created,
+        model: response.model,
+        system_fingerprint: response.system_fingerprint,
+        choices: [
+          {
+            index: 0,
+            delta: {
+              content: response.choices[0]?.message.content ?? "",
+            },
+            finish_reason: null,
+          },
+        ],
+      });
+
+      writeSseData(stream, {
+        id: response.id,
+        object: "chat.completion.chunk",
+        created: response.created,
+        model: response.model,
+        system_fingerprint: response.system_fingerprint,
+        choices: [
+          {
+            index: 0,
+            delta: {},
+            finish_reason: "stop",
+          },
+        ],
+      });
+      stream.write("data: [DONE]\n\n");
+    } finally {
+      stream.end();
+    }
+  })();
+
+  return reply.send(stream);
+}
 
 async function streamChatCompletionResponse(
   reply: FastifyReply,
@@ -1888,7 +2000,7 @@ function buildChatCompletionFallback(
     return "Mercenary did not get an approved specialist answer for this run. Rephrase the request more concretely, or use raid chat if you want a scoped build workflow.";
   }
 
-  return `Raid ${raidId} started. Mercenary is still waiting for approved specialist output.`;
+  return `Mercenary opened raid ${raidId} and is still waiting for approved specialist output.`;
 }
 
 function selectPrimaryChatPrompt(chatRequest?: ChatCompletionRequest): string {
@@ -1902,6 +2014,20 @@ function selectPrimaryChatPrompt(chatRequest?: ChatCompletionRequest): string {
     .filter((message) => message.length > 0);
 
   return userMessages[userMessages.length - 1] ?? "";
+}
+
+function buildDirectMercenaryChatReply(prompt: string): string {
+  const normalizedPrompt = prompt.trim().toLowerCase();
+
+  if (/^who are you\b/.test(normalizedPrompt)) {
+    return "I’m Mercenary, the Boss Raid orchestrator. I can answer directly for simple questions, or open specialists when you need scoped work.";
+  }
+
+  if (/^what can you do\b/.test(normalizedPrompt)) {
+    return "I can answer directly, compare options, and open specialists for code, art, gameplay, or promo work when the request needs real execution.";
+  }
+
+  return "Mercenary here. Ask a question or give me a concrete task and I’ll answer directly or open specialists when it helps.";
 }
 
 function isLowSignalChatPrompt(prompt: string): boolean {

@@ -718,13 +718,15 @@ test("POST /v1/chat/completions waits for a terminal raid state instead of reply
   }
 });
 
-test("POST /v1/chat/completions returns a direct Mercenary fallback for low-signal chat when no provider output is approved", async () => {
+test("POST /v1/chat/completions answers low-signal chat directly without opening a raid", async () => {
+  let acceptCount = 0;
   const provider: RaidProvider = {
     profile: createProviderProfile("provider-chat-fallback", {
       outputTypes: ["text", "json"],
       supportedLanguages: ["text"],
     }),
     async accept(_task: ProviderTaskPackage): Promise<ProviderAcceptance> {
+      acceptCount += 1;
       return {
         accepted: true,
         providerRunId: "run-chat-fallback",
@@ -774,7 +776,8 @@ test("POST /v1/chat/completions returns a direct Mercenary fallback for low-sign
 
     assert.equal(response.statusCode, 200);
     const body = response.json();
-    assert.equal(body.raid.status, "final");
+    assert.equal(body.raid, undefined);
+    assert.equal(acceptCount, 0);
     assert.equal(
       body.choices[0]?.message.content,
       "Mercenary here. Ask a question or give me a concrete task and I’ll answer directly or open specialists when it helps.",

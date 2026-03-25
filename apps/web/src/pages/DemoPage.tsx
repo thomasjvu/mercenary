@@ -32,6 +32,7 @@ type DemoPageProps = {
 type LiveRaidRun = {
   requestMode: DemoRequestMode;
   spawn: RaidSpawnOutput;
+  directResponse?: boolean;
   chatCompletion?: ChatCompletionResponse;
   startedAtMs: number;
   completedAtMs?: number;
@@ -214,7 +215,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
   }, []);
 
   useEffect(() => {
-    if (!liveRaidRun || raidIsTerminal) {
+    if (!liveRaidRun || raidIsTerminal || liveRaidRun.directResponse) {
       return;
     }
 
@@ -297,24 +298,26 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
         throw new Error(response.error ?? `Raid launch failed with status ${response.status}.`);
       }
 
+      const chatCompletion = demoMode === "chat_v1" ? (response.data as ChatCompletionResponse) : undefined;
+      const directResponse = demoMode === "chat_v1" && !chatCompletion?.raid;
       const spawn =
         demoMode === "raid"
           ? (response.data as RaidSpawnOutput)
-          : buildSpawnFromChatCompletion(response.data as ChatCompletionResponse);
-      if (!spawn) {
-        throw new Error("Mercenary returned a chat completion without raid metadata.");
-      }
+          : buildSpawnFromChatCompletion(chatCompletion ?? null) ?? buildDirectChatSpawn(chatCompletion);
 
       setLiveRaidRun({
         requestMode: demoMode,
         spawn,
-        chatCompletion: demoMode === "chat_v1" ? (response.data as ChatCompletionResponse) : undefined,
+        directResponse,
+        chatCompletion,
         startedAtMs,
         lastUpdatedAt: new Date().toISOString(),
         pollError: null,
       });
 
-      await refreshLiveRaid(spawn);
+      if (!directResponse) {
+        await refreshLiveRaid(spawn);
+      }
     } catch (error) {
       setLaunchError(readErrorMessage(error));
     } finally {
@@ -358,7 +361,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
   }
 
   async function copyReceiptLink() {
-    if (!liveRaidRun) {
+    if (!liveRaidRun || !liveRaidRun.spawn.receiptPath) {
       return;
     }
 
@@ -489,8 +492,10 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
               <div className="mercenary-pill-row">
                 <StatusPill tone="available">{buildDemoModeLabel(liveRaidRun.requestMode)}</StatusPill>
                 <StatusPill tone={raidIsTerminal ? "ready" : "working"}>{`status ${humanizeStatus(activeRaidStatus ?? "queued")}`}</StatusPill>
-                <StatusPill tone="available">{`${liveRaidRun.spawn.selectedExperts} specialists invited`}</StatusPill>
-                <StatusPill tone="available">{elapsedLabel}</StatusPill>
+                <StatusPill tone="available">
+                  {liveRaidRun.directResponse ? "no raid launched" : `${liveRaidRun.spawn.selectedExperts} specialists invited`}
+                </StatusPill>
+                <StatusPill tone="available">{`time ${elapsedLabel}`}</StatusPill>
                 {liveRaidRun.spawn.estimatedFirstResultSec > 0 ? (
                   <StatusPill tone="available">{`eta ${liveRaidRun.spawn.estimatedFirstResultSec}s`}</StatusPill>
                 ) : null}
@@ -504,7 +509,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
             <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant" tone="success">
               {liveResultText ? <p className="mercenary-final__answer">{liveResultText}</p> : <p>Final delivery is ready.</p>}
               {liveExplanation && !liveResultText ? <p>{liveExplanation}</p> : null}
-              {liveRaidRun?.requestMode === "chat_v1" ? (
+              {liveRaidRun?.requestMode === "chat_v1" && !liveRaidRun.directResponse ? (
                 <p className="mercenary-message__note">Returned through `/v1/chat/completions` and linked back to the same raid receipt and trace.</p>
               ) : null}
 
@@ -518,7 +523,16 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
 
           {liveRaidRun && raidIsTerminal && !liveResultText && liveArtifacts.length === 0 && !livePatch ? (
             <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant" tone="error">
-              <p>The raid finalized without an approved deliverable.</p>
+              <p>
+                {liveRaidRun.requestMode === "chat_v1"
+                  ? "Mercenary did not get an approved specialist answer for this v1 completion."
+                  : "Mercenary did not get an approved specialist deliverable for this raid."}
+              </p>
+              <p className="mercenary-message__note">
+                {isLowSignalChatPrompt(lastSubmittedBrief ?? "")
+                  ? "Short greetings usually stay conversational. Ask a concrete question or scoped task if you want specialist output."
+                  : "Try rephrasing the request more concretely, or switch to raid chat if you want a scoped build workflow."}
+              </p>
             </ChatMessage>
           ) : null}
         </div>
@@ -574,7 +588,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
           </div>
 
           <div className="mercenary-sidebar__links">
-            {liveRaidRun ? (
+            {liveRaidRun && !liveRaidRun.directResponse && liveRaidRun.spawn.receiptPath ? (
               <>
                 <a className="mercenary-sidebar__link" href={liveRaidRun.spawn.receiptPath}>
                   <span>proof</span>
@@ -589,6 +603,8 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
                   <strong>{receiptCopied ? "Copied" : "Copy link"}</strong>
                 </button>
               </>
+            ) : liveRaidRun?.directResponse ? (
+              <p className="mercenary-sidebar__note">Mercenary answered directly on the v1 route, so there is no raid receipt or trace for this turn.</p>
             ) : (
               <p className="mercenary-sidebar__note">Mercenary will add proof links here after the first run starts.</p>
             )}
@@ -639,7 +655,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
                     : "Open runtime attestation"}
               </strong>
             </a>
-            {liveRaidRun ? (
+            {liveRaidRun && !liveRaidRun.directResponse && liveRaidRun.spawn.raidAccessToken ? (
               <a
                 className="mercenary-sidebar__link"
                 href={buildAttestedResultPath(liveRaidRun)}
@@ -1160,6 +1176,10 @@ function buildProviderNote(provider: Provider | undefined, health: ProviderHealt
 }
 
 function buildRaidStatusCopy(run: LiveRaidRun): string {
+  if (run.directResponse) {
+    return "Mercenary answered directly on the v1 route without opening specialists.";
+  }
+
   const status = run.status?.status ?? run.spawn.status;
   const routeLabel = run.requestMode === "chat_v1" ? "v1 chat completion" : "native raid";
 
@@ -1180,7 +1200,9 @@ function buildRaidStatusCopy(run: LiveRaidRun): string {
   }
 
   if (status === "final") {
-    return `${routeLabel} is final, but no approved output was published.`;
+    return run.requestMode === "chat_v1"
+      ? "The v1 completion reached a terminal state, but Mercenary did not get an approved specialist answer for this prompt."
+      : "The raid reached a terminal state, but I did not get an approved specialist deliverable for this prompt.";
   }
 
   return `The ${routeLabel} is ${humanizeStatus(status)}.`;
@@ -1445,8 +1467,8 @@ function buildDemoChatCompletionPayload(brief: string) {
   };
 }
 
-function buildSpawnFromChatCompletion(chatCompletion: ChatCompletionResponse): RaidSpawnOutput | null {
-  if (!chatCompletion.raid) {
+function buildSpawnFromChatCompletion(chatCompletion: ChatCompletionResponse | null): RaidSpawnOutput | null {
+  if (!chatCompletion?.raid) {
     return null;
   }
 
@@ -1456,6 +1478,24 @@ function buildSpawnFromChatCompletion(chatCompletion: ChatCompletionResponse): R
     receiptPath: chatCompletion.raid.receipt_path,
     status: chatCompletion.raid.status ?? "queued",
     selectedExperts: chatCompletion.raid.agents_invited,
+    reserveExperts: 0,
+    estimatedFirstResultSec: 0,
+    sanitization: {
+      riskTier: "safe",
+      redactedSecrets: 0,
+      redactedIdentifiers: 0,
+      trimmedFiles: 0,
+    },
+  };
+}
+
+function buildDirectChatSpawn(chatCompletion: ChatCompletionResponse | undefined): RaidSpawnOutput {
+  return {
+    raidId: chatCompletion?.id ?? "chatcmpl_direct",
+    raidAccessToken: "",
+    receiptPath: "",
+    status: "final",
+    selectedExperts: 0,
     reserveExperts: 0,
     estimatedFirstResultSec: 0,
     sanitization: {
