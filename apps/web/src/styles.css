@@ -93,9 +93,12 @@ pre,
 }
 
 .app-shell--directory {
-  min-height: auto;
-  align-content: start;
-  padding-bottom: calc(var(--footer-lane) + var(--stage-pad-y) + 40px + env(safe-area-inset-bottom, 0px));
+  min-height: 100dvh;
+  height: 100dvh;
+  align-content: stretch;
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden;
+  padding-bottom: calc(var(--footer-lane) + env(safe-area-inset-bottom, 0px));
 }
 
 .app-shell--landing {
@@ -1131,10 +1134,25 @@ h2 {
   gap: var(--panel-gap);
 }
 
+.directory-shell--viewport,
+.receipt-shell--viewport {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .directory-shell__header,
 .directory-shell__copy {
   display: grid;
   gap: var(--panel-gap);
+}
+
+.directory-shell__hero,
+.receipt-shell__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.04fr) minmax(320px, 0.96fr);
+  gap: clamp(18px, 1.8vw, 24px);
+  align-items: stretch;
 }
 
 .directory-shell__header {
@@ -1176,6 +1194,99 @@ h2 {
 
 .receipt-shell__lede {
   max-width: 54ch;
+}
+
+.receipt-shell__body {
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+}
+
+.page-stage-card {
+  position: relative;
+  min-height: clamp(220px, 28vh, 280px);
+  display: grid;
+  align-content: end;
+  gap: 14px;
+  padding: clamp(16px, 1.5vh, 20px);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--panel-shadow);
+}
+
+.page-stage-card__image,
+.page-stage-card__scrim {
+  position: absolute;
+  inset: 0;
+}
+
+.page-stage-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(1.05) contrast(1.02);
+}
+
+.page-stage-card__scrim {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.82) 46%, rgba(255, 255, 255, 0.96)),
+    linear-gradient(135deg, rgba(44, 82, 179, 0.14), transparent 56%);
+}
+
+.page-stage-card__copy,
+.page-stage-card__summary {
+  position: relative;
+  z-index: 1;
+}
+
+.page-stage-card__copy {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.page-stage-card__copy strong {
+  font-family:
+    "Sora",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  font-size: clamp(1.6rem, 2vw, 2.1rem);
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+}
+
+.page-stage-card__copy p:last-child {
+  max-width: 36ch;
+  color: rgba(17, 17, 17, 0.74);
+  font-family:
+    "IBM Plex Mono",
+    ui-monospace,
+    Menlo,
+    monospace;
+  font-size: 0.74rem;
+  line-height: 1.55;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.page-stage-card__summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.page-stage-card__summary .summary-pill {
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(8px);
+  box-shadow: none;
+}
+
+.page-stage-card__summary .summary-pill strong {
+  font-size: clamp(1.02rem, 1.4vw, 1.18rem);
 }
 
 .receipt-form,
@@ -1480,6 +1591,19 @@ h2 {
   grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
   gap: clamp(18px, 1.6vw, 24px);
   align-items: start;
+}
+
+.receipt-dashboard--scroll,
+.directory-list--scroll {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 6px;
+  scrollbar-gutter: stable;
+}
+
+.receipt-empty--viewport {
+  min-height: 0;
+  overflow: auto;
 }
 
 .receipt-surface {
@@ -2079,7 +2203,9 @@ h2 {
 
 .directory-controls {
   display: grid;
-  gap: 12px;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: clamp(12px, 1.4vw, 18px);
   padding: clamp(14px, 1.3vh, 16px) 18px;
   border: 1px solid var(--line);
   position: relative;
@@ -3257,6 +3383,15 @@ h2 {
 }
 
 @media (max-width: 1100px) {
+  .app-shell--directory {
+    min-height: auto;
+    height: auto;
+    overflow: visible;
+    grid-template-rows: auto;
+    align-content: start;
+    padding-bottom: calc(var(--footer-lane) + var(--stage-pad-y) + 40px + env(safe-area-inset-bottom, 0px));
+  }
+
   .hero {
     grid-template-columns: 1fr;
     min-height: 0;
@@ -3267,9 +3402,11 @@ h2 {
   .demo-layout,
   .workflow-grid,
   .directory-shell__header,
+  .directory-shell__hero,
   .live-demo__header,
   .demo-shell__header,
   .receipt-shell__header,
+  .receipt-shell__hero,
   .directory-list__head,
   .raider-row,
   .directory-hero,
@@ -3297,6 +3434,11 @@ h2 {
 
   .directory-summary-bar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .directory-controls {
+    grid-template-columns: 1fr;
+    align-items: stretch;
   }
 
   .receipt-rail {
@@ -3359,6 +3501,10 @@ h2 {
 
   .app-shell--directory {
     padding-bottom: calc(18px + var(--footer-lane) + 28px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .page-stage-card__summary {
+    grid-template-columns: 1fr 1fr;
   }
 
   .terminal-deck__header,
@@ -3720,6 +3866,26 @@ h2 {
   --panel-surface-soft: rgba(18, 20, 27, 0.42);
 }
 
+.app-shell--theme-dark .page-stage-card {
+  background: rgba(18, 20, 27, 0.72);
+  border-color: rgba(241, 244, 251, 0.14);
+}
+
+.app-shell--theme-dark .page-stage-card__scrim {
+  background:
+    linear-gradient(180deg, rgba(8, 10, 15, 0.08), rgba(8, 10, 15, 0.78) 48%, rgba(8, 10, 15, 0.94)),
+    linear-gradient(135deg, rgba(255, 248, 103, 0.14), transparent 54%);
+}
+
+.app-shell--theme-dark .page-stage-card__copy p:last-child {
+  color: rgba(241, 244, 251, 0.72);
+}
+
+.app-shell--theme-dark .page-stage-card__summary .summary-pill {
+  background: rgba(12, 14, 20, 0.82);
+  border-color: rgba(241, 244, 251, 0.12);
+}
+
 .app-shell--theme-dark .demo-chat-shell,
 .app-shell--theme-dark .demo-sidebar__panel {
   background: rgba(18, 20, 27, 0.52);
@@ -3784,22 +3950,7 @@ h2 {
 }
 
 .app-shell--demo-route {
-  min-height: 100dvh;
-  height: 100dvh;
-  padding:
-    var(--stage-pad-y)
-    var(--stage-pad-x)
-    calc(var(--stage-pad-y) + env(safe-area-inset-bottom, 0px));
-  grid-template-rows: minmax(0, 1fr) auto;
-  align-content: stretch;
-  row-gap: 14px;
-  overflow: hidden;
-}
-
-.app-shell--demo-route .footer {
-  margin-top: 0;
-  position: relative;
-  z-index: 3;
+  row-gap: clamp(12px, 1.3vh, 16px);
 }
 
 .mercenary-demo {
@@ -4830,7 +4981,7 @@ h2 {
 
 @media (max-width: 720px) {
   .app-shell--demo-route {
-    padding: 18px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+    padding: 18px 18px calc(18px + var(--footer-lane) + env(safe-area-inset-bottom, 0px));
   }
 
   .mercenary-chat__topbar,

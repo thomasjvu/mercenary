@@ -84,8 +84,8 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
     raiders.length > 0 ? formatUsd(raiders.reduce((total, raider) => total + raider.provider.pricePerTaskUsd, 0) / raiders.length) : "n/a";
 
   return (
-    <section className="directory-shell" id="directory">
-      <div className="directory-shell__header">
+    <section className="directory-shell directory-shell--viewport" id="directory">
+      <div className="directory-shell__hero">
         <div className="directory-shell__copy">
           <p className="eyebrow">raiders</p>
           <h1>
@@ -96,30 +96,43 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
             Compare registered providers, inspect ERC-8004 and privacy signals, and sort by the proof that matters
             before you route a raid.
           </p>
+          <div className="directory-hero__actions">
+            <a
+              className="button"
+              href="/"
+              onClick={(event) => {
+                event.preventDefault();
+                onNavigate("/");
+              }}
+            >
+              landing
+            </a>
+            <DocsButton className="button button--primary" label="docs" />
+          </div>
         </div>
 
-        <div className="directory-shell__actions">
-          <a
-            className="button"
-            href="/"
-            onClick={(event) => {
-              event.preventDefault();
-              onNavigate("/");
-            }}
-          >
-            landing
-          </a>
-          <DocsButton className="button button--primary" label="docs" />
-        </div>
-      </div>
-
-      <div className="directory-summary-bar">
-        <SummaryPill label="total" value={String(raiders.length)} />
-        <SummaryPill label="ready" value={String(readyCount)} />
-        <SummaryPill label="8004 verified" value={String(verifiedCount)} />
-        <SummaryPill label="trusted" value={String(trustCount)} />
-        <SummaryPill label="venice" value={String(veniceCount)} />
-        <SummaryPill label="avg price" value={averagePrice} />
+        <aside className="page-stage-card page-stage-card--directory">
+          <img
+            alt=""
+            aria-hidden="true"
+            className="page-stage-card__image"
+            loading="lazy"
+            src={heroImage}
+            style={{ objectPosition: "50% 28%" }}
+          />
+          <div className="page-stage-card__scrim" />
+          <div className="page-stage-card__copy">
+            <p className="eyebrow">live roster</p>
+            <strong>{`${readyCount}/${raiders.length || 0} ready now`}</strong>
+            <p>{`${verifiedCount} verified · ${privacyCount} privacy-ready · ${averagePrice} avg price`}</p>
+          </div>
+          <div className="page-stage-card__summary">
+            <SummaryPill label="total" value={String(raiders.length)} />
+            <SummaryPill label="ready" value={String(readyCount)} />
+            <SummaryPill label="8004 verified" value={String(verifiedCount)} />
+            <SummaryPill label="trusted" value={String(trustCount)} />
+          </div>
+        </aside>
       </div>
 
       <div className="directory-controls">
@@ -167,12 +180,12 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
           <span>{registeredCount} registered</span>
           <span>{verifiedCount} verified</span>
           <span>{privacyCount} privacy-ready</span>
-          <span>{trustCount} trust-scored</span>
+          <span>{veniceCount} venice</span>
           <span>{veteranCount} veterans</span>
         </div>
       </div>
 
-      <div className="directory-list">
+      <div className="directory-list directory-list--scroll">
         {filteredRaiders.length === 0 ? (
           <div className="directory-empty">
             <p className="eyebrow">no match</p>

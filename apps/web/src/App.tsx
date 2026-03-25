@@ -68,7 +68,7 @@ export function App() {
 
   return (
     <main
-      className={`app-shell app-shell--theme-${appTheme} ${isLandingRoute ? "app-shell--landing" : ""} ${usesDirectoryLayout ? "app-shell--directory" : ""} ${isDemoRoute ? "app-shell--demo-route" : ""}`}
+      className={`app-shell app-shell--theme-${appTheme} ${isLandingRoute ? "app-shell--landing" : ""} ${usesDirectoryLayout ? "app-shell--directory" : ""} ${isDemoRoute ? "app-shell--demo-route" : ""} ${isRaidersRoute ? "app-shell--raiders-route" : ""} ${isReceiptRoute ? "app-shell--receipt-route" : ""}`}
       ref={appShellRef}
     >
       <div className="bg-grid" aria-hidden="true" />

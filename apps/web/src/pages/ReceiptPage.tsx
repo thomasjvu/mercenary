@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import useSWR from "swr";
+import heroImage from "../../../../assets/hero.webp";
 import {
   API_BASE,
   fetchAttestedRaidResult,
@@ -228,8 +229,8 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
   const visibleWorkstreams = workstreams.slice(0, 4);
 
   return (
-    <section className="receipt-shell" id="receipt">
-      <div className="receipt-shell__header">
+    <section className="receipt-shell receipt-shell--viewport" id="receipt">
+      <div className="receipt-shell__hero">
         <div className="receipt-shell__copy">
           <p className="eyebrow">shareable receipt</p>
           <h1>
@@ -237,33 +238,66 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
             <span className="directory-hero__headline-line">One receipt.</span>
           </h1>
           <p className="lede receipt-shell__lede">Load one run, its result, proof links, and settlement record.</p>
+          <div className="directory-hero__actions">
+            <button className="button button--primary" disabled={!activeQuery} onClick={handleCopyLink} type="button">
+              {shareCopied ? "copied" : "copy link"}
+            </button>
+            <a
+              className="button"
+              href="/demo"
+              onClick={(event) => {
+                event.preventDefault();
+                onNavigate("/demo");
+              }}
+            >
+              demo
+            </a>
+            <a
+              className="button"
+              href="/raiders"
+              onClick={(event) => {
+                event.preventDefault();
+                onNavigate("/raiders");
+              }}
+            >
+              raiders
+            </a>
+          </div>
         </div>
 
-        <div className="directory-shell__actions">
-          <button className="button button--primary" disabled={!activeQuery} onClick={handleCopyLink} type="button">
-            {shareCopied ? "copied" : "copy link"}
-          </button>
-          <a
-            className="button"
-            href="/demo"
-            onClick={(event) => {
-              event.preventDefault();
-              onNavigate("/demo");
-            }}
-          >
-            demo
-          </a>
-          <a
-            className="button"
-            href="/raiders"
-            onClick={(event) => {
-              event.preventDefault();
-              onNavigate("/raiders");
-            }}
-          >
-            raiders
-          </a>
-        </div>
+        <aside className="page-stage-card page-stage-card--receipt">
+          <img
+            alt=""
+            aria-hidden="true"
+            className="page-stage-card__image"
+            loading="lazy"
+            src={heroImage}
+            style={{ objectPosition: "50% 62%" }}
+          />
+          <div className="page-stage-card__scrim" />
+          <div className="page-stage-card__copy">
+            <p className="eyebrow">{activeQuery ? "loaded proof lane" : "proof lane"}</p>
+            <strong>{activeQuery ? currentReceiptStatus : "awaiting receipt"}</strong>
+            <p>
+              {activeQuery
+                ? `${approvedSubmissionCount} approved · ${successfulProviderCount} successful · ${runtimeAttestationStatus} runtime`
+                : "Load one raid to inspect output, proof, settlement, and provider lineage in a single receipt."}
+            </p>
+          </div>
+          <div className="page-stage-card__summary">
+            <SummaryPill label="runtime" value={runtimeAttestationStatus} />
+            <SummaryPill label="result" value={activeQuery ? resultAttestationStatus : "pending"} />
+            <SummaryPill
+              label="split"
+              value={
+                payoutPerSuccessfulProvider == null
+                  ? "pending"
+                  : `${successfulProviderCount} x ${formatUsd(payoutPerSuccessfulProvider)}`
+              }
+            />
+            <SummaryPill label="tee" value={`${teeProviderCount}/${routedProviderIds.length || 0}`} />
+          </div>
+        </aside>
       </div>
 
       <form className="receipt-form" onSubmit={handleLoadReceipt}>
@@ -299,8 +333,9 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
         </div>
       </form>
 
-      {!activeQuery ? (
-        <article className="receipt-empty">
+      <div className="receipt-shell__body">
+        {!activeQuery ? (
+          <article className="receipt-empty receipt-empty--viewport">
           <p className="eyebrow">capability link</p>
           <h2>Load one raid receipt.</h2>
           <p>Use the `raidId` and `raidAccessToken` returned by one raid run.</p>
@@ -339,36 +374,19 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                   ? readQueryErrorMessage(attestedRuntime.error)
                   : "Loading runtime attestation."}
           </p>
-        </article>
-      ) : null}
+          </article>
+        ) : null}
 
-      {status.error || result.error ? (
-        <article className="receipt-empty receipt-empty--error">
-          <p className="eyebrow">load failed</p>
-          <h2>Receipt access was rejected.</h2>
-          <p>{status.error?.message ?? result.error?.message}</p>
-        </article>
-      ) : null}
+        {status.error || result.error ? (
+          <article className="receipt-empty receipt-empty--error receipt-empty--viewport">
+            <p className="eyebrow">load failed</p>
+            <h2>Receipt access was rejected.</h2>
+            <p>{status.error?.message ?? result.error?.message}</p>
+          </article>
+        ) : null}
 
-      {activeQuery && !status.error && !result.error ? (
-        <>
-          <div className="receipt-rail">
-            <SummaryPill label="raid" value={shortValue(activeQuery.raidId)} />
-            <SummaryPill label="status" value={currentReceiptStatus} />
-            <SummaryPill label="approved" value={String(approvedSubmissionCount)} />
-            <SummaryPill label="runtime" value={runtimeAttestationStatus} />
-            <SummaryPill label="result" value={resultAttestationStatus} />
-            <SummaryPill
-              label="split"
-              value={
-                payoutPerSuccessfulProvider == null
-                  ? "pending"
-                  : `${successfulProviderCount} x ${formatUsd(payoutPerSuccessfulProvider)}`
-              }
-            />
-          </div>
-
-          <section className="receipt-dashboard">
+        {activeQuery && !status.error && !result.error ? (
+          <section className="receipt-dashboard receipt-dashboard--scroll">
             <article className="receipt-surface receipt-surface--wide">
               <div className="receipt-surface__head">
                 <div>
@@ -516,8 +534,8 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
               </details>
             </article>
           </section>
-        </>
-      ) : null}
+        ) : null}
+      </div>
     </section>
   );
 }
