@@ -27,7 +27,6 @@ import {
 import { probeProviderHealth, verifyProviderAuth } from "@bossraid/provider-sdk";
 import {
   type ChatCompletionRequest,
-  type BossRaidSynthesizedWorkstream,
   type BossRaidResultOutput,
   type BossRaidStatusOutput,
   type BossRaidSpawnInput,
@@ -1851,38 +1850,6 @@ function buildUserFacingChatContent(
 ): string {
   const synthesized = outcome.result.synthesizedOutput;
   const primary = outcome.result.primarySubmission;
-  const workstreams = synthesized?.workstreams ?? [];
-
-  if (workstreams.length > 0) {
-    const baseWorkstream =
-      workstreams.find((item) => item.baseSubmissionProviderId === synthesized?.baseSubmissionProviderId) ??
-      workstreams[0];
-    const sections: string[] = [];
-    const baseText = cleanChatSection(baseWorkstream.answerText ?? baseWorkstream.summary);
-    if (baseText) {
-      sections.push(baseText);
-    }
-
-    const constraint = findChatSupportWorkstream(workstreams, "constraints", /constraint/i);
-    if (constraint) {
-      sections.push(`Constraint: ${cleanChatSection(constraint.summary)}`);
-    }
-
-    const risk = findChatSupportWorkstream(workstreams, "risk", /risk/i);
-    if (risk) {
-      sections.push(`Risk: ${cleanChatSection(risk.summary)}`);
-    }
-
-    const execution = findChatSupportWorkstream(workstreams, "execution", /execution|next step|delivery/i);
-    if (execution) {
-      sections.push(`Next step: ${cleanChatSection(execution.summary)}`);
-    }
-
-    const uniqueSections = [...new Set(sections.filter(Boolean))];
-    if (uniqueSections.length > 0) {
-      return uniqueSections.join("\n\n");
-    }
-  }
 
   return (
     synthesized?.answerText ??
@@ -1893,28 +1860,6 @@ function buildUserFacingChatContent(
       ? "Raid finished without an approved provider output."
       : `Raid ${raidId} started. No approved provider output yet.`)
   );
-}
-
-function findChatSupportWorkstream(
-  workstreams: BossRaidSynthesizedWorkstream[],
-  id: string,
-  labelPattern: RegExp,
-): BossRaidSynthesizedWorkstream | undefined {
-  return workstreams.find(
-    (item) => item.id === id || labelPattern.test(item.label) || labelPattern.test(item.objective),
-  );
-}
-
-function cleanChatSection(value: string | undefined): string {
-  if (!value) {
-    return "";
-  }
-
-  return value
-    .replace(/^Supporting workstreams:\s*/im, "")
-    .replace(/\n- /g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
 }
 
 function normalizeChatCompletionModel(_model: string): string {

@@ -128,6 +128,145 @@ export function scoreSpecialization(provider: ProviderProfile, task: RaidTaskSpe
   return matches / required.size;
 }
 
+type TextDomainCategory = "implementation" | "art" | "promo";
+
+const TEXT_DOMAIN_SIGNAL_RULES: Array<{
+  category: TextDomainCategory;
+  weight: number;
+  patterns: RegExp[];
+}> = [
+  {
+    category: "implementation",
+    weight: 4,
+    patterns: [/\bgb[\s-]?studio\b/i, /\bplayable\b/i, /\bmicrogame\b/i],
+  },
+  {
+    category: "implementation",
+    weight: 3,
+    patterns: [/\bgameplay\b/i, /\bscene\b/i, /\bmechanic\b/i, /\bbuild\b/i, /\bimplement\b/i],
+  },
+  {
+    category: "art",
+    weight: 3,
+    patterns: [/\bpixel[\s-]?art\b/i, /\bsprite\b/i, /\btileset\b/i, /\btitle card\b/i],
+  },
+  {
+    category: "art",
+    weight: 2,
+    patterns: [/\bpalette\b/i, /\basset pack\b/i, /\bart pack\b/i, /\bvisual\b/i],
+  },
+  {
+    category: "promo",
+    weight: 4,
+    patterns: [/\btrailer\b/i, /\bteaser\b/i, /\bremotion\b/i],
+  },
+  {
+    category: "promo",
+    weight: 2,
+    patterns: [/\blaunch copy\b/i, /\bmarketing\b/i, /\bpromo\b/i, /\bvideo\b/i],
+  },
+];
+
+const TEXT_DOMAIN_PROVIDER_HINTS: Record<TextDomainCategory, string[]> = {
+  implementation: [
+    "gb-studio",
+    "gbstudio",
+    "gameplay",
+    "game-development",
+    "systems-design",
+    "implementation",
+    "builder",
+  ],
+  art: [
+    "pixel-art",
+    "pixel-artist",
+    "sprites",
+    "sprite",
+    "tileset",
+    "title-card",
+    "illustration",
+    "art",
+  ],
+  promo: [
+    "remotion",
+    "video-marketing",
+    "video-marketer",
+    "game-marketing",
+    "trailer",
+    "launch-copy",
+    "marketing",
+    "motion-design",
+  ],
+};
+
+function normalizeCapabilityToken(value: string): string {
+  return value.trim().toLowerCase().replace(/[\s_]+/g, "-");
+}
+
+function buildTextTaskHaystack(task: RaidTaskSpec): string {
+  return [
+    task.taskTitle,
+    task.taskDescription,
+    task.failingSignals.expectedBehavior,
+    task.failingSignals.observedBehavior,
+    ...task.failingSignals.errors,
+    ...task.files.map((file) => file.path),
+  ]
+    .filter((value): value is string => typeof value === "string" && value.length > 0)
+    .join("\n")
+    .toLowerCase();
+}
+
+function collectTextDomainWeights(task: RaidTaskSpec): Map<TextDomainCategory, number> {
+  const haystack = buildTextTaskHaystack(task);
+  const weights = new Map<TextDomainCategory, number>();
+
+  for (const rule of TEXT_DOMAIN_SIGNAL_RULES) {
+    if (!rule.patterns.some((pattern) => pattern.test(haystack))) {
+      continue;
+    }
+    weights.set(rule.category, (weights.get(rule.category) ?? 0) + rule.weight);
+  }
+
+  return weights;
+}
+
+function providerMatchesTextDomainCategory(
+  provider: ProviderProfile,
+  category: TextDomainCategory,
+): boolean {
+  const offered = new Set(
+    [
+      ...provider.specializations,
+      ...provider.supportedFrameworks,
+      ...provider.supportedLanguages,
+    ].map(normalizeCapabilityToken),
+  );
+
+  return TEXT_DOMAIN_PROVIDER_HINTS[category].some((hint) => offered.has(hint));
+}
+
+function scoreTextDomainFit(provider: ProviderProfile, task: RaidTaskSpec): number {
+  if ((task.output?.primaryType ?? "patch") !== "text") {
+    return 0.5;
+  }
+
+  const weights = collectTextDomainWeights(task);
+  const totalWeight = [...weights.values()].reduce((sum, value) => sum + value, 0);
+  if (totalWeight === 0) {
+    return 0.5;
+  }
+
+  let matchedWeight = 0;
+  for (const [category, weight] of weights) {
+    if (providerMatchesTextDomainCategory(provider, category)) {
+      matchedWeight += weight;
+    }
+  }
+
+  return clamp01(matchedWeight / totalWeight);
+}
+
 export function normalizeLatency(p95LatencyMs: number, maxLatencySec: number): number {
   const budgetedMs = Math.max(maxLatencySec * 1_000, 1);
   return clamp01(1 - p95LatencyMs / (budgetedMs * 1.5));
@@ -140,6 +279,7 @@ export function normalizePrice(pricePerTaskUsd: number, maxBudgetUsd: number, nu
 
 export function computeSelectionScore(provider: ProviderProfile, task: RaidTaskSpec): number {
   const specializationMatch = scoreSpecialization(provider, task);
+  const textDomainFit = scoreTextDomainFit(provider, task);
   const reputation = (provider.scores?.reputationScore ?? computeReputationScore(provider)) / 100;
   const latency = normalizeLatency(provider.reputation.p95LatencyMs, task.constraints.maxLatencySec);
   const validity = provider.reputation.validityScore;
@@ -148,6 +288,17 @@ export function computeSelectionScore(provider: ProviderProfile, task: RaidTaskS
     task.constraints.maxBudgetUsd,
     task.constraints.numExperts,
   );
+
+  if ((task.output?.primaryType ?? "patch") === "text") {
+    return (
+      0.2 * specializationMatch +
+      0.3 * textDomainFit +
+      0.2 * reputation +
+      0.15 * latency +
+      0.1 * validity +
+      0.05 * price
+    );
+  }
 
   return (
     0.35 * specializationMatch +

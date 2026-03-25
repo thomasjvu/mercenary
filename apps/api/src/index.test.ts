@@ -458,7 +458,7 @@ test("POST /v1/chat/completions synthesizes a text raid and returns a multi-prov
     assert.equal(body.choices[0]?.index, 0);
     assert.equal(body.choices[0]?.message.role, "assistant");
     assert.match(body.choices[0]?.message.content, /subtracts instead of adding|returns a - b/);
-    assert.match(body.choices[0]?.message.content, /Risk:/);
+    assert.doesNotMatch(body.choices[0]?.message.content, /Risk:/);
     assert.doesNotMatch(body.choices[0]?.message.content, /Supporting workstreams:/);
     assert.equal(body.choices[0]?.finish_reason, "stop");
     assert.match(body.raid.raid_id, /^raid_/);

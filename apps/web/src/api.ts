@@ -144,6 +144,7 @@ export type RaidResult = {
       supportingProviderIds: string[];
       roleLabels: string[];
       summary: string;
+      shortSummary?: string;
       answerText?: string;
       patchUnifiedDiff?: string;
       artifacts?: Array<{

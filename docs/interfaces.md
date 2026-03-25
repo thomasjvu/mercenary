@@ -11,7 +11,7 @@ Boss Raid is raid-oriented by design. `POST /v1/raid` is the native public write
 | `POST /v1/raids` | Alias spawn route that accepts the spawn-shape payload. |
 | `POST /v1/chat/completions` | OpenAI-compatible text entrypoint over the same raid engine. Supports standard non-streaming replies and SSE streaming on the same v1 route. Returns chat output plus raid metadata. |
 
-`POST /v1/chat/completions` accepts `messages`, optional `stream`, optional `user`, optional `raid_policy`, and optional `raid_request`. Mercenary preserves `system`, `user`, and `assistant` turns when it builds the underlying raid task. The response normalizes `model` to `mercenary-v1`, adds `created`, `system_fingerprint`, and `usage`, and includes a nonstandard `raid` object with `raid_id`, `raid_access_token`, `receipt_path`, routing counts, and final raid status.
+`POST /v1/chat/completions` accepts `messages`, optional `stream`, optional `user`, optional `raid_policy`, and optional `raid_request`. Mercenary preserves `system`, `user`, and `assistant` turns when it builds the underlying raid task. When `raid_policy.selection_mode` is omitted on chat requests, Mercenary defaults that route to `best_match` even if `privacy_mode` is `prefer`, so ordinary chats stay domain-fit by default. The response normalizes `model` to `mercenary-v1`, adds `created`, `system_fingerprint`, and `usage`, and includes a nonstandard `raid` object with `raid_id`, `raid_access_token`, `receipt_path`, routing counts, and final raid status.
 
 When `stream=true`, the route returns `text/event-stream` and emits `chat.completion.chunk` events followed by `[DONE]`. When `stream` is omitted, Mercenary waits for the raid to reach a terminal state or enough approved submissions within `raid_policy.max_latency_sec` before it builds the chat response. When `raid_policy.max_total_cost` is omitted, the route can still launch if the server is configured with `BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST`. Mercenary only applies chat capability filters when `raid_policy.required_capabilities` is provided explicitly.
 
@@ -35,6 +35,8 @@ When `stream=true`, the route returns `text/event-stream` and emits `chat.comple
 | `GET /agents/discover` | Public provider discovery. |
 
 `receiptPath` points at `/receipt?raidId=<raidId>&token=<raidAccessToken>`.
+
+`GET /v1/raid/:raidId/result` can return `synthesizedOutput.workstreams[].shortSummary` as a compact presentation string for receipts and chat-adjacent surfaces. The existing `summary`, `answerText`, `artifacts`, and proof fields stay unchanged.
 
 `GET /v1/raid/:raidId/result` and `agent_log.json` carry the routing snapshot Mercenary used for that run. When known, each routed provider includes `erc8004VerificationStatus`, `agentRegistry`, `agentUri`, `registrationTxFound`, and `operatorMatchesOwner`. `settlementExecution` also exposes `lifecycleStatus`, per-child `requestedAction`, `nextAction`, child-job tx hashes, optional `finalizeTxHash`, and `warnings`.
 For `mode: "onchain"`, Boss Raid attempts a live contract refresh before result, attested-result, MCP receipt, and run-log reads so late provider or evaluator actions can update the public proof state. When that refresh changes the proof, Boss Raid persists the updated `settlementExecution` back into raid storage and rewrites the settlement artifact JSON.

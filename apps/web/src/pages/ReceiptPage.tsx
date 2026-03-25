@@ -351,7 +351,7 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                       {visibleWorkstreams.map((workstream) => (
                         <div className="receipt-workstream-row" key={workstream.id}>
                           <strong>{workstream.label}</strong>
-                          <span>{compactText(workstream.summary, 120)}</span>
+                          <span>{compactText(workstream.shortSummary ?? workstream.summary, 120)}</span>
                         </div>
                       ))}
                     </div>

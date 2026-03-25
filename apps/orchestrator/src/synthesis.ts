@@ -47,32 +47,14 @@ function buildTextSynthesis(
   const supportingProviderIds = approved
     .map((item) => item.submission.providerId)
     .filter((providerId) => providerId !== baseProviderId);
-  const answerText = [
-    baseWorkstream.answerText ?? baseWorkstream.summary,
-    supportingWorkstreams.length === 0
-      ? undefined
-      : ["Supporting workstreams:", ...supportingWorkstreams.map((item) => `- ${item.label}: ${item.summary}`)].join("\n"),
-  ]
-    .filter(Boolean)
-    .join("\n\n");
+  const answerText = buildCanonicalTextAnswer(baseWorkstream, supportingWorkstreams);
 
   return {
     mode: "multi_agent_synthesis",
     primaryType,
     answerText,
     artifacts: collectArtifactsFromWorkstreams(workstreams),
-    explanation: [
-      `Mercenary synthesized ${approved.length} approved provider contributions across ${workstreams.length} workstreams into one response.`,
-      `Base workstream: ${baseWorkstream.label} via ${baseProviderId}.`,
-      supportingWorkstreams.length > 0
-        ? `Supporting workstreams: ${supportingWorkstreams.map((item) => item.label).join(", ")}.`
-        : undefined,
-      droppedProviderIds.length > 0
-        ? `Dropped ${droppedProviderIds.length} invalid provider output${droppedProviderIds.length === 1 ? "" : "s"}.`
-        : undefined,
-    ]
-      .filter(Boolean)
-      .join(" "),
+    explanation: buildSynthesisProofSummary("response", approved.length, workstreams.length, baseWorkstream.label, baseProviderId, droppedProviderIds),
     baseSubmissionProviderId: baseProviderId,
     contributingProviderIds: approved.map((item) => item.submission.providerId),
     supportingProviderIds,
@@ -111,17 +93,11 @@ function buildPatchSynthesis(
       approved.find((item) => hasPatch(item.submission.patchUnifiedDiff))?.submission.patchUnifiedDiff,
     artifacts: collectArtifactsFromWorkstreams(workstreams),
     explanation: [
-      `Mercenary synthesized ${approved.length} approved provider contributions across ${workstreams.length} workstreams into one patch.`,
-      `Base workstream: ${baseWorkstream.label} via ${baseProviderId}.`,
+      buildSynthesisProofSummary("patch", approved.length, workstreams.length, baseWorkstream.label, baseProviderId, droppedProviderIds),
       supportingWorkstreams.length > 0
-        ? `Supporting workstreams: ${supportingWorkstreams.map((item) => `${item.label}: ${item.summary}`).join(" ")}`
+        ? supportingWorkstreams.map((item) => `${item.label}: ${item.shortSummary ?? item.summary}`).join(" ")
         : undefined,
-      droppedProviderIds.length > 0
-        ? `Dropped ${droppedProviderIds.length} invalid provider output${droppedProviderIds.length === 1 ? "" : "s"}.`
-        : undefined,
-    ]
-      .filter(Boolean)
-      .join(" "),
+    ].filter(Boolean).join(" "),
     baseSubmissionProviderId: baseProviderId,
     contributingProviderIds: approved.map((item) => item.submission.providerId),
     supportingProviderIds,
@@ -181,11 +157,12 @@ function buildWorkstream(
   const artifacts = mergeArtifacts(group.entries);
   const artifactSummary = summarizeArtifactLabels(artifacts);
   const supportingSignals = collectSupportingSignals(base, supportingEntries);
+  const shortSummary = buildWorkstreamShortSummary(baseText);
   const summary =
     supportingSignals.length === 0 && !artifactSummary
-      ? baseText
+      ? shortSummary
       : [
-          baseText,
+          shortSummary,
           artifactSummary ? `Artifacts: ${artifactSummary}.` : undefined,
           supportingSignals.length > 0 ? `Supporting signals: ${supportingSignals.join(" | ")}` : undefined,
         ]
@@ -206,10 +183,88 @@ function buildWorkstream(
         .filter((value): value is string => Boolean(value)),
     ),
     summary,
+    shortSummary,
     answerText: workstreamPrimaryType === "patch" ? undefined : baseText,
     patchUnifiedDiff: workstreamPrimaryType === "patch" ? base.submission.patchUnifiedDiff : undefined,
     artifacts,
   };
+}
+
+function buildCanonicalTextAnswer(
+  baseWorkstream: BossRaidSynthesizedWorkstream,
+  supportingWorkstreams: BossRaidSynthesizedWorkstream[],
+): string {
+  const paragraphs: string[] = [];
+  const baseNarrative = pickWorkstreamNarrative(baseWorkstream);
+  if (baseNarrative) {
+    paragraphs.push(baseNarrative);
+  }
+
+  const constraint = findGroupedWorkstream(supportingWorkstreams, "constraints");
+  const risk = findGroupedWorkstream(supportingWorkstreams, "risk");
+  const execution = findGroupedWorkstream(supportingWorkstreams, "execution");
+  const groupedIds = new Set([constraint?.id, risk?.id, execution?.id].filter((value): value is string => Boolean(value)));
+  const cautionParagraph = [constraint, risk]
+    .flatMap((workstream) => {
+      const narrative = workstream ? pickWorkstreamNarrative(workstream) : undefined;
+      return narrative ? [ensureSentence(narrative)] : [];
+    })
+    .join(" ");
+  if (cautionParagraph) {
+    paragraphs.push(cautionParagraph);
+  }
+
+  const executionNarrative = execution ? pickWorkstreamNarrative(execution) : undefined;
+  if (executionNarrative) {
+    paragraphs.push(ensureSentence(executionNarrative));
+  }
+
+  const remaining = supportingWorkstreams
+    .filter((workstream) => !groupedIds.has(workstream.id))
+    .flatMap((workstream) => {
+      const narrative = pickWorkstreamNarrative(workstream);
+      return narrative ? [ensureSentence(narrative)] : [];
+    })
+    .join(" ");
+  if (remaining) {
+    paragraphs.push(remaining);
+  }
+
+  return paragraphs.filter((value) => value.length > 0).join("\n\n");
+}
+
+function buildSynthesisProofSummary(
+  outputKind: "response" | "patch",
+  approvedCount: number,
+  workstreamCount: number,
+  baseWorkstreamLabel: string,
+  baseProviderId: string,
+  droppedProviderIds: string[],
+): string {
+  return [
+    `Mercenary synthesized ${approvedCount} approved provider contributions across ${workstreamCount} workstreams into one ${outputKind}.`,
+    `Base ${outputKind === "patch" ? "workstream" : "answer"}: ${baseWorkstreamLabel} via ${baseProviderId}.`,
+    droppedProviderIds.length > 0
+      ? `Dropped ${droppedProviderIds.length} invalid provider output${droppedProviderIds.length === 1 ? "" : "s"}.`
+      : undefined,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function findGroupedWorkstream(
+  workstreams: BossRaidSynthesizedWorkstream[],
+  group: string,
+): BossRaidSynthesizedWorkstream | undefined {
+  return workstreams.find((workstream) => matchesWorkstreamGroup(workstream.id, group));
+}
+
+function pickWorkstreamNarrative(workstream: BossRaidSynthesizedWorkstream): string {
+  return cleanText(workstream.answerText ?? workstream.shortSummary ?? workstream.summary);
+}
+
+function buildWorkstreamShortSummary(baseText: string): string {
+  return trimSentence(cleanText(baseText), 160);
 }
 
 function selectBaseWorkstream(
@@ -421,6 +476,28 @@ function summarizeArtifactLabels(artifacts: SubmissionArtifact[] | undefined): s
 
 function cleanText(value: string): string {
   return value.replace(/\s+/g, " ").trim();
+}
+
+function trimSentence(value: string, maxLength: number): string {
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  const boundary = value.slice(0, maxLength).match(/^(.+[.!?])\s/);
+  if (boundary?.[1]) {
+    return boundary[1];
+  }
+
+  return `${value.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+}
+
+function ensureSentence(value: string): string {
+  const trimmed = cleanText(value);
+  if (trimmed.length === 0) {
+    return "";
+  }
+
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
 }
 
 function hasPatch(value: string | undefined): value is string {

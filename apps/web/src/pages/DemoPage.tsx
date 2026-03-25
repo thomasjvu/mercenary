@@ -363,99 +363,10 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
             </ChatMessage>
           ) : null}
 
-          {conversationSpecialists.length > 0 ? (
-            <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant">
-              <p>I hired these specialists for the current run.</p>
-              <div className="mercenary-list">
-                {conversationSpecialists.map((specialist) => (
-                  <div className="mercenary-list__item" key={specialist.providerId}>
-                    <div className="mercenary-list__copy">
-                      <strong>{specialist.displayName}</strong>
-                      <p>{specialist.note}</p>
-                      {specialist.meta ? <small>{specialist.meta}</small> : null}
-                    </div>
-                    <StatusPill tone={specialist.statusTone}>{specialist.statusLabel}</StatusPill>
-                  </div>
-                ))}
-              </div>
-            </ChatMessage>
-          ) : null}
-
-          {liveWorkstreams.length > 0 ? (
-            <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant">
-              <p>These scoped deliverables are coming back from the raid.</p>
-              <div className="mercenary-list">
-                {liveWorkstreams.map((workstream) => (
-                  <div className="mercenary-list__item" key={workstream.id}>
-                    <div className="mercenary-list__copy">
-                      <strong>{workstream.label}</strong>
-                      <p>{workstream.summary}</p>
-                    </div>
-                    <span className="mercenary-list__meta">{workstream.primaryType}</span>
-                  </div>
-                ))}
-              </div>
-            </ChatMessage>
-          ) : null}
-
-          {mercenaryDecisionTrace.length > 0 || specialistTraces.length > 0 ? (
-            <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant">
-              <p>Here is the live process trace for this run.</p>
-              <div className="mercenary-trace-list">
-                {mercenaryDecisionTrace.length > 0 ? (
-                  <details className="mercenary-trace" open={!raidIsTerminal}>
-                    <summary className="mercenary-trace__summary">
-                      <div>
-                        <strong>Mercenary</strong>
-                        <span>{`${mercenaryDecisionTrace.length} planning decisions`}</span>
-                      </div>
-                      <StatusPill tone={raidIsTerminal ? "ready" : "working"}>{raidIsTerminal ? "finalized" : "planning"}</StatusPill>
-                    </summary>
-                    <div className="mercenary-trace__events">
-                      {mercenaryDecisionTrace.map((decision, index) => (
-                        <div className="mercenary-trace__event" key={`${decision.type}:${decision.at}:${index}`}>
-                          <div className="mercenary-trace__event-meta">
-                            <strong>{humanizeStatus(decision.type)}</strong>
-                            <span>{formatTimestamp(decision.at)}</span>
-                          </div>
-                          <p>{decision.summary}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </details>
-                ) : null}
-
-                {specialistTraces.map((trace) => (
-                  <details className="mercenary-trace" key={trace.providerId} open={raidIsTerminal && trace.statusTone === "ready"}>
-                    <summary className="mercenary-trace__summary">
-                      <div>
-                        <strong>{trace.displayName}</strong>
-                        <span>{trace.scope || "specialist trace"}</span>
-                      </div>
-                      <StatusPill tone={trace.statusTone}>{trace.statusLabel}</StatusPill>
-                    </summary>
-                    <div className="mercenary-trace__events">
-                      {trace.outcome ? <p className="mercenary-trace__outcome">{trace.outcome}</p> : null}
-                      {trace.events.map((event) => (
-                        <div className="mercenary-trace__event" key={event.id}>
-                          <div className="mercenary-trace__event-meta">
-                            <strong>{event.label}</strong>
-                            <span>{formatTimestamp(event.at)}</span>
-                          </div>
-                          <p>{event.note}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </details>
-                ))}
-              </div>
-            </ChatMessage>
-          ) : null}
-
           {liveResultText || liveArtifacts.length > 0 || livePatch ? (
             <ChatMessage avatarSrc={heroImage} label="Mercenary" role="assistant" tone="success">
               {liveResultText ? <p className="mercenary-final__answer">{liveResultText}</p> : <p>Final delivery is ready.</p>}
-              {liveExplanation ? <p>{liveExplanation}</p> : null}
+              {liveExplanation && !liveResultText ? <p>{liveExplanation}</p> : null}
 
               {liveArtifacts.length > 0 ? (
                 <ArtifactGallery artifacts={liveArtifacts} onOpenArtifact={setExpandedArtifact} />
@@ -583,6 +494,66 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
             {sidebarSpecialists.length === 0 ? <p className="mercenary-sidebar__note">Waiting for provider registry data.</p> : null}
           </div>
         </section>
+
+        {mercenaryDecisionTrace.length > 0 || specialistTraces.length > 0 ? (
+          <section className="mercenary-sidebar__panel">
+            <div className="mercenary-sidebar__head">
+              <div>
+                <span className="mercenary-sidebar__eyebrow">Trace</span>
+                <strong>Process</strong>
+              </div>
+            </div>
+
+            <div className="mercenary-trace-list">
+              {mercenaryDecisionTrace.length > 0 ? (
+                <details className="mercenary-trace" open={!raidIsTerminal}>
+                  <summary className="mercenary-trace__summary">
+                    <div>
+                      <strong>Mercenary</strong>
+                      <span>{`${mercenaryDecisionTrace.length} planning decisions`}</span>
+                    </div>
+                    <StatusPill tone={raidIsTerminal ? "ready" : "working"}>{raidIsTerminal ? "finalized" : "planning"}</StatusPill>
+                  </summary>
+                  <div className="mercenary-trace__events">
+                    {mercenaryDecisionTrace.map((decision, index) => (
+                      <div className="mercenary-trace__event" key={`${decision.type}:${decision.at}:${index}`}>
+                        <div className="mercenary-trace__event-meta">
+                          <strong>{humanizeStatus(decision.type)}</strong>
+                          <span>{formatTimestamp(decision.at)}</span>
+                        </div>
+                        <p>{decision.summary}</p>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
+
+              {specialistTraces.map((trace) => (
+                <details className="mercenary-trace" key={trace.providerId}>
+                  <summary className="mercenary-trace__summary">
+                    <div>
+                      <strong>{trace.displayName}</strong>
+                      <span>{trace.scope || "specialist trace"}</span>
+                    </div>
+                    <StatusPill tone={trace.statusTone}>{trace.statusLabel}</StatusPill>
+                  </summary>
+                  <div className="mercenary-trace__events">
+                    {trace.outcome ? <p className="mercenary-trace__outcome">{trace.outcome}</p> : null}
+                    {trace.events.map((event) => (
+                      <div className="mercenary-trace__event" key={event.id}>
+                        <div className="mercenary-trace__event-meta">
+                          <strong>{event.label}</strong>
+                          <span>{formatTimestamp(event.at)}</span>
+                        </div>
+                        <p>{event.note}</p>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ))}
+            </div>
+          </section>
+        ) : null}
       </aside>
 
       {expandedArtifact ? (

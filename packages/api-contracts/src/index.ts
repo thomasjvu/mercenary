@@ -763,7 +763,7 @@ export function buildBossRaidRequestFromChatCompletion(
             ),
       selectionMode:
         rawRaidPolicy?.selectionMode == null && rawRaidPolicy?.selection_mode == null
-          ? undefined
+          ? "best_match"
           : ensureSelectionMode(
               rawRaidPolicy?.selectionMode ?? rawRaidPolicy?.selection_mode,
               "chat_completion_request.raid_policy.selection_mode",

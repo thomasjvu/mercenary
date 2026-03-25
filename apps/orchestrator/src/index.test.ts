@@ -494,6 +494,101 @@ test("strict privacy prefers Venice-backed providers when available", () => {
   assert.equal(selection.primaries[0]?.providerId, "provider-venice");
 });
 
+test("text-first game routing prefers the best domain-fit provider by default", () => {
+  const task = {
+    ...createSpawnInput(),
+    taskTitle: "Plan a one-room GB Studio microgame launch package",
+    taskDescription: "Return a direct build summary for a playable GB Studio microgame with matching pixel-art and trailer support.",
+    language: "text" as const,
+    framework: undefined,
+    files: [],
+    failingSignals: {
+      errors: [],
+      expectedBehavior: "Keep the answer scoped to the playable build, art pack, and trailer handoff.",
+    },
+    output: {
+      primaryType: "text" as const,
+      artifactTypes: ["text", "json"] as OutputType[],
+    },
+    constraints: {
+      ...createSpawnInput().constraints,
+      allowedOutputTypes: ["text", "json"] as OutputType[],
+      selectionMode: "best_match" as const,
+    },
+  };
+  const gamma = createProviderProfile("provider-gamma", {
+    specializations: ["gb-studio", "gameplay"],
+    supportedLanguages: ["text"],
+    supportedFrameworks: ["gb-studio"],
+    outputTypes: ["text", "patch"],
+  });
+  const dottie = createProviderProfile("provider-dottie", {
+    specializations: ["pixel-art", "sprites"],
+    supportedLanguages: ["text"],
+    supportedFrameworks: [],
+    outputTypes: ["text", "image", "bundle"],
+    privacy: {
+      noDataRetention: true,
+      signedOutputs: true,
+    },
+  });
+  const riko = createProviderProfile("provider-riko", {
+    specializations: ["video-marketing", "remotion"],
+    supportedLanguages: ["text"],
+    supportedFrameworks: [],
+    outputTypes: ["text", "video", "bundle"],
+  });
+
+  const selection = selectProviders(task, [dottie, riko, gamma], 60_000);
+  assert.equal(selection.primaries.length, 1);
+  assert.equal(selection.primaries[0]?.providerId, "provider-gamma");
+});
+
+test("explicit privacy_first still preserves privacy-led ordering for text chats", () => {
+  const task = {
+    ...createSpawnInput(),
+    taskTitle: "Plan a one-room GB Studio microgame launch package",
+    taskDescription: "Return a direct build summary for a playable GB Studio microgame with matching pixel-art and trailer support.",
+    language: "text" as const,
+    framework: undefined,
+    files: [],
+    failingSignals: {
+      errors: [],
+      expectedBehavior: "Keep the answer scoped to the playable build, art pack, and trailer handoff.",
+    },
+    output: {
+      primaryType: "text" as const,
+      artifactTypes: ["text", "json"] as OutputType[],
+    },
+    constraints: {
+      ...createSpawnInput().constraints,
+      allowedOutputTypes: ["text", "json"] as OutputType[],
+      selectionMode: "privacy_first" as const,
+    },
+  };
+  const gamma = createProviderProfile("provider-gamma", {
+    specializations: ["gb-studio", "gameplay"],
+    supportedLanguages: ["text"],
+    supportedFrameworks: ["gb-studio"],
+    outputTypes: ["text", "patch"],
+  });
+  const dottie = createProviderProfile("provider-dottie", {
+    specializations: ["pixel-art", "sprites"],
+    supportedLanguages: ["text"],
+    supportedFrameworks: [],
+    outputTypes: ["text", "image", "bundle"],
+    privacy: {
+      noDataRetention: true,
+      teeAttested: true,
+      signedOutputs: true,
+    },
+  });
+
+  const selection = selectProviders(task, [gamma, dottie], 60_000);
+  assert.equal(selection.primaries.length, 1);
+  assert.equal(selection.primaries[0]?.providerId, "provider-dottie");
+});
+
 test("provider selection respects active maxConcurrency across raids", async () => {
   const hold = new Promise<void>(() => {});
   let runCalls = 0;
@@ -742,9 +837,12 @@ test("Mercenary synthesizes approved provider contributions into one canonical r
     result.approvedSubmissions?.[0]?.submission.contributionRole?.workstreamLabel,
     result.approvedSubmissions?.[1]?.submission.contributionRole?.workstreamLabel,
   );
-  assert.match(result.synthesizedOutput?.answerText ?? "", /Supporting workstreams:/);
-  assert.match(result.synthesizedOutput?.answerText ?? "", /Risk:/);
+  assert.doesNotMatch(result.synthesizedOutput?.answerText ?? "", /Supporting workstreams:/);
+  assert.doesNotMatch(result.synthesizedOutput?.answerText ?? "", /Risk:/);
   assert.match(result.synthesizedOutput?.answerText ?? "", /subtracts instead of adding|returns a - b/);
+  assert.doesNotMatch(result.synthesizedOutput?.explanation ?? "", /Supporting workstreams:/);
+  assert.ok(result.synthesizedOutput?.workstreams.every((item) => (item.shortSummary?.length ?? 0) > 0));
+  assert.doesNotMatch(result.synthesizedOutput?.workstreams[0]?.shortSummary ?? "", /Artifacts:/);
 });
 
 test("Mercenary can recurse into nested child raids when expert count exceeds the front layer", async () => {

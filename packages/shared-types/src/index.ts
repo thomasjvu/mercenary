@@ -797,6 +797,7 @@ export interface BossRaidSynthesizedWorkstream {
   supportingProviderIds: string[];
   roleLabels: string[];
   summary: string;
+  shortSummary?: string;
   answerText?: string;
   patchUnifiedDiff?: string;
   artifacts?: SubmissionArtifact[];

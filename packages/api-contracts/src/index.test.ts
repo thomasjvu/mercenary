@@ -166,7 +166,7 @@ test("buildBossRaidRequestFromChatCompletion requires an explicit payout budget"
   );
 });
 
-test("buildBossRaidRequestFromChatCompletion accepts a server-side default payout budget", () => {
+test("buildBossRaidRequestFromChatCompletion accepts a server-side default payout budget and defaults chat routing to best_match", () => {
   const request = buildBossRaidRequestFromChatCompletion(
     parseChatCompletionRequest({
       model: "mercenary-v1",
@@ -184,6 +184,7 @@ test("buildBossRaidRequestFromChatCompletion accepts a server-side default payou
 
   assert.equal(request.raidPolicy?.maxTotalCost, 6);
   assert.equal(request.raidPolicy?.requiredCapabilities, undefined);
+  assert.equal(request.raidPolicy?.selectionMode, "best_match");
 });
 
 test("parseChatCompletionRequest rejects unsupported message roles", () => {
