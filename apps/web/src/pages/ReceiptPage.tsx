@@ -173,11 +173,17 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
   );
   const runtimeSignerDisabled = isAttestationSignerUnavailable(attestedRuntime.error?.message);
   const resultSignerDisabled = isAttestationSignerUnavailable(attestedResult.error?.message);
-  const runtimeAttestationStatus = attestedRuntime.data ? "live" : runtimeSignerDisabled ? "signer off" : attestedRuntime.error ? "unavailable" : "loading";
+  const runtimeAttestationStatus = attestedRuntime.data
+    ? "live"
+    : runtimeSignerDisabled
+      ? "proof unpublished"
+      : attestedRuntime.error
+        ? "unavailable"
+        : "loading";
   const resultAttestationStatus = attestedResult.data
     ? "live"
     : resultSignerDisabled
-      ? "signer off"
+      ? "proof unpublished"
       : attestedResult.error
         ? "unavailable"
         : activeQuery
@@ -190,8 +196,13 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
   const attestationTee =
     attestedResult.data?.payload.teePlatform ??
     attestedRuntime.data?.payload.teePlatform ??
-    (runtimeSignerDisabled || resultSignerDisabled ? "unsigned" : "pending");
-  const attestationSurfaceLabel = buildAttestationSurfaceLabel(attestationTarget, attestationTee);
+    (runtimeSignerDisabled || resultSignerDisabled ? "provider TEE live" : "pending");
+  const attestationSurfaceLabel =
+    attestedResult.data || attestedRuntime.data
+      ? buildAttestationSurfaceLabel(attestationTarget, attestationTee)
+      : runtimeSignerDisabled || resultSignerDisabled
+        ? "Host proof unpublished"
+        : buildAttestationSurfaceLabel(attestationTarget, attestationTee);
   const currentReceiptStatus = result.data?.status ?? status.data?.status ?? "loading";
   const canonicalSummary = summarizeCanonicalOutput(result.data);
   const previewArtifacts = pickPreviewArtifacts(synthesizedArtifacts);
@@ -323,10 +334,10 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                   attestedRuntime.data.payload.teePlatform ?? "unknown",
                 )} runtime proof is live.`
               : runtimeSignerDisabled
-                ? "This host is not publishing a signed runtime envelope because the attestation signer is not configured."
+                ? "Provider TEE signals are still live, but this host is not publishing a signed runtime envelope because MNEMONIC is not configured."
                 : attestedRuntime.error
                   ? readQueryErrorMessage(attestedRuntime.error)
-                : "Loading runtime attestation."}
+                  : "Loading runtime attestation."}
           </p>
         </article>
       ) : null}
@@ -415,7 +426,7 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
               <div className="receipt-proof-note receipt-proof-note--inline">
                 <strong>TEE proof:</strong>{" "}
                 {runtimeSignerDisabled || resultSignerDisabled
-                  ? "Provider TEE and signed-output counts still reflect routed provider proofs, but this host is not publishing signed runtime/result envelopes because the attestation signer is not configured."
+                  ? "Provider TEE and signed-output counts still reflect routed provider proofs, but this host is not publishing signed runtime/result envelopes because MNEMONIC is not configured."
                   : `${attestationSurfaceLabel} runtime proof and signed raid result proof are exposed here when the host signer is configured.`}
               </div>
               <div className="receipt-link-list">

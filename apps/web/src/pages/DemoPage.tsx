@@ -147,18 +147,20 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
   const runtimeAttestationStatus = runtimeAttestation
     ? "live"
     : runtimeAttestationSignerDisabled
-      ? "signer off"
+      ? "proof unpublished"
       : runtimeAttestationError
         ? "unavailable"
         : "loading";
   const runtimeAttestationTarget = runtimeAttestation?.payload.deploymentTarget ?? (runtimeAttestationSignerDisabled ? "not published" : "pending");
-  const runtimeAttestationTee = runtimeAttestation?.payload.teePlatform ?? (runtimeAttestationSignerDisabled ? "unsigned" : "pending");
+  const runtimeAttestationTee = runtimeAttestation?.payload.teePlatform ?? (runtimeAttestationSignerDisabled ? "provider TEE live" : "pending");
   const runtimeAttestationLabel = runtimeAttestation
     ? buildRuntimeAttestationLabel(runtimeAttestationTarget, runtimeAttestationTee)
     : runtimeAttestationSignerDisabled
-      ? "Runtime proof not published"
+      ? "Provider TEE live"
       : buildRuntimeAttestationLabel(runtimeAttestationTarget, runtimeAttestationTee);
+  const runtimeAttestationTone = runtimeAttestation ? "ready" : runtimeAttestationSignerDisabled ? "available" : runtimeAttestationError ? "offline" : "working";
   const elapsedLabel = liveRaidRun ? formatElapsedMs(liveRaidRun.startedAtMs, liveRaidRun.completedAtMs) : "n/a";
+  const approvedSubmissionCount = liveRaidRun?.result?.approvedSubmissions?.length ?? 0;
   const teeAttestedSpecialistCount = countTeeAttestedSpecialists(sidebarSpecialists);
   const signedSpecialistCount = countProofTag(sidebarSpecialists, "signed");
   const compactAvailabilityLabel = hostedProviderCount > 0 ? `${readyProviderCount}/${hostedProviderCount} ready` : "checking";
@@ -179,7 +181,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
   const runtimeSummaryValue = runtimeAttestation
     ? runtimeAttestationTee
     : runtimeAttestationSignerDisabled
-      ? "signer off"
+      ? "provider TEE live"
       : runtimeAttestationStatus;
   const runSignals: Array<{ label: string; value: string }> = liveRaidRun
     ? liveRaidRun.directResponse
@@ -193,8 +195,8 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
           { label: "time", value: elapsedLabel },
           { label: "invited", value: String(liveRaidRun.spawn.selectedExperts) },
           {
-            label: raidIsTerminal ? "outputs" : "status",
-            value: raidIsTerminal ? `${liveWorkstreams.length}/${liveArtifacts.length}` : humanizeStatus(activeRaidStatus ?? "queued"),
+            label: raidIsTerminal ? "approved" : "status",
+            value: raidIsTerminal ? `${approvedSubmissionCount}/${liveRaidRun.spawn.selectedExperts}` : humanizeStatus(activeRaidStatus ?? "queued"),
           },
         ]
     : [
@@ -502,7 +504,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
             <p>
               {demoMode === "raid"
                 ? "Talk to Mercenary directly here. I’ll answer normally, and if you ask for real scoped work I’ll open a native raid and hire specialists in the background."
-                : "Tell me what you want and I’ll route it through v1 chat completions so you can compare the compatibility layer against the native raid path."}
+                : "Talk to Mercenary through the v1 compatibility route here. Simple chat stays direct. Scoped work can still open specialists behind the same API."}
             </p>
             <p className="mercenary-message__note">
               Mercenary can be wrong, hallucinate, or merge weak specialist output. Verify important claims, code, and proofs before you rely on them.
@@ -673,7 +675,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
               <span className="mercenary-sidebar__eyebrow">Attestation</span>
               <strong>{runtimeAttestationLabel}</strong>
             </div>
-            <StatusPill tone={runtimeAttestation ? "ready" : runtimeAttestationError ? "offline" : "working"}>
+            <StatusPill tone={runtimeAttestationTone}>
               {runtimeAttestationStatus}
             </StatusPill>
           </div>
@@ -687,7 +689,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
           <details className="mercenary-sidebar__disclosure">
             <summary className="mercenary-sidebar__disclosure-summary">
               <span>proof detail</span>
-              <strong>{runtimeAttestation ? "open" : runtimeAttestationSignerDisabled ? "signer off" : "inspect"}</strong>
+              <strong>{runtimeAttestation ? "open" : runtimeAttestationSignerDisabled ? "unpublished" : "inspect"}</strong>
             </summary>
 
             <div className="mercenary-sidebar__actionstrip">
@@ -705,7 +707,7 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
               {runtimeAttestation
                 ? `Runtime is attested on ${runtimeAttestationTarget} / ${runtimeAttestationTee}. Specialist TEE and signed badges come from routed provider privacy proofs and registry data.`
                 : runtimeAttestationSignerDisabled
-                  ? "This host is not publishing signed runtime or result envelopes because the attestation signer is not configured."
+                  ? "Provider TEE and signed-output badges are still live from routed provider proofs. This host is not publishing signed runtime or result envelopes because MNEMONIC is not configured."
                   : runtimeAttestationError ?? "Loading runtime attestation."}
             </p>
           </details>
@@ -1577,7 +1579,13 @@ function isLowSignalChatPrompt(brief: string): boolean {
     /^(hi|hello|hey|yo|sup|hiya|howdy)\b/.test(normalizedBrief) ||
     /^what'?s up\b/.test(normalizedBrief) ||
     /^who are you\b/.test(normalizedBrief) ||
-    /^what can you do\b/.test(normalizedBrief)
+    /^what can you do\b/.test(normalizedBrief) ||
+    /^tell me (a )?joke\b/.test(normalizedBrief) ||
+    /^can you tell me (a )?joke\b/.test(normalizedBrief) ||
+    /^give me (a )?joke\b/.test(normalizedBrief) ||
+    /^share (a )?joke\b/.test(normalizedBrief) ||
+    /^make me laugh\b/.test(normalizedBrief) ||
+    /^say something funny\b/.test(normalizedBrief)
   );
 }
 

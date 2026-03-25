@@ -788,6 +788,72 @@ test("POST /v1/chat/completions answers low-signal chat directly without opening
   }
 });
 
+test("POST /v1/chat/completions keeps joke prompts direct without opening a raid", async () => {
+  let acceptCount = 0;
+  const provider: RaidProvider = {
+    profile: createProviderProfile("provider-chat-joke", {
+      outputTypes: ["text", "json"],
+      supportedLanguages: ["text"],
+    }),
+    async accept(_task: ProviderTaskPackage): Promise<ProviderAcceptance> {
+      acceptCount += 1;
+      return {
+        accepted: true,
+        providerRunId: "run-chat-joke",
+      };
+    },
+    async run(_task, callbacks): Promise<void> {
+      await callbacks.onFailure(new Error("Direct chat should not have opened specialists for a joke."));
+    },
+  };
+
+  const orchestrator = new BossRaidOrchestrator(
+    [provider],
+    {
+      inviteAcceptMs: 1_000,
+      firstHeartbeatMs: 2_000,
+      hardExecutionMs: 5_000,
+      raidAbsoluteMs: 5_000,
+    },
+    undefined,
+    undefined,
+    async (profile) => readyHealth(profile.providerId),
+  );
+  const app = buildApiServer(orchestrator, {
+    ...process.env,
+    BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: "8",
+  });
+
+  try {
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/chat/completions",
+      payload: {
+        model: "mercenary-v1",
+        messages: [
+          {
+            role: "user",
+            content: "tell me a joke",
+          },
+        ],
+        raid_policy: {
+          max_agents: 1,
+          max_total_cost: 8,
+          max_latency_sec: 5,
+        },
+      },
+    });
+
+    assert.equal(response.statusCode, 200);
+    const body = response.json();
+    assert.equal(body.raid, undefined);
+    assert.equal(acceptCount, 0);
+    assert.equal(body.choices[0]?.message.content, "Why did the programmer go broke? Because he used up all his cache.");
+  } finally {
+    await app.close();
+  }
+});
+
 test("resolveChatTerminalSettleGraceMs honors BOSSRAID_INVITE_ACCEPT_MS with floor and cap", () => {
   assert.equal(resolveChatTerminalSettleGraceMs({}), 5_000);
   assert.equal(resolveChatTerminalSettleGraceMs({ BOSSRAID_INVITE_ACCEPT_MS: "2000" } as NodeJS.ProcessEnv), 5_000);

@@ -221,7 +221,7 @@ pnpm render:video
 - `BOSSRAID_ERC8004_AGENT_ID`, `BOSSRAID_ERC8004_OPERATOR_WALLET`, and `BOSSRAID_ERC8004_REGISTRATION_TX`: Mercenary identity anchors
 - `BOSSRAID_ERC8004_IDENTITY_REGISTRY`, `BOSSRAID_ERC8004_REPUTATION_REGISTRY`, `BOSSRAID_ERC8004_VALIDATION_REGISTRY`, and `BOSSRAID_ERC8004_VALIDATION_TXS`: registry and validation refs
 - `BOSSRAID_ERC8004_LAST_VERIFIED_AT`: cached verification timestamp surfaced in proof
-- `MNEMONIC`: enables attested runtime and attested result signing
+- `MNEMONIC`: enables attested runtime and attested result signing; without it, provider TEE badges can still be surfaced from provider proofs, but host-level runtime and result envelopes stay unpublished
 - `BOSSRAID_TEE_PLATFORM` and `BOSSRAID_TEE_SOCKET_PATH`: TEE metadata surfaced on runtime proofs
 
 ### Deployment Wrappers

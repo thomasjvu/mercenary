@@ -1993,7 +1993,7 @@ function buildChatCompletionFallback(
   const prompt = selectPrimaryChatPrompt(chatRequest);
 
   if (isLowSignalChatPrompt(prompt)) {
-    return "Mercenary here. Ask a question or give me a concrete task and I’ll answer directly or open specialists when it helps.";
+    return buildDirectMercenaryChatReply(prompt);
   }
 
   if (status === "final") {
@@ -2027,6 +2027,10 @@ function buildDirectMercenaryChatReply(prompt: string): string {
     return "I can answer directly, compare options, and open specialists for code, art, gameplay, or promo work when the request needs real execution.";
   }
 
+  if (isDirectJokePrompt(normalizedPrompt)) {
+    return "Why did the programmer go broke? Because he used up all his cache.";
+  }
+
   return "Mercenary here. Ask a question or give me a concrete task and I’ll answer directly or open specialists when it helps.";
 }
 
@@ -2040,7 +2044,19 @@ function isLowSignalChatPrompt(prompt: string): boolean {
     /^(hi|hello|hey|yo|sup|hiya|howdy)\b/.test(normalizedPrompt) ||
     /^what'?s up\b/.test(normalizedPrompt) ||
     /^who are you\b/.test(normalizedPrompt) ||
-    /^what can you do\b/.test(normalizedPrompt)
+    /^what can you do\b/.test(normalizedPrompt) ||
+    isDirectJokePrompt(normalizedPrompt)
+  );
+}
+
+function isDirectJokePrompt(normalizedPrompt: string): boolean {
+  return (
+    /^tell me (a )?joke\b/.test(normalizedPrompt) ||
+    /^can you tell me (a )?joke\b/.test(normalizedPrompt) ||
+    /^give me (a )?joke\b/.test(normalizedPrompt) ||
+    /^share (a )?joke\b/.test(normalizedPrompt) ||
+    /^make me laugh\b/.test(normalizedPrompt) ||
+    /^say something funny\b/.test(normalizedPrompt)
   );
 }
 

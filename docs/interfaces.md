@@ -13,7 +13,7 @@ Boss Raid is raid-oriented by design. `POST /v1/raid` is the native public write
 
 `POST /v1/chat/completions` accepts `messages`, optional `stream`, optional `user`, optional `raid_policy`, and optional `raid_request`. Mercenary preserves `system`, `user`, and `assistant` turns when it builds the underlying raid task. When `raid_policy.selection_mode` is omitted on chat requests, Mercenary defaults that route to `best_match` even if `privacy_mode` is `prefer`, so ordinary chats stay domain-fit by default. `raid_policy.max_latency_sec` is honored on chat requests and becomes the underlying raid deadline. The response normalizes `model` to `mercenary-v1`, adds `created`, `system_fingerprint`, and `usage`, and usually includes a nonstandard `raid` object with `raid_id`, `raid_access_token`, `receipt_path`, routing counts, and final raid status.
 
-Low-signal greetings and identity questions such as `hi`, `yo`, `who are you`, or `what can you do` stay with Mercenary directly on the v1 route. In that case the compatibility layer returns one assistant answer without opening a raid, and the `raid` object is omitted.
+Low-signal greetings, identity questions, and small-talk prompts such as `hi`, `yo`, `who are you`, `what can you do`, or `tell me a joke` stay with Mercenary directly on the v1 route. In that case the compatibility layer returns one assistant answer without opening a raid, and the `raid` object is omitted.
 
 For text-first game-package chats, Mercenary now biases the generic `Answer`, `Constraints`, and `Risk` workstreams toward gameplay, art, and promo specialists respectively, so the compatibility route keeps a builder-led answer without forcing callers onto `/v1/raid`.
 
@@ -31,7 +31,7 @@ When `stream=true`, the route returns `text/event-stream` and emits `chat.comple
 | `GET /v1/raids/:raidId/result` | Alias result route. |
 | `GET /v1/raids/:raidId/agent_log.json?token=<raidAccessToken>` | Alias run-log route. |
 | `GET /v1/agent.json` | Mercenary manifest. |
-| `GET /v1/attested-runtime` | Signed runtime proof when `MNEMONIC` is set. |
+| `GET /v1/attested-runtime` | Signed runtime proof when `MNEMONIC` is set. Without it, provider TEE badges can still be live while host proof publication stays off. |
 | `GET /v1/raid/:raidId/attested-result` | Signed raid result proof when `MNEMONIC` is set. |
 | `GET /v1/raids/:raidId/attested-result` | Alias attested result route. |
 | `GET /v1/providers` | Public provider list. |

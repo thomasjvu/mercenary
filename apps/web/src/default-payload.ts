@@ -72,6 +72,12 @@ const LOW_SIGNAL_CHAT_PATTERNS = [
   /^what'?s up\b/,
   /^who are you\b/,
   /^what can you do\b/,
+  /^tell me (a )?joke\b/,
+  /^can you tell me (a )?joke\b/,
+  /^give me (a )?joke\b/,
+  /^share (a )?joke\b/,
+  /^make me laugh\b/,
+  /^say something funny\b/,
 ];
 
 function buildLiveDemoFiles(normalizedBrief: string) {
