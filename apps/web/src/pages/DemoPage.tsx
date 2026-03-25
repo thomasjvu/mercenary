@@ -140,10 +140,21 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
     conversationSpecialists.length > 0
       ? conversationSpecialists
       : buildHostedSpecialistRecords(providers, providerHealth, healthByProviderId);
-  const runtimeAttestationStatus = runtimeAttestation ? "live" : runtimeAttestationError ? "unavailable" : "loading";
-  const runtimeAttestationTarget = runtimeAttestation?.payload.deploymentTarget ?? "pending";
-  const runtimeAttestationTee = runtimeAttestation?.payload.teePlatform ?? "pending";
-  const runtimeAttestationLabel = buildRuntimeAttestationLabel(runtimeAttestationTarget, runtimeAttestationTee);
+  const runtimeAttestationSignerDisabled = isAttestationSignerUnavailable(runtimeAttestationError);
+  const runtimeAttestationStatus = runtimeAttestation
+    ? "live"
+    : runtimeAttestationSignerDisabled
+      ? "signer off"
+      : runtimeAttestationError
+        ? "unavailable"
+        : "loading";
+  const runtimeAttestationTarget = runtimeAttestation?.payload.deploymentTarget ?? (runtimeAttestationSignerDisabled ? "not published" : "pending");
+  const runtimeAttestationTee = runtimeAttestation?.payload.teePlatform ?? (runtimeAttestationSignerDisabled ? "unsigned" : "pending");
+  const runtimeAttestationLabel = runtimeAttestation
+    ? buildRuntimeAttestationLabel(runtimeAttestationTarget, runtimeAttestationTee)
+    : runtimeAttestationSignerDisabled
+      ? "Runtime proof not published"
+      : buildRuntimeAttestationLabel(runtimeAttestationTarget, runtimeAttestationTee);
   const teeAttestedSpecialistCount = countTeeAttestedSpecialists(sidebarSpecialists);
   const signedSpecialistCount = countProofTag(sidebarSpecialists, "signed");
   const hasConversation = Boolean(lastSubmittedBrief || liveRaidRun || launchError);
@@ -609,7 +620,13 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
           <div className="mercenary-sidebar__links">
             <a className="mercenary-sidebar__link" href={buildAttestedRuntimePath()} rel="noreferrer" target="_blank">
               <span>runtime proof</span>
-              <strong>{runtimeAttestation ? `${runtimeAttestationLabel} proof` : "Open runtime attestation"}</strong>
+              <strong>
+                {runtimeAttestation
+                  ? `${runtimeAttestationLabel} proof`
+                  : runtimeAttestationSignerDisabled
+                    ? "Signer required"
+                    : "Open runtime attestation"}
+              </strong>
             </a>
             {liveRaidRun ? (
               <a
@@ -627,7 +644,9 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
           <p className="mercenary-sidebar__note">
             {runtimeAttestation
               ? `Mercenary runtime proof says this host is attested on ${runtimeAttestationTarget} / ${runtimeAttestationTee}. Specialist badges reflect routed provider privacy features and provider registry proofs.`
-              : runtimeAttestationError ?? "Loading runtime attestation."}
+              : runtimeAttestationSignerDisabled
+                ? "This host is not publishing signed runtime or result envelopes because the attestation signer is not configured. The TEE and signed specialist badges still come from routed provider privacy proofs and registry data."
+                : runtimeAttestationError ?? "Loading runtime attestation."}
           </p>
         </section>
 
@@ -1451,6 +1470,10 @@ function buildRuntimeAttestationLabel(target: string, teePlatform: string): stri
     return `${teePlatform} TEE attested`;
   }
   return "TEE attestation";
+}
+
+function isAttestationSignerUnavailable(error: string | null | undefined): boolean {
+  return typeof error === "string" && error.includes("MNEMONIC environment variable is required");
 }
 
 function buildProviderProofTags(

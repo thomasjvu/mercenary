@@ -338,7 +338,7 @@ function buildNativeChatDemoPayload(normalizedBrief: string) {
       selectionMode: "best_match",
     },
     hostContext: {
-      host: "web_demo",
+      host: "codex",
     },
   };
 }

@@ -173,12 +173,6 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
       </div>
 
       <div className="directory-list">
-        <div className="directory-list__head" aria-hidden="true">
-          <span>raider</span>
-          <span>score</span>
-          <span>meta</span>
-        </div>
-
         {filteredRaiders.length === 0 ? (
           <div className="directory-empty">
             <p className="eyebrow">no match</p>
@@ -204,7 +198,6 @@ function SummaryPill({ label, value }: { label: string; value: string }) {
 }
 
 function RaiderRow({ raider, rank }: { raider: RaiderRecord; rank: number }) {
-  const privacyLabel = raider.privacySignals.length > 0 ? raider.privacySignals.join(" / ") : "standard";
   const registered = hasErc8004Registration(raider.provider);
   const verificationStatus = readErc8004VerificationStatus(raider.provider);
   const venice = isVeniceProvider(raider.provider);
@@ -216,39 +209,47 @@ function RaiderRow({ raider, rank }: { raider: RaiderRecord; rank: number }) {
 
   return (
     <article className="raider-row">
-      <div className="raider-row__primary">
-        <div className="raider-row__identity">
-          <div className="raider-row__title">
-            <img
-              alt={`${raider.provider.displayName} profile`}
-              className="raider-row__avatar"
-              loading="lazy"
-              src={heroImage}
-              style={{ objectPosition: avatarPosition }}
-            />
-            <div className="raider-row__name">
-              <span className="raider-row__rank">#{rank.toString().padStart(2, "0")}</span>
-              <strong>{raider.provider.displayName}</strong>
-              <p className="raider-row__provider-id">{raider.provider.providerId}</p>
-            </div>
-          </div>
+      <div className="raider-row__cover">
+        <img
+          alt={`${raider.provider.displayName} profile`}
+          className="raider-row__cover-image"
+          loading="lazy"
+          src={heroImage}
+          style={{ objectPosition: avatarPosition }}
+        />
+        <div className="raider-row__cover-scrim" />
+        <div className="raider-row__cover-top">
+          <span className="raider-row__rank">#{rank.toString().padStart(2, "0")}</span>
           <span className={`status-chip status-chip--${raider.activityTone}`}>{raider.activityLabel}</span>
         </div>
+        <div className="raider-row__cover-copy">
+          <strong>{raider.provider.displayName}</strong>
+          <p className="raider-row__provider-id">{raider.provider.providerId}</p>
+        </div>
+      </div>
 
-        {raider.provider.description ? <p className="raider-row__description">{raider.provider.description}</p> : null}
-
+      <div className="raider-row__body">
         <div className="signal-strip">
           <SignalChip tone={erc8004Tone}>{buildErc8004StatusLabel(verificationStatus, registered)}</SignalChip>
           <SignalChip tone={raider.trustScore > 0 ? "proof" : "muted"}>
             {raider.trustScore > 0 ? `trust ${raider.trustScore}` : "no trust score"}
           </SignalChip>
-          {raider.provider.trust?.source ? <SignalChip tone="proof">{raider.provider.trust.source}</SignalChip> : null}
-          {venice ? <SignalChip tone="private">venice private</SignalChip> : null}
+          {venice ? <SignalChip tone="private">venice</SignalChip> : null}
           {raider.privacySignals.map((signal) => (
             <SignalChip key={`${raider.provider.providerId}-${signal}`} tone="private">
               {signal}
             </SignalChip>
           ))}
+        </div>
+
+        {raider.provider.description ? <p className="raider-row__description">{raider.provider.description}</p> : null}
+
+        <div className="raider-row__stats">
+          <ListMetric label="rep" value={String(raider.reputationScore)} />
+          <ListMetric label="tee" value={raider.privacySignals.includes("tee") ? "yes" : "no"} />
+          <ListMetric label="wins" value={String(raider.successfulRaids)} />
+          <ListMetric label="trust" value={String(raider.trustScore)} />
+          <ListMetric label="price" value={formatUsd(raider.provider.pricePerTaskUsd)} />
         </div>
 
         {raider.specializations.length > 0 ? (
@@ -260,23 +261,13 @@ function RaiderRow({ raider, rank }: { raider: RaiderRecord; rank: number }) {
             ))}
           </div>
         ) : null}
-      </div>
 
-      <div className="raider-row__stats">
-        <ListMetric label="rep" value={String(raider.reputationScore)} />
-        <ListMetric label="privacy" value={String(raider.privacyScore)} />
-        <ListMetric label="trust" value={String(raider.trustScore)} />
-        <ListMetric label="wins" value={String(raider.successfulRaids)} />
-        <ListMetric label="price" value={formatUsd(raider.provider.pricePerTaskUsd)} />
-      </div>
-
-      <div className="raider-row__meta">
-        <span>model {raider.modelLabel}</span>
-        <span>agent {raider.provider.agentId ?? "pending"}</span>
-        <span>8004 {buildErc8004StatusValue(verificationStatus, registered)}</span>
-        <span>trust {raider.trustScore}</span>
-        <span>last seen {raider.lastSeenLabel}</span>
-        <span>privacy {privacyLabel}</span>
+        <div className="raider-row__facts">
+          <FactBadge label="model" value={raider.modelLabel} />
+          <FactBadge label="agent" value={raider.provider.agentId ?? "pending"} />
+          <FactBadge label="8004" value={buildErc8004StatusValue(verificationStatus, registered)} />
+          <FactBadge label="seen" value={raider.lastSeenLabel} />
+        </div>
       </div>
     </article>
   );
@@ -293,6 +284,15 @@ function ListMetric({ label, value }: { label: string; value: string }) {
 
 function SignalChip({ children, tone }: { children: string; tone: "proof" | "private" | "muted" }) {
   return <span className={`signal-chip signal-chip--${tone}`}>{children}</span>;
+}
+
+function FactBadge({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="raider-fact">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
 }
 
 function buildRaiderRecord(provider: Provider, health: ProviderHealth | undefined): RaiderRecord {

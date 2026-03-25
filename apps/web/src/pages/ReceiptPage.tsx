@@ -171,10 +171,26 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
     routingDecisionMap,
     (decision) => decision.privacyFeatures.includes("signed_outputs"),
   );
-  const runtimeAttestationStatus = attestedRuntime.data ? "live" : attestedRuntime.error ? "unavailable" : "loading";
-  const resultAttestationStatus = attestedResult.data ? "live" : attestedResult.error ? "unavailable" : activeQuery ? "loading" : "pending";
-  const attestationTarget = attestedResult.data?.payload.deploymentTarget ?? attestedRuntime.data?.payload.deploymentTarget ?? "pending";
-  const attestationTee = attestedResult.data?.payload.teePlatform ?? attestedRuntime.data?.payload.teePlatform ?? "pending";
+  const runtimeSignerDisabled = isAttestationSignerUnavailable(attestedRuntime.error?.message);
+  const resultSignerDisabled = isAttestationSignerUnavailable(attestedResult.error?.message);
+  const runtimeAttestationStatus = attestedRuntime.data ? "live" : runtimeSignerDisabled ? "signer off" : attestedRuntime.error ? "unavailable" : "loading";
+  const resultAttestationStatus = attestedResult.data
+    ? "live"
+    : resultSignerDisabled
+      ? "signer off"
+      : attestedResult.error
+        ? "unavailable"
+        : activeQuery
+          ? "loading"
+          : "pending";
+  const attestationTarget =
+    attestedResult.data?.payload.deploymentTarget ??
+    attestedRuntime.data?.payload.deploymentTarget ??
+    (runtimeSignerDisabled || resultSignerDisabled ? "not published" : "pending");
+  const attestationTee =
+    attestedResult.data?.payload.teePlatform ??
+    attestedRuntime.data?.payload.teePlatform ??
+    (runtimeSignerDisabled || resultSignerDisabled ? "unsigned" : "pending");
   const attestationSurfaceLabel = buildAttestationSurfaceLabel(attestationTarget, attestationTee);
   const currentReceiptStatus = result.data?.status ?? status.data?.status ?? "loading";
   const canonicalSummary = summarizeCanonicalOutput(result.data);
@@ -306,8 +322,10 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                   attestedRuntime.data.payload.deploymentTarget ?? "unknown",
                   attestedRuntime.data.payload.teePlatform ?? "unknown",
                 )} runtime proof is live.`
-              : attestedRuntime.error
-                ? readQueryErrorMessage(attestedRuntime.error)
+              : runtimeSignerDisabled
+                ? "This host is not publishing a signed runtime envelope because the attestation signer is not configured."
+                : attestedRuntime.error
+                  ? readQueryErrorMessage(attestedRuntime.error)
                 : "Loading runtime attestation."}
           </p>
         </article>
@@ -395,7 +413,10 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                 <ReceiptStat label="signed" value={`${signedProviderCount}/${routedProviderIds.length || 0}`} />
               </div>
               <div className="receipt-proof-note receipt-proof-note--inline">
-                <strong>TEE proof:</strong> {`${attestationSurfaceLabel} runtime proof and signed raid result proof are exposed here when the host signer is configured.`}
+                <strong>TEE proof:</strong>{" "}
+                {runtimeSignerDisabled || resultSignerDisabled
+                  ? "Provider TEE and signed-output counts still reflect routed provider proofs, but this host is not publishing signed runtime/result envelopes because the attestation signer is not configured."
+                  : `${attestationSurfaceLabel} runtime proof and signed raid result proof are exposed here when the host signer is configured.`}
               </div>
               <div className="receipt-link-list">
                 <ReceiptLinkItem
@@ -853,6 +874,10 @@ function buildAttestationSurfaceLabel(target: string | null | undefined, teePlat
     return `${teePlatform} TEE-attested`;
   }
   return "TEE-attested";
+}
+
+function isAttestationSignerUnavailable(message: string | undefined): boolean {
+  return typeof message === "string" && message.includes("MNEMONIC environment variable is required");
 }
 
 function buildReceiptUrl(query: ReceiptQuery): string {
