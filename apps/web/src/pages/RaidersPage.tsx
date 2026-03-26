@@ -84,104 +84,106 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
     raiders.length > 0 ? formatUsd(raiders.reduce((total, raider) => total + raider.provider.pricePerTaskUsd, 0) / raiders.length) : "n/a";
 
   return (
-    <section className="directory-shell directory-shell--viewport" id="directory">
-      <div className="directory-shell__hero">
-        <div className="directory-shell__copy">
-          <p className="eyebrow">raiders</p>
-          <h1>
-            <span className="directory-hero__headline-line">Raider directory.</span>
-            <span className="directory-hero__headline-line">Trust, privacy, and route readiness.</span>
-          </h1>
-          <p className="lede directory-hero__lede">
-            Compare registered providers, inspect ERC-8004 and privacy signals, and sort by the proof that matters
-            before you route a raid.
-          </p>
-          <div className="directory-hero__actions">
-            <a
-              className="button"
-              href="/"
-              onClick={(event) => {
-                event.preventDefault();
-                onNavigate("/");
-              }}
-            >
-              landing
-            </a>
-            <DocsButton className="button button--primary" label="docs" />
+    <section className="directory-shell directory-shell--viewport directory-shell--split" id="directory">
+      <div className="directory-shell__rail">
+        <div className="directory-shell__hero">
+          <div className="directory-shell__copy">
+            <p className="eyebrow">raiders</p>
+            <h1>
+              <span className="directory-hero__headline-line">Raider directory.</span>
+              <span className="directory-hero__headline-line">Trust, privacy, and route readiness.</span>
+            </h1>
+            <p className="lede directory-hero__lede">
+              Compare registered providers, inspect ERC-8004 and privacy signals, and sort by the proof that matters
+              before you route a raid.
+            </p>
+            <div className="directory-hero__actions">
+              <a
+                className="button"
+                href="/"
+                onClick={(event) => {
+                  event.preventDefault();
+                  onNavigate("/");
+                }}
+              >
+                landing
+              </a>
+              <DocsButton className="button button--primary" label="docs" />
+            </div>
           </div>
+
+          <aside className="page-stage-card page-stage-card--directory">
+            <img
+              alt=""
+              aria-hidden="true"
+              className="page-stage-card__image"
+              loading="lazy"
+              src={heroImage}
+              style={{ objectPosition: "50% 28%" }}
+            />
+            <div className="page-stage-card__scrim" />
+            <div className="page-stage-card__copy">
+              <p className="eyebrow">live roster</p>
+              <strong>{`${readyCount}/${raiders.length || 0} ready now`}</strong>
+              <p>{`${verifiedCount} verified · ${privacyCount} privacy-ready · ${averagePrice} avg price`}</p>
+            </div>
+            <div className="page-stage-card__summary">
+              <SummaryPill label="total" value={String(raiders.length)} />
+              <SummaryPill label="ready" value={String(readyCount)} />
+              <SummaryPill label="8004 verified" value={String(verifiedCount)} />
+              <SummaryPill label="trusted" value={String(trustCount)} />
+            </div>
+          </aside>
         </div>
 
-        <aside className="page-stage-card page-stage-card--directory">
-          <img
-            alt=""
-            aria-hidden="true"
-            className="page-stage-card__image"
-            loading="lazy"
-            src={heroImage}
-            style={{ objectPosition: "50% 28%" }}
-          />
-          <div className="page-stage-card__scrim" />
-          <div className="page-stage-card__copy">
-            <p className="eyebrow">live roster</p>
-            <strong>{`${readyCount}/${raiders.length || 0} ready now`}</strong>
-            <p>{`${verifiedCount} verified · ${privacyCount} privacy-ready · ${averagePrice} avg price`}</p>
-          </div>
-          <div className="page-stage-card__summary">
-            <SummaryPill label="total" value={String(raiders.length)} />
-            <SummaryPill label="ready" value={String(readyCount)} />
-            <SummaryPill label="8004 verified" value={String(verifiedCount)} />
-            <SummaryPill label="trusted" value={String(trustCount)} />
-          </div>
-        </aside>
-      </div>
+        <div className="directory-controls">
+          <label className="directory-search">
+            <span className="directory-search__label">search</span>
+            <input
+              className="directory-search__input"
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="name / model / specialty"
+              spellCheck={false}
+              type="text"
+              value={query}
+            />
+          </label>
 
-      <div className="directory-controls">
-        <label className="directory-search">
-          <span className="directory-search__label">search</span>
-          <input
-            className="directory-search__input"
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="name / model / specialty"
-            spellCheck={false}
-            type="text"
-            value={query}
-          />
-        </label>
-
-        <div className="directory-filters">
-          <div className="directory-pill-row">
-            {STATUS_OPTIONS.map((option) => (
-              <button
-                className={`directory-pill ${statusFilter === option.key ? "directory-pill--active" : ""}`}
-                key={option.key}
-                onClick={() => setStatusFilter(option.key)}
-                type="button"
-              >
-                {option.label}
-              </button>
-            ))}
+          <div className="directory-filters">
+            <div className="directory-pill-row">
+              {STATUS_OPTIONS.map((option) => (
+                <button
+                  className={`directory-pill ${statusFilter === option.key ? "directory-pill--active" : ""}`}
+                  key={option.key}
+                  onClick={() => setStatusFilter(option.key)}
+                  type="button"
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <div className="directory-pill-row">
+              {SORT_OPTIONS.map((option) => (
+                <button
+                  className={`directory-pill ${sortKey === option.key ? "directory-pill--active" : ""}`}
+                  key={option.key}
+                  onClick={() => setSortKey(option.key)}
+                  type="button"
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="directory-pill-row">
-            {SORT_OPTIONS.map((option) => (
-              <button
-                className={`directory-pill ${sortKey === option.key ? "directory-pill--active" : ""}`}
-                key={option.key}
-                onClick={() => setSortKey(option.key)}
-                type="button"
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
 
-        <div className="directory-main__summary">
-          <span>{filteredRaiders.length} shown</span>
-          <span>{registeredCount} registered</span>
-          <span>{verifiedCount} verified</span>
-          <span>{privacyCount} privacy-ready</span>
-          <span>{veniceCount} venice</span>
-          <span>{veteranCount} veterans</span>
+          <div className="directory-main__summary">
+            <span>{filteredRaiders.length} shown</span>
+            <span>{registeredCount} registered</span>
+            <span>{verifiedCount} verified</span>
+            <span>{privacyCount} privacy-ready</span>
+            <span>{veniceCount} venice</span>
+            <span>{veteranCount} veterans</span>
+          </div>
         </div>
       </div>
 
