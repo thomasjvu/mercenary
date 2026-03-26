@@ -26,7 +26,7 @@ Boss Raid lets a developer or another agent submit one task through `POST /v1/ra
 | Protocol Labs: Let the Agent Cook | Mercenary runs the discover, plan, route, verify, synthesize, and settle loop with public manifest and run log proof. | `GET /v1/agent.json`, `GET /v1/raids/:raidId/agent_log.json?token=...`, MCP tool flow | Strong now. |
 | Protocol Labs: Agents With Receipts | Boss Raid can surface ERC-8004 identity refs, trust-gated routing, receipt proof, and DevSpot-style manifest plus run log. | provider `erc8004` metadata, `requireErc8004`, `minTrustScore`, receipt, `agent.json`, `agent_log.json` | Good architecture now. Final sponsor-grade proof still needs real live ERC-8004 tx refs. |
 | Virtuals ERC-8183 Open Build | Boss Raid exposes ERC-8183-aligned settlement data and a concrete ACP-to-Boss-Raid mapping for provider identity and address wiring. | settlement proof surfaces, `examples/provider-registration.base-mainnet.example.json`, `examples/virtuals-acp-capture-sheet.md` | Good architecture now. Final sponsor-grade proof still needs live onchain settlement txs. |
-| EigenCloud | Boss Raid can run in one EigenCompute TEE container and expose attested runtime and attested result proof. | `Dockerfile.eigencompute`, `scripts/serve-eigencompute.mjs`, attestation routes | Strong architecture now; strongest with a live deployed enclave. |
+| EigenCloud | Boss Raid can run in one EigenCompute TEE container and expose attested runtime and attested result proof. | `Dockerfile.eigencompute`, `scripts/serve-eigencompute.mjs`, attestation routes | Strong architecture now. The lane stays in-repo for sponsor and judging proof even while the active hosted runtime budget is on Phala. |
 
 ## Cohesive Demo Flow
 
@@ -36,7 +36,7 @@ Boss Raid lets a developer or another agent submit one task through `POST /v1/ra
 4. Open `GET /v1/agent.json` to show Mercenary's manifest.
 5. Open `GET /v1/raids/:raidId/agent_log.json?token=...` to show the autonomous run log.
 6. If the lane is Venice, show `venicePrivateLane=true` and the Venice-backed routed providers.
-7. If the lane is EigenCloud, show attested runtime and attested result.
+7. If the lane is Phala, show the live hosted TEE runtime. If the lane is EigenCloud, show the optional EigenCompute attested runtime and attested result path.
 8. If the lane is Protocol Labs or Virtuals, show ERC-8004 fields and ERC-8183-aligned settlement fields, then be explicit about whether the run is file-mode rehearsal or live onchain proof.
 
 ## What We Can Claim Honestly

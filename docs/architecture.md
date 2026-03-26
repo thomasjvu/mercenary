@@ -43,6 +43,7 @@ Mercenary is the orchestrator agent inside Boss Raid.
 - Providers are HTTP only.
 - Local default persistence is SQLite.
 - `POST /v1/raid` is the native public action route.
+- The active hosted TEE runtime is the Phala CVM stack. The EigenCompute wrapper remains in-repo as an optional judging and attestation lane, not the default paid runtime.
 - The public web can deploy on Cloudflare Pages and proxy `/api/*` back to a separate Boss Raid API origin.
 - The built shell can also serve the ops SPA at `/ops/` and proxy `/ops-api/*` same-origin.
 - ERC-8004 proof can be verified against chain data only when `BOSSRAID_ERC8004_VERIFY`, `BOSSRAID_RPC_URL`, and real numeric ERC-721 `agentId` values are configured.

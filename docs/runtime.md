@@ -51,7 +51,7 @@ pnpm serve:gateway
 When running only the web app against a hosted API, point the dev proxy at that Boss Raid API origin:
 
 ```bash
-BOSSRAID_API_ORIGIN=http://35.198.249.153:8080/api pnpm --filter @bossraid/web dev
+BOSSRAID_API_ORIGIN=https://bossraid-web.pages.dev/api pnpm --filter @bossraid/web dev
 ```
 
 If Vite still proxies `/api/*` to `127.0.0.1:8787`, the repo root `.env` still has `VITE_BOSSRAID_API_BASE=http://127.0.0.1:8787`. Override it inline for that shell or update `.env`.
@@ -59,7 +59,7 @@ If Vite still proxies `/api/*` to `127.0.0.1:8787`, the repo root `.env` still h
 If the hosted API protects `POST /v1/demo/raid` with `BOSSRAID_DEMO_TOKEN`, mirror that token into the web proxy:
 
 ```bash
-BOSSRAID_API_ORIGIN=http://35.198.249.153:8080/api \
+BOSSRAID_API_ORIGIN=https://bossraid-web.pages.dev/api \
 BOSSRAID_DEMO_PROXY_TOKEN=demo-proxy-secret \
 pnpm --filter @bossraid/web dev
 ```
@@ -119,6 +119,8 @@ pnpm acp-seller:docker:build
 pnpm acp-seller:env:export
 pnpm render:video
 ```
+
+The active hosted stack is the Phala CVM deployment. `pnpm eigencompute:build` and `pnpm eigencompute:build-job` stay in-repo for the optional EigenCompute judging and attestation lane, but they are not required for the normal production path.
 
 ## Key Environment Variables
 
@@ -246,3 +248,4 @@ pnpm render:video
 - `pnpm serve:gateway` and `pnpm deploy:web:cloudflare` keep browser API traffic same-origin through `/api/*`. The ops shell uses `/ops-api/*`.
 - `pnpm deploy:web:cloudflare` rewrites bare IPv4 `BOSSRAID_API_ORIGIN` values to `nip.io` hostnames because Cloudflare Pages Functions will not proxy direct IP origins.
 - Runtime execution is opt-in.
+- The current public Pages proxy and hosted API path are expected to point at the Phala-backed control plane. Keep the EigenCompute wrapper for sponsor or judging lanes only when you explicitly need that enclave.
