@@ -2051,10 +2051,11 @@ function isLowSignalChatPrompt(prompt: string): boolean {
 
 function isDirectJokePrompt(normalizedPrompt: string): boolean {
   return (
-    /^tell me (a )?joke\b/.test(normalizedPrompt) ||
-    /^can you tell me (a )?joke\b/.test(normalizedPrompt) ||
-    /^give me (a )?joke\b/.test(normalizedPrompt) ||
-    /^share (a )?joke\b/.test(normalizedPrompt) ||
+    /^tell me (?:(?:a|another|one more|a better|a funnier|a new) )?joke\b/.test(normalizedPrompt) ||
+    /^can you tell me (?:(?:a|another|one more|a better|a funnier|a new) )?joke\b/.test(normalizedPrompt) ||
+    /^give me (?:(?:a|another|one more|a better|a funnier|a new) )?joke\b/.test(normalizedPrompt) ||
+    /^share (?:(?:a|another|one more|a better|a funnier|a new) )?joke\b/.test(normalizedPrompt) ||
+    /^(another|one more|a better|a funnier|a new) joke\b/.test(normalizedPrompt) ||
     /^make me laugh\b/.test(normalizedPrompt) ||
     /^say something funny\b/.test(normalizedPrompt)
   );

@@ -115,8 +115,9 @@ export function DemoPage({ providers, providerHealth }: DemoPageProps) {
   const hostedProviderCount = providerHealth.length > 0 ? providerHealth.length : providers.length;
   const availabilityLabel =
     hostedProviderCount > 0 ? `${readyProviderCount}/${hostedProviderCount} specialists ready` : "Checking specialists";
-  const canLaunchLiveRaid = providerHealth.length === 0 || readyProviderCount > 0;
-  const canSendBrief = canLaunchLiveRaid && liveDemoBrief.trim().length > 0 && !isLaunching;
+  const allowsDirectV1Reply = demoMode === "chat_v1" && isLowSignalChatPrompt(liveDemoBrief);
+  const canLaunchLiveRaid = providerHealth.length === 0 || readyProviderCount > 0 || allowsDirectV1Reply;
+  const canSendBrief = liveDemoBrief.trim().length > 0 && !isLaunching && canLaunchLiveRaid;
   const activeRaidStatus = liveRaidRun?.status?.status ?? liveRaidRun?.spawn.status;
   const raidIsTerminal = activeRaidStatus ? isTerminalRaidStatus(activeRaidStatus) : false;
   const liveResultText = selectResultText(liveRaidRun?.result) ?? selectChatCompletionText(liveRaidRun?.chatCompletion);
@@ -1580,10 +1581,11 @@ function isLowSignalChatPrompt(brief: string): boolean {
     /^what'?s up\b/.test(normalizedBrief) ||
     /^who are you\b/.test(normalizedBrief) ||
     /^what can you do\b/.test(normalizedBrief) ||
-    /^tell me (a )?joke\b/.test(normalizedBrief) ||
-    /^can you tell me (a )?joke\b/.test(normalizedBrief) ||
-    /^give me (a )?joke\b/.test(normalizedBrief) ||
-    /^share (a )?joke\b/.test(normalizedBrief) ||
+    /^tell me (?:(?:a|another|one more|a better|a funnier|a new) )?joke\b/.test(normalizedBrief) ||
+    /^can you tell me (?:(?:a|another|one more|a better|a funnier|a new) )?joke\b/.test(normalizedBrief) ||
+    /^give me (?:(?:a|another|one more|a better|a funnier|a new) )?joke\b/.test(normalizedBrief) ||
+    /^share (?:(?:a|another|one more|a better|a funnier|a new) )?joke\b/.test(normalizedBrief) ||
+    /^(another|one more|a better|a funnier|a new) joke\b/.test(normalizedBrief) ||
     /^make me laugh\b/.test(normalizedBrief) ||
     /^say something funny\b/.test(normalizedBrief)
   );

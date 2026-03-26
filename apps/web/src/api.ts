@@ -451,6 +451,7 @@ export type ChatCompletionResponse = {
 export const API_BASE =
   (import.meta.env.VITE_BOSSRAID_WEB_API_BASE as string | undefined) ?? "/api";
 export const RAID_ACCESS_TOKEN_HEADER = "x-bossraid-raid-token";
+const ACTION_REQUEST_TIMEOUT_MS = 20_000;
 
 export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, init);
@@ -473,42 +474,70 @@ export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T>
   return response.json() as Promise<T>;
 }
 
-export async function requestJsonDetailed<T>(path: string, init?: RequestInit): Promise<ApiResponse<T>> {
-  const response = await fetch(`${API_BASE}${path}`, init);
-  const headers = Object.fromEntries(response.headers.entries());
-  const text = await response.text();
+export async function requestJsonDetailed<T>(
+  path: string,
+  init?: RequestInit,
+  timeoutMs = ACTION_REQUEST_TIMEOUT_MS,
+): Promise<ApiResponse<T>> {
+  const controller = new AbortController();
+  const timeoutId =
+    timeoutMs > 0 ? globalThis.setTimeout(() => controller.abort(), timeoutMs) : undefined;
 
-  let data: T | undefined;
-  let error: string | undefined;
+  try {
+    const response = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      signal: init?.signal ?? controller.signal,
+    });
+    const headers = Object.fromEntries(response.headers.entries());
+    const text = await response.text();
 
-  if (text.length > 0) {
-    try {
-      const parsed = JSON.parse(text) as T | { message?: string; error?: string };
-      if (response.ok) {
-        data = parsed as T;
-      } else {
-        error =
-          typeof (parsed as { message?: string }).message === "string"
-            ? (parsed as { message?: string }).message
-            : typeof (parsed as { error?: string }).error === "string"
-              ? (parsed as { error?: string }).error
-              : undefined;
-        data = parsed as T;
-      }
-    } catch {
-      if (!response.ok) {
-        error = text;
+    let data: T | undefined;
+    let error: string | undefined;
+
+    if (text.length > 0) {
+      try {
+        const parsed = JSON.parse(text) as T | { message?: string; error?: string };
+        if (response.ok) {
+          data = parsed as T;
+        } else {
+          error =
+            typeof (parsed as { message?: string }).message === "string"
+              ? (parsed as { message?: string }).message
+              : typeof (parsed as { error?: string }).error === "string"
+                ? (parsed as { error?: string }).error
+                : undefined;
+          data = parsed as T;
+        }
+      } catch {
+        if (!response.ok) {
+          error = text;
+        }
       }
     }
-  }
 
-  return {
-    ok: response.ok,
-    status: response.status,
-    data,
-    error: error ?? (response.ok ? undefined : `Request failed: ${response.status}`),
-    headers,
-  };
+    return {
+      ok: response.ok,
+      status: response.status,
+      data,
+      error: error ?? (response.ok ? undefined : `Request failed: ${response.status}`),
+      headers,
+    };
+  } catch (error) {
+    if (controller.signal.aborted) {
+      return {
+        ok: false,
+        status: 0,
+        error: `Request timed out after ${formatActionTimeoutMs(timeoutMs)}.`,
+        headers: {},
+      };
+    }
+
+    throw error;
+  } finally {
+    if (timeoutId != null) {
+      globalThis.clearTimeout(timeoutId);
+    }
+  }
 }
 
 export async function spawnRaid(payload: unknown): Promise<ApiResponse<RaidSpawnOutput>> {
@@ -539,6 +568,14 @@ export async function requestChatCompletion(payload: unknown): Promise<ApiRespon
     },
     body: JSON.stringify(payload),
   });
+}
+
+function formatActionTimeoutMs(timeoutMs: number): string {
+  if (timeoutMs < 1_000) {
+    return `${timeoutMs}ms`;
+  }
+
+  return `${(timeoutMs / 1_000).toFixed(timeoutMs >= 10_000 ? 0 : 1)}s`;
 }
 
 export function raidTokenHeaders(raidAccessToken: string): Record<string, string> {

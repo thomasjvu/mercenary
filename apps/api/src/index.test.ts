@@ -788,7 +788,7 @@ test("POST /v1/chat/completions answers low-signal chat directly without opening
   }
 });
 
-test("POST /v1/chat/completions keeps joke prompts direct without opening a raid", async () => {
+test("POST /v1/chat/completions keeps follow-up joke prompts direct without opening a raid", async () => {
   let acceptCount = 0;
   const provider: RaidProvider = {
     profile: createProviderProfile("provider-chat-joke", {
@@ -833,7 +833,7 @@ test("POST /v1/chat/completions keeps joke prompts direct without opening a raid
         messages: [
           {
             role: "user",
-            content: "tell me a joke",
+            content: "tell me a better joke",
           },
         ],
         raid_policy: {
