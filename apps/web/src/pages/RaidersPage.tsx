@@ -1,5 +1,4 @@
 import { useDeferredValue, useState } from "react";
-import { DocsButton } from "@bossraid/ui";
 import heroImage from "../../../../assets/hero.webp";
 import type { Provider, ProviderHealth } from "../api";
 
@@ -46,7 +45,7 @@ const STATUS_OPTIONS: Array<{ key: StatusFilter; label: string }> = [
 
 const DEFAULT_AVATAR_POSITIONS = ["14% 20%", "50% 22%", "84% 24%", "24% 76%", "72% 74%"] as const;
 
-export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPageProps) {
+export function RaidersPage({ providers, providerHealth, onNavigate: _onNavigate }: RaidersPageProps) {
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("reputation");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -81,56 +80,18 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
   const veniceCount = raiders.filter((raider) => isVeniceProvider(raider.provider)).length;
   const veteranCount = raiders.filter((raider) => raider.successfulRaids > 0).length;
   const averagePrice =
-    raiders.length > 0 ? formatUsd(raiders.reduce((total, raider) => total + raider.provider.pricePerTaskUsd, 0) / raiders.length) : "n/a";
+    raiders.length > 0 ? formatUsdc(raiders.reduce((total, raider) => total + raider.provider.pricePerTaskUsd, 0) / raiders.length) : "n/a";
 
   return (
     <section className="directory-shell directory-shell--viewport directory-shell--split" id="directory">
       <div className="directory-shell__rail">
-        <div className="directory-shell__hero">
-          <div className="directory-shell__copy">
-            <p className="eyebrow">raiders</p>
-            <h1>
-              <span className="directory-hero__headline-line">Raiders.</span>
-              <span className="directory-hero__headline-line">Route by proof.</span>
-            </h1>
-            <p className="lede directory-hero__lede">Live roster for trust, privacy, readiness, and price.</p>
-            <div className="directory-hero__actions">
-              <a
-                className="button"
-                href="/"
-                onClick={(event) => {
-                  event.preventDefault();
-                  onNavigate("/");
-                }}
-              >
-                landing
-              </a>
-              <DocsButton className="button button--primary" label="docs" />
-            </div>
-          </div>
-
-          <aside className="page-stage-card page-stage-card--directory">
-            <img
-              alt=""
-              aria-hidden="true"
-              className="page-stage-card__image"
-              loading="lazy"
-              src={heroImage}
-              style={{ objectPosition: "50% 28%" }}
-            />
-            <div className="page-stage-card__scrim" />
-            <div className="page-stage-card__copy">
-              <p className="eyebrow">live roster</p>
-              <strong>{`${readyCount}/${raiders.length || 0} ready now`}</strong>
-              <p>{`${verifiedCount} verified · ${privacyCount} private · ${averagePrice} avg`}</p>
-            </div>
-            <div className="page-stage-card__summary">
-              <SummaryPill label="total" value={String(raiders.length)} />
-              <SummaryPill label="ready" value={String(readyCount)} />
-              <SummaryPill label="8004 verified" value={String(verifiedCount)} />
-              <SummaryPill label="trusted" value={String(trustCount)} />
-            </div>
-          </aside>
+        <div className="directory-shell__copy">
+          <p className="eyebrow">raiders</p>
+          <h1>
+            <span className="directory-hero__headline-line">Raiders.</span>
+            <span className="directory-hero__headline-line">Route by proof.</span>
+          </h1>
+          <p className="lede directory-hero__lede">Trust, privacy, readiness, cost.</p>
         </div>
 
         <div className="directory-controls">
@@ -188,6 +149,29 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
             <span>{veteranCount} veterans</span>
           </div>
         </div>
+
+        <aside className="page-stage-card page-stage-card--directory">
+          <img
+            alt=""
+            aria-hidden="true"
+            className="page-stage-card__image"
+            loading="lazy"
+            src={heroImage}
+            style={{ objectPosition: "50% 28%" }}
+          />
+          <div className="page-stage-card__scrim" />
+          <div className="page-stage-card__copy">
+            <p className="eyebrow">live roster</p>
+            <strong>{`${readyCount}/${raiders.length || 0} ready now`}</strong>
+            <p>{`${verifiedCount} verified · ${privacyCount} private · ${averagePrice} avg`}</p>
+          </div>
+          <div className="page-stage-card__summary">
+            <SummaryPill label="total" value={String(raiders.length)} />
+            <SummaryPill label="ready" value={String(readyCount)} />
+            <SummaryPill label="8004" value={String(verifiedCount)} />
+            <SummaryPill label="trust" value={String(trustCount)} />
+          </div>
+        </aside>
       </div>
 
       <div className="directory-list directory-list--scroll">
@@ -249,6 +233,7 @@ function RaiderRow({ raider, rank }: { raider: RaiderRecord; rank: number }) {
 
       <div className="raider-row__body">
         <div className="raider-row__meta-row">
+          <strong className="raider-price">{formatUsdc(raider.provider.pricePerTaskUsd)}</strong>
           <div className="signal-strip">
             <SignalChip tone={erc8004Tone}>{buildErc8004StatusLabel(verificationStatus, registered)}</SignalChip>
             {raider.trustScore > 0 ? <SignalChip tone="proof">{`trust ${raider.trustScore}`}</SignalChip> : null}
@@ -258,10 +243,6 @@ function RaiderRow({ raider, rank }: { raider: RaiderRecord; rank: number }) {
                 {formatPrivacySignalLabel(signal)}
               </SignalChip>
             ))}
-          </div>
-          <div className="raider-price">
-            <span>price</span>
-            <strong>{formatUsd(raider.provider.pricePerTaskUsd)}</strong>
           </div>
         </div>
 
@@ -470,6 +451,10 @@ function isVeniceProvider(provider: Provider): boolean {
 
 function formatUsd(value: number): string {
   return `$${value.toFixed(2)}`;
+}
+
+function formatUsdc(value: number): string {
+  return `${value.toFixed(2)} USDC`;
 }
 
 function formatAge(value: string | undefined): string {

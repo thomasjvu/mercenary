@@ -1167,21 +1167,10 @@ h2 {
   align-items: stretch;
 }
 
-.directory-shell--split .directory-shell__hero {
-  grid-template-columns: 1fr;
-}
-
 .directory-shell__header {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: clamp(18px, 1.8vw, 24px);
-}
-
-.directory-shell__actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
 .directory-summary-bar {
@@ -1275,7 +1264,7 @@ h2 {
 }
 
 .page-stage-card__copy p:last-child {
-  max-width: 36ch;
+  max-width: 40ch;
   color: rgba(17, 17, 17, 0.74);
   font-family:
     "IBM Plex Mono",
@@ -1290,12 +1279,12 @@ h2 {
 
 .page-stage-card__summary {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
 .page-stage-card__summary .summary-pill {
-  padding: 12px 14px;
+  padding: 10px 12px;
   background: rgba(255, 255, 255, 0.84);
   backdrop-filter: blur(8px);
   box-shadow: none;
@@ -1995,9 +1984,10 @@ h2 {
 
 .raider-row__meta-row {
   display: flex;
-  align-items: start;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: flex-start;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .raider-row__description {
@@ -2037,30 +2027,16 @@ h2 {
 }
 
 .raider-price {
-  display: grid;
-  gap: 4px;
-  min-width: 98px;
-  padding: 10px 12px;
-  border: 1px solid rgba(255, 248, 103, 0.5);
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(255, 248, 103, 0.54), rgba(255, 248, 103, 0.2)),
-    rgba(255, 255, 255, 0.88);
-  justify-items: end;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46);
-}
-
-.raider-price span {
-  color: rgba(15, 28, 46, 0.7);
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.raider-price strong {
   color: var(--rx-blue);
-  font-size: clamp(1.05rem, 1.55vw, 1.28rem);
+  font-family:
+    "Sora",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  font-size: clamp(1.18rem, 1.8vw, 1.52rem);
+  letter-spacing: -0.04em;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .raider-row__facts {
@@ -2116,13 +2092,7 @@ h2 {
 }
 
 .directory-hero__lede {
-  max-width: 28ch;
-}
-
-.directory-hero__actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  max-width: 18ch;
 }
 
 .directory-kpi-grid {
@@ -2255,6 +2225,7 @@ h2 {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  padding: 0 18px 18px;
 }
 
 .directory-main__summary span {
@@ -2272,24 +2243,25 @@ h2 {
   grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1fr) auto;
   align-items: end;
   gap: clamp(12px, 1.4vw, 18px);
-  padding: clamp(14px, 1.3vh, 16px) 18px;
+  padding: 0;
   border: 1px solid var(--line);
   position: relative;
   overflow: hidden;
-  border-radius: var(--radius);
-  background: var(--panel-surface);
-  box-shadow: var(--panel-shadow);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: none;
 }
 
 .directory-shell--split .directory-controls {
   grid-template-columns: 1fr;
   align-items: stretch;
-  gap: 14px;
+  gap: 12px;
 }
 
 .directory-search {
   display: grid;
   gap: 8px;
+  padding: 18px 18px 0;
 }
 
 .directory-search__label,
@@ -2301,7 +2273,7 @@ h2 {
 
 .directory-search__input {
   width: 100%;
-  min-height: 46px;
+  min-height: 48px;
   border: 1px solid var(--line-strong);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.96);
@@ -2325,6 +2297,7 @@ h2 {
 .directory-filters {
   display: grid;
   gap: 12px;
+  padding: 0 18px;
 }
 
 .directory-filter-group {
@@ -2379,8 +2352,27 @@ h2 {
   box-shadow: 0 6px 16px rgba(255, 248, 103, 0.18);
 }
 
+.page-stage-card--directory {
+  min-height: 186px;
+  gap: 12px;
+  padding: 14px;
+}
+
+.page-stage-card--directory .page-stage-card__copy {
+  gap: 6px;
+}
+
+.page-stage-card--directory .page-stage-card__copy strong {
+  font-size: clamp(1.34rem, 1.8vw, 1.7rem);
+}
+
+.page-stage-card--directory .page-stage-card__summary {
+  gap: 8px;
+}
+
 .raider-row .signal-strip {
   gap: 6px;
+  flex: 1 1 240px;
 }
 
 .raider-row .signal-chip {
@@ -4078,14 +4070,7 @@ h2 {
 }
 
 .app-shell--theme-dark .raider-price {
-  background:
-    linear-gradient(180deg, rgba(255, 248, 103, 0.24), rgba(255, 248, 103, 0.08)),
-    rgba(18, 20, 27, 0.64);
-  border-color: rgba(255, 248, 103, 0.3);
-}
-
-.app-shell--theme-dark .raider-price span {
-  color: rgba(241, 244, 251, 0.72);
+  color: var(--rx-yellow);
 }
 
 .app-shell--theme-dark .status-chip--ready {
