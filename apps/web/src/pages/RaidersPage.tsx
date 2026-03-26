@@ -90,13 +90,10 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
           <div className="directory-shell__copy">
             <p className="eyebrow">raiders</p>
             <h1>
-              <span className="directory-hero__headline-line">Raider directory.</span>
-              <span className="directory-hero__headline-line">Trust, privacy, and route readiness.</span>
+              <span className="directory-hero__headline-line">Raiders.</span>
+              <span className="directory-hero__headline-line">Route by proof.</span>
             </h1>
-            <p className="lede directory-hero__lede">
-              Compare registered providers, inspect ERC-8004 and privacy signals, and sort by the proof that matters
-              before you route a raid.
-            </p>
+            <p className="lede directory-hero__lede">Live roster for trust, privacy, readiness, and price.</p>
             <div className="directory-hero__actions">
               <a
                 className="button"
@@ -125,7 +122,7 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
             <div className="page-stage-card__copy">
               <p className="eyebrow">live roster</p>
               <strong>{`${readyCount}/${raiders.length || 0} ready now`}</strong>
-              <p>{`${verifiedCount} verified · ${privacyCount} privacy-ready · ${averagePrice} avg price`}</p>
+              <p>{`${verifiedCount} verified · ${privacyCount} private · ${averagePrice} avg`}</p>
             </div>
             <div className="page-stage-card__summary">
               <SummaryPill label="total" value={String(raiders.length)} />
@@ -150,29 +147,35 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
           </label>
 
           <div className="directory-filters">
-            <div className="directory-pill-row">
-              {STATUS_OPTIONS.map((option) => (
-                <button
-                  className={`directory-pill ${statusFilter === option.key ? "directory-pill--active" : ""}`}
-                  key={option.key}
-                  onClick={() => setStatusFilter(option.key)}
-                  type="button"
-                >
-                  {option.label}
-                </button>
-              ))}
+            <div className="directory-filter-group">
+              <span className="directory-filter-group__label">status</span>
+              <div className="directory-pill-row">
+                {STATUS_OPTIONS.map((option) => (
+                  <button
+                    className={`directory-pill ${statusFilter === option.key ? "directory-pill--active" : ""}`}
+                    key={option.key}
+                    onClick={() => setStatusFilter(option.key)}
+                    type="button"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="directory-pill-row">
-              {SORT_OPTIONS.map((option) => (
-                <button
-                  className={`directory-pill ${sortKey === option.key ? "directory-pill--active" : ""}`}
-                  key={option.key}
-                  onClick={() => setSortKey(option.key)}
-                  type="button"
-                >
-                  {option.label}
-                </button>
-              ))}
+            <div className="directory-filter-group">
+              <span className="directory-filter-group__label">sort</span>
+              <div className="directory-pill-row">
+                {SORT_OPTIONS.map((option) => (
+                  <button
+                    className={`directory-pill ${sortKey === option.key ? "directory-pill--active" : ""}`}
+                    key={option.key}
+                    onClick={() => setSortKey(option.key)}
+                    type="button"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -217,6 +220,7 @@ function RaiderRow({ raider, rank }: { raider: RaiderRecord; rank: number }) {
   const verificationStatus = readErc8004VerificationStatus(raider.provider);
   const venice = isVeniceProvider(raider.provider);
   const avatarPosition = selectAvatarPosition(raider.provider.providerId, rank);
+  const displaySignals = pickDisplayPrivacySignals(raider.privacySignals);
   const erc8004Tone =
     verificationStatus === "verified" || verificationStatus === "partial" || (verificationStatus == null && registered)
       ? "proof"
@@ -244,17 +248,21 @@ function RaiderRow({ raider, rank }: { raider: RaiderRecord; rank: number }) {
       </div>
 
       <div className="raider-row__body">
-        <div className="signal-strip">
-          <SignalChip tone={erc8004Tone}>{buildErc8004StatusLabel(verificationStatus, registered)}</SignalChip>
-          <SignalChip tone={raider.trustScore > 0 ? "proof" : "muted"}>
-            {raider.trustScore > 0 ? `trust ${raider.trustScore}` : "no trust score"}
-          </SignalChip>
-          {venice ? <SignalChip tone="private">venice</SignalChip> : null}
-          {raider.privacySignals.map((signal) => (
-            <SignalChip key={`${raider.provider.providerId}-${signal}`} tone="private">
-              {signal}
-            </SignalChip>
-          ))}
+        <div className="raider-row__meta-row">
+          <div className="signal-strip">
+            <SignalChip tone={erc8004Tone}>{buildErc8004StatusLabel(verificationStatus, registered)}</SignalChip>
+            {raider.trustScore > 0 ? <SignalChip tone="proof">{`trust ${raider.trustScore}`}</SignalChip> : null}
+            {venice ? <SignalChip tone="private">venice</SignalChip> : null}
+            {displaySignals.map((signal) => (
+              <SignalChip key={`${raider.provider.providerId}-${signal}`} tone="private">
+                {formatPrivacySignalLabel(signal)}
+              </SignalChip>
+            ))}
+          </div>
+          <div className="raider-price">
+            <span>price</span>
+            <strong>{formatUsd(raider.provider.pricePerTaskUsd)}</strong>
+          </div>
         </div>
 
         {raider.provider.description ? <p className="raider-row__description">{raider.provider.description}</p> : null}
@@ -264,12 +272,11 @@ function RaiderRow({ raider, rank }: { raider: RaiderRecord; rank: number }) {
           <ListMetric label="tee" value={raider.privacySignals.includes("tee") ? "yes" : "no"} />
           <ListMetric label="wins" value={String(raider.successfulRaids)} />
           <ListMetric label="trust" value={String(raider.trustScore)} />
-          <ListMetric label="price" value={formatUsd(raider.provider.pricePerTaskUsd)} />
         </div>
 
         {raider.specializations.length > 0 ? (
           <div className="raider-chip-group">
-            {raider.specializations.slice(0, 4).map((specialization) => (
+            {raider.specializations.slice(0, 3).map((specialization) => (
               <span className="raider-chip" key={specialization}>
                 {specialization}
               </span>
@@ -308,6 +315,37 @@ function FactBadge({ label, value }: { label: string; value: string }) {
       <strong>{value}</strong>
     </div>
   );
+}
+
+function formatPrivacySignalLabel(signal: string) {
+  switch (signal) {
+    case "tee":
+      return "TEE";
+    case "e2ee":
+      return "E2EE";
+    case "no-retention":
+      return "no retention";
+    case "signed":
+      return "signed";
+    default:
+      return signal;
+  }
+}
+
+function pickDisplayPrivacySignals(signals: string[]) {
+  const priority = ["tee", "signed", "e2ee", "no-retention"];
+  const selected: string[] = [];
+
+  for (const signal of priority) {
+    if (signals.includes(signal)) {
+      selected.push(signal);
+    }
+    if (selected.length === 2) {
+      break;
+    }
+  }
+
+  return selected;
 }
 
 function buildRaiderRecord(provider: Provider, health: ProviderHealth | undefined): RaiderRecord {

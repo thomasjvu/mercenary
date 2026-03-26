@@ -1993,6 +1993,13 @@ h2 {
   padding: 18px;
 }
 
+.raider-row__meta-row {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .raider-row__description {
   font-size: 0.92rem;
   line-height: 1.5;
@@ -2004,17 +2011,17 @@ h2 {
 
 .raider-row__stats {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
 .list-metric {
   display: grid;
   gap: 4px;
-  padding: 10px 12px;
+  padding: 12px;
   border: 1px solid var(--line-soft);
-  border-radius: 16px;
-  background: rgba(15, 28, 46, 0.03);
+  border-radius: 18px;
+  background: rgba(15, 28, 46, 0.02);
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2026,7 +2033,34 @@ h2 {
 
 .list-metric strong {
   color: var(--text);
-  font-size: 0.96rem;
+  font-size: 1rem;
+}
+
+.raider-price {
+  display: grid;
+  gap: 4px;
+  min-width: 98px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 248, 103, 0.5);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 248, 103, 0.54), rgba(255, 248, 103, 0.2)),
+    rgba(255, 255, 255, 0.88);
+  justify-items: end;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.46);
+}
+
+.raider-price span {
+  color: rgba(15, 28, 46, 0.7);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.raider-price strong {
+  color: var(--rx-blue);
+  font-size: clamp(1.05rem, 1.55vw, 1.28rem);
+  line-height: 1;
 }
 
 .raider-row__facts {
@@ -2082,7 +2116,7 @@ h2 {
 }
 
 .directory-hero__lede {
-  max-width: 40ch;
+  max-width: 28ch;
 }
 
 .directory-hero__actions {
@@ -2219,8 +2253,18 @@ h2 {
 
 .directory-main__summary {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
+}
+
+.directory-main__summary span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  background: rgba(15, 28, 46, 0.03);
 }
 
 .directory-controls {
@@ -2240,6 +2284,7 @@ h2 {
 .directory-shell--split .directory-controls {
   grid-template-columns: 1fr;
   align-items: stretch;
+  gap: 14px;
 }
 
 .directory-search {
@@ -2247,11 +2292,18 @@ h2 {
   gap: 8px;
 }
 
+.directory-search__label,
+.directory-filter-group__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .directory-search__input {
   width: 100%;
   min-height: 46px;
   border: 1px solid var(--line-strong);
-  border-radius: 14px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.96);
   color: var(--rx-blue);
   padding: 0 14px;
@@ -2272,21 +2324,31 @@ h2 {
 
 .directory-filters {
   display: grid;
-  gap: 10px;
+  gap: 12px;
+}
+
+.directory-filter-group {
+  display: grid;
+  gap: 8px;
 }
 
 .directory-pill-row {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  padding: 6px;
+  border: 1px solid var(--line-soft);
+  border-radius: 18px;
+  background: rgba(15, 28, 46, 0.03);
 }
 
 .directory-pill {
-  min-height: 34px;
-  padding: 0 12px;
-  border: 1px solid var(--line);
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid transparent;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.84);
+  background: transparent;
   color: var(--muted);
   cursor: pointer;
   font-family:
@@ -2297,12 +2359,38 @@ h2 {
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: lowercase;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.directory-pill:hover {
+  border-color: rgba(44, 82, 179, 0.14);
+  background: rgba(255, 255, 255, 0.64);
+  color: var(--rx-blue);
 }
 
 .directory-pill--active {
   border-color: rgba(255, 248, 103, 0.46);
   background: var(--rx-yellow);
   color: var(--rx-blue);
+  box-shadow: 0 6px 16px rgba(255, 248, 103, 0.18);
+}
+
+.raider-row .signal-strip {
+  gap: 6px;
+}
+
+.raider-row .signal-chip {
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid var(--line-soft);
+  background: rgba(15, 28, 46, 0.03);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .raider-grid {
@@ -3963,6 +4051,41 @@ h2 {
 .app-shell--theme-dark .raider-chip {
   background: rgba(18, 20, 27, 0.44);
   border-color: rgba(241, 244, 251, 0.14);
+}
+
+.app-shell--theme-dark .directory-pill-row,
+.app-shell--theme-dark .directory-main__summary span,
+.app-shell--theme-dark .raider-row .signal-chip {
+  background: rgba(18, 20, 27, 0.4);
+  border-color: rgba(241, 244, 251, 0.12);
+}
+
+.app-shell--theme-dark .directory-pill {
+  color: var(--muted);
+}
+
+.app-shell--theme-dark .directory-pill:hover {
+  background: rgba(241, 244, 251, 0.06);
+  border-color: rgba(241, 244, 251, 0.12);
+  color: var(--text);
+}
+
+.app-shell--theme-dark .directory-pill--active {
+  border-color: rgba(255, 248, 103, 0.38);
+  background: rgba(255, 248, 103, 0.2);
+  color: var(--text);
+  box-shadow: none;
+}
+
+.app-shell--theme-dark .raider-price {
+  background:
+    linear-gradient(180deg, rgba(255, 248, 103, 0.24), rgba(255, 248, 103, 0.08)),
+    rgba(18, 20, 27, 0.64);
+  border-color: rgba(255, 248, 103, 0.3);
+}
+
+.app-shell--theme-dark .raider-price span {
+  color: rgba(241, 244, 251, 0.72);
 }
 
 .app-shell--theme-dark .status-chip--ready {
