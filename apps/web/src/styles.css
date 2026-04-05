@@ -2695,7 +2695,7 @@ h2 {
 
 .terminal-window--front {
   z-index: 3;
-  right: clamp(12px, 1.2vw, 18px);
+  right: calc(clamp(12px, 1.2vw, 18px) - 2.5px);
   transform: translate3d(0, 0, 0);
   border-color: rgba(251, 47, 56, 0.24);
 }
@@ -3702,7 +3702,7 @@ h2 {
   }
 
   .terminal-window--front {
-    right: 12px;
+    right: 11.5px;
   }
 
   .hero__headline-line {
@@ -3980,10 +3980,16 @@ h2 {
 .app-shell--theme-dark .demo-composer__textarea,
 .app-shell--theme-dark .receipt-field__input,
 .app-shell--theme-dark .directory-search__input,
-.app-shell--theme-dark .directory-pill,
+.app-shell--theme-dark .directory-pill {
+  background: rgba(18, 20, 27, 0.72);
+  border-color: rgba(241, 244, 251, 0.18);
+  color: var(--text);
+  box-shadow: none;
+}
+
 .app-shell--theme-dark .footer__credit,
 .app-shell--theme-dark .footer__links {
-  background: rgba(18, 20, 27, 0.72);
+  background: transparent;
   border-color: rgba(241, 244, 251, 0.18);
   color: var(--text);
   box-shadow: none;
