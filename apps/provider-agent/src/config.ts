@@ -117,14 +117,45 @@ export function buildProviderConfig(env: NodeJS.ProcessEnv = process.env) {
   };
 }
 
-export const providerConfig = buildProviderConfig();
+export type ProviderConfig = ReturnType<typeof buildProviderConfig>;
+
+let cachedProviderConfig: ProviderConfig | undefined;
+
+export function getProviderConfig(env: NodeJS.ProcessEnv = process.env): ProviderConfig {
+  if (env !== process.env) {
+    return buildProviderConfig(env);
+  }
+
+  cachedProviderConfig ??= buildProviderConfig(env);
+  return cachedProviderConfig;
+}
+
+export function resetProviderConfigForTests(): void {
+  cachedProviderConfig = undefined;
+}
+
+export const providerConfig = new Proxy({} as ProviderConfig, {
+  get(_target, property, receiver) {
+    return Reflect.get(getProviderConfig(), property, receiver);
+  },
+  getOwnPropertyDescriptor(_target, property) {
+    return Object.getOwnPropertyDescriptor(getProviderConfig(), property);
+  },
+  has(_target, property) {
+    return property in getProviderConfig();
+  },
+  ownKeys() {
+    return Reflect.ownKeys(getProviderConfig());
+  },
+});
 
 export function getReadiness(): { ready: boolean; missing: string[] } {
+  const config = getProviderConfig();
   const missing: string[] = [];
-  if (!providerConfig.modelApiKey) {
+  if (!config.modelApiKey) {
     missing.push("BOSSRAID_MODEL_API_KEY");
   }
-  if (!providerConfig.modelName) {
+  if (!config.modelName) {
     missing.push("BOSSRAID_MODEL");
   }
   return {

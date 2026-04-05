@@ -84,6 +84,7 @@ pnpm dev:mcp
 Verification and rehearsal:
 
 ```bash
+pnpm test:unit
 pnpm --filter @bossraid/mcp-server test
 pnpm test:game-raid:e2e
 pnpm test:private-game-raid:e2e
@@ -235,6 +236,8 @@ The active hosted stack is the Phala CVM deployment. `pnpm eigencompute:build` a
 ## Current Defaults
 
 - Local persistence defaults to SQLite.
+- API control state, launch reservations, and raid state use the configured storage backend instead of process-local memory.
+- New raid launches fail closed when persistence is unavailable, and nonterminal raids resume from persisted state after restart.
 - The shipped local provider trio is `gamma`, `dottie`, and `riko`.
 - The public write path is `POST /v1/raid`.
 - `POST /v1/raids` remains as an alias. The OpenAI-compatible path is a compatibility layer over the same raid engine.

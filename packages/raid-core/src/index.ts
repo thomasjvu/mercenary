@@ -493,6 +493,9 @@ export function providerMatchesTask(
   provider: ProviderProfile,
   task: RaidTaskSpec,
   maxHeartbeatAgeMs: number = DEFAULT_TIMEOUTS.providerFreshMs,
+  options: {
+    skipFreshnessCheck?: boolean;
+  } = {},
 ): boolean {
   const isPatchTask = (task.output?.primaryType ?? "patch") === "patch";
   const requestedPrimaryOutputType = task.output?.primaryType;
@@ -527,7 +530,7 @@ export function providerMatchesTask(
   const strictPrivacyMatch =
     task.constraints.privacyMode !== "strict" ||
     (task.constraints.requirePrivacyFeatures ?? []).every((feature) => providerHasPrivacyFeature(provider, feature));
-  const freshMatch = providerIsFresh(provider, maxHeartbeatAgeMs);
+  const freshMatch = options.skipFreshnessCheck || providerIsFresh(provider, maxHeartbeatAgeMs);
 
   return (
     languageMatch &&
@@ -549,9 +552,12 @@ export function selectProviders(
   task: RaidTaskSpec,
   providers: ProviderProfile[],
   maxHeartbeatAgeMs: number = DEFAULT_TIMEOUTS.providerFreshMs,
+  options: {
+    skipFreshnessCheck?: boolean;
+  } = {},
 ): SelectedProviders {
   const eligible = providers
-    .filter((provider) => providerMatchesTask(provider, task, maxHeartbeatAgeMs))
+    .filter((provider) => providerMatchesTask(provider, task, maxHeartbeatAgeMs, options))
     .map((provider) => ({
       provider,
       selectionScore: computeSelectionScore(provider, task),

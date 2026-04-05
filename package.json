@@ -30,6 +30,7 @@
     "game-raid:build-payload": "node scripts/build-game-raid-payload.mjs",
     "render:video": "pnpm --filter @bossraid/video render",
     "serve:gateway": "node scripts/serve-gateway.mjs",
+    "test:unit": "turbo run test",
     "test:evaluator:e2e": "node scripts/test-evaluator-e2e.mjs",
     "test:game-raid:e2e": "node scripts/test-game-raid-e2e.mjs",
     "test:private-game-raid:e2e": "node scripts/test-private-game-raid-e2e.mjs",

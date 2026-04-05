@@ -102,6 +102,7 @@ pnpm serve:gateway
 Useful commands:
 
 ```bash
+pnpm test:unit
 pnpm test:game-raid:e2e
 pnpm test:private-game-raid:e2e
 pnpm test:strict-private:e2e

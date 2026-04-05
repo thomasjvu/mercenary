@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { createHash, createHmac } from "node:crypto";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import { recoverMessageAddress } from "viem";
 import { mnemonicToAccount } from "viem/accounts";
@@ -2283,6 +2286,49 @@ test("ops session login is rate limited", async () => {
     assert.equal(secondAttempt.headers["retry-after"], "60");
   } finally {
     await app.close();
+  }
+});
+
+test("ops session survives API restarts when persistence is file-backed", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "bossraid-api-control-state-"));
+  const env = {
+    BOSSRAID_ADMIN_TOKEN: "admin-secret",
+    BOSSRAID_STORAGE_BACKEND: "sqlite",
+    BOSSRAID_SQLITE_FILE: join(dir, "state.sqlite"),
+  };
+
+  const appA = buildApiServer(new BossRaidOrchestrator(), env);
+  try {
+    const login = await appA.inject({
+      method: "POST",
+      url: "/v1/ops/session",
+      payload: {
+        token: "admin-secret",
+      },
+    });
+
+    assert.equal(login.statusCode, 200);
+    const cookie = String(login.headers["set-cookie"]).split(";")[0];
+
+    await appA.close();
+
+    const appB = buildApiServer(new BossRaidOrchestrator(), env);
+    try {
+      const sessionStatus = await appB.inject({
+        method: "GET",
+        url: "/v1/ops/session",
+        headers: {
+          cookie,
+        },
+      });
+
+      assert.equal(sessionStatus.statusCode, 200);
+      assert.equal(sessionStatus.json().authenticated, true);
+    } finally {
+      await appB.close();
+    }
+  } finally {
+    await rm(dir, { recursive: true, force: true });
   }
 });
 

@@ -26,16 +26,6 @@ export const TERMINAL_RAID_STATUSES = new Set([
 
 export function restorePersistedRaid(raid: RaidRecord): RaidRecord {
   const restored = structuredClone(raid) as RaidRecord;
-  if (!["final", "cancelled", "expired"].includes(restored.status)) {
-    restored.status = "expired";
-    restored.updatedAt = new Date().toISOString();
-    for (const assignment of Object.values(restored.assignments)) {
-      if (!TERMINAL_ASSIGNMENT_STATUSES.has(assignment.status)) {
-        assignment.status = "failed";
-        assignment.message = "restored from persistence without active runtime";
-      }
-    }
-  }
   restored.synthesizedOutput ??= buildSynthesizedOutput(restored);
   return restored;
 }

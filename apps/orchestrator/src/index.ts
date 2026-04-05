@@ -27,10 +27,12 @@ import {
   refreshProviderScores,
 } from "@bossraid/provider-registry";
 import type {
+  AssignmentRecord,
   BossRaidReplayOutput,
   BossRaidResultOutput,
   BossRaidRoutingProof,
   ProviderFailure,
+  ProviderHealthStatus,
   BossRaidSpawnInput,
   BossRaidSpawnOutput,
   BossRaidStatusOutput,
@@ -97,6 +99,8 @@ import {
 import { ProviderTimerRegistry } from "./timer-registry.js";
 import { findWorkspaceRoot, resolveWorkspacePath } from "./workspace.js";
 
+const PROVIDER_HEALTH_CACHE_TTL_MS = 5_000;
+
 export class NoEligibleProvidersError extends Error {
   constructor() {
     super("No eligible providers are currently available for this raid request.");
@@ -115,6 +119,13 @@ export class InvalidRaidLaunchReservationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "InvalidRaidLaunchReservationError";
+  }
+}
+
+export class PersistenceUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PersistenceUnavailableError";
   }
 }
 
@@ -207,12 +218,14 @@ export class BossRaidOrchestrator {
   private readonly timers = new ProviderTimerRegistry();
   private readonly raidDeadlineTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly expiringRaids = new Set<string>();
+  private readonly providerHealthCache = new Map<string, { checkedAt: number; health: ProviderHealthStatus }>();
   private readonly options: RuntimeOptions;
   private readonly persistence: BossRaidPersistence;
   private readonly settlementExecutor: {
     execute(raid: RaidRecord): Promise<import("@bossraid/shared-types").SettlementExecutionRecord | undefined>;
   };
   private persistenceQueue: Promise<void> = Promise.resolve();
+  private lastPersistenceError?: Error;
 
   constructor(
     seedProviders: RaidProvider[] = [],
@@ -236,9 +249,11 @@ export class BossRaidOrchestrator {
     refreshProviderScores(provider.profile);
     this.providers.set(provider.profile.providerId, provider.profile);
     this.providerRuntimes.set(provider.profile.providerId, provider);
+    this.providerHealthCache.delete(provider.profile.providerId);
   }
 
-  upsertRegisteredProvider(input: ProviderRegistrationInput): ProviderProfile {
+  async upsertRegisteredProvider(input: ProviderRegistrationInput): Promise<ProviderProfile> {
+    this.assertPersistenceWritable();
     const existing =
       this.providers.get(input.agentId) ??
       [...this.providers.values()].find(
@@ -252,11 +267,12 @@ export class BossRaidOrchestrator {
 
     this.registerProvider(createProviderFromProfile(profile));
     this.dropProviderAliases(profile, { preserveSeededProvider: false });
-    void this.queuePersist();
+    await this.queuePersist();
     return profile;
   }
 
-  recordAgentHeartbeat(input: AgentHeartbeatInput): ProviderProfile | undefined {
+  async recordAgentHeartbeat(input: AgentHeartbeatInput): Promise<ProviderProfile | undefined> {
+    this.assertPersistenceWritable();
     this.refreshProviderLiveness();
     const provider =
       this.providers.get(input.agentId) ??
@@ -269,13 +285,30 @@ export class BossRaidOrchestrator {
     provider.status = input.status ?? "available";
     provider.lastSeenAt = input.timestamp ?? new Date().toISOString();
     refreshProviderScores(provider);
-    void this.queuePersist();
+    await this.queuePersist();
     return provider;
   }
 
   async discoverProviders(query: ProviderDiscoveryQuery = {}): Promise<ProviderProfile[]> {
     await this.refreshProviderAvailability();
     return this.filterDiscoverableProviders(query);
+  }
+
+  private async discoverProvidersForRaid(query: ProviderDiscoveryQuery = {}): Promise<ProviderProfile[]> {
+    const readyProviderIds = await this.refreshProviderAvailability();
+    return this.listProviders()
+      .filter((provider) => readyProviderIds.has(provider.providerId))
+      .filter((provider) => this.providerHasCapacity(provider.providerId))
+      .filter((provider) =>
+        providerMatchesDiscoveryQuery(
+          provider,
+          {
+            ...query,
+            onlineOnly: false,
+          },
+          this.options.providerFreshMs,
+        ),
+      );
   }
 
   private filterDiscoverableProviders(query: ProviderDiscoveryQuery = {}): ProviderProfile[] {
@@ -302,6 +335,7 @@ export class BossRaidOrchestrator {
   }
 
   async preflightRaid(input: BossRaidSpawnInput): Promise<void> {
+    this.assertPersistenceWritable();
     await this.prepareRaid(input);
   }
 
@@ -309,6 +343,7 @@ export class BossRaidOrchestrator {
     input: BossRaidSpawnInput,
     options: LaunchReservationOptions,
   ): Promise<RaidLaunchReservationRecord> {
+    this.assertPersistenceWritable();
     this.pruneLaunchReservations();
     const existing = this.findReusableLaunchReservation(options.route, options.requestKey);
     if (existing) {
@@ -346,7 +381,7 @@ export class BossRaidOrchestrator {
     }
     if (!reservation.spawnOutput && this.launchReservationExpired(reservation)) {
       this.launchReservations.delete(reservation.id);
-      void this.queuePersist();
+      this.queuePersistBestEffort();
       return undefined;
     }
     return reservation;
@@ -356,6 +391,7 @@ export class BossRaidOrchestrator {
     reservationId: string,
     requestKey: string,
   ): Promise<BossRaidSpawnOutput> {
+    this.assertPersistenceWritable();
     const reservation = this.getRaidLaunchReservation(reservationId, requestKey);
     if (!reservation) {
       throw new InvalidRaidLaunchReservationError(
@@ -374,21 +410,22 @@ export class BossRaidOrchestrator {
     }
 
     const prepared = this.hydrateLaunchReservation(reservation);
-    const spawn = this.spawnPreparedRaid(prepared, reservation.deadlineUnix);
+    const spawn = await this.spawnPreparedRaid(prepared, reservation.deadlineUnix);
     reservation.spawnOutput = spawn;
     await this.queuePersist();
     return spawn;
   }
 
   async spawnRaid(input: BossRaidSpawnInput): Promise<BossRaidSpawnOutput> {
+    this.assertPersistenceWritable();
     const prepared = await this.prepareRaid(input);
     return this.spawnPreparedRaid(prepared, this.computeRootDeadlineUnix(prepared.sanitized));
   }
 
-  private spawnPreparedRaid(
+  private async spawnPreparedRaid(
     prepared: PreparedLeafRaid | PreparedHierarchicalRaid,
     deadlineUnix: number,
-  ): BossRaidSpawnOutput {
+  ): Promise<BossRaidSpawnOutput> {
     const raidAccessToken = createRaidAccessToken();
 
     if (prepared.mode === "hierarchical") {
@@ -412,7 +449,7 @@ export class BossRaidOrchestrator {
       this.scheduleRaidDeadline(raid.id);
       this.instantiatePreparedChildren(raid.id, prepared.graph.children ?? [], deadlineUnix);
 
-      void this.queuePersist();
+      await this.queuePersist();
       void this.runRaid(raid.id);
 
       return {
@@ -433,7 +470,7 @@ export class BossRaidOrchestrator {
     raid.raidAccessTokenHash = hashRaidAccessToken(raidAccessToken);
     this.raids.set(raid.id, raid);
     this.scheduleRaidDeadline(raid.id);
-    void this.queuePersist();
+    await this.queuePersist();
     void this.runRaid(raid.id);
 
     return {
@@ -493,6 +530,7 @@ export class BossRaidOrchestrator {
       requestKey: options.requestKey,
       createdAt: new Date().toISOString(),
       expiresAt: new Date(options.holdUntilUnix * 1_000).toISOString(),
+      paymentTimeoutSeconds: Math.max(1, options.holdUntilUnix - Math.floor(Date.now() / 1_000)),
       deadlineUnix: options.deadlineUnix,
       mode: prepared.mode,
       sanitized: prepared.sanitized,
@@ -592,11 +630,12 @@ export class BossRaidOrchestrator {
       }
     }
 
-    const discoverableProviders = await this.discoverProviders(buildDiscoveryQueryFromTask(sanitized));
+    const discoverableProviders = await this.discoverProvidersForRaid(buildDiscoveryQueryFromTask(sanitized));
     const selectedProviders = selectProviders(
       sanitized,
       discoverableProviders,
       this.options.providerFreshMs,
+      { skipFreshnessCheck: true },
     );
     if (selectedProviders.primaries.length === 0) {
       throw new NoEligibleProvidersError();
@@ -630,7 +669,7 @@ export class BossRaidOrchestrator {
       return undefined;
     }
 
-    const discoverableProviders = await this.discoverProviders(buildDiscoveryQueryFromTask(sanitized));
+    const discoverableProviders = await this.discoverProvidersForRaid(buildDiscoveryQueryFromTask(sanitized));
     const usedProviderIds = this.collectPreparedProviderIds(preparedGraph);
     const adaptiveProviderIds = discoverableProviders
       .map((provider) => provider.providerId)
@@ -666,11 +705,12 @@ export class BossRaidOrchestrator {
       return prepared;
     }
 
-    const discoverableProviders = await this.discoverProviders(buildDiscoveryQueryFromTask(node.task));
+    const discoverableProviders = await this.discoverProvidersForRaid(buildDiscoveryQueryFromTask(node.task));
     const selectedProviders = selectProviders(
       node.task,
       discoverableProviders.filter((provider) => !reservedProviderIds.has(provider.providerId)),
       this.options.providerFreshMs,
+      { skipFreshnessCheck: true },
     );
 
     if (selectedProviders.primaries.length === 0) {
@@ -785,6 +825,13 @@ export class BossRaidOrchestrator {
     return raid.settlementExecution;
   }
 
+  getPersistenceStatus(): { healthy: boolean; lastError?: string } {
+    return {
+      healthy: this.lastPersistenceError == null,
+      lastError: this.lastPersistenceError?.message,
+    };
+  }
+
   restoreState(snapshot: BossRaidPersistenceSnapshot): boolean {
     let normalized = false;
 
@@ -843,6 +890,16 @@ export class BossRaidOrchestrator {
 
   async persistState(): Promise<void> {
     await this.queuePersist();
+  }
+
+  async resumeActiveRaids(): Promise<void> {
+    const activeRootRaids = this.listAllRaids()
+      .filter((raid) => raid.parentRaidId == null && !TERMINAL_RAID_STATUSES.has(raid.status))
+      .sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt));
+
+    for (const raid of activeRootRaids) {
+      await this.resumeRaid(raid.id);
+    }
   }
 
   getStatus(raidId: string): BossRaidStatusOutput {
@@ -1088,8 +1145,114 @@ export class BossRaidOrchestrator {
         assignment.timeoutAt = cancelledAt;
       }
     }
-    this.queuePersist();
+    this.queuePersistBestEffort();
     return this.getStatus(raidId);
+  }
+
+  private async resumeRaid(raidId: string): Promise<void> {
+    const raid = this.requireRaid(raidId);
+    if (TERMINAL_RAID_STATUSES.has(raid.status)) {
+      return;
+    }
+    if (this.raidDeadlineReached(raid)) {
+      this.expireRaidAtDeadline(raidId);
+      return;
+    }
+
+    this.scheduleRaidDeadline(raidId);
+
+    if (raid.childRaidIds?.length) {
+      for (const childRaidId of raid.childRaidIds) {
+        if (!TERMINAL_RAID_STATUSES.has(this.requireRaid(childRaidId).status)) {
+          await this.resumeRaid(childRaidId);
+        }
+      }
+      this.refreshParentRaidFromChildren(raidId);
+      if (this.maybeReplanHierarchicalRaid(raidId)) {
+        return;
+      }
+      if (this.shouldFinalizeHierarchicalRaid(raid)) {
+        this.finalizeRaid(raid);
+        return;
+      }
+      this.queuePersistBestEffort();
+      return;
+    }
+
+    let dispatchedProvider = false;
+    for (const assignment of Object.values(raid.assignments)) {
+      if (TERMINAL_ASSIGNMENT_STATUSES.has(assignment.status)) {
+        continue;
+      }
+
+      if (assignment.status === "selected" && !raid.selectedProviders.includes(assignment.providerId)) {
+        continue;
+      }
+
+      if (assignment.providerRunId && (assignment.status === "accepted" || assignment.status === "running")) {
+        this.resumeProviderAssignment(raidId, assignment);
+        continue;
+      }
+
+      dispatchedProvider = true;
+      void this.dispatchProvider(raidId, assignment.providerId);
+    }
+
+    if (!dispatchedProvider) {
+      this.maybeFinalizeAfterUpdate(raidId);
+    }
+
+    this.queuePersistBestEffort();
+  }
+
+  private resumeProviderAssignment(raidId: string, assignment: AssignmentRecord): void {
+    const raid = this.requireRaid(raidId);
+    const nowMs = Date.now();
+
+    this.clearProviderTimers(raidId, assignment.providerId);
+
+    const remainingHardMs = Math.max(
+      1,
+      Math.min(
+        raid.deadlineUnix * 1_000 - nowMs,
+        this.options.hardExecutionMs -
+          Math.max(0, nowMs - Date.parse(assignment.acceptedAt ?? assignment.invitedAt ?? raid.createdAt)),
+      ),
+    );
+    this.timers.setHardTimeout(raidId, assignment.providerId, remainingHardMs, () => {
+      this.markTimedOut(raidId, assignment.providerId, "hard execution timeout");
+    });
+
+    if (!assignment.firstHeartbeatAt) {
+      const remainingFirstHeartbeatMs = this.options.firstHeartbeatMs -
+        Math.max(0, nowMs - Date.parse(assignment.acceptedAt ?? assignment.invitedAt ?? raid.createdAt));
+      if (remainingFirstHeartbeatMs <= 0) {
+        this.markTimedOut(raidId, assignment.providerId, "first heartbeat timeout");
+        return;
+      }
+
+      this.timers.setFirstHeartbeatTimeout(raidId, assignment.providerId, remainingFirstHeartbeatMs, () => {
+        const current = this.requireRaid(raidId).assignments[assignment.providerId];
+        if (!current.firstHeartbeatAt && !TERMINAL_ASSIGNMENT_STATUSES.has(current.status)) {
+          this.markTimedOut(raidId, assignment.providerId, "first heartbeat timeout");
+        }
+      });
+      return;
+    }
+
+    const remainingHeartbeatMs = this.options.heartbeatStaleMs -
+      Math.max(0, nowMs - Date.parse(assignment.lastHeartbeatAt ?? assignment.firstHeartbeatAt));
+    if (remainingHeartbeatMs <= 0) {
+      this.markTimedOut(raidId, assignment.providerId, "heartbeat stale");
+      return;
+    }
+
+    this.timers.setHeartbeatStaleTimeout(raidId, assignment.providerId, remainingHeartbeatMs, () => {
+      const current = this.requireRaid(raidId).assignments[assignment.providerId];
+      if (!TERMINAL_ASSIGNMENT_STATUSES.has(current.status)) {
+        this.markTimedOut(raidId, assignment.providerId, "heartbeat stale");
+      }
+    });
   }
 
   private async runRaid(raidId: string): Promise<void> {
@@ -1107,7 +1270,7 @@ export class BossRaidOrchestrator {
     }
     raid.status = "dispatching";
     raid.updatedAt = new Date().toISOString();
-    this.queuePersist();
+    this.queuePersistBestEffort();
 
     const runs = raid.selectedProviders.map((providerId) => this.dispatchProvider(raidId, providerId));
     await Promise.allSettled(runs);
@@ -1131,7 +1294,7 @@ export class BossRaidOrchestrator {
 
     raid.status = "dispatching";
     raid.updatedAt = new Date().toISOString();
-    this.queuePersist();
+    this.queuePersistBestEffort();
 
     const childRuns = (raid.childRaidIds ?? []).map((childRaidId) => this.runRaid(childRaidId));
     await Promise.allSettled(childRuns);
@@ -1154,7 +1317,7 @@ export class BossRaidOrchestrator {
       return;
     }
 
-    this.queuePersist();
+    this.queuePersistBestEffort();
   }
 
   private async dispatchProvider(
@@ -1201,7 +1364,7 @@ export class BossRaidOrchestrator {
     assignment.message = "dispatching";
     raid.status = "running";
     raid.updatedAt = new Date().toISOString();
-    this.queuePersist();
+    this.queuePersistBestEffort();
 
     this.clearProviderTimers(raidId, providerId);
     this.timers.setHardTimeout(raidId, providerId, this.options.hardExecutionMs, () => {
@@ -1241,7 +1404,7 @@ export class BossRaidOrchestrator {
         profile.status = "available";
         profile.lastSeenAt = acceptedAt;
       }
-      this.queuePersist();
+      this.queuePersistBestEffort();
 
       this.timers.setFirstHeartbeatTimeout(raidId, providerId, this.options.firstHeartbeatMs, () => {
         const current = this.requireRaid(raidId).assignments[providerId];
@@ -1301,7 +1464,7 @@ export class BossRaidOrchestrator {
     if (raid.parentRaidId) {
       this.refreshRaidAncestry(raid.parentRaidId);
     }
-    this.queuePersist();
+    this.queuePersistBestEffort();
   }
 
   private async submitResult(raidId: string, submission: ProviderSubmission): Promise<void> {
@@ -1337,7 +1500,7 @@ export class BossRaidOrchestrator {
       this.maybeFinalizeAfterUpdate(raid.parentRaidId);
     }
     this.maybeFinalizeAfterUpdate(raidId);
-    this.queuePersist();
+    this.queuePersistBestEffort();
   }
 
   private markTimedOut(raidId: string, providerId: string, reason: string): void {
@@ -1361,7 +1524,7 @@ export class BossRaidOrchestrator {
     }
     this.promoteReserve(raidId);
     this.maybeFinalizeAfterUpdate(raidId);
-    this.queuePersist();
+    this.queuePersistBestEffort();
   }
 
   private markAssignmentFailed(raidId: string, providerId: string, reason: string): void {
@@ -1380,7 +1543,7 @@ export class BossRaidOrchestrator {
     }
     this.promoteReserve(raidId);
     this.maybeFinalizeAfterUpdate(raidId);
-    this.queuePersist();
+    this.queuePersistBestEffort();
   }
 
   private expireRaidAtDeadline(raidId: string): void {
@@ -1422,7 +1585,7 @@ export class BossRaidOrchestrator {
         this.refreshRaidAncestry(raid.parentRaidId);
         this.maybeFinalizeAfterUpdate(raid.parentRaidId);
       }
-      this.queuePersist();
+      this.queuePersistBestEffort();
       this.finalizeRaid(raid);
     } finally {
       this.expiringRaids.delete(raidId);
@@ -1448,7 +1611,7 @@ export class BossRaidOrchestrator {
             },
       );
     }
-    this.queuePersist();
+    this.queuePersistBestEffort();
     void this.dispatchProvider(raidId, nextReserveId);
   }
 
@@ -1535,7 +1698,7 @@ export class BossRaidOrchestrator {
     });
     raid.status = "dispatching";
     raid.updatedAt = createdAt;
-    this.queuePersist();
+    this.queuePersistBestEffort();
     void this.runRaid(spawnedRaid.id);
     return true;
   }
@@ -2006,7 +2169,7 @@ export class BossRaidOrchestrator {
       this.refreshRaidAncestry(raid.parentRaidId);
       this.maybeFinalizeAfterUpdate(raid.parentRaidId);
     }
-    this.queuePersist();
+    this.queuePersistBestEffort();
     if (raid.parentRaidId == null) {
       void this.executeSettlement(raid.id);
     }
@@ -2056,7 +2219,7 @@ export class BossRaidOrchestrator {
       raid.reputationEvents.push(event);
       currentRaidId = raid.parentRaidId;
     }
-    this.queuePersist();
+    this.queuePersistBestEffort();
   }
 
   private snapshotState(): BossRaidPersistenceSnapshot {
@@ -2072,10 +2235,34 @@ export class BossRaidOrchestrator {
   }
 
   private queuePersist(): Promise<void> {
-    this.persistenceQueue = this.persistenceQueue.then(() => this.persistence.saveState(this.snapshotState())).catch((error) => {
-      console.error("Mercenary persistence error", error);
-    });
+    this.persistenceQueue = this.persistenceQueue
+      .catch(() => undefined)
+      .then(async () => {
+        try {
+          await this.persistence.saveState(this.snapshotState());
+          this.lastPersistenceError = undefined;
+        } catch (error) {
+          this.lastPersistenceError =
+            error instanceof Error ? error : new Error(String(error));
+          console.error("Mercenary persistence error", error);
+          throw this.lastPersistenceError;
+        }
+      });
     return this.persistenceQueue;
+  }
+
+  private queuePersistBestEffort(): void {
+    void this.queuePersist().catch(() => undefined);
+  }
+
+  private assertPersistenceWritable(): void {
+    if (!this.lastPersistenceError) {
+      return;
+    }
+
+    throw new PersistenceUnavailableError(
+      `Mercenary persistence is unavailable: ${this.lastPersistenceError.message}`,
+    );
   }
 
   private requireRaid(raidId: string): RaidRecord {
@@ -2145,7 +2332,7 @@ export class BossRaidOrchestrator {
     }
 
     if (changed && persist) {
-      void this.queuePersist();
+      this.queuePersistBestEffort();
     }
   }
 
@@ -2231,38 +2418,50 @@ export class BossRaidOrchestrator {
     await this.queuePersist();
   }
 
-  private async refreshProviderAvailability(): Promise<void> {
+  private async refreshProviderAvailability(): Promise<Set<string>> {
     const providers = [...this.providers.values()];
     if (providers.length === 0) {
-      return;
+      return new Set<string>();
     }
 
-    const results = await Promise.allSettled(
+    const nowMs = Date.now();
+    const results = await Promise.all(
       providers.map(async (provider) => ({
         provider,
-        health: await this.providerHealthProbe(provider),
+        health: await this.readProviderHealth(provider, nowMs),
       })),
     );
 
-    for (const result of results) {
-      if (result.status !== "fulfilled") {
-        continue;
-      }
-
-      const { provider, health } = result.value;
+    const readyProviderIds = new Set<string>();
+    for (const { provider, health } of results) {
       if (health.ready) {
         provider.status = "available";
-        provider.lastSeenAt = new Date().toISOString();
+        readyProviderIds.add(provider.providerId);
         continue;
       }
 
       provider.status = health.reachable ? "degraded" : "offline";
-      if (health.reachable) {
-        provider.lastSeenAt = new Date().toISOString();
-      }
     }
 
     this.refreshProviderLiveness();
+    return readyProviderIds;
+  }
+
+  private async readProviderHealth(
+    provider: ProviderProfile,
+    nowMs: number,
+  ): Promise<ProviderHealthStatus> {
+    const cached = this.providerHealthCache.get(provider.providerId);
+    if (cached && nowMs - cached.checkedAt <= PROVIDER_HEALTH_CACHE_TTL_MS) {
+      return cached.health;
+    }
+
+    const health = await this.providerHealthProbe(provider);
+    this.providerHealthCache.set(provider.providerId, {
+      checkedAt: nowMs,
+      health,
+    });
+    return health;
   }
 
   private dropProviderAliases(
@@ -2295,6 +2494,7 @@ export class BossRaidOrchestrator {
 
       this.providers.delete(candidate.providerId);
       this.providerRuntimes.delete(candidate.providerId);
+      this.providerHealthCache.delete(candidate.providerId);
       changed = true;
     }
 
@@ -2340,6 +2540,7 @@ export async function createDefaultOrchestrator(
   if (orchestrator.restoreState(snapshot)) {
     await orchestrator.persistState();
   }
+  await orchestrator.resumeActiveRaids();
   return orchestrator;
 }
 

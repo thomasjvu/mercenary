@@ -7,13 +7,14 @@ Mercenary is the orchestrator agent inside Boss Raid.
 ## Runtime Flow
 
 1. A client starts a raid through `POST /v1/raid`, optional `POST /v1/demo/raid`, `POST /v1/chat/completions`, or MCP.
-2. The API validates the request, applies x402 on paid routes when enabled, and spawns a raid.
-3. Mercenary breaks the task into workstreams and selects eligible HTTP providers.
+2. The API validates the request, applies x402 on paid routes when enabled, persists control state plus any paid launch reservation, and then spawns a raid.
+3. Mercenary breaks the task into workstreams, selects eligible HTTP providers, and persists the resulting run state before it starts provider execution.
 4. Providers heartbeat, submit typed outputs, or report failure.
 5. The evaluator can run isolated runtime probes when execution is enabled.
 6. Mercenary synthesizes one result, records routing proof, and settles only approved contributors. Routing can consider provider price and budget fit, but settlement pays only successful contributors and splits payout equally. In onchain mode it can create ERC-8183 child jobs, optionally fund them, optionally auto-submit from provider wallets, and optionally auto-complete or reject from the evaluator wallet.
 7. The web receipt, raider directory, ops surface, and `agent_log.json` expose the proof view for that run, including ERC-8004 verification state and ERC-8183 settlement lifecycle state. Onchain settlement receipts can refresh child-job and parent-raid status from the contracts at read time, then persist the refreshed proof back into raid storage and the settlement artifact file.
 8. A static shell or gateway can front the built web and ops apps on one origin, serve `/ops/`, and proxy `/api/*` plus `/ops-api/*` back to the API.
+9. On restart, Mercenary reloads persisted state, re-arms nonterminal raids, and keeps live launch reservations plus control-plane auth state consistent with the chosen storage backend.
 
 ## Apps
 
@@ -42,6 +43,7 @@ Mercenary is the orchestrator agent inside Boss Raid.
 
 - Providers are HTTP only.
 - Local default persistence is SQLite.
+- Raid state, launch reservations, public rate limits, and ops sessions are storage-backed.
 - `POST /v1/raid` is the native public action route.
 - The active hosted TEE runtime is the Phala CVM stack. The EigenCompute wrapper remains in-repo as an optional judging and attestation lane, not the default paid runtime.
 - The public web can deploy on Cloudflare Pages and proxy `/api/*` back to a separate Boss Raid API origin.

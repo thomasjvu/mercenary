@@ -21,6 +21,7 @@ import {
   createDefaultOrchestrator,
   InvalidRaidLaunchReservationError,
   NoEligibleProvidersError,
+  PersistenceUnavailableError,
   runtimeOptionsFromEnv,
   UnknownRaidError,
 } from "@bossraid/orchestrator";
@@ -59,6 +60,7 @@ import {
   persistSettlementExecutionArtifact,
   settlementExecutionChanged,
 } from "./settlement-proof.js";
+import { createApiControlState } from "./control-state.js";
 
 interface AttestedRuntimePayload {
   version: 1;
@@ -124,8 +126,7 @@ export function buildApiServer(
   });
   const erc8004Verifier = createErc8004Verifier(env);
   const settlementProofRefresher = createSettlementProofRefresher(env);
-  const opsSessions = new Map<string, number>();
-  const rateLimits = new Map<string, { count: number; resetAt: number }>();
+  const controlState = createApiControlState(env);
   const workerIsolation = env.BOSSRAID_EVAL_JOB_ISOLATION === "container" ? "per_job_container" : "per_job_process";
 
   app.setErrorHandler((error, _request, reply) => {
@@ -174,6 +175,14 @@ export function buildApiServer(
     if (error instanceof InvalidRaidLaunchReservationError) {
       reply.code(409).send({
         error: "invalid_launch_reservation",
+        message: error.message,
+      });
+      return;
+    }
+
+    if (error instanceof PersistenceUnavailableError) {
+      reply.code(503).send({
+        error: "persistence_unavailable",
         message: error.message,
       });
       return;
@@ -292,29 +301,7 @@ export function buildApiServer(
     maxRequests: number,
     windowMs: number,
   ): { allowed: true } | { allowed: false; retryAfterSec: number } {
-    pruneExpiredRateLimits();
-    const nowMs = Date.now();
-    const entryKey = `${bucket}:${key}`;
-    const current = rateLimits.get(entryKey);
-
-    if (!current || current.resetAt <= nowMs) {
-      rateLimits.set(entryKey, {
-        count: 1,
-        resetAt: nowMs + windowMs,
-      });
-      return { allowed: true };
-    }
-
-    if (current.count >= maxRequests) {
-      return {
-        allowed: false,
-        retryAfterSec: Math.max(1, Math.ceil((current.resetAt - nowMs) / 1_000)),
-      };
-    }
-
-    current.count += 1;
-    rateLimits.set(entryKey, current);
-    return { allowed: true };
+    return controlState.consumeRateLimit(bucket, key, maxRequests, windowMs);
   }
 
   function requireRateLimit(
@@ -470,34 +457,20 @@ export function buildApiServer(
   function readOpsSession(
     headers: Record<string, string | string[] | undefined>,
   ): { token: string; expiresAt: number } | undefined {
-    pruneExpiredOpsSessions();
     const cookieHeader = asSingleHeader(headers.cookie);
     if (!cookieHeader) {
       return undefined;
     }
 
     const token = parseCookieHeader(cookieHeader)[OPS_SESSION_COOKIE_NAME];
-    if (!token) {
-      return undefined;
-    }
-
-    const expiresAt = opsSessions.get(token);
-    if (expiresAt == null || expiresAt <= Date.now()) {
-      opsSessions.delete(token);
-      return undefined;
-    }
-
-    return { token, expiresAt };
+    return controlState.readOpsSession(token);
   }
 
   function issueOpsSession(reply: FastifyReply): { expiresAt: number } {
-    pruneExpiredOpsSessions();
-    const token = `ops_${randomUUID()}`;
-    const expiresAt = Date.now() + opsSessionTtlSec * 1_000;
-    opsSessions.set(token, expiresAt);
+    const session = controlState.issueOpsSession(opsSessionTtlSec);
     reply.header(
       "set-cookie",
-      serializeCookie(OPS_SESSION_COOKIE_NAME, token, {
+      serializeCookie(OPS_SESSION_COOKIE_NAME, session.token, {
         httpOnly: true,
         sameSite: "Strict",
         path: "/ops-api",
@@ -505,7 +478,7 @@ export function buildApiServer(
         secure: env.NODE_ENV === "production",
       }),
     );
-    return { expiresAt };
+    return { expiresAt: session.expiresAt };
   }
 
   function clearOpsSession(
@@ -514,7 +487,7 @@ export function buildApiServer(
   ): void {
     const session = readOpsSession(headers);
     if (session) {
-      opsSessions.delete(session.token);
+      controlState.clearOpsSession(session.token);
     }
     reply.header(
       "set-cookie",
@@ -526,22 +499,6 @@ export function buildApiServer(
         secure: env.NODE_ENV === "production",
       }),
     );
-  }
-
-  function pruneExpiredOpsSessions(nowMs: number = Date.now()): void {
-    for (const [token, expiresAt] of opsSessions.entries()) {
-      if (expiresAt <= nowMs) {
-        opsSessions.delete(token);
-      }
-    }
-  }
-
-  function pruneExpiredRateLimits(nowMs: number = Date.now()): void {
-    for (const [key, entry] of rateLimits.entries()) {
-      if (entry.resetAt <= nowMs) {
-        rateLimits.delete(key);
-      }
-    }
   }
 
   function validateProviderCallback(
@@ -615,6 +572,21 @@ export function buildApiServer(
     return (request.params as { raidId: string }).raidId;
   }
 
+  function getLaunchReservationPaymentTimeoutSeconds(reservation: {
+    createdAt: string;
+    expiresAt: string;
+    paymentTimeoutSeconds?: number;
+  }): number {
+    if (typeof reservation.paymentTimeoutSeconds === "number" && Number.isFinite(reservation.paymentTimeoutSeconds)) {
+      return Math.max(1, Math.round(reservation.paymentTimeoutSeconds));
+    }
+
+    const derivedTimeoutSeconds = Math.ceil(
+      (Date.parse(reservation.expiresAt) - Date.parse(reservation.createdAt)) / 1_000,
+    );
+    return Math.max(1, Number.isFinite(derivedTimeoutSeconds) ? derivedTimeoutSeconds : 1);
+  }
+
   async function requireReservedLaunchPayment(
     route: "raid" | "chat",
     request: FastifyRequest,
@@ -658,7 +630,6 @@ export function buildApiServer(
       );
     }
 
-    const remainingTimeoutSec = Math.max(1, Math.ceil((Date.parse(reservation.expiresAt) - Date.now()) / 1_000));
     const paymentRequired = buildX402PaymentRequired({
       route,
       env,
@@ -666,7 +637,7 @@ export function buildApiServer(
       extra: {
         reservationId: reservation.id,
       },
-      maxTimeoutSeconds: remainingTimeoutSec,
+      maxTimeoutSeconds: getLaunchReservationPaymentTimeoutSeconds(reservation),
     });
 
     const payment = await requireX402Payment({
@@ -813,9 +784,10 @@ export function buildApiServer(
 
   app.get("/health", async () => {
     const providerHealth = await collectProviderHealth();
+    const persistence = orchestrator.getPersistenceStatus();
 
     return {
-      ok: providerHealth.length > 0 && providerHealth.every((provider) => provider.ready),
+      ok: persistence.healthy && providerHealth.length > 0 && providerHealth.every((provider) => provider.ready),
       providers: orchestrator.listProviders().length,
       readyProviders: providerHealth.filter((provider) => provider.ready).length,
       raids: orchestrator.listRaids().length,
@@ -1225,7 +1197,7 @@ export function buildApiServer(
       reply.code(401);
       return { error: "unauthorized" };
     }
-    const provider = orchestrator.upsertRegisteredProvider(parseProviderRegistrationInput(request.body));
+    const provider = await orchestrator.upsertRegisteredProvider(parseProviderRegistrationInput(request.body));
     await ensureErc8004ProofState({ includeMercenary: false, providers: [provider] });
     return serializeProviderProfile(provider, { includeEndpoint: true });
   });
@@ -1238,7 +1210,7 @@ export function buildApiServer(
       reply.code(401);
       return { error: "unauthorized" };
     }
-    const provider = orchestrator.recordAgentHeartbeat(parseAgentHeartbeatInput(request.body));
+    const provider = await orchestrator.recordAgentHeartbeat(parseAgentHeartbeatInput(request.body));
     if (!provider) {
       reply.code(404);
       return { error: "not_found" };

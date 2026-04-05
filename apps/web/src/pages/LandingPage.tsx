@@ -85,6 +85,8 @@ const WORKFLOW_ROWS = [
 ] as const;
 
 type AppRoute = "/" | "/demo" | "/raiders" | "/receipt";
+type PanelKey = (typeof PANELS)[number];
+type PanelLayer = "front" | "mid" | "back";
 
 type LandingPageProps = {
   onNavigate: (path: AppRoute) => void;
@@ -92,6 +94,22 @@ type LandingPageProps = {
 
 function normalizePublicApiBase(value: string): string {
   return value.endsWith("/") ? value.slice(0, -1) : value;
+}
+
+function getPanelLayer(activePanel: PanelKey, panel: PanelKey): PanelLayer {
+  const activeIndex = PANELS.indexOf(activePanel);
+  const panelIndex = PANELS.indexOf(panel);
+  const relativeIndex = (panelIndex - activeIndex + PANELS.length) % PANELS.length;
+
+  if (relativeIndex === 0) {
+    return "front";
+  }
+
+  if (relativeIndex === 1) {
+    return "mid";
+  }
+
+  return "back";
 }
 
 export function LandingPage({ onNavigate }: LandingPageProps) {
@@ -213,7 +231,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               actionLabel={copiedKey === "chat-panel" ? "copied" : "copy"}
               onAction={() => void copySnippet("chat-panel", CHAT_EXAMPLE)}
               theme="chat"
-              layer={activePanel === "chat" ? "front" : "back"}
+              layer={getPanelLayer(activePanel, "chat")}
               onFocus={() => setActivePanel("chat")}
             />
             <CodePanel
@@ -223,7 +241,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               actionLabel={copiedKey === "raid-panel" ? "copied" : "copy"}
               onAction={() => void copySnippet("raid-panel", RAID_EXAMPLE)}
               theme="raid"
-              layer={activePanel === "raid" ? "front" : "back"}
+              layer={getPanelLayer(activePanel, "raid")}
               onFocus={() => setActivePanel("raid")}
             />
             <CodePanel
@@ -233,7 +251,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               actionLabel={copiedKey === "mcp-panel" ? "copied" : "copy"}
               onAction={() => void copySnippet("mcp-panel", MCP_EXAMPLE)}
               theme="mcp"
-              layer={activePanel === "mcp" ? "front" : "back"}
+              layer={getPanelLayer(activePanel, "mcp")}
               onFocus={() => setActivePanel("mcp")}
             />
           </div>
@@ -288,7 +306,7 @@ function CodePanel({
   actionLabel: string;
   onAction: () => void;
   theme: "chat" | "raid" | "mcp";
-  layer: "front" | "back";
+  layer: PanelLayer;
   onFocus: () => void;
 }) {
   return (

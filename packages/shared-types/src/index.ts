@@ -678,6 +678,7 @@ export interface RaidLaunchReservationRecord {
   requestKey: string;
   createdAt: string;
   expiresAt: string;
+  paymentTimeoutSeconds?: number;
   deadlineUnix: number;
   mode: "single" | "hierarchical";
   sanitized: SanitizedTaskSpec;

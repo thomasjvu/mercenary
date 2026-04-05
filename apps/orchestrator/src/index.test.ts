@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { InMemoryBossRaidPersistence, type BossRaidPersistence } from "@bossraid/persistence";
 import { SqliteBossRaidPersistence } from "@bossraid/persistence-sqlite";
 import type { RaidProvider } from "@bossraid/provider-sdk";
 import type {
@@ -1594,7 +1595,7 @@ test("restoreState merges persisted provider aliases into seeded providers by en
   assert.equal(providers[0]?.reputation.totalRaids, 21);
 });
 
-test("upsertRegisteredProvider replaces aliased providers with the canonical agent id", () => {
+test("upsertRegisteredProvider replaces aliased providers with the canonical agent id", async () => {
   const orchestrator = new BossRaidOrchestrator([
     {
       profile: createProviderProfile("minimal-diff-hunter", {
@@ -1615,7 +1616,7 @@ test("upsertRegisteredProvider replaces aliased providers with the canonical age
     },
   ]);
 
-  const provider = orchestrator.upsertRegisteredProvider({
+  const provider = await orchestrator.upsertRegisteredProvider({
     agentId: "riko",
     name: "Riko",
     endpoint: "http://provider-b:9002/",
@@ -1626,6 +1627,113 @@ test("upsertRegisteredProvider replaces aliased providers with the canonical age
   assert.equal(provider.providerId, "riko");
   assert.equal(providers.length, 1);
   assert.equal(providers[0]?.providerId, "riko");
+});
+
+test("spawnRaid fails closed when persistence cannot save the new raid", async () => {
+  const provider: RaidProvider = {
+    profile: createProviderProfile("provider-alpha"),
+    async accept(): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: "run-alpha",
+      };
+    },
+    async run(): Promise<void> {
+      return;
+    },
+  };
+  const failingPersistence: BossRaidPersistence = {
+    async loadState() {
+      return {
+        version: 1,
+        savedAt: new Date().toISOString(),
+        raids: [],
+        providers: [],
+        launchReservations: [],
+      };
+    },
+    async saveState() {
+      throw new Error("disk full");
+    },
+  };
+  const orchestrator = new BossRaidOrchestrator(
+    [provider],
+    undefined,
+    failingPersistence,
+    undefined,
+    async (profile) => readyHealth(profile.providerId),
+  );
+
+  await assert.rejects(
+    () => orchestrator.spawnRaid(createSpawnInput()),
+    /disk full/,
+  );
+});
+
+test("restoreState preserves active raids and allows late provider submissions after restart", async () => {
+  const persistence = new InMemoryBossRaidPersistence();
+  const provider: RaidProvider = {
+    profile: createProviderProfile("provider-alpha"),
+    async accept(): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: "run-alpha",
+      };
+    },
+    async run(): Promise<void> {
+      return;
+    },
+  };
+  const original = new BossRaidOrchestrator(
+    [provider],
+    {
+      inviteAcceptMs: 1_000,
+      firstHeartbeatMs: 1_000,
+      hardExecutionMs: 5_000,
+      raidAbsoluteMs: 5_000,
+    },
+    persistence,
+    undefined,
+    async (profile) => readyHealth(profile.providerId),
+  );
+
+  const spawn = await original.spawnRaid(createSpawnInput());
+  await waitFor(() => original.getRaid(spawn.raidId)?.assignments["provider-alpha"]?.providerRunId === "run-alpha");
+  await original.persistState();
+
+  const snapshot = await persistence.loadState();
+  const restored = new BossRaidOrchestrator(
+    [provider],
+    {
+      inviteAcceptMs: 1_000,
+      firstHeartbeatMs: 1_000,
+      hardExecutionMs: 5_000,
+      raidAbsoluteMs: 5_000,
+    },
+    new InMemoryBossRaidPersistence(),
+    undefined,
+    async (profile) => readyHealth(profile.providerId),
+  );
+
+  restored.restoreState(snapshot);
+  await restored.resumeActiveRaids();
+
+  assert.equal(restored.getStatus(spawn.raidId).status, "running");
+
+  const result = await restored.recordProviderSubmission(spawn.raidId, {
+    raidId: spawn.raidId,
+    providerId: "provider-alpha",
+    providerRunId: "run-alpha",
+    explanation: "Fixed the disabled state after restore.",
+    confidence: 0.93,
+    filesTouched: ["src/components/Form.tsx"],
+    patchUnifiedDiff: "--- a/src/components/Form.tsx",
+    submittedAt: new Date().toISOString(),
+  });
+
+  assert.equal(result.status, "final");
+  assert.ok(result.rankedSubmissions);
+  assert.equal(result.rankedSubmissions[0]?.submission.providerId, "provider-alpha");
 });
 
 test("updateSettlementExecution persists refreshed settlement proof state", async () => {
