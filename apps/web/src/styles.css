@@ -3128,7 +3128,7 @@ h2 {
 }
 
 .footer__route-link--active {
-  color: var(--rx-red);
+  color: var(--rx-blue);
 }
 
 .footer__docs-link {
@@ -3137,6 +3137,11 @@ h2 {
 
 .footer__credit a,
 .footer__links a:hover,
+.footer__links a:focus-visible,
+.footer__links a[aria-label]:hover,
+.footer__links a[aria-label]:focus-visible,
+.footer__credit a:hover,
+.footer__credit a:focus-visible,
 .footer__theme-toggle:hover {
   color: var(--rx-blue);
 }
@@ -3316,8 +3321,14 @@ h2 {
 .proof-link-row a:hover,
 .footer__credit a,
 .footer__links a:hover,
+.footer__links a:focus-visible,
+.footer__links a[aria-label]:hover,
+.footer__links a[aria-label]:focus-visible,
+.footer__credit a:hover,
+.footer__credit a:focus-visible,
+.footer__theme-toggle:hover,
 .footer__route-link--active {
-  color: var(--accent);
+  color: var(--rx-blue);
 }
 
 .terminal-window {
@@ -3883,6 +3894,13 @@ h2 {
 
 .app-shell--theme-dark .terminal-window__head .button {
   background: transparent;
+  border-color: currentColor;
+}
+
+.app-shell--theme-dark .terminal-window__head .button:hover {
+  background: transparent;
+  color: inherit;
+  border-color: currentColor;
 }
 
 .app-shell--theme-dark .terminal-window--chat {
@@ -3947,6 +3965,11 @@ h2 {
 
 .app-shell--theme-dark .footer__credit a,
 .app-shell--theme-dark .footer__links a:hover,
+.app-shell--theme-dark .footer__links a:focus-visible,
+.app-shell--theme-dark .footer__links a[aria-label]:hover,
+.app-shell--theme-dark .footer__links a[aria-label]:focus-visible,
+.app-shell--theme-dark .footer__credit a:hover,
+.app-shell--theme-dark .footer__credit a:focus-visible,
 .app-shell--theme-dark .footer__theme-toggle:hover,
 .app-shell--theme-dark .footer__route-link--active {
   color: var(--rx-yellow);
