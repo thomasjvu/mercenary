@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { evaluateSubmission } from "@bossraid/evaluation";
+import { computePrivacyCompliance, buildPrivacyComplianceRecord, validateSubmissionPrivacy } from "@bossraid/privacy-engine";
 import { FileBossRaidPersistence, InMemoryBossRaidPersistence, type BossRaidPersistence } from "@bossraid/persistence";
 import { SqliteBossRaidPersistence } from "@bossraid/persistence-sqlite";
 import {
@@ -1481,6 +1482,16 @@ export class BossRaidOrchestrator {
           }
         : submission;
     const breakdown = await evaluateSubmission(raid, normalizedSubmission);
+    const privacyConstraints = raid.task.constraints;
+    if (privacyConstraints.privacyMode !== "off" && privacyConstraints.requirePrivacyFeatures?.length) {
+      const privacyResult = validateSubmissionPrivacy(
+        normalizedSubmission,
+        privacyConstraints.requirePrivacyFeatures,
+        raid.task.sanitizationReport,
+      );
+      breakdown.privacyComplianceScore = privacyResult.score;
+      breakdown.privacyComplianceDetails = privacyResult;
+    }
 
     this.clearProviderTimers(raidId, submission.providerId);
     applySubmissionToRaid(raid, normalizedSubmission, breakdown);
@@ -2408,12 +2419,56 @@ export class BossRaidOrchestrator {
       return;
     }
 
+    const privacyConstraints = raid.task.constraints;
+    const privacyMode = privacyConstraints.privacyMode ?? "off";
+    if (privacyMode !== "off" && privacyConstraints.requirePrivacyFeatures?.length) {
+      const complianceRecord = buildPrivacyComplianceRecord(
+        raid.id,
+        privacyMode,
+        privacyConstraints.requirePrivacyFeatures,
+        raid.rankedSubmissions,
+        raid.task.sanitizationReport,
+      );
+      if (!complianceRecord.overallPassed) {
+        raid.settlementExecution = {
+          mode: "file",
+          proofStandard: "erc8183_aligned",
+          lifecycleStatus: "synthetic",
+          executedAt: new Date().toISOString(),
+          artifactPath: "",
+          registryRaidRef: raid.id,
+          taskHash: "",
+          evaluationHash: "",
+          successfulProviderIds: [],
+          privacyCompliance: complianceRecord,
+          allocations: [],
+          contracts: { registryAddress: null, escrowAddress: null, tokenAddress: null, clientAddress: null, evaluatorAddress: null, chainId: null, rpcUrl: null },
+          registryCall: { method: "finalizeRaid", args: [raid.id, "0x0000000000000000000000000000000000000000"] },
+          childJobs: [],
+          warnings: ["privacy-compliance-failed"],
+        };
+        raid.updatedAt = new Date().toISOString();
+        await this.queuePersist();
+        return;
+      }
+    }
+
     const record = await this.settlementExecutor.execute(raid);
     if (!record) {
       return;
     }
 
     raid.settlementExecution = record;
+    if (privacyMode !== "off" && privacyConstraints.requirePrivacyFeatures?.length) {
+      const complianceRecord = buildPrivacyComplianceRecord(
+        raid.id,
+        privacyMode,
+        privacyConstraints.requirePrivacyFeatures,
+        raid.rankedSubmissions,
+        raid.task.sanitizationReport,
+      );
+      raid.settlementExecution.privacyCompliance = complianceRecord;
+    }
     raid.updatedAt = new Date().toISOString();
     await this.queuePersist();
   }

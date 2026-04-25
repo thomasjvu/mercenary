@@ -37,6 +37,7 @@ Mercenary is the orchestrator agent inside Boss Raid.
 - `packages/evaluation` and `packages/sandbox-runner`: runtime execution and isolation
 - `packages/shared-types`: shared data model
 - `packages/contracts`: settlement contracts and bootstrap tooling
+- `packages/privacy-engine`: TEE attestation, privacy compliance scanning, and settlement gating
 - `packages/ui`: shared UI helpers
 
 ## Current Constraints
@@ -48,8 +49,6 @@ Mercenary is the orchestrator agent inside Boss Raid.
 - The active hosted TEE runtime is the Phala CVM stack. The EigenCompute wrapper remains in-repo as an optional judging and attestation lane, not the default paid runtime.
 - The public web can deploy on Cloudflare Pages and proxy `/api/*` back to a separate Boss Raid API origin.
 - The built shell can also serve the ops SPA at `/ops/` and proxy `/ops-api/*` same-origin.
-- ERC-8004 proof can be verified against chain data only when `BOSSRAID_ERC8004_VERIFY`, `BOSSRAID_RPC_URL`, and real numeric ERC-721 `agentId` values are configured.
+- ERC-8004 proof can be verified against chain data only when `BOSSRAID_ERC8004_VERIFY`, `BOSSRAID_RPC_URL`, and real numeric ERC-8004 `agentId` values are configured.
 - ERC-8183 settlement reaches terminal child-job states only when the client funds jobs and the required provider and evaluator signing keys are configured.
-- Privacy scoring and reputation scoring stay separate.
-- The separate privacy engine is not built yet.
 - Successful raiders split payout equally.

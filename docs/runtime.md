@@ -192,7 +192,7 @@ The active hosted stack is the Phala CVM deployment. `pnpm eigencompute:build` a
 ### x402
 
 - `BOSSRAID_X402_ENABLED`: paid route gate; defaults to `true` unless explicitly disabled
-- `BOSSRAID_X402_PAY_TO`: recipient wallet
+- `BOSSRAID_X402_PAY_TO`: recipient wallet (e.g. `0x3bd7717267c6A2D29F07Da83D59155Ac6cD80A69` for Base mainnet USDC)
 - `BOSSRAID_X402_FACILITATOR_URL`: optional facilitator override
 - `BOSSRAID_X402_NETWORK`, `BOSSRAID_X402_ASSET`, `BOSSRAID_X402_ASSET_NAME`, and `BOSSRAID_X402_ASSET_VERSION`: payment asset config
 - `BOSSRAID_X402_RAID_PRICE_USD` and `BOSSRAID_X402_CHAT_PRICE_USD`: route surcharge added on top of requested provider budget
@@ -225,7 +225,32 @@ The active hosted stack is the Phala CVM deployment. `pnpm eigencompute:build` a
 - `BOSSRAID_ERC8004_IDENTITY_REGISTRY`, `BOSSRAID_ERC8004_REPUTATION_REGISTRY`, `BOSSRAID_ERC8004_VALIDATION_REGISTRY`, and `BOSSRAID_ERC8004_VALIDATION_TXS`: registry and validation refs
 - `BOSSRAID_ERC8004_LAST_VERIFIED_AT`: cached verification timestamp surfaced in proof
 - `MNEMONIC`: enables attested runtime and attested result signing; without it, provider TEE badges can still be surfaced from provider proofs, but host-level runtime and result envelopes stay unpublished
-- `BOSSRAID_TEE_PLATFORM` and `BOSSRAID_TEE_SOCKET_PATH`: TEE metadata surfaced on runtime proofs
+- `BOSSRAID_TEE_PLATFORM` and `BOSSRAID_TEE_SOCKET_PATH`: TEE metadata and socket path for Phala CVM attestation; defaults to `phala` and `/var/run/tappd.sock`
+
+### Privacy Engine
+
+The privacy engine (`packages/privacy-engine`) enforces privacy compliance for strict-private raids. It integrates into the orchestrator at two points:
+
+1. **Submission evaluation** — each provider submission is scanned for privacy violations before it is ranked
+2. **Settlement gating** — raids that fail privacy compliance are blocked from paying out; the settlement record includes `privacyCompliance` proof
+
+Privacy engine features:
+- Real-time Phala CVM TEE attestation verification via `BOSSRAID_TEE_SOCKET_PATH`
+- Redacted content reexposure scanning (checks submission text for sanitization markers)
+- External transmission detection (flags references to external APIs in submission text)
+- Per-provider privacy compliance records in settlement execution proof
+- Attestation-gated settlement: providers without valid privacy attestations are excluded from payout
+
+The privacy engine is always active when `raidPolicy.privacyMode` is `"strict"` or `"prefer"` with `requiredPrivacyFeatures` set.
+
+### ERC-8004 and ERC-8183 via ACP
+
+ERC-8004 identity registration and ERC-8183 onchain settlement are handled through the Virtuals ACP integration, not self-deployed contracts. The flow:
+
+1. Register Mercenary and all provider agents through the ACP registration process at `https://acpx.virtuals.io`
+2. Use `examples/virtuals-acp-capture-sheet.md` to map ACP output into Boss Raid environment variables
+3. Feed resulting `erc8004` identity refs into provider registration payloads via `POST /agents/register`
+4. Feed settlement addresses into `deploy/phala/docker-compose.yml` via `BOSSRAID_*` env vars
 
 ### Deployment Wrappers
 

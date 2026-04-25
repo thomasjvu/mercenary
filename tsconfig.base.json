@@ -18,6 +18,7 @@
       "@bossraid/scoring": ["packages/scoring/src/index.ts"],
       "@bossraid/provider-sdk": ["packages/provider-sdk/src/index.ts"],
       "@bossraid/orchestrator": ["apps/orchestrator/src/index.ts"],
+      "@bossraid/privacy-engine": ["packages/privacy-engine/src/index.ts"],
       "@bossraid/ui": ["packages/ui/src/index.tsx"]
     },
     "strict": true,

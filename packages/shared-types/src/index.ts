@@ -308,6 +308,7 @@ export interface ProviderSubmission {
   };
   filesTouched: string[];
   submittedAt: string;
+  privacyAttestation?: PrivacyAttestation;
 }
 
 export interface RaidContributionPlan {
@@ -479,10 +480,63 @@ export interface EvaluationBreakdown {
   explanationScore: number;
   latencyScore: number;
   uniquenessScore: number;
+  privacyComplianceScore?: number;
+  privacyComplianceDetails?: PrivacyComplianceResult;
   finalScore: number;
   valid: boolean;
   invalidReasons: string[];
   summary?: string;
+}
+
+export interface PrivacyComplianceResult {
+  passed: boolean;
+  score: number;
+  dataLineageLeak: boolean;
+  redactedContentReexposed: boolean;
+  externalTransmissionDetected: boolean;
+  issues: PrivacyComplianceIssue[];
+}
+
+export interface PrivacyComplianceIssue {
+  severity: "info" | "warn" | "error";
+  code: string;
+  message: string;
+  field?: string;
+}
+
+export interface TeeAttestationResult {
+  valid: boolean;
+  providerId: string;
+  verifiedAt: string;
+  expiresAt?: string;
+  vendor: string;
+  enclaveHash?: string;
+  signature?: string;
+  runtimeMode?: string;
+  notes?: string[];
+}
+
+export interface PrivacyAttestation {
+  providerId: string;
+  raidId: string;
+  submittedAt: string;
+  featuresClaimed: PrivacyFeatureKey[];
+  featuresVerified: PrivacyFeatureKey[];
+  teeAttestation?: TeeAttestationResult;
+  externalApiCalls: string[];
+  dataRetained: boolean;
+  signedDeclaration: string;
+}
+
+export interface PrivacyComplianceRecord {
+  raidId: string;
+  privacyMode: PrivacyRoutingMode;
+  requiredFeatures: PrivacyFeatureKey[];
+  providerAttestations: PrivacyAttestation[];
+  perProviderCompliance: Record<string, PrivacyComplianceResult>;
+  overallPassed: boolean;
+  overallScore: number;
+  evaluatedAt: string;
 }
 
 export interface RankedSubmission {
@@ -769,6 +823,7 @@ export interface SettlementExecutionRecord {
   taskHash: string;
   evaluationHash: string;
   successfulProviderIds: string[];
+  privacyCompliance?: PrivacyComplianceRecord;
   allocations: SettlementAllocation[];
   contracts: SettlementContractsProof;
   registryCall: SettlementRegistryCallProof;
