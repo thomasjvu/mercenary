@@ -46,9 +46,11 @@ Mercenary is the orchestrator agent inside Boss Raid.
 - Local default persistence is SQLite.
 - Raid state, launch reservations, public rate limits, and ops sessions are storage-backed.
 - `POST /v1/raid` is the native public action route.
+- x402 payments are enabled by default; the recipient wallet is configured via `BOSSRAID_X402_PAY_TO`.
 - The active hosted TEE runtime is the Phala CVM stack. The EigenCompute wrapper remains in-repo as an optional judging and attestation lane, not the default paid runtime.
 - The public web can deploy on Cloudflare Pages and proxy `/api/*` back to a separate Boss Raid API origin.
 - The built shell can also serve the ops SPA at `/ops/` and proxy `/ops-api/*` same-origin.
-- ERC-8004 proof can be verified against chain data only when `BOSSRAID_ERC8004_VERIFY`, `BOSSRAID_RPC_URL`, and real numeric ERC-8004 `agentId` values are configured.
-- ERC-8183 settlement reaches terminal child-job states only when the client funds jobs and the required provider and evaluator signing keys are configured.
+- ERC-8004 identity is registered through the Virtuals ACP platform. Boss Raid consumes the resulting `erc8004` refs and verifies them against chain data when `BOSSRAID_ERC8004_VERIFY=true` and `BOSSRAID_RPC_URL` is configured.
+- ERC-8183 settlement reaches terminal child-job states only when `BOSSRAID_SETTLEMENT_MODE=onchain`, wallet keys are configured, and the client wallet holds sufficient USDC for escrow funding.
+- Provider privacy attestation is submitted with each work result; the privacy engine gates settlement for strict-private raids.
 - Successful raiders split payout equally.
