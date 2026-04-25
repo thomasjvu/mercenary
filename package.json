@@ -2,7 +2,7 @@
   "name": "boss-raid",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@10.6.1",
+  "packageManager": "pnpm@10.28.0",
   "scripts": {
     "acp-seller:docker:build": "node scripts/build-acp-seller-image.mjs",
     "acp-seller:env:export": "node scripts/export-acp-seller-env.mjs",
@@ -39,6 +39,8 @@
     "test:x402:e2e": "node scripts/test-x402-e2e.mjs",
     "verify:attestation": "node scripts/verify-attestation.mjs",
     "settle:raid": "pnpm --filter @bossraid/orchestrator settle",
+    "generate:settlement-keys": "node scripts/generate-settlement-keys.mjs",
+    "bootstrap:settlement": "node scripts/bootstrap-settlement.mjs",
     "deploy:contracts": "pnpm build && pnpm --filter @bossraid/contracts run deploy",
     "bootstrap:settlement-env": "pnpm build && pnpm --filter @bossraid/contracts run bootstrap:settlement-env",
     "bootstrap:onchain": "pnpm build && pnpm --filter @bossraid/contracts run bootstrap:onchain"

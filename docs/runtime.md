@@ -102,6 +102,8 @@ Proof, settlement, and attestation:
 pnpm export:proof-bundle -- --raid-id <raidId>
 pnpm verify:attestation
 pnpm settle:raid -- --raid-id <raidId>
+pnpm generate:settlement-keys
+pnpm bootstrap:settlement
 ```
 
 Deploy and packaging:
@@ -252,11 +254,63 @@ ERC-8004 identity registration and ERC-8183 onchain settlement are handled throu
 3. Feed resulting `erc8004` identity refs into provider registration payloads via `POST /agents/register`
 4. Feed settlement addresses into `deploy/phala/docker-compose.yml` via `BOSSRAID_*` env vars
 
-### Deployment Wrappers
+## Beta Launch Checklist
 
-- `BOSSRAID_IMAGE`, `BOSSRAID_EVALUATOR_IMAGE`, and `BOSSRAID_EVAL_JOB_CONTAINER_IMAGE`: image tags used by Docker, Phala, and EigenCompute wrappers
-- `BOSSRAID_PROVIDER_{A,B,C}_*`: deploy-wrapper overrides for the default provider trio in `docker-compose.yml` and `deploy/phala/*.env.example`
-- `BOSSRAID_ACP_SELLER_IMAGE`, `BOSSRAID_ACP_CONFIG_PATH`, `BOSSRAID_ACP_SELLER_ENV_OUT`, `BOSSRAID_ACP_SELLER_CONTEXT_OUT`, `BOSSRAID_ACP_SELLER_PLATFORM`, and `BOSSRAID_ACP_REPO_PATH`: ACP seller image and export helpers
+Run these in order:
+
+### Step 1: ACP Registration (do once)
+1. Go to `https://acpx.virtuals.io`
+2. Register Mercenary (orchestrator)
+3. Register Gamma, Riko, Dottie (providers)
+4. Fill out `examples/virtuals-acp-capture-sheet.md` for each
+5. Map results to `deploy/phala/production.env.example`
+
+### Step 2: Settlement Keys and Contracts
+```bash
+# Generate wallets (outputs to temp/settlement-keys.json and temp/settlement-keys.env)
+pnpm generate:settlement-keys
+
+# Deploy contracts (requires BOSSRAID_RPC_URL, BOSSRAID_DEPLOYER_PRIVATE_KEY, BOSSRAID_TOKEN_ADDRESS)
+pnpm deploy:contracts
+
+# Full bootstrap: keys + deploy + settlement env in one shot
+pnpm bootstrap:settlement
+```
+
+### Step 3: Fund Wallets
+- **Client wallet** (`temp/settlement-keys.json`): fund with USDC on Base for escrow — each raid budgets `raid_policy.max_total_cost` per provider
+- **Provider wallets**: fund with ~0.01 ETH each for gas (Gamma, Riko, Dottie addresses from key generation output)
+- **Evaluator wallet**: optionally fund with ETH for gas
+
+### Step 4: Environment Merge
+```bash
+source temp/settlement-keys.env && source temp/settlement-bootstrap.env
+# Or merge into one file:
+cat temp/settlement-keys.env temp/settlement-bootstrap.env > temp/bossraid-prod.env
+```
+
+### Step 5: Compose Deployment
+```bash
+# Use production.env.example as a reference
+cp deploy/phala/production.env.example deploy/phala/.env
+# Edit .env with real values, then:
+docker compose -f deploy/phala/docker-compose.yml --env-file deploy/phala/.env up --build
+```
+
+### Step 6: Verify
+```bash
+# Health check
+curl https://<your-api>/health | jq
+
+# Settlement status (admin auth required)
+curl -H "Authorization: Bearer $BOSSRAID_ADMIN_TOKEN" \
+  https://<your-api>/v1/ops/settlement/status | jq
+
+# Test a raid
+curl -X POST https://<your-api>/v1/raid \
+  -H "content-type: application/json" \
+  -d @examples/strict-private-raid.json | jq
+```
 
 ## Current Defaults
 
@@ -268,7 +322,7 @@ ERC-8004 identity registration and ERC-8183 onchain settlement are handled throu
 - `POST /v1/raids` remains as an alias. The OpenAI-compatible path is a compatibility layer over the same raid engine.
 - x402 is enabled by default on `POST /v1/raid`, `POST /v1/raids`, and `POST /v1/chat/completions` unless `BOSSRAID_X402_ENABLED=false`.
 - The hosted `/demo` UI can use `POST /v1/demo/raid` as a free launch lane when `BOSSRAID_DEMO_ROUTE_ENABLED=true`.
-- `BOSSRAID_SETTLEMENT_MODE=file` is the safe default proof lane. Use `onchain` plus real signer config to reach terminal ERC-8183 child-job states.
+- `BOSSRAID_SETTLEMENT_MODE=file` is the safe default proof lane. Use `onchain` plus real signer config to reach terminal ERC-8183 child-job states. Set `BOSSRAID_SETTLEMENT_MODE=onchain` only after all settlement env vars are configured and wallets are funded.
 - When `settlementExecution.mode` is `onchain`, public result, receipt, attested-result, MCP receipt, and agent-log reads attempt a live contract refresh if the settlement proof carries `contracts.rpcUrl` or the runtime has `BOSSRAID_RPC_URL`.
 - When that refresh changes the proof, Boss Raid persists the updated settlement record and rewrites the referenced settlement artifact JSON.
 - `pnpm export:proof-bundle -- --raid-id <raidId>` attempts the same onchain refresh before it copies `result.json`, `agent_log.json`, and `settlement-execution.json`.
