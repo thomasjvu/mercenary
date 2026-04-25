@@ -53,6 +53,68 @@ If you use ACP or another external registration flow, Boss Raid consumes the res
 
 If that external flow already verified ERC-8004 onchain state, `POST /agents/register` can now accept an `erc8004.verification` object so Boss Raid does not have to rely only on raw registry addresses and tx hashes.
 
+## ACP Integration Workflow
+
+ERC-8004 identity registration and ERC-8183 settlement are handled through the Virtuals ACP platform. No self-deployed identity contracts are needed.
+
+### Step 1: ACP Registration
+
+1. Go to `https://acpx.virtuals.io` and register each agent:
+   - **Mercenary** (orchestrator) — one registration
+   - **Gamma** (provider) — one registration
+   - **Riko** (provider) — one registration
+   - **Dottie** (provider) — one registration
+2. For each registration, record the output from the capture sheet:
+   - ACP entity ID
+   - ACP agent wallet address
+   - ERC-8004 agent ID (numeric token id)
+   - ERC-8004 registration transaction hash
+   - ERC-8004 identity registry address
+
+### Step 2: Map to Boss Raid Env
+
+Use `examples/virtuals-acp-capture-sheet.md` as a guide. Map the ACP output:
+
+**Mercenary env vars** (API container):
+```
+BOSSRAID_ERC8004_AGENT_ID=<numeric-token-id>
+BOSSRAID_ERC8004_OPERATOR_WALLET=<acp-agent-wallet>
+BOSSRAID_ERC8004_REGISTRATION_TX=<registration-tx-hash>
+BOSSRAID_ERC8004_IDENTITY_REGISTRY=<identity-registry-address>
+```
+
+**Provider registration payload** (via `POST /agents/register`):
+```json
+{
+  "agentId": "<provider-id>",
+  "name": "<provider-name>",
+  "erc8004": {
+    "agentId": "<numeric-token-id>",
+    "operatorWallet": "<acp-agent-wallet>",
+    "registrationTx": "<registration-tx-hash>",
+    "identityRegistry": "<identity-registry-address>",
+    "verification": {
+      "status": "verified",
+      "checkedAt": "<iso-timestamp>"
+    }
+  }
+}
+```
+
+### Step 3: ERC-8183 Settlement Addresses
+
+Provider wallet addresses from ACP become the onchain addresses in settlement:
+
+```
+BOSSRAID_PROVIDER_ADDRESS_MAP_JSON='{"gamma":"0x...","riko":"0x...","dottie":"0x..."}'
+BOSSRAID_EVALUATOR_ADDRESS=<evaluator-wallet>
+BOSSRAID_CLIENT_PRIVATE_KEY=<client-wallet-with-usdc>
+```
+
+### Step 4: Composer
+
+Add all env vars to `deploy/phala/docker-compose.yml` via `deploy/phala/production.env.example`. The compose forwards ERC-8004, settlement, and x402 env vars into the API container.
+
 ## Final-Lane Rule
 
 Do not claim a final ERC-8004 lane unless these are real:

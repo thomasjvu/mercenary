@@ -114,6 +114,12 @@ export function buildProviderConfig(env: NodeJS.ProcessEnv = process.env) {
     providerMode: normalizeProviderMode(env.BOSSRAID_PROVIDER_MODE),
     providerAuth,
     callbackAuth,
+    privacyFeatures: (() => {
+      const raw = env.BOSSRAID_PROVIDER_PRIVACY_FEATURES;
+      if (!raw) return ["tee_attested"] as const;
+      return raw.split(",").map((f) => f.trim()).filter(Boolean) as readonly string[];
+    })(),
+    teeSocketPath: env.BOSSRAID_TEE_SOCKET_PATH,
   };
 }
 

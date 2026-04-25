@@ -167,6 +167,16 @@ function verifyResult(result) {
   }
 
   verifyRoutingProof(result.routingProof);
+
+  if (result.settlementExecution?.privacyCompliance) {
+    const pc = result.settlementExecution.privacyCompliance;
+    console.log(JSON.stringify({ step: "privacy_compliance", overallPassed: pc.overallPassed, overallScore: pc.overallScore }, null, 2));
+    if (!pc.overallPassed) {
+      throw new Error(`Expected privacy compliance to pass for strict-private raid: ${JSON.stringify(pc.perProviderCompliance)}`);
+    }
+  } else {
+    console.log(JSON.stringify({ step: "privacy_compliance", note: "no settlement execution yet (may be pending)" }, null, 2));
+  }
 }
 
 function verifyAgentLog(agentLog) {

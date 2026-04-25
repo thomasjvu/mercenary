@@ -978,6 +978,32 @@ export function buildApiServer(
     };
   });
 
+  app.get("/v1/ops/settlement/status", async (request, reply) => {
+    const adminError = requireAdmin(reply, request.headers);
+    if (adminError) {
+      return adminError;
+    }
+
+    const settlementMode = env.BOSSRAID_SETTLEMENT_MODE ?? "off";
+    const rpcUrl = env.BOSSRAID_RPC_URL;
+    const chainId = env.BOSSRAID_CHAIN_ID;
+    const registryAddress = env.BOSSRAID_REGISTRY_ADDRESS;
+    const escrowAddress = env.BOSSRAID_ESCROW_ADDRESS;
+    const tokenAddress = env.BOSSRAID_TOKEN_ADDRESS;
+
+    return {
+      mode: settlementMode,
+      configured: settlementMode !== "off" && Boolean(rpcUrl && registryAddress && escrowAddress),
+      chain: chainId ? { id: chainId } : null,
+      contracts: {
+        registry: registryAddress ?? null,
+        escrow: escrowAddress ?? null,
+        token: tokenAddress ?? null,
+      },
+      rpcUrl: rpcUrl ? new URL(rpcUrl).host : null,
+    };
+  });
+
   app.get("/v1/raids", async (request, reply) => {
     const adminError = requireAdmin(reply, request.headers);
     if (adminError) {

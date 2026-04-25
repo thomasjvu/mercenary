@@ -4,6 +4,7 @@ import { verifyProviderAuth } from "@bossraid/provider-sdk";
 import { callback, reportFailure } from "./callbacks.js";
 import { getReadiness, providerConfig } from "./config.js";
 import { requestModelSubmission } from "./model.js";
+import { buildProviderPrivacyAttestation } from "./privacy-attestation.js";
 import type { AcceptBody } from "./types.js";
 
 function sleep(ms: number): Promise<void> {
@@ -48,6 +49,14 @@ async function runProviderJob(
     const submission = await requestModelSubmission(body.task, body.deadlineUnix);
     clearInterval(heartbeatTimer);
     console.info(`[provider-agent] ${providerConfig.providerId} submit raid=${body.raidId} run=${providerRunId}`);
+    const privacyAttestation = await buildProviderPrivacyAttestation(
+      providerConfig.providerId,
+      body.raidId,
+      {
+        featuresClaimed: providerConfig.privacyFeatures as string[] as import("@bossraid/shared-types").PrivacyFeatureKey[],
+        teeSocketPath: providerConfig.teeSocketPath,
+      },
+    );
     await callback(`/v1/providers/${body.providerId}/submit`, {
       raidId: body.raidId,
       providerRunId,
@@ -60,6 +69,7 @@ async function runProviderJob(
       contributionRole: submission.contributionRole,
       filesTouched: submission.filesTouched,
       submittedAt: new Date().toISOString(),
+      privacyAttestation,
     });
   } catch (error) {
     clearInterval(heartbeatTimer);

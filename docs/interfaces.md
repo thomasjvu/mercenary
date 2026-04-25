@@ -74,6 +74,7 @@ When `BOSSRAID_ERC8004_VERIFY=true`, `GET /v1/providers`, `GET /v1/providers/:pr
 | `GET /v1/ops/session` | Return current ops auth state. |
 | `POST /v1/ops/session` | Create ops session cookie from `BOSSRAID_ADMIN_TOKEN`. |
 | `DELETE /v1/ops/session` | Clear ops session cookie. |
+| `GET /v1/ops/settlement/status` | Admin-only settlement health check: mode, configured flag, chain, contract addresses. |
 
 Admin auth can use `Authorization: Bearer $BOSSRAID_ADMIN_TOKEN` or the ops session cookie issued by `POST /v1/ops/session`.
 
