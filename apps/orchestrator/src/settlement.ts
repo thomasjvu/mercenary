@@ -46,5 +46,9 @@ export function buildSettlementSummary(raid: RaidRecord): SettlementSummary | un
     successfulProviderCount: rewards.successfulProviderCount,
     successfulProvidersPaid: rewards.successfulProvidersPaid,
     payoutPerSuccessfulProvider: rewards.payoutPerSuccessfulProvider,
+    escrowFundingUsd: raid.escrowFundingUsd ?? 0,
+    platformMarkupUsd: raid.platformMarkupUsd ?? 0,
+    minimumPayoutThresholdUsd: raid.task.constraints.minimumPayoutThresholdUsd ?? 0.25,
+    approvedProviderCount: raid.selectedProviders.length,
   };
 }

@@ -88,6 +88,7 @@ export interface RaidConstraints {
   privacyMode?: PrivacyRoutingMode;
   requirePrivacyFeatures?: PrivacyFeatureKey[];
   selectionMode?: SelectionMode;
+  minimumPayoutThresholdUsd?: number;
 }
 
 export interface RewardPolicy {
