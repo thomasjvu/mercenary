@@ -47,15 +47,16 @@ interface X402Config {
   payTo: string;
   maxAmountRequired?: string;
   maxTimeoutSeconds: number;
+  platformMarkupBps: number;
   routeSurchargeUsd: {
     raid: number;
     chat: number;
   };
-  verifyHmacSecret?: string;
   cdpApiKeyId?: string;
   cdpApiKeySecret?: string;
   payaiApiKeyId?: string;
   payaiApiKeySecret?: string;
+  facilitatorFallback?: boolean;
   assetName?: string;
   assetVersion?: string;
 }
@@ -79,25 +80,24 @@ class X402ProtocolError extends Error {
   }
 }
 
+import {
+  asSingleHeader,
+  parseBoolean,
+  readPositiveNumber,
+  readBooleanEnv as readBooleanEnvUtil,
+} from "@bossraid/shared-types";
+
+const DEFAULT_PAYAI_FACILITATOR_URL = "https://facilitator.payai.network";
+const DEFAULT_CDP_FACILITATOR_URL = "https://api.cdp.coinbase.com/platform/v2/x402";
+const DEFAULT_RAID_SURCHARGE_USD = 0.01;
+const DEFAULT_CHAT_SURCHARGE_USD = 0.002;
+const DEFAULT_PLATFORM_MARKUP_BPS = 100;
+const DEFAULT_MAX_TIMEOUT_SECONDS = 90;
+const CDP_JWT_EXPIRES_IN_SEC = 120;
+
 type RawHeaders = Record<string, string | string[] | undefined>;
 
 type X402RouteName = "raid" | "chat";
-
-function asSingleHeader(value: string | string[] | undefined): string | undefined {
-  if (Array.isArray(value)) {
-    return value[0];
-  }
-  return value;
-}
-
-function parseBoolean(value: string | undefined): boolean {
-  return value === "1" || value === "true" || value === "yes";
-}
-
-function readPositiveNumber(value: string | undefined, fallback: number): number {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}
 
 function formatUsdPrice(amountUsd: number): string {
   if (amountUsd >= 1) {
@@ -125,29 +125,36 @@ function usdToAtomicUsdc(amountUsd: number): string {
 
 export function readX402Config(env: NodeJS.ProcessEnv = process.env): X402Config {
   const enabled = env.BOSSRAID_X402_ENABLED == null ? true : parseBoolean(env.BOSSRAID_X402_ENABLED);
-  const raidSurchargeUsd = readPositiveNumber(env.BOSSRAID_X402_RAID_PRICE_USD, 0.01);
-  const chatSurchargeUsd = readPositiveNumber(env.BOSSRAID_X402_CHAT_PRICE_USD, 0.002);
+const raidSurchargeUsd = readPositiveNumber(env.BOSSRAID_X402_RAID_PRICE_USD, DEFAULT_RAID_SURCHARGE_USD);
+  const chatSurchargeUsd = readPositiveNumber(env.BOSSRAID_X402_CHAT_PRICE_USD, DEFAULT_CHAT_SURCHARGE_USD);
+  const platformMarkupBps = readPositiveNumber(env.BOSSRAID_X402_PLATFORM_MARKUP_BPS, DEFAULT_PLATFORM_MARKUP_BPS);
+
+  const hasExplicitFacilitatorUrl = !!env.BOSSRAID_X402_FACILITATOR_URL;
+  const hasFacilitatorCredential = !!(env.PAYAI_API_KEY_ID || env.CDP_API_KEY_ID);
 
   return {
     enabled,
-    facilitatorUrl:
-      env.BOSSRAID_X402_FACILITATOR_URL ??
-      (env.BOSSRAID_X402_VERIFY_HMAC_SECRET ? undefined : "https://facilitator.payai.network"),
+    facilitatorUrl: hasExplicitFacilitatorUrl
+      ? env.BOSSRAID_X402_FACILITATOR_URL!
+      : enabled && (hasFacilitatorCredential || env.BOSSRAID_X402_ENABLED == null)
+        ? DEFAULT_PAYAI_FACILITATOR_URL
+        : undefined,
     resourceBaseUrl: env.BOSSRAID_X402_RESOURCE_BASE_URL ?? "http://127.0.0.1:8787",
     network: env.BOSSRAID_X402_NETWORK ?? "eip155:84532",
     asset: env.BOSSRAID_X402_ASSET ?? "usdc",
     payTo: env.BOSSRAID_X402_PAY_TO ?? "0x0000000000000000000000000000000000000000",
     maxAmountRequired: env.BOSSRAID_X402_MAX_AMOUNT_REQUIRED,
-    maxTimeoutSeconds: Math.max(1, Math.round(readPositiveNumber(env.BOSSRAID_X402_MAX_TIMEOUT_SECONDS, 90))),
+    maxTimeoutSeconds: Math.max(1, Math.round(readPositiveNumber(env.BOSSRAID_X402_MAX_TIMEOUT_SECONDS, DEFAULT_MAX_TIMEOUT_SECONDS))),
+    platformMarkupBps,
     routeSurchargeUsd: {
       raid: raidSurchargeUsd,
       chat: chatSurchargeUsd,
     },
-    verifyHmacSecret: env.BOSSRAID_X402_VERIFY_HMAC_SECRET,
     cdpApiKeyId: env.CDP_API_KEY_ID,
     cdpApiKeySecret: env.CDP_API_KEY_SECRET,
     payaiApiKeyId: env.PAYAI_API_KEY_ID,
     payaiApiKeySecret: env.PAYAI_API_KEY_SECRET,
+    facilitatorFallback: parseBoolean(env.BOSSRAID_X402_FACILITATOR_FALLBACK),
     assetName: env.BOSSRAID_X402_ASSET_NAME,
     assetVersion: env.BOSSRAID_X402_ASSET_VERSION,
   };
@@ -201,7 +208,7 @@ function buildPaymentRequired(
   } = {},
 ): X402PaymentRequired {
   const resourcePath = route === "chat" ? "/v1/chat/completions" : "/v1/raid";
-  const priceUsd = computeChargeUsd(config, route, budgetUsd);
+  const price = computeChargeUsd(config, route, budgetUsd);
   const assetConfig = resolveAssetConfig(config);
 
   return {
@@ -213,7 +220,7 @@ function buildPaymentRequired(
         maxAmountRequired:
           route === "raid" && config.maxAmountRequired && budgetUsd <= 0
             ? config.maxAmountRequired
-            : usdToAtomicUsdc(priceUsd),
+            : usdToAtomicUsdc(price.totalUsd),
         resource: buildResourceUrl(config.resourceBaseUrl, resourcePath),
         description:
           route === "chat"
@@ -223,7 +230,7 @@ function buildPaymentRequired(
         payTo: config.payTo,
         maxTimeoutSeconds: options.maxTimeoutSeconds ?? config.maxTimeoutSeconds,
         asset: assetConfig.asset,
-        price: formatUsdPrice(priceUsd),
+        price: formatUsdPrice(price.totalUsd),
         extra:
           assetConfig.extra || options.extra
             ? {
@@ -254,10 +261,22 @@ function computeChargeUsd(
   config: X402Config,
   route: X402RouteName,
   budgetUsd: number,
-): number {
+): {
+  budgetUsd: number;
+  markupUsd: number;
+  totalUsd: number;
+} {
   const surchargeUsd = config.routeSurchargeUsd[route];
   const normalizedBudget = Number.isFinite(budgetUsd) && budgetUsd > 0 ? budgetUsd : 0;
-  return normalizedBudget + surchargeUsd;
+  const budgetWithSurcharge = normalizedBudget + surchargeUsd;
+  const markupUsd = (budgetWithSurcharge * config.platformMarkupBps) / 10000;
+  const totalUsd = budgetWithSurcharge + markupUsd;
+
+  return {
+    budgetUsd: budgetWithSurcharge,
+    markupUsd,
+    totalUsd,
+  };
 }
 
 function resolveAssetConfig(config: X402Config): {
@@ -389,8 +408,8 @@ function buildCdpBearerToken(config: X402Config, requestUrl: URL, method: string
     );
   }
 
-  const now = Math.floor(Date.now() / 1000);
-  const expiresIn = 120;
+  const now = Math.floor(Date.now() / 1_000);
+  const expiresIn = CDP_JWT_EXPIRES_IN_SEC;
   const payload = {
     sub: config.cdpApiKeyId,
     iss: "cdp",
@@ -542,16 +561,18 @@ async function verifyPayment(
   signatureHeader: string | undefined,
   paymentRequired: X402PaymentRequired,
 ): Promise<X402VerificationResponse> {
-  if (config.facilitatorUrl) {
-    const paymentPayload = decodeHeaderValue<unknown>(signatureHeader, "PAYMENT-SIGNATURE");
-    return facilitatorRequest<X402VerificationResponse>(config, "/verify", {
-      x402Version: 1,
-      paymentPayload,
-      paymentRequirements: paymentRequired.accepts[0],
-    });
+  if (!config.facilitatorUrl) {
+    throw new Error(
+      "No x402 facilitator configured. Set PAYAI_API_KEY_ID or BOSSRAID_X402_FACILITATOR_URL.",
+    );
   }
 
-  return verifyLocalPayment(signatureHeader, paymentRequired, config.verifyHmacSecret);
+  const paymentPayload = decodeHeaderValue<unknown>(signatureHeader, "PAYMENT-SIGNATURE");
+  return facilitatorRequest<X402VerificationResponse>(config, "/verify", {
+    x402Version: 1,
+    paymentPayload,
+    paymentRequirements: paymentRequired.accepts[0],
+  });
 }
 
 async function settlePayment(
@@ -559,23 +580,39 @@ async function settlePayment(
   signatureHeader: string | undefined,
   paymentRequired: X402PaymentRequired,
 ): Promise<X402SettlementResponse> {
-  if (config.facilitatorUrl) {
-    const paymentPayload = decodeHeaderValue<unknown>(signatureHeader, "PAYMENT-SIGNATURE");
+  if (!config.facilitatorUrl) {
+    throw new Error(
+      "No x402 facilitator configured. Set PAYAI_API_KEY_ID or BOSSRAID_X402_FACILITATOR_URL.",
+    );
+  }
+
+  const paymentPayload = decodeHeaderValue<unknown>(signatureHeader, "PAYMENT-SIGNATURE");
+  const originalFacilitatorUrl = config.facilitatorUrl;
+
+  try {
     return facilitatorRequest<X402SettlementResponse>(config, "/settle", {
       x402Version: 1,
       paymentPayload,
       paymentRequirements: paymentRequired.accepts[0],
     });
-  }
+  } catch (payaiError) {
+    if (
+      config.facilitatorFallback &&
+      isPayAIFacilitator(config) &&
+      config.cdpApiKeyId &&
+      config.cdpApiKeySecret
+    ) {
+      config.facilitatorUrl = DEFAULT_CDP_FACILITATOR_URL;
+      return facilitatorRequest<X402SettlementResponse>(config, "/settle", {
+        x402Version: 1,
+        paymentPayload,
+        paymentRequirements: paymentRequired.accepts[0],
+      });
+    }
 
-  const verification = verifyLocalPayment(signatureHeader, paymentRequired, config.verifyHmacSecret);
-  return {
-    success: verification.valid === true,
-    error: verification.valid === true ? undefined : verification.error,
-    payer: verification.payer,
-    network: paymentRequired.accepts[0]?.network,
-    transaction: verification.valid === true ? "local-hmac-settlement" : undefined,
-  };
+    config.facilitatorUrl = originalFacilitatorUrl;
+    throw payaiError;
+  }
 }
 
 export function applyX402Headers(reply: { header(name: string, value: string): unknown }, input: {
@@ -599,12 +636,20 @@ export async function requireX402Payment(input: {
 }): Promise<{
   settlement?: X402SettlementResponse;
   paymentRequired?: X402PaymentRequired;
+  paidAmountUsd: number;
+  escrowFundingUsd: number;
+  platformMarkupUsd: number;
 }> {
   const config = readX402Config(input.env);
   if (!config.enabled) {
-    return {};
+    return {
+      paidAmountUsd: 0,
+      escrowFundingUsd: 0,
+      platformMarkupUsd: 0,
+    };
   }
 
+  const computed = computeChargeUsd(config, input.route, input.budgetUsd ?? 0);
   const paymentRequired = input.paymentRequired ?? buildPaymentRequired(config, input.route, input.budgetUsd ?? 0);
   const signatureHeader = asSingleHeader(input.headers["payment-signature"]);
   if (!signatureHeader) {
@@ -639,6 +684,9 @@ export async function requireX402Payment(input: {
   return {
     settlement,
     paymentRequired,
+    paidAmountUsd: computed.totalUsd,
+    escrowFundingUsd: computed.budgetUsd,
+    platformMarkupUsd: computed.markupUsd,
   };
 }
 

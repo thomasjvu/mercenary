@@ -102,6 +102,20 @@ import { findWorkspaceRoot, resolveWorkspacePath } from "./workspace.js";
 
 const PROVIDER_HEALTH_CACHE_TTL_MS = 5_000;
 
+const RAID_POLL_INTERVAL_MS = 250;
+const STALE_RESERVATION_TIMEOUT_MS = 15 * 60 * 1_000;
+const DEFAULT_ESTIMATED_FIRST_RESULT_SEC = 25;
+const ADAPTIVE_PLANNING = {
+  MIN_EXPERTS_FOR_RESERVES: 6,
+  MAX_ADAPTIVE_RESERVES: 4,
+  RESERVE_RATIO: 5,
+  MAX_REVISIONS_PER_WORKSTREAM: 2,
+  WEAK_SCORE_THRESHOLD: 0.72,
+  EXPANSION_MISSING_CAP: 3,
+  EXPANSION_WEAK_CAP: 2,
+  MIN_EXPANSION_TO_TRIGGER: 2,
+} as const;
+
 export class NoEligibleProvidersError extends Error {
   constructor() {
     super("No eligible providers are currently available for this raid request.");
@@ -142,6 +156,7 @@ function normalizeProviderEndpoint(endpoint: string | undefined): string | undef
     const normalized = url.toString();
     return normalized.endsWith("/") ? normalized.slice(0, -1) : normalized;
   } catch {
+    console.warn(`normalizeProviderEndpoint: invalid URL '${endpoint}', falling back to trimmed`);
     return endpoint.trim().replace(/\/+$/, "");
   }
 }
@@ -391,6 +406,8 @@ export class BossRaidOrchestrator {
   async spawnReservedRaid(
     reservationId: string,
     requestKey: string,
+    escrowFundingUsd?: number,
+    platformMarkupUsd?: number,
   ): Promise<BossRaidSpawnOutput> {
     this.assertPersistenceWritable();
     const reservation = this.getRaidLaunchReservation(reservationId, requestKey);
@@ -411,21 +428,27 @@ export class BossRaidOrchestrator {
     }
 
     const prepared = this.hydrateLaunchReservation(reservation);
-    const spawn = await this.spawnPreparedRaid(prepared, reservation.deadlineUnix);
+    const spawn = await this.spawnPreparedRaid(prepared, reservation.deadlineUnix, escrowFundingUsd, platformMarkupUsd);
     reservation.spawnOutput = spawn;
     await this.queuePersist();
     return spawn;
   }
 
-  async spawnRaid(input: BossRaidSpawnInput): Promise<BossRaidSpawnOutput> {
+  async spawnRaid(
+    input: BossRaidSpawnInput,
+    escrowFundingUsd?: number,
+    platformMarkupUsd?: number,
+  ): Promise<BossRaidSpawnOutput> {
     this.assertPersistenceWritable();
     const prepared = await this.prepareRaid(input);
-    return this.spawnPreparedRaid(prepared, this.computeRootDeadlineUnix(prepared.sanitized));
+    return this.spawnPreparedRaid(prepared, this.computeRootDeadlineUnix(prepared.sanitized), escrowFundingUsd, platformMarkupUsd);
   }
 
   private async spawnPreparedRaid(
     prepared: PreparedLeafRaid | PreparedHierarchicalRaid,
     deadlineUnix: number,
+    escrowFundingUsd?: number,
+    platformMarkupUsd?: number,
   ): Promise<BossRaidSpawnOutput> {
     const raidAccessToken = createRaidAccessToken();
 
@@ -434,6 +457,8 @@ export class BossRaidOrchestrator {
       raid.status = "sanitizing";
       raid.planningMode = "hierarchical_parent";
       raid.childRaidIds = [];
+      raid.escrowFundingUsd = escrowFundingUsd;
+      raid.platformMarkupUsd = platformMarkupUsd;
       raid.adaptivePlanning =
         prepared.adaptiveProviderIds.length === 0
           ? undefined
@@ -460,7 +485,7 @@ export class BossRaidOrchestrator {
         status: raid.status,
         selectedExperts: this.countPreparedExperts(prepared.graph, "selected"),
         reserveExperts: this.countPreparedExperts(prepared.graph, "reserve") + prepared.adaptiveProviderIds.length,
-        estimatedFirstResultSec: Math.min(25, prepared.sanitized.constraints.maxLatencySec),
+        estimatedFirstResultSec: Math.min(DEFAULT_ESTIMATED_FIRST_RESULT_SEC, prepared.sanitized.constraints.maxLatencySec),
         sanitization: prepared.sanitized.sanitizationReport,
       };
     }
@@ -469,6 +494,8 @@ export class BossRaidOrchestrator {
     raid.status = "sanitizing";
     raid.planningMode = "single_raid";
     raid.raidAccessTokenHash = hashRaidAccessToken(raidAccessToken);
+    raid.escrowFundingUsd = escrowFundingUsd;
+    raid.platformMarkupUsd = platformMarkupUsd;
     this.raids.set(raid.id, raid);
     this.scheduleRaidDeadline(raid.id);
     await this.queuePersist();
@@ -481,7 +508,7 @@ export class BossRaidOrchestrator {
       status: raid.status,
       selectedExperts: prepared.selectedProviders.primaries.length,
       reserveExperts: prepared.selectedProviders.reserves.length,
-      estimatedFirstResultSec: Math.min(25, prepared.sanitized.constraints.maxLatencySec),
+      estimatedFirstResultSec: Math.min(DEFAULT_ESTIMATED_FIRST_RESULT_SEC, prepared.sanitized.constraints.maxLatencySec),
       sanitization: prepared.sanitized.sanitizationReport,
     };
   }
@@ -732,11 +759,14 @@ export class BossRaidOrchestrator {
   }
 
   private computeAdaptiveReserveExperts(totalExperts: number): number {
-    if (totalExperts < 6) {
+    if (totalExperts < ADAPTIVE_PLANNING.MIN_EXPERTS_FOR_RESERVES) {
       return 0;
     }
 
-    return Math.min(4, Math.max(1, Math.floor(totalExperts / 5)));
+    return Math.min(
+      ADAPTIVE_PLANNING.MAX_ADAPTIVE_RESERVES,
+      Math.max(1, Math.floor(totalExperts / ADAPTIVE_PLANNING.RESERVE_RATIO)),
+    );
   }
 
   private collectPreparedProviderIds(node: PreparedRaidNode): Set<string> {
@@ -1726,7 +1756,7 @@ export class BossRaidOrchestrator {
       }
 
       const revisionCount = this.countAdaptiveRevisions(raid, group.parentRaid.id, group.workstreamId);
-      if (revisionCount >= 2) {
+      if (revisionCount >= ADAPTIVE_PLANNING.MAX_REVISIONS_PER_WORKSTREAM) {
         return [];
       }
 
@@ -1747,7 +1777,7 @@ export class BossRaidOrchestrator {
       );
       const canExpand =
         template?.childFamilyId != null &&
-        expansionCount >= 2 &&
+        expansionCount >= ADAPTIVE_PLANNING.MIN_EXPANSION_TO_TRIGGER &&
         this.countAdaptiveRevisions(raid, group.parentRaid.id, group.workstreamId, "expand") === 0;
 
       const candidatesForGroup: Array<AdaptiveReplanTarget & { priority: number; depth: number; bestScore: number }> = [];
@@ -1769,7 +1799,7 @@ export class BossRaidOrchestrator {
       }
 
       const bestScore = Math.max(...group.children.map((child) => child.bestCurrentScore ?? 0), 0);
-      if (validChildren.length > 0 && bestScore < 0.72) {
+      if (validChildren.length > 0 && bestScore < ADAPTIVE_PLANNING.WEAK_SCORE_THRESHOLD) {
         candidatesForGroup.push({
           strategy: canExpand ? "expand" : "repair",
           parentRaid: group.parentRaid,
@@ -1919,7 +1949,9 @@ export class BossRaidOrchestrator {
     availableExperts: number,
     mode: "missing" | "weak",
   ): number {
-    const cap = mode === "missing" ? 3 : 2;
+    const cap = mode === "missing"
+      ? ADAPTIVE_PLANNING.EXPANSION_MISSING_CAP
+      : ADAPTIVE_PLANNING.EXPANSION_WEAK_CAP;
     return Math.max(0, Math.min(availableExperts, cap));
   }
 
@@ -2194,7 +2226,7 @@ export class BossRaidOrchestrator {
       if (TERMINAL_RAID_STATUSES.has(raid.status)) {
         return;
       }
-      await delay(250);
+      await delay(RAID_POLL_INTERVAL_MS);
     }
 
     const raid = this.requireRaid(raidId);
@@ -2330,7 +2362,7 @@ export class BossRaidOrchestrator {
     for (const [reservationId, reservation] of this.launchReservations.entries()) {
       const staleReplay =
         reservation.spawnOutput != null &&
-        Date.parse(reservation.createdAt) + 15 * 60_000 <= nowMs;
+        Date.parse(reservation.createdAt) + STALE_RESERVATION_TIMEOUT_MS <= nowMs;
       const expired =
         reservation.spawnOutput == null &&
         Date.parse(reservation.expiresAt) <= nowMs;

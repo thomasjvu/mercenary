@@ -230,8 +230,8 @@ test("PayAI facilitator is the default and uses merchant auth when keys are conf
 
     const paymentRequirements = requests[0]?.body.paymentRequirements as Record<string, unknown>;
     assert.equal(paymentRequirements.network, "base-sepolia");
-    assert.equal(paymentRequirements.maxAmountRequired, "3502000");
-    assert.equal(paymentRequirements.price, "$3.502");
+    assert.equal(paymentRequirements.maxAmountRequired, "3537020");
+    assert.equal(paymentRequirements.price, "$3.5370");
   } finally {
     globalThis.fetch = originalFetch;
   }

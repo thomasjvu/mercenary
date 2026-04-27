@@ -18,6 +18,8 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import { buildSettlementAllocations, buildSettlementSummary } from "./settlement.js";
 
+const DEFAULT_JOB_EXPIRY_SEC = 86_400;
+
 interface SettlementExecutor {
   execute(raid: RaidRecord): Promise<SettlementExecutionRecord | undefined>;
 }
@@ -468,7 +470,7 @@ class OnchainSettlementExecutor implements SettlementExecutor {
       rpcUrl: config.rpcUrl,
     });
     this.clientAddress = this.clientActor.address;
-    this.jobExpirySec = Number(config.jobExpirySec ?? "86400");
+    this.jobExpirySec = Number(config.jobExpirySec ?? String(DEFAULT_JOB_EXPIRY_SEC));
     this.atomicMultiplier = parseAtomicMultiplier(config.atomicMultiplier);
     this.fundJobs = parseBoolean(config.fundJobs);
     this.requireTerminalJobs = parseBoolean(config.requireTerminalJobs);
@@ -889,6 +891,7 @@ export function createSettlementExecutor(
 
   const outputDir = resolveSettlementOutputDir(workspaceRoot, env.BOSSRAID_SETTLEMENT_DIR);
   if (mode === "onchain") {
+    const treasuryKey = env.BOSSRAID_SETTLEMENT_TREASURY_KEY ?? env.BOSSRAID_CLIENT_PRIVATE_KEY;
     return new OnchainSettlementExecutor(outputDir, {
       rpcUrl: requireEnv(env.BOSSRAID_RPC_URL, "BOSSRAID_RPC_URL"),
       registryAddress: getAddress(requireEnv(env.BOSSRAID_REGISTRY_ADDRESS, "BOSSRAID_REGISTRY_ADDRESS")),
@@ -896,7 +899,7 @@ export function createSettlementExecutor(
       tokenAddress: env.BOSSRAID_TOKEN_ADDRESS,
       evaluatorAddress: getAddress(requireEnv(env.BOSSRAID_EVALUATOR_ADDRESS, "BOSSRAID_EVALUATOR_ADDRESS")),
       privateKey: normalizePrivateKey(
-        requireEnv(env.BOSSRAID_CLIENT_PRIVATE_KEY, "BOSSRAID_CLIENT_PRIVATE_KEY"),
+        requireEnv(treasuryKey, "BOSSRAID_SETTLEMENT_TREASURY_KEY or BOSSRAID_CLIENT_PRIVATE_KEY"),
       ),
       chainId: env.BOSSRAID_CHAIN_ID,
       jobExpirySec: env.BOSSRAID_SETTLEMENT_JOB_EXPIRY_SEC,

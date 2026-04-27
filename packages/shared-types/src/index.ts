@@ -635,6 +635,8 @@ export interface RaidRecord {
   bestCurrentScore?: number;
   settlementExecution?: SettlementExecutionRecord;
   reputationEvents: ReputationEvent[];
+  escrowFundingUsd?: number;
+  platformMarkupUsd?: number;
 }
 
 export interface SelectedProviders {
@@ -741,6 +743,9 @@ export interface RaidLaunchReservationRecord {
   adaptiveProviderIds?: string[];
   reservedProviderIds: string[];
   spawnOutput?: BossRaidSpawnOutput;
+  x402PaidAmountUsd?: number;
+  escrowFundingUsd?: number;
+  platformMarkupUsd?: number;
 }
 
 export interface BossRaidStatusOutput {
@@ -764,6 +769,10 @@ export interface SettlementSummary {
   successfulProviderCount: number;
   successfulProvidersPaid: number;
   payoutPerSuccessfulProvider: number;
+  escrowFundingUsd: number;
+  platformMarkupUsd: number;
+  minimumPayoutThresholdUsd: number;
+  approvedProviderCount: number;
 }
 
 export interface SettlementAllocation {
@@ -906,4 +915,24 @@ export interface BossRaidPersistenceSnapshot {
   raids: RaidRecord[];
   providers: ProviderProfile[];
   launchReservations?: RaidLaunchReservationRecord[];
+}
+
+export function asSingleHeader(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+  return value;
+}
+
+export function parseBoolean(value: string | undefined): boolean {
+  return value === "1" || value === "true" || value === "yes";
+}
+
+export function readBooleanEnv(value: string | undefined): boolean {
+  return parseBoolean(value);
+}
+
+export function readPositiveNumber(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }

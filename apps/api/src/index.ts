@@ -36,6 +36,8 @@ import {
   type ProviderProfile,
   type SanitizedTaskSpec,
   type TaskFile,
+  asSingleHeader,
+  readBooleanEnv as readBooleanEnvUtil,
 } from "@bossraid/shared-types";
 import {
   cleanupWorkspace,
@@ -595,6 +597,8 @@ export function buildApiServer(
     settlement?: import("./x402.js").X402SettlementResponse;
     reservationId?: string;
     requestKey?: string;
+    escrowFundingUsd?: number;
+    platformMarkupUsd?: number;
   }> {
     const x402Config = readX402Config(env);
     if (!x402Config.enabled) {
@@ -648,10 +652,16 @@ export function buildApiServer(
       paymentRequired,
     });
 
+    reservation.escrowFundingUsd = payment.escrowFundingUsd;
+    reservation.platformMarkupUsd = payment.platformMarkupUsd;
+    reservation.x402PaidAmountUsd = payment.paidAmountUsd;
+
     return {
       settlement: payment.settlement,
       reservationId: reservation.id,
       requestKey,
+      escrowFundingUsd: payment.escrowFundingUsd,
+      platformMarkupUsd: payment.platformMarkupUsd,
     };
   }
 
@@ -679,8 +689,13 @@ export function buildApiServer(
     const payment = options.requirePayment === false ? {} : await requireReservedLaunchPayment("raid", request, input);
     const response =
       payment.reservationId && payment.requestKey
-        ? await orchestrator.spawnReservedRaid(payment.reservationId, payment.requestKey)
-        : await orchestrator.spawnRaid(input);
+        ? await orchestrator.spawnReservedRaid(
+            payment.reservationId,
+            payment.requestKey,
+            payment.escrowFundingUsd,
+            payment.platformMarkupUsd,
+          )
+        : await orchestrator.spawnRaid(input, payment.escrowFundingUsd, payment.platformMarkupUsd);
     applyX402Headers(reply, {
       settlement: payment.settlement,
     });
@@ -1261,13 +1276,6 @@ function hashRaidAccessToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
-function asSingleHeader(value: string | string[] | undefined): string | undefined {
-  if (Array.isArray(value)) {
-    return value[0];
-  }
-  return value;
-}
-
 function asSingleQueryValue(value: unknown): string | undefined {
   if (typeof value === "string") {
     return value;
@@ -1381,7 +1389,7 @@ export function resolveChatTerminalSettleGraceMs(env: NodeJS.ProcessEnv): number
 }
 
 function readBooleanEnv(value: string | undefined): boolean {
-  return value === "1" || value === "true" || value === "yes";
+  return readBooleanEnvUtil(value);
 }
 
 function readMercenaryErc8004Identity(env: NodeJS.ProcessEnv): Erc8004Identity | undefined {
