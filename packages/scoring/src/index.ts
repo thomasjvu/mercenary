@@ -15,6 +15,22 @@ import type {
   TestCheckResult,
 } from "@bossraid/shared-types";
 
+const MAX_EVIDENCE_TERMS = 16;
+const DEFAULT_EVIDENCE_COVERAGE = 0.5;
+const FALLBACK_BUILD_SCORE = 0.45;
+const MIN_EXPLANATION_LENGTH = 12;
+const PATCH_HAS_CHANGES_SCORE = 0.8;
+const PATCH_MIN_SANE_SCORE = 0.55;
+const EXPLANATION_STRENGTH_DIVISOR = 220;
+const MAX_ANSWER_LENGTH_FOR_SCORING = 800;
+const MAX_REGRESSION_TESTS_SCORED = 3;
+const REGRESSION_PASS_THRESHOLD = 0.55;
+const HEURISTIC_WEIGHT = 0.25;
+const EVIDENCE_WEIGHT = 0.45;
+const BUILD_WEIGHT = 0.3;
+const TEST_WEIGHT = 0.15;
+const LATENCY_WEIGHT = 0.1;
+
 export function invalid(reason: string, summary?: string): EvaluationBreakdown {
   return {
     schemaPass: false,
@@ -124,13 +140,13 @@ function buildEvidenceTerms(task: SanitizedTaskSpec): string[] {
     terms.add(token);
   }
 
-  return [...terms].slice(0, 16);
+  return [...terms].slice(0, MAX_EVIDENCE_TERMS);
 }
 
 function computeEvidenceCoverage(task: SanitizedTaskSpec, submission: ProviderSubmission): number {
   const terms = buildEvidenceTerms(task);
   if (terms.length === 0) {
-    return 0.5;
+    return DEFAULT_EVIDENCE_COVERAGE;
   }
 
   const responseText = [
@@ -158,7 +174,7 @@ export function mergeBuildChecks(
   ) {
     return {
       passed: staticBuild.passed,
-      score: Math.min(staticBuild.score, 0.45),
+      score: Math.min(staticBuild.score, FALLBACK_BUILD_SCORE),
       summary: `${staticBuild.summary} Runtime probe unavailable. ${runtimeBuild.summary}`,
     };
   }
@@ -192,13 +208,13 @@ export function validateSubmissionSchema(
     if ((submission.patchUnifiedDiff ?? "").trim().length === 0) {
       issues.push("empty_diff");
     }
-  } else if (isTextTask && (submission.answerText ?? "").trim().length < 12) {
+  } else if (isTextTask && (submission.answerText ?? "").trim().length < MIN_EXPLANATION_LENGTH) {
     issues.push("empty_answer");
   } else if (!isTextTask && !hasArtifactOfType(submission, primaryType)) {
     issues.push("missing_artifact");
   }
 
-  if (submission.explanation.trim().length < 12) {
+  if (submission.explanation.trim().length < MIN_EXPLANATION_LENGTH) {
     issues.push("weak_explanation");
   }
 
@@ -256,7 +272,7 @@ export function runStaticBuildChecks(task: SanitizedTaskSpec, submission: Provid
   }
 
   const score =
-    (submission.patchUnifiedDiff ?? "").includes("+") && (submission.patchUnifiedDiff ?? "").includes("-") ? 0.8 : 0.55;
+    (submission.patchUnifiedDiff ?? "").includes("+") && (submission.patchUnifiedDiff ?? "").includes("-") ? PATCH_HAS_CHANGES_SCORE : PATCH_MIN_SANE_SCORE;
   return {
     passed: score >= 0.4,
     score,
@@ -271,10 +287,10 @@ export function runProxyTestChecks(task: SanitizedTaskSpec, submission: Provider
   const declaredTests = task.failingSignals.tests?.length ?? 0;
   const reproCount = task.failingSignals.reproSteps?.length ?? 0;
   const evidenceCoverage = computeEvidenceCoverage(task, submission);
-  const explanationStrength = clamp01(submission.explanation.trim().length / 220);
+  const explanationStrength = clamp01(submission.explanation.trim().length / EXPLANATION_STRENGTH_DIVISOR);
 
   if (!isPatchTask) {
-    const answerLengthScore = clamp01(Math.min((submission.answerText ?? "").length, 800) / 800);
+    const answerLengthScore = clamp01(Math.min((submission.answerText ?? "").length, MAX_ANSWER_LENGTH_FOR_SCORING) / MAX_ANSWER_LENGTH_FOR_SCORING);
     const artifactPresence = hasArtifactOfType(submission, primaryType) ? 1 : (submission.artifacts?.length ?? 0) > 0 ? 0.7 : 0;
     const answerScore = isTextTask
       ? clamp01(
@@ -290,8 +306,8 @@ export function runProxyTestChecks(task: SanitizedTaskSpec, submission: Provider
             0.2 * artifactPresence,
         );
     return {
-      passed: answerScore >= 0.55 ? 1 : 0,
-      failed: answerScore >= 0.55 ? 0 : 1,
+      passed: answerScore >= REGRESSION_PASS_THRESHOLD ? 1 : 0,
+      failed: answerScore >= REGRESSION_PASS_THRESHOLD ? 0 : 1,
       score: answerScore,
       summary: isTextTask
         ? "Text response scored with deterministic evidence and explanation checks."
@@ -309,7 +325,7 @@ export function runProxyTestChecks(task: SanitizedTaskSpec, submission: Provider
         0.15 * explanationStrength +
         0.15 * clamp01(touchedFiles / Math.max(Math.min(declaredTests, 3), 1)),
     );
-    const passed = regressionScore >= 0.55 ? declaredTests : 0;
+    const passed = regressionScore >= REGRESSION_PASS_THRESHOLD ? declaredTests : 0;
     const failed = Math.max(declaredTests - passed, 0);
     return {
       passed,

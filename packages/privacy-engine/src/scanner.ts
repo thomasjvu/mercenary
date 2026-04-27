@@ -7,7 +7,7 @@ export interface PrivacyScanContext {
   artifacts?: Array<{ label: string; description?: string }>;
 }
 
-const REDACTED_PLACEHOLDER_PATTERNS = [
+export const REDACTED_PLACEHOLDER_PATTERNS = [
   "[REDACTED",
   "***",
   "<SECRET>",
@@ -15,7 +15,7 @@ const REDACTED_PLACEHOLDER_PATTERNS = [
   "[TOKEN]",
 ];
 
-const EXTERNAL_API_PATTERNS = [
+export const EXTERNAL_API_PATTERNS = [
   "api.openai.com",
   "api.anthropic.com",
   "api.venice.ai",

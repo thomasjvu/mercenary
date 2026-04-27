@@ -21,5 +21,7 @@ export {
 export {
   scanForReexposedContent,
   checkForExternalTransmission,
+  REDACTED_PLACEHOLDER_PATTERNS,
+  EXTERNAL_API_PATTERNS,
   type PrivacyScanContext,
 } from "./scanner.js";

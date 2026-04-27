@@ -4,6 +4,10 @@ import type {
   TeeAttestationResult,
 } from "@bossraid/shared-types";
 
+const DEFAULT_TEE_SOCKET_PATH = "/var/run/tappd.sock";
+const DEFAULT_TEE_VENDOR = "phala";
+const DEFAULT_RUNTIME_MODE = "phala-cvm";
+
 export interface TeeAttestationOptions {
   providerId: string;
   socketPath?: string;
@@ -32,7 +36,7 @@ function buildTeeAttestation(
     providerId,
     verifiedAt: now,
     vendor,
-    runtimeMode: opts?.runtimeMode ?? "phala-cvm",
+    runtimeMode: opts?.runtimeMode ?? DEFAULT_RUNTIME_MODE,
     enclaveHash: opts?.enclaveHash,
     signature: opts?.signature,
     expiresAt: opts?.expiresAt,
@@ -53,8 +57,8 @@ async function verifyPhalaTeeAttestation(
     return cached.result;
   }
 
-  const teeSocketPath = socketPath || process.env.BOSSRAID_TEE_SOCKET_PATH || "/var/run/tappd.sock";
-  const vendor = "phala";
+  const teeSocketPath = socketPath || process.env.BOSSRAID_TEE_SOCKET_PATH || DEFAULT_TEE_SOCKET_PATH;
+  const vendor = DEFAULT_TEE_VENDOR;
 
   const result = await callPhalaAttestationApi(providerId, teeSocketPath);
   if (result.valid) {
@@ -76,7 +80,7 @@ async function callPhalaAttestationApi(
       socket.on("error", (err: unknown) => { reject(err); });
     });
     return buildTeeAttestation(providerId, "phala", {
-      runtimeMode: "phala-cvm",
+      runtimeMode: DEFAULT_RUNTIME_MODE,
       notes: ["phala-cvm-attestation"],
     });
   } catch {
@@ -85,7 +89,7 @@ async function callPhalaAttestationApi(
       providerId,
       verifiedAt: new Date().toISOString(),
       vendor: "phala",
-      runtimeMode: "phala-cvm",
+      runtimeMode: DEFAULT_RUNTIME_MODE,
       notes: [
         "tee-socket-unavailable",
         "attestation-skipped-tee-socket-not-found",

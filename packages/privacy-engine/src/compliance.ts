@@ -11,6 +11,10 @@ import type {
 } from "@bossraid/shared-types";
 import { scanForReexposedContent, checkForExternalTransmission } from "./scanner.js";
 
+const MAX_PRIVACY_SCORE = 100;
+const ERROR_PENALTY = 30;
+const WARNING_PENALTY = 10;
+
 export interface PrivacyEngineConfig {
   enabled?: boolean;
   teeSocketPath?: string;
@@ -74,7 +78,7 @@ export function buildPrivacyComplianceResult(
 
   const errors = issues.filter((i) => i.severity === "error");
   const warnings = issues.filter((i) => i.severity === "warn");
-  const score = Math.max(0, 100 - errors.length * 30 - warnings.length * 10);
+  const score = Math.max(0, MAX_PRIVACY_SCORE - errors.length * ERROR_PENALTY - warnings.length * WARNING_PENALTY);
   const passed = errors.length === 0 && requiredFeatures.every(
     (f) => attestation && attestation.featuresVerified.includes(f),
   );
