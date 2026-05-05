@@ -5,16 +5,15 @@ import type {
   ProviderPrivacy,
   ProviderProfile,
   RaidTaskSpec,
-} from "@bossraid/shared-types";
-
-export const DEFAULT_PROVIDER_FRESH_MS = 60_000;
+} from '@bossraid/shared-types';
+import { DEFAULTS } from '@bossraid/constants';
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
 function normalizeModelFamily(value: string | undefined): string {
-  return value?.trim().toLowerCase() ?? "";
+  return value?.trim().toLowerCase() ?? '';
 }
 
 export function computePrivacyScore(privacy: ProviderPrivacy | undefined): number {
@@ -22,8 +21,8 @@ export function computePrivacyScore(privacy: ProviderPrivacy | undefined): numbe
     return 0;
   }
 
-  const explicit = typeof privacy.score === "number" ? privacy.score : undefined;
-  if (typeof explicit === "number" && Number.isFinite(explicit)) {
+  const explicit = typeof privacy.score === 'number' ? privacy.score : undefined;
+  if (typeof explicit === 'number' && Number.isFinite(explicit)) {
     return Math.max(0, Math.min(100, explicit));
   }
 
@@ -44,18 +43,22 @@ export function computeReputationScore(provider: ProviderProfile): number {
   const timeoutPenalty = provider.reputation.timeoutRate * 20;
   const duplicatePenalty = provider.reputation.duplicateRate * 15;
   const latencyComponent =
-    provider.reputation.p95LatencyMs <= 3_000 ? 10 :
-    provider.reputation.p95LatencyMs <= 7_000 ? 7 :
-    provider.reputation.p95LatencyMs <= 15_000 ? 4 : 1;
+    provider.reputation.p95LatencyMs <= 3_000
+      ? 10
+      : provider.reputation.p95LatencyMs <= 7_000
+        ? 7
+        : provider.reputation.p95LatencyMs <= DEFAULTS.PROVIDER_FRESH_MS / 4
+          ? 4
+          : 1;
 
   const total = Math.round(
     30 * completionRate +
-    30 * evaluatorPassRate +
-    20 * responseRate +
-    latencyComponent +
-    10 -
-    timeoutPenalty -
-    duplicatePenalty,
+      30 * evaluatorPassRate +
+      20 * responseRate +
+      latencyComponent +
+      10 -
+      timeoutPenalty -
+      duplicatePenalty
   );
 
   return Math.max(0, Math.min(100, total));
@@ -66,22 +69,22 @@ export function providerHasErc8004Identity(provider: ProviderProfile): boolean {
 }
 
 export function providerIsVeniceBacked(provider: ProviderProfile): boolean {
-  return normalizeModelFamily(provider.modelFamily).includes("venice");
+  return normalizeModelFamily(provider.modelFamily).includes('venice');
 }
 
 export function erc8004IdentityIsRegistered(identity: Erc8004Identity | undefined): boolean {
-  if (identity?.verification?.status === "failed") {
+  if (identity?.verification?.status === 'failed') {
     return false;
   }
   return Boolean(identity?.agentId && identity.registrationTx);
 }
 
 export function computeTrustScore(provider: ProviderProfile): number {
-  if (provider.erc8004?.verification?.status === "failed") {
+  if (provider.erc8004?.verification?.status === 'failed') {
     return 0;
   }
 
-  if (typeof provider.trust?.score === "number" && Number.isFinite(provider.trust.score)) {
+  if (typeof provider.trust?.score === 'number' && Number.isFinite(provider.trust.score)) {
     return Math.max(0, Math.min(100, provider.trust.score));
   }
 
@@ -109,7 +112,7 @@ export function refreshProviderScores(provider: ProviderProfile): ProviderProfil
 
 export function providerHasPrivacyFeature(
   provider: ProviderProfile,
-  feature: PrivacyFeatureKey,
+  feature: PrivacyFeatureKey
 ): boolean {
   const privacy = provider.privacy;
   if (!privacy) {
@@ -117,24 +120,24 @@ export function providerHasPrivacyFeature(
   }
 
   switch (feature) {
-    case "tee_attested":
+    case 'tee_attested':
       return privacy.teeAttested === true;
-    case "e2ee":
+    case 'e2ee':
       return privacy.e2ee === true;
-    case "no_data_retention":
+    case 'no_data_retention':
       return privacy.noDataRetention === true;
-    case "signed_outputs":
+    case 'signed_outputs':
       return privacy.signedOutputs === true;
-    case "provenance_attested":
+    case 'provenance_attested':
       return privacy.provenanceAttested === true;
-    case "operator_verified":
+    case 'operator_verified':
       return privacy.operatorVerified === true;
   }
 }
 
 export function providerHeartbeatAgeMs(
   provider: ProviderProfile,
-  nowMs: number = Date.now(),
+  nowMs: number = Date.now()
 ): number | undefined {
   if (!provider.lastSeenAt) {
     return undefined;
@@ -150,10 +153,10 @@ export function providerHeartbeatAgeMs(
 
 export function providerIsFresh(
   provider: ProviderProfile,
-  maxHeartbeatAgeMs: number = DEFAULT_PROVIDER_FRESH_MS,
-  nowMs: number = Date.now(),
+  maxHeartbeatAgeMs: number = DEFAULTS.PROVIDER_FRESH_MS,
+  nowMs: number = Date.now()
 ): boolean {
-  if (provider.status !== "available") {
+  if (provider.status !== 'available') {
     return false;
   }
 
@@ -168,7 +171,7 @@ export function providerIsFresh(
 export function providerMatchesDiscoveryQuery(
   provider: ProviderProfile,
   query: ProviderDiscoveryQuery = {},
-  defaultMaxHeartbeatAgeMs: number = DEFAULT_PROVIDER_FRESH_MS,
+  defaultMaxHeartbeatAgeMs: number = DEFAULTS.PROVIDER_FRESH_MS
 ): boolean {
   const onlineOnly = query.onlineOnly ?? true;
   const maxHeartbeatAgeMs = query.maxHeartbeatAgeMs ?? defaultMaxHeartbeatAgeMs;
@@ -177,19 +180,27 @@ export function providerMatchesDiscoveryQuery(
     return false;
   }
 
-  if (query.capabilities?.length && !query.capabilities.every((capability) => provider.specializations.includes(capability))) {
+  if (
+    query.capabilities?.length &&
+    !query.capabilities.every((capability) => provider.specializations.includes(capability))
+  ) {
     return false;
   }
 
   if (
     query.allowedModelFamilies?.length &&
     (!provider.modelFamily ||
-      !query.allowedModelFamilies.some((family) => normalizeModelFamily(family) === normalizeModelFamily(provider.modelFamily)))
+      !query.allowedModelFamilies.some(
+        (family) => normalizeModelFamily(family) === normalizeModelFamily(provider.modelFamily)
+      ))
   ) {
     return false;
   }
 
-  if (query.allowedOutputTypes?.length && !query.allowedOutputTypes.some((type) => provider.outputTypes?.includes(type))) {
+  if (
+    query.allowedOutputTypes?.length &&
+    !query.allowedOutputTypes.some((type) => provider.outputTypes?.includes(type))
+  ) {
     return false;
   }
 
@@ -198,17 +209,19 @@ export function providerMatchesDiscoveryQuery(
   }
 
   const trustScore = computeTrustScore(provider);
-  if (typeof query.minTrustScore === "number" && trustScore < query.minTrustScore) {
+  if (typeof query.minTrustScore === 'number' && trustScore < query.minTrustScore) {
     return false;
   }
 
   const reputationScore = provider.scores?.reputationScore ?? computeReputationScore(provider);
-  if (typeof query.minReputationScore === "number" && reputationScore < query.minReputationScore) {
+  if (typeof query.minReputationScore === 'number' && reputationScore < query.minReputationScore) {
     return false;
   }
 
-  if (query.privacyMode === "strict" && query.requirePrivacyFeatures?.length) {
-    return query.requirePrivacyFeatures.every((feature) => providerHasPrivacyFeature(provider, feature));
+  if (query.privacyMode === 'strict' && query.requirePrivacyFeatures?.length) {
+    return query.requirePrivacyFeatures.every((feature) =>
+      providerHasPrivacyFeature(provider, feature)
+    );
   }
 
   return true;

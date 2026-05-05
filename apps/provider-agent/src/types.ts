@@ -1,5 +1,5 @@
-import type { SubmissionArtifact } from "@bossraid/shared-types";
-import type { ProviderTaskPackage } from "@bossraid/shared-types";
+import type { SubmissionArtifact } from '@bossraid/shared-types';
+import type { ProviderTaskPackage } from '@bossraid/shared-types';
 
 export type AcceptBody = {
   raidId: string;

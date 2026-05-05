@@ -1,68 +1,52 @@
-import type { PrivacyAttestation, PrivacyFeatureKey, TeeAttestationResult } from "@bossraid/shared-types";
+import type {
+  PrivacyAttestation,
+  PrivacyFeatureKey,
+  TeeAttestationResult,
+} from '@bossraid/shared-types';
+import { verifyPhalaTeeAttestation } from '@bossraid/privacy-engine';
 
 export interface PrivacyFeaturesConfig {
   featuresClaimed: PrivacyFeatureKey[];
   teeSocketPath?: string;
 }
 
-async function verifyTeeAttestation(
-  providerId: string,
-  socketPath: string,
-): Promise<TeeAttestationResult> {
-  try {
-    const { connect } = await import("node:net");
-    await new Promise<void>((resolve, reject) => {
-      const socket = connect({ path: socketPath });
-      socket.on("connect", () => { socket.destroy(); resolve(); });
-      socket.on("error", (err: unknown) => { reject(err); });
-    });
-    return {
-      valid: true,
-      providerId,
-      verifiedAt: new Date().toISOString(),
-      vendor: "phala",
-      runtimeMode: "phala-cvm",
-      notes: ["phala-cvm-attestation"],
-    };
-  } catch {
-    return {
-      valid: false,
-      providerId,
-      verifiedAt: new Date().toISOString(),
-      vendor: "phala",
-      runtimeMode: "phala-cvm",
-      notes: ["tee-socket-unavailable", "attestation-skipped"],
-    };
-  }
-}
-
 function buildDeclaration(
   providerId: string,
   raidId: string,
   featuresClaimed: PrivacyFeatureKey[],
-  teeResult: TeeAttestationResult,
+  teeResult: TeeAttestationResult
 ): string {
   const parts = [
     providerId,
     raidId,
-    featuresClaimed.join(","),
-    teeResult.valid ? "attested" : "unattested",
-    "0",
-    "false",
+    featuresClaimed.join(','),
+    teeResult.valid ? 'attested' : 'unattested',
+    '0',
+    'false',
   ];
-  return `PRIVACY_DECLARATION:${parts.join("|")}`;
+  return `PRIVACY_DECLARATION:${parts.join('|')}`;
 }
 
 export async function buildProviderPrivacyAttestation(
   providerId: string,
   raidId: string,
-  config: PrivacyFeaturesConfig,
+  config: PrivacyFeaturesConfig
 ): Promise<PrivacyAttestation | undefined> {
-  const socketPath = config.teeSocketPath ?? process.env.BOSSRAID_TEE_SOCKET_PATH ?? "/var/run/tappd.sock";
-  const teeResult = await verifyTeeAttestation(providerId, socketPath);
+  const socketPath =
+    config.teeSocketPath ?? process.env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/tappd.sock';
+  const teeResult = await verifyPhalaTeeAttestation(providerId, socketPath, undefined, undefined, {
+    reportData: JSON.stringify({ providerId, raidId }),
+    runtimeMode: process.env.BOSSRAID_TEE_RUNTIME_MODE ?? 'phala-cvm-gpu',
+  });
   const featuresVerified: PrivacyFeatureKey[] = [];
-  if (teeResult.valid && config.featuresClaimed.includes("tee_attested")) {
-    featuresVerified.push("tee_attested");
+  if (teeResult.valid && config.featuresClaimed.includes('signed_outputs')) {
+    featuresVerified.push('signed_outputs');
+  }
+  if (teeResult.valid && config.featuresClaimed.includes('no_data_retention')) {
+    featuresVerified.push('no_data_retention');
+  }
+  if (teeResult.valid && config.featuresClaimed.includes('tee_attested')) {
+    featuresVerified.push('tee_attested');
   }
 
   const declaration = buildDeclaration(providerId, raidId, config.featuresClaimed, teeResult);

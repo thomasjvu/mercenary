@@ -1,6 +1,6 @@
-import { resolve } from "node:path";
-import { deployContracts } from "./deploy.js";
-import { writeSettlementEnv } from "./bootstrap-settlement-env.js";
+import { resolve } from 'node:path';
+import { deployContracts } from './deploy.js';
+import { writeSettlementEnv } from './bootstrap-settlement-env.js';
 
 function requireEnv(value: string | undefined, name: string): string {
   if (!value) {
@@ -11,20 +11,23 @@ function requireEnv(value: string | undefined, name: string): string {
 }
 
 async function main(): Promise<void> {
-  const workspaceRoot = resolve(import.meta.dirname, "..", "..", "..");
+  const workspaceRoot = resolve(import.meta.dirname, '..', '..', '..');
   const manifestPath = resolve(
     workspaceRoot,
-    process.env.BOSSRAID_CONTRACTS_OUT ?? "temp/contracts/deployment.json",
+    process.env.BOSSRAID_CONTRACTS_OUT ?? 'temp/contracts/deployment.json'
   );
   const settlementEnvPath = resolve(
     workspaceRoot,
-    process.env.BOSSRAID_SETTLEMENT_ENV_OUT ?? "temp/contracts/settlement.env",
+    process.env.BOSSRAID_SETTLEMENT_ENV_OUT ?? 'temp/contracts/settlement.env'
   );
 
   const deployResult = await deployContracts({
-    rpcUrl: requireEnv(process.env.BOSSRAID_RPC_URL, "BOSSRAID_RPC_URL"),
-    privateKey: requireEnv(process.env.BOSSRAID_DEPLOYER_PRIVATE_KEY, "BOSSRAID_DEPLOYER_PRIVATE_KEY"),
-    tokenAddress: requireEnv(process.env.BOSSRAID_TOKEN_ADDRESS, "BOSSRAID_TOKEN_ADDRESS"),
+    rpcUrl: requireEnv(process.env.BOSSRAID_RPC_URL, 'BOSSRAID_RPC_URL'),
+    privateKey: requireEnv(
+      process.env.BOSSRAID_DEPLOYER_PRIVATE_KEY,
+      'BOSSRAID_DEPLOYER_PRIVATE_KEY'
+    ),
+    tokenAddress: requireEnv(process.env.BOSSRAID_TOKEN_ADDRESS, 'BOSSRAID_TOKEN_ADDRESS'),
     chainId: process.env.BOSSRAID_CHAIN_ID ? Number(process.env.BOSSRAID_CHAIN_ID) : undefined,
     outPath: manifestPath,
   });
@@ -46,13 +49,13 @@ async function main(): Promise<void> {
         settlementEnvPath: bootstrapResult.outPath,
         settlementEnvLines: bootstrapResult.linesWritten,
         next: [
-          "Set BOSSRAID_CLIENT_PRIVATE_KEY in the generated settlement env file.",
-          "Source the file before running on-chain settlement.",
+          'Set BOSSRAID_CLIENT_PRIVATE_KEY in the generated settlement env file.',
+          'Source the file before running on-chain settlement.',
         ],
       },
       null,
-      2,
-    )}\n`,
+      2
+    )}\n`
   );
 }
 

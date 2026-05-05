@@ -1,12 +1,20 @@
+import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
+import net from 'node:net';
 import type {
   PrivacyAttestation,
   PrivacyFeatureKey,
   TeeAttestationResult,
-} from "@bossraid/shared-types";
+} from '@bossraid/shared-types';
 
-const DEFAULT_TEE_SOCKET_PATH = "/var/run/tappd.sock";
-const DEFAULT_TEE_VENDOR = "phala";
-const DEFAULT_RUNTIME_MODE = "phala-cvm";
+const DSTACK_SOCKET_PATH = '/var/run/dstack.sock';
+const DEFAULT_TEE_SOCKET_PATH = '/var/run/tappd.sock';
+const DEFAULT_TEE_VENDOR = 'phala';
+const DEFAULT_RUNTIME_MODE = 'phala-cvm';
+const DEFAULT_PHALA_VERIFY_URL = 'https://cloud-api.phala.network/api/v1/attestations/verify';
+const DEFAULT_CACHE_TTL_MS = 10 * 60 * 1000;
 
 export interface TeeAttestationOptions {
   providerId: string;
@@ -25,10 +33,42 @@ export interface PrivacyAttestationOptions {
   dataRetained?: boolean;
 }
 
+export interface PhalaTeeAttestationOptions {
+  reportData?: string;
+  runtimeMode?: string;
+}
+
+type PhalaInfoResponse = {
+  app_id?: string;
+  instance_id?: string;
+  app_name?: string;
+  device_id?: string;
+  compose_hash?: string;
+  os_image_hash?: string;
+  tcb_info?: string | Record<string, unknown>;
+};
+
+type PhalaQuoteResponse = {
+  quote?: string;
+  event_log?: string;
+  report_data?: string;
+  vm_config?: string;
+  error?: string;
+};
+
+type PhalaVerifyResponse = {
+  verified?: boolean;
+  success?: boolean;
+  status?: string;
+  data?: unknown;
+  result?: unknown;
+  error?: string;
+};
+
 function buildTeeAttestation(
   providerId: string,
-  vendor = "phala",
-  opts?: Partial<TeeAttestationResult>,
+  vendor = 'phala',
+  opts?: Partial<TeeAttestationResult>
 ): TeeAttestationResult {
   const now = new Date().toISOString();
   return {
@@ -46,21 +86,23 @@ function buildTeeAttestation(
 
 async function verifyPhalaTeeAttestation(
   providerId: string,
-  socketPath: string,
-  cache: Map<string, { result: TeeAttestationResult; expiresAt: number }>,
-  cacheTtlMs: number,
+  socketPath = '',
+  cache: Map<string, { result: TeeAttestationResult; expiresAt: number }> = new Map(),
+  cacheTtlMs = DEFAULT_CACHE_TTL_MS,
+  opts: PhalaTeeAttestationOptions = {}
 ): Promise<TeeAttestationResult> {
-  const cacheKey = `tee:${providerId}`;
+  const reportData = opts.reportData ?? `bossraid-provider:${providerId}`;
+  const cacheKey = `tee:${providerId}:${createHash('sha256').update(reportData).digest('hex')}`;
   const now = Date.now();
   const cached = cache.get(cacheKey);
   if (cached && cached.expiresAt > now) {
     return cached.result;
   }
 
-  const teeSocketPath = socketPath || process.env.BOSSRAID_TEE_SOCKET_PATH || DEFAULT_TEE_SOCKET_PATH;
-  const vendor = DEFAULT_TEE_VENDOR;
-
-  const result = await callPhalaAttestationApi(providerId, teeSocketPath);
+  const result = await callPhalaAttestationApi(providerId, socketPath, {
+    reportData,
+    runtimeMode: opts.runtimeMode,
+  });
   if (result.valid) {
     const expiresAt = now + cacheTtlMs;
     cache.set(cacheKey, { result, expiresAt });
@@ -71,44 +113,257 @@ async function verifyPhalaTeeAttestation(
 async function callPhalaAttestationApi(
   providerId: string,
   socketPath: string,
+  opts: PhalaTeeAttestationOptions & { reportData: string }
 ): Promise<TeeAttestationResult> {
   try {
-    const { connect } = await import("node:net");
-    await new Promise<void>((resolve, reject) => {
-      const socket = connect({ path: socketPath });
-      socket.on("connect", () => { socket.destroy(); resolve(); });
-      socket.on("error", (err: unknown) => { reject(err); });
+    const endpoint = resolvePhalaEndpoint(socketPath);
+    const info = await phalaRpc<PhalaInfoResponse>(endpoint, '/Info', {});
+    const reportData = buildReportData(opts.reportData);
+    const quote = await phalaRpc<PhalaQuoteResponse>(endpoint, '/GetQuote', {
+      report_data: reportData.hex,
     });
-    return buildTeeAttestation(providerId, "phala", {
-      runtimeMode: DEFAULT_RUNTIME_MODE,
-      notes: ["phala-cvm-attestation"],
-    });
-  } catch {
+    if (quote.error) {
+      throw new Error(quote.error);
+    }
+    if (!quote.quote) {
+      throw new Error('Phala dstack did not return a TDX quote.');
+    }
+    const verification = await verifyWithPhalaCloud(quote.quote);
+    const verifiedAt = new Date().toISOString();
+    const runtimeMode =
+      opts.runtimeMode || process.env.BOSSRAID_TEE_RUNTIME_MODE || DEFAULT_RUNTIME_MODE;
+    const tcbInfo = parseTcbInfo(info.tcb_info);
+    const quoteHash = createHash('sha256').update(quote.quote).digest('hex');
+    return {
+      valid: verification.verified,
+      providerId,
+      verifiedAt,
+      expiresAt: new Date(Date.now() + DEFAULT_CACHE_TTL_MS).toISOString(),
+      vendor: DEFAULT_TEE_VENDOR,
+      runtimeMode,
+      enclaveHash: stringField(info.compose_hash) ?? stringField(tcbInfo?.mrtd) ?? quoteHash,
+      signature: quote.quote,
+      notes: [
+        'phala-dstack-tdx-quote',
+        verification.verified ? 'phala-cloud-verified' : 'phala-cloud-unverified',
+        `endpoint:${redactEndpoint(endpoint)}`,
+        ...(info.app_id ? [`app_id:${info.app_id}`] : []),
+        ...(info.instance_id ? [`instance_id:${info.instance_id}`] : []),
+        ...(info.device_id ? [`device_id:${info.device_id}`] : []),
+        ...(info.os_image_hash ? [`os_image_hash:${info.os_image_hash}`] : []),
+        ...(quote.report_data ? [`report_data:${quote.report_data}`] : []),
+        ...(verification.error ? [`verification_error:${verification.error}`] : []),
+      ],
+    };
+  } catch (error) {
     return {
       valid: false,
       providerId,
       verifiedAt: new Date().toISOString(),
-      vendor: "phala",
-      runtimeMode: DEFAULT_RUNTIME_MODE,
+      vendor: 'phala',
+      runtimeMode:
+        opts.runtimeMode || process.env.BOSSRAID_TEE_RUNTIME_MODE || DEFAULT_RUNTIME_MODE,
       notes: [
-        "tee-socket-unavailable",
-        "attestation-skipped-tee-socket-not-found",
+        'phala-dstack-attestation-failed',
+        error instanceof Error ? error.message : String(error),
       ],
     };
   }
+}
+
+function buildReportData(value: string): { hex: string } {
+  const raw = Buffer.from(value, 'utf8');
+  if (raw.length <= 64) {
+    return { hex: raw.toString('hex') };
+  }
+  return { hex: createHash('sha256').update(raw).digest('hex') };
+}
+
+function resolvePhalaEndpoint(socketPath: string): string {
+  const candidates = [
+    process.env.DSTACK_SIMULATOR_ENDPOINT,
+    process.env.TAPPD_SIMULATOR_ENDPOINT,
+    process.env.DSTACK_ENDPOINT,
+    process.env.TAPPD_ENDPOINT,
+    process.env.DSTACK_SOCKET_PATH,
+    process.env.TAPPD_SOCKET_PATH,
+    socketPath,
+    process.env.BOSSRAID_TEE_SOCKET_PATH,
+    DSTACK_SOCKET_PATH,
+    DEFAULT_TEE_SOCKET_PATH,
+  ].filter((value): value is string => typeof value === 'string' && value.length > 0);
+
+  const endpoint = candidates.find((candidate) => {
+    if (/^https?:\/\//i.test(candidate)) {
+      return true;
+    }
+    return existsSync(candidate);
+  });
+  if (!endpoint) {
+    throw new Error('No reachable Phala dstack or tappd endpoint was found.');
+  }
+  return endpoint;
+}
+
+function redactEndpoint(endpoint: string): string {
+  return /^https?:\/\//i.test(endpoint) ? new URL(endpoint).origin : endpoint;
+}
+
+function phalaRpc<T>(endpoint: string, path: string, body: unknown): Promise<T> {
+  const payload = JSON.stringify(body);
+  if (/^https?:\/\//i.test(endpoint)) {
+    return phalaHttpRpc<T>(endpoint, path, payload);
+  }
+  return phalaUnixRpc<T>(endpoint, path, payload);
+}
+
+function phalaHttpRpc<T>(endpoint: string, path: string, payload: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const url = new URL(path, endpoint);
+    const request = (url.protocol === 'https:' ? https : http).request(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'content-length': Buffer.byteLength(payload),
+        },
+      },
+      (response) => {
+        let data = '';
+        response.setEncoding('utf8');
+        response.on('data', (chunk) => {
+          data += chunk;
+        });
+        response.on('end', () => {
+          try {
+            resolve(JSON.parse(data) as T);
+          } catch {
+            reject(new Error('Phala dstack returned invalid JSON.'));
+          }
+        });
+      }
+    );
+    request.setTimeout(30_000, () => {
+      request.destroy(new Error('Phala dstack request timed out.'));
+    });
+    request.on('error', reject);
+    request.write(payload);
+    request.end();
+  });
+}
+
+function phalaUnixRpc<T>(socketPath: string, path: string, payload: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const socket = net.createConnection({ path: socketPath });
+    let buffer = '';
+    let settled = false;
+    const fail = (error: Error) => {
+      if (!settled) {
+        settled = true;
+        socket.destroy();
+        reject(error);
+      }
+    };
+    socket.setTimeout(30_000, () => fail(new Error('Phala dstack request timed out.')));
+    socket.on('connect', () => {
+      socket.write(`POST ${path} HTTP/1.1\r\n`);
+      socket.write('Host: localhost\r\n');
+      socket.write('Content-Type: application/json\r\n');
+      socket.write(`Content-Length: ${Buffer.byteLength(payload)}\r\n`);
+      socket.write('\r\n');
+      socket.write(payload);
+    });
+    socket.on('data', (chunk) => {
+      buffer += chunk.toString('utf8');
+      const headerEnd = buffer.indexOf('\r\n\r\n');
+      if (headerEnd < 0) {
+        return;
+      }
+      const headerText = buffer.slice(0, headerEnd);
+      const match = headerText.match(/^content-length:\s*(\d+)$/im);
+      const contentLength = match ? Number(match[1]) : 0;
+      const body = buffer.slice(headerEnd + 4);
+      if (body.length < contentLength) {
+        return;
+      }
+      try {
+        settled = true;
+        socket.end();
+        resolve(JSON.parse(body.slice(0, contentLength)) as T);
+      } catch {
+        fail(new Error('Phala dstack returned invalid JSON.'));
+      }
+    });
+    socket.on('error', fail);
+  });
+}
+
+async function verifyWithPhalaCloud(quote: string): Promise<{
+  verified: boolean;
+  error?: string;
+}> {
+  const verifyUrl = process.env.PHALA_CLOUD_ATTESTATION_VERIFY_URL || DEFAULT_PHALA_VERIFY_URL;
+  const response = await fetch(verifyUrl, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ quote }),
+  });
+  const payload = response.headers.get('content-type')?.includes('application/json')
+    ? ((await response.json()) as PhalaVerifyResponse)
+    : ({ error: await response.text() } as PhalaVerifyResponse);
+  if (!response.ok) {
+    return {
+      verified: false,
+      error:
+        typeof payload.error === 'string'
+          ? payload.error
+          : `Phala Cloud verification failed with status ${response.status}`,
+    };
+  }
+  const root = (payload.data || payload.result || payload) as PhalaVerifyResponse;
+  const verified =
+    root.verified === true ||
+    root.success === true ||
+    root.status === 'verified' ||
+    root.status === 'ok';
+  return {
+    verified,
+    error: verified ? undefined : 'Phala Cloud verification did not return verified status.',
+  };
+}
+
+function parseTcbInfo(value: unknown): Record<string, unknown> | null {
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  }
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
+
+function stringField(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
 export function buildSignedDeclaration(opts: PrivacyAttestationOptions): string {
   const parts = [
     opts.providerId,
     opts.raidId,
-    opts.featuresClaimed.join(","),
-    opts.featuresVerified.join(","),
-    opts.teeAttestation?.valid ? "attested" : "unattested",
+    opts.featuresClaimed.join(','),
+    opts.featuresVerified.join(','),
+    opts.teeAttestation?.valid ? 'attested' : 'unattested',
     String(opts.externalApiCalls?.length ?? 0),
     String(opts.dataRetained ?? false),
   ];
-  return `PRIVACY_DECLARATION:${parts.join("|")}`;
+  return `PRIVACY_DECLARATION:${parts.join('|')}`;
 }
 
 export function buildPrivacyAttestation(opts: PrivacyAttestationOptions): PrivacyAttestation {

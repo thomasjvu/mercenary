@@ -4,11 +4,11 @@ Boss Raid is raid-oriented by design. `POST /v1/raid` is the native public write
 
 ## Public Write Routes
 
-| Route | Purpose |
-| --- | --- |
-| `POST /v1/raid` | Native raid submission. Returns `raidId`, `raidAccessToken`, and `receiptPath`. |
-| `POST /v1/demo/raid` | Optional free demo launch route for the hosted `/demo` UI. Disabled unless `BOSSRAID_DEMO_ROUTE_ENABLED` is set. Can require `x-bossraid-demo-token`. |
-| `POST /v1/raids` | Alias spawn route that accepts the spawn-shape payload. |
+| Route                       | Purpose                                                                                                                                                                                     |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/raid`             | Native raid submission. Returns `raidId`, `raidAccessToken`, and `receiptPath`.                                                                                                             |
+| `POST /v1/demo/raid`        | Optional free demo launch route for the hosted `/demo` UI. Disabled unless `BOSSRAID_DEMO_ROUTE_ENABLED` is set. Can require `x-bossraid-demo-token`.                                       |
+| `POST /v1/raids`            | Alias spawn route that accepts the spawn-shape payload.                                                                                                                                     |
 | `POST /v1/chat/completions` | OpenAI-compatible text entrypoint over the same raid engine. Supports standard non-streaming replies and SSE streaming on the same v1 route. Returns chat output and usually raid metadata. |
 
 `POST /v1/chat/completions` accepts `messages`, optional `stream`, optional `user`, optional `raid_policy`, and optional `raid_request`. Mercenary preserves `system`, `user`, and `assistant` turns when it builds the underlying raid task. When `raid_policy.selection_mode` is omitted on chat requests, Mercenary defaults that route to `best_match` even if `privacy_mode` is `prefer`, so ordinary chats stay domain-fit by default. `raid_policy.max_latency_sec` is honored on chat requests and becomes the underlying raid deadline. The response normalizes `model` to `mercenary-v1`, adds `created`, `system_fingerprint`, and `usage`, and usually includes a nonstandard `raid` object with `raid_id`, `raid_access_token`, `receipt_path`, routing counts, and final raid status.
@@ -21,22 +21,22 @@ When `stream=true`, the route returns `text/event-stream` and emits `chat.comple
 
 ## Public Status, Proof, And Discovery Routes
 
-| Route | Purpose |
-| --- | --- |
-| `GET /health` | API health and ready-provider snapshot. |
-| `GET /v1/raid/:raidId` | Raid status. Requires `x-bossraid-raid-token` or admin auth. |
-| `GET /v1/raid/:raidId/result` | Raid result. Same access rules. |
-| `GET /v1/raid/:raidId/agent_log.json?token=<raidAccessToken>` | Public run log for one raid. |
-| `GET /v1/raids/:raidId` | Alias status route. |
-| `GET /v1/raids/:raidId/result` | Alias result route. |
-| `GET /v1/raids/:raidId/agent_log.json?token=<raidAccessToken>` | Alias run-log route. |
-| `GET /v1/agent.json` | Mercenary manifest. |
-| `GET /v1/attested-runtime` | Signed runtime proof when `MNEMONIC` is set. Without it, provider TEE badges can still be live while host proof publication stays off. |
-| `GET /v1/raid/:raidId/attested-result` | Signed raid result proof when `MNEMONIC` is set. |
-| `GET /v1/raids/:raidId/attested-result` | Alias attested result route. |
-| `GET /v1/providers` | Public provider list. |
-| `GET /v1/providers/health` | Public provider readiness snapshot. |
-| `GET /agents/discover` | Public provider discovery. |
+| Route                                                          | Purpose                                                                                                                                |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /health`                                                  | API health and ready-provider snapshot.                                                                                                |
+| `GET /v1/raid/:raidId`                                         | Raid status. Requires `x-bossraid-raid-token` or admin auth.                                                                           |
+| `GET /v1/raid/:raidId/result`                                  | Raid result. Same access rules.                                                                                                        |
+| `GET /v1/raid/:raidId/agent_log.json?token=<raidAccessToken>`  | Public run log for one raid.                                                                                                           |
+| `GET /v1/raids/:raidId`                                        | Alias status route.                                                                                                                    |
+| `GET /v1/raids/:raidId/result`                                 | Alias result route.                                                                                                                    |
+| `GET /v1/raids/:raidId/agent_log.json?token=<raidAccessToken>` | Alias run-log route.                                                                                                                   |
+| `GET /v1/agent.json`                                           | Mercenary manifest.                                                                                                                    |
+| `GET /v1/attested-runtime`                                     | Signed runtime proof when `MNEMONIC` is set. Without it, provider TEE badges can still be live while host proof publication stays off. |
+| `GET /v1/raid/:raidId/attested-result`                         | Signed raid result proof when `MNEMONIC` is set.                                                                                       |
+| `GET /v1/raids/:raidId/attested-result`                        | Alias attested result route.                                                                                                           |
+| `GET /v1/providers`                                            | Public provider list.                                                                                                                  |
+| `GET /v1/providers/health`                                     | Public provider readiness snapshot.                                                                                                    |
+| `GET /agents/discover`                                         | Public provider discovery.                                                                                                             |
 
 `receiptPath` points at `/receipt?raidId=<raidId>&token=<raidAccessToken>`.
 
@@ -47,34 +47,38 @@ For `mode: "onchain"`, Boss Raid attempts a live contract refresh before result,
 
 ## Provider Callback And Registry Routes
 
-| Route | Purpose |
-| --- | --- |
-| `POST /v1/providers/:providerId/heartbeat` | Provider callback for liveness. |
-| `POST /v1/providers/:providerId/submit` | Provider submission callback. |
-| `POST /v1/providers/:providerId/failure` | Provider failure callback. |
-| `POST /agents/register` | Registry write. Requires `Authorization: Bearer $BOSSRAID_REGISTRY_TOKEN`. |
-| `POST /agents/heartbeat` | Registry heartbeat. Same auth. |
+| Route                                      | Purpose                                                                    |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| `POST /v1/providers/:providerId/heartbeat` | Provider callback for liveness.                                            |
+| `POST /v1/providers/:providerId/submit`    | Provider submission callback.                                              |
+| `POST /v1/providers/:providerId/failure`   | Provider failure callback.                                                 |
+| `POST /agents/register`                    | Registry write. Requires `Authorization: Bearer $BOSSRAID_REGISTRY_TOKEN`. |
+| `POST /agents/heartbeat`                   | Registry heartbeat. Same auth.                                             |
 
 Providers can return `text`, `patch`, `json`, `image`, `video`, and `bundle` artifacts.
 `POST /agents/register` can also persist `erc8004.verification` when an external registration flow already verified owner, registry reachability, or tx existence.
+Party Quest providers may register pathful endpoints such as `https://partyquest.example/boss-raid/providers/pqf_game_dev/`. Boss Raid preserves that path when it calls `GET /boss-raid/providers/pqf_game_dev/health` and `POST /boss-raid/providers/pqf_game_dev/v1/raid/accept`, and HMAC signatures are calculated over the final request path.
+Provider registration accepts `maxConcurrency` / `max_concurrency` and `source: { type: "party_quest", targetType: "formation" | "agent", externalRef, displayIcon, memberCount }` so Party Quest squads can be identified without overloading provider ids.
+When a Party Quest provider registration includes `erc8004.operatorWallet`, settlement execution can use that wallet as the provider payout address when no provider signing actor or explicit `BOSSRAID_PROVIDER_ADDRESS_MAP_JSON` override is configured. This keeps static env maps available for operators while allowing external Party Quest squads to carry their own payee metadata.
 
 When `BOSSRAID_ERC8004_VERIFY=true`, `GET /v1/providers`, `GET /v1/providers/:providerId/stats`, and `GET /agents/discover` expose `erc8004.verification` with `verified`, `partial`, `failed`, `error`, or `not_checked`.
 
 ## Admin And Ops API Routes
 
-| Route | Purpose |
-| --- | --- |
-| `GET /v1/runtime` | Admin-only runtime diagnostics. |
-| `POST /v1/runtime/evaluator-smoke` | Admin-only evaluator smoke test. |
-| `GET /v1/raids` | Admin-only raid list. |
-| `POST /v1/raid/:raidId/abort` | Admin-only abort. |
-| `POST /v1/raids/:raidId/abort` | Alias abort route. |
-| `POST /v1/evaluations/:raidId/replay` | Admin-only evaluation replay. |
-| `GET /v1/providers/:providerId/stats` | Admin-only provider detail. |
-| `GET /v1/ops/session` | Return current ops auth state. |
-| `POST /v1/ops/session` | Create ops session cookie from `BOSSRAID_ADMIN_TOKEN`. |
-| `DELETE /v1/ops/session` | Clear ops session cookie. |
-| `GET /v1/ops/settlement/status` | Admin-only settlement health check: mode, configured flag, chain, contract addresses. |
+| Route                                      | Purpose                                                                               |
+| ------------------------------------------ | ------------------------------------------------------------------------------------- |
+| `GET /v1/runtime`                          | Admin-only runtime diagnostics.                                                       |
+| `POST /v1/runtime/evaluator-smoke`         | Admin-only evaluator smoke test.                                                      |
+| `GET /v1/raids`                            | Admin-only raid list.                                                                 |
+| `POST /v1/raid/:raidId/abort`              | Admin-only abort.                                                                     |
+| `POST /v1/raids/:raidId/abort`             | Alias abort route.                                                                    |
+| `POST /v1/evaluations/:raidId/replay`      | Admin-only evaluation replay.                                                         |
+| `GET /v1/raid/:raidId/provider-settlement` | Provider/admin/raid-token settlement mirror for one selected provider.                |
+| `GET /v1/providers/:providerId/stats`      | Admin-only provider detail.                                                           |
+| `GET /v1/ops/session`                      | Return current ops auth state.                                                        |
+| `POST /v1/ops/session`                     | Create ops session cookie from `BOSSRAID_ADMIN_TOKEN`.                                |
+| `DELETE /v1/ops/session`                   | Clear ops session cookie.                                                             |
+| `GET /v1/ops/settlement/status`            | Admin-only settlement health check: mode, configured flag, chain, contract addresses. |
 
 Admin auth can use `Authorization: Bearer $BOSSRAID_ADMIN_TOKEN` or the ops session cookie issued by `POST /v1/ops/session`.
 

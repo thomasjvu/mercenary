@@ -1,5 +1,5 @@
-import { computeRewards, hashSubmission } from "@bossraid/raid-core";
-import type { RaidRecord, SettlementAllocation, SettlementSummary } from "@bossraid/shared-types";
+import { computeRewards, hashSubmission } from '@bossraid/raid-core';
+import type { RaidRecord, SettlementAllocation, SettlementSummary } from '@bossraid/shared-types';
 
 export function buildSettlementAllocations(raid: RaidRecord): SettlementAllocation[] {
   if (raid.rankedSubmissions.length === 0) {
@@ -9,7 +9,7 @@ export function buildSettlementAllocations(raid: RaidRecord): SettlementAllocati
   const rewards = computeRewards(
     raid.task.constraints.maxBudgetUsd,
     raid.rankedSubmissions,
-    raid.task.rewardPolicy,
+    raid.task.rewardPolicy
   );
 
   return raid.selectedProviders.map((providerId) => {
@@ -18,13 +18,13 @@ export function buildSettlementAllocations(raid: RaidRecord): SettlementAllocati
 
     return {
       providerId,
-      role: valid ? "successful" : "unsuccessful",
-      status: valid ? "complete" : "reject",
+      role: valid ? 'successful' : 'unsuccessful',
+      status: valid ? 'complete' : 'reject',
       totalAmount: valid ? rewards.payoutPerSuccessfulProvider : 0,
       deliverableHash: ranked
         ? `0x${hashSubmission(
-            ranked.submission.patchUnifiedDiff ?? ranked.submission.answerText ?? "",
-            ranked.submission.explanation,
+            ranked.submission.patchUnifiedDiff ?? ranked.submission.answerText ?? '',
+            ranked.submission.explanation
           )}`
         : undefined,
     };
@@ -39,7 +39,7 @@ export function buildSettlementSummary(raid: RaidRecord): SettlementSummary | un
   const rewards = computeRewards(
     raid.task.constraints.maxBudgetUsd,
     raid.rankedSubmissions,
-    raid.task.rewardPolicy,
+    raid.task.rewardPolicy
   );
 
   return {

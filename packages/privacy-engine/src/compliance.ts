@@ -8,8 +8,8 @@ import type {
   ProviderSubmission,
   RankedSubmission,
   SanitizationReport,
-} from "@bossraid/shared-types";
-import { scanForReexposedContent, checkForExternalTransmission } from "./scanner.js";
+} from '@bossraid/shared-types';
+import { scanForReexposedContent, checkForExternalTransmission } from './scanner.js';
 
 const MAX_PRIVACY_SCORE = 100;
 const ERROR_PENALTY = 30;
@@ -24,7 +24,7 @@ export interface PrivacyEngineConfig {
 export function buildPrivacyComplianceResult(
   requiredFeatures: PrivacyFeatureKey[],
   attestation: PrivacyAttestation | undefined,
-  scanIssues: PrivacyComplianceIssue[],
+  scanIssues: PrivacyComplianceIssue[]
 ): PrivacyComplianceResult {
   const issues: PrivacyComplianceIssue[] = [...scanIssues];
 
@@ -33,15 +33,15 @@ export function buildPrivacyComplianceResult(
   let externalTransmissionDetected = false;
 
   for (const issue of scanIssues) {
-    if (issue.code === "DATA_LINEAGE_LEAK") dataLineageLeak = true;
-    if (issue.code === "REDACTED_PLACEHOLDER_EXPOSED") redactedContentReexposed = true;
-    if (issue.code === "EXTERNAL_API_REFERENCE") externalTransmissionDetected = true;
+    if (issue.code === 'DATA_LINEAGE_LEAK') dataLineageLeak = true;
+    if (issue.code === 'REDACTED_PLACEHOLDER_EXPOSED') redactedContentReexposed = true;
+    if (issue.code === 'EXTERNAL_API_REFERENCE') externalTransmissionDetected = true;
   }
 
   if (attestation?.dataRetained) {
     issues.push({
-      severity: "warn",
-      code: "DATA_RETAINED",
+      severity: 'warn',
+      code: 'DATA_RETAINED',
       message: `Provider ${attestation.providerId} retained data from this raid.`,
     });
   }
@@ -52,8 +52,8 @@ export function buildPrivacyComplianceResult(
     for (const feature of requiredFeatures) {
       if (claimed.has(feature) && !verified.has(feature)) {
         issues.push({
-          severity: "error",
-          code: "FEATURE_NOT_VERIFIED",
+          severity: 'error',
+          code: 'FEATURE_NOT_VERIFIED',
           message: `Required privacy feature '${feature}' was claimed but not verified for provider ${attestation.providerId}.`,
         });
       }
@@ -61,27 +61,30 @@ export function buildPrivacyComplianceResult(
     const unclaimed = requiredFeatures.filter((f) => !claimed.has(f));
     if (unclaimed.length > 0) {
       issues.push({
-        severity: "error",
-        code: "REQUIRED_FEATURE_MISSING",
-        message: `Provider ${attestation.providerId} did not claim required features: ${unclaimed.join(", ")}.`,
+        severity: 'error',
+        code: 'REQUIRED_FEATURE_MISSING',
+        message: `Provider ${attestation.providerId} did not claim required features: ${unclaimed.join(', ')}.`,
       });
     }
   } else {
     if (requiredFeatures.length > 0) {
       issues.push({
-        severity: "error",
-        code: "NO_ATTESTATION",
-        message: "No privacy attestation provided for this submission. Privacy mode required.",
+        severity: 'error',
+        code: 'NO_ATTESTATION',
+        message: 'No privacy attestation provided for this submission. Privacy mode required.',
       });
     }
   }
 
-  const errors = issues.filter((i) => i.severity === "error");
-  const warnings = issues.filter((i) => i.severity === "warn");
-  const score = Math.max(0, MAX_PRIVACY_SCORE - errors.length * ERROR_PENALTY - warnings.length * WARNING_PENALTY);
-  const passed = errors.length === 0 && requiredFeatures.every(
-    (f) => attestation && attestation.featuresVerified.includes(f),
+  const errors = issues.filter((i) => i.severity === 'error');
+  const warnings = issues.filter((i) => i.severity === 'warn');
+  const score = Math.max(
+    0,
+    MAX_PRIVACY_SCORE - errors.length * ERROR_PENALTY - warnings.length * WARNING_PENALTY
   );
+  const passed =
+    errors.length === 0 &&
+    requiredFeatures.every((f) => attestation && attestation.featuresVerified.includes(f));
 
   return {
     passed,
@@ -96,7 +99,7 @@ export function buildPrivacyComplianceResult(
 export function validateSubmissionPrivacy(
   submission: ProviderSubmission,
   requiredFeatures: PrivacyFeatureKey[],
-  sanitizationReport?: SanitizationReport,
+  sanitizationReport?: SanitizationReport
 ): PrivacyComplianceResult {
   const report: SanitizationReport = sanitizationReport ?? {
     redactedSecrets: 0,
@@ -104,7 +107,7 @@ export function validateSubmissionPrivacy(
     removedUrls: 0,
     trimmedFiles: 0,
     unsafeContentDetected: false,
-    riskTier: "safe",
+    riskTier: 'safe',
     issues: [],
   };
   const scanCtx = {
@@ -117,28 +120,21 @@ export function validateSubmissionPrivacy(
   const reexposedResult = scanForReexposedContent(scanCtx);
   const transmissionResult = checkForExternalTransmission(
     submission.explanation,
-    submission.artifacts?.map((a) => ({ label: a.label, description: a.description })),
+    submission.artifacts?.map((a) => ({ label: a.label, description: a.description }))
   );
 
-  const allIssues = [
-    ...reexposedResult.issues,
-    ...transmissionResult.issues,
-  ];
+  const allIssues = [...reexposedResult.issues, ...transmissionResult.issues];
 
-  return buildPrivacyComplianceResult(
-    requiredFeatures,
-    submission.privacyAttestation,
-    allIssues,
-  );
+  return buildPrivacyComplianceResult(requiredFeatures, submission.privacyAttestation, allIssues);
 }
 
 export function computePrivacyCompliance(
   rankedSubmissions: RankedSubmission[],
   privacyMode: PrivacyRoutingMode,
   requiredFeatures: PrivacyFeatureKey[],
-  sanitizationReport?: SanitizationReport,
+  sanitizationReport?: SanitizationReport
 ): PrivacyComplianceResult {
-  if (privacyMode === "off" || requiredFeatures.length === 0) {
+  if (privacyMode === 'off' || requiredFeatures.length === 0) {
     return {
       passed: true,
       score: 100,
@@ -171,7 +167,7 @@ export function buildPrivacyComplianceRecord(
   privacyMode: PrivacyRoutingMode,
   requiredFeatures: PrivacyFeatureKey[],
   rankedSubmissions: RankedSubmission[],
-  sanitizationReport?: SanitizationReport,
+  sanitizationReport?: SanitizationReport
 ): PrivacyComplianceRecord {
   const perProviderCompliance: Record<string, PrivacyComplianceResult> = {};
 
@@ -179,7 +175,7 @@ export function buildPrivacyComplianceRecord(
     perProviderCompliance[submission.providerId] = validateSubmissionPrivacy(
       submission,
       requiredFeatures,
-      sanitizationReport,
+      sanitizationReport
     );
   }
 
@@ -187,7 +183,7 @@ export function buildPrivacyComplianceRecord(
     rankedSubmissions,
     privacyMode,
     requiredFeatures,
-    sanitizationReport,
+    sanitizationReport
   );
 
   const providerAttestations = rankedSubmissions

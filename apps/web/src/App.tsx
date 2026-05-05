@@ -1,40 +1,44 @@
-import { startTransition, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Icon, addCollection } from "@iconify/react";
-import { icons as pixelIcons } from "@iconify-json/pixel";
-import { BOSSRAID_DOCS_URL } from "@bossraid/ui";
-import useSWR from "swr";
-import { bindAsciiRipple } from "./ascii-ripple";
-import { fetchJson, type Provider, type ProviderHealth } from "./api";
-import { DemoPage } from "./pages/DemoPage";
-import { LandingPage } from "./pages/LandingPage";
-import { ReceiptPage } from "./pages/ReceiptPage";
-import { RaidersPage } from "./pages/RaidersPage";
+import { startTransition, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { Icon, addCollection } from '@iconify/react';
+import { icons as pixelIcons } from '@iconify-json/pixel';
+import { BOSSRAID_DOCS_URL } from '@bossraid/ui';
+import useSWR from 'swr';
+import { bindAsciiRipple } from './ascii-ripple';
+import { fetchJson, type Provider, type ProviderHealth } from './api';
+import { DemoPage } from './pages/DemoPage';
+import { LandingPage } from './pages/LandingPage';
+import { ReceiptPage } from './pages/ReceiptPage';
+import { RaidersPage } from './pages/RaidersPage';
 
-type AppRoute = "/" | "/demo" | "/raiders" | "/receipt";
-type AppTheme = "light" | "dark";
+type AppRoute = '/' | '/demo' | '/raiders' | '/receipt';
+type AppTheme = 'light' | 'dark';
 
-const LANDING_THEME_STORAGE_KEY = "bossraid.landing-theme";
+const LANDING_THEME_STORAGE_KEY = 'bossraid.landing-theme';
 
 addCollection(pixelIcons);
 
 export function App() {
   const appShellRef = useRef<HTMLElement | null>(null);
-  const pathname = useSyncExternalStore(subscribeToLocation, getCurrentRoute, () => "/");
+  const pathname = useSyncExternalStore(subscribeToLocation, getCurrentRoute, () => '/');
   const [appTheme, setAppTheme] = useState<AppTheme>(() => getInitialTheme());
-  const isLandingRoute = pathname === "/";
-  const isDemoRoute = pathname === "/demo";
-  const isRaidersRoute = pathname === "/raiders";
-  const isReceiptRoute = pathname === "/receipt";
+  const isLandingRoute = pathname === '/';
+  const isDemoRoute = pathname === '/demo';
+  const isRaidersRoute = pathname === '/raiders';
+  const isReceiptRoute = pathname === '/receipt';
   const usesDirectoryLayout = isDemoRoute || isRaidersRoute || isReceiptRoute;
 
   const shouldLoadProviderData = isDemoRoute || isRaidersRoute;
-  const providers = useSWR<Provider[]>(shouldLoadProviderData ? "/v1/providers" : null, (path: string) => fetchJson(path), {
-    refreshInterval: 10_000,
-  });
-  const providerHealth = useSWR<ProviderHealth[]>(
-    shouldLoadProviderData ? "/v1/providers/health" : null,
+  const providers = useSWR<Provider[]>(
+    shouldLoadProviderData ? '/v1/providers' : null,
     (path: string) => fetchJson(path),
-    { refreshInterval: 10_000 },
+    {
+      refreshInterval: 10_000,
+    }
+  );
+  const providerHealth = useSWR<ProviderHealth[]>(
+    shouldLoadProviderData ? '/v1/providers/health' : null,
+    (path: string) => fetchJson(path),
+    { refreshInterval: 10_000 }
   );
 
   useEffect(() => {
@@ -47,7 +51,7 @@ export function App() {
   }, [pathname]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (typeof window === 'undefined') {
       return;
     }
 
@@ -60,15 +64,15 @@ export function App() {
     }
 
     startTransition(() => {
-      window.history.pushState({}, "", path);
-      window.dispatchEvent(new PopStateEvent("popstate"));
+      window.history.pushState({}, '', path);
+      window.dispatchEvent(new PopStateEvent('popstate'));
       window.scrollTo({ top: 0 });
     });
   }
 
   return (
     <main
-      className={`app-shell app-shell--theme-${appTheme} ${isLandingRoute ? "app-shell--landing" : ""} ${usesDirectoryLayout ? "app-shell--directory" : ""} ${isDemoRoute ? "app-shell--demo-route" : ""} ${isRaidersRoute ? "app-shell--raiders-route" : ""} ${isReceiptRoute ? "app-shell--receipt-route" : ""}`}
+      className={`app-shell app-shell--theme-${appTheme} ${isLandingRoute ? 'app-shell--landing' : ''} ${usesDirectoryLayout ? 'app-shell--directory' : ''} ${isDemoRoute ? 'app-shell--demo-route' : ''} ${isRaidersRoute ? 'app-shell--raiders-route' : ''} ${isReceiptRoute ? 'app-shell--receipt-route' : ''}`}
       ref={appShellRef}
     >
       <div className="bg-grid" aria-hidden="true" />
@@ -80,10 +84,7 @@ export function App() {
           onNavigate={navigate}
         />
       ) : isDemoRoute ? (
-        <DemoPage
-          providerHealth={providerHealth.data ?? []}
-          providers={providers.data ?? []}
-        />
+        <DemoPage providerHealth={providerHealth.data ?? []} providers={providers.data ?? []} />
       ) : isReceiptRoute ? (
         <ReceiptPage onNavigate={navigate} />
       ) : (
@@ -92,7 +93,7 @@ export function App() {
 
       <footer className="footer">
         <span className="footer__credit">
-          © 2026 Boss Raid · Developed by{" "}
+          © 2026 Boss Raid · Developed by{' '}
           <a href="https://ultima.gg" target="_blank" rel="noreferrer">
             Ultima
           </a>
@@ -100,22 +101,47 @@ export function App() {
         <div className="footer__links">
           <button
             className="footer__theme-toggle"
-            onClick={() => setAppTheme((current) => (current === "dark" ? "light" : "dark"))}
+            onClick={() => setAppTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
             type="button"
           >
-            {appTheme === "dark" ? "light mode" : "dark mode"}
+            {appTheme === 'dark' ? 'light mode' : 'dark mode'}
           </button>
           <span aria-hidden="true" className="footer__separator">
             |
           </span>
-          <RouteLink active={pathname === "/"} label="home" onNavigate={navigate} path="/" />
-          <RouteLink active={pathname === "/demo"} label="demo" onNavigate={navigate} path="/demo" />
-          <RouteLink active={pathname === "/raiders"} label="raiders" onNavigate={navigate} path="/raiders" />
-          <RouteLink active={pathname === "/receipt"} label="receipt" onNavigate={navigate} path="/receipt" />
-          <a className="footer__docs-link" href={BOSSRAID_DOCS_URL} target="_blank" rel="noreferrer">
+          <RouteLink active={pathname === '/'} label="home" onNavigate={navigate} path="/" />
+          <RouteLink
+            active={pathname === '/demo'}
+            label="demo"
+            onNavigate={navigate}
+            path="/demo"
+          />
+          <RouteLink
+            active={pathname === '/raiders'}
+            label="raiders"
+            onNavigate={navigate}
+            path="/raiders"
+          />
+          <RouteLink
+            active={pathname === '/receipt'}
+            label="receipt"
+            onNavigate={navigate}
+            path="/receipt"
+          />
+          <a
+            className="footer__docs-link"
+            href={BOSSRAID_DOCS_URL}
+            target="_blank"
+            rel="noreferrer"
+          >
             docs
           </a>
-          <a href="https://github.com/thomasjvu/mercenary" target="_blank" rel="noreferrer" aria-label="GitHub">
+          <a
+            href="https://github.com/thomasjvu/mercenary"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="GitHub"
+          >
             <Icon className="icon icon--pixel" icon="pixel:github" />
           </a>
           <a href="https://x.com/ultima_gg" target="_blank" rel="noreferrer" aria-label="X">
@@ -140,7 +166,7 @@ function RouteLink({
 }) {
   return (
     <a
-      className={`footer__route-link ${active ? "footer__route-link--active" : ""}`}
+      className={`footer__route-link ${active ? 'footer__route-link--active' : ''}`}
       href={path}
       onClick={(event) => {
         if (
@@ -164,40 +190,40 @@ function RouteLink({
 }
 
 function normalizePathname(pathname: string): AppRoute {
-  if (pathname === "/demo" || pathname === "/demo/") {
-    return "/demo";
+  if (pathname === '/demo' || pathname === '/demo/') {
+    return '/demo';
   }
-  if (pathname === "/raiders" || pathname === "/raiders/") {
-    return "/raiders";
+  if (pathname === '/raiders' || pathname === '/raiders/') {
+    return '/raiders';
   }
-  if (pathname === "/receipt" || pathname === "/receipt/") {
-    return "/receipt";
+  if (pathname === '/receipt' || pathname === '/receipt/') {
+    return '/receipt';
   }
-  return "/";
+  return '/';
 }
 
 function getCurrentRoute(): AppRoute {
-  return typeof window === "undefined" ? "/" : normalizePathname(window.location.pathname);
+  return typeof window === 'undefined' ? '/' : normalizePathname(window.location.pathname);
 }
 
 function subscribeToLocation(onStoreChange: () => void) {
-  if (typeof window === "undefined") {
+  if (typeof window === 'undefined') {
     return () => undefined;
   }
 
-  window.addEventListener("popstate", onStoreChange);
-  return () => window.removeEventListener("popstate", onStoreChange);
+  window.addEventListener('popstate', onStoreChange);
+  return () => window.removeEventListener('popstate', onStoreChange);
 }
 
 function getInitialTheme(): AppTheme {
-  if (typeof window === "undefined") {
-    return "light";
+  if (typeof window === 'undefined') {
+    return 'light';
   }
 
   const storedTheme = window.localStorage.getItem(LANDING_THEME_STORAGE_KEY);
-  if (storedTheme === "light" || storedTheme === "dark") {
+  if (storedTheme === 'light' || storedTheme === 'dark') {
     return storedTheme;
   }
 
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }

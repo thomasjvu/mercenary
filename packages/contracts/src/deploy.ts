@@ -1,7 +1,7 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import solc from "solc";
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import solc from 'solc';
 import {
   createPublicClient,
   createWalletClient,
@@ -10,9 +10,9 @@ import {
   http,
   type Address,
   type Hex,
-} from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import type { BossRaidDeployment } from "./index.js";
+} from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import type { BossRaidDeployment } from './index.js';
 
 type CompiledContract = {
   abi: unknown[];
@@ -33,43 +33,46 @@ function requireEnv(value: string | undefined, name: string): string {
 }
 
 function normalizePrivateKey(value: string): Hex {
-  return (value.startsWith("0x") ? value : `0x${value}`) as Hex;
+  return (value.startsWith('0x') ? value : `0x${value}`) as Hex;
 }
 
 async function compileContracts(projectRoot: string): Promise<ContractsOutput> {
   const [raidRegistrySource, bossJobEscrowSource] = await Promise.all([
-    readFile(resolve(projectRoot, "src/RaidRegistry.sol"), "utf8"),
-    readFile(resolve(projectRoot, "src/BossJobEscrow.sol"), "utf8"),
+    readFile(resolve(projectRoot, 'src/RaidRegistry.sol'), 'utf8'),
+    readFile(resolve(projectRoot, 'src/BossJobEscrow.sol'), 'utf8'),
   ]);
 
   const input = {
-    language: "Solidity",
+    language: 'Solidity',
     sources: {
-      "RaidRegistry.sol": { content: raidRegistrySource },
-      "BossJobEscrow.sol": { content: bossJobEscrowSource },
+      'RaidRegistry.sol': { content: raidRegistrySource },
+      'BossJobEscrow.sol': { content: bossJobEscrowSource },
     },
     settings: {
       outputSelection: {
-        "*": {
-          "*": ["abi", "evm.bytecode.object"],
+        '*': {
+          '*': ['abi', 'evm.bytecode.object'],
         },
       },
     },
   };
 
   const output = JSON.parse(solc.compile(JSON.stringify(input))) as {
-    contracts?: Record<string, Record<string, { abi: unknown[]; evm: { bytecode: { object: string } } }>>;
+    contracts?: Record<
+      string,
+      Record<string, { abi: unknown[]; evm: { bytecode: { object: string } } }>
+    >;
     errors?: Array<{ severity: string; formattedMessage: string }>;
   };
 
-  const errors = output.errors?.filter((item) => item.severity === "error") ?? [];
+  const errors = output.errors?.filter((item) => item.severity === 'error') ?? [];
   if (errors.length > 0) {
-    throw new Error(errors.map((item) => item.formattedMessage).join("\n"));
+    throw new Error(errors.map((item) => item.formattedMessage).join('\n'));
   }
 
   return {
-    raidRegistry: extractCompiledContract(output, "RaidRegistry.sol", "RaidRegistry"),
-    bossJobEscrow: extractCompiledContract(output, "BossJobEscrow.sol", "BossJobEscrow"),
+    raidRegistry: extractCompiledContract(output, 'RaidRegistry.sol', 'RaidRegistry'),
+    bossJobEscrow: extractCompiledContract(output, 'BossJobEscrow.sol', 'BossJobEscrow'),
   };
 }
 
@@ -86,16 +89,16 @@ export async function deployContracts(options: DeployContractsOptions): Promise<
   manifestPath: string;
   settlementEnv: string[];
 }> {
-  const packageRoot = resolve(import.meta.dirname, "..");
+  const packageRoot = resolve(import.meta.dirname, '..');
   const compiled = await compileContracts(packageRoot);
   const account = privateKeyToAccount(normalizePrivateKey(options.privateKey));
   const chain = options.chainId
     ? defineChain({
         id: options.chainId,
-        name: "bossraid",
+        name: 'bossraid',
         nativeCurrency: {
-          name: "Ether",
-          symbol: "ETH",
+          name: 'Ether',
+          symbol: 'ETH',
           decimals: 18,
         },
         rpcUrls: {
@@ -121,9 +124,11 @@ export async function deployContracts(options: DeployContractsOptions): Promise<
     bytecode: compiled.raidRegistry.bytecode,
     account,
   });
-  const registryReceipt = await publicClient.waitForTransactionReceipt({ hash: registryDeployHash });
-  if (registryReceipt.status !== "success" || !registryReceipt.contractAddress) {
-    throw new Error("RaidRegistry deployment failed.");
+  const registryReceipt = await publicClient.waitForTransactionReceipt({
+    hash: registryDeployHash,
+  });
+  if (registryReceipt.status !== 'success' || !registryReceipt.contractAddress) {
+    throw new Error('RaidRegistry deployment failed.');
   }
 
   const tokenAddress = getAddress(options.tokenAddress);
@@ -134,8 +139,8 @@ export async function deployContracts(options: DeployContractsOptions): Promise<
     account,
   });
   const escrowReceipt = await publicClient.waitForTransactionReceipt({ hash: escrowDeployHash });
-  if (escrowReceipt.status !== "success" || !escrowReceipt.contractAddress) {
-    throw new Error("BossJobEscrow deployment failed.");
+  if (escrowReceipt.status !== 'success' || !escrowReceipt.contractAddress) {
+    throw new Error('BossJobEscrow deployment failed.');
   }
 
   const deployment: BossRaidDeployment = {
@@ -153,7 +158,7 @@ export async function deployContracts(options: DeployContractsOptions): Promise<
   };
 
   await mkdir(dirname(options.outPath), { recursive: true });
-  await writeFile(options.outPath, JSON.stringify(deployment, null, 2), "utf8");
+  await writeFile(options.outPath, JSON.stringify(deployment, null, 2), 'utf8');
 
   const settlementEnv = [
     `BOSSRAID_RPC_URL=${options.rpcUrl}`,
@@ -172,10 +177,13 @@ export async function deployContracts(options: DeployContractsOptions): Promise<
 
 function extractCompiledContract(
   output: {
-    contracts?: Record<string, Record<string, { abi: unknown[]; evm: { bytecode: { object: string } } }>>;
+    contracts?: Record<
+      string,
+      Record<string, { abi: unknown[]; evm: { bytecode: { object: string } } }>
+    >;
   },
   fileName: string,
-  contractName: string,
+  contractName: string
 ): CompiledContract {
   const compiled = output.contracts?.[fileName]?.[contractName];
   if (!compiled?.evm.bytecode.object) {
@@ -189,11 +197,17 @@ function extractCompiledContract(
 }
 
 async function main(): Promise<void> {
-  const workspaceRoot = resolve(import.meta.dirname, "..", "..", "..");
-  const rpcUrl = requireEnv(process.env.BOSSRAID_RPC_URL, "BOSSRAID_RPC_URL");
-  const privateKey = requireEnv(process.env.BOSSRAID_DEPLOYER_PRIVATE_KEY, "BOSSRAID_DEPLOYER_PRIVATE_KEY");
-  const tokenAddress = requireEnv(process.env.BOSSRAID_TOKEN_ADDRESS, "BOSSRAID_TOKEN_ADDRESS");
-  const outPath = resolve(workspaceRoot, process.env.BOSSRAID_CONTRACTS_OUT ?? "temp/contracts/deployment.json");
+  const workspaceRoot = resolve(import.meta.dirname, '..', '..', '..');
+  const rpcUrl = requireEnv(process.env.BOSSRAID_RPC_URL, 'BOSSRAID_RPC_URL');
+  const privateKey = requireEnv(
+    process.env.BOSSRAID_DEPLOYER_PRIVATE_KEY,
+    'BOSSRAID_DEPLOYER_PRIVATE_KEY'
+  );
+  const tokenAddress = requireEnv(process.env.BOSSRAID_TOKEN_ADDRESS, 'BOSSRAID_TOKEN_ADDRESS');
+  const outPath = resolve(
+    workspaceRoot,
+    process.env.BOSSRAID_CONTRACTS_OUT ?? 'temp/contracts/deployment.json'
+  );
   const chainId = process.env.BOSSRAID_CHAIN_ID ? Number(process.env.BOSSRAID_CHAIN_ID) : undefined;
   const result = await deployContracts({
     rpcUrl,
@@ -211,8 +225,8 @@ async function main(): Promise<void> {
         settlementEnv: result.settlementEnv,
       },
       null,
-      2,
-    )}\n`,
+      2
+    )}\n`
   );
 }
 

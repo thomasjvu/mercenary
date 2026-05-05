@@ -1,4 +1,4 @@
-import { rankSubmissions } from "@bossraid/raid-core";
+import { rankSubmissions } from '@bossraid/raid-core';
 import type {
   BossRaidAdaptivePlanningOutput,
   BossRaidStatusOutput,
@@ -7,22 +7,18 @@ import type {
   ProviderSubmission,
   RaidRecord,
   RankedSubmission,
-} from "@bossraid/shared-types";
-import { buildSynthesizedOutput } from "./synthesis.js";
+} from '@bossraid/shared-types';
+import { buildSynthesizedOutput } from './synthesis.js';
 
 export const TERMINAL_ASSIGNMENT_STATUSES = new Set([
-  "submitted",
-  "invalid",
-  "timed_out",
-  "failed",
-  "disqualified",
+  'submitted',
+  'invalid',
+  'timed_out',
+  'failed',
+  'disqualified',
 ]);
 
-export const TERMINAL_RAID_STATUSES = new Set([
-  "final",
-  "cancelled",
-  "expired",
-]);
+export const TERMINAL_RAID_STATUSES = new Set(['final', 'cancelled', 'expired']);
 
 export function restorePersistedRaid(raid: RaidRecord): RaidRecord {
   const restored = structuredClone(raid) as RaidRecord;
@@ -39,7 +35,9 @@ export function buildRaidStatusOutput(raid: RaidRecord): BossRaidStatusOutput {
       providerId: assignment.providerId,
       status: assignment.status,
       latencyMs: assignment.latencyMs,
-      heartbeatAgeMs: assignment.lastHeartbeatAt ? now - Date.parse(assignment.lastHeartbeatAt) : undefined,
+      heartbeatAgeMs: assignment.lastHeartbeatAt
+        ? now - Date.parse(assignment.lastHeartbeatAt)
+        : undefined,
       progress: assignment.progress,
       message: assignment.message,
     })),
@@ -51,7 +49,7 @@ export function buildRaidStatusOutput(raid: RaidRecord): BossRaidStatusOutput {
 }
 
 export function buildAdaptivePlanningOutput(
-  raid: RaidRecord,
+  raid: RaidRecord
 ): BossRaidAdaptivePlanningOutput | undefined {
   if (!raid.adaptivePlanning) {
     return undefined;
@@ -69,7 +67,7 @@ export function buildAdaptivePlanningOutput(
 export function applyHeartbeatToRaid(
   raid: RaidRecord,
   providerId: string,
-  heartbeat: ProviderHeartbeat,
+  heartbeat: ProviderHeartbeat
 ): boolean {
   const assignment = raid.assignments[providerId];
   if (!assignment) {
@@ -80,7 +78,7 @@ export function applyHeartbeatToRaid(
   }
 
   const now = heartbeat.timestamp;
-  assignment.status = "running";
+  assignment.status = 'running';
   assignment.progress = heartbeat.progress;
   assignment.message = heartbeat.message;
   assignment.lastHeartbeatAt = now;
@@ -93,17 +91,20 @@ export function applyHeartbeatToRaid(
 export function applySubmissionToRaid(
   raid: RaidRecord,
   submission: ProviderSubmission,
-  breakdown: EvaluationBreakdown,
+  breakdown: EvaluationBreakdown
 ): RankedSubmission {
   const assignment = raid.assignments[submission.providerId];
   if (!assignment) {
     throw new Error(`Unknown provider assignment: ${submission.providerId}`);
   }
-  assignment.status = breakdown.valid ? "submitted" : "invalid";
+  assignment.status = breakdown.valid ? 'submitted' : 'invalid';
   assignment.submittedAt = submission.submittedAt;
   assignment.message = breakdown.summary;
   assignment.progress = 1;
-  assignment.latencyMs = Math.max(Date.parse(submission.submittedAt) - Date.parse(raid.createdAt), 0);
+  assignment.latencyMs = Math.max(
+    Date.parse(submission.submittedAt) - Date.parse(raid.createdAt),
+    0
+  );
 
   const next: RankedSubmission = {
     submission,
@@ -118,17 +119,15 @@ export function applySubmissionToRaid(
 
   if (!raid.firstValidSubmissionId && breakdown.valid) {
     raid.firstValidSubmissionId = submission.providerId;
-    raid.status = "first_valid";
+    raid.status = 'first_valid';
   }
 
-  return raid.rankedSubmissions.find((item) => item.submission.providerId === submission.providerId)!;
+  return raid.rankedSubmissions.find(
+    (item) => item.submission.providerId === submission.providerId
+  )!;
 }
 
-export function applyTimeoutToRaid(
-  raid: RaidRecord,
-  providerId: string,
-  reason: string,
-): boolean {
+export function applyTimeoutToRaid(raid: RaidRecord, providerId: string, reason: string): boolean {
   const assignment = raid.assignments[providerId];
   if (!assignment) {
     return false;
@@ -137,7 +136,7 @@ export function applyTimeoutToRaid(
     return false;
   }
 
-  assignment.status = "timed_out";
+  assignment.status = 'timed_out';
   assignment.timeoutAt = new Date().toISOString();
   assignment.message = reason;
   assignment.progress = assignment.progress ?? 0;
@@ -145,11 +144,7 @@ export function applyTimeoutToRaid(
   return true;
 }
 
-export function applyFailureToRaid(
-  raid: RaidRecord,
-  providerId: string,
-  reason: string,
-): boolean {
+export function applyFailureToRaid(raid: RaidRecord, providerId: string, reason: string): boolean {
   const assignment = raid.assignments[providerId];
   if (!assignment) {
     return false;
@@ -158,7 +153,7 @@ export function applyFailureToRaid(
     return false;
   }
 
-  assignment.status = "failed";
+  assignment.status = 'failed';
   assignment.message = reason;
   assignment.timeoutAt = new Date().toISOString();
   raid.updatedAt = assignment.timeoutAt;
@@ -168,7 +163,7 @@ export function applyFailureToRaid(
 export function applyDisqualificationToRaid(
   raid: RaidRecord,
   providerId: string,
-  reason: string,
+  reason: string
 ): boolean {
   const assignment = raid.assignments[providerId];
   if (!assignment) {
@@ -178,7 +173,7 @@ export function applyDisqualificationToRaid(
     return false;
   }
 
-  assignment.status = "disqualified";
+  assignment.status = 'disqualified';
   assignment.message = reason;
   assignment.timeoutAt = new Date().toISOString();
   assignment.progress = assignment.progress ?? 0;
@@ -187,28 +182,32 @@ export function applyDisqualificationToRaid(
 }
 
 export function promoteReserveProvider(raid: RaidRecord): string | undefined {
-  const nextReserveId = raid.reserveProviders.find((providerId) => !raid.selectedProviders.includes(providerId));
+  const nextReserveId = raid.reserveProviders.find(
+    (providerId) => !raid.selectedProviders.includes(providerId)
+  );
   if (!nextReserveId) {
     return undefined;
   }
 
   raid.selectedProviders.push(nextReserveId);
-  raid.assignments[nextReserveId].message = "promoted from reserve";
+  raid.assignments[nextReserveId].message = 'promoted from reserve';
   raid.updatedAt = new Date().toISOString();
   return nextReserveId;
 }
 
 export function shouldFinalizeRaid(raid: RaidRecord): boolean {
   return raid.selectedProviders.every((providerId) =>
-    TERMINAL_ASSIGNMENT_STATUSES.has(raid.assignments[providerId]?.status),
+    TERMINAL_ASSIGNMENT_STATUSES.has(raid.assignments[providerId]?.status)
   );
 }
 
 export function finalizeRaidRecord(raid: RaidRecord): void {
   raid.rankedSubmissions = rankSubmissions(raid.rankedSubmissions);
-  raid.primarySubmissionId = raid.rankedSubmissions.find((item) => item.breakdown.valid)?.submission.providerId;
+  raid.primarySubmissionId = raid.rankedSubmissions.find(
+    (item) => item.breakdown.valid
+  )?.submission.providerId;
   raid.synthesizedOutput = buildSynthesizedOutput(raid);
   raid.bestCurrentScore = raid.rankedSubmissions[0]?.breakdown.finalScore;
-  raid.status = "final";
+  raid.status = 'final';
   raid.updatedAt = new Date().toISOString();
 }

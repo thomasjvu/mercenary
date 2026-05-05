@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
-import useSWR from "swr";
-import heroImage from "../../../../assets/hero.webp";
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import useSWR from 'swr';
+import heroImage from '../../../../assets/hero.webp';
 import {
   API_BASE,
   fetchAttestedRaidResult,
@@ -14,9 +14,9 @@ import {
   type Provider,
   type RaidResult,
   type RaidStatus,
-} from "../api";
+} from '../api';
 
-type AppRoute = "/" | "/demo" | "/raiders" | "/receipt";
+type AppRoute = '/' | '/demo' | '/raiders' | '/receipt';
 
 type ReceiptPageProps = {
   onNavigate: (path: AppRoute) => void;
@@ -27,10 +27,14 @@ type ReceiptQuery = {
   token: string;
 };
 
-type RoutingDecision = NonNullable<RaidResult["routingProof"]>["providers"][number];
-type SettlementExecution = NonNullable<RaidResult["settlementExecution"]>;
-type SubmissionArtifact = NonNullable<NonNullable<RaidResult["synthesizedOutput"]>["artifacts"]>[number];
-type Erc8004VerificationStatus = NonNullable<NonNullable<Provider["erc8004"]>["verification"]>["status"];
+type RoutingDecision = NonNullable<RaidResult['routingProof']>['providers'][number];
+type SettlementExecution = NonNullable<RaidResult['settlementExecution']>;
+type SubmissionArtifact = NonNullable<
+  NonNullable<RaidResult['synthesizedOutput']>['artifacts']
+>[number];
+type Erc8004VerificationStatus = NonNullable<
+  NonNullable<Provider['erc8004']>['verification']
+>['status'];
 type ReceiptProviderRowData = {
   providerId: string;
   displayName: string;
@@ -40,54 +44,63 @@ type ReceiptProviderRowData = {
   reason: string;
 };
 
-const TERMINAL_STATUSES = new Set(["final", "cancelled", "expired"]);
+const TERMINAL_STATUSES = new Set(['final', 'cancelled', 'expired']);
 const PINNED_PROOF_RECEIPT_URL =
-  (import.meta.env.VITE_BOSSRAID_PROOF_RECEIPT_URL as string | undefined)?.trim() ?? "";
+  (import.meta.env.VITE_BOSSRAID_PROOF_RECEIPT_URL as string | undefined)?.trim() ?? '';
 
 export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
   const initialQuery = useMemo(readReceiptQuery, []);
-  const [raidIdInput, setRaidIdInput] = useState(initialQuery?.raidId ?? "");
-  const [tokenInput, setTokenInput] = useState(initialQuery?.token ?? "");
+  const [raidIdInput, setRaidIdInput] = useState(initialQuery?.raidId ?? '');
+  const [tokenInput, setTokenInput] = useState(initialQuery?.token ?? '');
   const [activeQuery, setActiveQuery] = useState<ReceiptQuery | null>(initialQuery);
   const [shareCopied, setShareCopied] = useState(false);
 
   const status = useSWR(
-    activeQuery ? (["receipt-status", activeQuery.raidId, activeQuery.token] as const) : null,
+    activeQuery ? (['receipt-status', activeQuery.raidId, activeQuery.token] as const) : null,
     ([, raidId, token]) => fetchRaidStatus(raidId, token),
     {
       refreshInterval: (latestData?: RaidStatus) =>
-        activeQuery && !TERMINAL_STATUSES.has(latestData?.status ?? "") ? 2_000 : 0,
+        activeQuery && !TERMINAL_STATUSES.has(latestData?.status ?? '') ? 2_000 : 0,
       revalidateOnFocus: true,
-    },
+    }
   );
 
   const statusIsTerminal = status.data ? TERMINAL_STATUSES.has(status.data.status) : false;
   const result = useSWR(
-    activeQuery ? (["receipt-result", activeQuery.raidId, activeQuery.token] as const) : null,
+    activeQuery ? (['receipt-result', activeQuery.raidId, activeQuery.token] as const) : null,
     ([, raidId, token]) => fetchRaidResult(raidId, token),
     {
       refreshInterval: (latestData?: RaidResult) =>
-        activeQuery && !statusIsTerminal && !TERMINAL_STATUSES.has(latestData?.status ?? "") ? 2_000 : 0,
+        activeQuery && !statusIsTerminal && !TERMINAL_STATUSES.has(latestData?.status ?? '')
+          ? 2_000
+          : 0,
       revalidateOnFocus: true,
-    },
+    }
   );
-  const providers = useSWR<Provider[]>(activeQuery ? "/v1/providers" : null, (path: string) => fetchJson(path), {
-    revalidateOnFocus: false,
-  });
+  const providers = useSWR<Provider[]>(
+    activeQuery ? '/v1/providers' : null,
+    (path: string) => fetchJson(path),
+    {
+      revalidateOnFocus: false,
+    }
+  );
   const attestedRuntime = useSWR<AttestedEnvelope<AttestedRuntimePayload>>(
-    "receipt-attested-runtime",
+    'receipt-attested-runtime',
     () => fetchAttestedRuntime(),
     {
       revalidateOnFocus: false,
-    },
+    }
   );
   const attestedResult = useSWR<AttestedEnvelope<AttestedRaidResultPayload>>(
-    activeQuery ? (["receipt-attested-result", activeQuery.raidId, activeQuery.token] as const) : null,
-    ([, raidId, token]: readonly [string, string, string]) => fetchAttestedRaidResult(raidId, token),
+    activeQuery
+      ? (['receipt-attested-result', activeQuery.raidId, activeQuery.token] as const)
+      : null,
+    ([, raidId, token]: readonly [string, string, string]) =>
+      fetchAttestedRaidResult(raidId, token),
     {
       refreshInterval: () => (activeQuery && !statusIsTerminal ? 2_000 : 0),
       revalidateOnFocus: true,
-    },
+    }
   );
 
   useEffect(() => {
@@ -110,7 +123,7 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
 
     const next = { raidId, token };
     setActiveQuery(next);
-    window.history.replaceState({}, "", buildReceiptPath(next));
+    window.history.replaceState({}, '', buildReceiptPath(next));
   }
 
   async function handleCopyLink() {
@@ -131,10 +144,14 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
       ? result.data.settlementExecution.successfulProviderIds
       : result.data?.synthesizedOutput?.contributingProviderIds.length
         ? result.data.synthesizedOutput.contributingProviderIds
-        : (result.data?.approvedSubmissions ?? []).map((submission) => submission.submission.providerId),
+        : (result.data?.approvedSubmissions ?? []).map(
+            (submission) => submission.submission.providerId
+          )
   );
   const supportingProviders = uniqueStrings(
-    (result.data?.synthesizedOutput?.supportingProviderIds ?? []).filter((providerId) => !approvedProviders.includes(providerId)),
+    (result.data?.synthesizedOutput?.supportingProviderIds ?? []).filter(
+      (providerId) => !approvedProviders.includes(providerId)
+    )
   );
   const droppedProviders = uniqueStrings(result.data?.synthesizedOutput?.droppedProviderIds ?? []);
   const workstreams = result.data?.synthesizedOutput?.workstreams ?? [];
@@ -142,7 +159,9 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
   const settlementExecution = result.data?.settlementExecution;
   const routingProof = result.data?.routingProof;
   const routingDecisions = routingProof?.providers ?? [];
-  const providerMap = new Map((providers.data ?? []).map((provider) => [provider.providerId, provider]));
+  const providerMap = new Map(
+    (providers.data ?? []).map((provider) => [provider.providerId, provider])
+  );
   const routingDecisionMap = new Map<string, RoutingDecision[]>();
 
   for (const decision of routingDecisions) {
@@ -158,56 +177,61 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
     ...droppedProviders,
     ...(settlementExecution?.childJobs.map((job) => job.providerId) ?? []),
   ]);
-  const erc8004ProviderCount = countProvidersWithSignal(routingDecisionMap, (decision) => decision.erc8004Registered);
+  const erc8004ProviderCount = countProvidersWithSignal(
+    routingDecisionMap,
+    (decision) => decision.erc8004Registered
+  );
   const verifiedErc8004ProviderCount = countProvidersWithSignal(
     routingDecisionMap,
-    (decision) => decision.erc8004VerificationStatus === "verified",
+    (decision) => decision.erc8004VerificationStatus === 'verified'
   );
-  const veniceProviderCount = countProvidersWithSignal(routingDecisionMap, (decision) => decision.veniceBacked);
-  const teeProviderCount = countProvidersWithSignal(
+  const veniceProviderCount = countProvidersWithSignal(
     routingDecisionMap,
-    (decision) => decision.privacyFeatures.includes("tee_attested"),
+    (decision) => decision.veniceBacked
   );
-  const signedProviderCount = countProvidersWithSignal(
-    routingDecisionMap,
-    (decision) => decision.privacyFeatures.includes("signed_outputs"),
+  const teeProviderCount = countProvidersWithSignal(routingDecisionMap, (decision) =>
+    decision.privacyFeatures.includes('tee_attested')
+  );
+  const signedProviderCount = countProvidersWithSignal(routingDecisionMap, (decision) =>
+    decision.privacyFeatures.includes('signed_outputs')
   );
   const runtimeSignerDisabled = isAttestationSignerUnavailable(attestedRuntime.error?.message);
   const resultSignerDisabled = isAttestationSignerUnavailable(attestedResult.error?.message);
   const runtimeAttestationStatus = attestedRuntime.data
-    ? "live"
+    ? 'live'
     : runtimeSignerDisabled
-      ? "proof unpublished"
+      ? 'proof unpublished'
       : attestedRuntime.error
-        ? "unavailable"
-        : "loading";
+        ? 'unavailable'
+        : 'loading';
   const resultAttestationStatus = attestedResult.data
-    ? "live"
+    ? 'live'
     : resultSignerDisabled
-      ? "proof unpublished"
+      ? 'proof unpublished'
       : attestedResult.error
-        ? "unavailable"
+        ? 'unavailable'
         : activeQuery
-          ? "loading"
-          : "pending";
+          ? 'loading'
+          : 'pending';
   const attestationTarget =
     attestedResult.data?.payload.deploymentTarget ??
     attestedRuntime.data?.payload.deploymentTarget ??
-    (runtimeSignerDisabled || resultSignerDisabled ? "not published" : "pending");
+    (runtimeSignerDisabled || resultSignerDisabled ? 'not published' : 'pending');
   const attestationTee =
     attestedResult.data?.payload.teePlatform ??
     attestedRuntime.data?.payload.teePlatform ??
-    (runtimeSignerDisabled || resultSignerDisabled ? "provider TEE live" : "pending");
+    (runtimeSignerDisabled || resultSignerDisabled ? 'provider TEE live' : 'pending');
   const attestationSurfaceLabel =
     attestedResult.data || attestedRuntime.data
       ? buildAttestationSurfaceLabel(attestationTarget, attestationTee)
       : runtimeSignerDisabled || resultSignerDisabled
-        ? "Host proof unpublished"
+        ? 'Host proof unpublished'
         : buildAttestationSurfaceLabel(attestationTarget, attestationTee);
-  const currentReceiptStatus = result.data?.status ?? status.data?.status ?? "loading";
+  const currentReceiptStatus = result.data?.status ?? status.data?.status ?? 'loading';
   const canonicalSummary = summarizeCanonicalOutput(result.data);
   const previewArtifacts = pickPreviewArtifacts(synthesizedArtifacts);
-  const approvedSubmissionCount = result.data?.approvedSubmissions?.length ?? approvedProviders.length;
+  const approvedSubmissionCount =
+    result.data?.approvedSubmissions?.length ?? approvedProviders.length;
   const successfulProviderCount =
     result.data?.settlement?.successfulProviderCount ??
     settlementExecution?.successfulProviderIds.length ??
@@ -215,14 +239,14 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
   const payoutPerSuccessfulProvider = result.data?.settlement?.payoutPerSuccessfulProvider;
   const primaryOutputType =
     result.data?.synthesizedOutput?.primaryType ??
-    (result.data?.primarySubmission?.submission.patchUnifiedDiff ? "patch" : "pending");
+    (result.data?.primarySubmission?.submission.patchUnifiedDiff ? 'patch' : 'pending');
   const providerRows = buildReceiptProviderRows(
     routedProviderIds,
     routingDecisionMap,
     providerMap,
     approvedProviders,
     supportingProviders,
-    droppedProviders,
+    droppedProviders
   );
   const settlementWarnings = settlementExecution?.warnings ?? [];
   const childJobCount = settlementExecution?.childJobs.length ?? 0;
@@ -237,17 +261,24 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
             <span className="directory-hero__headline-line">One raid.</span>
             <span className="directory-hero__headline-line">One receipt.</span>
           </h1>
-          <p className="lede receipt-shell__lede">Load one run, its result, proof links, and settlement record.</p>
+          <p className="lede receipt-shell__lede">
+            Load one run, its result, proof links, and settlement record.
+          </p>
           <div className="directory-hero__actions">
-            <button className="button button--primary" disabled={!activeQuery} onClick={handleCopyLink} type="button">
-              {shareCopied ? "copied" : "copy link"}
+            <button
+              className="button button--primary"
+              disabled={!activeQuery}
+              onClick={handleCopyLink}
+              type="button"
+            >
+              {shareCopied ? 'copied' : 'copy link'}
             </button>
             <a
               className="button"
               href="/demo"
               onClick={(event) => {
                 event.preventDefault();
-                onNavigate("/demo");
+                onNavigate('/demo');
               }}
             >
               demo
@@ -257,7 +288,7 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
               href="/raiders"
               onClick={(event) => {
                 event.preventDefault();
-                onNavigate("/raiders");
+                onNavigate('/raiders');
               }}
             >
               raiders
@@ -272,30 +303,33 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
             className="page-stage-card__image"
             loading="lazy"
             src={heroImage}
-            style={{ objectPosition: "50% 62%" }}
+            style={{ objectPosition: '50% 62%' }}
           />
           <div className="page-stage-card__scrim" />
           <div className="page-stage-card__copy">
-            <p className="eyebrow">{activeQuery ? "loaded proof lane" : "proof lane"}</p>
-            <strong>{activeQuery ? currentReceiptStatus : "awaiting receipt"}</strong>
+            <p className="eyebrow">{activeQuery ? 'loaded proof lane' : 'proof lane'}</p>
+            <strong>{activeQuery ? currentReceiptStatus : 'awaiting receipt'}</strong>
             <p>
               {activeQuery
                 ? `${approvedSubmissionCount} approved · ${successfulProviderCount} successful · ${runtimeAttestationStatus} runtime`
-                : "Load one raid to inspect output, proof, settlement, and provider lineage in a single receipt."}
+                : 'Load one raid to inspect output, proof, settlement, and provider lineage in a single receipt.'}
             </p>
           </div>
           <div className="page-stage-card__summary">
             <SummaryPill label="runtime" value={runtimeAttestationStatus} />
-            <SummaryPill label="result" value={activeQuery ? resultAttestationStatus : "pending"} />
+            <SummaryPill label="result" value={activeQuery ? resultAttestationStatus : 'pending'} />
             <SummaryPill
               label="split"
               value={
                 payoutPerSuccessfulProvider == null
-                  ? "pending"
+                  ? 'pending'
                   : `${successfulProviderCount} x ${formatUsd(payoutPerSuccessfulProvider)}`
               }
             />
-            <SummaryPill label="tee" value={`${teeProviderCount}/${routedProviderIds.length || 0}`} />
+            <SummaryPill
+              label="tee"
+              value={`${teeProviderCount}/${routedProviderIds.length || 0}`}
+            />
           </div>
         </aside>
       </div>
@@ -336,44 +370,46 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
       <div className="receipt-shell__body">
         {!activeQuery ? (
           <article className="receipt-empty receipt-empty--viewport">
-          <p className="eyebrow">capability link</p>
-          <h2>Load one raid receipt.</h2>
-          <p>Use the `raidId` and `raidAccessToken` returned by one raid run.</p>
-          <pre className="code-panel receipt-empty__code">/receipt?raidId=&lt;raidId&gt;&amp;token=&lt;raidAccessToken&gt;</pre>
-          <div className="receipt-empty__actions">
-            {PINNED_PROOF_RECEIPT_URL ? (
-              <a className="button button--primary" href={PINNED_PROOF_RECEIPT_URL}>
-                open pinned receipt
+            <p className="eyebrow">capability link</p>
+            <h2>Load one raid receipt.</h2>
+            <p>Use the `raidId` and `raidAccessToken` returned by one raid run.</p>
+            <pre className="code-panel receipt-empty__code">
+              /receipt?raidId=&lt;raidId&gt;&amp;token=&lt;raidAccessToken&gt;
+            </pre>
+            <div className="receipt-empty__actions">
+              {PINNED_PROOF_RECEIPT_URL ? (
+                <a className="button button--primary" href={PINNED_PROOF_RECEIPT_URL}>
+                  open pinned receipt
+                </a>
+              ) : null}
+              <a
+                className="button"
+                href="/demo"
+                onClick={(event) => {
+                  event.preventDefault();
+                  onNavigate('/demo');
+                }}
+              >
+                open live demo
               </a>
-            ) : null}
-            <a
-              className="button"
-              href="/demo"
-              onClick={(event) => {
-                event.preventDefault();
-                onNavigate("/demo");
-              }}
-            >
-              open live demo
-            </a>
-          </div>
-          <p>
-            {PINNED_PROOF_RECEIPT_URL
-              ? "Use the pinned receipt for a no-wallet proof path, or open /demo to launch a new hosted raid."
-              : "Set VITE_BOSSRAID_PROOF_RECEIPT_URL to pin one recent proof URL for judges."}
-          </p>
-          <p>
-            {attestedRuntime.data
-              ? `${buildAttestationSurfaceLabel(
-                  attestedRuntime.data.payload.deploymentTarget ?? "unknown",
-                  attestedRuntime.data.payload.teePlatform ?? "unknown",
-                )} runtime proof is live.`
-              : runtimeSignerDisabled
-                ? "Provider TEE signals are still live, but this host is not publishing a signed runtime envelope because MNEMONIC is not configured."
-                : attestedRuntime.error
-                  ? readQueryErrorMessage(attestedRuntime.error)
-                  : "Loading runtime attestation."}
-          </p>
+            </div>
+            <p>
+              {PINNED_PROOF_RECEIPT_URL
+                ? 'Use the pinned receipt for a no-wallet proof path, or open /demo to launch a new hosted raid.'
+                : 'Set VITE_BOSSRAID_PROOF_RECEIPT_URL to pin one recent proof URL for judges.'}
+            </p>
+            <p>
+              {attestedRuntime.data
+                ? `${buildAttestationSurfaceLabel(
+                    attestedRuntime.data.payload.deploymentTarget ?? 'unknown',
+                    attestedRuntime.data.payload.teePlatform ?? 'unknown'
+                  )} runtime proof is live.`
+                : runtimeSignerDisabled
+                  ? 'Provider TEE signals are still live, but this host is not publishing a signed runtime envelope because MNEMONIC is not configured.'
+                  : attestedRuntime.error
+                    ? readQueryErrorMessage(attestedRuntime.error)
+                    : 'Loading runtime attestation.'}
+            </p>
           </article>
         ) : null}
 
@@ -398,7 +434,9 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
               <div className="receipt-outcome">
                 <div className="receipt-outcome__copy">
                   <strong className="receipt-kicker">{primaryOutputType}</strong>
-                  <p className="receipt-panel__text receipt-panel__text--clamped">{canonicalSummary}</p>
+                  <p className="receipt-panel__text receipt-panel__text--clamped">
+                    {canonicalSummary}
+                  </p>
                   <div className="receipt-stat-grid">
                     <ReceiptStat label="type" value={primaryOutputType} />
                     <ReceiptStat label="workstreams" value={String(workstreams.length)} />
@@ -410,7 +448,9 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                       {visibleWorkstreams.map((workstream) => (
                         <div className="receipt-workstream-row" key={workstream.id}>
                           <strong>{workstream.label}</strong>
-                          <span>{compactText(workstream.shortSummary ?? workstream.summary, 120)}</span>
+                          <span>
+                            {compactText(workstream.shortSummary ?? workstream.summary, 120)}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -419,7 +459,10 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                 {previewArtifacts.length ? (
                   <div className="receipt-preview-stack">
                     {previewArtifacts.map((artifact) => (
-                      <ArtifactPreview artifact={artifact} key={`${artifact.outputType}-${artifact.uri}`} />
+                      <ArtifactPreview
+                        artifact={artifact}
+                        key={`${artifact.outputType}-${artifact.uri}`}
+                      />
                     ))}
                   </div>
                 ) : null}
@@ -438,13 +481,19 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                 <ReceiptStat label="result" value={resultAttestationStatus} />
                 <ReceiptStat label="target" value={attestationTarget} />
                 <ReceiptStat label="tee" value={attestationTee} />
-                <ReceiptStat label="tee providers" value={`${teeProviderCount}/${routedProviderIds.length || 0}`} />
-                <ReceiptStat label="signed" value={`${signedProviderCount}/${routedProviderIds.length || 0}`} />
+                <ReceiptStat
+                  label="tee providers"
+                  value={`${teeProviderCount}/${routedProviderIds.length || 0}`}
+                />
+                <ReceiptStat
+                  label="signed"
+                  value={`${signedProviderCount}/${routedProviderIds.length || 0}`}
+                />
               </div>
               <div className="receipt-proof-note receipt-proof-note--inline">
-                <strong>TEE proof:</strong>{" "}
+                <strong>TEE proof:</strong>{' '}
                 {runtimeSignerDisabled || resultSignerDisabled
-                  ? "Provider TEE and signed-output counts still reflect routed provider proofs, but this host is not publishing signed runtime/result envelopes because MNEMONIC is not configured."
+                  ? 'Provider TEE and signed-output counts still reflect routed provider proofs, but this host is not publishing signed runtime/result envelopes because MNEMONIC is not configured.'
                   : `${attestationSurfaceLabel} runtime proof and signed raid result proof are exposed here when the host signer is configured.`}
               </div>
               <div className="receipt-link-list">
@@ -458,7 +507,11 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                   label="result attestation"
                   note={`${attestationSurfaceLabel} result proof`}
                 />
-                <ReceiptLinkItem href={buildAgentLogUrl(activeQuery)} label="agent log" note="token-gated run log" />
+                <ReceiptLinkItem
+                  href={buildAgentLogUrl(activeQuery)}
+                  label="agent log"
+                  note="token-gated run log"
+                />
                 <ReceiptLinkItem
                   href={buildAgentManifestUrl()}
                   label="Mercenary manifest"
@@ -468,12 +521,22 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
               <details className="receipt-disclosure">
                 <summary>show hashes</summary>
                 <div className="receipt-detail-list">
-                  <ReceiptDetailRow label="runtime signer" value={shortValue(attestedRuntime.data?.signer ?? "pending")} />
+                  <ReceiptDetailRow
+                    label="runtime signer"
+                    value={shortValue(attestedRuntime.data?.signer ?? 'pending')}
+                  />
                   <ReceiptDetailRow
                     label="result hash"
-                    value={shortValue(attestedResult.data?.payload.resultHash ?? settlementExecution?.evaluationHash ?? "pending")}
+                    value={shortValue(
+                      attestedResult.data?.payload.resultHash ??
+                        settlementExecution?.evaluationHash ??
+                        'pending'
+                    )}
                   />
-                  <ReceiptDetailRow label="message hash" value={shortValue(attestedResult.data?.messageHash ?? "pending")} />
+                  <ReceiptDetailRow
+                    label="message hash"
+                    value={shortValue(attestedResult.data?.messageHash ?? 'pending')}
+                  />
                 </div>
               </details>
             </article>
@@ -487,9 +550,7 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
               </div>
               <div className="receipt-provider-list">
                 {providerRows.length ? (
-                  providerRows.map((row) => (
-                    <ReceiptProviderRow key={row.providerId} row={row} />
-                  ))
+                  providerRows.map((row) => <ReceiptProviderRow key={row.providerId} row={row} />)
                 ) : (
                   <p className="receipt-panel__muted">No routed providers recorded yet.</p>
                 )}
@@ -504,19 +565,29 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                 </div>
               </div>
               <div className="receipt-stat-grid">
-                <ReceiptStat label="proof" value={settlementExecution?.proofStandard ?? "pending"} />
-                <ReceiptStat label="lifecycle" value={buildSettlementLifecycleLabel(settlementExecution?.lifecycleStatus)} />
+                <ReceiptStat
+                  label="proof"
+                  value={settlementExecution?.proofStandard ?? 'pending'}
+                />
+                <ReceiptStat
+                  label="lifecycle"
+                  value={buildSettlementLifecycleLabel(settlementExecution?.lifecycleStatus)}
+                />
                 <ReceiptStat label="successful" value={String(successfulProviderCount)} />
                 <ReceiptStat
                   label="payout each"
-                  value={payoutPerSuccessfulProvider == null ? "pending" : formatUsd(payoutPerSuccessfulProvider)}
+                  value={
+                    payoutPerSuccessfulProvider == null
+                      ? 'pending'
+                      : formatUsd(payoutPerSuccessfulProvider)
+                  }
                 />
               </div>
               <div className="receipt-proof-note receipt-proof-note--inline">
                 <strong>Payout rule:</strong> Successful raiders split payout equally.
               </div>
               <div className="receipt-detail-list">
-                <ReceiptDetailRow label="mode" value={settlementExecution?.mode ?? "pending"} />
+                <ReceiptDetailRow label="mode" value={settlementExecution?.mode ?? 'pending'} />
                 <ReceiptDetailRow label="child jobs" value={String(childJobCount)} />
                 <ReceiptDetailRow
                   label="8004 verified"
@@ -527,9 +598,17 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
               <details className="receipt-disclosure">
                 <summary>show settlement fields</summary>
                 <div className="receipt-detail-list">
-                  <ReceiptDetailRow label="registry ref" value={shortValue(settlementExecution?.registryRaidRef ?? "pending")} />
-                  <ReceiptDetailRow label="evaluation hash" value={shortValue(settlementExecution?.evaluationHash ?? "pending")} />
-                  {settlementWarnings[0] ? <ReceiptDetailRow label="warning" value={settlementWarnings[0]} /> : null}
+                  <ReceiptDetailRow
+                    label="registry ref"
+                    value={shortValue(settlementExecution?.registryRaidRef ?? 'pending')}
+                  />
+                  <ReceiptDetailRow
+                    label="evaluation hash"
+                    value={shortValue(settlementExecution?.evaluationHash ?? 'pending')}
+                  />
+                  {settlementWarnings[0] ? (
+                    <ReceiptDetailRow label="warning" value={settlementWarnings[0]} />
+                  ) : null}
                 </div>
               </details>
             </article>
@@ -549,15 +628,7 @@ function SummaryPill({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ReceiptLinkItem({
-  href,
-  label,
-  note,
-}: {
-  href: string;
-  label: string;
-  note: string;
-}) {
+function ReceiptLinkItem({ href, label, note }: { href: string; label: string; note: string }) {
   return (
     <a className="receipt-link-item" href={href} rel="noreferrer" target="_blank">
       <span>{label}</span>
@@ -593,7 +664,9 @@ function ReceiptProviderRow({ row }: { row: ReceiptProviderRowData }) {
         <span className="receipt-provider-row__state">{row.state}</span>
       </div>
       <p>{compactText(row.assignment, 84)}</p>
-      <small>{compactText([row.proof, row.reason].filter((value) => value.length > 0).join(" · "), 120)}</small>
+      <small>
+        {compactText([row.proof, row.reason].filter((value) => value.length > 0).join(' · '), 120)}
+      </small>
     </div>
   );
 }
@@ -611,7 +684,9 @@ function ArtifactPreview({ artifact }: { artifact: SubmissionArtifact }) {
   }
 
   if (isRenderableVideoArtifact(artifact)) {
-    return <video className="receipt-preview-media" controls preload="metadata" src={artifact.uri} />;
+    return (
+      <video className="receipt-preview-media" controls preload="metadata" src={artifact.uri} />
+    );
   }
 
   return (
@@ -623,12 +698,16 @@ function ArtifactPreview({ artifact }: { artifact: SubmissionArtifact }) {
 }
 
 function pickPreviewArtifacts(artifacts: SubmissionArtifact[]): SubmissionArtifact[] {
-  return artifacts.filter((artifact) => isRenderableImageArtifact(artifact) || isRenderableVideoArtifact(artifact)).slice(0, 1);
+  return artifacts
+    .filter(
+      (artifact) => isRenderableImageArtifact(artifact) || isRenderableVideoArtifact(artifact)
+    )
+    .slice(0, 1);
 }
 
 function summarizeCanonicalOutput(result: RaidResult | undefined): string {
   if (!result) {
-    return "Loading receipt proof.";
+    return 'Loading receipt proof.';
   }
 
   const summary =
@@ -641,15 +720,18 @@ function summarizeCanonicalOutput(result: RaidResult | undefined): string {
     return compactText(summary, 220);
   }
 
-  if (result.synthesizedOutput?.patchUnifiedDiff || result.primarySubmission?.submission.patchUnifiedDiff) {
-    return "Patch-backed result is ready. Open the agent log for the full run trace and the attested result for the signed proof payload.";
+  if (
+    result.synthesizedOutput?.patchUnifiedDiff ||
+    result.primarySubmission?.submission.patchUnifiedDiff
+  ) {
+    return 'Patch-backed result is ready. Open the agent log for the full run trace and the attested result for the signed proof payload.';
   }
 
-  return "Waiting for an approved canonical output.";
+  return 'Waiting for an approved canonical output.';
 }
 
 function compactText(value: string, maxLength: number): string {
-  const normalized = value.replace(/\s+/g, " ").trim();
+  const normalized = value.replace(/\s+/g, ' ').trim();
   if (normalized.length <= maxLength) {
     return normalized;
   }
@@ -668,24 +750,27 @@ function buildReceiptProviderRows(
   providerMap: Map<string, Provider>,
   approvedProviders: string[],
   supportingProviders: string[],
-  droppedProviders: string[],
+  droppedProviders: string[]
 ): ReceiptProviderRowData[] {
   return providerIds.map((providerId) => {
     const provider = providerMap.get(providerId);
     const decision = matchRoutingDecision(routingDecisionMap.get(providerId));
     const state = approvedProviders.includes(providerId)
-      ? "approved"
+      ? 'approved'
       : supportingProviders.includes(providerId)
-        ? "supporting"
+        ? 'supporting'
         : droppedProviders.includes(providerId)
-          ? "dropped"
-          : "routed";
+          ? 'dropped'
+          : 'routed';
 
     return {
       providerId,
       displayName: provider?.displayName ?? providerId,
       state,
-      assignment: [decision?.workstreamLabel, decision?.roleLabel].filter((value): value is string => Boolean(value)).join(" / ") || "routed provider",
+      assignment:
+        [decision?.workstreamLabel, decision?.roleLabel]
+          .filter((value): value is string => Boolean(value))
+          .join(' / ') || 'routed provider',
       proof: compactText(buildProviderProofNote(decision, provider), 72),
       reason: compactText(buildRoutingReasonNote(decision), 96),
     };
@@ -693,7 +778,7 @@ function buildReceiptProviderRows(
 }
 
 function formatUsd(value?: number): string {
-  return value == null ? "$0.00" : `$${value.toFixed(2)}`;
+  return value == null ? '$0.00' : `$${value.toFixed(2)}`;
 }
 
 function shortValue(value: string): string {
@@ -709,32 +794,35 @@ function uniqueStrings(values: string[]): string[] {
 }
 
 function isRenderableImageArtifact(artifact: SubmissionArtifact): boolean {
-  if (artifact.mimeType?.startsWith("image/")) {
+  if (artifact.mimeType?.startsWith('image/')) {
     return true;
   }
 
-  return artifact.mimeType == null && artifact.outputType === "image";
+  return artifact.mimeType == null && artifact.outputType === 'image';
 }
 
 function isRenderableVideoArtifact(artifact: SubmissionArtifact): boolean {
-  if (artifact.mimeType?.startsWith("video/")) {
+  if (artifact.mimeType?.startsWith('video/')) {
     return true;
   }
 
-  return artifact.mimeType == null && artifact.outputType === "video";
+  return artifact.mimeType == null && artifact.outputType === 'video';
 }
 
 function hasErc8004Registration(provider: Provider): boolean {
-  return typeof provider.erc8004?.registrationTx === "string" && provider.erc8004.registrationTx.length > 0;
+  return (
+    typeof provider.erc8004?.registrationTx === 'string' &&
+    provider.erc8004.registrationTx.length > 0
+  );
 }
 
 function isVeniceProvider(provider: Provider): boolean {
-  return (provider.modelFamily ?? "").toLowerCase().includes("venice");
+  return (provider.modelFamily ?? '').toLowerCase().includes('venice');
 }
 
 function countProvidersWithSignal(
   routingDecisionMap: Map<string, RoutingDecision[]>,
-  predicate: (decision: RoutingDecision) => boolean,
+  predicate: (decision: RoutingDecision) => boolean
 ): number {
   let count = 0;
 
@@ -750,7 +838,7 @@ function countProvidersWithSignal(
 function matchRoutingDecision(
   decisions: RoutingDecision[] | undefined,
   workstreamLabel?: string,
-  roleLabel?: string,
+  roleLabel?: string
 ): RoutingDecision | undefined {
   if (!decisions?.length) {
     return undefined;
@@ -760,119 +848,130 @@ function matchRoutingDecision(
     const exactMatch = decisions.find(
       (decision) =>
         (workstreamLabel == null || decision.workstreamLabel === workstreamLabel) &&
-        (roleLabel == null || decision.roleLabel === roleLabel),
+        (roleLabel == null || decision.roleLabel === roleLabel)
     );
     if (exactMatch) {
       return exactMatch;
     }
   }
 
-  return decisions.find((decision) => decision.phase === "primary") ?? decisions[0];
+  return decisions.find((decision) => decision.phase === 'primary') ?? decisions[0];
 }
 
-function buildSettlementLifecycleLabel(lifecycleStatus: SettlementExecution["lifecycleStatus"] | undefined): string {
+function buildSettlementLifecycleLabel(
+  lifecycleStatus: SettlementExecution['lifecycleStatus'] | undefined
+): string {
   switch (lifecycleStatus) {
-    case "terminal":
-      return "terminal";
-    case "partial":
-      return "partial";
-    case "synthetic":
-      return "synthetic";
+    case 'terminal':
+      return 'terminal';
+    case 'partial':
+      return 'partial';
+    case 'synthetic':
+      return 'synthetic';
     default:
-      return "pending";
+      return 'pending';
   }
 }
 
 function buildErc8004ProofLabel(
   verificationStatus: Erc8004VerificationStatus | undefined,
-  registered: boolean,
+  registered: boolean
 ): string {
   switch (verificationStatus) {
-    case "verified":
-      return "8004 verified";
-    case "partial":
-      return "8004 partial";
-    case "failed":
-      return "8004 failed";
-    case "error":
-      return "8004 error";
+    case 'verified':
+      return '8004 verified';
+    case 'partial':
+      return '8004 partial';
+    case 'failed':
+      return '8004 failed';
+    case 'error':
+      return '8004 error';
     default:
-      return registered ? "8004 registered" : "8004 pending";
+      return registered ? '8004 registered' : '8004 pending';
   }
 }
 
-function buildProviderProofNote(decision: RoutingDecision | undefined, provider: Provider | undefined): string {
+function buildProviderProofNote(
+  decision: RoutingDecision | undefined,
+  provider: Provider | undefined
+): string {
   const privacyFeatures = new Set<string>(decision?.privacyFeatures ?? []);
   if (provider?.privacy?.noDataRetention) {
-    privacyFeatures.add("no_data_retention");
+    privacyFeatures.add('no_data_retention');
   }
   if (provider?.privacy?.signedOutputs) {
-    privacyFeatures.add("signed_outputs");
+    privacyFeatures.add('signed_outputs');
   }
   if (provider?.privacy?.teeAttested) {
-    privacyFeatures.add("tee_attested");
+    privacyFeatures.add('tee_attested');
   }
 
   const trustScore =
     decision?.trustScore ??
-    (typeof provider?.trust?.score === "number" ? provider.trust.score : undefined);
-  const verificationStatus = decision?.erc8004VerificationStatus ?? provider?.erc8004?.verification?.status;
-  const registered = decision?.erc8004Registered ?? (provider ? hasErc8004Registration(provider) : false);
+    (typeof provider?.trust?.score === 'number' ? provider.trust.score : undefined);
+  const verificationStatus =
+    decision?.erc8004VerificationStatus ?? provider?.erc8004?.verification?.status;
+  const registered =
+    decision?.erc8004Registered ?? (provider ? hasErc8004Registration(provider) : false);
   const registrationTx = decision?.registrationTx ?? provider?.erc8004?.registrationTx;
-  const registrationTxFound = decision?.registrationTxFound ?? provider?.erc8004?.verification?.registrationTxFound;
-  const operatorMatchesOwner = decision?.operatorMatchesOwner ?? provider?.erc8004?.verification?.operatorMatchesOwner;
+  const registrationTxFound =
+    decision?.registrationTxFound ?? provider?.erc8004?.verification?.registrationTxFound;
+  const operatorMatchesOwner =
+    decision?.operatorMatchesOwner ?? provider?.erc8004?.verification?.operatorMatchesOwner;
   const parts = [
     buildErc8004ProofLabel(verificationStatus, registered),
-    registrationTxFound === false ? "reg tx missing" : null,
-    operatorMatchesOwner === false ? "owner mismatch" : null,
+    registrationTxFound === false ? 'reg tx missing' : null,
+    operatorMatchesOwner === false ? 'owner mismatch' : null,
     registrationTx ? `reg ${shortValue(registrationTx)}` : null,
-    typeof trustScore === "number" && trustScore > 0 ? `trust ${trustScore}` : null,
-    decision?.veniceBacked ?? (provider ? isVeniceProvider(provider) : false) ? "venice" : null,
-    privacyFeatures.has("no_data_retention") ? "no-retention" : null,
-    privacyFeatures.has("signed_outputs") ? "signed outputs" : null,
-    privacyFeatures.has("tee_attested") ? "tee attested" : null,
+    typeof trustScore === 'number' && trustScore > 0 ? `trust ${trustScore}` : null,
+    (decision?.veniceBacked ?? (provider ? isVeniceProvider(provider) : false)) ? 'venice' : null,
+    privacyFeatures.has('no_data_retention') ? 'no-retention' : null,
+    privacyFeatures.has('signed_outputs') ? 'signed outputs' : null,
+    privacyFeatures.has('tee_attested') ? 'tee attested' : null,
   ].filter((value): value is string => value != null);
 
-  return parts.join(" · ");
+  return parts.join(' · ');
 }
 
 function buildRoutingReasonNote(decision: RoutingDecision | undefined): string {
   if (!decision) {
-    return "";
+    return '';
   }
 
   const reasonLabels = decision.reasons
-    .filter((reason) => !["selected_primary", "reserved_fallback", "workstream_scoped"].includes(reason))
+    .filter(
+      (reason) => !['selected_primary', 'reserved_fallback', 'workstream_scoped'].includes(reason)
+    )
     .map((reason) => {
       switch (reason) {
-        case "strict_privacy":
-          return "strict privacy";
-        case "privacy_requested":
-          return "privacy preferred";
-        case "venice_private_lane":
-          return "venice lane";
-        case "venice_fallback":
-          return "venice fallback";
-        case "allowed_model_family":
-          return "model family match";
-        case "required_privacy_features":
-          return "privacy features";
-        case "erc8004_required":
-          return "erc-8004 required";
-        case "trust_threshold_met":
-          return "trust threshold";
-        case "trust_ranked":
-          return "trust-ranked";
-        case "specialization_match":
-          return "specialist match";
-        case "promoted_from_reserve":
-          return "reserve promotion";
+        case 'strict_privacy':
+          return 'strict privacy';
+        case 'privacy_requested':
+          return 'privacy preferred';
+        case 'venice_private_lane':
+          return 'venice lane';
+        case 'venice_fallback':
+          return 'venice fallback';
+        case 'allowed_model_family':
+          return 'model family match';
+        case 'required_privacy_features':
+          return 'privacy features';
+        case 'erc8004_required':
+          return 'erc-8004 required';
+        case 'trust_threshold_met':
+          return 'trust threshold';
+        case 'trust_ranked':
+          return 'trust-ranked';
+        case 'specialization_match':
+          return 'specialist match';
+        case 'promoted_from_reserve':
+          return 'reserve promotion';
         default:
-          return reason.replaceAll("_", " ");
+          return reason.replaceAll('_', ' ');
       }
     });
 
-  return reasonLabels.join(" / ");
+  return reasonLabels.join(' / ');
 }
 
 function buildAgentManifestUrl(): string {
@@ -891,22 +990,27 @@ function buildAgentLogUrl(query: ReceiptQuery): string {
   return `${API_BASE}/v1/raids/${encodeURIComponent(query.raidId)}/agent_log.json?token=${encodeURIComponent(query.token)}`;
 }
 
-function buildAttestationSurfaceLabel(target: string | null | undefined, teePlatform: string | null | undefined): string {
-  const haystack = `${target ?? ""} ${teePlatform ?? ""}`.toLowerCase();
-  if (haystack.includes("phala")) {
-    return "Phala TEE-attested";
+function buildAttestationSurfaceLabel(
+  target: string | null | undefined,
+  teePlatform: string | null | undefined
+): string {
+  const haystack = `${target ?? ''} ${teePlatform ?? ''}`.toLowerCase();
+  if (haystack.includes('phala')) {
+    return 'Phala TEE-attested';
   }
-  if (haystack.includes("eigen")) {
-    return "EigenCompute TEE-attested";
+  if (haystack.includes('eigen')) {
+    return 'EigenCompute TEE-attested';
   }
   if (teePlatform != null && teePlatform.trim().length > 0) {
     return `${teePlatform} TEE-attested`;
   }
-  return "TEE-attested";
+  return 'TEE-attested';
 }
 
 function isAttestationSignerUnavailable(message: string | undefined): boolean {
-  return typeof message === "string" && message.includes("MNEMONIC environment variable is required");
+  return (
+    typeof message === 'string' && message.includes('MNEMONIC environment variable is required')
+  );
 }
 
 function buildReceiptUrl(query: ReceiptQuery): string {
@@ -922,13 +1026,14 @@ function buildReceiptPath(query: ReceiptQuery): string {
 }
 
 function readReceiptQuery(): ReceiptQuery | null {
-  if (typeof window === "undefined") {
+  if (typeof window === 'undefined') {
     return null;
   }
 
   const params = new URLSearchParams(window.location.search);
-  const raidId = params.get("raidId") ?? params.get("raid_id") ?? "";
-  const token = params.get("token") ?? params.get("raidAccessToken") ?? params.get("raid_access_token") ?? "";
+  const raidId = params.get('raidId') ?? params.get('raid_id') ?? '';
+  const token =
+    params.get('token') ?? params.get('raidAccessToken') ?? params.get('raid_access_token') ?? '';
 
   if (!raidId || !token) {
     return null;
@@ -938,5 +1043,5 @@ function readReceiptQuery(): ReceiptQuery | null {
 }
 
 function readQueryErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Request failed.";
+  return error instanceof Error ? error.message : 'Request failed.';
 }

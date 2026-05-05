@@ -1,61 +1,55 @@
-export type SupportedLanguage = "csharp" | "typescript" | "python" | "solidity" | "text";
-export type SupportedFramework =
-  | "unity"
-  | "node"
-  | "react"
-  | "foundry"
-  | "django"
-  | "fastapi";
-export type OutputType = "text" | "json" | "image" | "video" | "patch" | "bundle";
-export type PrivacyRoutingMode = "off" | "prefer" | "strict";
-export type SelectionMode = "best_match" | "privacy_first" | "cost_first" | "diverse_mix";
+export type SupportedLanguage = 'csharp' | 'typescript' | 'python' | 'solidity' | 'text';
+export type SupportedFramework = 'unity' | 'node' | 'react' | 'foundry' | 'django' | 'fastapi';
+export type OutputType = 'text' | 'json' | 'image' | 'video' | 'patch' | 'bundle';
+export type PrivacyRoutingMode = 'off' | 'prefer' | 'strict';
+export type SelectionMode = 'best_match' | 'privacy_first' | 'cost_first' | 'diverse_mix';
 export type PrivacyFeatureKey =
-  | "tee_attested"
-  | "e2ee"
-  | "no_data_retention"
-  | "signed_outputs"
-  | "provenance_attested"
-  | "operator_verified";
+  | 'tee_attested'
+  | 'e2ee'
+  | 'no_data_retention'
+  | 'signed_outputs'
+  | 'provenance_attested'
+  | 'operator_verified';
 
 export type RaidStatus =
-  | "draft"
-  | "sanitizing"
-  | "queued"
-  | "dispatching"
-  | "running"
-  | "first_valid"
-  | "evaluating"
-  | "settling"
-  | "final"
-  | "cancelled"
-  | "expired";
+  | 'draft'
+  | 'sanitizing'
+  | 'queued'
+  | 'dispatching'
+  | 'running'
+  | 'first_valid'
+  | 'evaluating'
+  | 'settling'
+  | 'final'
+  | 'cancelled'
+  | 'expired';
 
 export type AssignmentStatus =
-  | "selected"
-  | "invited"
-  | "accepted"
-  | "running"
-  | "submitted"
-  | "invalid"
-  | "timed_out"
-  | "failed"
-  | "disqualified"
-  | "paid";
+  | 'selected'
+  | 'invited'
+  | 'accepted'
+  | 'running'
+  | 'submitted'
+  | 'invalid'
+  | 'timed_out'
+  | 'failed'
+  | 'disqualified'
+  | 'paid';
 
-export type ProviderStatus = "available" | "degraded" | "offline";
+export type ProviderStatus = 'available' | 'degraded' | 'offline';
 export type SubmissionFormat =
-  | "unified_diff_plus_explanation"
-  | "text_answer_plus_explanation"
-  | "artifact_plus_explanation";
+  | 'unified_diff_plus_explanation'
+  | 'text_answer_plus_explanation'
+  | 'artifact_plus_explanation';
 
 export type ReputationEventType =
-  | "invite_timeout"
-  | "heartbeat_timeout"
-  | "valid_submission"
-  | "successful_provider"
-  | "invalid_submission"
-  | "duplicate_submission"
-  | "security_violation";
+  | 'invite_timeout'
+  | 'heartbeat_timeout'
+  | 'valid_submission'
+  | 'successful_provider'
+  | 'invalid_submission'
+  | 'duplicate_submission'
+  | 'security_violation';
 
 export interface TaskFile {
   path: string;
@@ -92,7 +86,7 @@ export interface RaidConstraints {
 }
 
 export interface RewardPolicy {
-  splitStrategy: "equal_success_only";
+  splitStrategy: 'equal_success_only';
 }
 
 export interface PrivacyMode {
@@ -102,7 +96,7 @@ export interface PrivacyMode {
 }
 
 export interface HostContext {
-  host: "codex" | "claude_code";
+  host: 'codex' | 'claude_code';
   sessionId?: string;
   repoRootHint?: string;
   branchName?: string;
@@ -126,7 +120,7 @@ export interface RaidTaskSpec {
 }
 
 export interface SanitizationIssue {
-  severity: "info" | "warn" | "error";
+  severity: 'info' | 'warn' | 'error';
   code: string;
   message: string;
 }
@@ -137,7 +131,7 @@ export interface SanitizationReport {
   removedUrls: number;
   trimmedFiles: number;
   unsafeContentDetected: boolean;
-  riskTier: "safe" | "medium" | "unsafe";
+  riskTier: 'safe' | 'medium' | 'unsafe';
   issues: SanitizationIssue[];
 }
 
@@ -190,7 +184,7 @@ export interface Erc8004Identity {
 }
 
 export interface Erc8004Verification {
-  status: "not_checked" | "verified" | "partial" | "failed" | "error";
+  status: 'not_checked' | 'verified' | 'partial' | 'failed' | 'error';
   checkedAt: string;
   chainId?: string;
   agentRegistry?: string;
@@ -207,7 +201,15 @@ export interface Erc8004Verification {
 export interface ProviderTrust {
   score?: number;
   reason?: string;
-  source?: "erc8004";
+  source?: 'erc8004';
+}
+
+export interface ProviderSourceMetadata {
+  type: string;
+  targetType?: string;
+  externalRef?: string;
+  displayIcon?: string;
+  memberCount?: number;
 }
 
 export interface ProviderProfile {
@@ -215,7 +217,7 @@ export interface ProviderProfile {
   agentId?: string;
   displayName: string;
   description?: string;
-  endpointType: "http";
+  endpointType: 'http';
   endpoint: string;
   specializations: string[];
   supportedLanguages: SupportedLanguage[];
@@ -232,6 +234,7 @@ export interface ProviderProfile {
   scores?: ProviderScores;
   lastSeenAt?: string;
   auth?: ProviderAuthConfig;
+  source?: ProviderSourceMetadata;
 }
 
 export interface ProviderRegistrationInput {
@@ -244,6 +247,8 @@ export interface ProviderRegistrationInput {
   supportedFrameworks?: string[];
   outputTypes?: OutputType[];
   modelFamily?: string;
+  maxConcurrency?: number;
+  source?: ProviderSourceMetadata;
   privacy?: ProviderPrivacy;
   erc8004?: Partial<Erc8004Identity>;
   trust?: Partial<ProviderTrust>;
@@ -261,7 +266,7 @@ export interface AgentHeartbeatInput {
 }
 
 export interface ProviderAuthConfig {
-  type: "bearer" | "hmac" | "none";
+  type: 'bearer' | 'hmac' | 'none';
   token?: string;
   secret?: string;
   headerName?: string;
@@ -336,7 +341,7 @@ export interface BossRaidRoutingPolicy {
 
 export interface BossRaidRoutingDecision {
   providerId: string;
-  phase: "primary" | "reserve";
+  phase: 'primary' | 'reserve';
   workstreamId?: string;
   workstreamLabel?: string;
   roleId?: string;
@@ -348,7 +353,7 @@ export interface BossRaidRoutingDecision {
   trustReason?: string;
   operatorWallet?: string;
   registrationTx?: string;
-  erc8004VerificationStatus?: Erc8004Verification["status"];
+  erc8004VerificationStatus?: Erc8004Verification['status'];
   erc8004VerificationCheckedAt?: string;
   agentRegistry?: string;
   agentUri?: string;
@@ -392,8 +397,8 @@ export interface ProviderTaskPackage {
     mustNot: string[];
   };
   synthesis?: {
-    mode: "multi_agent_synthesis";
-    role: "contributor";
+    mode: 'multi_agent_synthesis';
+    role: 'contributor';
     totalExperts: number;
     providerIndex: number;
     workstreamId: string;
@@ -499,7 +504,7 @@ export interface PrivacyComplianceResult {
 }
 
 export interface PrivacyComplianceIssue {
-  severity: "info" | "warn" | "error";
+  severity: 'info' | 'warn' | 'error';
   code: string;
   message: string;
   field?: string;
@@ -589,7 +594,7 @@ export interface RaidAdaptiveReplanEvent {
   targetParentRaidId: string;
   workstreamId: string;
   workstreamLabel: string;
-  strategy: "expand" | "repair";
+  strategy: 'expand' | 'repair';
   reason: string;
   spawnedRaidIds: string[];
   createdAt: string;
@@ -619,7 +624,7 @@ export interface RaidRecord {
   status: RaidStatus;
   deadlineUnix: number;
   raidAccessTokenHash?: string;
-  planningMode?: "single_raid" | "hierarchical_parent" | "hierarchical_child";
+  planningMode?: 'single_raid' | 'hierarchical_parent' | 'hierarchical_child';
   parentRaidId?: string;
   childRaidIds?: string[];
   contributionPlan?: RaidContributionPlan;
@@ -648,7 +653,7 @@ export interface SelectedProviders {
 export interface BossRaidSpawnInput extends RaidTaskSpec {}
 
 export interface BossRaidRequest {
-  agent: "mercenary-v1";
+  agent: 'mercenary-v1';
   taskType: string;
   task: {
     title: string;
@@ -680,7 +685,7 @@ export interface BossRaidRequest {
 }
 
 export interface ChatCompletionMessage {
-  role: "system" | "user" | "assistant";
+  role: 'system' | 'user' | 'assistant';
   content: string;
 }
 
@@ -690,7 +695,7 @@ export interface ChatCompletionRequest {
   stream?: boolean;
   user?: string;
   raidRequest?: BossRaidSpawnInput;
-  raidPolicy?: BossRaidRequest["raidPolicy"];
+  raidPolicy?: BossRaidRequest['raidPolicy'];
 }
 
 export interface ProviderDiscoveryQuery {
@@ -731,13 +736,13 @@ export interface ReservedRaidNode {
 
 export interface RaidLaunchReservationRecord {
   id: string;
-  route: "raid" | "chat";
+  route: 'raid' | 'chat';
   requestKey: string;
   createdAt: string;
   expiresAt: string;
   paymentTimeoutSeconds?: number;
   deadlineUnix: number;
-  mode: "single" | "hierarchical";
+  mode: 'single' | 'hierarchical';
   sanitized: SanitizedTaskSpec;
   selectedProviders?: ReservedSelectedProviders;
   graph?: ReservedRaidNode;
@@ -778,8 +783,8 @@ export interface SettlementSummary {
 
 export interface SettlementAllocation {
   providerId: string;
-  role: "successful" | "unsuccessful";
-  status: "complete" | "reject";
+  role: 'successful' | 'unsuccessful';
+  status: 'complete' | 'reject';
   totalAmount: number;
   deliverableHash?: string;
 }
@@ -795,7 +800,7 @@ export interface SettlementContractsProof {
 }
 
 export interface SettlementRegistryCallProof {
-  method: "finalizeRaid";
+  method: 'finalizeRaid';
   args: [string, string];
 }
 
@@ -805,8 +810,15 @@ export interface SettlementChildJobProof {
   providerAddress?: string | null;
   role: string;
   status: string;
-  requestedAction: "complete" | "reject";
-  lifecycleStatus: "synthetic" | "open" | "funded" | "submitted" | "completed" | "rejected" | "expired";
+  requestedAction: 'complete' | 'reject';
+  lifecycleStatus:
+    | 'synthetic'
+    | 'open'
+    | 'funded'
+    | 'submitted'
+    | 'completed'
+    | 'rejected'
+    | 'expired';
   budgetUsd: number;
   budgetAtomic?: string;
   submitResultHash: string | null;
@@ -824,9 +836,9 @@ export interface SettlementChildJobProof {
 }
 
 export interface SettlementExecutionRecord {
-  mode: "file" | "onchain";
-  proofStandard: "erc8183_aligned";
-  lifecycleStatus: "synthetic" | "partial" | "terminal";
+  mode: 'file' | 'onchain';
+  proofStandard: 'erc8183_aligned';
+  lifecycleStatus: 'synthetic' | 'partial' | 'terminal';
   executedAt: string;
   artifactPath: string;
   registryRaidRef: string;
@@ -871,7 +883,7 @@ export interface BossRaidSynthesizedWorkstream {
 }
 
 export interface BossRaidSynthesizedOutput {
-  mode: "multi_agent_synthesis";
+  mode: 'multi_agent_synthesis';
   primaryType: OutputType;
   answerText?: string;
   patchUnifiedDiff?: string;
@@ -926,7 +938,7 @@ export function asSingleHeader(value: string | string[] | undefined): string | u
 }
 
 export function parseBoolean(value: string | undefined): boolean {
-  return value === "1" || value === "true" || value === "yes";
+  return value === '1' || value === 'true' || value === 'yes';
 }
 
 export function readBooleanEnv(value: string | undefined): boolean {

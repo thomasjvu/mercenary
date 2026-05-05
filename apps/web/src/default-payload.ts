@@ -39,10 +39,10 @@ export const DEFAULT_SPAWN_PAYLOAD = `{
 }`;
 
 export const DEFAULT_LIVE_DEMO_BRIEF =
-  "Create a one-room GB Studio microgame called Boss Raid: Slime Panic. Mercenary should split this into gameplay, pixel art, and trailer work, keep the creative direction consistent, and return one verified receipt-backed result.";
+  'Create a one-room GB Studio microgame called Boss Raid: Slime Panic. Mercenary should split this into gameplay, pixel art, and trailer work, keep the creative direction consistent, and return one verified receipt-backed result.';
 
 const NATIVE_CHAT_SYSTEM_PROMPT =
-  "You are Mercenary in the native Boss Raid demo. Reply directly and concisely. If the user is greeting you or asking what you can do, answer conversationally and do not pretend a build already happened. Only treat the request as a real seeded GB Studio build when the user explicitly asks for that game package.";
+  'You are Mercenary in the native Boss Raid demo. Reply directly and concisely. If the user is greeting you or asking what you can do, answer conversationally and do not pretend a build already happened. Only treat the request as a real seeded GB Studio build when the user explicitly asks for that game package.';
 
 const SEEDED_GAME_BUILD_SIGNALS = [
   /\bgb studio\b/,
@@ -83,7 +83,7 @@ const LOW_SIGNAL_CHAT_PATTERNS = [
 function buildLiveDemoFiles(normalizedBrief: string) {
   return [
     {
-      path: "game/project.gbsproj",
+      path: 'game/project.gbsproj',
       content: `{
   "name": "Boss Raid: Slime Panic",
   "engine": "gb-studio",
@@ -98,10 +98,10 @@ function buildLiveDemoFiles(normalizedBrief: string) {
   "notes": "One-room microgame scaffold for Mercenary live demo."
 }
 `,
-      sha256: "demo-gbstudio-project",
+      sha256: 'demo-gbstudio-project',
     },
     {
-      path: "game/scripts/encounter.ts",
+      path: 'game/scripts/encounter.ts',
       content: `export const bossRaidPitch = {
   title: "Boss Raid: Slime Panic",
   loop: "Collect the vault key, dodge the slime king, and reach the exit before the timer expires.",
@@ -124,10 +124,10 @@ function buildLiveDemoFiles(normalizedBrief: string) {
   ]
 };
 `,
-      sha256: "demo-encounter-script",
+      sha256: 'demo-encounter-script',
     },
     {
-      path: "game/scripts/timer.ts",
+      path: 'game/scripts/timer.ts',
       content: `export const slimePanicTimer = {
   totalSeconds: 30,
   warningSeconds: 10,
@@ -138,10 +138,10 @@ export function stepEncounterTimer(secondsRemaining: number, deltaSeconds: numbe
   return Math.max(0, Number((secondsRemaining - deltaSeconds).toFixed(2)));
 }
 `,
-      sha256: "demo-timer-script",
+      sha256: 'demo-timer-script',
     },
     {
-      path: "game/scripts/slime-king.ts",
+      path: 'game/scripts/slime-king.ts',
       content: `export type GridPoint = { x: number; y: number };
 
 export type SlimeKingState = {
@@ -169,10 +169,10 @@ export function chooseSlimeKingTarget(state: SlimeKingState, player: GridPoint, 
   return state.patrolRoute[state.routeIndex] ?? player;
 }
 `,
-      sha256: "demo-slime-king-script",
+      sha256: 'demo-slime-king-script',
     },
     {
-      path: "game/scripts/exit-door.ts",
+      path: 'game/scripts/exit-door.ts',
       content: `export type ExitGateState = {
   locked: boolean;
   prompt: string;
@@ -190,10 +190,10 @@ export function resolveExitGateState(hasKey: boolean, timerExpired: boolean): Ex
   return { locked: false, prompt: "Exit unlocked. Move." };
 }
 `,
-      sha256: "demo-exit-door-script",
+      sha256: 'demo-exit-door-script',
     },
     {
-      path: "game/data/dungeon-vault.scene.json",
+      path: 'game/data/dungeon-vault.scene.json',
       content: `{
   "name": "Dungeon Vault",
   "size": { "width": 20, "height": 18 },
@@ -223,10 +223,10 @@ export function resolveExitGateState(hasKey: boolean, timerExpired: boolean): Ex
   ]
 }
 `,
-      sha256: "demo-scene-json",
+      sha256: 'demo-scene-json',
     },
     {
-      path: "game/data/ui-hud.json",
+      path: 'game/data/ui-hud.json',
       content: `{
   "timer": {
     "anchor": "top-left",
@@ -241,10 +241,10 @@ export function resolveExitGateState(hasKey: boolean, timerExpired: boolean): Ex
   "statusText": "Get the key. Reach the exit."
 }
 `,
-      sha256: "demo-ui-hud-json",
+      sha256: 'demo-ui-hud-json',
     },
     {
-      path: "marketing/creative-brief.md",
+      path: 'marketing/creative-brief.md',
       content: `# Boss Raid: Slime Panic
 
 Tone: Tense, retro-cute, readable in one glance.
@@ -270,89 +270,89 @@ Collect key -> dodge boss slime -> reach exit before timer runs out
 - Dungeon floor and wall tiles
 - Timer and key HUD icons
 `,
-      sha256: "demo-creative-brief",
+      sha256: 'demo-creative-brief',
     },
   ];
 }
 
 function buildSeededGameDemoPayload(normalizedBrief: string) {
   return {
-    agent: "mercenary-v1",
-    taskType: "game_build",
+    agent: 'mercenary-v1',
+    taskType: 'game_build',
     task: {
-      title: "Build a GB Studio microgame and launch package",
+      title: 'Build a GB Studio microgame and launch package',
       description: normalizedBrief,
-      language: "typescript",
-      framework: "gb-studio",
+      language: 'typescript',
+      framework: 'gb-studio',
       files: buildLiveDemoFiles(normalizedBrief),
       failingSignals: {
         errors: [],
         reproSteps: [
-          "Open the supplied GB Studio repo snapshot",
-          "Implement the Dungeon Vault room, timer loop, boss pressure, and exit unlock flow",
-          "Return gameplay changes plus supporting art and trailer artifacts",
+          'Open the supplied GB Studio repo snapshot',
+          'Implement the Dungeon Vault room, timer loop, boss pressure, and exit unlock flow',
+          'Return gameplay changes plus supporting art and trailer artifacts',
         ],
         expectedBehavior:
-          "The final raid result should include a concrete room layout, timer and boss behavior logic, supporting pixel assets, a teaser preview, and synthesized launch copy.",
+          'The final raid result should include a concrete room layout, timer and boss behavior logic, supporting pixel assets, a teaser preview, and synthesized launch copy.',
       },
     },
     output: {
-      primaryType: "patch",
-      artifactTypes: ["patch", "image", "video", "text", "bundle"],
+      primaryType: 'patch',
+      artifactTypes: ['patch', 'image', 'video', 'text', 'bundle'],
     },
     raidPolicy: {
       maxAgents: 3,
-      allowedModelFamilies: ["openai", "venice"],
+      allowedModelFamilies: ['openai', 'venice'],
       minReputationScore: 60,
-      privacyMode: "prefer",
-      requirePrivacyFeatures: ["signed_outputs"],
-      allowedOutputTypes: ["patch", "image", "video", "text", "bundle"],
+      privacyMode: 'prefer',
+      requirePrivacyFeatures: ['signed_outputs'],
+      allowedOutputTypes: ['patch', 'image', 'video', 'text', 'bundle'],
       maxTotalCost: 18,
-      selectionMode: "diverse_mix",
+      selectionMode: 'diverse_mix',
     },
   };
 }
 
 function buildNativeChatDemoPayload(normalizedBrief: string) {
-  const title = normalizedBrief.slice(0, 80) || "Mercenary native chat";
+  const title = normalizedBrief.slice(0, 80) || 'Mercenary native chat';
   const lowSignalChat = isLowSignalChatPrompt(normalizedBrief);
 
   return {
-    agent: "mercenary-v1",
-    taskType: "analysis",
+    agent: 'mercenary-v1',
+    taskType: 'analysis',
     task: {
       title,
       description: `System:\n${NATIVE_CHAT_SYSTEM_PROMPT}\n\nUser:\n${normalizedBrief}`,
-      language: "text",
+      language: 'text',
       files: [],
       failingSignals: {
         errors: [],
         reproSteps: [
-          "Read the user message",
-          "Reply directly as Mercenary",
-          "If the user is only chatting, keep the response conversational instead of fabricating a shipped deliverable",
+          'Read the user message',
+          'Reply directly as Mercenary',
+          'If the user is only chatting, keep the response conversational instead of fabricating a shipped deliverable',
         ],
         expectedBehavior:
-          "Return one clean Mercenary answer. Do not claim a build or artifact package exists unless the user explicitly asked for the seeded GB Studio demo build.",
+          'Return one clean Mercenary answer. Do not claim a build or artifact package exists unless the user explicitly asked for the seeded GB Studio demo build.',
       },
     },
     output: {
-      primaryType: "text",
-      artifactTypes: ["text", "json"],
+      primaryType: 'text',
+      artifactTypes: ['text', 'json'],
     },
     raidPolicy: {
       maxAgents: lowSignalChat ? 1 : 3,
       maxLatencySec: lowSignalChat ? 20 : 45,
-      allowedModelFamilies: ["openai", "venice"],
+      allowedModelFamilies: ['openai', 'venice'],
       minReputationScore: 60,
-      privacyMode: "prefer",
-      requirePrivacyFeatures: ["signed_outputs"],
-      allowedOutputTypes: ["text", "json"],
+      privacyMode: 'prefer',
+      requirePrivacyFeatures: ['signed_outputs'],
+      allowedOutputTypes: ['text', 'json'],
       maxTotalCost: 12,
-      selectionMode: "best_match",
+      selectionMode: 'best_match',
     },
     hostContext: {
-      host: "codex",
+      host: 'codex',
     },
   };
 }
@@ -364,13 +364,18 @@ function isSeededGameBuildRequest(brief: string): boolean {
   }
 
   const hasWorkSignal = EXPLICIT_WORK_SIGNALS.some((pattern) => pattern.test(normalizedBrief));
-  const hasSeededGameSignal = SEEDED_GAME_BUILD_SIGNALS.some((pattern) => pattern.test(normalizedBrief));
+  const hasSeededGameSignal = SEEDED_GAME_BUILD_SIGNALS.some((pattern) =>
+    pattern.test(normalizedBrief)
+  );
   return hasWorkSignal && hasSeededGameSignal;
 }
 
 function isLowSignalChatPrompt(brief: string): boolean {
   const normalizedBrief = brief.trim().toLowerCase();
-  return normalizedBrief.length > 0 && LOW_SIGNAL_CHAT_PATTERNS.some((pattern) => pattern.test(normalizedBrief));
+  return (
+    normalizedBrief.length > 0 &&
+    LOW_SIGNAL_CHAT_PATTERNS.some((pattern) => pattern.test(normalizedBrief))
+  );
 }
 
 export function buildLiveDemoPayload(brief: string) {

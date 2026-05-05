@@ -3,8 +3,8 @@ import type {
   ProviderTaskPackage,
   RaidContributionPlan,
   SanitizedTaskSpec,
-} from "@bossraid/shared-types";
-import { buildContributionRolePlan } from "./partition.js";
+} from '@bossraid/shared-types';
+import { buildContributionRolePlan } from './partition.js';
 
 export function buildProviderTaskPackage(
   raidId: string,
@@ -15,15 +15,17 @@ export function buildProviderTaskPackage(
     totalExperts: number;
     providerSpecializations?: string[];
     contributionPlan?: RaidContributionPlan;
-  },
+  }
 ): ProviderTaskPackage {
-  const primaryType = task.output?.primaryType ?? "patch";
-  const artifactTypes = task.output?.artifactTypes ?? (primaryType === "patch" ? ["patch", "text"] : [primaryType]);
+  const primaryType = task.output?.primaryType ?? 'patch';
+  const artifactTypes =
+    task.output?.artifactTypes ?? (primaryType === 'patch' ? ['patch', 'text'] : [primaryType]);
   const providerIndex = providerContext?.providerIndex;
   const totalExperts = providerContext?.totalExperts;
   const specializationNote =
-    providerContext?.providerSpecializations != null && providerContext.providerSpecializations.length > 0
-      ? `Lean on these strengths when they help: ${providerContext.providerSpecializations.slice(0, 3).join(", ")}.`
+    providerContext?.providerSpecializations != null &&
+    providerContext.providerSpecializations.length > 0
+      ? `Lean on these strengths when they help: ${providerContext.providerSpecializations.slice(0, 3).join(', ')}.`
       : undefined;
   const rolePlan =
     providerContext == null
@@ -33,25 +35,27 @@ export function buildProviderTaskPackage(
             id: providerContext.contributionPlan.roleId,
             label: providerContext.contributionPlan.roleLabel,
             objective: providerContext.contributionPlan.roleObjective,
-            prompt: [providerContext.contributionPlan.prompt, specializationNote].filter(Boolean).join(" "),
+            prompt: [providerContext.contributionPlan.prompt, specializationNote]
+              .filter(Boolean)
+              .join(' '),
             workstreamId: providerContext.contributionPlan.workstreamId,
             workstreamLabel: providerContext.contributionPlan.workstreamLabel,
             workstreamObjective: providerContext.contributionPlan.workstreamObjective,
           }
-      : buildContributionRolePlan({
-          task,
-          providerIndex: providerContext.providerIndex,
-          totalExperts: providerContext.totalExperts,
-          providerSpecializations: providerContext.providerSpecializations,
-        });
+        : buildContributionRolePlan({
+            task,
+            providerIndex: providerContext.providerIndex,
+            totalExperts: providerContext.totalExperts,
+            providerSpecializations: providerContext.providerSpecializations,
+          });
   return {
     raidId,
     submissionFormat:
-      primaryType === "patch"
-        ? "unified_diff_plus_explanation"
-        : primaryType === "text" || primaryType === "json"
-          ? "text_answer_plus_explanation"
-          : "artifact_plus_explanation",
+      primaryType === 'patch'
+        ? 'unified_diff_plus_explanation'
+        : primaryType === 'text' || primaryType === 'json'
+          ? 'text_answer_plus_explanation'
+          : 'artifact_plus_explanation',
     desiredOutput: {
       primaryType,
       artifactTypes,
@@ -74,14 +78,14 @@ export function buildProviderTaskPackage(
       maxChangedFiles: task.constraints.maxChangedFiles ?? 4,
       maxDiffLines: task.constraints.maxDiffLines ?? 250,
       forbidPaths: task.constraints.forbidPaths ?? [],
-      mustNot: ["delete core systems", "introduce external dependency"],
+      mustNot: ['delete core systems', 'introduce external dependency'],
     },
     synthesis:
       rolePlan == null || providerIndex == null || totalExperts == null
         ? undefined
         : {
-            mode: "multi_agent_synthesis",
-            role: "contributor",
+            mode: 'multi_agent_synthesis',
+            role: 'contributor',
             totalExperts,
             providerIndex,
             workstreamId: rolePlan.workstreamId,
@@ -94,7 +98,8 @@ export function buildProviderTaskPackage(
             guidance: buildContributionGuidance(primaryType),
           },
     deadlineUnix:
-      providerContext?.deadlineUnix ?? Math.floor(Date.now() / 1_000) + task.constraints.maxLatencySec,
+      providerContext?.deadlineUnix ??
+      Math.floor(Date.now() / 1_000) + task.constraints.maxLatencySec,
   };
 }
 
@@ -108,7 +113,7 @@ function buildRoleScopedDescription(
         objective: string;
         prompt: string;
       }
-    | undefined,
+    | undefined
 ): string {
   if (!rolePlan) {
     return description;
@@ -121,17 +126,17 @@ function buildRoleScopedDescription(
     `Assigned sub-role: ${rolePlan.label}.`,
     `Role objective: ${rolePlan.objective}`,
     `Role brief: ${rolePlan.prompt}`,
-  ].join("\n\n");
+  ].join('\n\n');
 }
 
 function buildContributionGuidance(primaryType: OutputType): string[] {
   return [
-    "Mercenary will synthesize the final result from approved provider contributions.",
-    primaryType === "patch"
-      ? "Prefer diffs that are minimal, safe, and easy to reconcile with adjacent provider work."
-      : primaryType === "text" || primaryType === "json"
-        ? "Prefer concise answers that are easy to blend with other expert signals."
-        : "Prefer artifact refs that are easy for the receipt to preview, plus the shortest explanation needed to place them.",
-    "If the task is under-scoped, state the limit directly instead of inventing missing context.",
+    'Mercenary will synthesize the final result from approved provider contributions.',
+    primaryType === 'patch'
+      ? 'Prefer diffs that are minimal, safe, and easy to reconcile with adjacent provider work.'
+      : primaryType === 'text' || primaryType === 'json'
+        ? 'Prefer concise answers that are easy to blend with other expert signals.'
+        : 'Prefer artifact refs that are easy for the receipt to preview, plus the shortest explanation needed to place them.',
+    'If the task is under-scoped, state the limit directly instead of inventing missing context.',
   ];
 }

@@ -1,11 +1,12 @@
-import { randomUUID } from "node:crypto";
-import Fastify from "fastify";
-import { verifyProviderAuth } from "@bossraid/provider-sdk";
-import { callback, reportFailure } from "./callbacks.js";
-import { getReadiness, providerConfig } from "./config.js";
-import { requestModelSubmission } from "./model.js";
-import { buildProviderPrivacyAttestation } from "./privacy-attestation.js";
-import type { AcceptBody } from "./types.js";
+import { randomUUID } from 'node:crypto';
+import Fastify from 'fastify';
+import { verifyProviderAuth } from '@bossraid/provider-sdk';
+import { callback, reportFailure } from './callbacks.js';
+import { getReadiness, providerConfig } from './config.js';
+import { requestModelSubmission } from './model.js';
+import { buildProviderPrivacyAttestation } from './privacy-attestation.js';
+import logger from '@bossraid/logger';
+import type { AcceptBody } from './types.js';
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -21,9 +22,11 @@ function asSingleHeader(value: string | string[] | undefined): string | undefine
 async function runProviderJob(
   app: ReturnType<typeof Fastify>,
   body: AcceptBody,
-  providerRunId: string,
+  providerRunId: string
 ): Promise<void> {
-  console.info(`[provider-agent] ${providerConfig.providerId} run start raid=${body.raidId} run=${providerRunId}`);
+  logger.info(
+    `[provider-agent] ${providerConfig.providerId} run start raid=${body.raidId} run=${providerRunId}`
+  );
   let heartbeatCount = 0;
   const sendHeartbeat = (progress: number, message: string): void => {
     void callback(`/v1/providers/${body.providerId}/heartbeat`, {
@@ -41,21 +44,24 @@ async function runProviderJob(
     heartbeatCount += 1;
     sendHeartbeat(
       Math.min(0.9, 0.05 + heartbeatCount * 0.15),
-      `${providerConfig.displayName} analyzing ${body.task.artifacts.files.length} file(s)`,
+      `${providerConfig.displayName} analyzing ${body.task.artifacts.files.length} file(s)`
     );
   }, providerConfig.heartbeatIntervalMs);
 
   try {
     const submission = await requestModelSubmission(body.task, body.deadlineUnix);
     clearInterval(heartbeatTimer);
-    console.info(`[provider-agent] ${providerConfig.providerId} submit raid=${body.raidId} run=${providerRunId}`);
+    logger.info(
+      `[provider-agent] ${providerConfig.providerId} submit raid=${body.raidId} run=${providerRunId}`
+    );
     const privacyAttestation = await buildProviderPrivacyAttestation(
       providerConfig.providerId,
       body.raidId,
       {
-        featuresClaimed: providerConfig.privacyFeatures as string[] as import("@bossraid/shared-types").PrivacyFeatureKey[],
+        featuresClaimed:
+          providerConfig.privacyFeatures as string[] as import('@bossraid/shared-types').PrivacyFeatureKey[],
         teeSocketPath: providerConfig.teeSocketPath,
-      },
+      }
     );
     await callback(`/v1/providers/${body.providerId}/submit`, {
       raidId: body.raidId,
@@ -73,10 +79,10 @@ async function runProviderJob(
     });
   } catch (error) {
     clearInterval(heartbeatTimer);
-    console.error(
+    logger.error(
       `[provider-agent] ${providerConfig.providerId} failure raid=${body.raidId} run=${providerRunId} error=${
         error instanceof Error ? error.message : String(error)
-      }`,
+      }`
     );
     await reportFailure(app.log, body, providerRunId, error);
   }
@@ -85,7 +91,7 @@ async function runProviderJob(
 export function buildProviderAgentServer() {
   const app = Fastify({ logger: false });
 
-  app.get("/health", async () => {
+  app.get('/health', async () => {
     const readiness = getReadiness();
     return {
       ok: readiness.ready,
@@ -97,31 +103,31 @@ export function buildProviderAgentServer() {
     };
   });
 
-  app.post("/v1/raid/accept", async (request, reply) => {
-    console.info(`[provider-agent] ${providerConfig.providerId} accept received`);
+  app.post('/v1/raid/accept', async (request, reply) => {
+    logger.info(`[provider-agent] ${providerConfig.providerId} accept received`);
     if (
       !verifyProviderAuth({
-      auth: providerConfig.providerAuth,
-      providerId: providerConfig.providerId,
-      method: request.method,
-      path: request.url,
-      body: JSON.stringify(request.body ?? {}),
-      headers: request.headers,
-      authorizationHeader: asSingleHeader(request.headers.authorization),
-      timestampHeader: asSingleHeader(request.headers["x-bossraid-timestamp"]),
-      signatureHeader: asSingleHeader(request.headers["x-bossraid-signature"]),
-        providerIdHeader: asSingleHeader(request.headers["x-bossraid-provider-id"]),
+        auth: providerConfig.providerAuth,
+        providerId: providerConfig.providerId,
+        method: request.method,
+        path: request.url,
+        body: JSON.stringify(request.body ?? {}),
+        headers: request.headers,
+        authorizationHeader: asSingleHeader(request.headers.authorization),
+        timestampHeader: asSingleHeader(request.headers['x-bossraid-timestamp']),
+        signatureHeader: asSingleHeader(request.headers['x-bossraid-signature']),
+        providerIdHeader: asSingleHeader(request.headers['x-bossraid-provider-id']),
       })
     ) {
       reply.code(401);
-      return { error: "unauthorized" };
+      return { error: 'unauthorized' };
     }
 
     const readiness = getReadiness();
     if (!readiness.ready) {
       reply.code(503);
       return {
-        error: "provider_not_ready",
+        error: 'provider_not_ready',
         missing: readiness.missing,
       };
     }
@@ -129,12 +135,14 @@ export function buildProviderAgentServer() {
     const body = request.body as AcceptBody;
     if (body.providerId !== providerConfig.providerId) {
       reply.code(400);
-      return { error: "provider_mismatch" };
+      return { error: 'provider_mismatch' };
     }
 
     await sleep(providerConfig.acceptDelayMs);
     const providerRunId = `run_${randomUUID()}`;
-    console.info(`[provider-agent] ${providerConfig.providerId} accept acknowledged raid=${body.raidId} run=${providerRunId}`);
+    logger.info(
+      `[provider-agent] ${providerConfig.providerId} accept acknowledged raid=${body.raidId} run=${providerRunId}`
+    );
     // Yield one full timer turn so Fastify can flush the accept response
     // before any model or artifact work starts on the same event loop.
     setTimeout(() => {

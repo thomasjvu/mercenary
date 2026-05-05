@@ -1,99 +1,103 @@
-import test from "node:test";
-import assert from "node:assert/strict";
-import { mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   HttpRaidProvider,
+  buildProviderAuthHeaders,
   buildProviderProfileFromRegistration,
   loadProviderProfilesFromFile,
-} from "./index.js";
-import type { ProviderTaskPackage } from "@bossraid/shared-types";
+  resolveProviderEndpointPath,
+  verifyProviderAuth,
+} from './index.js';
+import type { ProviderTaskPackage } from '@bossraid/shared-types';
 
-test("loadProviderProfilesFromFile expands env placeholders with default values", async () => {
-  const tempDir = await mkdtemp(join(tmpdir(), "bossraid-provider-sdk-"));
-  const file = join(tempDir, "providers.json");
+test('loadProviderProfilesFromFile expands env placeholders with default values', async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), 'bossraid-provider-sdk-'));
+  const file = join(tempDir, 'providers.json');
   await writeFile(
     file,
     JSON.stringify([
       {
-        providerId: "provider-defaults",
-        displayName: "Provider Defaults",
-        endpointType: "http",
-        endpoint: "http://provider-defaults:9001",
-        specializations: ["analysis"],
-        supportedLanguages: ["text"],
+        providerId: 'provider-defaults',
+        displayName: 'Provider Defaults',
+        endpointType: 'http',
+        endpoint: 'http://provider-defaults:9001',
+        specializations: ['analysis'],
+        supportedLanguages: ['text'],
         supportedFrameworks: [],
-        modelFamily: "venice",
-        outputTypes: ["text"],
+        modelFamily: 'venice',
+        outputTypes: ['text'],
         pricePerTaskUsd: 1,
         maxConcurrency: 1,
-        status: "available",
+        status: 'available',
         auth: {
-          type: "bearer",
-          token: "${BOSSRAID_PROVIDER_A_TOKEN:-provider-token}",
+          type: 'bearer',
+          token: '${BOSSRAID_PROVIDER_A_TOKEN:-provider-token}',
         },
         erc8004: {
-          agentId: "${TEST_ERC8004_AGENT_ID:-8004-provider-defaults}",
-          operatorWallet: "${TEST_ERC8004_OPERATOR_WALLET:-0x1111111111111111111111111111111111111111}",
-          registrationTx: "${TEST_ERC8004_REGISTRATION_TX:-0xproviderregistration}",
-          identityRegistry: "${TEST_ERC8004_IDENTITY_REGISTRY:-0xidentityregistry}"
-        }
-      }
-    ]),
+          agentId: '${TEST_ERC8004_AGENT_ID:-8004-provider-defaults}',
+          operatorWallet:
+            '${TEST_ERC8004_OPERATOR_WALLET:-0x1111111111111111111111111111111111111111}',
+          registrationTx: '${TEST_ERC8004_REGISTRATION_TX:-0xproviderregistration}',
+          identityRegistry: '${TEST_ERC8004_IDENTITY_REGISTRY:-0xidentityregistry}',
+        },
+      },
+    ])
   );
 
   const [profile] = await loadProviderProfilesFromFile(file);
-  assert.equal(profile.auth?.token, "provider-token");
-  assert.equal(profile.erc8004?.agentId, "8004-provider-defaults");
-  assert.equal(profile.erc8004?.operatorWallet, "0x1111111111111111111111111111111111111111");
-  assert.equal(profile.erc8004?.registrationTx, "0xproviderregistration");
+  assert.equal(profile.auth?.token, 'provider-token');
+  assert.equal(profile.erc8004?.agentId, '8004-provider-defaults');
+  assert.equal(profile.erc8004?.operatorWallet, '0x1111111111111111111111111111111111111111');
+  assert.equal(profile.erc8004?.registrationTx, '0xproviderregistration');
 });
 
-test("buildProviderProfileFromRegistration preserves ERC-8004 verification payloads", () => {
+test('buildProviderProfileFromRegistration preserves ERC-8004 verification payloads', () => {
   const profile = buildProviderProfileFromRegistration({
-    agentId: "provider-verified",
-    name: "Provider Verified",
-    endpoint: "http://127.0.0.1:9001",
+    agentId: 'provider-verified',
+    name: 'Provider Verified',
+    endpoint: 'http://127.0.0.1:9001',
     erc8004: {
-      agentId: "8004-verified",
-      registrationTx: "0xverified",
+      agentId: '8004-verified',
+      registrationTx: '0xverified',
       verification: {
-        status: "verified",
-        checkedAt: "2026-03-23T00:00:00.000Z",
-        chainId: "8453",
-        agentRegistry: "eip155:8453:0xregistry",
+        status: 'verified',
+        checkedAt: '2026-03-23T00:00:00.000Z',
+        chainId: '8453',
+        agentRegistry: 'eip155:8453:0xregistry',
         registrationTxFound: true,
         operatorMatchesOwner: true,
       },
     },
   });
 
-  assert.equal(profile.erc8004?.verification?.status, "verified");
-  assert.equal(profile.erc8004?.verification?.agentRegistry, "eip155:8453:0xregistry");
+  assert.equal(profile.erc8004?.verification?.status, 'verified');
+  assert.equal(profile.erc8004?.verification?.agentRegistry, 'eip155:8453:0xregistry');
   assert.equal(profile.erc8004?.verification?.operatorMatchesOwner, true);
 });
 
-test("buildProviderProfileFromRegistration canonicalizes providerId to the registering agent id", () => {
+test('buildProviderProfileFromRegistration canonicalizes providerId to the registering agent id', () => {
   const profile = buildProviderProfileFromRegistration(
     {
-      agentId: "riko",
-      name: "Riko",
-      endpoint: "http://127.0.0.1:9002",
+      agentId: 'riko',
+      name: 'Riko',
+      endpoint: 'http://127.0.0.1:9002',
     },
     {
-      providerId: "minimal-diff-hunter",
-      agentId: "minimal-diff-hunter",
-      displayName: "Old Riko",
-      endpointType: "http",
-      endpoint: "http://127.0.0.1:9002",
-      specializations: ["video-marketing"],
-      supportedLanguages: ["text"],
-      supportedFrameworks: ["remotion"],
+      providerId: 'minimal-diff-hunter',
+      agentId: 'minimal-diff-hunter',
+      displayName: 'Old Riko',
+      endpointType: 'http',
+      endpoint: 'http://127.0.0.1:9002',
+      specializations: ['video-marketing'],
+      supportedLanguages: ['text'],
+      supportedFrameworks: ['remotion'],
       pricePerTaskUsd: 2,
       maxConcurrency: 1,
-      status: "available",
-      outputTypes: ["video", "text", "bundle"],
+      status: 'available',
+      outputTypes: ['video', 'text', 'bundle'],
       privacy: {},
       reputation: {
         globalScore: 0.8,
@@ -108,11 +112,92 @@ test("buildProviderProfileFromRegistration canonicalizes providerId to the regis
         totalRaids: 1,
         totalSuccessfulRaids: 1,
       },
-    },
+    }
   );
 
-  assert.equal(profile.providerId, "riko");
-  assert.equal(profile.agentId, "riko");
+  assert.equal(profile.providerId, 'riko');
+  assert.equal(profile.agentId, 'riko');
+});
+
+test('buildProviderProfileFromRegistration preserves Party Quest source metadata', () => {
+  const profile = buildProviderProfileFromRegistration({
+    agentId: 'pqf-game-dev',
+    name: 'Game Dev Squad',
+    endpoint: 'https://partyquest.example/boss-raid/providers/pqf-game-dev/',
+    maxConcurrency: 3,
+    source: {
+      type: 'party_quest',
+      targetType: 'formation',
+      externalRef: 'pqf-game-dev',
+      displayIcon: 'fire-b-fill',
+      memberCount: 4,
+    },
+  });
+
+  assert.equal(profile.maxConcurrency, 3);
+  assert.deepEqual(profile.source, {
+    type: 'party_quest',
+    targetType: 'formation',
+    externalRef: 'pqf-game-dev',
+    displayIcon: 'fire-b-fill',
+    memberCount: 4,
+  });
+});
+
+test('resolveProviderEndpointPath preserves pathful Party Quest provider endpoints', () => {
+  const profile = buildProviderProfileFromRegistration({
+    agentId: 'pqf-game-dev',
+    name: 'Game Dev Squad',
+    endpoint: 'https://partyquest.example/boss-raid/providers/pqf-game-dev/',
+  });
+
+  const accept = resolveProviderEndpointPath(profile, '/v1/raid/accept');
+  const health = resolveProviderEndpointPath(profile, '/health');
+
+  assert.equal(
+    accept.url,
+    'https://partyquest.example/boss-raid/providers/pqf-game-dev/v1/raid/accept'
+  );
+  assert.equal(accept.pathname, '/boss-raid/providers/pqf-game-dev/v1/raid/accept');
+  assert.equal(health.url, 'https://partyquest.example/boss-raid/providers/pqf-game-dev/health');
+});
+
+test('HMAC provider auth signs and verifies the final provider endpoint path', () => {
+  const body = JSON.stringify({ raidId: 'raid-pathful' });
+  const headers = buildProviderAuthHeaders(
+    { type: 'hmac', secret: 'path-secret' },
+    'pqf-game-dev',
+    'POST',
+    '/boss-raid/providers/pqf-game-dev/v1/raid/accept',
+    body
+  );
+
+  assert.equal(
+    verifyProviderAuth({
+      auth: { type: 'hmac', secret: 'path-secret' },
+      providerId: 'pqf-game-dev',
+      method: 'POST',
+      path: '/boss-raid/providers/pqf-game-dev/v1/raid/accept',
+      body,
+      timestampHeader: headers['x-bossraid-timestamp'],
+      signatureHeader: headers['x-bossraid-signature'],
+      providerIdHeader: headers['x-bossraid-provider-id'],
+    }),
+    true
+  );
+  assert.equal(
+    verifyProviderAuth({
+      auth: { type: 'hmac', secret: 'path-secret' },
+      providerId: 'pqf-game-dev',
+      method: 'POST',
+      path: '/v1/raid/accept',
+      body,
+      timestampHeader: headers['x-bossraid-timestamp'],
+      signatureHeader: headers['x-bossraid-signature'],
+      providerIdHeader: headers['x-bossraid-provider-id'],
+    }),
+    false
+  );
 });
 
 async function withInviteTimeoutEnv<T>(inviteAcceptMs: string, fn: () => Promise<T>): Promise<T> {
@@ -132,13 +217,14 @@ async function withInviteTimeoutEnv<T>(inviteAcceptMs: string, fn: () => Promise
 async function withMockedAcceptFetch<T>(responseDelayMs: number, fn: () => Promise<T>): Promise<T> {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
-    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-    assert.equal(url, "http://provider.test/v1/raid/accept");
+    const url =
+      typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    assert.equal(url, 'http://provider.test/v1/raid/accept');
     await new Promise<void>((resolve, reject) => {
       const timer = setTimeout(resolve, responseDelayMs);
       const onAbort = () => {
         clearTimeout(timer);
-        reject(new DOMException("The operation was aborted.", "AbortError"));
+        reject(new DOMException('The operation was aborted.', 'AbortError'));
       };
 
       if (init?.signal?.aborted) {
@@ -146,12 +232,12 @@ async function withMockedAcceptFetch<T>(responseDelayMs: number, fn: () => Promi
         return;
       }
 
-      init?.signal?.addEventListener("abort", onAbort, { once: true });
+      init?.signal?.addEventListener('abort', onAbort, { once: true });
     });
-    return new Response(JSON.stringify({ accepted: true, providerRunId: "run-test" }), {
+    return new Response(JSON.stringify({ accepted: true, providerRunId: 'run-test' }), {
       status: 200,
       headers: {
-        "content-type": "application/json",
+        'content-type': 'application/json',
       },
     });
   }) as typeof fetch;
@@ -166,28 +252,28 @@ async function withMockedAcceptFetch<T>(responseDelayMs: number, fn: () => Promi
 function createTestProvider(): HttpRaidProvider {
   return new HttpRaidProvider(
     buildProviderProfileFromRegistration({
-      agentId: "probe-provider",
-      name: "Probe Provider",
-      endpoint: "http://provider.test",
+      agentId: 'probe-provider',
+      name: 'Probe Provider',
+      endpoint: 'http://provider.test',
       auth: {
-        type: "none",
+        type: 'none',
       },
-    }),
+    })
   );
 }
 
 function createTestTask(): ProviderTaskPackage {
   return {
-    raidId: "raid-test",
-    submissionFormat: "text_answer_plus_explanation",
+    raidId: 'raid-test',
+    submissionFormat: 'text_answer_plus_explanation',
     desiredOutput: {
-      primaryType: "text",
-      artifactTypes: ["text"],
+      primaryType: 'text',
+      artifactTypes: ['text'],
     },
     task: {
-      title: "Probe task",
-      description: "Verify provider accept timeout behavior.",
-      language: "text",
+      title: 'Probe task',
+      description: 'Verify provider accept timeout behavior.',
+      language: 'text',
     },
     artifacts: {
       files: [],
@@ -205,25 +291,25 @@ function createTestTask(): ProviderTaskPackage {
   };
 }
 
-test("HttpRaidProvider accept honors BOSSRAID_INVITE_ACCEPT_MS when the provider is slow", async () => {
+test('HttpRaidProvider accept honors BOSSRAID_INVITE_ACCEPT_MS when the provider is slow', async () => {
   await withMockedAcceptFetch(100, async () => {
-    await withInviteTimeoutEnv("50", async () => {
+    await withInviteTimeoutEnv('50', async () => {
       const provider = createTestProvider();
       await assert.rejects(
         () => provider.accept(createTestTask()),
-        /request timed out after 50 ms/,
+        /request timed out after 50 ms/
       );
     });
   });
 });
 
-test("HttpRaidProvider accept succeeds when BOSSRAID_INVITE_ACCEPT_MS exceeds provider latency", async () => {
+test('HttpRaidProvider accept succeeds when BOSSRAID_INVITE_ACCEPT_MS exceeds provider latency', async () => {
   await withMockedAcceptFetch(50, async () => {
-    await withInviteTimeoutEnv("250", async () => {
+    await withInviteTimeoutEnv('250', async () => {
       const provider = createTestProvider();
       const acceptance = await provider.accept(createTestTask());
       assert.equal(acceptance.accepted, true);
-      assert.equal(acceptance.providerRunId, "run-test");
+      assert.equal(acceptance.providerRunId, 'run-test');
     });
   });
 });

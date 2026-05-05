@@ -38,17 +38,17 @@ x402 Payment (budget + 1% markup via PayAI facilitator)
 
 ## Environment Variables
 
-| Variable | Description | Required |
-|----------|------------|----------|
-| `BOSSRAID_X402_PAY_TO` | Cold storage wallet (platform revenue) | Yes |
-| `BOSSRAID_X402_PLATFORM_MARKUP_BPS` | Basis points markup (100 = 1%) | Yes (default 100) |
-| `PAYAI_API_KEY_ID` | PayAI facilitator API key | Yes |
-| `PAYAI_API_KEY_SECRET` | PayAI facilitator API secret | Yes |
-| `BOSSRAID_X402_FACILITATOR_FALLBACK` | Enable CDP fallback | No |
-| `CDP_API_KEY_ID` | CDP fallback API key | No (if fallback enabled) |
-| `CDP_API_KEY_SECRET` | CDP fallback API secret | No (if fallback enabled) |
-| `BOSSRAID_SETTLEMENT_TREASURY_KEY` | Private key for onchain payouts (hot wallet). Falls back to `BOSSRAID_CLIENT_PRIVATE_KEY` for backward compatibility. | Yes |
-| `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD` | Minimum payout threshold | Yes (default 0.25) |
+| Variable                             | Description                                                                                                           | Required                 |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `BOSSRAID_X402_PAY_TO`               | Cold storage wallet (platform revenue)                                                                                | Yes                      |
+| `BOSSRAID_X402_PLATFORM_MARKUP_BPS`  | Basis points markup (100 = 1%)                                                                                        | Yes (default 100)        |
+| `PAYAI_API_KEY_ID`                   | PayAI facilitator API key                                                                                             | Yes                      |
+| `PAYAI_API_KEY_SECRET`               | PayAI facilitator API secret                                                                                          | Yes                      |
+| `BOSSRAID_X402_FACILITATOR_FALLBACK` | Enable CDP fallback                                                                                                   | No                       |
+| `CDP_API_KEY_ID`                     | CDP fallback API key                                                                                                  | No (if fallback enabled) |
+| `CDP_API_KEY_SECRET`                 | CDP fallback API secret                                                                                               | No (if fallback enabled) |
+| `BOSSRAID_SETTLEMENT_TREASURY_KEY`   | Private key for onchain payouts (hot wallet). Falls back to `BOSSRAID_CLIENT_PRIVATE_KEY` for backward compatibility. | Yes                      |
+| `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD` | Minimum payout threshold                                                                                              | Yes (default 0.25)       |
 
 ## Payment Flow
 
@@ -80,5 +80,4 @@ Set `BOSSRAID_X402_FACILITATOR_FALLBACK=true` to enable CDP fallback.
 
 ## Removed
 
-- HMAC fallback - No more local payment verification
-- `BOSSRAID_X402_VERIFY_HMAC_SECRET` - Deprecated
+- Winner-take-all payout logic - approved providers split escrow equally.

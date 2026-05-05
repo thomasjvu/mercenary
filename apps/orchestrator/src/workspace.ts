@@ -1,7 +1,10 @@
-import { existsSync } from "node:fs";
-import { dirname, isAbsolute, resolve } from "node:path";
+import { existsSync } from 'node:fs';
+import { dirname, isAbsolute, resolve } from 'node:path';
 
-export function resolveWorkspacePath(pathValue: string | undefined, workspaceCwd: string): string | undefined {
+export function resolveWorkspacePath(
+  pathValue: string | undefined,
+  workspaceCwd: string
+): string | undefined {
   if (!pathValue) {
     return undefined;
   }
@@ -17,7 +20,7 @@ export function findWorkspaceRoot(startDir: string): string {
   let currentDir = startDir;
 
   while (true) {
-    if (existsSync(resolve(currentDir, "pnpm-workspace.yaml"))) {
+    if (existsSync(resolve(currentDir, 'pnpm-workspace.yaml'))) {
       return currentDir;
     }
 

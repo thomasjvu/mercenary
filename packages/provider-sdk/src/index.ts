@@ -1,6 +1,6 @@
-import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
-import { readFile } from "node:fs/promises";
-import { refreshProviderScores } from "@bossraid/provider-registry";
+import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import { refreshProviderScores } from '@bossraid/provider-registry';
 import type {
   ProviderAcceptance,
   ProviderAuthConfig,
@@ -10,11 +10,12 @@ import type {
   ProviderRegistrationInput,
   ProviderSubmission,
   ProviderTaskPackage,
-} from "@bossraid/shared-types";
+} from '@bossraid/shared-types';
+import { DEFAULTS } from '@bossraid/constants';
 
 const HMAC_TIMESTAMP_MAX_SKEW_MS = 5 * 60_000;
-const DEFAULT_PROVIDER_HEALTH_TIMEOUT_MS = 5_000;
-const DEFAULT_PROVIDER_ACCEPT_TIMEOUT_MS = 20_000;
+const DEFAULT_PROVIDER_HEALTH_TIMEOUT_MS = DEFAULTS.PROVIDER_HEALTH_TIMEOUT;
+const DEFAULT_PROVIDER_ACCEPT_TIMEOUT_MS = DEFAULTS.PROVIDER_ACCEPT_TIMEOUT;
 
 export interface RaidProvider {
   readonly profile: ProviderProfile;
@@ -25,17 +26,36 @@ export interface RaidProvider {
       onHeartbeat: (heartbeat: ProviderHeartbeat) => Promise<void> | void;
       onSubmit: (submission: ProviderSubmission) => Promise<void> | void;
       onFailure: (error: Error) => Promise<void> | void;
-    },
+    }
   ): Promise<void>;
 }
 
 export function normalizeRequestPath(path: string): string {
   try {
-    return new URL(path, "http://bossraid.local").pathname;
+    return new URL(path, 'http://bossraid.local').pathname;
   } catch {
-    const queryIndex = path.indexOf("?");
+    const queryIndex = path.indexOf('?');
     return queryIndex >= 0 ? path.slice(0, queryIndex) : path;
   }
+}
+
+export function resolveProviderEndpointPath(
+  profile: ProviderProfile,
+  path: string
+): {
+  url: string;
+  pathname: string;
+} {
+  const endpoint = new URL(profile.endpoint);
+  const normalizedBasePath = endpoint.pathname.replace(/\/+$/u, '');
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  endpoint.pathname = `${normalizedBasePath}${normalizedPath}`;
+  endpoint.search = '';
+  endpoint.hash = '';
+  return {
+    url: endpoint.toString(),
+    pathname: endpoint.pathname,
+  };
 }
 
 export function buildProviderAuthHeaders(
@@ -43,35 +63,35 @@ export function buildProviderAuthHeaders(
   providerId: string,
   method: string,
   path: string,
-  body: string,
+  body: string
 ): Record<string, string> {
   const canonicalPath = normalizeRequestPath(path);
-  if (!auth || auth.type === "none") {
+  if (!auth || auth.type === 'none') {
     return {};
   }
 
-  if (auth.type === "bearer") {
+  if (auth.type === 'bearer') {
     if (!auth.token) {
-      throw new Error("Bearer provider auth requires a token.");
+      throw new Error('Bearer provider auth requires a token.');
     }
     return {
-      [auth.headerName ?? "authorization"]: `Bearer ${auth.token}`,
+      [auth.headerName ?? 'authorization']: `Bearer ${auth.token}`,
     };
   }
 
-  if (auth.type === "hmac") {
+  if (auth.type === 'hmac') {
     if (!auth.secret) {
-      throw new Error("HMAC provider auth requires a secret.");
+      throw new Error('HMAC provider auth requires a secret.');
     }
     const timestamp = new Date().toISOString();
-    const signature = createHmac("sha256", auth.secret)
+    const signature = createHmac('sha256', auth.secret)
       .update(`${method.toUpperCase()} ${canonicalPath}\n${timestamp}\n${body}`)
-      .digest("hex");
+      .digest('hex');
 
     return {
-      "x-bossraid-timestamp": timestamp,
-      "x-bossraid-signature": signature,
-      "x-bossraid-provider-id": providerId,
+      'x-bossraid-timestamp': timestamp,
+      'x-bossraid-signature': signature,
+      'x-bossraid-provider-id': providerId,
     };
   }
 
@@ -93,14 +113,14 @@ export function verifyProviderAuth(input: {
 }): boolean {
   const { auth } = input;
   const canonicalPath = normalizeRequestPath(input.path);
-  if (!auth || auth.type === "none") {
+  if (!auth || auth.type === 'none') {
     return true;
   }
 
-  if (auth.type === "bearer" && auth.token) {
-    const headerName = (auth.headerName ?? "authorization").toLowerCase();
+  if (auth.type === 'bearer' && auth.token) {
+    const headerName = (auth.headerName ?? 'authorization').toLowerCase();
     const headerValue =
-      headerName === "authorization"
+      headerName === 'authorization'
         ? input.authorizationHeader
         : Array.isArray(input.headers?.[headerName])
           ? input.headers?.[headerName]?.[0]
@@ -108,7 +128,7 @@ export function verifyProviderAuth(input: {
     return headerValue === `Bearer ${auth.token}`;
   }
 
-  if (auth.type === "hmac" && auth.secret) {
+  if (auth.type === 'hmac' && auth.secret) {
     if (!input.timestampHeader || !input.signatureHeader || !input.providerIdHeader) {
       return false;
     }
@@ -119,9 +139,11 @@ export function verifyProviderAuth(input: {
       return false;
     }
 
-    const expected = createHmac("sha256", auth.secret)
-      .update(`${input.method.toUpperCase()} ${canonicalPath}\n${input.timestampHeader}\n${input.body}`)
-      .digest("hex");
+    const expected = createHmac('sha256', auth.secret)
+      .update(
+        `${input.method.toUpperCase()} ${canonicalPath}\n${input.timestampHeader}\n${input.body}`
+      )
+      .digest('hex');
 
     return safeEqualHex(expected, input.signatureHeader);
   }
@@ -150,10 +172,10 @@ function timestampIsFresh(timestamp: string, nowMs: number = Date.now()): boolea
 async function postJson<TResponse>(
   profile: ProviderProfile,
   path: string,
-  payload: unknown,
+  payload: unknown
 ): Promise<TResponse> {
   const body = JSON.stringify(payload);
-  const url = new URL(path, profile.endpoint).toString();
+  const endpoint = resolveProviderEndpointPath(profile, path);
   const startedAt = Date.now();
   const controller = new AbortController();
   const timeoutMs = readProviderAcceptTimeoutMs();
@@ -162,18 +184,24 @@ async function postJson<TResponse>(
   console.info(`[provider-http] ${profile.providerId} POST ${path} start`);
 
   try {
-    const response = await fetch(url, {
-      method: "POST",
+    const response = await fetch(endpoint.url, {
+      method: 'POST',
       headers: {
-        "content-type": "application/json",
-        ...buildProviderAuthHeaders(profile.auth, profile.providerId, "POST", path, body),
+        'content-type': 'application/json',
+        ...buildProviderAuthHeaders(
+          profile.auth,
+          profile.providerId,
+          'POST',
+          endpoint.pathname,
+          body
+        ),
       },
       body,
       signal: controller.signal,
     });
 
     console.info(
-      `[provider-http] ${profile.providerId} POST ${path} status=${response.status} elapsed_ms=${Date.now() - startedAt}`,
+      `[provider-http] ${profile.providerId} POST ${path} status=${response.status} elapsed_ms=${Date.now() - startedAt}`
     );
 
     if (!response.ok) {
@@ -183,13 +211,13 @@ async function postJson<TResponse>(
     return response.json() as Promise<TResponse>;
   } catch (error) {
     const message =
-      error instanceof Error && error.name === "AbortError"
+      error instanceof Error && error.name === 'AbortError'
         ? `${profile.providerId} request timed out after ${timeoutMs} ms`
         : error instanceof Error
           ? error.message
           : String(error);
     console.error(
-      `[provider-http] ${profile.providerId} POST ${path} failed elapsed_ms=${Date.now() - startedAt} error=${message}`,
+      `[provider-http] ${profile.providerId} POST ${path} failed elapsed_ms=${Date.now() - startedAt} error=${message}`
     );
     throw new Error(message);
   } finally {
@@ -213,8 +241,8 @@ export async function probeProviderHealth(profile: ProviderProfile): Promise<Pro
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch(new URL("/health", profile.endpoint).toString(), {
-      method: "GET",
+    const response = await fetch(resolveProviderEndpointPath(profile, '/health').url, {
+      method: 'GET',
       signal: controller.signal,
     });
 
@@ -227,34 +255,37 @@ export async function probeProviderHealth(profile: ProviderProfile): Promise<Pro
 
     return {
       providerId: profile.providerId,
-      providerName: typeof payload.providerName === "string" ? payload.providerName : profile.displayName,
+      providerName:
+        typeof payload.providerName === 'string' ? payload.providerName : profile.displayName,
       endpoint: profile.endpoint,
       reachable: response.ok,
       ready: response.ok && payload.ready === true,
       statusCode: response.status,
       missing: Array.isArray(payload.missing)
-        ? payload.missing.filter((item): item is string => typeof item === "string")
+        ? payload.missing.filter((item): item is string => typeof item === 'string')
         : undefined,
-      model: typeof payload.model === "string" || payload.model === null ? (payload.model as string | null) : undefined,
-      modelApiBase: typeof payload.modelApiBase === "string" ? payload.modelApiBase : undefined,
+      model:
+        typeof payload.model === 'string' || payload.model === null
+          ? (payload.model as string | null)
+          : undefined,
+      modelApiBase: typeof payload.modelApiBase === 'string' ? payload.modelApiBase : undefined,
       error: response.ok ? undefined : `health check failed (${response.status})`,
     };
   } catch (error) {
     const timedOut =
       error instanceof Error &&
-      (error.name === "AbortError" || error.message.includes("timed out"));
+      (error.name === 'AbortError' || error.message.includes('timed out'));
     return {
       providerId: profile.providerId,
       providerName: profile.displayName,
       endpoint: profile.endpoint,
       reachable: false,
       ready: false,
-      error:
-        timedOut
-          ? `health check timed out after ${timeoutMs} ms`
-          : error instanceof Error
-            ? error.message
-            : String(error),
+      error: timedOut
+        ? `health check timed out after ${timeoutMs} ms`
+        : error instanceof Error
+          ? error.message
+          : String(error),
     };
   } finally {
     clearTimeout(timeout);
@@ -279,7 +310,7 @@ export class HttpRaidProvider implements RaidProvider {
   }
 
   async accept(task: ProviderTaskPackage): Promise<ProviderAcceptance> {
-    return postJson<ProviderAcceptance>(this.profile, "/v1/raid/accept", {
+    return postJson<ProviderAcceptance>(this.profile, '/v1/raid/accept', {
       raidId: task.raidId,
       providerId: this.profile.providerId,
       task,
@@ -293,16 +324,18 @@ export class HttpRaidProvider implements RaidProvider {
       onHeartbeat: (heartbeat: ProviderHeartbeat) => Promise<void> | void;
       onSubmit: (submission: ProviderSubmission) => Promise<void> | void;
       onFailure: (error: Error) => Promise<void> | void;
-    },
+    }
   ): Promise<void> {
     return;
   }
 }
 
 export async function loadProviderProfilesFromFile(path: string): Promise<ProviderProfile[]> {
-  const raw = await readFile(path, "utf8");
+  const raw = await readFile(path, 'utf8');
   const expanded = expandEnvPlaceholders(raw);
-  return (JSON.parse(expanded) as ProviderProfile[]).map((profile) => normalizeProviderProfile(profile));
+  return (JSON.parse(expanded) as ProviderProfile[]).map((profile) =>
+    normalizeProviderProfile(profile)
+  );
 }
 
 export function createProvidersFromProfiles(profiles: ProviderProfile[]): RaidProvider[] {
@@ -311,9 +344,9 @@ export function createProvidersFromProfiles(profiles: ProviderProfile[]): RaidPr
 
 export function createProviderFromProfile(profile: ProviderProfile): RaidProvider {
   const normalized = normalizeProviderProfile(profile);
-  if (profile.endpointType !== "http") {
+  if (profile.endpointType !== 'http') {
     throw new Error(
-      `Unsupported provider endpointType "${profile.endpointType}" for ${profile.providerId}. Configure an HTTP provider.`,
+      `Unsupported provider endpointType "${profile.endpointType}" for ${profile.providerId}. Configure an HTTP provider.`
     );
   }
 
@@ -322,34 +355,35 @@ export function createProviderFromProfile(profile: ProviderProfile): RaidProvide
 
 export function buildProviderProfileFromRegistration(
   input: ProviderRegistrationInput,
-  existing?: ProviderProfile,
+  existing?: ProviderProfile
 ): ProviderProfile {
   return normalizeProviderProfile({
     providerId: input.agentId,
     agentId: input.agentId,
     displayName: input.name,
     description: input.description ?? existing?.description,
-    endpointType: "http",
+    endpointType: 'http',
     endpoint: input.endpoint,
     specializations: input.capabilities ?? existing?.specializations ?? [],
-    supportedLanguages: input.supportedLanguages ?? existing?.supportedLanguages ?? ["typescript"],
+    supportedLanguages: input.supportedLanguages ?? existing?.supportedLanguages ?? ['typescript'],
     supportedFrameworks: input.supportedFrameworks ?? existing?.supportedFrameworks ?? [],
     outputTypes: input.outputTypes ?? existing?.outputTypes ?? [],
     modelFamily: input.modelFamily ?? existing?.modelFamily,
     pricePerTaskUsd: input.pricing?.pricePerTaskUsd ?? existing?.pricePerTaskUsd ?? 1,
-    maxConcurrency: existing?.maxConcurrency ?? 1,
-    status: existing?.status ?? "available",
+    maxConcurrency: input.maxConcurrency ?? existing?.maxConcurrency ?? 1,
+    status: existing?.status ?? 'available',
     privacy: {
       ...existing?.privacy,
       ...input.privacy,
     },
     erc8004: (() => {
-      const merged = existing?.erc8004 || input.erc8004
-        ? {
-            ...existing?.erc8004,
-            ...input.erc8004,
-          }
-        : undefined;
+      const merged =
+        existing?.erc8004 || input.erc8004
+          ? {
+              ...existing?.erc8004,
+              ...input.erc8004,
+            }
+          : undefined;
       const agentId = merged?.agentId;
       if (!agentId) {
         return undefined;
@@ -392,6 +426,7 @@ export function buildProviderProfileFromRegistration(
     scores: existing?.scores,
     lastSeenAt: existing?.lastSeenAt ?? new Date().toISOString(),
     auth: input.auth ?? existing?.auth,
+    source: input.source ?? existing?.source,
   });
 }
 
@@ -404,12 +439,13 @@ export function normalizeProviderProfile(profile: ProviderProfile): ProviderProf
     supportedFrameworks: profile.supportedFrameworks ?? [],
     outputTypes: profile.outputTypes ?? [],
     privacy: profile.privacy ?? {},
-    erc8004: profile.erc8004 == null
-      ? undefined
-      : {
-          ...profile.erc8004,
-          validationTxs: profile.erc8004.validationTxs ?? [],
-        },
+    erc8004:
+      profile.erc8004 == null
+        ? undefined
+        : {
+            ...profile.erc8004,
+            validationTxs: profile.erc8004.validationTxs ?? [],
+          },
     trust: profile.trust == null ? undefined : { ...profile.trust },
     reputation: {
       globalScore: profile.reputation?.globalScore ?? 0.5,
@@ -431,14 +467,17 @@ export function normalizeProviderProfile(profile: ProviderProfile): ProviderProf
 }
 
 function expandEnvPlaceholders(raw: string, env: NodeJS.ProcessEnv = process.env): string {
-  return raw.replace(/\$\{([A-Z0-9_]+)(?::-(.*?))?\}/g, (_match, name: string, fallback: string | undefined) => {
-    const value = env[name];
-    if (value != null) {
-      return value;
+  return raw.replace(
+    /\$\{([A-Z0-9_]+)(?::-(.*?))?\}/g,
+    (_match, name: string, fallback: string | undefined) => {
+      const value = env[name];
+      if (value != null) {
+        return value;
+      }
+      if (fallback != null) {
+        return fallback;
+      }
+      throw new Error(`Missing environment variable ${name} for provider config template.`);
     }
-    if (fallback != null) {
-      return fallback;
-    }
-    throw new Error(`Missing environment variable ${name} for provider config template.`);
-  });
+  );
 }

@@ -5,34 +5,37 @@ import {
   type Address,
   type Hex,
   type PublicClient,
-} from "viem";
+} from 'viem';
 import {
   type Erc8004Identity,
   type Erc8004Verification,
   type ProviderProfile,
   readBooleanEnv as readBooleanEnvUtil,
-} from "@bossraid/shared-types";
+} from '@bossraid/shared-types';
 
 const ERC8004_VERIFICATION_CACHE_MS = 60_000;
 
 const erc721IdentityAbi = [
   {
-    type: "function",
-    name: "ownerOf",
-    stateMutability: "view",
-    inputs: [{ name: "tokenId", type: "uint256" }],
-    outputs: [{ name: "owner", type: "address" }],
+    type: 'function',
+    name: 'ownerOf',
+    stateMutability: 'view',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ name: 'owner', type: 'address' }],
   },
   {
-    type: "function",
-    name: "tokenURI",
-    stateMutability: "view",
-    inputs: [{ name: "tokenId", type: "uint256" }],
-    outputs: [{ name: "uri", type: "string" }],
+    type: 'function',
+    name: 'tokenURI',
+    stateMutability: 'view',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ name: 'uri', type: 'string' }],
   },
 ] as const;
 
-type Erc8004ReadClient = Pick<PublicClient, "getBytecode" | "readContract" | "getTransactionReceipt">;
+type Erc8004ReadClient = Pick<
+  PublicClient,
+  'getBytecode' | 'readContract' | 'getTransactionReceipt'
+>;
 
 export function createErc8004Verifier(env: NodeJS.ProcessEnv): {
   enabled: boolean;
@@ -45,7 +48,9 @@ export function createErc8004Verifier(env: NodeJS.ProcessEnv): {
   const chainId = env.BOSSRAID_CHAIN_ID?.trim();
   const client = enabled && rpcUrl ? createPublicClient({ transport: http(rpcUrl) }) : undefined;
 
-  async function verifyIdentity(identity: Erc8004Identity | undefined): Promise<Erc8004Identity | undefined> {
+  async function verifyIdentity(
+    identity: Erc8004Identity | undefined
+  ): Promise<Erc8004Identity | undefined> {
     if (!enabled || !identity) {
       return identity;
     }
@@ -95,7 +100,7 @@ export async function verifyErc8004IdentityWithClient(
     client?: Erc8004ReadClient;
     chainId?: string;
     now?: number;
-  },
+  }
 ): Promise<Erc8004Verification> {
   const now = options.now ?? Date.now();
   if (verificationIsFresh(identity.verification, options.chainId, now)) {
@@ -108,51 +113,51 @@ export async function verifyErc8004IdentityWithClient(
     checkedAt,
     chainId: options.chainId,
     notes,
-  } satisfies Pick<Erc8004Verification, "checkedAt" | "chainId" | "notes">;
+  } satisfies Pick<Erc8004Verification, 'checkedAt' | 'chainId' | 'notes'>;
 
   if (!options.client) {
-    notes.push("RPC verification is enabled but BOSSRAID_RPC_URL is not configured.");
+    notes.push('RPC verification is enabled but BOSSRAID_RPC_URL is not configured.');
     return {
       ...verificationBase,
-      status: "not_checked",
+      status: 'not_checked',
     };
   }
 
   const identityRegistry = normalizeAddress(identity.identityRegistry);
   if (!identityRegistry) {
-    notes.push("Identity registry address is missing or invalid.");
+    notes.push('Identity registry address is missing or invalid.');
     return {
       ...verificationBase,
-      status: "failed",
+      status: 'failed',
     };
   }
 
   const agentId = parseAgentId(identity.agentId);
   if (agentId == null) {
-    notes.push("agentId is not a numeric ERC-721 token id.");
+    notes.push('agentId is not a numeric ERC-721 token id.');
     return {
       ...verificationBase,
       agentRegistry: buildAgentRegistry(options.chainId, identityRegistry),
-      status: "failed",
+      status: 'failed',
     };
   }
 
   try {
     const identityRegistryReachable = await hasContractCode(options.client, identityRegistry);
     if (!identityRegistryReachable) {
-      notes.push("Identity registry contract is not deployed at the configured address.");
+      notes.push('Identity registry contract is not deployed at the configured address.');
       return {
         ...verificationBase,
         agentRegistry: buildAgentRegistry(options.chainId, identityRegistry),
         identityRegistryReachable,
-        status: "failed",
+        status: 'failed',
       };
     }
 
     const owner = (await options.client.readContract({
       address: identityRegistry,
       abi: erc721IdentityAbi,
-      functionName: "ownerOf",
+      functionName: 'ownerOf',
       args: [agentId],
     })) as Address;
 
@@ -161,35 +166,43 @@ export async function verifyErc8004IdentityWithClient(
       agentUri = (await options.client.readContract({
         address: identityRegistry,
         abi: erc721IdentityAbi,
-        functionName: "tokenURI",
+        functionName: 'tokenURI',
         args: [agentId],
       })) as string;
     } catch {
-      notes.push("Identity registry owner check passed, but tokenURI could not be read.");
+      notes.push('Identity registry owner check passed, but tokenURI could not be read.');
     }
 
     const operatorWallet = normalizeAddress(identity.operatorWallet);
     const operatorMatchesOwner =
-      identity.operatorWallet == null ? undefined : operatorWallet != null && operatorWallet === owner;
+      identity.operatorWallet == null
+        ? undefined
+        : operatorWallet != null && operatorWallet === owner;
     if (identity.operatorWallet && operatorWallet == null) {
-      notes.push("Configured operator wallet is not a valid EVM address.");
+      notes.push('Configured operator wallet is not a valid EVM address.');
     }
     if (operatorMatchesOwner === false) {
-      notes.push("Configured operator wallet does not match the onchain owner of the ERC-8004 identity token.");
+      notes.push(
+        'Configured operator wallet does not match the onchain owner of the ERC-8004 identity token.'
+      );
     }
 
-    const registrationTxFound = await readRegistrationTxStatus(options.client, identity.registrationTx, notes);
+    const registrationTxFound = await readRegistrationTxStatus(
+      options.client,
+      identity.registrationTx,
+      notes
+    );
     const reputationRegistryReachable = await readOptionalContractStatus(
       options.client,
       identity.reputationRegistry,
-      "reputation registry",
-      notes,
+      'reputation registry',
+      notes
     );
     const validationRegistryReachable = await readOptionalContractStatus(
       options.client,
       identity.validationRegistry,
-      "validation registry",
-      notes,
+      'validation registry',
+      notes
     );
 
     return {
@@ -216,7 +229,7 @@ export async function verifyErc8004IdentityWithClient(
     return {
       ...verificationBase,
       agentRegistry: buildAgentRegistry(options.chainId, identityRegistry),
-      status: "error",
+      status: 'error',
     };
   }
 }
@@ -224,7 +237,7 @@ export async function verifyErc8004IdentityWithClient(
 function verificationIsFresh(
   verification: Erc8004Verification | undefined,
   chainId: string | undefined,
-  now: number,
+  now: number
 ): boolean {
   if (!verification?.checkedAt) {
     return false;
@@ -235,7 +248,10 @@ function verificationIsFresh(
   return now - Date.parse(verification.checkedAt) < ERC8004_VERIFICATION_CACHE_MS;
 }
 
-function buildAgentRegistry(chainId: string | undefined, identityRegistry: Address): string | undefined {
+function buildAgentRegistry(
+  chainId: string | undefined,
+  identityRegistry: Address
+): string | undefined {
   if (!chainId) {
     return undefined;
   }
@@ -264,14 +280,14 @@ function normalizeAddress(value: string | undefined): Address | undefined {
 
 async function hasContractCode(client: Erc8004ReadClient, address: Address): Promise<boolean> {
   const bytecode = await client.getBytecode({ address });
-  return typeof bytecode === "string" && bytecode !== "0x";
+  return typeof bytecode === 'string' && bytecode !== '0x';
 }
 
 async function readOptionalContractStatus(
   client: Erc8004ReadClient,
   value: string | undefined,
   label: string,
-  notes: string[],
+  notes: string[]
 ): Promise<boolean | undefined> {
   if (!value) {
     return undefined;
@@ -293,7 +309,7 @@ async function readOptionalContractStatus(
 async function readRegistrationTxStatus(
   client: Erc8004ReadClient,
   registrationTx: string | undefined,
-  notes: string[],
+  notes: string[]
 ): Promise<boolean | undefined> {
   if (!registrationTx) {
     return undefined;
@@ -301,7 +317,7 @@ async function readRegistrationTxStatus(
 
   const hash = normalizeHash(registrationTx);
   if (!hash) {
-    notes.push("Configured registration transaction hash is not a valid hex value.");
+    notes.push('Configured registration transaction hash is not a valid hex value.');
     return false;
   }
 
@@ -309,7 +325,7 @@ async function readRegistrationTxStatus(
     await client.getTransactionReceipt({ hash });
     return true;
   } catch {
-    notes.push("Configured registration transaction could not be found on the configured chain.");
+    notes.push('Configured registration transaction could not be found on the configured chain.');
     return false;
   }
 }
@@ -327,9 +343,9 @@ function buildVerificationStatus(input: {
   agentUri?: string;
   reputationRegistryReachable?: boolean;
   validationRegistryReachable?: boolean;
-}): Erc8004Verification["status"] {
+}): Erc8004Verification['status'] {
   if (input.operatorMatchesOwner === false || input.registrationTxFound === false) {
-    return "failed";
+    return 'failed';
   }
 
   const optionalChecks = [
@@ -338,7 +354,7 @@ function buildVerificationStatus(input: {
     input.validationRegistryReachable,
   ].filter((value) => value !== undefined);
 
-  return optionalChecks.every(Boolean) ? "verified" : "partial";
+  return optionalChecks.every(Boolean) ? 'verified' : 'partial';
 }
 
 function readBooleanEnv(value: string | undefined): boolean {

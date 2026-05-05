@@ -1,4 +1,4 @@
-import type { PrivacyComplianceIssue, SanitizationReport } from "@bossraid/shared-types";
+import type { PrivacyComplianceIssue, SanitizationReport } from '@bossraid/shared-types';
 
 export interface PrivacyScanContext {
   sanitizationReport: SanitizationReport;
@@ -8,19 +8,19 @@ export interface PrivacyScanContext {
 }
 
 export const REDACTED_PLACEHOLDER_PATTERNS = [
-  "[REDACTED",
-  "***",
-  "<SECRET>",
-  "[API_KEY]",
-  "[TOKEN]",
+  '[REDACTED',
+  '***',
+  '<SECRET>',
+  '[API_KEY]',
+  '[TOKEN]',
 ];
 
 export const EXTERNAL_API_PATTERNS = [
-  "api.openai.com",
-  "api.anthropic.com",
-  "api.venice.ai",
-  "openai.com",
-  "anthropic.com",
+  'api.openai.com',
+  'api.anthropic.com',
+  'api.venice.ai',
+  'openai.com',
+  'anthropic.com',
 ];
 
 function scanForReexposedContent(ctx: PrivacyScanContext): {
@@ -28,7 +28,8 @@ function scanForReexposedContent(ctx: PrivacyScanContext): {
   issues: PrivacyComplianceIssue[];
 } {
   const issues: PrivacyComplianceIssue[] = [];
-  const redacted = ctx.sanitizationReport.redactedSecrets + ctx.sanitizationReport.redactedIdentifiers;
+  const redacted =
+    ctx.sanitizationReport.redactedSecrets + ctx.sanitizationReport.redactedIdentifiers;
 
   if (redacted === 0) {
     return { reexposed: false, issues };
@@ -45,21 +46,23 @@ function scanForReexposedContent(ctx: PrivacyScanContext): {
     for (const pattern of REDACTED_PLACEHOLDER_PATTERNS) {
       if (text.includes(pattern)) {
         issues.push({
-          severity: "warn",
-          code: "REDACTED_PLACEHOLDER_EXPOSED",
+          severity: 'warn',
+          code: 'REDACTED_PLACEHOLDER_EXPOSED',
           message: `Redacted placeholder '${pattern}' found in submission text. Content may not be fully sanitized.`,
         });
       }
     }
   }
 
-  const reexposed = issues.some((i) => i.severity === "error" || i.code === "REDACTED_PLACEHOLDER_EXPOSED");
+  const reexposed = issues.some(
+    (i) => i.severity === 'error' || i.code === 'REDACTED_PLACEHOLDER_EXPOSED'
+  );
   return { reexposed, issues };
 }
 
 function checkForExternalTransmission(
   explanation: string | undefined,
-  artifacts: PrivacyScanContext["artifacts"],
+  artifacts: PrivacyScanContext['artifacts']
 ): {
   detected: boolean;
   issues: PrivacyComplianceIssue[];
@@ -71,21 +74,21 @@ function checkForExternalTransmission(
 
   const textToCheck = [explanation, ...(artifacts?.map((a) => a.description) ?? [])]
     .filter(Boolean)
-    .join(" ");
+    .join(' ');
 
   for (const pattern of EXTERNAL_API_PATTERNS) {
     const lower = textToCheck.toLowerCase();
     if (lower.includes(pattern)) {
       issues.push({
-        severity: "warn",
-        code: "EXTERNAL_API_REFERENCE",
+        severity: 'warn',
+        code: 'EXTERNAL_API_REFERENCE',
         message: `Submission text references external API endpoint: ${pattern}. This may indicate external data transmission.`,
-        field: "explanation",
+        field: 'explanation',
       });
     }
   }
 
-  const detected = issues.some((i) => i.severity === "error");
+  const detected = issues.some((i) => i.severity === 'error');
   return { detected, issues };
 }
 

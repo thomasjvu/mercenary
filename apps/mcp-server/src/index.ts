@@ -1,11 +1,7 @@
-import { createHmac } from "node:crypto";
-import { buildBossRaidRequestFromDelegateInput } from "@bossraid/api-contracts";
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
+import { buildBossRaidRequestFromDelegateInput } from '@bossraid/api-contracts';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import type {
   BossRaidResultOutput,
   BossRaidSpawnOutput,
@@ -15,198 +11,219 @@ import type {
   PrivacyRoutingMode,
   SelectionMode,
   SupportedLanguage,
-} from "@bossraid/shared-types";
-import { summarizeRaidReceipt } from "./receipt.js";
+} from '@bossraid/shared-types';
+import { summarizeRaidReceipt } from './receipt.js';
 
-const apiBase = process.env.BOSSRAID_API_BASE ?? "http://127.0.0.1:8787";
-const DEFAULT_DELEGATE_TIMEOUT_MS = 20_000;
+import { NETWORK } from '@bossraid/constants';
+import { TIMEOUTS } from '@bossraid/constants';
+import logger from '@bossraid/logger';
+
+const apiBase =
+  process.env.BOSSRAID_API_BASE ?? `http://${NETWORK.LOCALHOST}:${NETWORK.LOCAL_API_PORT}`;
+const DEFAULT_DELEGATE_TIMEOUT_MS = TIMEOUTS.DELEGATE_TIMEOUT;
 const POLL_INTERVAL_MS = 500;
-const SUPPORTED_LANGUAGES = new Set<SupportedLanguage>(["csharp", "typescript", "python", "solidity", "text"]);
-const OUTPUT_TYPES = new Set<OutputType>(["text", "json", "image", "video", "patch", "bundle"]);
-const PRIVACY_ROUTING_MODES = new Set<PrivacyRoutingMode>(["off", "prefer", "strict"]);
-const SELECTION_MODES = new Set<SelectionMode>(["best_match", "privacy_first", "cost_first", "diverse_mix"]);
-const PRIVACY_FEATURES = new Set<PrivacyFeatureKey>([
-  "tee_attested",
-  "e2ee",
-  "no_data_retention",
-  "signed_outputs",
-  "provenance_attested",
-  "operator_verified",
+const SUPPORTED_LANGUAGES = new Set<SupportedLanguage>([
+  'csharp',
+  'typescript',
+  'python',
+  'solidity',
+  'text',
 ]);
-const TERMINAL_RAID_STATUSES = new Set(["final", "cancelled", "expired"]);
-const RAID_ACCESS_TOKEN_HEADER = "x-bossraid-raid-token";
+const OUTPUT_TYPES = new Set<OutputType>(['text', 'json', 'image', 'video', 'patch', 'bundle']);
+const PRIVACY_ROUTING_MODES = new Set<PrivacyRoutingMode>(['off', 'prefer', 'strict']);
+const SELECTION_MODES = new Set<SelectionMode>([
+  'best_match',
+  'privacy_first',
+  'cost_first',
+  'diverse_mix',
+]);
+const PRIVACY_FEATURES = new Set<PrivacyFeatureKey>([
+  'tee_attested',
+  'e2ee',
+  'no_data_retention',
+  'signed_outputs',
+  'provenance_attested',
+  'operator_verified',
+]);
+const TERMINAL_RAID_STATUSES = new Set(['final', 'cancelled', 'expired']);
+const RAID_ACCESS_TOKEN_HEADER = 'x-bossraid-raid-token';
 
 const server = new Server(
   {
-    name: "boss-raid",
-    version: "0.1.0",
+    name: 'boss-raid',
+    version: '0.1.0',
   },
   {
     capabilities: {
       tools: {},
     },
-  },
+  }
 );
 
 const tools = [
   {
-    name: "bossraid_delegate",
+    name: 'bossraid_delegate',
     description:
-      "Create a private raid from a coding or analysis task. Requires maxTotalCost, computes missing file hashes, and waits for synthesized output by default.",
+      'Create a private raid from a coding or analysis task. Requires maxTotalCost, computes missing file hashes, and waits for synthesized output by default.',
     inputSchema: {
-      type: "object",
+      type: 'object',
       properties: {
-        prompt: { type: "string" },
-        system: { type: "string" },
-        title: { type: "string" },
-        description: { type: "string" },
-        language: { type: "string", enum: [...SUPPORTED_LANGUAGES] },
-        framework: { type: "string" },
+        prompt: { type: 'string' },
+        system: { type: 'string' },
+        title: { type: 'string' },
+        description: { type: 'string' },
+        language: { type: 'string', enum: [...SUPPORTED_LANGUAGES] },
+        framework: { type: 'string' },
         files: {
-          type: "array",
+          type: 'array',
           items: {
-            type: "object",
+            type: 'object',
             properties: {
-              path: { type: "string" },
-              content: { type: "string" },
-              sha256: { type: "string" },
+              path: { type: 'string' },
+              content: { type: 'string' },
+              sha256: { type: 'string' },
             },
-            required: ["path", "content"],
+            required: ['path', 'content'],
             additionalProperties: false,
           },
         },
-        failingSignals: { type: "object" },
-        output: { type: "object" },
+        failingSignals: { type: 'object' },
+        output: { type: 'object' },
         raidPolicy: {
-          type: "object",
-          description: "Optional native raid policy object. Set raidPolicy.maxTotalCost here if maxTotalCost is not provided at the top level.",
+          type: 'object',
+          description:
+            'Optional native raid policy object. Set raidPolicy.maxTotalCost here if maxTotalCost is not provided at the top level.',
         },
-        hostContext: { type: "object" },
-        waitForResult: { type: "boolean" },
-        timeoutSec: { type: "number" },
-        maxAgents: { type: "number" },
+        hostContext: { type: 'object' },
+        waitForResult: { type: 'boolean' },
+        timeoutSec: { type: 'number' },
+        maxAgents: { type: 'number' },
         maxTotalCost: {
-          description: "Required unless raidPolicy.maxTotalCost is provided.",
-          anyOf: [{ type: "number" }, { type: "string" }],
+          description: 'Required unless raidPolicy.maxTotalCost is provided.',
+          anyOf: [{ type: 'number' }, { type: 'string' }],
         },
-        privacyMode: { type: "string", enum: [...PRIVACY_ROUTING_MODES] },
+        privacyMode: { type: 'string', enum: [...PRIVACY_ROUTING_MODES] },
         requiredCapabilities: {
-          type: "array",
-          items: { type: "string" },
+          type: 'array',
+          items: { type: 'string' },
         },
-        minReputationScore: { type: "number" },
+        minReputationScore: { type: 'number' },
         allowedModelFamilies: {
-          type: "array",
-          items: { type: "string" },
+          type: 'array',
+          items: { type: 'string' },
         },
         allowedOutputTypes: {
-          type: "array",
-          items: { type: "string", enum: [...OUTPUT_TYPES] },
+          type: 'array',
+          items: { type: 'string', enum: [...OUTPUT_TYPES] },
         },
         requirePrivacyFeatures: {
-          type: "array",
-          items: { type: "string", enum: [...PRIVACY_FEATURES] },
+          type: 'array',
+          items: { type: 'string', enum: [...PRIVACY_FEATURES] },
         },
-        selectionMode: { type: "string", enum: [...SELECTION_MODES] },
+        selectionMode: { type: 'string', enum: [...SELECTION_MODES] },
       },
-      required: ["prompt"],
+      required: ['prompt'],
       additionalProperties: true,
     },
   },
   {
-    name: "bossraid_receipt",
-    description: "Return a compact raid receipt with live expert status, synthesized output, ranked contributions, and settlement proof. Pass raid_access_token for public raid reads.",
+    name: 'bossraid_receipt',
+    description:
+      'Return a compact raid receipt with live expert status, synthesized output, ranked contributions, and settlement proof. Pass raid_access_token for public raid reads.',
     inputSchema: {
-      type: "object",
+      type: 'object',
       properties: {
-        raid_id: { type: "string" },
-        raid_access_token: { type: "string" },
+        raid_id: { type: 'string' },
+        raid_access_token: { type: 'string' },
       },
-      required: ["raid_id"],
+      required: ['raid_id'],
       additionalProperties: false,
     },
   },
   {
-    name: "bossraid_capabilities",
-    description: "Return Boss Raid API routes and MCP adapter metadata.",
+    name: 'bossraid_capabilities',
+    description: 'Return Boss Raid API routes and MCP adapter metadata.',
     inputSchema: {
-      type: "object",
+      type: 'object',
       properties: {},
       additionalProperties: false,
     },
   },
   {
-    name: "bossraid_spawn",
-    description: "Create a raid using the native Boss Raid request shape. raidPolicy.maxTotalCost is required.",
+    name: 'bossraid_spawn',
+    description:
+      'Create a raid using the native Boss Raid request shape. raidPolicy.maxTotalCost is required.',
     inputSchema: {
-      type: "object",
+      type: 'object',
       properties: {
-        agent: { type: "string" },
-        taskType: { type: "string" },
-        task: { type: "object" },
-        output: { type: "object" },
-        raidPolicy: { type: "object" },
-        hostContext: { type: "object" },
+        agent: { type: 'string' },
+        taskType: { type: 'string' },
+        task: { type: 'object' },
+        output: { type: 'object' },
+        raidPolicy: { type: 'object' },
+        hostContext: { type: 'object' },
       },
-      required: ["agent", "taskType", "task"],
+      required: ['agent', 'taskType', 'task'],
       additionalProperties: true,
     },
   },
   {
-    name: "bossraid_status",
-    description: "Return the current raid state and provider statuses. Pass raid_access_token for public raid reads.",
+    name: 'bossraid_status',
+    description:
+      'Return the current raid state and provider statuses. Pass raid_access_token for public raid reads.',
     inputSchema: {
-      type: "object",
+      type: 'object',
       properties: {
-        raid_id: { type: "string" },
-        raid_access_token: { type: "string" },
+        raid_id: { type: 'string' },
+        raid_access_token: { type: 'string' },
       },
-      required: ["raid_id"],
+      required: ['raid_id'],
       additionalProperties: false,
     },
   },
   {
-    name: "bossraid_result",
-    description: "Return the current best or final ranked raid result. Pass raid_access_token for public raid reads.",
+    name: 'bossraid_result',
+    description:
+      'Return the current best or final ranked raid result. Pass raid_access_token for public raid reads.',
     inputSchema: {
-      type: "object",
+      type: 'object',
       properties: {
-        raid_id: { type: "string" },
-        raid_access_token: { type: "string" },
+        raid_id: { type: 'string' },
+        raid_access_token: { type: 'string' },
       },
-      required: ["raid_id"],
+      required: ['raid_id'],
       additionalProperties: false,
     },
   },
   {
-    name: "bossraid_abort",
-    description: "Cancel an active raid.",
+    name: 'bossraid_abort',
+    description: 'Cancel an active raid.',
     inputSchema: {
-      type: "object",
+      type: 'object',
       properties: {
-        raid_id: { type: "string" },
+        raid_id: { type: 'string' },
       },
-      required: ["raid_id"],
+      required: ['raid_id'],
       additionalProperties: false,
     },
   },
   {
-    name: "bossraid_replay",
-    description: "Re-run evaluation over stored submissions.",
+    name: 'bossraid_replay',
+    description: 'Re-run evaluation over stored submissions.',
     inputSchema: {
-      type: "object",
+      type: 'object',
       properties: {
-        raid_id: { type: "string" },
+        raid_id: { type: 'string' },
       },
-      required: ["raid_id"],
+      required: ['raid_id'],
       additionalProperties: false,
     },
   },
   {
-    name: "bossraid_provider_stats",
-    description: "List provider state used for routing.",
+    name: 'bossraid_provider_stats',
+    description: 'List provider state used for routing.',
     inputSchema: {
-      type: "object",
+      type: 'object',
       properties: {},
       additionalProperties: false,
     },
@@ -221,86 +238,96 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const args = request.params.arguments == null ? {} : ensureObject(request.params.arguments);
 
   switch (request.params.name) {
-    case "bossraid_delegate":
+    case 'bossraid_delegate':
       return jsonResult(await delegateRaid(args));
 
-    case "bossraid_receipt":
+    case 'bossraid_receipt':
       return jsonResult(
         await buildRaidReceipt(
-          asString(args.raid_id, "raid_id"),
-          optionalString(args.raid_access_token ?? args.raidAccessToken),
-        ),
+          asString(args.raid_id, 'raid_id'),
+          optionalString(args.raid_access_token ?? args.raidAccessToken)
+        )
       );
 
-    case "bossraid_capabilities":
+    case 'bossraid_capabilities':
       return textResult(
         JSON.stringify(
           {
             apiBase,
-            transport: "http-api-adapter",
-            nativeRoute: "POST /v1/raid",
+            transport: 'http-api-adapter',
+            nativeRoute: 'POST /v1/raid',
             workflow: {
-              highLevel: ["bossraid_delegate", "bossraid_receipt"],
+              highLevel: ['bossraid_delegate', 'bossraid_receipt'],
               lowLevel: [
-                "bossraid_spawn",
-                "bossraid_status",
-                "bossraid_result",
-                "bossraid_abort",
-                "bossraid_replay",
-                "bossraid_provider_stats",
+                'bossraid_spawn',
+                'bossraid_status',
+                'bossraid_result',
+                'bossraid_abort',
+                'bossraid_replay',
+                'bossraid_provider_stats',
               ],
             },
             notes: [
-              "bossraid_delegate prefers POST /v1/raid and computes missing file sha256 values.",
-              "bossraid_delegate waits for synthesized output by default and falls back to polling guidance when still running.",
-              "Public raid status and result reads require the per-raid access token returned at spawn time.",
-              "Spawn responses now include receiptPath so callers can open the public proof page directly.",
-              "bossraid_receipt combines /v1/raids/:id and /v1/raids/:id/result into one compact proof object.",
-              "bossraid_receipt preserves ERC-8004 verification state and ERC-8183 settlement lifecycle proof fields.",
+              'bossraid_delegate prefers POST /v1/raid and computes missing file sha256 values.',
+              'bossraid_delegate waits for synthesized output by default and falls back to polling guidance when still running.',
+              'Public raid status and result reads require the per-raid access token returned at spawn time.',
+              'Spawn responses now include receiptPath so callers can open the public proof page directly.',
+              'bossraid_receipt combines /v1/raids/:id and /v1/raids/:id/result into one compact proof object.',
+              'bossraid_receipt preserves ERC-8004 verification state and ERC-8183 settlement lifecycle proof fields.',
             ],
             tools: tools.map((tool) => tool.name),
           },
           null,
-          2,
-        ),
+          2
+        )
       );
 
-    case "bossraid_spawn":
-      return jsonResult(await apiRequest("/v1/raid", {
-        method: "POST",
-        body: JSON.stringify(args),
-      }));
+    case 'bossraid_spawn':
+      return jsonResult(
+        await apiRequest('/v1/raid', {
+          method: 'POST',
+          body: JSON.stringify(args),
+        })
+      );
 
-    case "bossraid_status":
+    case 'bossraid_status':
       return jsonResult(
         await getRaidStatus(
-          asString(args.raid_id, "raid_id"),
-          optionalString(args.raid_access_token ?? args.raidAccessToken),
-        ),
+          asString(args.raid_id, 'raid_id'),
+          optionalString(args.raid_access_token ?? args.raidAccessToken)
+        )
       );
 
-    case "bossraid_result":
+    case 'bossraid_result':
       return jsonResult(
         await getRaidResult(
-          asString(args.raid_id, "raid_id"),
-          optionalString(args.raid_access_token ?? args.raidAccessToken),
-        ),
+          asString(args.raid_id, 'raid_id'),
+          optionalString(args.raid_access_token ?? args.raidAccessToken)
+        )
       );
 
-    case "bossraid_abort":
+    case 'bossraid_abort':
       return jsonResult(
-        await apiRequest(`/v1/raids/${encodeURIComponent(asString(args.raid_id, "raid_id"))}/abort`, {
-          method: "POST",
-        }),
+        await apiRequest(
+          `/v1/raids/${encodeURIComponent(asString(args.raid_id, 'raid_id'))}/abort`,
+          {
+            method: 'POST',
+          }
+        )
       );
 
-    case "bossraid_replay":
-      return jsonResult(await apiRequest(`/v1/evaluations/${encodeURIComponent(asString(args.raid_id, "raid_id"))}/replay`, {
-        method: "POST",
-      }));
+    case 'bossraid_replay':
+      return jsonResult(
+        await apiRequest(
+          `/v1/evaluations/${encodeURIComponent(asString(args.raid_id, 'raid_id'))}/replay`,
+          {
+            method: 'POST',
+          }
+        )
+      );
 
-    case "bossraid_provider_stats":
-      return jsonResult(await apiRequest("/v1/providers"));
+    case 'bossraid_provider_stats':
+      return jsonResult(await apiRequest('/v1/providers'));
 
     default:
       throw new Error(`Unsupported tool: ${request.params.name}`);
@@ -309,11 +336,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 async function delegateRaid(args: Record<string, unknown>) {
   const request = buildBossRaidRequestFromDelegateInput(args);
-  const spawn = (await apiRequest("/v1/raid", {
-    method: "POST",
+  const spawn = (await apiRequest('/v1/raid', {
+    method: 'POST',
     body: JSON.stringify(request),
   })) as BossRaidSpawnOutput;
-  const waitForResult = asBooleanWithDefault(args.waitForResult ?? args.wait_for_result, true, "waitForResult");
+  const waitForResult = asBooleanWithDefault(
+    args.waitForResult ?? args.wait_for_result,
+    true,
+    'waitForResult'
+  );
 
   if (!waitForResult) {
     return {
@@ -325,14 +356,14 @@ async function delegateRaid(args: Record<string, unknown>) {
       reserveExperts: spawn.reserveExperts,
       estimatedFirstResultSec: spawn.estimatedFirstResultSec,
       sanitization: spawn.sanitization,
-      pollTools: ["bossraid_status", "bossraid_result", "bossraid_receipt"],
+      pollTools: ['bossraid_status', 'bossraid_result', 'bossraid_receipt'],
     };
   }
 
   const timeoutSec = asPositiveNumberWithDefault(
     args.timeoutSec ?? args.timeout_sec,
     DEFAULT_DELEGATE_TIMEOUT_MS / 1_000,
-    "timeoutSec",
+    'timeoutSec'
   );
   const awaited = await waitForRaidReceipt(spawn.raidId, spawn.raidAccessToken, timeoutSec * 1_000);
 
@@ -384,13 +415,19 @@ async function buildRaidReceipt(raidId: string, raidAccessToken?: string) {
   return summarizeRaidReceipt(status, result);
 }
 
-async function getRaidStatus(raidId: string, raidAccessToken?: string): Promise<BossRaidStatusOutput> {
+async function getRaidStatus(
+  raidId: string,
+  raidAccessToken?: string
+): Promise<BossRaidStatusOutput> {
   return (await apiRequest(`/v1/raids/${encodeURIComponent(raidId)}`, {
     headers: raidHeaders(raidAccessToken),
   })) as BossRaidStatusOutput;
 }
 
-async function getRaidResult(raidId: string, raidAccessToken?: string): Promise<BossRaidResultOutput> {
+async function getRaidResult(
+  raidId: string,
+  raidAccessToken?: string
+): Promise<BossRaidResultOutput> {
   return (await apiRequest(`/v1/raids/${encodeURIComponent(raidId)}/result`, {
     headers: raidHeaders(raidAccessToken),
   })) as BossRaidResultOutput;
@@ -407,73 +444,38 @@ function raidHeaders(raidAccessToken?: string): Record<string, string> | undefin
 }
 
 async function apiRequest(path: string, init?: RequestInit): Promise<unknown> {
-  let response = await fetch(new URL(path, apiBase), {
+  const response = await fetch(new URL(path, apiBase), {
     ...init,
     headers: {
-      "content-type": "application/json",
+      'content-type': 'application/json',
       ...(init?.headers ?? {}),
     },
   });
-
-  if (response.status === 402) {
-    const paidResponse = await retryWithLocalHmacPayment(path, init, response);
-    if (paidResponse) {
-      response = paidResponse;
-    }
-  }
 
   const text = await response.text();
   const payload = text.length > 0 ? safeParseJson(text) : undefined;
 
   if (!response.ok) {
     const message =
-      response.status === 402 && !process.env.BOSSRAID_X402_VERIFY_HMAC_SECRET
-        ? "Boss Raid API requires payment. Set BOSSRAID_X402_VERIFY_HMAC_SECRET for local HMAC retries or disable x402 for private MCP use."
-        :
-      payload && typeof payload === "object" && payload !== null && "message" in payload && typeof payload.message === "string"
-        ? payload.message
-        : payload && typeof payload === "object" && payload !== null && "error" in payload && typeof payload.error === "string"
-          ? payload.error
-        : `Boss Raid API request failed (${response.status})`;
+      response.status === 402
+        ? 'Boss Raid API requires x402 payment through the configured facilitator. Use a wallet-capable x402 client or disable x402 for private MCP use.'
+        : payload &&
+            typeof payload === 'object' &&
+            payload !== null &&
+            'message' in payload &&
+            typeof payload.message === 'string'
+          ? payload.message
+          : payload &&
+              typeof payload === 'object' &&
+              payload !== null &&
+              'error' in payload &&
+              typeof payload.error === 'string'
+            ? payload.error
+            : `Boss Raid API request failed (${response.status})`;
     throw new Error(message);
   }
 
   return payload ?? { ok: true };
-}
-
-async function retryWithLocalHmacPayment(path: string, init: RequestInit | undefined, response: Response) {
-  const secret = process.env.BOSSRAID_X402_VERIFY_HMAC_SECRET;
-  if (!secret) {
-    return undefined;
-  }
-
-  const paymentRequiredHeader = response.headers.get("payment-required");
-  if (!paymentRequiredHeader) {
-    throw new Error("Boss Raid API returned 402 without PAYMENT-REQUIRED.");
-  }
-
-  const paymentRequired = decodeBase64Json(paymentRequiredHeader);
-  const requirement =
-    paymentRequired && typeof paymentRequired === "object" && "accepts" in paymentRequired && Array.isArray(paymentRequired.accepts)
-      ? paymentRequired.accepts[0]
-      : undefined;
-  if (!requirement || typeof requirement !== "object") {
-    throw new Error("Boss Raid API PAYMENT-REQUIRED header did not include a valid payment requirement.");
-  }
-
-  const paymentSignature = encodeBase64Json({
-    requirement,
-    signature: createHmac("sha256", secret).update(JSON.stringify(requirement)).digest("hex"),
-    payer: "bossraid-mcp",
-  });
-  const headers = new Headers(init?.headers);
-  headers.set("content-type", "application/json");
-  headers.set("payment-signature", paymentSignature);
-
-  return await fetch(new URL(path, apiBase), {
-    ...init,
-    headers,
-  });
 }
 
 function safeParseJson(text: string): unknown {
@@ -492,15 +494,15 @@ function textResult(text: string) {
   return {
     content: [
       {
-        type: "text" as const,
+        type: 'text' as const,
         text,
       },
     ],
   };
 }
 
-function ensureObject(value: unknown, field = "object"): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
+function ensureObject(value: unknown, field = 'object'): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(`Expected object for ${field}.`);
   }
 
@@ -508,7 +510,7 @@ function ensureObject(value: unknown, field = "object"): Record<string, unknown>
 }
 
 function asString(value: unknown, field: string): string {
-  if (typeof value !== "string" || value.length === 0) {
+  if (typeof value !== 'string' || value.length === 0) {
     throw new Error(`Expected non-empty string for ${field}.`);
   }
 
@@ -516,7 +518,7 @@ function asString(value: unknown, field: string): string {
 }
 
 function optionalString(value: unknown): string | undefined {
-  if (typeof value !== "string") {
+  if (typeof value !== 'string') {
     return undefined;
   }
 
@@ -528,7 +530,7 @@ function asBooleanWithDefault(value: unknown, fallback: boolean, field: string):
   if (value == null) {
     return fallback;
   }
-  if (typeof value === "boolean") {
+  if (typeof value === 'boolean') {
     return value;
   }
 
@@ -549,10 +551,10 @@ function asPositiveNumberWithDefault(value: unknown, fallback: number, field: st
 }
 
 function asFiniteNumber(value: unknown, field: string): number {
-  if (typeof value === "number" && Number.isFinite(value)) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
     return value;
   }
-  if (typeof value === "string" && value.trim().length > 0) {
+  if (typeof value === 'string' && value.trim().length > 0) {
     const parsed = Number(value);
     if (Number.isFinite(parsed)) {
       return parsed;
@@ -560,14 +562,6 @@ function asFiniteNumber(value: unknown, field: string): number {
   }
 
   throw new Error(`Expected finite number for ${field}.`);
-}
-
-function encodeBase64Json(value: unknown): string {
-  return Buffer.from(JSON.stringify(value), "utf8").toString("base64");
-}
-
-function decodeBase64Json(value: string): unknown {
-  return JSON.parse(Buffer.from(value, "base64").toString("utf8"));
 }
 
 function sleep(ms: number): Promise<void> {
@@ -580,6 +574,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
-  console.error(error);
+  logger.error(error);
   process.exit(1);
 });

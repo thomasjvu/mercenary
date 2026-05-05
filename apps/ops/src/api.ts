@@ -75,8 +75,8 @@ export type RaidResult = {
   status: string;
   routingProof?: {
     policy: {
-      privacyMode: "off" | "prefer" | "strict";
-      selectionMode: "best_match" | "privacy_first" | "cost_first" | "diverse_mix";
+      privacyMode: 'off' | 'prefer' | 'strict';
+      selectionMode: 'best_match' | 'privacy_first' | 'cost_first' | 'diverse_mix';
       requireErc8004: boolean;
       minTrustScore?: number;
       allowedModelFamilies: string[];
@@ -85,7 +85,7 @@ export type RaidResult = {
     };
     providers: Array<{
       providerId: string;
-      phase: "primary" | "reserve";
+      phase: 'primary' | 'reserve';
       workstreamId?: string;
       workstreamLabel?: string;
       roleId?: string;
@@ -97,7 +97,7 @@ export type RaidResult = {
       trustReason?: string;
       operatorWallet?: string;
       registrationTx?: string;
-      erc8004VerificationStatus?: "not_checked" | "verified" | "partial" | "failed" | "error";
+      erc8004VerificationStatus?: 'not_checked' | 'verified' | 'partial' | 'failed' | 'error';
       erc8004VerificationCheckedAt?: string;
       agentRegistry?: string;
       agentUri?: string;
@@ -109,7 +109,7 @@ export type RaidResult = {
     }>;
   };
   synthesizedOutput?: {
-    mode: "multi_agent_synthesis";
+    mode: 'multi_agent_synthesis';
     primaryType: string;
     answerText?: string;
     patchUnifiedDiff?: string;
@@ -166,9 +166,9 @@ export type RaidResult = {
     payoutPerSuccessfulProvider: number;
   };
   settlementExecution?: {
-    mode: "file" | "onchain";
-    proofStandard: "erc8183_aligned";
-    lifecycleStatus: "synthetic" | "partial" | "terminal";
+    mode: 'file' | 'onchain';
+    proofStandard: 'erc8183_aligned';
+    lifecycleStatus: 'synthetic' | 'partial' | 'terminal';
     executedAt: string;
     artifactPath: string;
     registryRaidRef: string;
@@ -185,7 +185,7 @@ export type RaidResult = {
       rpcUrl?: string | null;
     };
     registryCall: {
-      method: "finalizeRaid";
+      method: 'finalizeRaid';
       args: [string, string];
     };
     childJobs: Array<{
@@ -194,8 +194,15 @@ export type RaidResult = {
       providerAddress?: string | null;
       role: string;
       status: string;
-      requestedAction: "complete" | "reject";
-      lifecycleStatus: "synthetic" | "open" | "funded" | "submitted" | "completed" | "rejected" | "expired";
+      requestedAction: 'complete' | 'reject';
+      lifecycleStatus:
+        | 'synthetic'
+        | 'open'
+        | 'funded'
+        | 'submitted'
+        | 'completed'
+        | 'rejected'
+        | 'expired';
       budgetUsd: number;
       budgetAtomic?: string;
       submitResultHash: string | null;
@@ -257,7 +264,7 @@ export type Provider = {
     validationTxs?: string[];
     lastVerifiedAt?: string;
     verification?: {
-      status: "not_checked" | "verified" | "partial" | "failed" | "error";
+      status: 'not_checked' | 'verified' | 'partial' | 'failed' | 'error';
       checkedAt: string;
       chainId?: string;
       agentRegistry?: string;
@@ -274,7 +281,7 @@ export type Provider = {
   trust?: {
     score?: number;
     reason?: string;
-    source?: "erc8004";
+    source?: 'erc8004';
   };
   scores?: {
     privacyScore: number;
@@ -305,7 +312,7 @@ export type ProviderHealth = {
 };
 
 export const API_BASE =
-  (import.meta.env.VITE_BOSSRAID_OPS_API_BASE as string | undefined) ?? "/ops-api";
+  (import.meta.env.VITE_BOSSRAID_OPS_API_BASE as string | undefined) ?? '/ops-api';
 
 export type OpsSessionStatus = {
   authenticated: boolean;
@@ -314,7 +321,7 @@ export type OpsSessionStatus = {
 
 async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   return fetch(`${API_BASE}${path}`, {
-    credentials: "same-origin",
+    credentials: 'same-origin',
     ...init,
   });
 }
@@ -326,9 +333,9 @@ export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T>
 
     try {
       const payload = (await response.json()) as { message?: string; error?: string };
-      if (typeof payload.message === "string" && payload.message.length > 0) {
+      if (typeof payload.message === 'string' && payload.message.length > 0) {
         message = payload.message;
-      } else if (typeof payload.error === "string" && payload.error.length > 0) {
+      } else if (typeof payload.error === 'string' && payload.error.length > 0) {
         message = payload.error;
       }
     } catch {
@@ -341,7 +348,7 @@ export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T>
 }
 
 export async function fetchOpsSessionStatus(): Promise<OpsSessionStatus> {
-  const response = await apiFetch("/v1/ops/session");
+  const response = await apiFetch('/v1/ops/session');
   if (response.status === 401) {
     return { authenticated: false };
   }
@@ -350,9 +357,9 @@ export async function fetchOpsSessionStatus(): Promise<OpsSessionStatus> {
 
     try {
       const payload = (await response.json()) as { message?: string; error?: string };
-      if (typeof payload.message === "string" && payload.message.length > 0) {
+      if (typeof payload.message === 'string' && payload.message.length > 0) {
         message = payload.message;
-      } else if (typeof payload.error === "string" && payload.error.length > 0) {
+      } else if (typeof payload.error === 'string' && payload.error.length > 0) {
         message = payload.error;
       }
     } catch {
@@ -366,17 +373,17 @@ export async function fetchOpsSessionStatus(): Promise<OpsSessionStatus> {
 }
 
 export async function createOpsSession(token: string): Promise<OpsSessionStatus> {
-  return fetchJson<OpsSessionStatus>("/v1/ops/session", {
-    method: "POST",
+  return fetchJson<OpsSessionStatus>('/v1/ops/session', {
+    method: 'POST',
     headers: {
-      "content-type": "application/json",
+      'content-type': 'application/json',
     },
     body: JSON.stringify({ token }),
   });
 }
 
 export async function deleteOpsSession(): Promise<OpsSessionStatus> {
-  return fetchJson<OpsSessionStatus>("/v1/ops/session", {
-    method: "DELETE",
+  return fetchJson<OpsSessionStatus>('/v1/ops/session', {
+    method: 'DELETE',
   });
 }

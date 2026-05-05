@@ -1,6 +1,6 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
-import type { BossRaidPersistenceSnapshot } from "@bossraid/shared-types";
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
+import type { BossRaidPersistenceSnapshot } from '@bossraid/shared-types';
 
 export interface BossRaidPersistence {
   loadState(): Promise<BossRaidPersistenceSnapshot>;
@@ -38,10 +38,10 @@ export class FileBossRaidPersistence implements BossRaidPersistence {
 
   async loadState(): Promise<BossRaidPersistenceSnapshot> {
     try {
-      const raw = await readFile(this.path, "utf8");
+      const raw = await readFile(this.path, 'utf8');
       return JSON.parse(raw) as BossRaidPersistenceSnapshot;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return createEmptyPersistenceSnapshot();
       }
       throw error;
@@ -51,7 +51,7 @@ export class FileBossRaidPersistence implements BossRaidPersistence {
   async saveState(snapshot: BossRaidPersistenceSnapshot): Promise<void> {
     await mkdir(dirname(this.path), { recursive: true });
     const tempPath = `${this.path}.tmp`;
-    await writeFile(tempPath, JSON.stringify(snapshot, null, 2), "utf8");
+    await writeFile(tempPath, JSON.stringify(snapshot, null, 2), 'utf8');
     await rename(tempPath, this.path);
   }
 }

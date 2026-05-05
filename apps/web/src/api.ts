@@ -1,3 +1,5 @@
+import { TIMEOUTS } from '@bossraid/constants';
+
 export type RaidListItem = {
   raidId: string;
   status: string;
@@ -74,8 +76,8 @@ export type RaidResult = {
   status: string;
   routingProof?: {
     policy: {
-      privacyMode: "off" | "prefer" | "strict";
-      selectionMode: "best_match" | "privacy_first" | "cost_first" | "diverse_mix";
+      privacyMode: 'off' | 'prefer' | 'strict';
+      selectionMode: 'best_match' | 'privacy_first' | 'cost_first' | 'diverse_mix';
       requireErc8004: boolean;
       minTrustScore?: number;
       allowedModelFamilies: string[];
@@ -84,7 +86,7 @@ export type RaidResult = {
     };
     providers: Array<{
       providerId: string;
-      phase: "primary" | "reserve";
+      phase: 'primary' | 'reserve';
       workstreamId?: string;
       workstreamLabel?: string;
       roleId?: string;
@@ -96,7 +98,7 @@ export type RaidResult = {
       trustReason?: string;
       operatorWallet?: string;
       registrationTx?: string;
-      erc8004VerificationStatus?: "not_checked" | "verified" | "partial" | "failed" | "error";
+      erc8004VerificationStatus?: 'not_checked' | 'verified' | 'partial' | 'failed' | 'error';
       erc8004VerificationCheckedAt?: string;
       agentRegistry?: string;
       agentUri?: string;
@@ -108,7 +110,7 @@ export type RaidResult = {
     }>;
   };
   synthesizedOutput?: {
-    mode: "multi_agent_synthesis";
+    mode: 'multi_agent_synthesis';
     primaryType: string;
     answerText?: string;
     patchUnifiedDiff?: string;
@@ -165,9 +167,9 @@ export type RaidResult = {
     payoutPerSuccessfulProvider: number;
   };
   settlementExecution?: {
-    mode: "file" | "onchain";
-    proofStandard: "erc8183_aligned";
-    lifecycleStatus: "synthetic" | "partial" | "terminal";
+    mode: 'file' | 'onchain';
+    proofStandard: 'erc8183_aligned';
+    lifecycleStatus: 'synthetic' | 'partial' | 'terminal';
     executedAt: string;
     artifactPath: string;
     registryRaidRef: string;
@@ -184,7 +186,7 @@ export type RaidResult = {
       rpcUrl?: string | null;
     };
     registryCall: {
-      method: "finalizeRaid";
+      method: 'finalizeRaid';
       args: [string, string];
     };
     childJobs: Array<{
@@ -193,8 +195,15 @@ export type RaidResult = {
       providerAddress?: string | null;
       role: string;
       status: string;
-      requestedAction: "complete" | "reject";
-      lifecycleStatus: "synthetic" | "open" | "funded" | "submitted" | "completed" | "rejected" | "expired";
+      requestedAction: 'complete' | 'reject';
+      lifecycleStatus:
+        | 'synthetic'
+        | 'open'
+        | 'funded'
+        | 'submitted'
+        | 'completed'
+        | 'rejected'
+        | 'expired';
       budgetUsd: number;
       budgetAtomic?: string;
       submitResultHash: string | null;
@@ -238,7 +247,7 @@ export type RaidAgentLog = {
     createdAt: string;
     updatedAt: string;
     childRaidCount: number;
-    host: "codex" | "claude_code" | null;
+    host: 'codex' | 'claude_code' | null;
     receiptPath?: string;
   };
   workstreams: Array<{
@@ -256,14 +265,14 @@ export type RaidAgentLog = {
   decisions: Array<{
     at: string;
     type: string;
-    status: "complete" | "pending";
+    status: 'complete' | 'pending';
     summary: string;
     data?: Record<string, unknown>;
   }>;
   toolCalls: Array<{
     at: string;
     tool: string;
-    kind: "internal" | "http" | "evaluation" | "settlement";
+    kind: 'internal' | 'http' | 'evaluation' | 'settlement';
     status: string;
     target?: string;
     details?: Record<string, unknown>;
@@ -345,7 +354,7 @@ export type Provider = {
     validationTxs?: string[];
     lastVerifiedAt?: string;
     verification?: {
-      status: "not_checked" | "verified" | "partial" | "failed" | "error";
+      status: 'not_checked' | 'verified' | 'partial' | 'failed' | 'error';
       checkedAt: string;
       chainId?: string;
       agentRegistry?: string;
@@ -362,7 +371,7 @@ export type Provider = {
   trust?: {
     score?: number;
     reason?: string;
-    source?: "erc8004";
+    source?: 'erc8004';
   };
   scores?: {
     privacyScore: number;
@@ -449,9 +458,9 @@ export type ChatCompletionResponse = {
 };
 
 export const API_BASE =
-  (import.meta.env.VITE_BOSSRAID_WEB_API_BASE as string | undefined) ?? "/api";
-export const RAID_ACCESS_TOKEN_HEADER = "x-bossraid-raid-token";
-const ACTION_REQUEST_TIMEOUT_MS = 20_000;
+  (import.meta.env.VITE_BOSSRAID_WEB_API_BASE as string | undefined) ?? '/api';
+export const RAID_ACCESS_TOKEN_HEADER = 'x-bossraid-raid-token';
+const ACTION_REQUEST_TIMEOUT_MS = TIMEOUTS.ACTION_REQUEST;
 
 export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, init);
@@ -460,9 +469,9 @@ export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T>
 
     try {
       const payload = (await response.json()) as { message?: string; error?: string };
-      if (typeof payload.message === "string" && payload.message.length > 0) {
+      if (typeof payload.message === 'string' && payload.message.length > 0) {
         message = payload.message;
-      } else if (typeof payload.error === "string" && payload.error.length > 0) {
+      } else if (typeof payload.error === 'string' && payload.error.length > 0) {
         message = payload.error;
       }
     } catch {
@@ -477,7 +486,7 @@ export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T>
 export async function requestJsonDetailed<T>(
   path: string,
   init?: RequestInit,
-  timeoutMs = ACTION_REQUEST_TIMEOUT_MS,
+  timeoutMs = ACTION_REQUEST_TIMEOUT_MS
 ): Promise<ApiResponse<T>> {
   const controller = new AbortController();
   const timeoutId =
@@ -501,9 +510,9 @@ export async function requestJsonDetailed<T>(
           data = parsed as T;
         } else {
           error =
-            typeof (parsed as { message?: string }).message === "string"
+            typeof (parsed as { message?: string }).message === 'string'
               ? (parsed as { message?: string }).message
-              : typeof (parsed as { error?: string }).error === "string"
+              : typeof (parsed as { error?: string }).error === 'string'
                 ? (parsed as { error?: string }).error
                 : undefined;
           data = parsed as T;
@@ -541,30 +550,32 @@ export async function requestJsonDetailed<T>(
 }
 
 export async function spawnRaid(payload: unknown): Promise<ApiResponse<RaidSpawnOutput>> {
-  return requestJsonDetailed<RaidSpawnOutput>("/v1/raid", {
-    method: "POST",
+  return requestJsonDetailed<RaidSpawnOutput>('/v1/raid', {
+    method: 'POST',
     headers: {
-      "content-type": "application/json",
+      'content-type': 'application/json',
     },
     body: JSON.stringify(payload),
   });
 }
 
 export async function spawnDemoRaid(payload: unknown): Promise<ApiResponse<RaidSpawnOutput>> {
-  return requestJsonDetailed<RaidSpawnOutput>("/v1/demo/raid", {
-    method: "POST",
+  return requestJsonDetailed<RaidSpawnOutput>('/v1/demo/raid', {
+    method: 'POST',
     headers: {
-      "content-type": "application/json",
+      'content-type': 'application/json',
     },
     body: JSON.stringify(payload),
   });
 }
 
-export async function requestChatCompletion(payload: unknown): Promise<ApiResponse<ChatCompletionResponse>> {
-  return requestJsonDetailed<ChatCompletionResponse>("/v1/chat/completions", {
-    method: "POST",
+export async function requestChatCompletion(
+  payload: unknown
+): Promise<ApiResponse<ChatCompletionResponse>> {
+  return requestJsonDetailed<ChatCompletionResponse>('/v1/chat/completions', {
+    method: 'POST',
     headers: {
-      "content-type": "application/json",
+      'content-type': 'application/json',
     },
     body: JSON.stringify(payload),
   });
@@ -584,31 +595,45 @@ export function raidTokenHeaders(raidAccessToken: string): Record<string, string
   };
 }
 
-export async function fetchRaidStatus(raidId: string, raidAccessToken: string): Promise<RaidStatus> {
+export async function fetchRaidStatus(
+  raidId: string,
+  raidAccessToken: string
+): Promise<RaidStatus> {
   return fetchJson<RaidStatus>(`/v1/raids/${encodeURIComponent(raidId)}`, {
     headers: raidTokenHeaders(raidAccessToken),
   });
 }
 
-export async function fetchRaidResult(raidId: string, raidAccessToken: string): Promise<RaidResult> {
+export async function fetchRaidResult(
+  raidId: string,
+  raidAccessToken: string
+): Promise<RaidResult> {
   return fetchJson<RaidResult>(`/v1/raids/${encodeURIComponent(raidId)}/result`, {
     headers: raidTokenHeaders(raidAccessToken),
   });
 }
 
-export async function fetchRaidAgentLog(raidId: string, raidAccessToken: string): Promise<RaidAgentLog> {
-  return fetchJson<RaidAgentLog>(`/v1/raids/${encodeURIComponent(raidId)}/agent_log.json?token=${encodeURIComponent(raidAccessToken)}`);
+export async function fetchRaidAgentLog(
+  raidId: string,
+  raidAccessToken: string
+): Promise<RaidAgentLog> {
+  return fetchJson<RaidAgentLog>(
+    `/v1/raids/${encodeURIComponent(raidId)}/agent_log.json?token=${encodeURIComponent(raidAccessToken)}`
+  );
 }
 
 export async function fetchAttestedRuntime(): Promise<AttestedEnvelope<AttestedRuntimePayload>> {
-  return fetchJson<AttestedEnvelope<AttestedRuntimePayload>>("/v1/attested-runtime");
+  return fetchJson<AttestedEnvelope<AttestedRuntimePayload>>('/v1/attested-runtime');
 }
 
 export async function fetchAttestedRaidResult(
   raidId: string,
-  raidAccessToken: string,
+  raidAccessToken: string
 ): Promise<AttestedEnvelope<AttestedRaidResultPayload>> {
-  return fetchJson<AttestedEnvelope<AttestedRaidResultPayload>>(`/v1/raid/${encodeURIComponent(raidId)}/attested-result`, {
-    headers: raidTokenHeaders(raidAccessToken),
-  });
+  return fetchJson<AttestedEnvelope<AttestedRaidResultPayload>>(
+    `/v1/raid/${encodeURIComponent(raidId)}/attested-result`,
+    {
+      headers: raidTokenHeaders(raidAccessToken),
+    }
+  );
 }

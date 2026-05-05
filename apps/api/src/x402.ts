@@ -1,8 +1,10 @@
-import { createHmac, createPrivateKey, randomBytes, sign, timingSafeEqual } from "node:crypto";
-import { createFacilitatorConfig as createPayAIFacilitatorConfig } from "@payai/facilitator";
+import { createPrivateKey, randomBytes, sign } from 'node:crypto';
+import { createFacilitatorConfig as createPayAIFacilitatorConfig } from '@payai/facilitator';
+
+import { NETWORK } from '@bossraid/constants';
 
 export interface X402PaymentRequirement {
-  scheme: "exact";
+  scheme: 'exact';
   network: string;
   maxAmountRequired: string;
   resource: string;
@@ -70,10 +72,10 @@ class X402ProtocolError extends Error {
     message: string,
     paymentRequired: X402PaymentRequired,
     statusCode = 402,
-    settlement?: X402SettlementResponse,
+    settlement?: X402SettlementResponse
   ) {
     super(message);
-    this.name = "X402ProtocolError";
+    this.name = 'X402ProtocolError';
     this.statusCode = statusCode;
     this.paymentRequired = paymentRequired;
     this.settlement = settlement;
@@ -85,10 +87,10 @@ import {
   parseBoolean,
   readPositiveNumber,
   readBooleanEnv as readBooleanEnvUtil,
-} from "@bossraid/shared-types";
+} from '@bossraid/shared-types';
 
-const DEFAULT_PAYAI_FACILITATOR_URL = "https://facilitator.payai.network";
-const DEFAULT_CDP_FACILITATOR_URL = "https://api.cdp.coinbase.com/platform/v2/x402";
+const DEFAULT_PAYAI_FACILITATOR_URL = 'https://facilitator.payai.network';
+const DEFAULT_CDP_FACILITATOR_URL = 'https://api.cdp.coinbase.com/platform/v2/x402';
 const DEFAULT_RAID_SURCHARGE_USD = 0.01;
 const DEFAULT_CHAT_SURCHARGE_USD = 0.002;
 const DEFAULT_PLATFORM_MARKUP_BPS = 100;
@@ -97,7 +99,7 @@ const CDP_JWT_EXPIRES_IN_SEC = 120;
 
 type RawHeaders = Record<string, string | string[] | undefined>;
 
-type X402RouteName = "raid" | "chat";
+type X402RouteName = 'raid' | 'chat';
 
 function formatUsdPrice(amountUsd: number): string {
   if (amountUsd >= 1) {
@@ -124,27 +126,41 @@ function usdToAtomicUsdc(amountUsd: number): string {
 }
 
 export function readX402Config(env: NodeJS.ProcessEnv = process.env): X402Config {
-  const enabled = env.BOSSRAID_X402_ENABLED == null ? true : parseBoolean(env.BOSSRAID_X402_ENABLED);
-const raidSurchargeUsd = readPositiveNumber(env.BOSSRAID_X402_RAID_PRICE_USD, DEFAULT_RAID_SURCHARGE_USD);
-  const chatSurchargeUsd = readPositiveNumber(env.BOSSRAID_X402_CHAT_PRICE_USD, DEFAULT_CHAT_SURCHARGE_USD);
-  const platformMarkupBps = readPositiveNumber(env.BOSSRAID_X402_PLATFORM_MARKUP_BPS, DEFAULT_PLATFORM_MARKUP_BPS);
-
-  const hasExplicitFacilitatorUrl = !!env.BOSSRAID_X402_FACILITATOR_URL;
-  const hasFacilitatorCredential = !!(env.PAYAI_API_KEY_ID || env.CDP_API_KEY_ID);
+  const enabled =
+    env.BOSSRAID_X402_ENABLED == null ? true : parseBoolean(env.BOSSRAID_X402_ENABLED);
+  const raidSurchargeUsd = readPositiveNumber(
+    env.BOSSRAID_X402_RAID_PRICE_USD,
+    DEFAULT_RAID_SURCHARGE_USD
+  );
+  const chatSurchargeUsd = readPositiveNumber(
+    env.BOSSRAID_X402_CHAT_PRICE_USD,
+    DEFAULT_CHAT_SURCHARGE_USD
+  );
+  const platformMarkupBps = readPositiveNumber(
+    env.BOSSRAID_X402_PLATFORM_MARKUP_BPS,
+    DEFAULT_PLATFORM_MARKUP_BPS
+  );
 
   return {
     enabled,
-    facilitatorUrl: hasExplicitFacilitatorUrl
+    facilitatorUrl: env.BOSSRAID_X402_FACILITATOR_URL
       ? env.BOSSRAID_X402_FACILITATOR_URL!
-      : enabled && (hasFacilitatorCredential || env.BOSSRAID_X402_ENABLED == null)
+      : enabled
         ? DEFAULT_PAYAI_FACILITATOR_URL
         : undefined,
-    resourceBaseUrl: env.BOSSRAID_X402_RESOURCE_BASE_URL ?? "http://127.0.0.1:8787",
-    network: env.BOSSRAID_X402_NETWORK ?? "eip155:84532",
-    asset: env.BOSSRAID_X402_ASSET ?? "usdc",
-    payTo: env.BOSSRAID_X402_PAY_TO ?? "0x0000000000000000000000000000000000000000",
+    resourceBaseUrl:
+      env.BOSSRAID_X402_RESOURCE_BASE_URL ??
+      `http://${NETWORK.LOCALHOST}:${NETWORK.LOCAL_API_PORT}`,
+    network: env.BOSSRAID_X402_NETWORK ?? 'eip155:84532',
+    asset: env.BOSSRAID_X402_ASSET ?? 'usdc',
+    payTo: env.BOSSRAID_X402_PAY_TO ?? '0x0000000000000000000000000000000000000000',
     maxAmountRequired: env.BOSSRAID_X402_MAX_AMOUNT_REQUIRED,
-    maxTimeoutSeconds: Math.max(1, Math.round(readPositiveNumber(env.BOSSRAID_X402_MAX_TIMEOUT_SECONDS, DEFAULT_MAX_TIMEOUT_SECONDS))),
+    maxTimeoutSeconds: Math.max(
+      1,
+      Math.round(
+        readPositiveNumber(env.BOSSRAID_X402_MAX_TIMEOUT_SECONDS, DEFAULT_MAX_TIMEOUT_SECONDS)
+      )
+    ),
     platformMarkupBps,
     routeSurchargeUsd: {
       raid: raidSurchargeUsd,
@@ -161,7 +177,7 @@ const raidSurchargeUsd = readPositiveNumber(env.BOSSRAID_X402_RAID_PRICE_USD, DE
 }
 
 function encodeHeaderValue(value: unknown): string {
-  return Buffer.from(JSON.stringify(value), "utf8").toString("base64");
+  return Buffer.from(JSON.stringify(value), 'utf8').toString('base64');
 }
 
 function decodeHeaderValue<T>(value: string | undefined, label: string): T {
@@ -170,29 +186,29 @@ function decodeHeaderValue<T>(value: string | undefined, label: string): T {
   }
 
   try {
-    const json = Buffer.from(value, "base64").toString("utf8");
+    const json = Buffer.from(value, 'base64').toString('utf8');
     return JSON.parse(json) as T;
   } catch (error) {
     throw new Error(
-      `${label} header did not contain valid base64 JSON: ${error instanceof Error ? error.message : String(error)}`,
+      `${label} header did not contain valid base64 JSON: ${error instanceof Error ? error.message : String(error)}`
     );
   }
 }
 
 function buildResourceUrl(resourceBaseUrl: string, resourcePath: string): string {
   const baseUrl = new URL(resourceBaseUrl);
-  baseUrl.pathname = baseUrl.pathname.endsWith("/") ? baseUrl.pathname : `${baseUrl.pathname}/`;
-  baseUrl.search = "";
-  baseUrl.hash = "";
-  return new URL(resourcePath.replace(/^\/+/, ""), baseUrl).toString();
+  baseUrl.pathname = baseUrl.pathname.endsWith('/') ? baseUrl.pathname : `${baseUrl.pathname}/`;
+  baseUrl.search = '';
+  baseUrl.hash = '';
+  return new URL(resourcePath.replace(/^\/+/, ''), baseUrl).toString();
 }
 
 function formatPaymentRequirementNetwork(network: string): string {
   const v1Aliases: Record<string, string> = {
-    "eip155:1": "ethereum",
-    "eip155:8453": "base",
-    "eip155:84532": "base-sepolia",
-    "eip155:11155111": "sepolia",
+    'eip155:1': 'ethereum',
+    'eip155:8453': 'base',
+    'eip155:84532': 'base-sepolia',
+    'eip155:11155111': 'sepolia',
   };
 
   return v1Aliases[network] ?? network;
@@ -205,9 +221,9 @@ function buildPaymentRequired(
   options: {
     extra?: Record<string, unknown>;
     maxTimeoutSeconds?: number;
-  } = {},
+  } = {}
 ): X402PaymentRequired {
-  const resourcePath = route === "chat" ? "/v1/chat/completions" : "/v1/raid";
+  const resourcePath = route === 'chat' ? '/v1/chat/completions' : '/v1/raid';
   const price = computeChargeUsd(config, route, budgetUsd);
   const assetConfig = resolveAssetConfig(config);
 
@@ -215,18 +231,16 @@ function buildPaymentRequired(
     x402Version: 1,
     accepts: [
       {
-        scheme: "exact",
+        scheme: 'exact',
         network: formatPaymentRequirementNetwork(config.network),
         maxAmountRequired:
-          route === "raid" && config.maxAmountRequired && budgetUsd <= 0
+          route === 'raid' && config.maxAmountRequired && budgetUsd <= 0
             ? config.maxAmountRequired
             : usdToAtomicUsdc(price.totalUsd),
         resource: buildResourceUrl(config.resourceBaseUrl, resourcePath),
         description:
-          route === "chat"
-            ? "Boss Raid chat completion request"
-            : "Boss Raid native raid request",
-        mimeType: "application/json",
+          route === 'chat' ? 'Boss Raid chat completion request' : 'Boss Raid native raid request',
+        mimeType: 'application/json',
         payTo: config.payTo,
         maxTimeoutSeconds: options.maxTimeoutSeconds ?? config.maxTimeoutSeconds,
         asset: assetConfig.asset,
@@ -260,7 +274,7 @@ export function buildX402PaymentRequired(input: {
 function computeChargeUsd(
   config: X402Config,
   route: X402RouteName,
-  budgetUsd: number,
+  budgetUsd: number
 ): {
   budgetUsd: number;
   markupUsd: number;
@@ -292,39 +306,39 @@ function resolveAssetConfig(config: X402Config): {
         }
       : undefined;
 
-  if (config.asset.startsWith("0x")) {
+  if (config.asset.startsWith('0x')) {
     return {
       asset: config.asset,
       extra: overrideExtra,
     };
   }
 
-  if (!config.network.startsWith("eip155:")) {
+  if (!config.network.startsWith('eip155:')) {
     return {
       asset: config.asset,
       extra: overrideExtra,
     };
   }
 
-  if (lowerAsset !== "usdc") {
+  if (lowerAsset !== 'usdc') {
     throw new Error(
-      "For EVM x402 routes, BOSSRAID_X402_ASSET must be 'usdc' or an ERC-20 token address.",
+      "For EVM x402 routes, BOSSRAID_X402_ASSET must be 'usdc' or an ERC-20 token address."
     );
   }
 
   const defaultUsdcByNetwork: Record<string, { asset: string; extra: Record<string, string> }> = {
-    "eip155:8453": {
-      asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    'eip155:8453': {
+      asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
       extra: {
-        name: "USD Coin",
-        version: "2",
+        name: 'USD Coin',
+        version: '2',
       },
     },
-    "eip155:84532": {
-      asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    'eip155:84532': {
+      asset: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
       extra: {
-        name: "USDC",
-        version: "2",
+        name: 'USDC',
+        version: '2',
       },
     },
   };
@@ -332,7 +346,7 @@ function resolveAssetConfig(config: X402Config): {
   const resolved = defaultUsdcByNetwork[config.network];
   if (!resolved) {
     throw new Error(
-      `No built-in x402 asset metadata is configured for ${config.network}. Set BOSSRAID_X402_ASSET to a token address and provide BOSSRAID_X402_ASSET_NAME/BOSSRAID_X402_ASSET_VERSION if needed.`,
+      `No built-in x402 asset metadata is configured for ${config.network}. Set BOSSRAID_X402_ASSET to a token address and provide BOSSRAID_X402_ASSET_NAME/BOSSRAID_X402_ASSET_VERSION if needed.`
     );
   }
 
@@ -343,7 +357,7 @@ function resolveAssetConfig(config: X402Config): {
 }
 
 function base64UrlEncode(input: Buffer | string): string {
-  return Buffer.from(input).toString("base64url");
+  return Buffer.from(input).toString('base64url');
 }
 
 function encodeJwtSegment(value: unknown): string {
@@ -351,16 +365,16 @@ function encodeJwtSegment(value: unknown): string {
 }
 
 function normalizePemSecret(secret: string): string {
-  return secret.includes("\\n") ? secret.replace(/\\n/g, "\n") : secret;
+  return secret.includes('\\n') ? secret.replace(/\\n/g, '\n') : secret;
 }
 
 function isLikelyPemPrivateKey(secret: string): boolean {
-  return secret.includes("BEGIN");
+  return secret.includes('BEGIN');
 }
 
 function isLikelyEd25519Secret(secret: string): boolean {
   try {
-    return Buffer.from(secret, "base64").length === 64;
+    return Buffer.from(secret, 'base64').length === 64;
   } catch {
     return false;
   }
@@ -371,7 +385,7 @@ function isCdpFacilitator(config: X402Config): boolean {
     return false;
   }
 
-  return new URL(config.facilitatorUrl).host === "api.cdp.coinbase.com";
+  return new URL(config.facilitatorUrl).host === 'api.cdp.coinbase.com';
 }
 
 function isPayAIFacilitator(config: X402Config): boolean {
@@ -379,156 +393,104 @@ function isPayAIFacilitator(config: X402Config): boolean {
     return false;
   }
 
-  return new URL(config.facilitatorUrl).host === "facilitator.payai.network";
+  return new URL(config.facilitatorUrl).host === 'facilitator.payai.network';
 }
 
 function createEd25519PrivateKey(secret: string) {
-  const decoded = Buffer.from(secret, "base64");
+  const decoded = Buffer.from(secret, 'base64');
   if (decoded.length !== 64) {
-    throw new Error("CDP Ed25519 API key secret must be 64 bytes after base64 decoding.");
+    throw new Error('CDP Ed25519 API key secret must be 64 bytes after base64 decoding.');
   }
 
   const seed = decoded.subarray(0, 32);
   const publicKey = decoded.subarray(32);
   return createPrivateKey({
     key: {
-      kty: "OKP",
-      crv: "Ed25519",
-      d: seed.toString("base64url"),
-      x: publicKey.toString("base64url"),
+      kty: 'OKP',
+      crv: 'Ed25519',
+      d: seed.toString('base64url'),
+      x: publicKey.toString('base64url'),
     },
-    format: "jwk",
+    format: 'jwk',
   });
 }
 
 function buildCdpBearerToken(config: X402Config, requestUrl: URL, method: string): string {
   if (!config.cdpApiKeyId || !config.cdpApiKeySecret) {
-    throw new Error(
-      "Coinbase CDP facilitator requires CDP_API_KEY_ID and CDP_API_KEY_SECRET.",
-    );
+    throw new Error('Coinbase CDP facilitator requires CDP_API_KEY_ID and CDP_API_KEY_SECRET.');
   }
 
   const now = Math.floor(Date.now() / 1_000);
   const expiresIn = CDP_JWT_EXPIRES_IN_SEC;
   const payload = {
     sub: config.cdpApiKeyId,
-    iss: "cdp",
-    aud: ["cdp_service"],
+    iss: 'cdp',
+    aud: ['cdp_service'],
     uris: [`${method.toUpperCase()} ${requestUrl.host}${requestUrl.pathname}${requestUrl.search}`],
     iat: now,
     nbf: now,
     exp: now + expiresIn,
   };
-  const nonce = randomBytes(16).toString("hex");
+  const nonce = randomBytes(16).toString('hex');
   const normalizedSecret = normalizePemSecret(config.cdpApiKeySecret);
   const signingInput = [
     encodeJwtSegment({
-      alg: isLikelyPemPrivateKey(normalizedSecret) ? "ES256" : "EdDSA",
+      alg: isLikelyPemPrivateKey(normalizedSecret) ? 'ES256' : 'EdDSA',
       kid: config.cdpApiKeyId,
-      typ: "JWT",
+      typ: 'JWT',
       nonce,
     }),
     encodeJwtSegment(payload),
-  ].join(".");
+  ].join('.');
 
   let signature: Buffer;
   if (isLikelyPemPrivateKey(normalizedSecret)) {
-    signature = sign("sha256", Buffer.from(signingInput), {
+    signature = sign('sha256', Buffer.from(signingInput), {
       key: createPrivateKey(normalizedSecret),
-      dsaEncoding: "ieee-p1363",
+      dsaEncoding: 'ieee-p1363',
     });
   } else if (isLikelyEd25519Secret(normalizedSecret)) {
     signature = sign(null, Buffer.from(signingInput), createEd25519PrivateKey(normalizedSecret));
   } else {
     throw new Error(
-      "Unsupported CDP_API_KEY_SECRET format. Use a PEM EC private key or a base64 Ed25519 secret.",
+      'Unsupported CDP_API_KEY_SECRET format. Use a PEM EC private key or a base64 Ed25519 secret.'
     );
   }
 
   return `${signingInput}.${base64UrlEncode(signature)}`;
 }
 
-function safeEqual(value: string, expected: string): boolean {
-  const left = Buffer.from(value);
-  const right = Buffer.from(expected);
-  if (left.length !== right.length) {
-    return false;
-  }
-
-  return timingSafeEqual(left, right);
-}
-
-function verifyLocalPayment(
-  signatureHeader: string | undefined,
-  paymentRequired: X402PaymentRequired,
-  secret: string | undefined,
-): X402VerificationResponse {
-  if (!secret) {
-    return {
-      valid: false,
-      error: "Missing BOSSRAID_X402_VERIFY_HMAC_SECRET for local x402 verification.",
-    };
-  }
-
-  const payload = decodeHeaderValue<{ requirement: X402PaymentRequirement; signature: string; payer?: string }>(
-    signatureHeader,
-    "PAYMENT-SIGNATURE",
-  );
-  const requirement = paymentRequired.accepts[0];
-  if (!payload.requirement || !payload.signature) {
-    return {
-      valid: false,
-      error: "Local payment signature payload must include requirement and signature.",
-    };
-  }
-
-  const expected = createHmac("sha256", secret)
-    .update(JSON.stringify(requirement))
-    .digest("hex");
-  if (!safeEqual(payload.signature, expected)) {
-    return {
-      valid: false,
-      error: "Local payment signature did not match the required payment payload.",
-    };
-  }
-
-  return {
-    valid: true,
-    payer: payload.payer ?? "local-hmac-buyer",
-  };
-}
-
 async function facilitatorRequest<TResponse>(
   config: X402Config,
   path: string,
-  body: unknown,
+  body: unknown
 ): Promise<TResponse> {
   if (!config.facilitatorUrl) {
-    throw new Error("BOSSRAID_X402_FACILITATOR_URL is required when x402 is enabled.");
+    throw new Error('BOSSRAID_X402_FACILITATOR_URL is required when x402 is enabled.');
   }
 
   const baseUrl = new URL(config.facilitatorUrl);
-  if (!baseUrl.pathname.endsWith("/")) {
+  if (!baseUrl.pathname.endsWith('/')) {
     baseUrl.pathname = `${baseUrl.pathname}/`;
   }
-  const requestUrl = new URL(path.replace(/^\/+/, ""), baseUrl);
+  const requestUrl = new URL(path.replace(/^\/+/, ''), baseUrl);
   const headers: Record<string, string> = {
-    "content-type": "application/json",
-    accept: "application/json",
+    'content-type': 'application/json',
+    accept: 'application/json',
   };
   if (isCdpFacilitator(config)) {
-    headers.authorization = `Bearer ${buildCdpBearerToken(config, requestUrl, "POST")}`;
+    headers.authorization = `Bearer ${buildCdpBearerToken(config, requestUrl, 'POST')}`;
   } else if (isPayAIFacilitator(config)) {
     const authHeaders = await createPayAIFacilitatorConfig(
       config.payaiApiKeyId,
-      config.payaiApiKeySecret,
+      config.payaiApiKeySecret
     ).createAuthHeaders?.();
-    const endpoint = path.replace(/^\/+/, "") === "settle" ? "settle" : "verify";
+    const endpoint = path.replace(/^\/+/, '') === 'settle' ? 'settle' : 'verify';
     Object.assign(headers, authHeaders?.[endpoint] ?? {});
   }
 
   const response = await fetch(requestUrl.toString(), {
-    method: "POST",
+    method: 'POST',
     headers,
     body: JSON.stringify(body),
   });
@@ -542,15 +504,13 @@ async function facilitatorRequest<TResponse>(
       throw new Error(
         `x402 facilitator ${path} returned invalid JSON: ${
           error instanceof Error ? error.message : String(error)
-        }`,
+        }`
       );
     }
   }
   if (!response.ok) {
     throw new Error(
-      `x402 facilitator ${path} failed (${response.status})${
-        text.length > 0 ? `: ${text}` : ""
-      }`,
+      `x402 facilitator ${path} failed (${response.status})${text.length > 0 ? `: ${text}` : ''}`
     );
   }
   return payload;
@@ -559,16 +519,14 @@ async function facilitatorRequest<TResponse>(
 async function verifyPayment(
   config: X402Config,
   signatureHeader: string | undefined,
-  paymentRequired: X402PaymentRequired,
+  paymentRequired: X402PaymentRequired
 ): Promise<X402VerificationResponse> {
   if (!config.facilitatorUrl) {
-    throw new Error(
-      "No x402 facilitator configured. Set PAYAI_API_KEY_ID or BOSSRAID_X402_FACILITATOR_URL.",
-    );
+    throw new Error('x402 payment verification requires a configured facilitator.');
   }
 
-  const paymentPayload = decodeHeaderValue<unknown>(signatureHeader, "PAYMENT-SIGNATURE");
-  return facilitatorRequest<X402VerificationResponse>(config, "/verify", {
+  const paymentPayload = decodeHeaderValue<unknown>(signatureHeader, 'PAYMENT-SIGNATURE');
+  return facilitatorRequest<X402VerificationResponse>(config, '/verify', {
     x402Version: 1,
     paymentPayload,
     paymentRequirements: paymentRequired.accepts[0],
@@ -578,19 +536,17 @@ async function verifyPayment(
 async function settlePayment(
   config: X402Config,
   signatureHeader: string | undefined,
-  paymentRequired: X402PaymentRequired,
+  paymentRequired: X402PaymentRequired
 ): Promise<X402SettlementResponse> {
   if (!config.facilitatorUrl) {
-    throw new Error(
-      "No x402 facilitator configured. Set PAYAI_API_KEY_ID or BOSSRAID_X402_FACILITATOR_URL.",
-    );
+    throw new Error('x402 payment settlement requires a configured facilitator.');
   }
 
-  const paymentPayload = decodeHeaderValue<unknown>(signatureHeader, "PAYMENT-SIGNATURE");
+  const paymentPayload = decodeHeaderValue<unknown>(signatureHeader, 'PAYMENT-SIGNATURE');
   const originalFacilitatorUrl = config.facilitatorUrl;
 
   try {
-    return facilitatorRequest<X402SettlementResponse>(config, "/settle", {
+    return facilitatorRequest<X402SettlementResponse>(config, '/settle', {
       x402Version: 1,
       paymentPayload,
       paymentRequirements: paymentRequired.accepts[0],
@@ -603,7 +559,7 @@ async function settlePayment(
       config.cdpApiKeySecret
     ) {
       config.facilitatorUrl = DEFAULT_CDP_FACILITATOR_URL;
-      return facilitatorRequest<X402SettlementResponse>(config, "/settle", {
+      return facilitatorRequest<X402SettlementResponse>(config, '/settle', {
         x402Version: 1,
         paymentPayload,
         paymentRequirements: paymentRequired.accepts[0],
@@ -615,15 +571,18 @@ async function settlePayment(
   }
 }
 
-export function applyX402Headers(reply: { header(name: string, value: string): unknown }, input: {
-  paymentRequired?: X402PaymentRequired;
-  settlement?: X402SettlementResponse;
-}): void {
+export function applyX402Headers(
+  reply: { header(name: string, value: string): unknown },
+  input: {
+    paymentRequired?: X402PaymentRequired;
+    settlement?: X402SettlementResponse;
+  }
+): void {
   if (input.paymentRequired) {
-    reply.header("PAYMENT-REQUIRED", encodeHeaderValue(input.paymentRequired));
+    reply.header('PAYMENT-REQUIRED', encodeHeaderValue(input.paymentRequired));
   }
   if (input.settlement) {
-    reply.header("PAYMENT-RESPONSE", encodeHeaderValue(input.settlement));
+    reply.header('PAYMENT-RESPONSE', encodeHeaderValue(input.settlement));
   }
 }
 
@@ -650,34 +609,32 @@ export async function requireX402Payment(input: {
   }
 
   const computed = computeChargeUsd(config, input.route, input.budgetUsd ?? 0);
-  const paymentRequired = input.paymentRequired ?? buildPaymentRequired(config, input.route, input.budgetUsd ?? 0);
-  const signatureHeader = asSingleHeader(input.headers["payment-signature"]);
+  const paymentRequired =
+    input.paymentRequired ?? buildPaymentRequired(config, input.route, input.budgetUsd ?? 0);
+  const signatureHeader = asSingleHeader(input.headers['payment-signature']);
   if (!signatureHeader) {
-    throw new X402ProtocolError("Payment required.", paymentRequired);
+    throw new X402ProtocolError('Payment required.', paymentRequired);
   }
 
   const verification = await verifyPayment(config, signatureHeader, paymentRequired);
   const isValid = verification.isValid ?? verification.valid ?? verification.success;
   if (!isValid) {
-    throw new X402ProtocolError(
-      verification.error ?? "Payment verification failed.",
-      {
-        ...paymentRequired,
-        error: verification.error ?? "payment_verification_failed",
-      },
-    );
+    throw new X402ProtocolError(verification.error ?? 'Payment verification failed.', {
+      ...paymentRequired,
+      error: verification.error ?? 'payment_verification_failed',
+    });
   }
 
   const settlement = await settlePayment(config, signatureHeader, paymentRequired);
   if (!settlement.success) {
     throw new X402ProtocolError(
-      settlement.error ?? "Payment settlement failed.",
+      settlement.error ?? 'Payment settlement failed.',
       {
         ...paymentRequired,
-        error: settlement.error ?? "payment_settlement_failed",
+        error: settlement.error ?? 'payment_settlement_failed',
       },
       402,
-      settlement,
+      settlement
     );
   }
 
@@ -696,14 +653,14 @@ export function isX402ProtocolError(error: unknown): error is X402ProtocolError 
 
 export function readX402ReservationId(
   headers: RawHeaders,
-  headerName = "x-bossraid-launch-reservation",
+  headerName = 'x-bossraid-launch-reservation'
 ): string | undefined {
   const explicitHeader = asSingleHeader(headers[headerName]);
   if (explicitHeader) {
     return explicitHeader;
   }
 
-  const signatureHeader = asSingleHeader(headers["payment-signature"]);
+  const signatureHeader = asSingleHeader(headers['payment-signature']);
   if (!signatureHeader) {
     return undefined;
   }
@@ -713,9 +670,9 @@ export function readX402ReservationId(
       requirement?: {
         extra?: Record<string, unknown>;
       };
-    }>(signatureHeader, "PAYMENT-SIGNATURE");
+    }>(signatureHeader, 'PAYMENT-SIGNATURE');
     const reservationId = payload.requirement?.extra?.reservationId;
-    return typeof reservationId === "string" ? reservationId : undefined;
+    return typeof reservationId === 'string' ? reservationId : undefined;
   } catch {
     return undefined;
   }

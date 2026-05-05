@@ -1,14 +1,14 @@
-import { useEffect, useState } from "react";
-import { Icon } from "@iconify/react";
-import { BOSSRAID_DOCS_URL } from "@bossraid/ui";
-import heroImage from "../../../../assets/hero.webp";
+import { useEffect, useState } from 'react';
+import { Icon } from '@iconify/react';
+import { BOSSRAID_DOCS_URL } from '@bossraid/ui';
+import heroImage from '../../../../assets/hero.webp';
 
 const PUBLIC_API_BASE = normalizePublicApiBase(
   (import.meta.env.VITE_BOSSRAID_API_BASE as string | undefined) ??
     (import.meta.env.VITE_BOSSRAID_WEB_API_BASE as string | undefined) ??
-    "$BOSSRAID_API_BASE",
+    '$BOSSRAID_API_BASE'
 );
-const PANELS = ["chat", "raid", "mcp"] as const;
+const PANELS = ['chat', 'raid', 'mcp'] as const;
 
 const CHAT_EXAMPLE = `curl -X POST ${PUBLIC_API_BASE}/v1/chat/completions \\
   -H "content-type: application/json" \\
@@ -63,37 +63,37 @@ bossraid_delegate({
 
 const WORKFLOW_ROWS = [
   {
-    label: "STEP 01",
-    value: "Start from MCP, tool chat, or `POST /v1/raid`.",
+    label: 'STEP 01',
+    value: 'Start from MCP, tool chat, or `POST /v1/raid`.',
   },
   {
-    label: "STEP 02",
-    value: "Mercenary splits the task, sets privacy mode, and routes specialists.",
+    label: 'STEP 02',
+    value: 'Mercenary splits the task, sets privacy mode, and routes specialists.',
   },
   {
-    label: "STEP 03",
-    value: "Providers return scoped outputs. Weak work gets dropped.",
+    label: 'STEP 03',
+    value: 'Providers return scoped outputs. Weak work gets dropped.',
   },
   {
-    label: "STEP 04",
-    value: "Keep one verified result with receipt and settlement proof.",
+    label: 'STEP 04',
+    value: 'Keep one verified result with receipt and settlement proof.',
   },
   {
-    label: "STEP 05",
-    value: "Successful raiders split payout equally.",
+    label: 'STEP 05',
+    value: 'Successful raiders split payout equally.',
   },
 ] as const;
 
-type AppRoute = "/" | "/demo" | "/raiders" | "/receipt";
+type AppRoute = '/' | '/demo' | '/raiders' | '/receipt';
 type PanelKey = (typeof PANELS)[number];
-type PanelLayer = "front" | "mid" | "back";
+type PanelLayer = 'front' | 'mid' | 'back';
 
 type LandingPageProps = {
   onNavigate: (path: AppRoute) => void;
 };
 
 function normalizePublicApiBase(value: string): string {
-  return value.endsWith("/") ? value.slice(0, -1) : value;
+  return value.endsWith('/') ? value.slice(0, -1) : value;
 }
 
 function getPanelLayer(activePanel: PanelKey, panel: PanelKey): PanelLayer {
@@ -102,19 +102,19 @@ function getPanelLayer(activePanel: PanelKey, panel: PanelKey): PanelLayer {
   const relativeIndex = (panelIndex - activeIndex + PANELS.length) % PANELS.length;
 
   if (relativeIndex === 0) {
-    return "front";
+    return 'front';
   }
 
   if (relativeIndex === 1) {
-    return "mid";
+    return 'mid';
   }
 
-  return "back";
+  return 'back';
 }
 
 export function LandingPage({ onNavigate }: LandingPageProps) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [activePanel, setActivePanel] = useState<(typeof PANELS)[number]>("chat");
+  const [activePanel, setActivePanel] = useState<(typeof PANELS)[number]>('chat');
 
   useEffect(() => {
     if (!copiedKey) {
@@ -167,7 +167,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               href="/demo"
               onClick={(event) => {
                 event.preventDefault();
-                onNavigate("/demo");
+                onNavigate('/demo');
               }}
             >
               <Icon className="icon icon--pixel" icon="pixel:sparkles-solid" />
@@ -201,22 +201,22 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             <p className="eyebrow">private surfaces</p>
             <div className="terminal-deck__tabs" role="tablist" aria-label="Integration surfaces">
               <button
-                className={`deck-tab deck-tab--chat ${activePanel === "chat" ? "deck-tab--active" : ""}`}
-                onClick={() => setActivePanel("chat")}
+                className={`deck-tab deck-tab--chat ${activePanel === 'chat' ? 'deck-tab--active' : ''}`}
+                onClick={() => setActivePanel('chat')}
                 type="button"
               >
                 tool
               </button>
               <button
-                className={`deck-tab deck-tab--raid ${activePanel === "raid" ? "deck-tab--active" : ""}`}
-                onClick={() => setActivePanel("raid")}
+                className={`deck-tab deck-tab--raid ${activePanel === 'raid' ? 'deck-tab--active' : ''}`}
+                onClick={() => setActivePanel('raid')}
                 type="button"
               >
                 raid
               </button>
               <button
-                className={`deck-tab deck-tab--mcp ${activePanel === "mcp" ? "deck-tab--active" : ""}`}
-                onClick={() => setActivePanel("mcp")}
+                className={`deck-tab deck-tab--mcp ${activePanel === 'mcp' ? 'deck-tab--active' : ''}`}
+                onClick={() => setActivePanel('mcp')}
                 type="button"
               >
                 mcp
@@ -228,31 +228,31 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               label="/v1/chat/completions"
               note="compatibility surface"
               code={CHAT_EXAMPLE}
-              actionLabel={copiedKey === "chat-panel" ? "copied" : "copy"}
-              onAction={() => void copySnippet("chat-panel", CHAT_EXAMPLE)}
+              actionLabel={copiedKey === 'chat-panel' ? 'copied' : 'copy'}
+              onAction={() => void copySnippet('chat-panel', CHAT_EXAMPLE)}
               theme="chat"
-              layer={getPanelLayer(activePanel, "chat")}
-              onFocus={() => setActivePanel("chat")}
+              layer={getPanelLayer(activePanel, 'chat')}
+              onFocus={() => setActivePanel('chat')}
             />
             <CodePanel
               label="/v1/raid"
               note="native coordination route"
               code={RAID_EXAMPLE}
-              actionLabel={copiedKey === "raid-panel" ? "copied" : "copy"}
-              onAction={() => void copySnippet("raid-panel", RAID_EXAMPLE)}
+              actionLabel={copiedKey === 'raid-panel' ? 'copied' : 'copy'}
+              onAction={() => void copySnippet('raid-panel', RAID_EXAMPLE)}
               theme="raid"
-              layer={getPanelLayer(activePanel, "raid")}
-              onFocus={() => setActivePanel("raid")}
+              layer={getPanelLayer(activePanel, 'raid')}
+              onFocus={() => setActivePanel('raid')}
             />
             <CodePanel
               label="mcp adapter"
               note="workflow-native delegation"
               code={MCP_EXAMPLE}
-              actionLabel={copiedKey === "mcp-panel" ? "copied" : "copy"}
-              onAction={() => void copySnippet("mcp-panel", MCP_EXAMPLE)}
+              actionLabel={copiedKey === 'mcp-panel' ? 'copied' : 'copy'}
+              onAction={() => void copySnippet('mcp-panel', MCP_EXAMPLE)}
               theme="mcp"
-              layer={getPanelLayer(activePanel, "mcp")}
-              onFocus={() => setActivePanel("mcp")}
+              layer={getPanelLayer(activePanel, 'mcp')}
+              onFocus={() => setActivePanel('mcp')}
             />
           </div>
         </div>
@@ -277,12 +277,14 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               href="/demo"
               onClick={(event) => {
                 event.preventDefault();
-                onNavigate("/demo");
+                onNavigate('/demo');
               }}
             >
               start raid
             </a>
-            <p className="info-panel__footnote">* Pricing: set the budget. Buyer charge = budget + a small route surcharge.</p>
+            <p className="info-panel__footnote">
+              * Pricing: set the budget. Buyer charge = budget + a small route surcharge.
+            </p>
           </section>
         </aside>
       </section>
@@ -305,7 +307,7 @@ function CodePanel({
   code: string;
   actionLabel: string;
   onAction: () => void;
-  theme: "chat" | "raid" | "mcp";
+  theme: 'chat' | 'raid' | 'mcp';
   layer: PanelLayer;
   onFocus: () => void;
 }) {

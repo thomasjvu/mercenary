@@ -1,5 +1,5 @@
-import { Composition } from "remotion";
-import { BossRaidMercenaryVideo, bossRaidMercenaryDuration } from "./BossRaidMercenaryVideo";
+import { Composition } from 'remotion';
+import { BossRaidMercenaryVideo, bossRaidMercenaryDuration } from './BossRaidMercenaryVideo';
 
 export const RemotionRoot = () => {
   return (

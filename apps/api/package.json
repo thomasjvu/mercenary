@@ -19,10 +19,14 @@
   },
   "dependencies": {
     "@bossraid/api-contracts": "workspace:*",
+    "@bossraid/constants": "workspace:*",
+    "@bossraid/logger": "workspace:*",
     "@bossraid/orchestrator": "workspace:*",
     "@bossraid/provider-registry": "workspace:*",
     "@bossraid/provider-sdk": "workspace:*",
     "@bossraid/sandbox-runner": "workspace:*",
+    "@bossraid/shared-types": "workspace:*",
+    "@bossraid/validator": "workspace:*",
     "@payai/facilitator": "^2.3.4",
     "fastify": "^5.2.1",
     "viem": "^2.47.5"

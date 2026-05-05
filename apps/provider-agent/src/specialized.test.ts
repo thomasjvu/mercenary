@@ -1,35 +1,37 @@
-import assert from "node:assert/strict";
-import { mkdtemp, chmod, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import test from "node:test";
-import type { ProviderTaskPackage } from "@bossraid/shared-types";
+import assert from 'node:assert/strict';
+import { mkdtemp, chmod, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import test from 'node:test';
+import type { ProviderTaskPackage } from '@bossraid/shared-types';
 
 function createVideoTask(): ProviderTaskPackage {
   return {
-    raidId: "raid_video_test",
-    submissionFormat: "artifact_plus_explanation",
+    raidId: 'raid_video_test',
+    submissionFormat: 'artifact_plus_explanation',
     desiredOutput: {
-      primaryType: "video",
-      artifactTypes: ["video", "text"],
+      primaryType: 'video',
+      artifactTypes: ['video', 'text'],
     },
     task: {
-      title: "Build a one-room GB Studio microgame with one boss, one key, one exit, and a matching 12-second trailer.",
-      description: "Create the trailer package and launch copy for the room-sized GB Studio reveal.",
-      language: "text",
+      title:
+        'Build a one-room GB Studio microgame with one boss, one key, one exit, and a matching 12-second trailer.',
+      description:
+        'Create the trailer package and launch copy for the room-sized GB Studio reveal.',
+      language: 'text',
     },
     artifacts: {
       files: [
         {
-          path: "marketing/creative-brief.md",
-          content: "# Boss Raid: Slime Panic\n\nTone: Tense, retro-cute.\n",
-          sha256: "creative-brief-sha",
+          path: 'marketing/creative-brief.md',
+          content: '# Boss Raid: Slime Panic\n\nTone: Tense, retro-cute.\n',
+          sha256: 'creative-brief-sha',
         },
       ],
       errors: [],
-      reproSteps: ["Open the project", "Package the trailer support"],
+      reproSteps: ['Open the project', 'Package the trailer support'],
       tests: [],
-      expectedBehavior: "Return a video-first trailer package for the launch.",
+      expectedBehavior: 'Return a video-first trailer package for the launch.',
     },
     constraints: {
       maxChangedFiles: 0,
@@ -38,101 +40,95 @@ function createVideoTask(): ProviderTaskPackage {
       mustNot: [],
     },
     synthesis: {
-      mode: "multi_agent_synthesis",
-      role: "contributor",
+      mode: 'multi_agent_synthesis',
+      role: 'contributor',
       totalExperts: 3,
       providerIndex: 3,
-      workstreamId: "video-marketing",
-      workstreamLabel: "Video Marketing",
-      workstreamObjective: "Produce the trailer and launch package.",
-      roleId: "video-marketer",
-      roleLabel: "Video Marketing",
-      roleObjective: "Produce the promo render artifact or final video handoff that best sells the requested game slice.",
-      focus: "12-second trailer",
-      guidance: ["Return one strong video deliverable."],
+      workstreamId: 'video-marketing',
+      workstreamLabel: 'Video Marketing',
+      workstreamObjective: 'Produce the trailer and launch package.',
+      roleId: 'video-marketer',
+      roleLabel: 'Video Marketing',
+      roleObjective:
+        'Produce the promo render artifact or final video handoff that best sells the requested game slice.',
+      focus: '12-second trailer',
+      guidance: ['Return one strong video deliverable.'],
     },
     deadlineUnix: Math.floor(Date.now() / 1000) + 60,
   };
 }
 
-let specializedModulePromise:
-  | Promise<typeof import("./specialized.js")>
-  | undefined;
+let specializedModulePromise: Promise<typeof import('./specialized.js')> | undefined;
 
 async function loadSpecializedModule() {
-  process.env.BOSSRAID_ALLOW_INSECURE_PROVIDER_AUTH = "1";
-  process.env.BOSSRAID_PROVIDER_MODE = "remotion";
-  specializedModulePromise ??= import("./specialized.js");
+  process.env.BOSSRAID_ALLOW_INSECURE_PROVIDER_AUTH = '1';
+  process.env.BOSSRAID_PROVIDER_MODE = 'remotion';
+  specializedModulePromise ??= import('./specialized.js');
   return specializedModulePromise;
 }
 
-test("submissionSupportsRequestedOutput rejects artifact sets that miss the requested media type", async () => {
+test('submissionSupportsRequestedOutput rejects artifact sets that miss the requested media type', async () => {
   const { submissionSupportsRequestedOutput } = await loadSpecializedModule();
   const task = createVideoTask();
 
   assert.equal(
     submissionSupportsRequestedOutput(
       {
-        explanation: "Only image previews were returned.",
+        explanation: 'Only image previews were returned.',
         confidence: 0.6,
         filesTouched: [],
         artifacts: [
           {
-            outputType: "image",
-            label: "Storyboard frame",
-            uri: "data:image/png;base64,AAAA",
-            mimeType: "image/png",
+            outputType: 'image',
+            label: 'Storyboard frame',
+            uri: 'data:image/png;base64,AAAA',
+            mimeType: 'image/png',
           },
           {
-            outputType: "bundle",
-            label: "Trailer bundle",
-            uri: "data:application/json;base64,AAAA",
-            mimeType: "application/json",
+            outputType: 'bundle',
+            label: 'Trailer bundle',
+            uri: 'data:application/json;base64,AAAA',
+            mimeType: 'application/json',
           },
         ],
       },
-      task,
+      task
     ),
-    false,
+    false
   );
 });
 
-test("Riko remotion fallback still returns a video artifact when ffmpeg is unavailable", async () => {
-  const { maybeRequestSpecializedSubmission, submissionSupportsRequestedOutput } = await loadSpecializedModule();
+test('Riko remotion fallback still returns a video artifact when ffmpeg is unavailable', async () => {
+  const { maybeRequestSpecializedSubmission, submissionSupportsRequestedOutput } =
+    await loadSpecializedModule();
   const task = createVideoTask();
   const originalPath = process.env.PATH;
 
-  process.env.PATH = "";
+  process.env.PATH = '';
   try {
     const submission = await maybeRequestSpecializedSubmission(task);
     assert.ok(submission);
-    const previewArtifact = submission.artifacts?.find((artifact) => artifact.outputType === "video");
-    assert.equal(
-      previewArtifact?.outputType,
-      "video",
+    const previewArtifact = submission.artifacts?.find(
+      (artifact) => artifact.outputType === 'video'
     );
-    assert.equal(
-      previewArtifact?.mimeType,
-      "image/gif",
-    );
-    assert.equal(
-      previewArtifact?.uri.startsWith("data:image/gif;base64,"),
-      true,
-    );
+    assert.equal(previewArtifact?.outputType, 'video');
+    assert.equal(previewArtifact?.mimeType, 'image/gif');
+    assert.equal(previewArtifact?.uri.startsWith('data:image/gif;base64,'), true);
     assert.equal(submissionSupportsRequestedOutput(submission, task), true);
   } finally {
     process.env.PATH = originalPath;
   }
 });
 
-test("Riko remotion fallback does not block on a slow ffmpeg binary", async () => {
-  const { maybeRequestSpecializedSubmission, submissionSupportsRequestedOutput } = await loadSpecializedModule();
+test('Riko remotion fallback does not block on a slow ffmpeg binary', async () => {
+  const { maybeRequestSpecializedSubmission, submissionSupportsRequestedOutput } =
+    await loadSpecializedModule();
   const task = createVideoTask();
   const originalPath = process.env.PATH;
-  const fakeBinDir = await mkdtemp(join(tmpdir(), "bossraid-riko-ffmpeg-"));
-  const fakeFfmpegPath = join(fakeBinDir, "ffmpeg");
+  const fakeBinDir = await mkdtemp(join(tmpdir(), 'bossraid-riko-ffmpeg-'));
+  const fakeFfmpegPath = join(fakeBinDir, 'ffmpeg');
 
-  await writeFile(fakeFfmpegPath, "#!/bin/sh\nsleep 5\nexit 1\n");
+  await writeFile(fakeFfmpegPath, '#!/bin/sh\nsleep 5\nexit 1\n');
   await chmod(fakeFfmpegPath, 0o755);
 
   process.env.PATH = originalPath ? `${fakeBinDir}:${originalPath}` : fakeBinDir;
@@ -141,11 +137,16 @@ test("Riko remotion fallback does not block on a slow ffmpeg binary", async () =
     const startedAt = Date.now();
     const submission = await maybeRequestSpecializedSubmission(task);
     const elapsedMs = Date.now() - startedAt;
-    const previewArtifact = submission?.artifacts?.find((artifact) => artifact.outputType === "video");
+    const previewArtifact = submission?.artifacts?.find(
+      (artifact) => artifact.outputType === 'video'
+    );
 
     assert.ok(submission);
-    assert.ok(elapsedMs < 3_000, `expected slow ffmpeg fallback in under 3000ms, got ${elapsedMs}ms`);
-    assert.equal(previewArtifact?.mimeType, "image/gif");
+    assert.ok(
+      elapsedMs < 3_000,
+      `expected slow ffmpeg fallback in under 3000ms, got ${elapsedMs}ms`
+    );
+    assert.equal(previewArtifact?.mimeType, 'image/gif');
     assert.equal(submissionSupportsRequestedOutput(submission, task), true);
   } finally {
     process.env.PATH = originalPath;

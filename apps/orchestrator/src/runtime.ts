@@ -18,22 +18,22 @@ export function timeoutReject(ms: number, message: string): Promise<never> {
 }
 
 export function readRuntimeOptionsFromEnv(
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv = process.env
 ): Partial<RuntimeOptions> {
   return {
-    ...readEnvNumber(env, "BOSSRAID_INVITE_ACCEPT_MS", "inviteAcceptMs"),
-    ...readEnvNumber(env, "BOSSRAID_FIRST_HEARTBEAT_MS", "firstHeartbeatMs"),
-    ...readEnvNumber(env, "BOSSRAID_HEARTBEAT_STALE_MS", "heartbeatStaleMs"),
-    ...readEnvNumber(env, "BOSSRAID_HARD_EXECUTION_MS", "hardExecutionMs"),
-    ...readEnvNumber(env, "BOSSRAID_RAID_ABSOLUTE_MS", "raidAbsoluteMs"),
-    ...readEnvNumber(env, "BOSSRAID_PROVIDER_FRESH_MS", "providerFreshMs"),
+    ...readEnvNumber(env, 'BOSSRAID_INVITE_ACCEPT_MS', 'inviteAcceptMs'),
+    ...readEnvNumber(env, 'BOSSRAID_FIRST_HEARTBEAT_MS', 'firstHeartbeatMs'),
+    ...readEnvNumber(env, 'BOSSRAID_HEARTBEAT_STALE_MS', 'heartbeatStaleMs'),
+    ...readEnvNumber(env, 'BOSSRAID_HARD_EXECUTION_MS', 'hardExecutionMs'),
+    ...readEnvNumber(env, 'BOSSRAID_RAID_ABSOLUTE_MS', 'raidAbsoluteMs'),
+    ...readEnvNumber(env, 'BOSSRAID_PROVIDER_FRESH_MS', 'providerFreshMs'),
   };
 }
 
 function readEnvNumber<TKey extends keyof RuntimeOptions>(
   env: NodeJS.ProcessEnv,
   envKey: string,
-  optionKey: TKey,
+  optionKey: TKey
 ): Partial<RuntimeOptions> {
   const raw = env[envKey];
   if (!raw) {

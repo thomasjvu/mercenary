@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomUUID } from 'node:crypto';
 import {
   computeTrustScore,
   computePrivacyScore,
@@ -7,7 +7,7 @@ import {
   providerHasPrivacyFeature,
   providerIsVeniceBacked,
   providerIsFresh,
-} from "@bossraid/provider-registry";
+} from '@bossraid/provider-registry';
 import type {
   AssignmentRecord,
   BossRaidRoutingDecision,
@@ -29,7 +29,7 @@ import type {
   SanitizedTaskSpec,
   SelectedProviders,
   TaskFile,
-} from "@bossraid/shared-types";
+} from '@bossraid/shared-types';
 
 export const DEFAULT_TIMEOUTS = {
   inviteAcceptMs: 3_000,
@@ -41,8 +41,8 @@ export const DEFAULT_TIMEOUTS = {
 } as const;
 
 export const DEFAULT_CAPABILITIES = {
-  supportsLanguages: ["csharp", "typescript", "python", "solidity"],
-  supportsEvalModes: ["build", "test", "lint", "llm_rubric"],
+  supportsLanguages: ['csharp', 'typescript', 'python', 'solidity'],
+  supportsEvalModes: ['build', 'test', 'lint', 'llm_rubric'],
   maxExperts: 8,
   defaultTimeoutSec: 90,
 } as const;
@@ -89,7 +89,7 @@ export function clamp01(value: number): number {
 }
 
 export function sha256(value: string): string {
-  return createHash("sha256").update(value).digest("hex");
+  return createHash('sha256').update(value).digest('hex');
 }
 
 export function countLines(text: string): number {
@@ -97,14 +97,16 @@ export function countLines(text: string): number {
 }
 
 export function scoreSpecialization(provider: ProviderProfile, task: RaidTaskSpec): number {
-  const required = new Set(task.constraints.requireSpecializations.map((item) => item.toLowerCase()));
-  const isPatchTask = (task.output?.primaryType ?? "patch") === "patch";
+  const required = new Set(
+    task.constraints.requireSpecializations.map((item) => item.toLowerCase())
+  );
+  const isPatchTask = (task.output?.primaryType ?? 'patch') === 'patch';
 
   if (isPatchTask && task.framework) {
     required.add(String(task.framework).toLowerCase());
   }
 
-  if (isPatchTask && task.language !== "text") {
+  if (isPatchTask && task.language !== 'text') {
     required.add(task.language.toLowerCase());
   }
 
@@ -128,7 +130,7 @@ export function scoreSpecialization(provider: ProviderProfile, task: RaidTaskSpe
   return matches / required.size;
 }
 
-type TextDomainCategory = "implementation" | "art" | "promo";
+type TextDomainCategory = 'implementation' | 'art' | 'promo';
 
 const TEXT_DOMAIN_SIGNAL_RULES: Array<{
   category: TextDomainCategory;
@@ -136,32 +138,32 @@ const TEXT_DOMAIN_SIGNAL_RULES: Array<{
   patterns: RegExp[];
 }> = [
   {
-    category: "implementation",
+    category: 'implementation',
     weight: 4,
     patterns: [/\bgb[\s-]?studio\b/i, /\bplayable\b/i, /\bmicrogame\b/i],
   },
   {
-    category: "implementation",
+    category: 'implementation',
     weight: 3,
     patterns: [/\bgameplay\b/i, /\bscene\b/i, /\bmechanic\b/i, /\bbuild\b/i, /\bimplement\b/i],
   },
   {
-    category: "art",
+    category: 'art',
     weight: 3,
     patterns: [/\bpixel[\s-]?art\b/i, /\bsprite\b/i, /\btileset\b/i, /\btitle card\b/i],
   },
   {
-    category: "art",
+    category: 'art',
     weight: 2,
     patterns: [/\bpalette\b/i, /\basset pack\b/i, /\bart pack\b/i, /\bvisual\b/i],
   },
   {
-    category: "promo",
+    category: 'promo',
     weight: 4,
     patterns: [/\btrailer\b/i, /\bteaser\b/i, /\bremotion\b/i],
   },
   {
-    category: "promo",
+    category: 'promo',
     weight: 2,
     patterns: [/\blaunch copy\b/i, /\bmarketing\b/i, /\bpromo\b/i, /\bvideo\b/i],
   },
@@ -169,38 +171,41 @@ const TEXT_DOMAIN_SIGNAL_RULES: Array<{
 
 const TEXT_DOMAIN_PROVIDER_HINTS: Record<TextDomainCategory, string[]> = {
   implementation: [
-    "gb-studio",
-    "gbstudio",
-    "gameplay",
-    "game-development",
-    "systems-design",
-    "implementation",
-    "builder",
+    'gb-studio',
+    'gbstudio',
+    'gameplay',
+    'game-development',
+    'systems-design',
+    'implementation',
+    'builder',
   ],
   art: [
-    "pixel-art",
-    "pixel-artist",
-    "sprites",
-    "sprite",
-    "tileset",
-    "title-card",
-    "illustration",
-    "art",
+    'pixel-art',
+    'pixel-artist',
+    'sprites',
+    'sprite',
+    'tileset',
+    'title-card',
+    'illustration',
+    'art',
   ],
   promo: [
-    "remotion",
-    "video-marketing",
-    "video-marketer",
-    "game-marketing",
-    "trailer",
-    "launch-copy",
-    "marketing",
-    "motion-design",
+    'remotion',
+    'video-marketing',
+    'video-marketer',
+    'game-marketing',
+    'trailer',
+    'launch-copy',
+    'marketing',
+    'motion-design',
   ],
 };
 
 function normalizeCapabilityToken(value: string): string {
-  return value.trim().toLowerCase().replace(/[\s_]+/g, "-");
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, '-');
 }
 
 function buildTextTaskHaystack(task: RaidTaskSpec): string {
@@ -212,8 +217,8 @@ function buildTextTaskHaystack(task: RaidTaskSpec): string {
     ...task.failingSignals.errors,
     ...task.files.map((file) => file.path),
   ]
-    .filter((value): value is string => typeof value === "string" && value.length > 0)
-    .join("\n")
+    .filter((value): value is string => typeof value === 'string' && value.length > 0)
+    .join('\n')
     .toLowerCase();
 }
 
@@ -233,21 +238,21 @@ function collectTextDomainWeights(task: RaidTaskSpec): Map<TextDomainCategory, n
 
 function providerMatchesTextDomainCategory(
   provider: ProviderProfile,
-  category: TextDomainCategory,
+  category: TextDomainCategory
 ): boolean {
   const offered = new Set(
     [
       ...provider.specializations,
       ...provider.supportedFrameworks,
       ...provider.supportedLanguages,
-    ].map(normalizeCapabilityToken),
+    ].map(normalizeCapabilityToken)
   );
 
   return TEXT_DOMAIN_PROVIDER_HINTS[category].some((hint) => offered.has(hint));
 }
 
 function scoreTextDomainFit(provider: ProviderProfile, task: RaidTaskSpec): number {
-  if ((task.output?.primaryType ?? "patch") !== "text") {
+  if ((task.output?.primaryType ?? 'patch') !== 'text') {
     return 0.5;
   }
 
@@ -272,7 +277,11 @@ export function normalizeLatency(p95LatencyMs: number, maxLatencySec: number): n
   return clamp01(1 - p95LatencyMs / (budgetedMs * 1.5));
 }
 
-export function normalizePrice(pricePerTaskUsd: number, maxBudgetUsd: number, numExperts: number): number {
+export function normalizePrice(
+  pricePerTaskUsd: number,
+  maxBudgetUsd: number,
+  numExperts: number
+): number {
   const perExpertBudget = maxBudgetUsd / Math.max(numExperts, 1);
   return clamp01(1 - pricePerTaskUsd / Math.max(perExpertBudget, 0.01));
 }
@@ -281,15 +290,18 @@ export function computeSelectionScore(provider: ProviderProfile, task: RaidTaskS
   const specializationMatch = scoreSpecialization(provider, task);
   const textDomainFit = scoreTextDomainFit(provider, task);
   const reputation = (provider.scores?.reputationScore ?? computeReputationScore(provider)) / 100;
-  const latency = normalizeLatency(provider.reputation.p95LatencyMs, task.constraints.maxLatencySec);
+  const latency = normalizeLatency(
+    provider.reputation.p95LatencyMs,
+    task.constraints.maxLatencySec
+  );
   const validity = provider.reputation.validityScore;
   const price = normalizePrice(
     provider.pricePerTaskUsd,
     task.constraints.maxBudgetUsd,
-    task.constraints.numExperts,
+    task.constraints.numExperts
   );
 
-  if ((task.output?.primaryType ?? "patch") === "text") {
+  if ((task.output?.primaryType ?? 'patch') === 'text') {
     return (
       0.2 * specializationMatch +
       0.3 * textDomainFit +
@@ -301,34 +313,35 @@ export function computeSelectionScore(provider: ProviderProfile, task: RaidTaskS
   }
 
   return (
-    0.35 * specializationMatch +
-    0.2 * reputation +
-    0.2 * latency +
-    0.15 * validity +
-    0.1 * price
+    0.35 * specializationMatch + 0.2 * reputation + 0.2 * latency + 0.15 * validity + 0.1 * price
   );
 }
 
 function normalizeModelFamily(value: string | undefined): string {
-  return value?.trim().toLowerCase() ?? "";
+  return value?.trim().toLowerCase() ?? '';
 }
 
 function providerMatchesAllowedModelFamilies(
   provider: ProviderProfile,
-  allowedFamilies: string[] | undefined,
+  allowedFamilies: string[] | undefined
 ): boolean {
   if (!allowedFamilies?.length) {
     return true;
   }
 
   const providerFamily = normalizeModelFamily(provider.modelFamily);
-  return providerFamily.length > 0 && allowedFamilies.some((family) => normalizeModelFamily(family) === providerFamily);
+  return (
+    providerFamily.length > 0 &&
+    allowedFamilies.some((family) => normalizeModelFamily(family) === providerFamily)
+  );
 }
 
 function taskUsesVenicePrivateLane(task: RaidTaskSpec): boolean {
   return (
-    task.constraints.privacyMode === "strict" ||
-    (task.constraints.allowedModelFamilies ?? []).some((family) => normalizeModelFamily(family).includes("venice"))
+    task.constraints.privacyMode === 'strict' ||
+    (task.constraints.allowedModelFamilies ?? []).some((family) =>
+      normalizeModelFamily(family).includes('venice')
+    )
   );
 }
 
@@ -336,35 +349,37 @@ function readProviderPrivacyFeatures(provider: ProviderProfile): PrivacyFeatureK
   const features: PrivacyFeatureKey[] = [];
 
   if (provider.privacy?.teeAttested) {
-    features.push("tee_attested");
+    features.push('tee_attested');
   }
   if (provider.privacy?.e2ee) {
-    features.push("e2ee");
+    features.push('e2ee');
   }
   if (provider.privacy?.noDataRetention) {
-    features.push("no_data_retention");
+    features.push('no_data_retention');
   }
   if (provider.privacy?.signedOutputs) {
-    features.push("signed_outputs");
+    features.push('signed_outputs');
   }
   if (provider.privacy?.provenanceAttested) {
-    features.push("provenance_attested");
+    features.push('provenance_attested');
   }
   if (provider.privacy?.operatorVerified) {
-    features.push("operator_verified");
+    features.push('operator_verified');
   }
 
   return features;
 }
 
 function collectMatchedSpecializations(provider: ProviderProfile, task: RaidTaskSpec): string[] {
-  const required = new Set(task.constraints.requireSpecializations.map((item) => item.toLowerCase()));
+  const required = new Set(
+    task.constraints.requireSpecializations.map((item) => item.toLowerCase())
+  );
 
-  if ((task.output?.primaryType ?? "patch") === "patch" && task.framework) {
+  if ((task.output?.primaryType ?? 'patch') === 'patch' && task.framework) {
     required.add(String(task.framework).toLowerCase());
   }
 
-  if ((task.output?.primaryType ?? "patch") === "patch" && task.language !== "text") {
+  if ((task.output?.primaryType ?? 'patch') === 'patch' && task.language !== 'text') {
     required.add(task.language.toLowerCase());
   }
 
@@ -384,12 +399,11 @@ function collectMatchedSpecializations(provider: ProviderProfile, task: RaidTask
 function buildRoutingDecision(
   task: RaidTaskSpec,
   provider: ProviderProfile,
-  phase: "primary" | "reserve",
+  phase: 'primary' | 'reserve'
 ): BossRaidRoutingDecision {
   const trustScore = computeTrustScore(provider);
   const trustAwareRouting =
-    task.constraints.requireErc8004 === true ||
-    typeof task.constraints.minTrustScore === "number";
+    task.constraints.requireErc8004 === true || typeof task.constraints.minTrustScore === 'number';
   const veniceBacked = providerIsVeniceBacked(provider);
   const requiredPrivacyFeatures = task.constraints.requirePrivacyFeatures ?? [];
   const verification = provider.erc8004?.verification;
@@ -397,28 +411,31 @@ function buildRoutingDecision(
     requiredPrivacyFeatures.length === 0 ||
     requiredPrivacyFeatures.every((feature) => providerHasPrivacyFeature(provider, feature));
   const reasons = [
-    phase === "primary" ? "selected_primary" : "reserved_fallback",
-    task.constraints.privacyMode === "strict"
-      ? "strict_privacy"
-      : task.constraints.privacyMode === "prefer"
-        ? "privacy_requested"
-        : "standard_routing",
+    phase === 'primary' ? 'selected_primary' : 'reserved_fallback',
+    task.constraints.privacyMode === 'strict'
+      ? 'strict_privacy'
+      : task.constraints.privacyMode === 'prefer'
+        ? 'privacy_requested'
+        : 'standard_routing',
     taskUsesVenicePrivateLane(task)
       ? veniceBacked
-        ? "venice_private_lane"
-        : "venice_fallback"
+        ? 'venice_private_lane'
+        : 'venice_fallback'
       : null,
     providerMatchesAllowedModelFamilies(provider, task.constraints.allowedModelFamilies) &&
     (task.constraints.allowedModelFamilies?.length ?? 0) > 0
-      ? "allowed_model_family"
+      ? 'allowed_model_family'
       : null,
-    privacyFeatureMatch && requiredPrivacyFeatures.length > 0 ? "required_privacy_features" : null,
-    task.constraints.requireErc8004 === true && providerHasErc8004Identity(provider) ? "erc8004_required" : null,
-    typeof task.constraints.minTrustScore === "number" && trustScore >= task.constraints.minTrustScore
-      ? "trust_threshold_met"
+    privacyFeatureMatch && requiredPrivacyFeatures.length > 0 ? 'required_privacy_features' : null,
+    task.constraints.requireErc8004 === true && providerHasErc8004Identity(provider)
+      ? 'erc8004_required'
       : null,
-    trustAwareRouting && trustScore > 0 ? "trust_ranked" : null,
-    collectMatchedSpecializations(provider, task).length > 0 ? "specialization_match" : null,
+    typeof task.constraints.minTrustScore === 'number' &&
+    trustScore >= task.constraints.minTrustScore
+      ? 'trust_threshold_met'
+      : null,
+    trustAwareRouting && trustScore > 0 ? 'trust_ranked' : null,
+    collectMatchedSpecializations(provider, task).length > 0 ? 'specialization_match' : null,
   ].filter((value): value is string => value != null);
 
   return {
@@ -445,14 +462,16 @@ function buildRoutingDecision(
 
 export function buildRoutingProof(
   task: RaidTaskSpec,
-  selectedProviders: SelectedProviders,
+  selectedProviders: SelectedProviders
 ): BossRaidRoutingProof {
   return {
     policy: {
-      privacyMode: task.constraints.privacyMode ?? "off",
+      privacyMode: task.constraints.privacyMode ?? 'off',
       selectionMode:
         task.constraints.selectionMode ??
-        (task.constraints.privacyMode && task.constraints.privacyMode !== "off" ? "privacy_first" : "best_match"),
+        (task.constraints.privacyMode && task.constraints.privacyMode !== 'off'
+          ? 'privacy_first'
+          : 'best_match'),
       requireErc8004: task.constraints.requireErc8004 === true,
       minTrustScore: task.constraints.minTrustScore,
       allowedModelFamilies: task.constraints.allowedModelFamilies ?? [],
@@ -460,15 +479,19 @@ export function buildRoutingProof(
       venicePrivateLane: taskUsesVenicePrivateLane(task),
     },
     providers: [
-      ...selectedProviders.primaries.map((provider) => buildRoutingDecision(task, provider, "primary")),
-      ...selectedProviders.reserves.map((provider) => buildRoutingDecision(task, provider, "reserve")),
+      ...selectedProviders.primaries.map((provider) =>
+        buildRoutingDecision(task, provider, 'primary')
+      ),
+      ...selectedProviders.reserves.map((provider) =>
+        buildRoutingDecision(task, provider, 'reserve')
+      ),
     ],
   };
 }
 
 export function annotateRoutingProof(
   routingProof: BossRaidRoutingProof,
-  contributionPlan: RaidContributionPlan | undefined,
+  contributionPlan: RaidContributionPlan | undefined
 ): BossRaidRoutingProof {
   if (!contributionPlan) {
     return routingProof;
@@ -482,9 +505,9 @@ export function annotateRoutingProof(
       workstreamLabel: contributionPlan.workstreamLabel,
       roleId: contributionPlan.roleId,
       roleLabel: contributionPlan.roleLabel,
-      reasons: decision.reasons.includes("workstream_scoped")
+      reasons: decision.reasons.includes('workstream_scoped')
         ? decision.reasons
-        : [...decision.reasons, "workstream_scoped"],
+        : [...decision.reasons, 'workstream_scoped'],
     })),
   };
 }
@@ -495,9 +518,9 @@ export function providerMatchesTask(
   maxHeartbeatAgeMs: number = DEFAULT_TIMEOUTS.providerFreshMs,
   options: {
     skipFreshnessCheck?: boolean;
-  } = {},
+  } = {}
 ): boolean {
-  const isPatchTask = (task.output?.primaryType ?? "patch") === "patch";
+  const isPatchTask = (task.output?.primaryType ?? 'patch') === 'patch';
   const requestedPrimaryOutputType = task.output?.primaryType;
   const frameworkMatch =
     !isPatchTask ||
@@ -507,29 +530,37 @@ export function providerMatchesTask(
       .includes(String(task.framework).toLowerCase());
 
   const languageMatch =
-    !isPatchTask ||
-    task.language === "text" ||
-    provider.supportedLanguages.includes(task.language);
+    !isPatchTask || task.language === 'text' || provider.supportedLanguages.includes(task.language);
   const reputationMatch =
-    (provider.scores?.reputationScore ?? computeReputationScore(provider)) / 100 >= task.constraints.minReputation;
+    (provider.scores?.reputationScore ?? computeReputationScore(provider)) / 100 >=
+    task.constraints.minReputation;
   const timeoutMatch = provider.reputation.timeoutRate <= 0.25;
   const priceMatch =
-    provider.pricePerTaskUsd * Math.max(task.constraints.numExperts, 1) <= task.constraints.maxBudgetUsd;
-  const modelFamilyMatch =
-    providerMatchesAllowedModelFamilies(provider, task.constraints.allowedModelFamilies);
+    provider.pricePerTaskUsd * Math.max(task.constraints.numExperts, 1) <=
+    task.constraints.maxBudgetUsd;
+  const modelFamilyMatch = providerMatchesAllowedModelFamilies(
+    provider,
+    task.constraints.allowedModelFamilies
+  );
   const primaryOutputMatch =
-    requestedPrimaryOutputType == null || provider.outputTypes?.includes(requestedPrimaryOutputType) === true;
+    requestedPrimaryOutputType == null ||
+    provider.outputTypes?.includes(requestedPrimaryOutputType) === true;
   const outputTypeMatch =
     !task.constraints.allowedOutputTypes?.length ||
-    task.constraints.allowedOutputTypes.some((outputType) => provider.outputTypes?.includes(outputType));
+    task.constraints.allowedOutputTypes.some((outputType) =>
+      provider.outputTypes?.includes(outputType)
+    );
   const erc8004Match =
     task.constraints.requireErc8004 !== true || providerHasErc8004Identity(provider);
   const trustScore = computeTrustScore(provider);
   const trustMatch =
-    typeof task.constraints.minTrustScore !== "number" || trustScore >= task.constraints.minTrustScore;
+    typeof task.constraints.minTrustScore !== 'number' ||
+    trustScore >= task.constraints.minTrustScore;
   const strictPrivacyMatch =
-    task.constraints.privacyMode !== "strict" ||
-    (task.constraints.requirePrivacyFeatures ?? []).every((feature) => providerHasPrivacyFeature(provider, feature));
+    task.constraints.privacyMode !== 'strict' ||
+    (task.constraints.requirePrivacyFeatures ?? []).every((feature) =>
+      providerHasPrivacyFeature(provider, feature)
+    );
   const freshMatch = options.skipFreshnessCheck || providerIsFresh(provider, maxHeartbeatAgeMs);
 
   return (
@@ -554,7 +585,7 @@ export function selectProviders(
   maxHeartbeatAgeMs: number = DEFAULT_TIMEOUTS.providerFreshMs,
   options: {
     skipFreshnessCheck?: boolean;
-  } = {},
+  } = {}
 ): SelectedProviders {
   const eligible = providers
     .filter((provider) => providerMatchesTask(provider, task, maxHeartbeatAgeMs, options))
@@ -567,18 +598,19 @@ export function selectProviders(
     ? eligible.filter((item) => providerIsVeniceBacked(item.provider))
     : [];
   const routingPool = veniceEligible.length > 0 ? veniceEligible : eligible;
-  const ranked = routingPool
-    .sort((left, right) => compareProviders(left, right, task));
+  const ranked = routingPool.sort((left, right) => compareProviders(left, right, task));
 
   const selected =
-    task.constraints.selectionMode === "diverse_mix"
+    task.constraints.selectionMode === 'diverse_mix'
       ? selectDiverseProviders(ranked, task.constraints.numExperts)
       : ranked.slice(0, task.constraints.numExperts);
 
   const primaries = selected.map((item) => item.provider);
   const reserveCount = primaries.length > 0 ? 1 : 0;
   const reserves = ranked
-    .filter((item) => !primaries.some((provider) => provider.providerId === item.provider.providerId))
+    .filter(
+      (item) => !primaries.some((provider) => provider.providerId === item.provider.providerId)
+    )
     .slice(0, reserveCount)
     .map((item) => item.provider);
 
@@ -588,21 +620,22 @@ export function selectProviders(
 function compareProviders(
   left: { provider: ProviderProfile; selectionScore: number; privacyScore: number },
   right: { provider: ProviderProfile; selectionScore: number; privacyScore: number },
-  task: RaidTaskSpec,
+  task: RaidTaskSpec
 ): number {
   const mode =
     task.constraints.selectionMode ??
-    (task.constraints.privacyMode && task.constraints.privacyMode !== "off" ? "privacy_first" : "best_match");
+    (task.constraints.privacyMode && task.constraints.privacyMode !== 'off'
+      ? 'privacy_first'
+      : 'best_match');
   const leftTrustScore = computeTrustScore(left.provider);
   const rightTrustScore = computeTrustScore(right.provider);
   const leftVenice = providerIsVeniceBacked(left.provider);
   const rightVenice = providerIsVeniceBacked(right.provider);
   const trustAwareRouting =
-    task.constraints.requireErc8004 === true ||
-    typeof task.constraints.minTrustScore === "number";
+    task.constraints.requireErc8004 === true || typeof task.constraints.minTrustScore === 'number';
   const venicePrivateLane = taskUsesVenicePrivateLane(task);
 
-  if (mode === "cost_first" && left.provider.pricePerTaskUsd !== right.provider.pricePerTaskUsd) {
+  if (mode === 'cost_first' && left.provider.pricePerTaskUsd !== right.provider.pricePerTaskUsd) {
     return left.provider.pricePerTaskUsd - right.provider.pricePerTaskUsd;
   }
 
@@ -614,7 +647,7 @@ function compareProviders(
     return rightTrustScore - leftTrustScore;
   }
 
-  if (mode === "privacy_first" && left.privacyScore !== right.privacyScore) {
+  if (mode === 'privacy_first' && left.privacyScore !== right.privacyScore) {
     return right.privacyScore - left.privacyScore;
   }
 
@@ -627,9 +660,13 @@ function compareProviders(
 
 function selectDiverseProviders(
   eligible: Array<{ provider: ProviderProfile; selectionScore: number; privacyScore: number }>,
-  maxProviders: number,
+  maxProviders: number
 ): Array<{ provider: ProviderProfile; selectionScore: number; privacyScore: number }> {
-  const selected: Array<{ provider: ProviderProfile; selectionScore: number; privacyScore: number }> = [];
+  const selected: Array<{
+    provider: ProviderProfile;
+    selectionScore: number;
+    privacyScore: number;
+  }> = [];
   const usedFamilies = new Set<string>();
 
   for (const item of eligible) {
@@ -645,7 +682,9 @@ function selectDiverseProviders(
   }
 
   for (const item of eligible) {
-    if (selected.some((selectedItem) => selectedItem.provider.providerId === item.provider.providerId)) {
+    if (
+      selected.some((selectedItem) => selectedItem.provider.providerId === item.provider.providerId)
+    ) {
       continue;
     }
     selected.push(item);
@@ -657,14 +696,16 @@ function selectDiverseProviders(
   return selected;
 }
 
-export function createAssignmentRecords(selectedProviders: SelectedProviders): Record<string, AssignmentRecord> {
+export function createAssignmentRecords(
+  selectedProviders: SelectedProviders
+): Record<string, AssignmentRecord> {
   const assignments: Record<string, AssignmentRecord> = {};
   const now = new Date().toISOString();
 
   for (const provider of selectedProviders.primaries) {
     assignments[provider.providerId] = {
       providerId: provider.providerId,
-      status: "selected",
+      status: 'selected',
       invitedAt: now,
       progress: 0,
     };
@@ -673,10 +714,10 @@ export function createAssignmentRecords(selectedProviders: SelectedProviders): R
   for (const provider of selectedProviders.reserves) {
     assignments[provider.providerId] = {
       providerId: provider.providerId,
-      status: "selected",
+      status: 'selected',
       invitedAt: now,
       progress: 0,
-      message: "reserve",
+      message: 'reserve',
     };
   }
 
@@ -686,7 +727,7 @@ export function createAssignmentRecords(selectedProviders: SelectedProviders): R
 function replaceAllMatches(
   input: string,
   patterns: RegExp[],
-  replacement: string,
+  replacement: string
 ): { text: string; replacements: number } {
   let replacements = 0;
   let text = input;
@@ -710,26 +751,33 @@ function trimLargeContent(content: string, maxLines = 300): { content: string; t
   const head = lines.slice(0, Math.ceil(maxLines * 0.6));
   const tail = lines.slice(-Math.floor(maxLines * 0.25));
   return {
-    content: [...head, "... [redacted middle section] ...", ...tail].join("\n"),
+    content: [...head, '... [redacted middle section] ...', ...tail].join('\n'),
     trimmed: true,
   };
 }
 
-function sanitizeFile(file: TaskFile, redactIdentifiers: boolean): {
+function sanitizeFile(
+  file: TaskFile,
+  redactIdentifiers: boolean
+): {
   file: TaskFile;
   secretCount: number;
   identifierCount: number;
   urlCount: number;
   trimmed: boolean;
 } {
-  const secretResult = replaceAllMatches(file.content, SECRET_PATTERNS, "[REDACTED_SECRET]");
+  const secretResult = replaceAllMatches(file.content, SECRET_PATTERNS, '[REDACTED_SECRET]');
   let content = secretResult.text;
   let identifierCount = 0;
   let urlCount = 0;
 
   if (redactIdentifiers) {
     const before = content;
-    const identifierResult = replaceAllMatches(content, IDENTIFIER_PATTERNS, "[REDACTED_IDENTIFIER]");
+    const identifierResult = replaceAllMatches(
+      content,
+      IDENTIFIER_PATTERNS,
+      '[REDACTED_IDENTIFIER]'
+    );
     content = identifierResult.text;
     identifierCount = identifierResult.replacements;
     urlCount = (before.match(/https?:\/\/[^\s)"']+/gi) ?? []).length;
@@ -764,35 +812,36 @@ export function sanitizeTask(input: BossRaidSpawnInput): SanitizedTaskSpec {
 
   if (input.files.length > DEFAULT_LIMITS.maxFiles) {
     issues.push({
-      severity: "warn",
-      code: "too_many_files",
+      severity: 'warn',
+      code: 'too_many_files',
       message: `Trimmed payload to ${DEFAULT_LIMITS.maxFiles} files.`,
     });
   }
 
   if (originalBytes > DEFAULT_LIMITS.maxPayloadBytes) {
     issues.push({
-      severity: "warn",
-      code: "payload_large",
-      message: "Original payload exceeded the preferred byte budget.",
+      severity: 'warn',
+      code: 'payload_large',
+      message: 'Original payload exceeded the preferred byte budget.',
     });
   }
 
   if (input.constraints.allowExternalSearch) {
     issues.push({
-      severity: "warn",
-      code: "external_search_requested",
-      message: "Provider execution should stay offline for the hackathon MVP.",
+      severity: 'warn',
+      code: 'external_search_requested',
+      message: 'Provider execution should stay offline for the hackathon MVP.',
     });
   }
 
-  const unsafeContentDetected = redactedSecrets > 0 || originalBytes > DEFAULT_LIMITS.maxPayloadBytes;
+  const unsafeContentDetected =
+    redactedSecrets > 0 || originalBytes > DEFAULT_LIMITS.maxPayloadBytes;
   const riskTier =
     unsafeContentDetected || input.files.length > DEFAULT_LIMITS.maxFiles
-      ? "unsafe"
-      : input.framework === "unity" || input.failingSignals.errors.length > 0
-        ? "medium"
-        : "safe";
+      ? 'unsafe'
+      : input.framework === 'unity' || input.failingSignals.errors.length > 0
+        ? 'medium'
+        : 'safe';
 
   const report: SanitizationReport = {
     redactedSecrets,
@@ -816,19 +865,19 @@ export function sanitizeTask(input: BossRaidSpawnInput): SanitizedTaskSpec {
 }
 
 export function sanitizeFreeformText(input: string): string {
-  const secretRedacted = replaceAllMatches(input, SECRET_PATTERNS, "[REDACTED_SECRET]");
+  const secretRedacted = replaceAllMatches(input, SECRET_PATTERNS, '[REDACTED_SECRET]');
   const identifierRedacted = replaceAllMatches(
     secretRedacted.text,
     IDENTIFIER_PATTERNS,
-    "[REDACTED_IDENTIFIER]",
+    '[REDACTED_IDENTIFIER]'
   );
 
   return identifierRedacted.text;
 }
 
-export function sanitizeFailingSignals<T extends { errors: string[]; tests?: string[]; reproSteps?: string[] }>(
-  input: T,
-): T {
+export function sanitizeFailingSignals<
+  T extends { errors: string[]; tests?: string[]; reproSteps?: string[] },
+>(input: T): T {
   return {
     ...input,
     errors: input.errors.map((item) => sanitizeFreeformText(item)),
@@ -842,18 +891,19 @@ export function createRaidRecord(
   selectedProviders: SelectedProviders,
   options: {
     deadlineUnix?: number;
-  } = {},
+  } = {}
 ): RaidRecord {
   const now = new Date().toISOString();
   const raidId = `raid_${randomUUID()}`;
   const deadlineUnix =
-    options.deadlineUnix ?? Math.ceil((Date.now() + input.constraints.maxLatencySec * 1_000) / 1_000);
+    options.deadlineUnix ??
+    Math.ceil((Date.now() + input.constraints.maxLatencySec * 1_000) / 1_000);
 
   return {
     id: raidId,
     createdAt: now,
     updatedAt: now,
-    status: "queued",
+    status: 'queued',
     deadlineUnix,
     task: input,
     selectedProviders: selectedProviders.primaries.map((provider) => provider.providerId),
@@ -887,7 +937,7 @@ export function rankSubmissions(submissions: RankedSubmission[]): RankedSubmissi
     .map((item, index) => ({ ...item, rank: index + 1 }));
 }
 
-function summarizeSubmissionContent(submission: RankedSubmission["submission"]): string {
+function summarizeSubmissionContent(submission: RankedSubmission['submission']): string {
   if (submission.patchUnifiedDiff) {
     return submission.patchUnifiedDiff;
   }
@@ -897,14 +947,18 @@ function summarizeSubmissionContent(submission: RankedSubmission["submission"]):
   }
 
   return (submission.artifacts ?? [])
-    .map((artifact) => [artifact.outputType, artifact.label, artifact.description, artifact.mimeType].filter(Boolean).join(" "))
-    .join("\n");
+    .map((artifact) =>
+      [artifact.outputType, artifact.label, artifact.description, artifact.mimeType]
+        .filter(Boolean)
+        .join(' ')
+    )
+    .join('\n');
 }
 
 export function computeRewards(
   totalBudget: number,
   ranked: RankedSubmission[],
-  _rewardPolicy: RewardPolicy,
+  _rewardPolicy: RewardPolicy
 ): RewardComputation {
   const successfulProviders = ranked.filter((item) => item.breakdown.valid);
   const payoutPerSuccessfulProvider =
@@ -924,7 +978,7 @@ export function applyReputationDelta(current: number, delta = 0): number {
 export function createReputationEvent(
   providerId: string,
   type: keyof typeof ReputationDeltas,
-  context?: Record<string, unknown>,
+  context?: Record<string, unknown>
 ): ReputationEvent {
   return {
     providerId,
@@ -945,7 +999,7 @@ export function estimateLatencyScore(elapsedMs: number, maxLatencySec: number): 
 
 export function summarizeBreakdown(breakdown: EvaluationBreakdown): string {
   if (!breakdown.valid) {
-    return `invalid: ${breakdown.invalidReasons.join(", ")}`;
+    return `invalid: ${breakdown.invalidReasons.join(', ')}`;
   }
 
   return `valid score=${breakdown.finalScore.toFixed(3)} build=${breakdown.buildScore.toFixed(2)} test=${breakdown.testScore.toFixed(2)}`;

@@ -4,19 +4,19 @@ export {
   buildPrivacyComplianceRecord,
   buildPrivacyComplianceResult,
   type PrivacyEngineConfig,
-} from "./compliance.js";
+} from './compliance.js';
 
 export {
   verifyPhalaTeeAttestation,
   buildTeeAttestation,
   type TeeAttestationOptions,
-} from "./attestation.js";
+} from './attestation.js';
 
 export {
   buildPrivacyAttestation,
   buildSignedDeclaration,
   type PrivacyAttestationOptions,
-} from "./attestation.js";
+} from './attestation.js';
 
 export {
   scanForReexposedContent,
@@ -24,4 +24,4 @@ export {
   REDACTED_PLACEHOLDER_PATTERNS,
   EXTERNAL_API_PATTERNS,
   type PrivacyScanContext,
-} from "./scanner.js";
+} from './scanner.js';

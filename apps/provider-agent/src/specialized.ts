@@ -1,12 +1,17 @@
-import { spawnSync } from "node:child_process";
-import type { ProviderTaskPackage, SubmissionArtifact, TaskFile } from "@bossraid/shared-types";
-import { providerConfig } from "./config.js";
-import { ArtifactBuilder, createBundleArtifact, createFileArtifact, joinArtifactPath } from "./artifacts.js";
-import { Bitmap, encodeGifAnimation, encodePng, parseHexColor, type RgbaColor } from "./bitmap.js";
-import { generateStructuredWithVenice } from "./venice.js";
-import type { ModelSubmission } from "./types.js";
+import { spawnSync } from 'node:child_process';
+import type { ProviderTaskPackage, SubmissionArtifact, TaskFile } from '@bossraid/shared-types';
+import { providerConfig } from './config.js';
+import {
+  ArtifactBuilder,
+  createBundleArtifact,
+  createFileArtifact,
+  joinArtifactPath,
+} from './artifacts.js';
+import { Bitmap, encodeGifAnimation, encodePng, parseHexColor, type RgbaColor } from './bitmap.js';
+import { generateStructuredWithVenice } from './venice.js';
+import type { ModelSubmission } from './types.js';
 
-type ProviderMode = "generic" | "gbstudio" | "pixel_art" | "remotion";
+type ProviderMode = 'generic' | 'gbstudio' | 'pixel_art' | 'remotion';
 
 type GbStudioPlan = {
   title: string;
@@ -53,18 +58,18 @@ type TextPlan = {
   confidence: number;
 };
 
-type TextContributionRole = "lead" | "risk" | "constraints" | "execution" | "other";
+type TextContributionRole = 'lead' | 'risk' | 'constraints' | 'execution' | 'other';
 
 function normalizeName(value: string, fallback: string): string {
   const safe = value
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
   return safe || fallback;
 }
 
 function toHex(color: string): string {
-  return color.replace("#", "").toUpperCase();
+  return color.replace('#', '').toUpperCase();
 }
 
 function buildPalette(colors: string[]): RgbaColor[] {
@@ -76,15 +81,16 @@ function unique(values: string[]): string[] {
 }
 
 function extractPalette(task: ProviderTaskPackage, fallback: string[]): string[] {
-  const matches = `${task.task.description}\n${task.artifacts.files.map((file) => file.content).join("\n")}`.match(
-    /#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})/g,
-  );
+  const matches =
+    `${task.task.description}\n${task.artifacts.files.map((file) => file.content).join('\n')}`.match(
+      /#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})/g
+    );
   const palette = unique((matches ?? []).map((value) => value.toUpperCase()));
   return palette.length >= 4 ? palette.slice(0, 4) : fallback;
 }
 
 function extractGameTitle(task: ProviderTaskPackage): string {
-  return task.task.title.trim() || "Boss Raid Microgame";
+  return task.task.title.trim() || 'Boss Raid Microgame';
 }
 
 function shortText(value: string, fallback: string): string {
@@ -92,12 +98,15 @@ function shortText(value: string, fallback: string): string {
   return trimmed.length > 0 ? trimmed : fallback;
 }
 
-function firstFile(task: ProviderTaskPackage, predicate: (file: TaskFile) => boolean): TaskFile | undefined {
+function firstFile(
+  task: ProviderTaskPackage,
+  predicate: (file: TaskFile) => boolean
+): TaskFile | undefined {
   return task.artifacts.files.find(predicate);
 }
 
 function quotedList(values: string[]): string {
-  return values.map((value) => `- ${value}`).join("\n");
+  return values.map((value) => `- ${value}`).join('\n');
 }
 
 function buildUnifiedDiff(path: string, before: string, after: string): string {
@@ -105,21 +114,27 @@ function buildUnifiedDiff(path: string, before: string, after: string): string {
   const afterLines = after.split(/\r?\n/);
   const beforeCount = beforeLines.length;
   const afterCount = afterLines.length;
-  const beforeBody = beforeLines.map((line) => `-${line}`).join("\n");
-  const afterBody = afterLines.map((line) => `+${line}`).join("\n");
-  return [`--- a/${path}`, `+++ b/${path}`, `@@ -1,${beforeCount} +1,${afterCount} @@`, beforeBody, afterBody].join("\n");
+  const beforeBody = beforeLines.map((line) => `-${line}`).join('\n');
+  const afterBody = afterLines.map((line) => `+${line}`).join('\n');
+  return [
+    `--- a/${path}`,
+    `+++ b/${path}`,
+    `@@ -1,${beforeCount} +1,${afterCount} @@`,
+    beforeBody,
+    afterBody,
+  ].join('\n');
 }
 
 type SpriteKind =
-  | "hero"
-  | "npc"
-  | "key"
-  | "slime"
-  | "tree"
-  | "ui"
-  | "door"
-  | "floor_tile"
-  | "wall_tile";
+  | 'hero'
+  | 'npc'
+  | 'key'
+  | 'slime'
+  | 'tree'
+  | 'ui'
+  | 'door'
+  | 'floor_tile'
+  | 'wall_tile';
 
 type DungeonBlueprint = {
   name: string;
@@ -138,16 +153,16 @@ function createSimpleSprite(
   height: number,
   colors: RgbaColor[],
   kind: SpriteKind,
-  variant: number,
+  variant: number
 ): Bitmap {
   const bitmap = new Bitmap(width, height, { r: 0, g: 0, b: 0, a: 0 });
-  const floorBase = colors[0] ?? parseHexColor("0F1C2E");
-  const wallBase = colors[1] ?? parseHexColor("FFDA47");
-  const accent = colors[2] ?? parseHexColor("F65D5D");
-  const outline = colors[3] ?? parseHexColor("77F6C5");
-  const light = parseHexColor("F4F1D8");
+  const floorBase = colors[0] ?? parseHexColor('0F1C2E');
+  const wallBase = colors[1] ?? parseHexColor('FFDA47');
+  const accent = colors[2] ?? parseHexColor('F65D5D');
+  const outline = colors[3] ?? parseHexColor('77F6C5');
+  const light = parseHexColor('F4F1D8');
 
-  if (kind === "hero" || kind === "npc") {
+  if (kind === 'hero' || kind === 'npc') {
     const armOffset = variant % 2;
     bitmap.fillRect(5, 1, 6, 4, light);
     bitmap.fillRect(4, 5, 8, 5, accent);
@@ -160,7 +175,7 @@ function createSimpleSprite(
     bitmap.fillRect(6, 4, 3, 1, outline);
     bitmap.strokeRect(4, 5, 8, 5, outline);
     bitmap.strokeRect(5, 1, 6, 4, outline);
-  } else if (kind === "key") {
+  } else if (kind === 'key') {
     const sparkleOffset = variant % 2;
     bitmap.fillRect(3, 6, 7, 3, wallBase);
     bitmap.fillRect(10, 5, 2, 5, wallBase);
@@ -170,7 +185,7 @@ function createSimpleSprite(
     bitmap.fillRect(3 + sparkleOffset, 2, 1, 3, outline);
     bitmap.fillRect(2 + sparkleOffset, 3, 3, 1, outline);
     bitmap.strokeRect(2, 5, 10, 5, outline);
-  } else if (kind === "slime") {
+  } else if (kind === 'slime') {
     const bounce = variant % 2;
     bitmap.fillRect(3, 5 - bounce, 10, 6, accent);
     bitmap.fillRect(4, 11 - bounce, 8, 2, accent);
@@ -181,7 +196,7 @@ function createSimpleSprite(
     bitmap.fillRect(6, 10 - bounce, 4, 1, outline);
     bitmap.fillRect(4, 12 - bounce, 2, 1, outline);
     bitmap.fillRect(10, 12 - bounce, 2, 1, outline);
-  } else if (kind === "door") {
+  } else if (kind === 'door') {
     const isOpen = variant % 2 === 1;
     bitmap.fillRect(3, 1, 10, 14, wallBase);
     bitmap.fillRect(5, 3, 6, 10, floorBase);
@@ -191,7 +206,7 @@ function createSimpleSprite(
       bitmap.fillRect(5, 16, 6, height - 16, wallBase);
       bitmap.strokeRect(3, 15, 10, height - 15, outline);
     }
-  } else if (kind === "floor_tile") {
+  } else if (kind === 'floor_tile') {
     bitmap.fillRect(0, 0, width, height, floorBase);
     for (let y = 2; y < height; y += 4) {
       for (let x = (y / 2) % 4 === 0 ? 1 : 3; x < width; x += 4) {
@@ -199,17 +214,17 @@ function createSimpleSprite(
       }
     }
     bitmap.strokeRect(0, 0, width, height, outline);
-  } else if (kind === "wall_tile") {
+  } else if (kind === 'wall_tile') {
     bitmap.fillRect(0, 0, width, height, wallBase);
     for (let y = 2; y < height; y += 4) {
       bitmap.fillRect(2, y, width - 4, 1, accent);
     }
     bitmap.strokeRect(0, 0, width, height, outline);
-  } else if (kind === "tree") {
+  } else if (kind === 'tree') {
     bitmap.fillRect(6, 10, 4, 5, outline);
     bitmap.fillRect(3, 3, 10, 8, accent);
     bitmap.fillRect(5, 5, 6, 4, wallBase);
-  } else if (kind === "ui") {
+  } else if (kind === 'ui') {
     bitmap.fillRect(1, 1, width - 2, height - 2, floorBase);
     bitmap.strokeRect(1, 1, width - 2, height - 2, outline);
     bitmap.fillRect(3, 3, width - 6, 3, wallBase);
@@ -228,42 +243,56 @@ function createSpriteSheet(
   frameHeight: number,
   colors: RgbaColor[],
   kind: SpriteKind,
-  frameCount: number,
+  frameCount: number
 ): Bitmap {
   const sheet = new Bitmap(frameWidth * frameCount, frameHeight, { r: 0, g: 0, b: 0, a: 0 });
   for (let frame = 0; frame < frameCount; frame += 1) {
-    sheet.blit(createSimpleSprite(frameWidth, frameHeight, colors, kind, frame), frame * frameWidth, 0);
+    sheet.blit(
+      createSimpleSprite(frameWidth, frameHeight, colors, kind, frame),
+      frame * frameWidth,
+      0
+    );
   }
   return sheet;
 }
 
 function inferAssetKind(name: string): SpriteKind {
   const lower = name.toLowerCase();
-  if (lower.includes("floor")) {
-    return "floor_tile";
+  if (lower.includes('floor')) {
+    return 'floor_tile';
   }
-  if (lower.includes("wall")) {
-    return "wall_tile";
+  if (lower.includes('wall')) {
+    return 'wall_tile';
   }
-  if (lower.includes("coin") || lower.includes("gem") || lower.includes("pickup") || lower.includes("key")) {
-    return "key";
+  if (
+    lower.includes('coin') ||
+    lower.includes('gem') ||
+    lower.includes('pickup') ||
+    lower.includes('key')
+  ) {
+    return 'key';
   }
-  if (lower.includes("tree") || lower.includes("plant") || lower.includes("bush")) {
-    return "tree";
+  if (lower.includes('tree') || lower.includes('plant') || lower.includes('bush')) {
+    return 'tree';
   }
-  if (lower.includes("door") || lower.includes("exit")) {
-    return "door";
+  if (lower.includes('door') || lower.includes('exit')) {
+    return 'door';
   }
-  if (lower.includes("ui") || lower.includes("button") || lower.includes("panel") || lower.includes("title")) {
-    return "ui";
+  if (
+    lower.includes('ui') ||
+    lower.includes('button') ||
+    lower.includes('panel') ||
+    lower.includes('title')
+  ) {
+    return 'ui';
   }
-  if (lower.includes("monster") || lower.includes("enemy") || lower.includes("slime")) {
-    return "slime";
+  if (lower.includes('monster') || lower.includes('enemy') || lower.includes('slime')) {
+    return 'slime';
   }
-  if (lower.includes("npc") || lower.includes("guide")) {
-    return "npc";
+  if (lower.includes('npc') || lower.includes('guide')) {
+    return 'npc';
   }
-  return "hero";
+  return 'hero';
 }
 
 function buildDungeonBlueprint(plan: GbStudioPlan): DungeonBlueprint {
@@ -282,24 +311,24 @@ function buildDungeonBlueprint(plan: GbStudioPlan): DungeonBlueprint {
       { x: 9, y: 10 },
     ],
     tilemap: [
-      "####################",
-      "#........##........#",
-      "#.###....##....###.#",
-      "#..K.....##........#",
-      "#........##..###...#",
-      "#..####......###...#",
-      "#........SS........#",
-      "#........SS........#",
-      "#..###........###..#",
-      "#..###........###..#",
-      "#........##........#",
-      "#...###..##..###...#",
-      "#........##........#",
-      "#........##.....D..#",
-      "#..####........###.#",
-      "#........##........#",
-      "#........##........#",
-      "####################",
+      '####################',
+      '#........##........#',
+      '#.###....##....###.#',
+      '#..K.....##........#',
+      '#........##..###...#',
+      '#..####......###...#',
+      '#........SS........#',
+      '#........SS........#',
+      '#..###........###..#',
+      '#..###........###..#',
+      '#........##........#',
+      '#...###..##..###...#',
+      '#........##........#',
+      '#........##.....D..#',
+      '#..####........###.#',
+      '#........##........#',
+      '#........##........#',
+      '####################',
     ],
   };
 }
@@ -307,10 +336,10 @@ function buildDungeonBlueprint(plan: GbStudioPlan): DungeonBlueprint {
 function drawDungeonRoomPreview(blueprint: DungeonBlueprint, colors: RgbaColor[]): Bitmap {
   const tileSize = 8;
   const bitmap = new Bitmap(blueprint.width * tileSize, blueprint.height * tileSize, colors[0]);
-  const floor = colors[0] ?? parseHexColor("0F1C2E");
-  const wall = colors[1] ?? parseHexColor("FFDA47");
-  const danger = colors[2] ?? parseHexColor("F65D5D");
-  const accent = colors[3] ?? parseHexColor("77F6C5");
+  const floor = colors[0] ?? parseHexColor('0F1C2E');
+  const wall = colors[1] ?? parseHexColor('FFDA47');
+  const danger = colors[2] ?? parseHexColor('F65D5D');
+  const accent = colors[3] ?? parseHexColor('77F6C5');
 
   blueprint.tilemap.forEach((row, rowIndex) => {
     [...row].forEach((cell, columnIndex) => {
@@ -318,7 +347,7 @@ function drawDungeonRoomPreview(blueprint: DungeonBlueprint, colors: RgbaColor[]
       const y = rowIndex * tileSize;
       bitmap.fillRect(x, y, tileSize, tileSize, floor);
 
-      if (cell === "#") {
+      if (cell === '#') {
         bitmap.fillRect(x, y, tileSize, tileSize, wall);
         bitmap.fillRect(x + 1, y + 1, tileSize - 2, tileSize - 2, floor);
         bitmap.fillRect(x + 2, y + 2, tileSize - 4, 1, accent);
@@ -330,29 +359,39 @@ function drawDungeonRoomPreview(blueprint: DungeonBlueprint, colors: RgbaColor[]
         bitmap.fillRect(x + 5, y + 5, 1, 1, accent);
       }
 
-      if (cell === "K") {
-        bitmap.blit(createSimpleSprite(8, 8, colors, "key", 0), x, y);
-      } else if (cell === "D") {
-        bitmap.blit(createSimpleSprite(8, 8, colors, "door", 0), x, y);
-      } else if (cell === "S") {
+      if (cell === 'K') {
+        bitmap.blit(createSimpleSprite(8, 8, colors, 'key', 0), x, y);
+      } else if (cell === 'D') {
+        bitmap.blit(createSimpleSprite(8, 8, colors, 'door', 0), x, y);
+      } else if (cell === 'S') {
         bitmap.fillRect(x + 1, y + 1, tileSize - 2, tileSize - 2, danger);
       }
     });
   });
 
-  bitmap.fillRect(blueprint.playerSpawn.x * tileSize + 2, blueprint.playerSpawn.y * tileSize + 2, 4, 4, accent);
-  bitmap.drawText("30", 8, 8, wall, { scale: 1 });
-  bitmap.drawText("KEY", 116, 8, wall, { scale: 1 });
+  bitmap.fillRect(
+    blueprint.playerSpawn.x * tileSize + 2,
+    blueprint.playerSpawn.y * tileSize + 2,
+    4,
+    4,
+    accent
+  );
+  bitmap.drawText('30', 8, 8, wall, { scale: 1 });
+  bitmap.drawText('KEY', 116, 8, wall, { scale: 1 });
   return bitmap;
 }
 
-function buildGbStudioProjectDocument(plan: GbStudioPlan, blueprint: DungeonBlueprint, sceneSlug: string) {
+function buildGbStudioProjectDocument(
+  plan: GbStudioPlan,
+  blueprint: DungeonBlueprint,
+  sceneSlug: string
+) {
   return {
-    _resourceType: "project",
+    _resourceType: 'project',
     name: plan.title,
-    author: "Boss Raid / Gamma",
+    author: 'Boss Raid / Gamma',
     notes: plan.conceptSummary,
-    engine: "gb-studio",
+    engine: 'gb-studio',
     scenes: [
       {
         id: `${sceneSlug}-scene`,
@@ -363,22 +402,24 @@ function buildGbStudioProjectDocument(plan: GbStudioPlan, blueprint: DungeonBlue
       },
     ],
     spriteSheets: [
-      { id: `${sceneSlug}-player`, name: "player", filename: "player.png", frames: 4 },
-      { id: `${sceneSlug}-slime`, name: "slime-king", filename: "slime-king.png", frames: 2 },
-      { id: `${sceneSlug}-key`, name: "vault-key", filename: "vault-key.png", frames: 2 },
-      { id: `${sceneSlug}-door`, name: "exit-door", filename: "exit-door.png", frames: 2 },
+      { id: `${sceneSlug}-player`, name: 'player', filename: 'player.png', frames: 4 },
+      { id: `${sceneSlug}-slime`, name: 'slime-king', filename: 'slime-king.png', frames: 2 },
+      { id: `${sceneSlug}-key`, name: 'vault-key', filename: 'vault-key.png', frames: 2 },
+      { id: `${sceneSlug}-door`, name: 'exit-door', filename: 'exit-door.png', frames: 2 },
     ],
-    backgrounds: [{ id: `${sceneSlug}-background`, name: blueprint.name, filename: `${sceneSlug}.png` }],
+    backgrounds: [
+      { id: `${sceneSlug}-background`, name: blueprint.name, filename: `${sceneSlug}.png` },
+    ],
     palettes: [
-      { id: "default-bg-1", name: "Default BG 1", colors: plan.palette.map(toHex) },
-      { id: "default-sprite", name: "Default Sprites", colors: plan.palette.map(toHex) },
+      { id: 'default-bg-1', name: 'Default BG 1', colors: plan.palette.map(toHex) },
+      { id: 'default-sprite', name: 'Default Sprites', colors: plan.palette.map(toHex) },
     ],
   };
 }
 
 function buildEncounterModule(plan: GbStudioPlan, blueprint: DungeonBlueprint): string {
   return [
-    "export const bossRaidPitch = {",
+    'export const bossRaidPitch = {',
     `  title: ${JSON.stringify(plan.title)},`,
     `  loop: ${JSON.stringify(plan.coreMechanic)},`,
     `  sceneName: ${JSON.stringify(plan.sceneName)},`,
@@ -391,84 +432,84 @@ function buildEncounterModule(plan: GbStudioPlan, blueprint: DungeonBlueprint): 
     `  bossSpawn: ${JSON.stringify(blueprint.bossSpawn)},`,
     `  keySpawn: ${JSON.stringify(blueprint.keySpawn)},`,
     `  exitDoor: ${JSON.stringify(blueprint.exitDoor)}`,
-    "};",
-    "",
-  ].join("\n");
+    '};',
+    '',
+  ].join('\n');
 }
 
 function buildTimerModule(): string {
   return [
-    "export const slimePanicTimer = {",
-    "  totalSeconds: 30,",
-    "  warningSeconds: 10,",
-    "  loseState: \"timer-expired\"",
-    "};",
-    "",
-    "export function stepEncounterTimer(secondsRemaining: number, deltaSeconds: number): number {",
-    "  return Math.max(0, Number((secondsRemaining - deltaSeconds).toFixed(2)));",
-    "}",
-    "",
-    "export function shouldTriggerWarning(secondsRemaining: number): boolean {",
-    "  return secondsRemaining <= slimePanicTimer.warningSeconds;",
-    "}",
-    "",
-  ].join("\n");
+    'export const slimePanicTimer = {',
+    '  totalSeconds: 30,',
+    '  warningSeconds: 10,',
+    '  loseState: "timer-expired"',
+    '};',
+    '',
+    'export function stepEncounterTimer(secondsRemaining: number, deltaSeconds: number): number {',
+    '  return Math.max(0, Number((secondsRemaining - deltaSeconds).toFixed(2)));',
+    '}',
+    '',
+    'export function shouldTriggerWarning(secondsRemaining: number): boolean {',
+    '  return secondsRemaining <= slimePanicTimer.warningSeconds;',
+    '}',
+    '',
+  ].join('\n');
 }
 
 function buildSlimeKingModule(plan: GbStudioPlan, blueprint: DungeonBlueprint): string {
   return [
-    "export type GridPoint = { x: number; y: number };",
-    "",
-    "export type SlimeKingState = {",
-    "  patrolRoute: GridPoint[];",
-    "  routeIndex: number;",
-    "  detectionRadius: number;",
-    "  speed: number;",
-    "};",
-    "",
-    "export const defaultSlimeKingState: SlimeKingState = {",
+    'export type GridPoint = { x: number; y: number };',
+    '',
+    'export type SlimeKingState = {',
+    '  patrolRoute: GridPoint[];',
+    '  routeIndex: number;',
+    '  detectionRadius: number;',
+    '  speed: number;',
+    '};',
+    '',
+    'export const defaultSlimeKingState: SlimeKingState = {',
     `  patrolRoute: ${JSON.stringify(blueprint.patrolRoute)},`,
-    "  routeIndex: 0,",
-    "  detectionRadius: 5,",
-    "  speed: 1",
-    "};",
-    "",
-    "export function chooseSlimeKingTarget(state: SlimeKingState, player: GridPoint, hasKey: boolean): GridPoint {",
-    "  if (hasKey) {",
-    "    return player;",
-    "  }",
-    "",
-    "  return state.patrolRoute[state.routeIndex] ?? player;",
-    "}",
-    "",
-    "export function buildSlimeKingTaunt(): string {",
+    '  routeIndex: 0,',
+    '  detectionRadius: 5,',
+    '  speed: 1',
+    '};',
+    '',
+    'export function chooseSlimeKingTarget(state: SlimeKingState, player: GridPoint, hasKey: boolean): GridPoint {',
+    '  if (hasKey) {',
+    '    return player;',
+    '  }',
+    '',
+    '  return state.patrolRoute[state.routeIndex] ?? player;',
+    '}',
+    '',
+    'export function buildSlimeKingTaunt(): string {',
     `  return ${JSON.stringify(plan.npcLine)};`,
-    "}",
-    "",
-  ].join("\n");
+    '}',
+    '',
+  ].join('\n');
 }
 
 function buildExitDoorModule(blueprint: DungeonBlueprint): string {
   return [
-    "export type ExitGateState = {",
-    "  locked: boolean;",
-    "  prompt: string;",
-    "  location: { x: number; y: number };",
-    "};",
-    "",
-    "export function resolveExitGateState(hasKey: boolean, timerExpired: boolean): ExitGateState {",
-    "  if (timerExpired) {",
+    'export type ExitGateState = {',
+    '  locked: boolean;',
+    '  prompt: string;',
+    '  location: { x: number; y: number };',
+    '};',
+    '',
+    'export function resolveExitGateState(hasKey: boolean, timerExpired: boolean): ExitGateState {',
+    '  if (timerExpired) {',
     `    return { locked: true, prompt: "Too late. Restart the room.", location: ${JSON.stringify(blueprint.exitDoor)} };`,
-    "  }",
-    "",
-    "  if (!hasKey) {",
+    '  }',
+    '',
+    '  if (!hasKey) {',
     `    return { locked: true, prompt: "Find the vault key first.", location: ${JSON.stringify(blueprint.exitDoor)} };`,
-    "  }",
-    "",
+    '  }',
+    '',
     `  return { locked: false, prompt: "Exit unlocked. Move.", location: ${JSON.stringify(blueprint.exitDoor)} };`,
-    "}",
-    "",
-  ].join("\n");
+    '}',
+    '',
+  ].join('\n');
 }
 
 function buildSceneDocument(plan: GbStudioPlan, blueprint: DungeonBlueprint) {
@@ -488,18 +529,18 @@ function buildSceneDocument(plan: GbStudioPlan, blueprint: DungeonBlueprint) {
 function buildHudDocument(blueprint: DungeonBlueprint) {
   return {
     timer: {
-      anchor: "top-left",
-      format: "00:30",
+      anchor: 'top-left',
+      format: '00:30',
       warningThreshold: 10,
     },
     keyIcon: {
-      anchor: "top-right",
-      emptyState: "outline",
-      filledState: "filled",
+      anchor: 'top-right',
+      emptyState: 'outline',
+      filledState: 'filled',
     },
     prompts: {
-      start: "Get the key. Reach the exit.",
-      fail: "The vault resets.",
+      start: 'Get the key. Reach the exit.',
+      fail: 'The vault resets.',
       exit: `Door at ${blueprint.exitDoor.x},${blueprint.exitDoor.y}`,
     },
   };
@@ -508,39 +549,39 @@ function buildHudDocument(blueprint: DungeonBlueprint) {
 function buildCreativeBrief(plan: GbStudioPlan): string {
   return [
     `# ${plan.title}`,
-    "",
+    '',
     `Tone: ${plan.tone}.`,
-    "Audience: players who like tiny retro challenge games.",
-    "Deliverables: gameplay patch, pixel pack, teaser clip, and launch copy.",
-    "",
-    "## Shared Hook",
+    'Audience: players who like tiny retro challenge games.',
+    'Deliverables: gameplay patch, pixel pack, teaser clip, and launch copy.',
+    '',
+    '## Shared Hook',
     plan.coreMechanic,
-    "",
-    "## Room Plan",
+    '',
+    '## Room Plan',
     quotedList(plan.roomPlan),
-    "",
-    "## Asset Plan",
+    '',
+    '## Asset Plan',
     quotedList(plan.assetPlan),
-    "",
-  ].join("\n");
+    '',
+  ].join('\n');
 }
 
 function buildGameplayReadme(plan: GbStudioPlan): string {
   return [
     `# ${plan.title}`,
-    "",
+    '',
     plan.conceptSummary,
-    "",
-    "## Core Mechanic",
+    '',
+    '## Core Mechanic',
     plan.coreMechanic,
-    "",
-    "## Milestones",
+    '',
+    '## Milestones',
     ...plan.milestonePlan.map((item, index) => `${index + 1}. ${item}`),
-    "",
-    "## Gameplay Changes",
+    '',
+    '## Gameplay Changes',
     ...plan.gameplayChanges.map((item) => `- ${item}`),
-    "",
-  ].join("\n");
+    '',
+  ].join('\n');
 }
 
 function renderStoryFrame(
@@ -550,7 +591,7 @@ function renderStoryFrame(
   headline: string,
   subhead: string,
   accent: string,
-  frameIndex: number,
+  frameIndex: number
 ): Bitmap {
   const colors = buildPalette(palette);
   const bitmap = new Bitmap(width, height, colors[0]);
@@ -564,23 +605,31 @@ function renderStoryFrame(
   bitmap.fillRect(width - 102, 74, 38, 6, colors[0]);
   bitmap.fillRect(width - 102, 86, 52, 6, colors[0]);
   bitmap.drawText(headline, 16, 5, colors[0], { scale: 2, maxWidth: width - 32, lineHeight: 18 });
-  bitmap.drawText(subhead, 16, height - 24, colors[0], { scale: 1, maxWidth: width - 32, lineHeight: 10 });
+  bitmap.drawText(subhead, 16, height - 24, colors[0], {
+    scale: 1,
+    maxWidth: width - 32,
+    lineHeight: 10,
+  });
   bitmap.drawText(accent, 30, 116, colors[3], { scale: 1, maxWidth: width - 60 });
   return bitmap;
 }
 
 function tryRunFfmpeg(args: string[]): boolean {
   // Keep the optional mp4 preview from blocking provider heartbeats on slow hosts.
-  const result = spawnSync("ffmpeg", args, {
-    stdio: "ignore",
+  const result = spawnSync('ffmpeg', args, {
+    stdio: 'ignore',
     timeout: 1_500,
-    killSignal: "SIGKILL",
+    killSignal: 'SIGKILL',
   });
   return result.status === 0;
 }
 
 function readVeniceRuntime() {
-  if (!providerConfig.modelApiKey || !providerConfig.modelName || !providerConfig.modelApiBase.includes("venice")) {
+  if (
+    !providerConfig.modelApiKey ||
+    !providerConfig.modelName ||
+    !providerConfig.modelApiBase.includes('venice')
+  ) {
     return undefined;
   }
 
@@ -595,7 +644,7 @@ function readVeniceRuntime() {
 async function planWithVenice<T>(
   schema: Record<string, unknown>,
   systemPrompt: string,
-  userPrompt: string,
+  userPrompt: string
 ): Promise<T | undefined> {
   const runtime = readVeniceRuntime();
   if (!runtime) {
@@ -613,33 +662,45 @@ async function planWithVenice<T>(
 
 function fallbackGbStudioPlan(task: ProviderTaskPackage): GbStudioPlan {
   const title = extractGameTitle(task);
-  const hook = shortText(task.task.description.split(".")[0] ?? "", "Escape the room before the timer expires.");
+  const hook = shortText(
+    task.task.description.split('.')[0] ?? '',
+    'Escape the room before the timer expires.'
+  );
   return {
     title,
-    genre: "retro action-puzzle",
-    tone: "playful pressure",
+    genre: 'retro action-puzzle',
+    tone: 'playful pressure',
     coreMechanic: hook,
-    sceneName: "Dungeon Vault",
-    npcName: "Slime King",
-    npcLine: "No one leaves the vault without the key.",
-    palette: extractPalette(task, ["#0F1C2E", "#FFDA47", "#F65D5D", "#77F6C5"]),
+    sceneName: 'Dungeon Vault',
+    npcName: 'Slime King',
+    npcLine: 'No one leaves the vault without the key.',
+    palette: extractPalette(task, ['#0F1C2E', '#FFDA47', '#F65D5D', '#77F6C5']),
     conceptSummary: `${title} is a one-room microgame about reading slime paths, taking the key, and escaping under pressure.`,
     milestonePlan: [
-      "Lock the Dungeon Vault room layout with one readable patrol lane.",
-      "Wire timer pressure, key pickup, and exit unlock into one complete run.",
-      "Align the art pack and teaser to the same one-room escape story.",
+      'Lock the Dungeon Vault room layout with one readable patrol lane.',
+      'Wire timer pressure, key pickup, and exit unlock into one complete run.',
+      'Align the art pack and teaser to the same one-room escape story.',
     ],
     roomPlan: [
-      "Place the player on the left lane, the key at the upper pressure point, and the exit at the lower-right vault door.",
-      "Keep the Slime King in the center patrol box until the key is collected, then switch to chase pressure.",
-      "Show the timer and key state in the HUD so the win condition reads in one glance.",
+      'Place the player on the left lane, the key at the upper pressure point, and the exit at the lower-right vault door.',
+      'Keep the Slime King in the center patrol box until the key is collected, then switch to chase pressure.',
+      'Show the timer and key state in the HUD so the win condition reads in one glance.',
     ],
-    assetPlan: ["player walk sheet", "slime king bounce sheet", "vault key pickup sprite", "exit door open and closed sprite", "dungeon floor tile", "dungeon wall tile", "timer and key HUD icons"],
-    patchSummary: "Replace the thin demo scaffold with a concrete Dungeon Vault room package, gameplay scripts, and supporting GB Studio data files.",
+    assetPlan: [
+      'player walk sheet',
+      'slime king bounce sheet',
+      'vault key pickup sprite',
+      'exit door open and closed sprite',
+      'dungeon floor tile',
+      'dungeon wall tile',
+      'timer and key HUD icons',
+    ],
+    patchSummary:
+      'Replace the thin demo scaffold with a concrete Dungeon Vault room package, gameplay scripts, and supporting GB Studio data files.',
     gameplayChanges: [
-      "Update the project manifest with concrete scene, background, and sprite sheet entries.",
-      "Implement timer, Slime King target selection, exit gating, and room blueprint data.",
-      "Align the creative brief to the same concrete room layout and asset list.",
+      'Update the project manifest with concrete scene, background, and sprite sheet entries.',
+      'Implement timer, Slime King target selection, exit gating, and room blueprint data.',
+      'Align the creative brief to the same concrete room layout and asset list.',
     ],
   };
 }
@@ -648,45 +709,45 @@ async function buildGbStudioPlan(task: ProviderTaskPackage): Promise<GbStudioPla
   const fallback = fallbackGbStudioPlan(task);
   const planned = await planWithVenice<GbStudioPlan>(
     {
-      name: "gamma_gbstudio_plan",
+      name: 'gamma_gbstudio_plan',
       schema: {
-        type: "object",
+        type: 'object',
         additionalProperties: false,
         required: [
-          "title",
-          "genre",
-          "tone",
-          "coreMechanic",
-          "sceneName",
-          "npcName",
-          "npcLine",
-          "palette",
-          "conceptSummary",
-          "milestonePlan",
-          "roomPlan",
-          "assetPlan",
-          "patchSummary",
-          "gameplayChanges",
+          'title',
+          'genre',
+          'tone',
+          'coreMechanic',
+          'sceneName',
+          'npcName',
+          'npcLine',
+          'palette',
+          'conceptSummary',
+          'milestonePlan',
+          'roomPlan',
+          'assetPlan',
+          'patchSummary',
+          'gameplayChanges',
         ],
         properties: {
-          title: { type: "string" },
-          genre: { type: "string" },
-          tone: { type: "string" },
-          coreMechanic: { type: "string" },
-          sceneName: { type: "string" },
-          npcName: { type: "string" },
-          npcLine: { type: "string" },
-          palette: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 4 },
-          conceptSummary: { type: "string" },
-          milestonePlan: { type: "array", items: { type: "string" }, minItems: 3, maxItems: 5 },
-          roomPlan: { type: "array", items: { type: "string" }, minItems: 3, maxItems: 5 },
-          assetPlan: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 8 },
-          patchSummary: { type: "string" },
-          gameplayChanges: { type: "array", items: { type: "string" }, minItems: 3, maxItems: 6 },
+          title: { type: 'string' },
+          genre: { type: 'string' },
+          tone: { type: 'string' },
+          coreMechanic: { type: 'string' },
+          sceneName: { type: 'string' },
+          npcName: { type: 'string' },
+          npcLine: { type: 'string' },
+          palette: { type: 'array', items: { type: 'string' }, minItems: 4, maxItems: 4 },
+          conceptSummary: { type: 'string' },
+          milestonePlan: { type: 'array', items: { type: 'string' }, minItems: 3, maxItems: 5 },
+          roomPlan: { type: 'array', items: { type: 'string' }, minItems: 3, maxItems: 5 },
+          assetPlan: { type: 'array', items: { type: 'string' }, minItems: 4, maxItems: 8 },
+          patchSummary: { type: 'string' },
+          gameplayChanges: { type: 'array', items: { type: 'string' }, minItems: 3, maxItems: 6 },
         },
       },
     },
-    "You are Gamma, a game developer inside Boss Raid. Plan one small playable game slice. Keep the plan concrete and consistent with the supplied repo context.",
+    'You are Gamma, a game developer inside Boss Raid. Plan one small playable game slice. Keep the plan concrete and consistent with the supplied repo context.',
     JSON.stringify(
       {
         task: task.task,
@@ -694,43 +755,91 @@ async function buildGbStudioPlan(task: ProviderTaskPackage): Promise<GbStudioPla
         files: task.artifacts.files.map((file) => ({ path: file.path, content: file.content })),
       },
       null,
-      2,
-    ),
+      2
+    )
   ).catch(() => undefined);
   return planned ?? fallback;
 }
 
 function produceGbStudioBundle(plan: GbStudioPlan) {
-  const builder = new ArtifactBuilder("gamma");
-  const palette = plan.palette.length >= 4 ? plan.palette : ["#0F1C2E", "#FFDA47", "#F65D5D", "#77F6C5"];
+  const builder = new ArtifactBuilder('gamma');
+  const palette =
+    plan.palette.length >= 4 ? plan.palette : ['#0F1C2E', '#FFDA47', '#F65D5D', '#77F6C5'];
   const colors = buildPalette(palette);
-  const sceneSlug = normalizeName(plan.sceneName, "scene-one");
+  const sceneSlug = normalizeName(plan.sceneName, 'scene-one');
   const blueprint = buildDungeonBlueprint(plan);
   const background = drawDungeonRoomPreview(blueprint, colors);
-  const playerSheet = createSpriteSheet(16, 16, colors, "hero", 4);
-  const slimeSheet = createSpriteSheet(16, 16, colors, "slime", 2);
-  const keySheet = createSpriteSheet(16, 16, colors, "key", 2);
-  const doorSheet = createSpriteSheet(16, 32, colors, "door", 2);
-  const floorTile = createSimpleSprite(16, 16, colors, "floor_tile", 0);
-  const wallTile = createSimpleSprite(16, 16, colors, "wall_tile", 0);
-  const hudIcons = createSpriteSheet(16, 16, colors, "ui", 2);
+  const playerSheet = createSpriteSheet(16, 16, colors, 'hero', 4);
+  const slimeSheet = createSpriteSheet(16, 16, colors, 'slime', 2);
+  const keySheet = createSpriteSheet(16, 16, colors, 'key', 2);
+  const doorSheet = createSpriteSheet(16, 32, colors, 'door', 2);
+  const floorTile = createSimpleSprite(16, 16, colors, 'floor_tile', 0);
+  const wallTile = createSimpleSprite(16, 16, colors, 'wall_tile', 0);
+  const hudIcons = createSpriteSheet(16, 16, colors, 'ui', 2);
 
-  builder.writeBinary(joinArtifactPath("game", "assets", "backgrounds", `${sceneSlug}.png`), encodePng(background), "image/png");
-  builder.writeBinary(joinArtifactPath("game", "assets", "sprites", "player.png"), encodePng(playerSheet), "image/png");
-  builder.writeBinary(joinArtifactPath("game", "assets", "sprites", "slime-king.png"), encodePng(slimeSheet), "image/png");
-  builder.writeBinary(joinArtifactPath("game", "assets", "sprites", "vault-key.png"), encodePng(keySheet), "image/png");
-  builder.writeBinary(joinArtifactPath("game", "assets", "sprites", "exit-door.png"), encodePng(doorSheet), "image/png");
-  builder.writeBinary(joinArtifactPath("game", "assets", "tiles", "floor-tile.png"), encodePng(floorTile), "image/png");
-  builder.writeBinary(joinArtifactPath("game", "assets", "tiles", "wall-tile.png"), encodePng(wallTile), "image/png");
-  builder.writeBinary(joinArtifactPath("game", "assets", "ui", "hud-icons.png"), encodePng(hudIcons), "image/png");
-  builder.writeJson(joinArtifactPath("game", "project.gbsproj"), buildGbStudioProjectDocument(plan, blueprint, sceneSlug));
-  builder.writeText(joinArtifactPath("game", "scripts", "encounter.ts"), buildEncounterModule(plan, blueprint));
-  builder.writeText(joinArtifactPath("game", "scripts", "timer.ts"), buildTimerModule());
-  builder.writeText(joinArtifactPath("game", "scripts", "slime-king.ts"), buildSlimeKingModule(plan, blueprint));
-  builder.writeText(joinArtifactPath("game", "scripts", "exit-door.ts"), buildExitDoorModule(blueprint));
-  builder.writeJson(joinArtifactPath("game", "data", "dungeon-vault.scene.json"), buildSceneDocument(plan, blueprint));
-  builder.writeJson(joinArtifactPath("game", "data", "ui-hud.json"), buildHudDocument(blueprint));
-  builder.writeJson(joinArtifactPath("game", "design", "notes.json"), {
+  builder.writeBinary(
+    joinArtifactPath('game', 'assets', 'backgrounds', `${sceneSlug}.png`),
+    encodePng(background),
+    'image/png'
+  );
+  builder.writeBinary(
+    joinArtifactPath('game', 'assets', 'sprites', 'player.png'),
+    encodePng(playerSheet),
+    'image/png'
+  );
+  builder.writeBinary(
+    joinArtifactPath('game', 'assets', 'sprites', 'slime-king.png'),
+    encodePng(slimeSheet),
+    'image/png'
+  );
+  builder.writeBinary(
+    joinArtifactPath('game', 'assets', 'sprites', 'vault-key.png'),
+    encodePng(keySheet),
+    'image/png'
+  );
+  builder.writeBinary(
+    joinArtifactPath('game', 'assets', 'sprites', 'exit-door.png'),
+    encodePng(doorSheet),
+    'image/png'
+  );
+  builder.writeBinary(
+    joinArtifactPath('game', 'assets', 'tiles', 'floor-tile.png'),
+    encodePng(floorTile),
+    'image/png'
+  );
+  builder.writeBinary(
+    joinArtifactPath('game', 'assets', 'tiles', 'wall-tile.png'),
+    encodePng(wallTile),
+    'image/png'
+  );
+  builder.writeBinary(
+    joinArtifactPath('game', 'assets', 'ui', 'hud-icons.png'),
+    encodePng(hudIcons),
+    'image/png'
+  );
+  builder.writeJson(
+    joinArtifactPath('game', 'project.gbsproj'),
+    buildGbStudioProjectDocument(plan, blueprint, sceneSlug)
+  );
+  builder.writeText(
+    joinArtifactPath('game', 'scripts', 'encounter.ts'),
+    buildEncounterModule(plan, blueprint)
+  );
+  builder.writeText(joinArtifactPath('game', 'scripts', 'timer.ts'), buildTimerModule());
+  builder.writeText(
+    joinArtifactPath('game', 'scripts', 'slime-king.ts'),
+    buildSlimeKingModule(plan, blueprint)
+  );
+  builder.writeText(
+    joinArtifactPath('game', 'scripts', 'exit-door.ts'),
+    buildExitDoorModule(blueprint)
+  );
+  builder.writeJson(
+    joinArtifactPath('game', 'data', 'dungeon-vault.scene.json'),
+    buildSceneDocument(plan, blueprint)
+  );
+  builder.writeJson(joinArtifactPath('game', 'data', 'ui-hud.json'), buildHudDocument(blueprint));
+  builder.writeJson(joinArtifactPath('game', 'design', 'notes.json'), {
     title: plan.title,
     genre: plan.genre,
     tone: plan.tone,
@@ -742,22 +851,25 @@ function produceGbStudioBundle(plan: GbStudioPlan) {
     assetPlan: plan.assetPlan,
     gameplayChanges: plan.gameplayChanges,
   });
-  builder.writeText(joinArtifactPath("game", "README.md"), buildGameplayReadme(plan));
+  builder.writeText(joinArtifactPath('game', 'README.md'), buildGameplayReadme(plan));
   builder.writeText(
-    joinArtifactPath("marketing", "launch-copy.md"),
-    `# Launch Copy\n\n${plan.title}\n\n${plan.coreMechanic}\n\n- Dodge the ${plan.npcName.toLowerCase()}.\n- Grab the key.\n- Reach the door before the clock wins.\n`,
+    joinArtifactPath('marketing', 'launch-copy.md'),
+    `# Launch Copy\n\n${plan.title}\n\n${plan.coreMechanic}\n\n- Dodge the ${plan.npcName.toLowerCase()}.\n- Grab the key.\n- Reach the door before the clock wins.\n`
   );
 
   return builder.inlineAll();
 }
 
-function buildGbStudioPatch(task: ProviderTaskPackage, plan: GbStudioPlan): { patch: string; filesTouched: string[] } {
+function buildGbStudioPatch(
+  task: ProviderTaskPackage,
+  plan: GbStudioPlan
+): { patch: string; filesTouched: string[] } {
   const filesTouched: string[] = [];
   const diffParts: string[] = [];
   const blueprint = buildDungeonBlueprint(plan);
-  const sceneSlug = normalizeName(plan.sceneName, "scene-one");
+  const sceneSlug = normalizeName(plan.sceneName, 'scene-one');
 
-  const projectFile = firstFile(task, (file) => file.path.endsWith(".gbsproj"));
+  const projectFile = firstFile(task, (file) => file.path.endsWith('.gbsproj'));
   if (projectFile) {
     let parsed: Record<string, unknown> = {};
     try {
@@ -777,54 +889,54 @@ function buildGbStudioPatch(task: ProviderTaskPackage, plan: GbStudioPlan): { pa
         assetPlan: plan.assetPlan,
       },
     };
-    const nextContent = JSON.stringify(updated, null, 2) + "\n";
+    const nextContent = JSON.stringify(updated, null, 2) + '\n';
     diffParts.push(buildUnifiedDiff(projectFile.path, projectFile.content, nextContent));
     filesTouched.push(projectFile.path);
   }
 
-  const encounterFile = firstFile(task, (file) => file.path.includes("encounter"));
+  const encounterFile = firstFile(task, (file) => file.path.includes('encounter'));
   if (encounterFile) {
     const nextContent = buildEncounterModule(plan, blueprint);
     diffParts.push(buildUnifiedDiff(encounterFile.path, encounterFile.content, nextContent));
     filesTouched.push(encounterFile.path);
   }
 
-  const timerFile = firstFile(task, (file) => file.path.endsWith("timer.ts"));
+  const timerFile = firstFile(task, (file) => file.path.endsWith('timer.ts'));
   if (timerFile) {
     const nextContent = buildTimerModule();
     diffParts.push(buildUnifiedDiff(timerFile.path, timerFile.content, nextContent));
     filesTouched.push(timerFile.path);
   }
 
-  const slimeKingFile = firstFile(task, (file) => file.path.endsWith("slime-king.ts"));
+  const slimeKingFile = firstFile(task, (file) => file.path.endsWith('slime-king.ts'));
   if (slimeKingFile) {
     const nextContent = buildSlimeKingModule(plan, blueprint);
     diffParts.push(buildUnifiedDiff(slimeKingFile.path, slimeKingFile.content, nextContent));
     filesTouched.push(slimeKingFile.path);
   }
 
-  const exitDoorFile = firstFile(task, (file) => file.path.endsWith("exit-door.ts"));
+  const exitDoorFile = firstFile(task, (file) => file.path.endsWith('exit-door.ts'));
   if (exitDoorFile) {
     const nextContent = buildExitDoorModule(blueprint);
     diffParts.push(buildUnifiedDiff(exitDoorFile.path, exitDoorFile.content, nextContent));
     filesTouched.push(exitDoorFile.path);
   }
 
-  const sceneFile = firstFile(task, (file) => file.path.endsWith("dungeon-vault.scene.json"));
+  const sceneFile = firstFile(task, (file) => file.path.endsWith('dungeon-vault.scene.json'));
   if (sceneFile) {
-    const nextContent = JSON.stringify(buildSceneDocument(plan, blueprint), null, 2) + "\n";
+    const nextContent = JSON.stringify(buildSceneDocument(plan, blueprint), null, 2) + '\n';
     diffParts.push(buildUnifiedDiff(sceneFile.path, sceneFile.content, nextContent));
     filesTouched.push(sceneFile.path);
   }
 
-  const hudFile = firstFile(task, (file) => file.path.endsWith("ui-hud.json"));
+  const hudFile = firstFile(task, (file) => file.path.endsWith('ui-hud.json'));
   if (hudFile) {
-    const nextContent = JSON.stringify(buildHudDocument(blueprint), null, 2) + "\n";
+    const nextContent = JSON.stringify(buildHudDocument(blueprint), null, 2) + '\n';
     diffParts.push(buildUnifiedDiff(hudFile.path, hudFile.content, nextContent));
     filesTouched.push(hudFile.path);
   }
 
-  const briefFile = firstFile(task, (file) => file.path.endsWith("creative-brief.md"));
+  const briefFile = firstFile(task, (file) => file.path.endsWith('creative-brief.md'));
   if (briefFile) {
     const nextContent = buildCreativeBrief(plan);
     diffParts.push(buildUnifiedDiff(briefFile.path, briefFile.content, nextContent));
@@ -832,7 +944,7 @@ function buildGbStudioPatch(task: ProviderTaskPackage, plan: GbStudioPlan): { pa
   }
 
   return {
-    patch: diffParts.join("\n\n"),
+    patch: diffParts.join('\n\n'),
     filesTouched,
   };
 }
@@ -841,11 +953,19 @@ function fallbackPixelPlan(task: ProviderTaskPackage): PixelPlan {
   const title = extractGameTitle(task);
   return {
     artDirection: `${title} should read as clean Game Boy pixel art with one warm accent color.`,
-    palette: extractPalette(task, ["#0F1C2E", "#FFDA47", "#F65D5D", "#77F6C5"]),
-    assetList: ["player", "slime enemy", "vault key", "exit door", "floor tile", "wall tile", "hud icons"],
+    palette: extractPalette(task, ['#0F1C2E', '#FFDA47', '#F65D5D', '#77F6C5']),
+    assetList: [
+      'player',
+      'slime enemy',
+      'vault key',
+      'exit door',
+      'floor tile',
+      'wall tile',
+      'hud icons',
+    ],
     notes: [
-      "Keep the silhouettes readable at 16x16.",
-      "Reuse the same palette across gameplay, art, and trailer.",
+      'Keep the silhouettes readable at 16x16.',
+      'Reuse the same palette across gameplay, art, and trailer.',
     ],
     summary: `Deliver a compact pixel pack for ${title} with gameplay sprites, tiles, and HUD support art.`,
   };
@@ -855,34 +975,38 @@ async function buildPixelPlan(task: ProviderTaskPackage): Promise<PixelPlan> {
   const fallback = fallbackPixelPlan(task);
   const planned = await planWithVenice<PixelPlan>(
     {
-      name: "dottie_pixel_plan",
+      name: 'dottie_pixel_plan',
       schema: {
-        type: "object",
+        type: 'object',
         additionalProperties: false,
-        required: ["artDirection", "palette", "assetList", "notes", "summary"],
+        required: ['artDirection', 'palette', 'assetList', 'notes', 'summary'],
         properties: {
-          artDirection: { type: "string" },
-          palette: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 4 },
-          assetList: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 8 },
-          notes: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 6 },
-          summary: { type: "string" },
+          artDirection: { type: 'string' },
+          palette: { type: 'array', items: { type: 'string' }, minItems: 4, maxItems: 4 },
+          assetList: { type: 'array', items: { type: 'string' }, minItems: 4, maxItems: 8 },
+          notes: { type: 'array', items: { type: 'string' }, minItems: 2, maxItems: 6 },
+          summary: { type: 'string' },
         },
       },
     },
-    "You are Dottie, a pixel artist inside Boss Raid. Turn the request into a compact asset pack plan with a coherent palette and only the assets the build actually needs.",
-    JSON.stringify({ task: task.task, synthesis: task.synthesis }, null, 2),
+    'You are Dottie, a pixel artist inside Boss Raid. Turn the request into a compact asset pack plan with a coherent palette and only the assets the build actually needs.',
+    JSON.stringify({ task: task.task, synthesis: task.synthesis }, null, 2)
   ).catch(() => undefined);
   return planned ?? fallback;
 }
 
 function producePixelBundle(plan: PixelPlan) {
-  const builder = new ArtifactBuilder("dottie");
-  const palette = plan.palette.length >= 4 ? plan.palette : ["#0F1C2E", "#FFDA47", "#F65D5D", "#77F6C5"];
+  const builder = new ArtifactBuilder('dottie');
+  const palette =
+    plan.palette.length >= 4 ? plan.palette : ['#0F1C2E', '#FFDA47', '#F65D5D', '#77F6C5'];
   const colors = buildPalette(palette);
   const assets = plan.assetList.map((asset, index) => {
     const bitmap = createSimpleSprite(16, 16, colors, inferAssetKind(asset), index);
-    const relativePath = joinArtifactPath("pixel-pack", `${normalizeName(asset, `asset-${index + 1}`)}.png`);
-    builder.writeBinary(relativePath, encodePng(bitmap), "image/png");
+    const relativePath = joinArtifactPath(
+      'pixel-pack',
+      `${normalizeName(asset, `asset-${index + 1}`)}.png`
+    );
+    builder.writeBinary(relativePath, encodePng(bitmap), 'image/png');
     return { name: asset, relativePath };
   });
 
@@ -891,14 +1015,21 @@ function producePixelBundle(plan: PixelPlan) {
     const sprite = createSimpleSprite(16, 16, colors, inferAssetKind(asset.name), index);
     sheet.blit(sprite, 4 + index * 20, 4);
   });
-  builder.writeBinary(joinArtifactPath("pixel-pack", "spritesheet.png"), encodePng(sheet), "image/png");
-  builder.writeJson(joinArtifactPath("pixel-pack", "metadata.json"), {
+  builder.writeBinary(
+    joinArtifactPath('pixel-pack', 'spritesheet.png'),
+    encodePng(sheet),
+    'image/png'
+  );
+  builder.writeJson(joinArtifactPath('pixel-pack', 'metadata.json'), {
     artDirection: plan.artDirection,
     palette: palette.map(toHex),
     assets,
     notes: plan.notes,
   });
-  builder.writeText(joinArtifactPath("pixel-pack", "README.md"), `# Dottie Pixel Pack\n\n${plan.summary}\n`);
+  builder.writeText(
+    joinArtifactPath('pixel-pack', 'README.md'),
+    `# Dottie Pixel Pack\n\n${plan.summary}\n`
+  );
   return builder.inlineAll();
 }
 
@@ -906,24 +1037,30 @@ function fallbackVideoPlan(task: ProviderTaskPackage): VideoPlan {
   const title = extractGameTitle(task);
   return {
     projectTitle: title,
-    format: "12-second teaser",
+    format: '12-second teaser',
     durationSec: 12,
-    visualStyle: "retro kinetic typography over chunky gameplay stills",
-    musicMood: "urgent chiptune pulse",
+    visualStyle: 'retro kinetic typography over chunky gameplay stills',
+    musicMood: 'urgent chiptune pulse',
     scriptSummary: `Sell ${title} as a fast, readable microgame with a key, a slime, and a timer.`,
     beatSheet: [
-      "Find the key before the slime closes the lane.",
-      "Read the pattern, move clean, and open the exit.",
-      "Boss Raid: Slime Panic. Clear the room before the clock wins.",
+      'Find the key before the slime closes the lane.',
+      'Read the pattern, move clean, and open the exit.',
+      'Boss Raid: Slime Panic. Clear the room before the clock wins.',
     ],
     compositionPlan: [
-      "Open on the timer and the room layout.",
-      "Cut to the slime lane and key pickup.",
-      "Land on the title card and CTA.",
+      'Open on the timer and the room layout.',
+      'Cut to the slime lane and key pickup.',
+      'Land on the title card and CTA.',
     ],
-    renderNotes: ["Keep captions readable in one glance.", "Use the same palette as the gameplay and art pack."],
-    palette: extractPalette(task, ["#0F1C2E", "#FFDA47", "#F65D5D", "#77F6C5"]),
-    launchCopy: ["A one-room Game Boy microgame with timer pressure.", "Dodge the slime. Grab the key. Hit the exit."],
+    renderNotes: [
+      'Keep captions readable in one glance.',
+      'Use the same palette as the gameplay and art pack.',
+    ],
+    palette: extractPalette(task, ['#0F1C2E', '#FFDA47', '#F65D5D', '#77F6C5']),
+    launchCopy: [
+      'A one-room Game Boy microgame with timer pressure.',
+      'Dodge the slime. Grab the key. Hit the exit.',
+    ],
   };
 }
 
@@ -931,55 +1068,70 @@ async function buildVideoPlan(task: ProviderTaskPackage): Promise<VideoPlan> {
   const fallback = fallbackVideoPlan(task);
   const planned = await planWithVenice<VideoPlan>(
     {
-      name: "riko_video_plan",
+      name: 'riko_video_plan',
       schema: {
-        type: "object",
+        type: 'object',
         additionalProperties: false,
         required: [
-          "projectTitle",
-          "format",
-          "durationSec",
-          "visualStyle",
-          "musicMood",
-          "scriptSummary",
-          "beatSheet",
-          "compositionPlan",
-          "renderNotes",
-          "palette",
-          "launchCopy",
+          'projectTitle',
+          'format',
+          'durationSec',
+          'visualStyle',
+          'musicMood',
+          'scriptSummary',
+          'beatSheet',
+          'compositionPlan',
+          'renderNotes',
+          'palette',
+          'launchCopy',
         ],
         properties: {
-          projectTitle: { type: "string" },
-          format: { type: "string" },
-          durationSec: { type: "number" },
-          visualStyle: { type: "string" },
-          musicMood: { type: "string" },
-          scriptSummary: { type: "string" },
-          beatSheet: { type: "array", items: { type: "string" }, minItems: 3, maxItems: 5 },
-          compositionPlan: { type: "array", items: { type: "string" }, minItems: 3, maxItems: 5 },
-          renderNotes: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 6 },
-          palette: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 4 },
-          launchCopy: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 5 },
+          projectTitle: { type: 'string' },
+          format: { type: 'string' },
+          durationSec: { type: 'number' },
+          visualStyle: { type: 'string' },
+          musicMood: { type: 'string' },
+          scriptSummary: { type: 'string' },
+          beatSheet: { type: 'array', items: { type: 'string' }, minItems: 3, maxItems: 5 },
+          compositionPlan: { type: 'array', items: { type: 'string' }, minItems: 3, maxItems: 5 },
+          renderNotes: { type: 'array', items: { type: 'string' }, minItems: 2, maxItems: 6 },
+          palette: { type: 'array', items: { type: 'string' }, minItems: 4, maxItems: 4 },
+          launchCopy: { type: 'array', items: { type: 'string' }, minItems: 2, maxItems: 5 },
         },
       },
     },
-    "You are Riko, a video marketer inside Boss Raid. Turn the request into a short teaser plan, beat sheet, and launch copy that match the supplied game brief.",
-    JSON.stringify({ task: task.task, synthesis: task.synthesis }, null, 2),
+    'You are Riko, a video marketer inside Boss Raid. Turn the request into a short teaser plan, beat sheet, and launch copy that match the supplied game brief.',
+    JSON.stringify({ task: task.task, synthesis: task.synthesis }, null, 2)
   ).catch(() => undefined);
   return planned ?? fallback;
 }
 
 function produceVideoBundle(plan: VideoPlan) {
-  const builder = new ArtifactBuilder("riko");
-  const palette = plan.palette.length >= 4 ? plan.palette : ["#0F1C2E", "#FFDA47", "#F65D5D", "#77F6C5"];
-  const frames = plan.beatSheet.slice(0, 3).map((beat, index) =>
-    renderStoryFrame(320, 180, palette, `${plan.projectTitle} ${index + 1}`, beat, plan.visualStyle, index),
-  );
+  const builder = new ArtifactBuilder('riko');
+  const palette =
+    plan.palette.length >= 4 ? plan.palette : ['#0F1C2E', '#FFDA47', '#F65D5D', '#77F6C5'];
+  const frames = plan.beatSheet
+    .slice(0, 3)
+    .map((beat, index) =>
+      renderStoryFrame(
+        320,
+        180,
+        palette,
+        `${plan.projectTitle} ${index + 1}`,
+        beat,
+        plan.visualStyle,
+        index
+      )
+    );
   const framePaths: string[] = [];
 
   frames.forEach((bitmap, index) => {
-    const relativePath = joinArtifactPath("video-preview", "frames", `frame-${String(index + 1).padStart(2, "0")}.png`);
-    builder.writeBinary(relativePath, encodePng(bitmap), "image/png");
+    const relativePath = joinArtifactPath(
+      'video-preview',
+      'frames',
+      `frame-${String(index + 1).padStart(2, '0')}.png`
+    );
+    builder.writeBinary(relativePath, encodePng(bitmap), 'image/png');
     framePaths.push(relativePath);
   });
 
@@ -987,113 +1139,133 @@ function produceVideoBundle(plan: VideoPlan) {
   frames.forEach((frame, index) => {
     storyboard.blit(frame, index * 320, 0);
   });
-  builder.writeBinary(joinArtifactPath("video-preview", "storyboard.png"), encodePng(storyboard), "image/png");
   builder.writeBinary(
-    joinArtifactPath("video-preview", "preview.gif"),
+    joinArtifactPath('video-preview', 'storyboard.png'),
+    encodePng(storyboard),
+    'image/png'
+  );
+  builder.writeBinary(
+    joinArtifactPath('video-preview', 'preview.gif'),
     encodeGifAnimation(frames, {
-      delayCs: Math.max(60, Math.round((Math.max(3, plan.durationSec) * 100) / Math.max(1, frames.length))),
+      delayCs: Math.max(
+        60,
+        Math.round((Math.max(3, plan.durationSec) * 100) / Math.max(1, frames.length))
+      ),
       loopCount: 0,
     }),
-    "image/gif",
+    'image/gif'
   );
   builder.writeText(
-    joinArtifactPath("video-preview", "captions.srt"),
+    joinArtifactPath('video-preview', 'captions.srt'),
     plan.beatSheet
       .slice(0, 3)
-      .map((beat, index) => `${index + 1}\n00:00:0${index * 2},000 --> 00:00:0${index * 2 + 2},000\n${beat}\n`)
-      .join("\n"),
-    "application/x-subrip",
+      .map(
+        (beat, index) =>
+          `${index + 1}\n00:00:0${index * 2},000 --> 00:00:0${index * 2 + 2},000\n${beat}\n`
+      )
+      .join('\n'),
+    'application/x-subrip'
   );
-  builder.writeJson(joinArtifactPath("video-preview", "plan.json"), plan);
+  builder.writeJson(joinArtifactPath('video-preview', 'plan.json'), plan);
   builder.writeText(
-    joinArtifactPath("video-preview", "remotion", "package.json"),
+    joinArtifactPath('video-preview', 'remotion', 'package.json'),
     JSON.stringify(
       {
-        name: normalizeName(plan.projectTitle, "riko-remotion"),
+        name: normalizeName(plan.projectTitle, 'riko-remotion'),
         private: true,
-        scripts: { render: "remotion render src/index.ts Promo out/promo.mp4" },
+        scripts: { render: 'remotion render src/index.ts Promo out/promo.mp4' },
         dependencies: {
-          remotion: "^4.0.0",
-          react: "^19.0.0",
-          "react-dom": "^19.0.0",
+          remotion: '^4.0.0',
+          react: '^19.0.0',
+          'react-dom': '^19.0.0',
         },
       },
       null,
-      2,
-    ) + "\n",
-    "application/json",
+      2
+    ) + '\n',
+    'application/json'
   );
   builder.writeText(
-    joinArtifactPath("video-preview", "remotion", "src", "Promo.tsx"),
-    `import React from "react";\nimport { AbsoluteFill, Sequence, useCurrentFrame, interpolate } from "remotion";\n\nconst beats = ${JSON.stringify(plan.beatSheet, null, 2)};\n\nexport const Promo: React.FC = () => {\n  const frame = useCurrentFrame();\n  return (\n    <AbsoluteFill style={{ backgroundColor: "${plan.palette[0]}", color: "${plan.palette[3]}", fontFamily: "sans-serif", justifyContent: "center", alignItems: "center" }}>\n      {beats.map((beat, index) => (\n        <Sequence key={index} from={index * 60} durationInFrames={60}>\n          <div style={{ opacity: interpolate(frame, [index * 60, index * 60 + 15], [0, 1], { extrapolateRight: "clamp" }), width: "80%", fontSize: 42, textAlign: "center" }}>{beat}</div>\n        </Sequence>\n      ))}\n    </AbsoluteFill>\n  );\n};\n`,
+    joinArtifactPath('video-preview', 'remotion', 'src', 'Promo.tsx'),
+    `import React from "react";\nimport { AbsoluteFill, Sequence, useCurrentFrame, interpolate } from "remotion";\n\nconst beats = ${JSON.stringify(plan.beatSheet, null, 2)};\n\nexport const Promo: React.FC = () => {\n  const frame = useCurrentFrame();\n  return (\n    <AbsoluteFill style={{ backgroundColor: "${plan.palette[0]}", color: "${plan.palette[3]}", fontFamily: "sans-serif", justifyContent: "center", alignItems: "center" }}>\n      {beats.map((beat, index) => (\n        <Sequence key={index} from={index * 60} durationInFrames={60}>\n          <div style={{ opacity: interpolate(frame, [index * 60, index * 60 + 15], [0, 1], { extrapolateRight: "clamp" }), width: "80%", fontSize: 42, textAlign: "center" }}>{beat}</div>\n        </Sequence>\n      ))}\n    </AbsoluteFill>\n  );\n};\n`
   );
   builder.writeText(
-    joinArtifactPath("video-preview", "remotion", "src", "Root.tsx"),
+    joinArtifactPath('video-preview', 'remotion', 'src', 'Root.tsx'),
     `import React from "react";\nimport { Composition } from "remotion";\nimport { Promo } from "./Promo";\n\nexport const RemotionRoot: React.FC = () => (\n  <Composition id="Promo" component={Promo} width={1280} height={720} fps={30} durationInFrames={${Math.max(
       90,
-      plan.beatSheet.length * 60,
-    )}} defaultProps={{}} />\n);\n`,
+      plan.beatSheet.length * 60
+    )}} defaultProps={{}} />\n);\n`
   );
   builder.writeText(
-    joinArtifactPath("video-preview", "remotion", "src", "index.ts"),
-    `import { registerRoot } from "remotion";\nimport { RemotionRoot } from "./Root";\n\nregisterRoot(RemotionRoot);\n`,
+    joinArtifactPath('video-preview', 'remotion', 'src', 'index.ts'),
+    `import { registerRoot } from "remotion";\nimport { RemotionRoot } from "./Root";\n\nregisterRoot(RemotionRoot);\n`
   );
 
   const frameGlob = `${builder.root}/video-preview/frames/frame-%02d.png`;
   const mp4Output = `${builder.root}/video-preview/preview.mp4`;
   if (
     tryRunFfmpeg([
-      "-y",
-      "-framerate",
-      "1",
-      "-i",
+      '-y',
+      '-framerate',
+      '1',
+      '-i',
       frameGlob,
-      "-vf",
-      "scale=640:360:flags=neighbor,format=yuv420p",
-      "-t",
-      "6",
+      '-vf',
+      'scale=640:360:flags=neighbor,format=yuv420p',
+      '-t',
+      '6',
       mp4Output,
     ])
   ) {
-    const mp4Buffer = spawnSync("cat", [mp4Output], { encoding: null }).stdout;
+    const mp4Buffer = spawnSync('cat', [mp4Output], { encoding: null }).stdout;
     if (mp4Buffer) {
-      builder.writeBinary(joinArtifactPath("video-preview", "preview.mp4"), mp4Buffer, "video/mp4");
+      builder.writeBinary(joinArtifactPath('video-preview', 'preview.mp4'), mp4Buffer, 'video/mp4');
     }
   }
 
-  builder.writeText(joinArtifactPath("video-preview", "README.md"), `# ${plan.projectTitle}\n\n${plan.scriptSummary}\n`);
+  builder.writeText(
+    joinArtifactPath('video-preview', 'README.md'),
+    `# ${plan.projectTitle}\n\n${plan.scriptSummary}\n`
+  );
   return builder.inlineAll();
 }
 
 async function buildGenericTextPlan(task: ProviderTaskPackage): Promise<TextPlan> {
   const fallback: TextPlan = {
-    answerText: trimSentence(task.task.description, 220) || `Mercenary asked ${providerConfig.displayName} for a scoped contribution.`,
-    explanation: "Produced a constrained text contribution aligned to the supplied workstream scope.",
+    answerText:
+      trimSentence(task.task.description, 220) ||
+      `Mercenary asked ${providerConfig.displayName} for a scoped contribution.`,
+    explanation:
+      'Produced a constrained text contribution aligned to the supplied workstream scope.',
     confidence: 0.66,
   };
 
   const planned = await planWithVenice<TextPlan>(
     {
-      name: "generic_text_answer",
+      name: 'generic_text_answer',
       schema: {
-        type: "object",
+        type: 'object',
         additionalProperties: false,
-        required: ["answerText", "explanation", "confidence"],
+        required: ['answerText', 'explanation', 'confidence'],
         properties: {
-          answerText: { type: "string" },
-          explanation: { type: "string" },
-          confidence: { type: "number" },
+          answerText: { type: 'string' },
+          explanation: { type: 'string' },
+          confidence: { type: 'number' },
         },
       },
     },
-    "You are a specialist provider inside Boss Raid. Give one concise contribution for Mercenary to synthesize. Keep the answer role-aligned, direct, and artifact-light unless the task explicitly asks for an asset list. Do not mention hidden chain-of-thought.",
-    JSON.stringify({ task: task.task, synthesis: task.synthesis, artifacts: task.artifacts }, null, 2),
+    'You are a specialist provider inside Boss Raid. Give one concise contribution for Mercenary to synthesize. Keep the answer role-aligned, direct, and artifact-light unless the task explicitly asks for an asset list. Do not mention hidden chain-of-thought.',
+    JSON.stringify(
+      { task: task.task, synthesis: task.synthesis, artifacts: task.artifacts },
+      null,
+      2
+    )
   ).catch(() => undefined);
   return planned ?? fallback;
 }
 
 function trimSentence(value: string, maxLength: number): string {
-  const normalized = value.replace(/\s+/g, " ").trim();
+  const normalized = value.replace(/\s+/g, ' ').trim();
   if (normalized.length <= maxLength) {
     return normalized;
   }
@@ -1108,20 +1280,20 @@ function trimSentence(value: string, maxLength: number): string {
 
 function buildTaskHaystack(task: ProviderTaskPackage): string {
   return [
-    task.task.framework ?? "",
+    task.task.framework ?? '',
     task.task.title,
     task.task.description,
     task.artifacts.expectedBehavior,
-    task.artifacts.errors.join(" "),
-    task.synthesis?.workstreamLabel ?? "",
-    task.synthesis?.roleLabel ?? "",
+    task.artifacts.errors.join(' '),
+    task.synthesis?.workstreamLabel ?? '',
+    task.synthesis?.roleLabel ?? '',
   ]
-    .join("\n")
+    .join('\n')
     .toLowerCase();
 }
 
 function isGamePackageTextTask(task: ProviderTaskPackage): boolean {
-  if (task.desiredOutput.primaryType !== "text") {
+  if (task.desiredOutput.primaryType !== 'text') {
     return false;
   }
 
@@ -1131,40 +1303,44 @@ function isGamePackageTextTask(task: ProviderTaskPackage): boolean {
   }
 
   const signals = [
-    "gameplay",
-    "microgame",
-    "trailer",
-    "pixel",
-    "sprite",
-    "launch copy",
-    "video",
+    'gameplay',
+    'microgame',
+    'trailer',
+    'pixel',
+    'sprite',
+    'launch copy',
+    'video',
   ].filter((signal) => haystack.includes(signal)).length;
   return signals >= 2;
 }
 
 function readTextContributionRole(task: ProviderTaskPackage): TextContributionRole {
   const haystack = [
-    task.synthesis?.workstreamId ?? "",
-    task.synthesis?.roleId ?? "",
-    task.synthesis?.workstreamLabel ?? "",
-    task.synthesis?.roleLabel ?? "",
+    task.synthesis?.workstreamId ?? '',
+    task.synthesis?.roleId ?? '',
+    task.synthesis?.workstreamLabel ?? '',
+    task.synthesis?.roleLabel ?? '',
   ]
-    .join(" ")
+    .join(' ')
     .toLowerCase();
 
-  if (haystack.includes("lead-answer") || haystack.includes("answer")) {
-    return "lead";
+  if (haystack.includes('lead-answer') || haystack.includes('answer')) {
+    return 'lead';
   }
-  if (haystack.includes("risk")) {
-    return "risk";
+  if (haystack.includes('risk')) {
+    return 'risk';
   }
-  if (haystack.includes("constraint")) {
-    return "constraints";
+  if (haystack.includes('constraint')) {
+    return 'constraints';
   }
-  if (haystack.includes("execution") || haystack.includes("action-plan") || haystack.includes("next step")) {
-    return "execution";
+  if (
+    haystack.includes('execution') ||
+    haystack.includes('action-plan') ||
+    haystack.includes('next step')
+  ) {
+    return 'execution';
   }
-  return "other";
+  return 'other';
 }
 
 function summarizeItems(values: string[], limit = 3): string {
@@ -1172,7 +1348,7 @@ function summarizeItems(values: string[], limit = 3): string {
     .map((value) => trimSentence(value, 72))
     .filter((value) => value.length > 0)
     .slice(0, limit)
-    .join(", ");
+    .join(', ');
 }
 
 function buildGbStudioTextPlan(task: ProviderTaskPackage, plan: GbStudioPlan): TextPlan {
@@ -1181,27 +1357,28 @@ function buildGbStudioTextPlan(task: ProviderTaskPackage, plan: GbStudioPlan): T
   const gameplayScope = summarizeItems(plan.gameplayChanges, 2);
 
   switch (role) {
-    case "lead":
+    case 'lead':
       return {
         answerText: `${plan.conceptSummary} Keep the build to one readable room with the key, the ${plan.npcName}, the exit, and the timer driving the loop.`,
         explanation: "Returned the gameplay-led answer for Mercenary's final synthesis.",
         confidence: 0.82,
       };
-    case "risk":
+    case 'risk':
       return {
         answerText: `Keep the scope to one room and one readable boss pattern. Extra rooms, combat layers, or unclear HUD states will make the build feel unfinished.`,
         explanation: "Returned the gameplay risk note for Mercenary's final synthesis.",
         confidence: 0.79,
       };
-    case "constraints":
+    case 'constraints':
       return {
-        answerText: `Preserve only the ${plan.sceneName} slice and the systems needed to read the run in one glance: ${gameplayScope || "timer, key state, boss pressure, and exit gating"}.`,
+        answerText: `Preserve only the ${plan.sceneName} slice and the systems needed to read the run in one glance: ${gameplayScope || 'timer, key state, boss pressure, and exit gating'}.`,
         explanation: "Returned the gameplay boundary note for Mercenary's final synthesis.",
         confidence: 0.78,
       };
-    case "execution":
+    case 'execution':
       return {
-        answerText: `Start by locking the ${plan.sceneName} room and core loop, then align the art pack and trailer to that same slice. ${roomScope || ""}`.trim(),
+        answerText:
+          `Start by locking the ${plan.sceneName} room and core loop, then align the art pack and trailer to that same slice. ${roomScope || ''}`.trim(),
         explanation: "Returned the gameplay next-step note for Mercenary's final synthesis.",
         confidence: 0.8,
       };
@@ -1219,33 +1396,33 @@ function buildPixelTextPlan(task: ProviderTaskPackage, plan: PixelPlan): TextPla
   const assetScope = summarizeItems(plan.assetList, 4);
 
   switch (role) {
-    case "lead":
+    case 'lead':
       return {
         answerText: `${plan.summary} Reuse one palette and only ship the assets the playable slice actually needs.`,
         explanation: "Returned the art-led answer for Mercenary's final synthesis.",
         confidence: 0.8,
       };
-    case "risk":
+    case 'risk':
       return {
         answerText: `Unreadable silhouettes or extra decorative assets will dilute the package. Keep each sprite legible at gameplay scale and keep the palette consistent across the whole launch set.`,
         explanation: "Returned the art risk note for Mercenary's final synthesis.",
         confidence: 0.77,
       };
-    case "constraints":
+    case 'constraints':
       return {
-        answerText: `Limit the art pack to the core ship list: ${assetScope || "player, boss, key, exit, floor, wall, and HUD"}. Do not branch into extra characters or props outside the one-room loop.`,
+        answerText: `Limit the art pack to the core ship list: ${assetScope || 'player, boss, key, exit, floor, wall, and HUD'}. Do not branch into extra characters or props outside the one-room loop.`,
         explanation: "Returned the art boundary note for Mercenary's final synthesis.",
         confidence: 0.76,
       };
-    case "execution":
+    case 'execution':
       return {
-        answerText: `Lock the palette first, then finish the smallest asset pack that unblocks the build and trailer: ${assetScope || "the gameplay-critical sprite set"}.`,
+        answerText: `Lock the palette first, then finish the smallest asset pack that unblocks the build and trailer: ${assetScope || 'the gameplay-critical sprite set'}.`,
         explanation: "Returned the art handoff note for Mercenary's final synthesis.",
         confidence: 0.78,
       };
     default:
       return {
-        answerText: `${plan.summary} Focus on ${assetScope || "the gameplay-critical asset pack"} and keep the palette coherent.`,
+        answerText: `${plan.summary} Focus on ${assetScope || 'the gameplay-critical asset pack'} and keep the palette coherent.`,
         explanation: "Returned a concise art contribution for Mercenary's final synthesis.",
         confidence: 0.78,
       };
@@ -1257,25 +1434,26 @@ function buildVideoTextPlan(task: ProviderTaskPackage, plan: VideoPlan): TextPla
   const launchAngle = summarizeItems(plan.launchCopy, 2);
 
   switch (role) {
-    case "lead":
+    case 'lead':
       return {
         answerText: `${plan.scriptSummary} The trailer should sell the timer, key, slime, and exit in one quick read.`,
         explanation: "Returned the promo-led answer for Mercenary's final synthesis.",
         confidence: 0.8,
       };
-    case "risk":
+    case 'risk':
       return {
         answerText: `If the trailer introduces mechanics or scenes the playable slice does not ship, the package will feel fake. Keep every beat anchored to the one-room loop.`,
         explanation: "Returned the promo risk note for Mercenary's final synthesis.",
         confidence: 0.77,
       };
-    case "constraints":
+    case 'constraints':
       return {
-        answerText: `Stay inside ${plan.durationSec} seconds and only claim the mechanics the build actually contains. ${launchAngle || ""}`.trim(),
+        answerText:
+          `Stay inside ${plan.durationSec} seconds and only claim the mechanics the build actually contains. ${launchAngle || ''}`.trim(),
         explanation: "Returned the promo boundary note for Mercenary's final synthesis.",
         confidence: 0.76,
       };
-    case "execution":
+    case 'execution':
       return {
         answerText: `Capture the locked gameplay slice first, then cut the ${plan.durationSec}-second teaser around the key pickup, boss pressure, and exit reveal.`,
         explanation: "Returned the promo next-step note for Mercenary's final synthesis.",
@@ -1292,21 +1470,21 @@ function buildVideoTextPlan(task: ProviderTaskPackage, plan: VideoPlan): TextPla
 
 async function maybeBuildSpecializedTextPlan(
   mode: ProviderMode,
-  task: ProviderTaskPackage,
+  task: ProviderTaskPackage
 ): Promise<TextPlan | undefined> {
-  if (task.desiredOutput.primaryType !== "text") {
+  if (task.desiredOutput.primaryType !== 'text') {
     return undefined;
   }
 
-  if (mode === "gbstudio" && domainMatchesMode(mode, task)) {
+  if (mode === 'gbstudio' && domainMatchesMode(mode, task)) {
     return buildGbStudioTextPlan(task, await buildGbStudioPlan(task));
   }
 
-  if (mode === "pixel_art" && (domainMatchesMode(mode, task) || isGamePackageTextTask(task))) {
+  if (mode === 'pixel_art' && (domainMatchesMode(mode, task) || isGamePackageTextTask(task))) {
     return buildPixelTextPlan(task, await buildPixelPlan(task));
   }
 
-  if (mode === "remotion" && (domainMatchesMode(mode, task) || isGamePackageTextTask(task))) {
+  if (mode === 'remotion' && (domainMatchesMode(mode, task) || isGamePackageTextTask(task))) {
     return buildVideoTextPlan(task, await buildVideoPlan(task));
   }
 
@@ -1315,73 +1493,90 @@ async function maybeBuildSpecializedTextPlan(
 
 function domainMatchesMode(mode: ProviderMode, task: ProviderTaskPackage): boolean {
   const haystack = [
-    task.task.framework ?? "",
+    task.task.framework ?? '',
     task.task.description,
-    task.synthesis?.workstreamLabel ?? "",
-    task.synthesis?.roleLabel ?? "",
+    task.synthesis?.workstreamLabel ?? '',
+    task.synthesis?.roleLabel ?? '',
   ]
-    .join("\n")
+    .join('\n')
     .toLowerCase();
 
-  if (mode === "gbstudio") {
-    return haystack.includes("gb-studio") || haystack.includes("gameplay");
+  if (mode === 'gbstudio') {
+    return haystack.includes('gb-studio') || haystack.includes('gameplay');
   }
-  if (mode === "pixel_art") {
-    return haystack.includes("pixel") || haystack.includes("sprite") || haystack.includes("art");
+  if (mode === 'pixel_art') {
+    return haystack.includes('pixel') || haystack.includes('sprite') || haystack.includes('art');
   }
-  if (mode === "remotion") {
-    return haystack.includes("remotion") || haystack.includes("promo") || haystack.includes("video");
+  if (mode === 'remotion') {
+    return (
+      haystack.includes('remotion') || haystack.includes('promo') || haystack.includes('video')
+    );
   }
   return false;
 }
 
 function describeBundleArtifacts(
-  bundle: ReturnType<ArtifactBuilder["inlineAll"]>,
+  bundle: ReturnType<ArtifactBuilder['inlineAll']>,
   prefix: string,
   options: {
     allowVideoFallback?: boolean;
-  } = {},
+  } = {}
 ): SubmissionArtifact[] {
   const files = bundle.files;
   const videoHighlights: SubmissionArtifact[] = [];
   const imageHighlights: SubmissionArtifact[] = [];
-  const fallbackVideoFile =
-    options.allowVideoFallback
-      ? files.find((file) => file.relativePath.endsWith("preview.gif")) ??
-        files.find((file) => file.relativePath.endsWith("storyboard.png")) ??
-        files.find((file) => file.relativePath.endsWith("frames/frame-01.png")) ??
-        files.find((file) => file.mimeType.startsWith("image/"))
-      : undefined;
+  const fallbackVideoFile = options.allowVideoFallback
+    ? (files.find((file) => file.relativePath.endsWith('preview.gif')) ??
+      files.find((file) => file.relativePath.endsWith('storyboard.png')) ??
+      files.find((file) => file.relativePath.endsWith('frames/frame-01.png')) ??
+      files.find((file) => file.mimeType.startsWith('image/')))
+    : undefined;
 
   for (const file of files) {
-    if (file.mimeType.startsWith("video/")) {
-      videoHighlights.push(createFileArtifact("video", `${prefix} preview`, "Generated video artifact.", file));
+    if (file.mimeType.startsWith('video/')) {
+      videoHighlights.push(
+        createFileArtifact('video', `${prefix} preview`, 'Generated video artifact.', file)
+      );
       continue;
     }
-    if (file.mimeType.startsWith("image/")) {
-      imageHighlights.push(createFileArtifact("image", `${prefix} ${file.relativePath}`, "Generated image artifact.", file));
+    if (file.mimeType.startsWith('image/')) {
+      imageHighlights.push(
+        createFileArtifact(
+          'image',
+          `${prefix} ${file.relativePath}`,
+          'Generated image artifact.',
+          file
+        )
+      );
     }
   }
 
   if (videoHighlights.length === 0 && fallbackVideoFile) {
     videoHighlights.push(
       createFileArtifact(
-        "video",
+        'video',
         `${prefix} storyboard preview`,
-        "Storyboard fallback used when encoded video output was unavailable.",
-        fallbackVideoFile,
-      ),
+        'Storyboard fallback used when encoded video output was unavailable.',
+        fallbackVideoFile
+      )
     );
   }
 
   const visibleImages = fallbackVideoFile
-    ? imageHighlights.filter((artifact) => artifact.uri !== `data:${fallbackVideoFile.mimeType};base64,${fallbackVideoFile.data}`)
+    ? imageHighlights.filter(
+        (artifact) =>
+          artifact.uri !== `data:${fallbackVideoFile.mimeType};base64,${fallbackVideoFile.data}`
+      )
     : imageHighlights;
 
   return uniqueArtifacts([
     ...videoHighlights.slice(0, 1),
     ...visibleImages.slice(0, 5),
-    createBundleArtifact(bundle, `${prefix} bundle`, `Inline bundle with ${bundle.files.length} generated files.`),
+    createBundleArtifact(
+      bundle,
+      `${prefix} bundle`,
+      `Inline bundle with ${bundle.files.length} generated files.`
+    ),
   ]);
 }
 
@@ -1400,10 +1595,10 @@ function uniqueArtifacts(artifacts: SubmissionArtifact[]): SubmissionArtifact[] 
 }
 
 export async function maybeRequestSpecializedSubmission(
-  task: ProviderTaskPackage,
+  task: ProviderTaskPackage
 ): Promise<ModelSubmission | undefined> {
   const mode = providerConfig.providerMode as ProviderMode;
-  if (mode === "generic") {
+  if (mode === 'generic') {
     return undefined;
   }
 
@@ -1418,7 +1613,7 @@ export async function maybeRequestSpecializedSubmission(
     };
   }
 
-  if (!domainMatchesMode(mode, task) && task.desiredOutput.primaryType === "text") {
+  if (!domainMatchesMode(mode, task) && task.desiredOutput.primaryType === 'text') {
     const generic = await buildGenericTextPlan(task);
     return {
       answerText: generic.answerText,
@@ -1429,47 +1624,47 @@ export async function maybeRequestSpecializedSubmission(
     };
   }
 
-  if (mode === "gbstudio") {
+  if (mode === 'gbstudio') {
     const plan = await buildGbStudioPlan(task);
     const bundle = produceGbStudioBundle(plan);
     const patch = buildGbStudioPatch(task, plan);
     return {
-      patchUnifiedDiff: task.desiredOutput.primaryType === "patch" ? patch.patch : undefined,
+      patchUnifiedDiff: task.desiredOutput.primaryType === 'patch' ? patch.patch : undefined,
       answerText:
-        task.desiredOutput.primaryType === "text"
-          ? `${plan.conceptSummary}\n\nGameplay scope:\n${plan.gameplayChanges.map((item) => `- ${item}`).join("\n")}`
+        task.desiredOutput.primaryType === 'text'
+          ? `${plan.conceptSummary}\n\nGameplay scope:\n${plan.gameplayChanges.map((item) => `- ${item}`).join('\n')}`
           : undefined,
-      artifacts: describeBundleArtifacts(bundle, "Gamma"),
+      artifacts: describeBundleArtifacts(bundle, 'Gamma'),
       explanation: `${plan.patchSummary} Mercenary can use the inline GB Studio bundle for receipt proof and downstream handoff.`,
       confidence: 0.82,
-      filesTouched: task.desiredOutput.primaryType === "patch" ? patch.filesTouched : [],
+      filesTouched: task.desiredOutput.primaryType === 'patch' ? patch.filesTouched : [],
     };
   }
 
-  if (mode === "pixel_art") {
+  if (mode === 'pixel_art') {
     const plan = await buildPixelPlan(task);
     const bundle = producePixelBundle(plan);
     return {
       answerText:
-        task.desiredOutput.primaryType === "text"
-          ? `${plan.summary}\n\nAsset list:\n${plan.assetList.map((item) => `- ${item}`).join("\n")}`
+        task.desiredOutput.primaryType === 'text'
+          ? `${plan.summary}\n\nAsset list:\n${plan.assetList.map((item) => `- ${item}`).join('\n')}`
           : undefined,
-      artifacts: describeBundleArtifacts(bundle, "Dottie"),
+      artifacts: describeBundleArtifacts(bundle, 'Dottie'),
       explanation: `${plan.summary} Included inline pixel-art files, a spritesheet, and bundle metadata.`,
       confidence: 0.8,
       filesTouched: [],
     };
   }
 
-  if (mode === "remotion") {
+  if (mode === 'remotion') {
     const plan = await buildVideoPlan(task);
     const bundle = produceVideoBundle(plan);
     return {
       answerText:
-        task.desiredOutput.primaryType === "text"
-          ? `${plan.scriptSummary}\n\nLaunch copy:\n${plan.launchCopy.map((item) => `- ${item}`).join("\n")}`
+        task.desiredOutput.primaryType === 'text'
+          ? `${plan.scriptSummary}\n\nLaunch copy:\n${plan.launchCopy.map((item) => `- ${item}`).join('\n')}`
           : undefined,
-      artifacts: describeBundleArtifacts(bundle, "Riko", { allowVideoFallback: true }),
+      artifacts: describeBundleArtifacts(bundle, 'Riko', { allowVideoFallback: true }),
       explanation: `${plan.scriptSummary} Included storyboard frames, captions, Remotion source, and a playable preview render with MP4 preferred and animated GIF fallback.`,
       confidence: 0.8,
       filesTouched: [],
@@ -1479,7 +1674,10 @@ export async function maybeRequestSpecializedSubmission(
   return undefined;
 }
 
-export function attachContributionRole(submission: ModelSubmission, task: ProviderTaskPackage): ModelSubmission {
+export function attachContributionRole(
+  submission: ModelSubmission,
+  task: ProviderTaskPackage
+): ModelSubmission {
   if (task.synthesis == null) {
     return submission;
   }
@@ -1497,13 +1695,18 @@ export function attachContributionRole(submission: ModelSubmission, task: Provid
   };
 }
 
-export function submissionSupportsRequestedOutput(submission: ModelSubmission, task: ProviderTaskPackage): boolean {
+export function submissionSupportsRequestedOutput(
+  submission: ModelSubmission,
+  task: ProviderTaskPackage
+): boolean {
   const primaryType = task.desiredOutput.primaryType;
-  if (primaryType === "patch") {
-    return typeof submission.patchUnifiedDiff === "string" && submission.patchUnifiedDiff.length > 0;
+  if (primaryType === 'patch') {
+    return (
+      typeof submission.patchUnifiedDiff === 'string' && submission.patchUnifiedDiff.length > 0
+    );
   }
-  if (primaryType === "text" || primaryType === "json") {
-    return typeof submission.answerText === "string" && submission.answerText.length > 0;
+  if (primaryType === 'text' || primaryType === 'json') {
+    return typeof submission.answerText === 'string' && submission.answerText.length > 0;
   }
   return (
     Array.isArray(submission.artifacts) &&

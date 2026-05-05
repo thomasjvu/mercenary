@@ -1,9 +1,6 @@
-import type {
-  BossRaidResultOutput,
-  BossRaidStatusOutput,
-} from "@bossraid/shared-types";
+import type { BossRaidResultOutput, BossRaidStatusOutput } from '@bossraid/shared-types';
 
-const TERMINAL_RAID_STATUSES = new Set(["final", "cancelled", "expired"]);
+const TERMINAL_RAID_STATUSES = new Set(['final', 'cancelled', 'expired']);
 
 export function summarizeRaidReceipt(status: BossRaidStatusOutput, result: BossRaidResultOutput) {
   return {
@@ -24,7 +21,10 @@ export function summarizeRaidReceipt(status: BossRaidStatusOutput, result: BossR
       result.synthesizedOutput == null
         ? undefined
         : summarizeSynthesizedOutput(result.synthesizedOutput),
-    primaryResponse: result.primarySubmission == null ? undefined : summarizePrimarySubmission(result.primarySubmission),
+    primaryResponse:
+      result.primarySubmission == null
+        ? undefined
+        : summarizePrimarySubmission(result.primarySubmission),
     approvedProviders: (result.approvedSubmissions ?? []).map((entry) => ({
       providerId: entry.submission.providerId,
       rank: entry.rank,
@@ -39,7 +39,9 @@ export function summarizeRaidReceipt(status: BossRaidStatusOutput, result: BossR
             policy: { ...result.routingProof.policy },
             providers: result.routingProof.providers.map((decision) => ({ ...decision })),
           },
-    rankedSubmissions: (result.rankedSubmissions ?? []).map((entry) => summarizeRankedSubmission(entry)),
+    rankedSubmissions: (result.rankedSubmissions ?? []).map((entry) =>
+      summarizeRankedSubmission(entry)
+    ),
     settlement: result.settlement,
     settlementExecution:
       result.settlementExecution == null
@@ -53,19 +55,29 @@ export function summarizeRaidReceipt(status: BossRaidStatusOutput, result: BossR
               args: [...result.settlementExecution.registryCall.args] as [string, string],
             },
             childJobs: result.settlementExecution.childJobs.map((job) => ({ ...job })),
-            allocations: result.settlementExecution.allocations.map((allocation) => ({ ...allocation })),
+            allocations: result.settlementExecution.allocations.map((allocation) => ({
+              ...allocation,
+            })),
             transactionHashes: result.settlementExecution.transactionHashes
               ? [...result.settlementExecution.transactionHashes]
               : undefined,
-            jobIds: result.settlementExecution.jobIds ? [...result.settlementExecution.jobIds] : undefined,
-            warnings: result.settlementExecution.warnings ? [...result.settlementExecution.warnings] : undefined,
+            jobIds: result.settlementExecution.jobIds
+              ? [...result.settlementExecution.jobIds]
+              : undefined,
+            warnings: result.settlementExecution.warnings
+              ? [...result.settlementExecution.warnings]
+              : undefined,
           },
     reputationEvents: result.reputationEvents ?? [],
-    pollTools: TERMINAL_RAID_STATUSES.has(status.status) ? undefined : ["bossraid_status", "bossraid_result", "bossraid_receipt"],
+    pollTools: TERMINAL_RAID_STATUSES.has(status.status)
+      ? undefined
+      : ['bossraid_status', 'bossraid_result', 'bossraid_receipt'],
   };
 }
 
-function summarizeSynthesizedOutput(output: NonNullable<BossRaidResultOutput["synthesizedOutput"]>) {
+function summarizeSynthesizedOutput(
+  output: NonNullable<BossRaidResultOutput['synthesizedOutput']>
+) {
   return {
     primaryType: output.primaryType,
     answerText: output.answerText,
@@ -81,7 +93,7 @@ function summarizeSynthesizedOutput(output: NonNullable<BossRaidResultOutput["sy
   };
 }
 
-function summarizePrimarySubmission(entry: NonNullable<BossRaidResultOutput["primarySubmission"]>) {
+function summarizePrimarySubmission(entry: NonNullable<BossRaidResultOutput['primarySubmission']>) {
   return {
     providerId: entry.submission.providerId,
     contributionRole: entry.submission.contributionRole,
@@ -99,7 +111,9 @@ function summarizePrimarySubmission(entry: NonNullable<BossRaidResultOutput["pri
   };
 }
 
-function summarizeRankedSubmission(entry: NonNullable<BossRaidResultOutput["rankedSubmissions"]>[number]) {
+function summarizeRankedSubmission(
+  entry: NonNullable<BossRaidResultOutput['rankedSubmissions']>[number]
+) {
   return {
     providerId: entry.submission.providerId,
     contributionRole: entry.submission.contributionRole,

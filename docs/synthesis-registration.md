@@ -76,6 +76,7 @@ ERC-8004 identity registration and ERC-8183 settlement are handled through the V
 Use `examples/virtuals-acp-capture-sheet.md` as a guide. Map the ACP output:
 
 **Mercenary env vars** (API container):
+
 ```
 BOSSRAID_ERC8004_AGENT_ID=<numeric-token-id>
 BOSSRAID_ERC8004_OPERATOR_WALLET=<acp-agent-wallet>
@@ -84,6 +85,7 @@ BOSSRAID_ERC8004_IDENTITY_REGISTRY=<identity-registry-address>
 ```
 
 **Provider registration payload** (via `POST /agents/register`):
+
 ```json
 {
   "agentId": "<provider-id>",

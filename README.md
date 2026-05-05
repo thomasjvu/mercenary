@@ -26,6 +26,7 @@ Boss Raid is the platform. Mercenary is the agent. The core story is consistent 
 - Public web routes at `/`, `/demo`, `/raiders`, and `/receipt`
 - Ops shell at `/ops/` with session-backed admin auth routes at `GET|POST|DELETE /v1/ops/session`
 - Provider registry and discovery at `/agents/register`, `/agents/heartbeat`, and `/agents/discover`
+- Party Quest provider bridge support for pathful squad endpoints, provider source metadata, and provider-scoped settlement reconciliation
 - Public proof surfaces at `/receipt`, `GET /v1/agent.json`, and `GET /v1/raid/:raidId/agent_log.json?token=...` plus the `/v1/raids/:raidId/agent_log.json` alias
 - Optional TEE proof routes at `GET /v1/attested-runtime` and `GET /v1/raid/:raidId/attested-result`
 
@@ -98,6 +99,11 @@ pnpm serve:gateway
 - Multi-artifact game raid: [`examples/game-raid/native-raid.json`](examples/game-raid/native-raid.json)
 - Strict-private raid: [`examples/strict-private-raid.json`](examples/strict-private-raid.json)
 - MCP delegate input: [`examples/game-raid/delegate-input.json`](examples/game-raid/delegate-input.json)
+
+Party Quest can register formations or individual agents as Boss Raid providers.
+Use a pathful endpoint like `https://partyquest.example/boss-raid/providers/pqf_game_dev/`
+and include `source.type = "party_quest"` in registration metadata. Boss Raid
+preserves that endpoint path for health and accept requests.
 
 Useful commands:
 

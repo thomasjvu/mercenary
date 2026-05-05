@@ -1,9 +1,9 @@
-import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { dirname, extname, isAbsolute, resolve } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { randomUUID } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { dirname, extname, isAbsolute, resolve } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 
-type StorageBackend = "sqlite" | "file" | "memory";
+type StorageBackend = 'sqlite' | 'file' | 'memory';
 
 type ApiOpsSessionEntry = {
   token: string;
@@ -47,10 +47,10 @@ class FileApiControlStateStore implements ApiControlStateStore {
 
   loadState(): ApiControlStateSnapshot {
     try {
-      const raw = readFileSync(this.path, "utf8");
+      const raw = readFileSync(this.path, 'utf8');
       return normalizeApiControlState(JSON.parse(raw) as Partial<ApiControlStateSnapshot>);
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return createEmptyApiControlState();
       }
       throw error;
@@ -60,7 +60,7 @@ class FileApiControlStateStore implements ApiControlStateStore {
   saveState(snapshot: ApiControlStateSnapshot): void {
     mkdirSync(dirname(this.path), { recursive: true });
     const tempPath = `${this.path}.tmp`;
-    writeFileSync(tempPath, JSON.stringify(snapshot, null, 2), "utf8");
+    writeFileSync(tempPath, JSON.stringify(snapshot, null, 2), 'utf8');
     renameSync(tempPath, this.path);
   }
 }
@@ -73,50 +73,49 @@ class SqliteApiControlStateStore implements ApiControlStateStore {
     this.db = new DatabaseSync(path);
     this.db.exec(
       [
-        "create table if not exists bossraid_api_control_state (",
-        "  key integer primary key check(key = 1),",
-        "  version integer not null,",
-        "  saved_at text not null,",
-        "  snapshot_json text not null",
-        ")",
-      ].join(" "),
+        'create table if not exists bossraid_api_control_state (',
+        '  key integer primary key check(key = 1),',
+        '  version integer not null,',
+        '  saved_at text not null,',
+        '  snapshot_json text not null',
+        ')',
+      ].join(' ')
     );
   }
 
   loadState(): ApiControlStateSnapshot {
     const row = this.db
-      .prepare("select snapshot_json from bossraid_api_control_state where key = ?")
+      .prepare('select snapshot_json from bossraid_api_control_state where key = ?')
       .get(SNAPSHOT_KEY) as { snapshot_json?: string } | undefined;
 
     if (!row?.snapshot_json) {
       return createEmptyApiControlState();
     }
 
-    return normalizeApiControlState(JSON.parse(row.snapshot_json) as Partial<ApiControlStateSnapshot>);
+    return normalizeApiControlState(
+      JSON.parse(row.snapshot_json) as Partial<ApiControlStateSnapshot>
+    );
   }
 
   saveState(snapshot: ApiControlStateSnapshot): void {
-    this.db.exec("begin immediate");
+    this.db.exec('begin immediate');
 
     try {
-      this.db.prepare(
-        [
-          "insert into bossraid_api_control_state (key, version, saved_at, snapshot_json)",
-          "values (?, ?, ?, ?)",
-          "on conflict(key) do update set",
-          "  version = excluded.version,",
-          "  saved_at = excluded.saved_at,",
-          "  snapshot_json = excluded.snapshot_json",
-        ].join(" "),
-      ).run(
-        SNAPSHOT_KEY,
-        snapshot.version,
-        snapshot.savedAt,
-        JSON.stringify(snapshot),
-      );
-      this.db.exec("commit");
+      this.db
+        .prepare(
+          [
+            'insert into bossraid_api_control_state (key, version, saved_at, snapshot_json)',
+            'values (?, ?, ?, ?)',
+            'on conflict(key) do update set',
+            '  version = excluded.version,',
+            '  saved_at = excluded.saved_at,',
+            '  snapshot_json = excluded.snapshot_json',
+          ].join(' ')
+        )
+        .run(SNAPSHOT_KEY, snapshot.version, snapshot.savedAt, JSON.stringify(snapshot));
+      this.db.exec('commit');
     } catch (error) {
-      this.db.exec("rollback");
+      this.db.exec('rollback');
       throw error;
     }
   }
@@ -132,12 +131,12 @@ function createEmptyApiControlState(): ApiControlStateSnapshot {
 }
 
 function normalizeApiControlState(
-  snapshot: Partial<ApiControlStateSnapshot> | undefined,
+  snapshot: Partial<ApiControlStateSnapshot> | undefined
 ): ApiControlStateSnapshot {
   return {
     version: 1,
     savedAt:
-      typeof snapshot?.savedAt === "string" && snapshot.savedAt.length > 0
+      typeof snapshot?.savedAt === 'string' && snapshot.savedAt.length > 0
         ? snapshot.savedAt
         : new Date().toISOString(),
     opsSessions: Array.isArray(snapshot?.opsSessions)
@@ -152,9 +151,9 @@ function normalizeApiControlState(
 function isValidOpsSessionEntry(value: unknown): value is ApiOpsSessionEntry {
   return (
     Boolean(value) &&
-    typeof value === "object" &&
-    typeof (value as ApiOpsSessionEntry).token === "string" &&
-    typeof (value as ApiOpsSessionEntry).expiresAt === "number" &&
+    typeof value === 'object' &&
+    typeof (value as ApiOpsSessionEntry).token === 'string' &&
+    typeof (value as ApiOpsSessionEntry).expiresAt === 'number' &&
     Number.isFinite((value as ApiOpsSessionEntry).expiresAt)
   );
 }
@@ -162,37 +161,37 @@ function isValidOpsSessionEntry(value: unknown): value is ApiOpsSessionEntry {
 function isValidRateLimitEntry(value: unknown): value is ApiRateLimitEntry {
   return (
     Boolean(value) &&
-    typeof value === "object" &&
-    typeof (value as ApiRateLimitEntry).key === "string" &&
-    typeof (value as ApiRateLimitEntry).count === "number" &&
+    typeof value === 'object' &&
+    typeof (value as ApiRateLimitEntry).key === 'string' &&
+    typeof (value as ApiRateLimitEntry).count === 'number' &&
     Number.isFinite((value as ApiRateLimitEntry).count) &&
-    typeof (value as ApiRateLimitEntry).resetAt === "number" &&
+    typeof (value as ApiRateLimitEntry).resetAt === 'number' &&
     Number.isFinite((value as ApiRateLimitEntry).resetAt)
   );
 }
 
 function readStorageBackend(env: NodeJS.ProcessEnv): StorageBackend {
   const configured = env.BOSSRAID_STORAGE_BACKEND;
-  if (configured === "sqlite" || configured === "file" || configured === "memory") {
+  if (configured === 'sqlite' || configured === 'file' || configured === 'memory') {
     return configured;
   }
 
   if (configured != null) {
-    throw new Error("BOSSRAID_STORAGE_BACKEND must be sqlite, file, or memory.");
+    throw new Error('BOSSRAID_STORAGE_BACKEND must be sqlite, file, or memory.');
   }
 
   if (env !== process.env) {
-    return "memory";
+    return 'memory';
   }
 
-  return env.BOSSRAID_STATE_FILE ? "file" : "sqlite";
+  return env.BOSSRAID_STATE_FILE ? 'file' : 'sqlite';
 }
 
 function findWorkspaceRoot(startDir: string): string {
   let currentDir = startDir;
 
   while (true) {
-    if (existsSync(resolve(currentDir, "pnpm-workspace.yaml"))) {
+    if (existsSync(resolve(currentDir, 'pnpm-workspace.yaml'))) {
       return currentDir;
     }
 
@@ -205,7 +204,10 @@ function findWorkspaceRoot(startDir: string): string {
   }
 }
 
-function resolveWorkspacePath(pathValue: string | undefined, workspaceCwd: string): string | undefined {
+function resolveWorkspacePath(
+  pathValue: string | undefined,
+  workspaceCwd: string
+): string | undefined {
   if (!pathValue) {
     return undefined;
   }
@@ -231,22 +233,22 @@ function createApiControlStateStore(env: NodeJS.ProcessEnv): ApiControlStateStor
   const storageBackend = readStorageBackend(env);
 
   switch (storageBackend) {
-    case "memory":
+    case 'memory':
       return new InMemoryApiControlStateStore();
-    case "file": {
+    case 'file': {
       const stateFile = resolveWorkspacePath(env.BOSSRAID_STATE_FILE, workspaceCwd);
       if (!stateFile) {
-        throw new Error("BOSSRAID_STATE_FILE is required when BOSSRAID_STORAGE_BACKEND=file.");
+        throw new Error('BOSSRAID_STATE_FILE is required when BOSSRAID_STORAGE_BACKEND=file.');
       }
       return new FileApiControlStateStore(deriveApiStateFile(stateFile));
     }
-    case "sqlite": {
+    case 'sqlite': {
       const sqliteFile = resolveWorkspacePath(
-        env.BOSSRAID_SQLITE_FILE ?? "./temp/bossraid-state.sqlite",
-        workspaceCwd,
+        env.BOSSRAID_SQLITE_FILE ?? './temp/bossraid-state.sqlite',
+        workspaceCwd
       );
       if (!sqliteFile) {
-        throw new Error("BOSSRAID_SQLITE_FILE is required when BOSSRAID_STORAGE_BACKEND=sqlite.");
+        throw new Error('BOSSRAID_SQLITE_FILE is required when BOSSRAID_STORAGE_BACKEND=sqlite.');
       }
       return new SqliteApiControlStateStore(sqliteFile);
     }
@@ -302,7 +304,7 @@ export class ApiControlState {
     key: string,
     maxRequests: number,
     windowMs: number,
-    nowMs = Date.now(),
+    nowMs = Date.now()
   ): { allowed: true } | { allowed: false; retryAfterSec: number } {
     const { snapshot, changed } = this.readPrunedState(nowMs);
     const entryKey = `${bucket}:${key}`;

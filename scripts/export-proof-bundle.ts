@@ -1,17 +1,17 @@
-import { access, copyFile, mkdir, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { FileBossRaidPersistence, type BossRaidPersistence } from "@bossraid/persistence";
-import { SqliteBossRaidPersistence } from "@bossraid/persistence-sqlite";
-import { BossRaidOrchestrator } from "@bossraid/orchestrator";
-import { runtimeExecutionEnabled, runtimeExecutionTransport } from "@bossraid/sandbox-runner";
-import type { BossRaidPersistenceSnapshot, RaidRecord } from "@bossraid/shared-types";
-import { mnemonicToAccount } from "viem/accounts";
-import { buildAgentLog, buildAgentManifest } from "../apps/api/src/agent-artifacts.ts";
+import { access, copyFile, mkdir, writeFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
+import { FileBossRaidPersistence, type BossRaidPersistence } from '@bossraid/persistence';
+import { SqliteBossRaidPersistence } from '@bossraid/persistence-sqlite';
+import { BossRaidOrchestrator } from '@bossraid/orchestrator';
+import { runtimeExecutionEnabled, runtimeExecutionTransport } from '@bossraid/sandbox-runner';
+import type { BossRaidPersistenceSnapshot, RaidRecord } from '@bossraid/shared-types';
+import { mnemonicToAccount } from 'viem/accounts';
+import { buildAgentLog, buildAgentManifest } from '../apps/api/src/agent-artifacts.ts';
 import {
   createSettlementProofRefresher,
   persistSettlementExecutionArtifact,
   settlementExecutionChanged,
-} from "../apps/api/src/settlement-proof.ts";
+} from '../apps/api/src/settlement-proof.ts';
 
 type CliArgs = {
   raidId?: string;
@@ -46,7 +46,10 @@ async function main(): Promise<void> {
     runtimeExecutionRequested: readBooleanEnv(process.env.BOSSRAID_EVAL_RUNTIME_EXECUTION),
     runtimeExecutionEnabled: runtimeExecutionEnabled(process.env),
     evaluatorTransport: runtimeExecutionTransport(process.env),
-    workerIsolation: process.env.BOSSRAID_EVAL_JOB_ISOLATION === "container" ? "per_job_container" : "per_job_process",
+    workerIsolation:
+      process.env.BOSSRAID_EVAL_JOB_ISOLATION === 'container'
+        ? 'per_job_container'
+        : 'per_job_process',
     maxEvaluatorJobs: readPositiveInteger(process.env.BOSSRAID_EVAL_MAX_CONCURRENT_JOBS, 2),
     teeWalletAddress,
     mercenaryIdentity,
@@ -59,9 +62,9 @@ async function main(): Promise<void> {
   const result = orchestrator.getResult(raid.id);
 
   await mkdir(outDir, { recursive: true });
-  await writeJson(resolve(outDir, "agent.json"), manifest);
-  await writeJson(resolve(outDir, "agent_log.json"), agentLog);
-  await writeJson(resolve(outDir, "result.json"), result);
+  await writeJson(resolve(outDir, 'agent.json'), manifest);
+  await writeJson(resolve(outDir, 'agent_log.json'), agentLog);
+  await writeJson(resolve(outDir, 'result.json'), result);
 
   let settlementArtifactFile: string | null = null;
   if (raid.settlementExecution?.artifactPath) {
@@ -75,8 +78,8 @@ async function main(): Promise<void> {
     raidAccessToken: args.raidAccessToken,
   });
 
-  await writeJson(resolve(outDir, "proof-index.json"), {
-    schemaVersion: "bossraid-proof-bundle/v1",
+  await writeJson(resolve(outDir, 'proof-index.json'), {
+    schemaVersion: 'bossraid-proof-bundle/v1',
     generatedAt: new Date().toISOString(),
     raid: {
       raidId: raid.id,
@@ -85,7 +88,9 @@ async function main(): Promise<void> {
       childRaidCount: raid.childRaidIds?.length ?? 0,
       requireErc8004: raid.task.constraints.requireErc8004 === true,
       minTrustScore: raid.task.constraints.minTrustScore ?? null,
-      venicePrivateLane: raid.routingProof?.policy.venicePrivateLane ?? raid.task.constraints.privacyMode === "strict",
+      venicePrivateLane:
+        raid.routingProof?.policy.venicePrivateLane ??
+        raid.task.constraints.privacyMode === 'strict',
     },
     settlement: raid.settlementExecution
       ? {
@@ -98,10 +103,10 @@ async function main(): Promise<void> {
         }
       : null,
     files: {
-      manifest: "agent.json",
-      agentLog: "agent_log.json",
-      result: "result.json",
-      proofIndex: "proof-index.json",
+      manifest: 'agent.json',
+      agentLog: 'agent_log.json',
+      result: 'result.json',
+      proofIndex: 'proof-index.json',
       settlementArtifact: settlementArtifactFile,
     },
     publicUrls,
@@ -120,39 +125,39 @@ function parseArgs(argv: string[]): CliArgs {
 
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index];
-    if (value === "--") {
+    if (value === '--') {
       continue;
     }
-    if (value === "--help" || value === "-h") {
+    if (value === '--help' || value === '-h') {
       printHelp();
       process.exit(0);
     }
-    if (value === "--raid-id") {
+    if (value === '--raid-id') {
       parsed.raidId = argv[index + 1];
       index += 1;
       continue;
     }
-    if (value === "--raid-access-token") {
+    if (value === '--raid-access-token') {
       parsed.raidAccessToken = argv[index + 1];
       index += 1;
       continue;
     }
-    if (value === "--out-dir") {
+    if (value === '--out-dir') {
       parsed.outDir = argv[index + 1];
       index += 1;
       continue;
     }
-    if (value === "--sqlite-file") {
+    if (value === '--sqlite-file') {
       parsed.sqliteFile = argv[index + 1];
       index += 1;
       continue;
     }
-    if (value === "--state-file") {
+    if (value === '--state-file') {
       parsed.stateFile = argv[index + 1];
       index += 1;
       continue;
     }
-    if (value === "--api-base-url") {
+    if (value === '--api-base-url') {
       parsed.apiBaseUrl = argv[index + 1];
       index += 1;
       continue;
@@ -166,19 +171,19 @@ function parseArgs(argv: string[]): CliArgs {
 function printHelp(): void {
   console.log(
     [
-      "Export one persisted raid into a static proof bundle.",
-      "",
-      "Usage:",
-      "  pnpm export:proof-bundle -- [options]",
-      "",
-      "Options:",
-      "  --raid-id <id>             Export this raid id. Defaults to the newest root raid.",
-      "  --raid-access-token <tok>  Include receiptPath and public read URLs that need the token.",
-      "  --out-dir <path>           Output directory. Defaults to temp/proof-bundles/<raidId>.",
-      "  --sqlite-file <path>       SQLite snapshot path. Defaults to BOSSRAID_SQLITE_FILE or temp/bossraid-state.sqlite.",
-      "  --state-file <path>        JSON state snapshot path when using file persistence.",
-      "  --api-base-url <url>       Base URL used to emit public proof links in proof-index.json.",
-    ].join("\n"),
+      'Export one persisted raid into a static proof bundle.',
+      '',
+      'Usage:',
+      '  pnpm export:proof-bundle -- [options]',
+      '',
+      'Options:',
+      '  --raid-id <id>             Export this raid id. Defaults to the newest root raid.',
+      '  --raid-access-token <tok>  Include receiptPath and public read URLs that need the token.',
+      '  --out-dir <path>           Output directory. Defaults to temp/proof-bundles/<raidId>.',
+      '  --sqlite-file <path>       SQLite snapshot path. Defaults to BOSSRAID_SQLITE_FILE or temp/bossraid-state.sqlite.',
+      '  --state-file <path>        JSON state snapshot path when using file persistence.',
+      '  --api-base-url <url>       Base URL used to emit public proof links in proof-index.json.',
+    ].join('\n')
   );
 }
 
@@ -187,7 +192,9 @@ function createPersistence(args: CliArgs): BossRaidPersistence {
     return new FileBossRaidPersistence(resolve(args.stateFile));
   }
 
-  const sqliteFile = resolve(args.sqliteFile ?? process.env.BOSSRAID_SQLITE_FILE ?? "./temp/bossraid-state.sqlite");
+  const sqliteFile = resolve(
+    args.sqliteFile ?? process.env.BOSSRAID_SQLITE_FILE ?? './temp/bossraid-state.sqlite'
+  );
   return new SqliteBossRaidPersistence(sqliteFile);
 }
 
@@ -202,7 +209,7 @@ function selectRaid(orchestrator: BossRaidOrchestrator, raidId?: string): RaidRe
 
   const latestRootRaid = orchestrator.listRaids()[0];
   if (!latestRootRaid) {
-    throw new Error("No root raids exist in the loaded persistence snapshot.");
+    throw new Error('No root raids exist in the loaded persistence snapshot.');
   }
   return latestRootRaid;
 }
@@ -229,13 +236,15 @@ async function refreshPersistedSettlementProof(input: {
   await input.persistence.saveState({
     ...input.snapshot,
     savedAt: new Date().toISOString(),
-    raids: input.snapshot.raids.map((raid) => (raid.id === input.raid.id ? { ...raid, settlementExecution: refreshed } : raid)),
+    raids: input.snapshot.raids.map((raid) =>
+      raid.id === input.raid.id ? { ...raid, settlementExecution: refreshed } : raid
+    ),
   });
   await persistSettlementExecutionArtifact(refreshed);
 }
 
 function readBooleanEnv(value: string | undefined): boolean {
-  return value === "1" || value === "true" || value === "yes";
+  return value === '1' || value === 'true' || value === 'yes';
 }
 
 function readPositiveInteger(value: string | undefined, fallback: number): number {
@@ -249,7 +258,7 @@ function readMercenaryErc8004Identity(env: NodeJS.ProcessEnv) {
     return undefined;
   }
 
-  const validationTxs = env.BOSSRAID_ERC8004_VALIDATION_TXS?.split(",")
+  const validationTxs = env.BOSSRAID_ERC8004_VALIDATION_TXS?.split(',')
     .map((value) => value.trim())
     .filter(Boolean);
 
@@ -280,7 +289,7 @@ function readTeeWalletAddress(env: NodeJS.ProcessEnv): string | null {
 
 async function writeJson(path: string, value: unknown): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+  await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
 async function copySettlementArtifact(sourcePath: string, outDir: string): Promise<string | null> {
@@ -290,9 +299,9 @@ async function copySettlementArtifact(sourcePath: string, outDir: string): Promi
     return null;
   }
 
-  const target = resolve(outDir, "settlement-execution.json");
+  const target = resolve(outDir, 'settlement-execution.json');
   await copyFile(sourcePath, target);
-  return "settlement-execution.json";
+  return 'settlement-execution.json';
 }
 
 function buildPublicUrls(input: {
@@ -304,7 +313,7 @@ function buildPublicUrls(input: {
     return null;
   }
 
-  const base = input.apiBaseUrl.replace(/\/+$/, "");
+  const base = input.apiBaseUrl.replace(/\/+$/, '');
   const urls: Record<string, string> = {
     manifest: `${base}/v1/agent.json`,
   };
@@ -330,9 +339,9 @@ function printSummary(input: {
   console.log(`RAID_STATUS=${input.raid.status}`);
   console.log(`CHILD_RAID_COUNT=${input.raid.childRaidIds?.length ?? 0}`);
   console.log(`REQUIRE_ERC8004=${input.raid.task.constraints.requireErc8004 === true}`);
-  console.log(`SETTLEMENT_MODE=${input.raid.settlementExecution?.mode ?? "none"}`);
-  console.log(`PROOF_STANDARD=${input.raid.settlementExecution?.proofStandard ?? "none"}`);
-  console.log(`SETTLEMENT_ARTIFACT=${input.settlementArtifactFile ?? "none"}`);
+  console.log(`SETTLEMENT_MODE=${input.raid.settlementExecution?.mode ?? 'none'}`);
+  console.log(`PROOF_STANDARD=${input.raid.settlementExecution?.proofStandard ?? 'none'}`);
+  console.log(`SETTLEMENT_ARTIFACT=${input.settlementArtifactFile ?? 'none'}`);
   if (input.publicUrls?.receipt) {
     console.log(`PUBLIC_RECEIPT=${input.publicUrls.receipt}`);
   }

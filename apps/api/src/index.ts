@@ -1,8 +1,8 @@
-import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
-import { stat } from "node:fs/promises";
-import { PassThrough } from "node:stream";
-import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
-import { mnemonicToAccount } from "viem/accounts";
+import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
+import { stat } from 'node:fs/promises';
+import { PassThrough } from 'node:stream';
+import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
+import { mnemonicToAccount } from 'viem/accounts';
 import {
   ApiContractError,
   buildBossRaidRequestFromChatCompletion,
@@ -15,7 +15,7 @@ import {
   parseProviderHeartbeat,
   parseProviderRegistrationInput,
   parseProviderSubmission,
-} from "@bossraid/api-contracts";
+} from '@bossraid/api-contracts';
 import {
   type BossRaidOrchestrator,
   createDefaultOrchestrator,
@@ -24,8 +24,10 @@ import {
   PersistenceUnavailableError,
   runtimeOptionsFromEnv,
   UnknownRaidError,
-} from "@bossraid/orchestrator";
-import { probeProviderHealth, verifyProviderAuth } from "@bossraid/provider-sdk";
+} from '@bossraid/orchestrator';
+import { probeProviderHealth, verifyProviderAuth } from '@bossraid/provider-sdk';
+import { getConfig } from '@bossraid/validator';
+import logger from '@bossraid/logger';
 import {
   type ChatCompletionRequest,
   type BossRaidResultOutput,
@@ -38,7 +40,7 @@ import {
   type TaskFile,
   asSingleHeader,
   readBooleanEnv as readBooleanEnvUtil,
-} from "@bossraid/shared-types";
+} from '@bossraid/shared-types';
 import {
   cleanupWorkspace,
   materializeWorkspace,
@@ -46,7 +48,7 @@ import {
   runtimeExecutionEnabled,
   runtimeExecutionTransport,
   unsafeHostExecutionAllowed,
-} from "@bossraid/sandbox-runner";
+} from '@bossraid/sandbox-runner';
 import {
   applyX402Headers,
   buildX402PaymentRequired,
@@ -54,15 +56,16 @@ import {
   readX402Config,
   readX402ReservationId,
   requireX402Payment,
-} from "./x402.js";
-import { buildAgentLog, buildAgentManifest } from "./agent-artifacts.js";
-import { createErc8004Verifier } from "./erc8004.js";
+} from './x402.js';
+import { buildAgentLog, buildAgentManifest } from './agent-artifacts.js';
+import { createErc8004Verifier } from './erc8004.js';
 import {
   createSettlementProofRefresher,
   persistSettlementExecutionArtifact,
   settlementExecutionChanged,
-} from "./settlement-proof.js";
-import { createApiControlState } from "./control-state.js";
+} from './settlement-proof.js';
+import { createApiControlState } from './control-state.js';
+import { DEFAULTS, TIMEOUTS } from '@bossraid/constants';
 
 interface AttestedRuntimePayload {
   version: 1;
@@ -75,7 +78,7 @@ interface AttestedRuntimePayload {
   readyProviders: number;
   raids: number;
   evaluatorTransport: string;
-  workerIsolation: "per_job_process" | "per_job_container";
+  workerIsolation: 'per_job_process' | 'per_job_container';
 }
 
 interface AttestedRaidResultPayload {
@@ -85,9 +88,9 @@ interface AttestedRaidResultPayload {
   deploymentTarget: string | null;
   teePlatform: string | null;
   evaluatorTransport: string;
-  workerIsolation: "per_job_process" | "per_job_container";
+  workerIsolation: 'per_job_process' | 'per_job_container';
   raidId: string;
-  status: BossRaidResultOutput["status"];
+  status: BossRaidResultOutput['status'];
   approvedSubmissionCount: number;
   resultHash: `0x${string}`;
   result: BossRaidResultOutput;
@@ -95,31 +98,52 @@ interface AttestedRaidResultPayload {
 
 export function buildApiServer(
   orchestrator: BossRaidOrchestrator,
-  env: NodeJS.ProcessEnv = process.env,
+  env: NodeJS.ProcessEnv = process.env
 ) {
   const adminToken = env.BOSSRAID_ADMIN_TOKEN;
   const demoRouteEnabled = readBooleanEnv(env.BOSSRAID_DEMO_ROUTE_ENABLED);
   const demoToken = env.BOSSRAID_DEMO_TOKEN?.trim() || undefined;
-  const apiBodyLimitBytes = readPositiveInteger(env.BOSSRAID_API_BODY_LIMIT_BYTES, 524_288);
-  const providerSubmissionBodyLimitBytes = Math.max(apiBodyLimitBytes, 8 * 1024 * 1024);
-  const opsSessionTtlSec = readPositiveInteger(env.BOSSRAID_OPS_SESSION_TTL_SEC, 43_200);
-  const publicRateLimitMax = readPositiveInteger(env.BOSSRAID_PUBLIC_RATE_LIMIT_MAX, 60);
-  const publicRateLimitWindowMs = readPositiveInteger(env.BOSSRAID_PUBLIC_RATE_LIMIT_WINDOW_MS, 60_000);
-  const opsSessionRateLimitMax = readPositiveInteger(env.BOSSRAID_OPS_SESSION_RATE_LIMIT_MAX, 10);
+  const apiBodyLimitBytes = readPositiveInteger(
+    env.BOSSRAID_API_BODY_LIMIT_BYTES,
+    DEFAULTS.API_BODY_LIMIT_BYTES
+  );
+  const providerSubmissionBodyLimitBytes = Math.max(
+    apiBodyLimitBytes,
+    DEFAULTS.PROVIDER_SUBMISSION_BODY_LIMIT_MULTIPLIER * 1024 * 1024
+  );
+  const opsSessionTtlSec = readPositiveInteger(
+    env.BOSSRAID_OPS_SESSION_TTL_SEC,
+    DEFAULTS.OPS_SESSION_TTL_SEC
+  );
+  const publicRateLimitMax = readPositiveInteger(
+    env.BOSSRAID_PUBLIC_RATE_LIMIT_MAX,
+    DEFAULTS.PUBLIC_RATE_LIMIT_MAX
+  );
+  const publicRateLimitWindowMs = readPositiveInteger(
+    env.BOSSRAID_PUBLIC_RATE_LIMIT_WINDOW_MS,
+    DEFAULTS.PUBLIC_RATE_LIMIT_WINDOW_MS
+  );
+  const opsSessionRateLimitMax = readPositiveInteger(
+    env.BOSSRAID_OPS_SESSION_RATE_LIMIT_MAX,
+    DEFAULTS.OPS_SESSION_RATE_LIMIT_MAX
+  );
   const opsSessionRateLimitWindowMs = readPositiveInteger(
     env.BOSSRAID_OPS_SESSION_RATE_LIMIT_WINDOW_MS,
-    300_000,
+    DEFAULTS.OPS_SESSION_RATE_LIMIT_WINDOW_MS
   );
-  const providerHealthTimeoutMs = readPositiveInteger(env.BOSSRAID_PROVIDER_HEALTH_TIMEOUT_MS, 5_000);
+  const providerHealthTimeoutMs = readPositiveInteger(
+    env.BOSSRAID_PROVIDER_HEALTH_TIMEOUT_MS,
+    DEFAULTS.PROVIDER_HEALTH_TIMEOUT_MS
+  );
   const chatDefaultMaxTotalCost = readPositiveNumber(env.BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST);
   const chatTerminalSettleGraceMs = resolveChatTerminalSettleGraceMs(env);
   const evaluatorMaxConcurrentJobs = readPositiveInteger(env.BOSSRAID_EVAL_MAX_CONCURRENT_JOBS, 2);
   const registryToken = env.BOSSRAID_REGISTRY_TOKEN;
   let mercenaryIdentity = readMercenaryErc8004Identity(env);
   const trustProxy =
-    env.BOSSRAID_TRUST_PROXY === "1" ||
-    env.BOSSRAID_TRUST_PROXY === "true" ||
-    env.BOSSRAID_TRUST_PROXY === "yes";
+    env.BOSSRAID_TRUST_PROXY === '1' ||
+    env.BOSSRAID_TRUST_PROXY === 'true' ||
+    env.BOSSRAID_TRUST_PROXY === 'yes';
   const teeSigner = readTeeSigner(env);
   const app = Fastify({
     logger: false,
@@ -129,20 +153,21 @@ export function buildApiServer(
   const erc8004Verifier = createErc8004Verifier(env);
   const settlementProofRefresher = createSettlementProofRefresher(env);
   const controlState = createApiControlState(env);
-  const workerIsolation = env.BOSSRAID_EVAL_JOB_ISOLATION === "container" ? "per_job_container" : "per_job_process";
+  const workerIsolation =
+    env.BOSSRAID_EVAL_JOB_ISOLATION === 'container' ? 'per_job_container' : 'per_job_process';
 
   app.setErrorHandler((error, _request, reply) => {
     if (isX402ProtocolError(error)) {
       const reservationId = error.paymentRequired.accepts[0]?.extra?.reservationId;
-      if (typeof reservationId === "string") {
-        reply.header("X-BOSSRAID-LAUNCH-RESERVATION", reservationId);
+      if (typeof reservationId === 'string') {
+        reply.header('X-BOSSRAID-LAUNCH-RESERVATION', reservationId);
       }
       applyX402Headers(reply, {
         paymentRequired: error.paymentRequired,
         settlement: error.settlement,
       });
       reply.code(error.statusCode).send({
-        error: "payment_required",
+        error: 'payment_required',
         message: error.message,
         x402: error.paymentRequired,
         settlement: error.settlement,
@@ -152,7 +177,7 @@ export function buildApiServer(
 
     if (error instanceof ApiContractError) {
       reply.code(error.statusCode).send({
-        error: "bad_request",
+        error: 'bad_request',
         message: error.message,
       });
       return;
@@ -160,7 +185,7 @@ export function buildApiServer(
 
     if (error instanceof NoEligibleProvidersError) {
       reply.code(409).send({
-        error: "no_eligible_providers",
+        error: 'no_eligible_providers',
         message: error.message,
       });
       return;
@@ -168,7 +193,7 @@ export function buildApiServer(
 
     if (error instanceof UnknownRaidError) {
       reply.code(404).send({
-        error: "not_found",
+        error: 'not_found',
         message: error.message,
       });
       return;
@@ -176,7 +201,7 @@ export function buildApiServer(
 
     if (error instanceof InvalidRaidLaunchReservationError) {
       reply.code(409).send({
-        error: "invalid_launch_reservation",
+        error: 'invalid_launch_reservation',
         message: error.message,
       });
       return;
@@ -184,16 +209,16 @@ export function buildApiServer(
 
     if (error instanceof PersistenceUnavailableError) {
       reply.code(503).send({
-        error: "persistence_unavailable",
+        error: 'persistence_unavailable',
         message: error.message,
       });
       return;
     }
 
-    console.error(error);
+    logger.error(error);
     reply.code(500).send({
-      error: "internal_error",
-      message: "Internal server error.",
+      error: 'internal_error',
+      message: 'Internal server error.',
     });
   });
 
@@ -203,8 +228,9 @@ export function buildApiServer(
       method: string;
       path: string;
       body: unknown;
+      bodyText?: string;
       headers: Record<string, string | string[] | undefined>;
-    },
+    }
   ): boolean {
     const provider = orchestrator.listProviders().find((item) => item.providerId === providerId);
     if (!provider) {
@@ -216,12 +242,12 @@ export function buildApiServer(
       providerId,
       method: request.method,
       path: request.path,
-      body: JSON.stringify(request.body ?? {}),
+      body: request.bodyText ?? JSON.stringify(request.body ?? {}),
       headers: request.headers,
       authorizationHeader: asSingleHeader(request.headers.authorization),
-      timestampHeader: asSingleHeader(request.headers["x-bossraid-timestamp"]),
-      signatureHeader: asSingleHeader(request.headers["x-bossraid-signature"]),
-      providerIdHeader: asSingleHeader(request.headers["x-bossraid-provider-id"]),
+      timestampHeader: asSingleHeader(request.headers['x-bossraid-timestamp']),
+      signatureHeader: asSingleHeader(request.headers['x-bossraid-signature']),
+      providerIdHeader: asSingleHeader(request.headers['x-bossraid-provider-id']),
     });
   }
 
@@ -234,7 +260,10 @@ export function buildApiServer(
   }
 
   function adminIsAuthorized(headers: Record<string, string | string[] | undefined>): boolean {
-    if (adminToken && safeEqualString(asSingleHeader(headers.authorization), `Bearer ${adminToken}`)) {
+    if (
+      adminToken &&
+      safeEqualString(asSingleHeader(headers.authorization), `Bearer ${adminToken}`)
+    ) {
       return true;
     }
 
@@ -244,19 +273,19 @@ export function buildApiServer(
 
   function requireAdmin(
     reply: FastifyReply,
-    headers: Record<string, string | string[] | undefined>,
+    headers: Record<string, string | string[] | undefined>
   ): { error: string; message?: string } | undefined {
     if (!adminToken) {
       reply.code(503);
       return {
-        error: "admin_auth_not_configured",
-        message: "BOSSRAID_ADMIN_TOKEN is required for this route.",
+        error: 'admin_auth_not_configured',
+        message: 'BOSSRAID_ADMIN_TOKEN is required for this route.',
       };
     }
 
     if (!adminIsAuthorized(headers)) {
       reply.code(401);
-      return { error: "unauthorized" };
+      return { error: 'unauthorized' };
     }
 
     return undefined;
@@ -271,26 +300,26 @@ export function buildApiServer(
       return true;
     }
 
-    return safeEqualString(asSingleHeader(headers["x-bossraid-demo-token"]), demoToken);
+    return safeEqualString(asSingleHeader(headers['x-bossraid-demo-token']), demoToken);
   }
 
   function requireDemoRouteAccess(
     reply: FastifyReply,
-    headers: Record<string, string | string[] | undefined>,
+    headers: Record<string, string | string[] | undefined>
   ): { error: string; message?: string } | undefined {
     if (!demoRouteEnabled) {
       reply.code(404);
       return {
-        error: "not_found",
-        message: "Demo raid route is not enabled.",
+        error: 'not_found',
+        message: 'Demo raid route is not enabled.',
       };
     }
 
     if (!demoRouteIsAuthorized(headers)) {
       reply.code(401);
       return {
-        error: "unauthorized",
-        message: "Demo raid route requires a valid x-bossraid-demo-token header.",
+        error: 'unauthorized',
+        message: 'Demo raid route requires a valid x-bossraid-demo-token header.',
       };
     }
 
@@ -301,7 +330,7 @@ export function buildApiServer(
     bucket: string,
     key: string,
     maxRequests: number,
-    windowMs: number,
+    windowMs: number
   ): { allowed: true } | { allowed: false; retryAfterSec: number } {
     return controlState.consumeRateLimit(bucket, key, maxRequests, windowMs);
   }
@@ -311,28 +340,21 @@ export function buildApiServer(
     reply: FastifyReply,
     bucket: string,
     maxRequests: number,
-    windowMs: number,
+    windowMs: number
   ): { error: string; message: string } | undefined {
     if (maxRequests <= 0) {
       return undefined;
     }
 
-    const result = consumeRateLimit(
-      bucket,
-      readClientRateLimitKey(request),
-      maxRequests,
-      windowMs,
-    );
+    const result = consumeRateLimit(bucket, readClientRateLimitKey(request), maxRequests, windowMs);
     if (result.allowed) {
       return undefined;
     }
 
-    reply
-      .code(429)
-      .header("retry-after", String(result.retryAfterSec));
+    reply.code(429).header('retry-after', String(result.retryAfterSec));
     return {
-      error: "rate_limited",
-      message: "Too many requests. Retry later.",
+      error: 'rate_limited',
+      message: 'Too many requests. Retry later.',
     };
   }
 
@@ -340,7 +362,7 @@ export function buildApiServer(
     reply: FastifyReply,
     raidId: string,
     headers: Record<string, string | string[] | undefined>,
-    queryAccessToken?: string,
+    queryAccessToken?: string
   ): { error: string } | undefined {
     if (adminIsAuthorized(headers)) {
       return undefined;
@@ -355,7 +377,7 @@ export function buildApiServer(
       !safeEqualString(hashRaidAccessToken(raidAccessToken), expectedHash)
     ) {
       reply.code(401);
-      return { error: "unauthorized" };
+      return { error: 'unauthorized' };
     }
 
     return undefined;
@@ -378,7 +400,7 @@ export function buildApiServer(
 
   function serializeProviderProfile(
     provider: ProviderProfile,
-    options: { includeEndpoint?: boolean } = {},
+    options: { includeEndpoint?: boolean } = {}
   ) {
     return {
       providerId: provider.providerId,
@@ -401,13 +423,89 @@ export function buildApiServer(
       reputation: provider.reputation,
       scores: provider.scores,
       lastSeenAt: provider.lastSeenAt,
+      source: provider.source,
     };
   }
 
-  async function ensureErc8004ProofState(options: {
-    includeMercenary?: boolean;
-    providers?: ProviderProfile[];
-  } = {}): Promise<void> {
+  function requireProviderOrRaidReadAccess(
+    reply: FastifyReply,
+    raidId: string,
+    providerId: string,
+    request: {
+      method: string;
+      path: string;
+      body: unknown;
+      bodyText?: string;
+      headers: Record<string, string | string[] | undefined>;
+    }
+  ): { error: string; message?: string } | undefined {
+    if (adminIsAuthorized(request.headers)) {
+      return undefined;
+    }
+    if (
+      providerIsAuthorized(providerId, {
+        method: request.method,
+        path: request.path,
+        body: request.body,
+        bodyText: request.bodyText,
+        headers: request.headers,
+      })
+    ) {
+      return undefined;
+    }
+
+    const raid = orchestrator.getRaid(raidId);
+    const token = asSingleHeader(request.headers[RAID_ACCESS_TOKEN_HEADER]);
+    if (
+      token &&
+      raid?.raidAccessTokenHash &&
+      safeEqualString(hashRaidAccessToken(token), raid.raidAccessTokenHash)
+    ) {
+      return undefined;
+    }
+
+    reply.code(401);
+    return { error: 'unauthorized' };
+  }
+
+  async function buildProviderSettlementPayload(
+    raidId: string,
+    providerId: string
+  ): Promise<Record<string, unknown> | undefined> {
+    const raid = orchestrator.getRaid(raidId);
+    if (!raid || !raid.selectedProviders.includes(providerId)) {
+      return undefined;
+    }
+    await ensureSettlementProofState(raidId);
+    const result = orchestrator.getResult(raidId);
+    const ranked = result.rankedSubmissions?.find(
+      (entry) => entry.submission.providerId === providerId
+    );
+    const grossUsd =
+      ranked?.breakdown.valid && result.settlement
+        ? result.settlement.payoutPerSuccessfulProvider
+        : 0;
+    return {
+      raidId,
+      providerId,
+      status: raid.status,
+      grossUsd,
+      feesUsd: 0,
+      netUsd: grossUsd,
+      receiptPath: `/receipt?raidId=${raidId}`,
+      settlement: result.settlement,
+      settlementExecution: result.settlementExecution,
+      assignment: raid.assignments[providerId],
+      valid: ranked?.breakdown.valid ?? false,
+    };
+  }
+
+  async function ensureErc8004ProofState(
+    options: {
+      includeMercenary?: boolean;
+      providers?: ProviderProfile[];
+    } = {}
+  ): Promise<void> {
     if (!erc8004Verifier.enabled) {
       return;
     }
@@ -434,13 +532,13 @@ export function buildApiServer(
     try {
       await persistSettlementExecutionArtifact(refreshed);
     } catch (error) {
-      console.error("Mercenary settlement artifact sync error", error);
+      logger.error(error, 'Mercenary settlement artifact sync error');
     }
   }
 
   function serializeProviderHealth(
     health: ProviderHealthStatus,
-    options: { includeDiagnostics?: boolean; includeEndpoint?: boolean } = {},
+    options: { includeDiagnostics?: boolean; includeEndpoint?: boolean } = {}
   ) {
     return {
       providerId: health.providerId,
@@ -457,7 +555,7 @@ export function buildApiServer(
   }
 
   function readOpsSession(
-    headers: Record<string, string | string[] | undefined>,
+    headers: Record<string, string | string[] | undefined>
   ): { token: string; expiresAt: number } | undefined {
     const cookieHeader = asSingleHeader(headers.cookie);
     if (!cookieHeader) {
@@ -471,52 +569,50 @@ export function buildApiServer(
   function issueOpsSession(reply: FastifyReply): { expiresAt: number } {
     const session = controlState.issueOpsSession(opsSessionTtlSec);
     reply.header(
-      "set-cookie",
+      'set-cookie',
       serializeCookie(OPS_SESSION_COOKIE_NAME, session.token, {
         httpOnly: true,
-        sameSite: "Strict",
-        path: "/ops-api",
+        sameSite: 'Strict',
+        path: '/ops-api',
         maxAge: opsSessionTtlSec,
-        secure: env.NODE_ENV === "production",
-      }),
+        secure: env.NODE_ENV === 'production',
+      })
     );
     return { expiresAt: session.expiresAt };
   }
 
   function clearOpsSession(
     reply: FastifyReply,
-    headers: Record<string, string | string[] | undefined>,
+    headers: Record<string, string | string[] | undefined>
   ): void {
     const session = readOpsSession(headers);
     if (session) {
       controlState.clearOpsSession(session.token);
     }
     reply.header(
-      "set-cookie",
-      serializeCookie(OPS_SESSION_COOKIE_NAME, "", {
+      'set-cookie',
+      serializeCookie(OPS_SESSION_COOKIE_NAME, '', {
         httpOnly: true,
-        sameSite: "Strict",
-        path: "/ops-api",
+        sameSite: 'Strict',
+        path: '/ops-api',
         maxAge: 0,
-        secure: env.NODE_ENV === "production",
-      }),
+        secure: env.NODE_ENV === 'production',
+      })
     );
   }
 
   function validateProviderCallback(
     raidId: string,
     providerId: string,
-    providerRunId?: string,
-  ):
-    | { ok: true }
-    | { ok: false; statusCode: number; body: { error: string; message: string } } {
+    providerRunId?: string
+  ): { ok: true } | { ok: false; statusCode: number; body: { error: string; message: string } } {
     const raid = orchestrator.getRaid(raidId);
     if (!raid) {
       return {
         ok: false,
         statusCode: 404,
         body: {
-          error: "not_found",
+          error: 'not_found',
           message: `Unknown raid: ${raidId}`,
         },
       };
@@ -528,7 +624,7 @@ export function buildApiServer(
         ok: false,
         statusCode: 404,
         body: {
-          error: "provider_not_assigned",
+          error: 'provider_not_assigned',
           message: `Provider ${providerId} is not assigned to raid ${raidId}.`,
         },
       };
@@ -539,7 +635,7 @@ export function buildApiServer(
         ok: false,
         statusCode: 409,
         body: {
-          error: "provider_run_not_ready",
+          error: 'provider_run_not_ready',
           message: `Provider ${providerId} has not accepted raid ${raidId} yet.`,
         },
       };
@@ -550,7 +646,7 @@ export function buildApiServer(
         ok: false,
         statusCode: 409,
         body: {
-          error: "provider_run_required",
+          error: 'provider_run_required',
           message: `Provider ${providerId} must include providerRunId for raid ${raidId}.`,
         },
       };
@@ -561,7 +657,7 @@ export function buildApiServer(
         ok: false,
         statusCode: 409,
         body: {
-          error: "provider_run_mismatch",
+          error: 'provider_run_mismatch',
           message: `Provider run ${providerRunId} does not match the active assignment for raid ${raidId}.`,
         },
       };
@@ -579,22 +675,25 @@ export function buildApiServer(
     expiresAt: string;
     paymentTimeoutSeconds?: number;
   }): number {
-    if (typeof reservation.paymentTimeoutSeconds === "number" && Number.isFinite(reservation.paymentTimeoutSeconds)) {
+    if (
+      typeof reservation.paymentTimeoutSeconds === 'number' &&
+      Number.isFinite(reservation.paymentTimeoutSeconds)
+    ) {
       return Math.max(1, Math.round(reservation.paymentTimeoutSeconds));
     }
 
     const derivedTimeoutSeconds = Math.ceil(
-      (Date.parse(reservation.expiresAt) - Date.parse(reservation.createdAt)) / 1_000,
+      (Date.parse(reservation.expiresAt) - Date.parse(reservation.createdAt)) / 1000
     );
     return Math.max(1, Number.isFinite(derivedTimeoutSeconds) ? derivedTimeoutSeconds : 1);
   }
 
   async function requireReservedLaunchPayment(
-    route: "raid" | "chat",
+    route: 'raid' | 'chat',
     request: FastifyRequest,
-    input: BossRaidSpawnInput,
+    input: BossRaidSpawnInput
   ): Promise<{
-    settlement?: import("./x402.js").X402SettlementResponse;
+    settlement?: import('./x402.js').X402SettlementResponse;
     reservationId?: string;
     requestKey?: string;
     escrowFundingUsd?: number;
@@ -606,11 +705,11 @@ export function buildApiServer(
     }
 
     const requestKey = buildLaunchRequestKey(request, route, input);
-    const paymentSignature = asSingleHeader(request.headers["payment-signature"]);
+    const paymentSignature = asSingleHeader(request.headers['payment-signature']);
     const explicitReservationId = readX402ReservationId(request.headers);
     if (paymentSignature && !explicitReservationId) {
       throw new ApiContractError(
-        "Paid requests must include X-BossRaid-Launch-Reservation from the payment challenge.",
+        'Paid requests must include X-BossRaid-Launch-Reservation from the payment challenge.'
       );
     }
 
@@ -625,12 +724,12 @@ export function buildApiServer(
 
     if (!reservation) {
       throw new InvalidRaidLaunchReservationError(
-        "Raid launch reservation is missing, expired, or does not match this request.",
+        'Raid launch reservation is missing, expired, or does not match this request.'
       );
     }
     if (reservation.route !== route) {
       throw new InvalidRaidLaunchReservationError(
-        `Raid launch reservation ${reservation.id} was created for /v1/${reservation.route}, not ${route}.`,
+        `Raid launch reservation ${reservation.id} was created for /v1/${reservation.route}, not ${route}.`
       );
     }
 
@@ -671,14 +770,14 @@ export function buildApiServer(
     parseInput: (value: unknown) => BossRaidSpawnInput,
     options: {
       requirePayment?: boolean;
-    } = {},
+    } = {}
   ) {
     const rateLimitError = requireRateLimit(
       request,
       reply,
-      "public-action",
+      'public-action',
       publicRateLimitMax,
-      publicRateLimitWindowMs,
+      publicRateLimitWindowMs
     );
     if (rateLimitError) {
       return rateLimitError;
@@ -686,14 +785,17 @@ export function buildApiServer(
 
     const input = parseInput(request.body);
     await ensureErc8004ProofState({ includeMercenary: false });
-    const payment = options.requirePayment === false ? {} : await requireReservedLaunchPayment("raid", request, input);
+    const payment =
+      options.requirePayment === false
+        ? {}
+        : await requireReservedLaunchPayment('raid', request, input);
     const response =
       payment.reservationId && payment.requestKey
         ? await orchestrator.spawnReservedRaid(
             payment.reservationId,
             payment.requestKey,
             payment.escrowFundingUsd,
-            payment.platformMarkupUsd,
+            payment.platformMarkupUsd
           )
         : await orchestrator.spawnRaid(input, payment.escrowFundingUsd, payment.platformMarkupUsd);
     applyX402Headers(reply, {
@@ -702,7 +804,7 @@ export function buildApiServer(
     return response;
   }
 
-  function registerRaidRoutes(basePath: "/v1/raid" | "/v1/raids"): void {
+  function registerRaidRoutes(basePath: '/v1/raid' | '/v1/raids'): void {
     app.get(`${basePath}/:raidId`, async (request, reply) => {
       const raidId = getRaidId(request);
       const authorizationError = requireRaidReadAccess(reply, raidId, request.headers);
@@ -727,7 +829,12 @@ export function buildApiServer(
     app.get(`${basePath}/:raidId/agent_log.json`, async (request, reply) => {
       const raidId = getRaidId(request);
       const queryAccessToken = readRaidAccessTokenQuery(request.query);
-      const authorizationError = requireRaidReadAccess(reply, raidId, request.headers, queryAccessToken);
+      const authorizationError = requireRaidReadAccess(
+        reply,
+        raidId,
+        request.headers,
+        queryAccessToken
+      );
       if (authorizationError) {
         return authorizationError;
       }
@@ -736,20 +843,19 @@ export function buildApiServer(
       if (!raid) {
         reply.code(404);
         return {
-          error: "not_found",
+          error: 'not_found',
           message: `Unknown raid: ${raidId}`,
         };
       }
 
-      reply.header("cache-control", "private, no-store");
+      reply.header('cache-control', 'private, no-store');
       await ensureSettlementProofState(raidId);
       await ensureErc8004ProofState({ includeMercenary: false });
       return buildAgentLog(raid, {
         getRaid: (currentRaidId) => orchestrator.getRaid(currentRaidId),
         getProvider: (providerId) => orchestrator.getProviderProfile(providerId),
         raidAccessToken:
-          asSingleHeader(request.headers[RAID_ACCESS_TOKEN_HEADER]) ??
-          queryAccessToken,
+          asSingleHeader(request.headers[RAID_ACCESS_TOKEN_HEADER]) ?? queryAccessToken,
       });
     });
 
@@ -763,8 +869,10 @@ export function buildApiServer(
       if (!teeSigner.account) {
         reply.code(503);
         return {
-          error: "tee_signer_not_configured",
-          message: teeSigner.error ?? "MNEMONIC environment variable is required for attested raid result proofs.",
+          error: 'tee_signer_not_configured',
+          message:
+            teeSigner.error ??
+            'MNEMONIC environment variable is required for attested raid result proofs.',
         };
       }
 
@@ -794,22 +902,27 @@ export function buildApiServer(
   }
 
   async function collectProviderHealth() {
-    return Promise.all(orchestrator.listProviders().map((provider) => probeProviderHealth(provider)));
+    return Promise.all(
+      orchestrator.listProviders().map((provider) => probeProviderHealth(provider))
+    );
   }
 
-  app.get("/health", async () => {
+  app.get('/health', async () => {
     const providerHealth = await collectProviderHealth();
     const persistence = orchestrator.getPersistenceStatus();
 
     return {
-      ok: persistence.healthy && providerHealth.length > 0 && providerHealth.every((provider) => provider.ready),
+      ok:
+        persistence.healthy &&
+        providerHealth.length > 0 &&
+        providerHealth.every((provider) => provider.ready),
       providers: orchestrator.listProviders().length,
       readyProviders: providerHealth.filter((provider) => provider.ready).length,
       raids: orchestrator.listRaids().length,
     };
   });
 
-  app.get("/v1/agent.json", async () => {
+  app.get('/v1/agent.json', async () => {
     await ensureErc8004ProofState();
     return buildAgentManifest(orchestrator, {
       runtimeExecutionRequested: readBooleanEnv(env.BOSSRAID_EVAL_RUNTIME_EXECUTION),
@@ -822,12 +935,14 @@ export function buildApiServer(
     });
   });
 
-  app.get("/v1/attested-runtime", async (_request, reply) => {
+  app.get('/v1/attested-runtime', async (_request, reply) => {
     if (!teeSigner.account) {
       reply.code(503);
       return {
-        error: "tee_signer_not_configured",
-        message: teeSigner.error ?? "MNEMONIC environment variable is required for attested runtime proofs.",
+        error: 'tee_signer_not_configured',
+        message:
+          teeSigner.error ??
+          'MNEMONIC environment variable is required for attested runtime proofs.',
       };
     }
 
@@ -845,13 +960,13 @@ export function buildApiServer(
     };
   });
 
-  app.get("/v1/runtime", async (request, reply) => {
+  app.get('/v1/runtime', async (request, reply) => {
     const adminError = requireAdmin(reply, request.headers);
     if (adminError) {
       return adminError;
     }
 
-    const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? "/var/run/tappd.sock";
+    const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/tappd.sock';
     return {
       deploymentTarget: env.BOSSRAID_DEPLOY_TARGET ?? null,
       nodeEnv: env.NODE_ENV ?? null,
@@ -872,9 +987,12 @@ export function buildApiServer(
         runtimeExecutionRequested: readBooleanEnv(env.BOSSRAID_EVAL_RUNTIME_EXECUTION),
         runtimeExecutionEnabled: runtimeExecutionEnabled(env),
         transport: runtimeExecutionTransport(env),
-        sandboxMode: env.BOSSRAID_EVAL_SANDBOX_MODE ?? "host",
+        sandboxMode: env.BOSSRAID_EVAL_SANDBOX_MODE ?? 'host',
         workerIsolation,
-        jobTimeoutMs: readPositiveInteger(env.BOSSRAID_EVAL_JOB_TIMEOUT_MS, 45_000),
+        jobTimeoutMs: readPositiveInteger(
+          env.BOSSRAID_EVAL_JOB_TIMEOUT_MS,
+          DEFAULTS.EVAL_JOB_TIMEOUT_MS
+        ),
         jobContainerImageConfigured: Boolean(env.BOSSRAID_EVAL_JOB_CONTAINER_IMAGE),
         dockerSocketConfigured: Boolean(env.BOSSRAID_EVAL_DOCKER_SOCKET_PATH),
         sandboxUrlConfigured: Boolean(env.BOSSRAID_EVAL_SANDBOX_URL),
@@ -893,7 +1011,7 @@ export function buildApiServer(
     };
   });
 
-  app.post("/v1/runtime/evaluator-smoke", async (request, reply) => {
+  app.post('/v1/runtime/evaluator-smoke', async (request, reply) => {
     const adminError = requireAdmin(reply, request.headers);
     if (adminError) {
       return adminError;
@@ -902,8 +1020,8 @@ export function buildApiServer(
     if (!runtimeExecutionEnabled(env)) {
       reply.code(503);
       return {
-        error: "runtime_execution_disabled",
-        message: "Runtime execution must be enabled before evaluator smoke checks can run.",
+        error: 'runtime_execution_disabled',
+        message: 'Runtime execution must be enabled before evaluator smoke checks can run.',
         evaluator: {
           transport: runtimeExecutionTransport(env),
           workerIsolation,
@@ -928,17 +1046,20 @@ export function buildApiServer(
     }
   });
 
-  app.get("/v1/ops/session", async (request, reply) => {
+  app.get('/v1/ops/session', async (request, reply) => {
     if (!adminToken) {
       reply.code(503);
       return {
-        error: "admin_auth_not_configured",
-        message: "BOSSRAID_ADMIN_TOKEN is required for this route.",
+        error: 'admin_auth_not_configured',
+        message: 'BOSSRAID_ADMIN_TOKEN is required for this route.',
       };
     }
 
     const session = readOpsSession(request.headers);
-    if (session || safeEqualString(asSingleHeader(request.headers.authorization), `Bearer ${adminToken}`)) {
+    if (
+      session ||
+      safeEqualString(asSingleHeader(request.headers.authorization), `Bearer ${adminToken}`)
+    ) {
       return {
         authenticated: true,
         expiresAt: session ? new Date(session.expiresAt).toISOString() : undefined,
@@ -948,16 +1069,16 @@ export function buildApiServer(
     reply.code(401);
     return {
       authenticated: false,
-      error: "unauthorized",
+      error: 'unauthorized',
     };
   });
-  app.post("/v1/ops/session", async (request, reply) => {
+  app.post('/v1/ops/session', async (request, reply) => {
     const rateLimitError = requireRateLimit(
       request,
       reply,
-      "ops-session",
+      'ops-session',
       opsSessionRateLimitMax,
-      opsSessionRateLimitWindowMs,
+      opsSessionRateLimitWindowMs
     );
     if (rateLimitError) {
       return rateLimitError;
@@ -966,8 +1087,8 @@ export function buildApiServer(
     if (!adminToken) {
       reply.code(503);
       return {
-        error: "admin_auth_not_configured",
-        message: "BOSSRAID_ADMIN_TOKEN is required for this route.",
+        error: 'admin_auth_not_configured',
+        message: 'BOSSRAID_ADMIN_TOKEN is required for this route.',
       };
     }
 
@@ -976,7 +1097,7 @@ export function buildApiServer(
       reply.code(401);
       return {
         authenticated: false,
-        error: "unauthorized",
+        error: 'unauthorized',
       };
     }
 
@@ -986,20 +1107,20 @@ export function buildApiServer(
       expiresAt: new Date(session.expiresAt).toISOString(),
     };
   });
-  app.delete("/v1/ops/session", async (request, reply) => {
+  app.delete('/v1/ops/session', async (request, reply) => {
     clearOpsSession(reply, request.headers);
     return {
       authenticated: false,
     };
   });
 
-  app.get("/v1/ops/settlement/status", async (request, reply) => {
+  app.get('/v1/ops/settlement/status', async (request, reply) => {
     const adminError = requireAdmin(reply, request.headers);
     if (adminError) {
       return adminError;
     }
 
-    const settlementMode = env.BOSSRAID_SETTLEMENT_MODE ?? "off";
+    const settlementMode = env.BOSSRAID_SETTLEMENT_MODE ?? 'off';
     const rpcUrl = env.BOSSRAID_RPC_URL;
     const chainId = env.BOSSRAID_CHAIN_ID;
     const registryAddress = env.BOSSRAID_REGISTRY_ADDRESS;
@@ -1008,7 +1129,7 @@ export function buildApiServer(
 
     return {
       mode: settlementMode,
-      configured: settlementMode !== "off" && Boolean(rpcUrl && registryAddress && escrowAddress),
+      configured: settlementMode !== 'off' && Boolean(rpcUrl && registryAddress && escrowAddress),
       chain: chainId ? { id: chainId } : null,
       contracts: {
         registry: registryAddress ?? null,
@@ -1019,7 +1140,7 @@ export function buildApiServer(
     };
   });
 
-  app.get("/v1/raids", async (request, reply) => {
+  app.get('/v1/raids', async (request, reply) => {
     const adminError = requireAdmin(reply, request.headers);
     if (adminError) {
       return adminError;
@@ -1033,16 +1154,17 @@ export function buildApiServer(
       bestCurrentScore: raid.bestCurrentScore,
       firstValidSubmissionId: raid.firstValidSubmissionId,
       primarySubmissionId: raid.primarySubmissionId,
-      successfulSubmissionCount: raid.rankedSubmissions.filter((item) => item.breakdown.valid).length,
+      successfulSubmissionCount: raid.rankedSubmissions.filter((item) => item.breakdown.valid)
+        .length,
     }));
   });
-  app.post("/v1/chat/completions", async (request, reply) => {
+  app.post('/v1/chat/completions', async (request, reply) => {
     const rateLimitError = requireRateLimit(
       request,
       reply,
-      "public-action",
+      'public-action',
       publicRateLimitMax,
-      publicRateLimitWindowMs,
+      publicRateLimitWindowMs
     );
     if (rateLimitError) {
       return rateLimitError;
@@ -1054,7 +1176,7 @@ export function buildApiServer(
       parseBossRaidRequest(
         buildBossRaidRequestFromChatCompletion(chatRequest, {
           defaultMaxTotalCost: chatDefaultMaxTotalCost,
-        }),
+        })
       );
     const created = Math.floor(Date.now() / 1000);
     const directResponse = buildDirectChatCompletionResponse(chatRequest, created);
@@ -1069,7 +1191,7 @@ export function buildApiServer(
     }
 
     await ensureErc8004ProofState({ includeMercenary: false });
-    const payment = await requireReservedLaunchPayment("chat", request, raidRequest);
+    const payment = await requireReservedLaunchPayment('chat', request, raidRequest);
     const spawn =
       payment.reservationId && payment.requestKey
         ? await orchestrator.spawnReservedRaid(payment.reservationId, payment.requestKey)
@@ -1092,8 +1214,8 @@ export function buildApiServer(
     const outcome = await waitForTerminalRaidOutput(
       orchestrator,
       spawn.raidId,
-      Math.max(raidRequest.constraints.maxLatencySec * 1000, 1_000),
-      chatTerminalSettleGraceMs,
+      Math.max(raidRequest.constraints.maxLatencySec * 1000, TIMEOUTS.MIN_TIMEOUT_MS),
+      chatTerminalSettleGraceMs
     );
     const response = buildChatCompletionResponse(chatRequest, spawn, outcome, created);
     applyX402Headers(reply, {
@@ -1101,10 +1223,10 @@ export function buildApiServer(
     });
     return response;
   });
-  app.post("/v1/raid", async (request, reply) => {
+  app.post('/v1/raid', async (request, reply) => {
     return spawnParsedRaid(request, reply, parseBossRaidRequest);
   });
-  app.post("/v1/demo/raid", async (request, reply) => {
+  app.post('/v1/demo/raid', async (request, reply) => {
     const demoAccessError = requireDemoRouteAccess(reply, request.headers);
     if (demoAccessError) {
       return demoAccessError;
@@ -1114,12 +1236,12 @@ export function buildApiServer(
       requirePayment: false,
     });
   });
-  app.post("/v1/raids", async (request, reply) => {
+  app.post('/v1/raids', async (request, reply) => {
     return spawnParsedRaid(request, reply, parseBossRaidSpawnInput);
   });
-  registerRaidRoutes("/v1/raid");
-  registerRaidRoutes("/v1/raids");
-  app.post("/v1/evaluations/:raidId/replay", async (request, reply) => {
+  registerRaidRoutes('/v1/raid');
+  registerRaidRoutes('/v1/raids');
+  app.post('/v1/evaluations/:raidId/replay', async (request, reply) => {
     const adminError = requireAdmin(reply, request.headers);
     if (adminError) {
       return adminError;
@@ -1127,7 +1249,7 @@ export function buildApiServer(
 
     return orchestrator.replayEvaluation((request.params as { raidId: string }).raidId);
   });
-  app.post("/v1/providers/:providerId/heartbeat", async (request, reply) => {
+  app.post('/v1/providers/:providerId/heartbeat', async (request, reply) => {
     const params = request.params as { providerId: string };
     if (
       !providerIsAuthorized(params.providerId, {
@@ -1138,13 +1260,13 @@ export function buildApiServer(
       })
     ) {
       reply.code(401);
-      return { error: "unauthorized" };
+      return { error: 'unauthorized' };
     }
     const heartbeat = parseProviderHeartbeat(request.body, params.providerId);
     const validation = validateProviderCallback(
       heartbeat.raidId,
       params.providerId,
-      heartbeat.providerRunId,
+      heartbeat.providerRunId
     );
     if (!validation.ok) {
       reply.code(validation.statusCode);
@@ -1152,7 +1274,36 @@ export function buildApiServer(
     }
     return orchestrator.recordProviderHeartbeat(heartbeat.raidId, params.providerId, heartbeat);
   });
-  app.post("/v1/providers/:providerId/submit", { bodyLimit: providerSubmissionBodyLimitBytes }, async (request, reply) => {
+  app.post(
+    '/v1/providers/:providerId/submit',
+    { bodyLimit: providerSubmissionBodyLimitBytes },
+    async (request, reply) => {
+      const params = request.params as { providerId: string };
+      if (
+        !providerIsAuthorized(params.providerId, {
+          method: request.method,
+          path: request.url,
+          body: request.body,
+          headers: request.headers,
+        })
+      ) {
+        reply.code(401);
+        return { error: 'unauthorized' };
+      }
+      const submission = parseProviderSubmission(request.body, params.providerId);
+      const validation = validateProviderCallback(
+        submission.raidId,
+        params.providerId,
+        submission.providerRunId
+      );
+      if (!validation.ok) {
+        reply.code(validation.statusCode);
+        return validation.body;
+      }
+      return orchestrator.recordProviderSubmission(submission.raidId, submission);
+    }
+  );
+  app.post('/v1/providers/:providerId/failure', async (request, reply) => {
     const params = request.params as { providerId: string };
     if (
       !providerIsAuthorized(params.providerId, {
@@ -1163,39 +1314,14 @@ export function buildApiServer(
       })
     ) {
       reply.code(401);
-      return { error: "unauthorized" };
-    }
-    const submission = parseProviderSubmission(request.body, params.providerId);
-    const validation = validateProviderCallback(
-      submission.raidId,
-      params.providerId,
-      submission.providerRunId,
-    );
-    if (!validation.ok) {
-      reply.code(validation.statusCode);
-      return validation.body;
-    }
-    return orchestrator.recordProviderSubmission(submission.raidId, submission);
-  });
-  app.post("/v1/providers/:providerId/failure", async (request, reply) => {
-    const params = request.params as { providerId: string };
-    if (
-      !providerIsAuthorized(params.providerId, {
-        method: request.method,
-        path: request.url,
-        body: request.body,
-        headers: request.headers,
-      })
-    ) {
-      reply.code(401);
-      return { error: "unauthorized" };
+      return { error: 'unauthorized' };
     }
 
     const failure = parseProviderFailure(request.body, params.providerId);
     const validation = validateProviderCallback(
       failure.raidId,
       params.providerId,
-      failure.providerRunId,
+      failure.providerRunId
     );
     if (!validation.ok) {
       reply.code(validation.statusCode);
@@ -1203,17 +1329,19 @@ export function buildApiServer(
     }
     return orchestrator.recordProviderFailure(failure.raidId, params.providerId, failure);
   });
-  app.get("/v1/providers", async () => {
+  app.get('/v1/providers', async () => {
     const providers = orchestrator.listProviders();
     await ensureErc8004ProofState({ includeMercenary: false, providers });
     return providers.map((provider) => serializeProviderProfile(provider));
   });
-  app.get("/v1/providers/health", async () =>
-    (await Promise.all(orchestrator.listProviders().map((provider) => probeProviderHealth(provider)))).map((health) =>
-      serializeProviderHealth(health),
-    ),
+  app.get('/v1/providers/health', async () =>
+    (
+      await Promise.all(
+        orchestrator.listProviders().map((provider) => probeProviderHealth(provider))
+      )
+    ).map((health) => serializeProviderHealth(health))
   );
-  app.get("/v1/providers/:providerId/stats", async (request, reply) => {
+  app.get('/v1/providers/:providerId/stats', async (request, reply) => {
     const adminError = requireAdmin(reply, request.headers);
     if (adminError) {
       return adminError;
@@ -1223,64 +1351,101 @@ export function buildApiServer(
     const provider = orchestrator.listProviders().find((item) => item.providerId === providerId);
     if (!provider) {
       reply.code(404);
-      return { error: "not_found" };
+      return { error: 'not_found' };
     }
     await ensureErc8004ProofState({ includeMercenary: false, providers: [provider] });
     return serializeProviderProfile(provider, { includeEndpoint: true });
   });
 
-  app.post("/agents/register", async (request, reply) => {
+  app.get('/v1/raid/:raidId/provider-settlement', async (request, reply) => {
+    const raidId = (request.params as { raidId: string }).raidId;
+    const query = request.query as { providerId?: unknown; provider_id?: unknown };
+    const providerId =
+      asSingleQueryValue(query.providerId) ?? asSingleQueryValue(query.provider_id);
+    if (!providerId) {
+      reply.code(400);
+      return {
+        error: 'bad_request',
+        message: 'providerId is required.',
+      };
+    }
+    const authorizationError = requireProviderOrRaidReadAccess(reply, raidId, providerId, {
+      method: request.method,
+      path: request.url,
+      body: {},
+      bodyText: '',
+      headers: request.headers,
+    });
+    if (authorizationError) {
+      return authorizationError;
+    }
+    const payload = await buildProviderSettlementPayload(raidId, providerId);
+    if (!payload) {
+      reply.code(404);
+      return {
+        error: 'not_found',
+        message: `No settlement data for provider ${providerId} on raid ${raidId}.`,
+      };
+    }
+    return payload;
+  });
+
+  app.post('/agents/register', async (request, reply) => {
     if (!registryToken) {
       reply.code(503);
-      return { error: "registry_auth_not_configured" };
+      return { error: 'registry_auth_not_configured' };
     }
     if (!registryIsAuthorized(request.headers)) {
       reply.code(401);
-      return { error: "unauthorized" };
+      return { error: 'unauthorized' };
     }
-    const provider = await orchestrator.upsertRegisteredProvider(parseProviderRegistrationInput(request.body));
+    const provider = await orchestrator.upsertRegisteredProvider(
+      parseProviderRegistrationInput(request.body)
+    );
     await ensureErc8004ProofState({ includeMercenary: false, providers: [provider] });
     return serializeProviderProfile(provider, { includeEndpoint: true });
   });
-  app.post("/agents/heartbeat", async (request, reply) => {
+  app.post('/agents/heartbeat', async (request, reply) => {
     if (!registryToken) {
       reply.code(503);
-      return { error: "registry_auth_not_configured" };
+      return { error: 'registry_auth_not_configured' };
     }
     if (!registryIsAuthorized(request.headers)) {
       reply.code(401);
-      return { error: "unauthorized" };
+      return { error: 'unauthorized' };
     }
-    const provider = await orchestrator.recordAgentHeartbeat(parseAgentHeartbeatInput(request.body));
+    const provider = await orchestrator.recordAgentHeartbeat(
+      parseAgentHeartbeatInput(request.body)
+    );
     if (!provider) {
       reply.code(404);
-      return { error: "not_found" };
+      return { error: 'not_found' };
     }
     await ensureErc8004ProofState({ includeMercenary: false, providers: [provider] });
     return serializeProviderProfile(provider, { includeEndpoint: true });
   });
-  app.get("/agents/discover", async (request) => {
+  app.get('/agents/discover', async (request) => {
     await ensureErc8004ProofState({ includeMercenary: false });
-    return (await orchestrator.discoverProviders(parseProviderDiscoveryQuery(request.query))).map((provider) =>
-      serializeProviderProfile(provider),
+    return (await orchestrator.discoverProviders(parseProviderDiscoveryQuery(request.query))).map(
+      (provider) => serializeProviderProfile(provider)
     );
   });
 
   return app;
 }
 
-const OPS_SESSION_COOKIE_NAME = "bossraid_ops_session";
-const RAID_ACCESS_TOKEN_HEADER = "x-bossraid-raid-token";
+const OPS_SESSION_COOKIE_NAME = 'bossraid_ops_session';
+const RAID_ACCESS_TOKEN_HEADER = 'x-bossraid-raid-token';
 
 function hashRaidAccessToken(token: string): string {
-  return createHash("sha256").update(token).digest("hex");
+  return createHash('sha256').update(token).digest('hex');
 }
 
 function asSingleQueryValue(value: unknown): string | undefined {
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     return value;
   }
-  if (Array.isArray(value) && value.length > 0 && typeof value[0] === "string") {
+  if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') {
     return value[0];
   }
   return undefined;
@@ -1292,16 +1457,16 @@ function readClientRateLimitKey(request: FastifyRequest): string {
 
 function buildLaunchRequestKey(
   request: FastifyRequest,
-  route: "raid" | "chat",
-  input: BossRaidSpawnInput,
+  route: 'raid' | 'chat',
+  input: BossRaidSpawnInput
 ): string {
-  return createHash("sha256")
+  return createHash('sha256')
     .update(`${readClientRateLimitKey(request)}\n${route}\n${stableStringify(input)}`)
-    .digest("hex");
+    .digest('hex');
 }
 
 function safeEqualString(left: string | undefined, right: string): boolean {
-  if (typeof left !== "string") {
+  if (typeof left !== 'string') {
     return false;
   }
 
@@ -1315,16 +1480,16 @@ function safeEqualString(left: string | undefined, right: string): boolean {
 }
 
 function parseCookieHeader(header: string): Record<string, string> {
-  const entries = header.split(";");
+  const entries = header.split(';');
   const cookies: Record<string, string> = {};
 
   for (const entry of entries) {
-    const [rawName, ...rawValue] = entry.trim().split("=");
+    const [rawName, ...rawValue] = entry.trim().split('=');
     if (!rawName) {
       continue;
     }
 
-    cookies[rawName] = decodeURIComponent(rawValue.join("="));
+    cookies[rawName] = decodeURIComponent(rawValue.join('='));
   }
 
   return cookies;
@@ -1335,11 +1500,11 @@ function serializeCookie(
   value: string,
   options: {
     httpOnly?: boolean;
-    sameSite?: "Strict" | "Lax" | "None";
+    sameSite?: 'Strict' | 'Lax' | 'None';
     path?: string;
     maxAge?: number;
     secure?: boolean;
-  },
+  }
 ): string {
   const parts = [`${name}=${encodeURIComponent(value)}`];
 
@@ -1350,16 +1515,16 @@ function serializeCookie(
     parts.push(`Path=${options.path}`);
   }
   if (options.httpOnly) {
-    parts.push("HttpOnly");
+    parts.push('HttpOnly');
   }
   if (options.sameSite) {
     parts.push(`SameSite=${options.sameSite}`);
   }
   if (options.secure) {
-    parts.push("Secure");
+    parts.push('Secure');
   }
 
-  return parts.join("; ");
+  return parts.join('; ');
 }
 
 function readPositiveInteger(value: string | undefined, fallback: number): number {
@@ -1383,8 +1548,8 @@ function readPositiveNumber(value: string | undefined): number | undefined {
 export function resolveChatTerminalSettleGraceMs(env: NodeJS.ProcessEnv): number {
   const inviteAcceptMs = readPositiveInteger(env.BOSSRAID_INVITE_ACCEPT_MS, 3_000);
   return Math.min(
-    CHAT_TERMINAL_SETTLE_GRACE_CAP_MS,
-    Math.max(CHAT_TERMINAL_SETTLE_GRACE_FLOOR_MS, inviteAcceptMs),
+    TIMEOUTS.CHAT_TERMINAL_SETTLE_GRACE_CAP_MS,
+    Math.max(TIMEOUTS.CHAT_TERMINAL_SETTLE_GRACE_FLOOR_MS, inviteAcceptMs)
   );
 }
 
@@ -1398,7 +1563,7 @@ function readMercenaryErc8004Identity(env: NodeJS.ProcessEnv): Erc8004Identity |
     return undefined;
   }
 
-  const validationTxs = env.BOSSRAID_ERC8004_VALIDATION_TXS?.split(",")
+  const validationTxs = env.BOSSRAID_ERC8004_VALIDATION_TXS?.split(',')
     .map((value) => value.trim())
     .filter(Boolean);
 
@@ -1443,7 +1608,7 @@ function buildAttestedRuntimePayload(
   env: NodeJS.ProcessEnv,
   orchestrator: BossRaidOrchestrator,
   providerHealth: ProviderHealthStatus[],
-  workerIsolation: "per_job_process" | "per_job_container",
+  workerIsolation: 'per_job_process' | 'per_job_container'
 ): AttestedRuntimePayload {
   return {
     version: 1,
@@ -1467,70 +1632,64 @@ function buildEvaluatorSmokeTask(): {
 } {
   const files = [
     createSmokeFile(
-      "package.json",
+      'package.json',
       JSON.stringify(
         {
-          name: "bossraid-evaluator-smoke",
+          name: 'bossraid-evaluator-smoke',
           private: true,
-          type: "module",
+          type: 'module',
           scripts: {
-            test: "node --test",
+            test: 'node --test',
           },
         },
         null,
-        2,
-      ),
+        2
+      )
     ),
+    createSmokeFile('sum.js', ['export function sum(a, b) {', '  return a + b;', '}'].join('\n')),
     createSmokeFile(
-      "sum.js",
-      [
-        "export function sum(a, b) {",
-        "  return a + b;",
-        "}",
-      ].join("\n"),
-    ),
-    createSmokeFile(
-      "sum.test.js",
+      'sum.test.js',
       [
         'import assert from "node:assert/strict";',
         'import test from "node:test";',
         'import { sum } from "./sum.js";',
-        "",
+        '',
         'test("sum adds positive integers", () => {',
-        "  assert.equal(sum(2, 3), 5);",
-        "});",
-      ].join("\n"),
+        '  assert.equal(sum(2, 3), 5);',
+        '});',
+      ].join('\n')
     ),
   ];
 
   return {
     task: {
-      taskTitle: "Evaluator smoke test",
-      taskDescription: "Confirm the configured evaluator can execute an isolated Node built-in test suite.",
-      language: "text",
-      framework: "node",
+      taskTitle: 'Evaluator smoke test',
+      taskDescription:
+        'Confirm the configured evaluator can execute an isolated Node built-in test suite.',
+      language: 'text',
+      framework: 'node',
       files,
       failingSignals: {
-        errors: ["sum must return the correct arithmetic result."],
-        tests: ["node --test"],
-        reproSteps: ["Run node --test in the workspace."],
+        errors: ['sum must return the correct arithmetic result.'],
+        tests: ['node --test'],
+        reproSteps: ['Run node --test in the workspace.'],
       },
       output: {
-        primaryType: "patch",
-        artifactTypes: ["patch", "text"],
+        primaryType: 'patch',
+        artifactTypes: ['patch', 'text'],
       },
       constraints: {
         numExperts: 1,
         maxBudgetUsd: 1,
         maxLatencySec: 30,
         allowExternalSearch: false,
-        requireSpecializations: ["node"],
+        requireSpecializations: ['node'],
         minReputation: 0,
-        allowedOutputTypes: ["patch", "text"],
-        privacyMode: "off",
+        allowedOutputTypes: ['patch', 'text'],
+        privacyMode: 'off',
       },
       rewardPolicy: {
-        splitStrategy: "equal_success_only",
+        splitStrategy: 'equal_success_only',
       },
       privacyMode: {
         redactSecrets: false,
@@ -1538,22 +1697,25 @@ function buildEvaluatorSmokeTask(): {
         allowFullRepo: false,
       },
       hostContext: {
-        host: "codex",
+        host: 'codex',
       },
       originalFileCount: files.length,
-      originalBytes: files.reduce((total, file) => total + Buffer.byteLength(file.content, "utf8"), 0),
+      originalBytes: files.reduce(
+        (total, file) => total + Buffer.byteLength(file.content, 'utf8'),
+        0
+      ),
       sanitizationReport: {
         redactedSecrets: 0,
         redactedIdentifiers: 0,
         removedUrls: 0,
         trimmedFiles: 0,
         unsafeContentDetected: false,
-        riskTier: "safe",
+        riskTier: 'safe',
         issues: [],
       },
     },
     files,
-    touchedFiles: ["sum.js"],
+    touchedFiles: ['sum.js'],
   };
 }
 
@@ -1561,31 +1723,31 @@ function createSmokeFile(path: string, content: string): TaskFile {
   return {
     path,
     content,
-    sha256: createHash("sha256").update(content, "utf8").digest("hex"),
+    sha256: createHash('sha256').update(content, 'utf8').digest('hex'),
   };
 }
 
 function buildAttestedRuntimeMessage(payload: AttestedRuntimePayload): string {
   return [
-    "BossRaidAttestedRuntime",
+    'BossRaidAttestedRuntime',
     `version=${payload.version}`,
     `nonce=${payload.nonce}`,
     `timestamp=${payload.timestamp}`,
-    `deploymentTarget=${payload.deploymentTarget ?? "unknown"}`,
-    `teePlatform=${payload.teePlatform ?? "unknown"}`,
+    `deploymentTarget=${payload.deploymentTarget ?? 'unknown'}`,
+    `teePlatform=${payload.teePlatform ?? 'unknown'}`,
     `storageBackend=${payload.storageBackend}`,
     `providers=${payload.providers}`,
     `readyProviders=${payload.readyProviders}`,
     `raids=${payload.raids}`,
     `evaluatorTransport=${payload.evaluatorTransport}`,
     `workerIsolation=${payload.workerIsolation}`,
-  ].join("|");
+  ].join('|');
 }
 
 function buildAttestedRaidResultPayload(
   env: NodeJS.ProcessEnv,
   result: BossRaidResultOutput,
-  workerIsolation: "per_job_process" | "per_job_container",
+  workerIsolation: 'per_job_process' | 'per_job_container'
 ): AttestedRaidResultPayload {
   return {
     version: 1,
@@ -1605,19 +1767,19 @@ function buildAttestedRaidResultPayload(
 
 function buildAttestedRaidResultMessage(payload: AttestedRaidResultPayload): string {
   return [
-    "BossRaidAttestedResult",
+    'BossRaidAttestedResult',
     `version=${payload.version}`,
     `nonce=${payload.nonce}`,
     `timestamp=${payload.timestamp}`,
-    `deploymentTarget=${payload.deploymentTarget ?? "unknown"}`,
-    `teePlatform=${payload.teePlatform ?? "unknown"}`,
+    `deploymentTarget=${payload.deploymentTarget ?? 'unknown'}`,
+    `teePlatform=${payload.teePlatform ?? 'unknown'}`,
     `evaluatorTransport=${payload.evaluatorTransport}`,
     `workerIsolation=${payload.workerIsolation}`,
     `raidId=${payload.raidId}`,
     `status=${payload.status}`,
     `approvedSubmissionCount=${payload.approvedSubmissionCount}`,
     `resultHash=${payload.resultHash}`,
-  ].join("|");
+  ].join('|');
 }
 
 function stableStringify(value: unknown): string {
@@ -1629,12 +1791,12 @@ function sortJsonValue(value: unknown): unknown {
     return value.map((item) => sortJsonValue(item));
   }
 
-  if (value && typeof value === "object") {
+  if (value && typeof value === 'object') {
     return Object.fromEntries(
       Object.entries(value)
         .filter(([, entryValue]) => entryValue !== undefined)
         .sort(([left], [right]) => left.localeCompare(right))
-        .map(([key, entryValue]) => [key, sortJsonValue(entryValue)]),
+        .map(([key, entryValue]) => [key, sortJsonValue(entryValue)])
     );
   }
 
@@ -1642,18 +1804,24 @@ function sortJsonValue(value: unknown): unknown {
 }
 
 function hashAttestationText(value: string): `0x${string}` {
-  return `0x${createHash("sha256").update(value).digest("hex")}`;
+  return `0x${createHash('sha256').update(value).digest('hex')}`;
 }
 
-function readStorageBackend(env: NodeJS.ProcessEnv): "sqlite" | "file" | "memory" {
-  if (env.BOSSRAID_STORAGE_BACKEND === "sqlite" || env.BOSSRAID_STORAGE_BACKEND === "file" || env.BOSSRAID_STORAGE_BACKEND === "memory") {
+function readStorageBackend(env: NodeJS.ProcessEnv): 'sqlite' | 'file' | 'memory' {
+  if (
+    env.BOSSRAID_STORAGE_BACKEND === 'sqlite' ||
+    env.BOSSRAID_STORAGE_BACKEND === 'file' ||
+    env.BOSSRAID_STORAGE_BACKEND === 'memory'
+  ) {
     return env.BOSSRAID_STORAGE_BACKEND;
   }
 
-  return env.BOSSRAID_STATE_FILE ? "file" : "sqlite";
+  return env.BOSSRAID_STATE_FILE ? 'file' : 'sqlite';
 }
 
-async function readTeeSocketState(path: string): Promise<{ pathExists: boolean; socketMounted: boolean }> {
+async function readTeeSocketState(
+  path: string
+): Promise<{ pathExists: boolean; socketMounted: boolean }> {
   try {
     const stats = await stat(path);
     return {
@@ -1669,13 +1837,13 @@ async function readTeeSocketState(path: string): Promise<{ pathExists: boolean; 
 }
 
 function parseOpsSessionInput(value: unknown): { token: string } {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new ApiContractError("Expected object for ops_session.");
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new ApiContractError('Expected object for ops_session.');
   }
 
   const token = (value as Record<string, unknown>).token;
-  if (typeof token !== "string" || token.trim().length === 0) {
-    throw new ApiContractError("Expected non-empty string for ops_session.token.");
+  if (typeof token !== 'string' || token.trim().length === 0) {
+    throw new ApiContractError('Expected non-empty string for ops_session.token.');
   }
 
   return {
@@ -1695,24 +1863,24 @@ function buildChatCompletionResponse(
     status: BossRaidStatusOutput;
     result: BossRaidResultOutput;
   },
-  created: number,
+  created: number
 ) {
   const content = buildUserFacingChatContent(spawn.raidId, outcome, chatRequest);
 
   return {
     id: `chatcmpl_${spawn.raidId}`,
-    object: "chat.completion",
+    object: 'chat.completion',
     created,
     model: normalizeChatCompletionModel(chatRequest.model),
-    system_fingerprint: "mercenary-v1",
+    system_fingerprint: 'mercenary-v1',
     choices: [
       {
         index: 0,
         message: {
-          role: "assistant",
+          role: 'assistant',
           content,
         },
-        finish_reason: "stop",
+        finish_reason: 'stop',
       },
     ],
     raid: buildChatRaidMetadata(spawn, outcome),
@@ -1734,42 +1902,41 @@ function buildDirectChatCompletionResponse(chatRequest: ChatCompletionRequest, c
 
   return {
     id: `chatcmpl_${randomUUID()}`,
-    object: "chat.completion",
+    object: 'chat.completion',
     created,
     model: normalizeChatCompletionModel(chatRequest.model),
-    system_fingerprint: "mercenary-v1",
+    system_fingerprint: 'mercenary-v1',
     choices: [
       {
         index: 0,
         message: {
-          role: "assistant",
+          role: 'assistant',
           content,
         },
-        finish_reason: "stop",
+        finish_reason: 'stop',
       },
     ],
     usage: estimateChatUsage(chatRequest.messages, content),
   };
 }
 
-const CHAT_TERMINAL_SETTLE_GRACE_FLOOR_MS = 5_000;
-const CHAT_TERMINAL_SETTLE_GRACE_CAP_MS = 30_000;
+// Using constants from @bossraid/constants
 
 async function streamDirectChatCompletionResponse(
   reply: FastifyReply,
-  response: NonNullable<ReturnType<typeof buildDirectChatCompletionResponse>>,
+  response: NonNullable<ReturnType<typeof buildDirectChatCompletionResponse>>
 ) {
   const stream = new PassThrough();
   reply.code(200);
-  reply.header("content-type", "text/event-stream; charset=utf-8");
-  reply.header("cache-control", "no-cache, no-transform");
-  reply.header("connection", "keep-alive");
-  reply.header("x-accel-buffering", "no");
+  reply.header('content-type', 'text/event-stream; charset=utf-8');
+  reply.header('cache-control', 'no-cache, no-transform');
+  reply.header('connection', 'keep-alive');
+  reply.header('x-accel-buffering', 'no');
   void (async () => {
     try {
       writeSseData(stream, {
         id: response.id,
-        object: "chat.completion.chunk",
+        object: 'chat.completion.chunk',
         created: response.created,
         model: response.model,
         system_fingerprint: response.system_fingerprint,
@@ -1777,7 +1944,7 @@ async function streamDirectChatCompletionResponse(
           {
             index: 0,
             delta: {
-              role: "assistant",
+              role: 'assistant',
             },
             finish_reason: null,
           },
@@ -1786,7 +1953,7 @@ async function streamDirectChatCompletionResponse(
 
       writeSseData(stream, {
         id: response.id,
-        object: "chat.completion.chunk",
+        object: 'chat.completion.chunk',
         created: response.created,
         model: response.model,
         system_fingerprint: response.system_fingerprint,
@@ -1794,7 +1961,7 @@ async function streamDirectChatCompletionResponse(
           {
             index: 0,
             delta: {
-              content: response.choices[0]?.message.content ?? "",
+              content: response.choices[0]?.message.content ?? '',
             },
             finish_reason: null,
           },
@@ -1803,7 +1970,7 @@ async function streamDirectChatCompletionResponse(
 
       writeSseData(stream, {
         id: response.id,
-        object: "chat.completion.chunk",
+        object: 'chat.completion.chunk',
         created: response.created,
         model: response.model,
         system_fingerprint: response.system_fingerprint,
@@ -1811,11 +1978,11 @@ async function streamDirectChatCompletionResponse(
           {
             index: 0,
             delta: {},
-            finish_reason: "stop",
+            finish_reason: 'stop',
           },
         ],
       });
-      stream.write("data: [DONE]\n\n");
+      stream.write('data: [DONE]\n\n');
     } finally {
       stream.end();
     }
@@ -1838,27 +2005,27 @@ async function streamChatCompletionResponse(
     };
     created: number;
     settleGraceMs: number;
-  },
+  }
 ) {
   const stream = new PassThrough();
   reply.code(200);
-  reply.header("content-type", "text/event-stream; charset=utf-8");
-  reply.header("cache-control", "no-cache, no-transform");
-  reply.header("connection", "keep-alive");
-  reply.header("x-accel-buffering", "no");
+  reply.header('content-type', 'text/event-stream; charset=utf-8');
+  reply.header('cache-control', 'no-cache, no-transform');
+  reply.header('connection', 'keep-alive');
+  reply.header('x-accel-buffering', 'no');
   void (async () => {
     try {
       writeSseData(stream, {
         id: `chatcmpl_${input.spawn.raidId}`,
-        object: "chat.completion.chunk",
+        object: 'chat.completion.chunk',
         created: input.created,
         model: normalizeChatCompletionModel(input.chatRequest.model),
-        system_fingerprint: "mercenary-v1",
+        system_fingerprint: 'mercenary-v1',
         choices: [
           {
             index: 0,
             delta: {
-              role: "assistant",
+              role: 'assistant',
             },
             finish_reason: null,
           },
@@ -1866,7 +2033,8 @@ async function streamChatCompletionResponse(
         raid: buildChatRaidMetadata(input.spawn),
       });
 
-      const deadline = Date.now() + Math.max(input.raidRequest.constraints.maxLatencySec * 1000, 1_000);
+      const deadline =
+        Date.now() + Math.max(input.raidRequest.constraints.maxLatencySec * 1000, 1_000);
       const settleDeadline = deadline + input.settleGraceMs;
       let lastKeepAliveAt = Date.now();
       let outcome = {
@@ -1883,8 +2051,8 @@ async function streamChatCompletionResponse(
           break;
         }
 
-        if (Date.now() - lastKeepAliveAt >= 5_000) {
-          stream.write(": keep-alive\n\n");
+        if (Date.now() - lastKeepAliveAt >= DEFAULTS.PROVIDER_HEALTH_TIMEOUT_MS) {
+          stream.write(': keep-alive\n\n');
           lastKeepAliveAt = Date.now();
         }
         await new Promise((resolve) => setTimeout(resolve, 250));
@@ -1896,15 +2064,19 @@ async function streamChatCompletionResponse(
             status: orchestrator.getStatus(input.spawn.raidId),
             result: orchestrator.getResult(input.spawn.raidId),
           };
-      const content = buildUserFacingChatContent(input.spawn.raidId, finalOutcome, input.chatRequest);
+      const content = buildUserFacingChatContent(
+        input.spawn.raidId,
+        finalOutcome,
+        input.chatRequest
+      );
 
       if (content.length > 0) {
         writeSseData(stream, {
           id: `chatcmpl_${input.spawn.raidId}`,
-          object: "chat.completion.chunk",
+          object: 'chat.completion.chunk',
           created: input.created,
           model: normalizeChatCompletionModel(input.chatRequest.model),
-          system_fingerprint: "mercenary-v1",
+          system_fingerprint: 'mercenary-v1',
           choices: [
             {
               index: 0,
@@ -1920,20 +2092,20 @@ async function streamChatCompletionResponse(
 
       writeSseData(stream, {
         id: `chatcmpl_${input.spawn.raidId}`,
-        object: "chat.completion.chunk",
+        object: 'chat.completion.chunk',
         created: input.created,
         model: normalizeChatCompletionModel(input.chatRequest.model),
-        system_fingerprint: "mercenary-v1",
+        system_fingerprint: 'mercenary-v1',
         choices: [
           {
             index: 0,
             delta: {},
-            finish_reason: "stop",
+            finish_reason: 'stop',
           },
         ],
         raid: buildChatRaidMetadata(input.spawn, finalOutcome),
       });
-      stream.write("data: [DONE]\n\n");
+      stream.write('data: [DONE]\n\n');
     } finally {
       stream.end();
     }
@@ -1952,7 +2124,7 @@ function buildChatRaidMetadata(
   outcome?: {
     status: BossRaidStatusOutput;
     result: BossRaidResultOutput;
-  },
+  }
 ) {
   const approved = outcome?.result.approvedSubmissions ?? [];
   const synthesized = outcome?.result.synthesizedOutput;
@@ -1976,7 +2148,7 @@ function buildUserFacingChatContent(
     status: BossRaidStatusOutput;
     result: BossRaidResultOutput;
   },
-  chatRequest?: ChatCompletionRequest,
+  chatRequest?: ChatCompletionRequest
 ): string {
   const synthesized = outcome.result.synthesizedOutput;
   const primary = outcome.result.primarySubmission;
@@ -1993,8 +2165,8 @@ function buildUserFacingChatContent(
 
 function buildChatCompletionFallback(
   raidId: string,
-  status: BossRaidStatusOutput["status"],
-  chatRequest?: ChatCompletionRequest,
+  status: BossRaidStatusOutput['status'],
+  chatRequest?: ChatCompletionRequest
 ): string {
   const prompt = selectPrimaryChatPrompt(chatRequest);
 
@@ -2002,8 +2174,8 @@ function buildChatCompletionFallback(
     return buildDirectMercenaryChatReply(prompt);
   }
 
-  if (status === "final") {
-    return "Mercenary did not get an approved specialist answer for this run. Rephrase the request more concretely, or use raid chat if you want a scoped build workflow.";
+  if (status === 'final') {
+    return 'Mercenary did not get an approved specialist answer for this run. Rephrase the request more concretely, or use raid chat if you want a scoped build workflow.';
   }
 
   return `Mercenary opened raid ${raidId} and is still waiting for approved specialist output.`;
@@ -2011,33 +2183,33 @@ function buildChatCompletionFallback(
 
 function selectPrimaryChatPrompt(chatRequest?: ChatCompletionRequest): string {
   if (!chatRequest) {
-    return "";
+    return '';
   }
 
   const userMessages = chatRequest.messages
-    .filter((message) => message.role === "user")
+    .filter((message) => message.role === 'user')
     .map((message) => message.content.trim())
     .filter((message) => message.length > 0);
 
-  return userMessages[userMessages.length - 1] ?? "";
+  return userMessages[userMessages.length - 1] ?? '';
 }
 
 function buildDirectMercenaryChatReply(prompt: string): string {
   const normalizedPrompt = prompt.trim().toLowerCase();
 
   if (/^who are you\b/.test(normalizedPrompt)) {
-    return "I’m Mercenary, the Boss Raid orchestrator. I can answer directly for simple questions, or open specialists when you need scoped work.";
+    return 'I’m Mercenary, the Boss Raid orchestrator. I can answer directly for simple questions, or open specialists when you need scoped work.';
   }
 
   if (/^what can you do\b/.test(normalizedPrompt)) {
-    return "I can answer directly, compare options, and open specialists for code, art, gameplay, or promo work when the request needs real execution.";
+    return 'I can answer directly, compare options, and open specialists for code, art, gameplay, or promo work when the request needs real execution.';
   }
 
   if (isDirectJokePrompt(normalizedPrompt)) {
-    return "Why did the programmer go broke? Because he used up all his cache.";
+    return 'Why did the programmer go broke? Because he used up all his cache.';
   }
 
-  return "Mercenary here. Ask a question or give me a concrete task and I’ll answer directly or open specialists when it helps.";
+  return 'Mercenary here. Ask a question or give me a concrete task and I’ll answer directly or open specialists when it helps.';
 }
 
 function isLowSignalChatPrompt(prompt: string): boolean {
@@ -2058,7 +2230,9 @@ function isLowSignalChatPrompt(prompt: string): boolean {
 function isDirectJokePrompt(normalizedPrompt: string): boolean {
   return (
     /^tell me (?:(?:a|another|one more|a better|a funnier|a new) )?joke\b/.test(normalizedPrompt) ||
-    /^can you tell me (?:(?:a|another|one more|a better|a funnier|a new) )?joke\b/.test(normalizedPrompt) ||
+    /^can you tell me (?:(?:a|another|one more|a better|a funnier|a new) )?joke\b/.test(
+      normalizedPrompt
+    ) ||
     /^give me (?:(?:a|another|one more|a better|a funnier|a new) )?joke\b/.test(normalizedPrompt) ||
     /^share (?:(?:a|another|one more|a better|a funnier|a new) )?joke\b/.test(normalizedPrompt) ||
     /^(another|one more|a better|a funnier|a new) joke\b/.test(normalizedPrompt) ||
@@ -2068,11 +2242,14 @@ function isDirectJokePrompt(normalizedPrompt: string): boolean {
 }
 
 function normalizeChatCompletionModel(_model: string): string {
-  return "mercenary-v1";
+  return 'mercenary-v1';
 }
 
-function estimateChatUsage(messages: ChatCompletionRequest["messages"], content: string) {
-  const promptTokens = messages.reduce((total, message) => total + estimateTokenCount(message.content), 0);
+function estimateChatUsage(messages: ChatCompletionRequest['messages'], content: string) {
+  const promptTokens = messages.reduce(
+    (total, message) => total + estimateTokenCount(message.content),
+    0
+  );
   const completionTokens = estimateTokenCount(content);
   return {
     prompt_tokens: promptTokens,
@@ -2094,23 +2271,22 @@ function writeSseData(stream: PassThrough, payload: unknown): void {
   stream.write(`data: ${JSON.stringify(payload)}\n\n`);
 }
 
-function isTerminalChatOutcome(
-  outcome: {
-    status: BossRaidStatusOutput;
-    result: BossRaidResultOutput;
-  },
-): boolean {
-  return ["final", "cancelled", "expired"].includes(outcome.status.status);
+function isTerminalChatOutcome(outcome: {
+  status: BossRaidStatusOutput;
+  result: BossRaidResultOutput;
+}): boolean {
+  return ['final', 'cancelled', 'expired'].includes(outcome.status.status);
 }
 
 async function waitForTerminalRaidOutput(
   orchestrator: BossRaidOrchestrator,
   raidId: string,
   timeoutMs: number,
-  settleGraceMs: number,
+  settleGraceMs: number
 ) {
   const deadline = Date.now() + Math.max(timeoutMs, 1_000);
-  const settleDeadline = deadline + Math.max(settleGraceMs, CHAT_TERMINAL_SETTLE_GRACE_FLOOR_MS);
+  const settleDeadline =
+    deadline + Math.max(settleGraceMs, TIMEOUTS.CHAT_TERMINAL_SETTLE_GRACE_FLOOR_MS);
   let latest = {
     status: orchestrator.getStatus(raidId),
     result: orchestrator.getResult(raidId),
@@ -2130,13 +2306,15 @@ async function waitForTerminalRaidOutput(
   return latest;
 }
 
+import { NETWORK } from '@bossraid/constants';
+
 async function main() {
   const orchestrator = await createDefaultOrchestrator(runtimeOptionsFromEnv());
   const app = buildApiServer(orchestrator);
-  const port = Number(process.env.PORT || "8787");
-  const host = process.env.BOSSRAID_API_HOST ?? process.env.HOST ?? "127.0.0.1";
+  const port = Number(process.env.PORT || NETWORK.LOCAL_API_PORT.toString());
+  const host = process.env.BOSSRAID_API_HOST ?? process.env.HOST ?? NETWORK.LOCALHOST;
   await app.listen({ port, host });
-  console.log(`Boss Raid API listening on http://${host}:${port}`);
+  logger.info(`Boss Raid API listening on http://${host}:${port}`);
   registerShutdownHandlers(async () => {
     await app.close();
   });
@@ -2144,7 +2322,7 @@ async function main() {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch((error) => {
-    console.error(error);
+    logger.error(error);
     process.exit(1);
   });
 }
@@ -2157,16 +2335,16 @@ function registerShutdownHandlers(closeServer: () => Promise<void>): void {
       return;
     }
     closing = true;
-    console.log(`Shutting down Boss Raid API after ${signal}`);
+    logger.info(`Shutting down Boss Raid API after ${signal}`);
     try {
       await closeServer();
       process.exit(0);
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       process.exit(1);
     }
   };
 
-  process.on("SIGINT", () => void shutdown("SIGINT"));
-  process.on("SIGTERM", () => void shutdown("SIGTERM"));
+  process.on('SIGINT', () => void shutdown('SIGINT'));
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
 }

@@ -1,14 +1,17 @@
-import { providerConfig } from "./config.js";
-import { buildProviderAgentServer } from "./server.js";
+import { providerConfig } from './config.js';
+import { buildProviderAgentServer } from './server.js';
 
-export { buildProviderAgentServer } from "./server.js";
+import { NETWORK } from '@bossraid/constants';
+import logger from '@bossraid/logger';
+
+export { buildProviderAgentServer } from './server.js';
 
 async function main() {
   const app = buildProviderAgentServer();
-  const host = process.env.BOSSRAID_PROVIDER_HOST ?? process.env.HOST ?? "127.0.0.1";
+  const host = process.env.BOSSRAID_PROVIDER_HOST ?? process.env.HOST ?? NETWORK.LOCALHOST;
   await app.listen({ host, port: providerConfig.port });
-  console.log(
-    `Provider agent ${providerConfig.providerId} listening on http://${host}:${providerConfig.port}`,
+  logger.info(
+    `Provider agent ${providerConfig.providerId} listening on http://${host}:${providerConfig.port}`
   );
   registerShutdownHandlers(async () => {
     await app.close();
@@ -17,7 +20,7 @@ async function main() {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch((error) => {
-    console.error(error);
+    logger.error(error);
     process.exit(1);
   });
 }
@@ -30,16 +33,16 @@ function registerShutdownHandlers(closeServer: () => Promise<void>): void {
       return;
     }
     closing = true;
-    console.log(`Shutting down provider agent ${providerConfig.providerId} after ${signal}`);
+    logger.info(`Shutting down provider agent ${providerConfig.providerId} after ${signal}`);
     try {
       await closeServer();
       process.exit(0);
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       process.exit(1);
     }
   };
 
-  process.on("SIGINT", () => void shutdown("SIGINT"));
-  process.on("SIGTERM", () => void shutdown("SIGTERM"));
+  process.on('SIGINT', () => void shutdown('SIGINT'));
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
 }

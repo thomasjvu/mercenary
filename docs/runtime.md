@@ -201,7 +201,6 @@ The active hosted stack is the Phala CVM deployment. `pnpm eigencompute:build` a
 - `BOSSRAID_X402_MAX_AMOUNT_REQUIRED`: override for unpaid budgetless raid requests
 - `BOSSRAID_X402_MAX_TIMEOUT_SECONDS`: max payment wait time
 - `BOSSRAID_X402_RESOURCE_BASE_URL`: absolute resource URL base encoded into x402 headers
-- `BOSSRAID_X402_VERIFY_HMAC_SECRET`: local or custom verifier shortcut
 - `PAYAI_API_KEY_ID`, `PAYAI_API_KEY_SECRET`, `CDP_API_KEY_ID`, and `CDP_API_KEY_SECRET`: facilitator credentials
 - `BOSSRAID_X402_E2E_MODE`, `BOSSRAID_X402_E2E_ROUTE`, `BOSSRAID_X402_E2E_API_BASE`, `BOSSRAID_X402_BUYER_PRIVATE_KEY`, and `EVM_PRIVATE_KEY`: test client helpers
 
@@ -214,7 +213,7 @@ The active hosted stack is the Phala CVM deployment. `pnpm eigencompute:build` a
 - `BOSSRAID_CLIENT_PRIVATE_KEY`: client signer for child-job create, fund, and finalize flows
 - `BOSSRAID_CLIENT_ADDRESS`: optional surfaced client address when the signer is managed elsewhere
 - `BOSSRAID_EVALUATOR_ADDRESS`: evaluator address recorded onchain
-- `BOSSRAID_PROVIDER_ADDRESS_MAP_JSON`: provider-id to onchain address map
+- `BOSSRAID_PROVIDER_ADDRESS_MAP_JSON`: optional provider-id to onchain address override map. If unset for an external provider, Boss Raid can use that provider's registered `erc8004.operatorWallet` as the payout address.
 - `BOSSRAID_SETTLEMENT_JOB_EXPIRY_SEC`, `BOSSRAID_SETTLEMENT_ATOMIC_MULTIPLIER`, and `BOSSRAID_SETTLEMENT_FUND_JOBS`: child-job economics and funding
 - `BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY` and `BOSSRAID_SETTLEMENT_PROVIDER_PRIVATE_KEYS_JSON`: optional auto-advance signers
 - `BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS`: hold parent finalize until every child job is terminal
@@ -237,6 +236,7 @@ The privacy engine (`packages/privacy-engine`) enforces privacy compliance for s
 2. **Settlement gating** — raids that fail privacy compliance are blocked from paying out; the settlement record includes `privacyCompliance` proof
 
 Privacy engine features:
+
 - Real-time Phala CVM TEE attestation verification via `BOSSRAID_TEE_SOCKET_PATH`
 - Redacted content reexposure scanning (checks submission text for sanitization markers)
 - External transmission detection (flags references to external APIs in submission text)
@@ -254,11 +254,26 @@ ERC-8004 identity registration and ERC-8183 onchain settlement are handled throu
 3. Feed resulting `erc8004` identity refs into provider registration payloads via `POST /agents/register`
 4. Feed settlement addresses into `deploy/phala/docker-compose.yml` via `BOSSRAID_*` env vars
 
+### Party Quest Provider Payouts
+
+![Party Quest provider payout flow](./assets/partyquest-payout-flow.svg)
+
+Party Quest formation and agent listings register as Boss Raid providers. The
+provider registration should include `erc8004.operatorWallet` with the listing
+payee or splitter wallet. During settlement, Boss Raid resolves the child-job
+provider address from a provider signing actor first, explicit settlement env
+overrides second, and the registered operator wallet third.
+
+Formation providers are paid as one provider. Use a splitter wallet when member
+payouts need to happen automatically; otherwise Party Quest mirrors member-level
+credit, EXP, and analytics without custodying or redistributing funds.
+
 ## Beta Launch Checklist
 
 Run these in order:
 
 ### Step 1: ACP Registration (do once)
+
 1. Go to `https://acpx.virtuals.io`
 2. Register Mercenary (orchestrator)
 3. Register Gamma, Riko, Dottie (providers)
@@ -266,6 +281,7 @@ Run these in order:
 5. Map results to `deploy/phala/production.env.example`
 
 ### Step 2: Settlement Keys and Contracts
+
 ```bash
 # Generate wallets (outputs to temp/settlement-keys.json and temp/settlement-keys.env)
 pnpm generate:settlement-keys
@@ -278,11 +294,13 @@ pnpm bootstrap:settlement
 ```
 
 ### Step 3: Fund Wallets
+
 - **Client wallet** (`temp/settlement-keys.json`): fund with USDC on Base for escrow — each raid budgets `raid_policy.max_total_cost` per provider
 - **Provider wallets**: fund with ~0.01 ETH each for gas (Gamma, Riko, Dottie addresses from key generation output)
 - **Evaluator wallet**: optionally fund with ETH for gas
 
 ### Step 4: Environment Merge
+
 ```bash
 source temp/settlement-keys.env && source temp/settlement-bootstrap.env
 # Or merge into one file:
@@ -290,6 +308,7 @@ cat temp/settlement-keys.env temp/settlement-bootstrap.env > temp/bossraid-prod.
 ```
 
 ### Step 5: Compose Deployment
+
 ```bash
 # Use production.env.example as a reference
 cp deploy/phala/production.env.example deploy/phala/.env
@@ -298,6 +317,7 @@ docker compose -f deploy/phala/docker-compose.yml --env-file deploy/phala/.env u
 ```
 
 ### Step 6: Verify
+
 ```bash
 # Health check
 curl https://<your-api>/health | jq

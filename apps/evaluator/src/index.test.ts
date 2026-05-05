@@ -1,67 +1,67 @@
-import assert from "node:assert/strict";
-import test from "node:test";
-import type { RuntimeProbeInput, SanitizedTaskSpec } from "@bossraid/shared-types";
-import { buildEvaluatorServer } from "./index.js";
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import type { RuntimeProbeInput, SanitizedTaskSpec } from '@bossraid/shared-types';
+import { buildEvaluatorServer } from './index.js';
 
 function createRuntimeProbeInput(): RuntimeProbeInput {
   const files = [
     {
-      path: "package.json",
+      path: 'package.json',
       content: JSON.stringify({
-        name: "runtime-probe-fixture",
+        name: 'runtime-probe-fixture',
         private: true,
         scripts: {
-          test: "node --test",
+          test: 'node --test',
         },
       }),
-      sha256: "package-json-sha",
+      sha256: 'package-json-sha',
     },
     {
-      path: "sum.js",
-      content: "function sum(a, b) { return a + b; }\nmodule.exports = { sum };\n",
-      sha256: "sum-js-sha",
+      path: 'sum.js',
+      content: 'function sum(a, b) { return a + b; }\nmodule.exports = { sum };\n',
+      sha256: 'sum-js-sha',
     },
     {
-      path: "sum.test.js",
+      path: 'sum.test.js',
       content: [
         "const test = require('node:test');",
         "const assert = require('node:assert/strict');",
         "const { sum } = require('./sum.js');",
-        "",
+        '',
         "test('sum adds two numbers', () => {",
-        "  assert.equal(sum(2, 3), 5);",
-        "});",
-      ].join("\n"),
-      sha256: "sum-test-js-sha",
+        '  assert.equal(sum(2, 3), 5);',
+        '});',
+      ].join('\n'),
+      sha256: 'sum-test-js-sha',
     },
   ];
 
   const task: SanitizedTaskSpec = {
-    taskTitle: "Fix the addition helper",
-    taskDescription: "Ensure the helper returns the correct sum.",
-    language: "text",
+    taskTitle: 'Fix the addition helper',
+    taskDescription: 'Ensure the helper returns the correct sum.',
+    language: 'text',
     files,
     failingSignals: {
-      errors: ["sum returned the wrong value"],
-      tests: ["sum.test.js"],
-      reproSteps: ["Run node --test"],
+      errors: ['sum returned the wrong value'],
+      tests: ['sum.test.js'],
+      reproSteps: ['Run node --test'],
     },
     output: {
-      primaryType: "patch",
-      artifactTypes: ["patch", "text"],
+      primaryType: 'patch',
+      artifactTypes: ['patch', 'text'],
     },
     constraints: {
       numExperts: 1,
       maxBudgetUsd: 10,
       maxLatencySec: 60,
       allowExternalSearch: false,
-      requireSpecializations: ["node"],
+      requireSpecializations: ['node'],
       minReputation: 0,
-      allowedOutputTypes: ["patch", "text"],
-      privacyMode: "prefer",
+      allowedOutputTypes: ['patch', 'text'],
+      privacyMode: 'prefer',
     },
     rewardPolicy: {
-      splitStrategy: "equal_success_only",
+      splitStrategy: 'equal_success_only',
     },
     privacyMode: {
       redactSecrets: true,
@@ -69,7 +69,7 @@ function createRuntimeProbeInput(): RuntimeProbeInput {
       allowFullRepo: false,
     },
     hostContext: {
-      host: "codex",
+      host: 'codex',
     },
     originalFileCount: files.length,
     originalBytes: files.reduce((sum, file) => sum + file.content.length, 0),
@@ -79,7 +79,7 @@ function createRuntimeProbeInput(): RuntimeProbeInput {
       removedUrls: 0,
       trimmedFiles: 0,
       unsafeContentDetected: false,
-      riskTier: "safe",
+      riskTier: 'safe',
       issues: [],
     },
   };
@@ -87,42 +87,42 @@ function createRuntimeProbeInput(): RuntimeProbeInput {
   return {
     task,
     files,
-    touchedFiles: ["sum.js"],
+    touchedFiles: ['sum.js'],
   };
 }
 
-test("runtime probe endpoint requires auth when sandbox token is configured", async () => {
+test('runtime probe endpoint requires auth when sandbox token is configured', async () => {
   const app = buildEvaluatorServer({
-    BOSSRAID_EVAL_SANDBOX_TOKEN: "sandbox-secret",
+    BOSSRAID_EVAL_SANDBOX_TOKEN: 'sandbox-secret',
   });
 
   try {
     const response = await app.inject({
-      method: "POST",
-      url: "/v1/runtime-probes",
+      method: 'POST',
+      url: '/v1/runtime-probes',
       payload: createRuntimeProbeInput(),
     });
 
     assert.equal(response.statusCode, 401);
     assert.deepEqual(response.json(), {
-      error: "unauthorized",
+      error: 'unauthorized',
     });
   } finally {
     await app.close();
   }
 });
 
-test("runtime probe endpoint runs node built-in tests inside the evaluator service", async () => {
+test('runtime probe endpoint runs node built-in tests inside the evaluator service', async () => {
   const app = buildEvaluatorServer({
-    BOSSRAID_EVAL_SANDBOX_TOKEN: "sandbox-secret",
+    BOSSRAID_EVAL_SANDBOX_TOKEN: 'sandbox-secret',
   });
 
   try {
     const response = await app.inject({
-      method: "POST",
-      url: "/v1/runtime-probes",
+      method: 'POST',
+      url: '/v1/runtime-probes',
       headers: {
-        authorization: "Bearer sandbox-secret",
+        authorization: 'Bearer sandbox-secret',
       },
       payload: createRuntimeProbeInput(),
     });
@@ -143,77 +143,77 @@ test("runtime probe endpoint runs node built-in tests inside the evaluator servi
   }
 });
 
-test("runtime probe endpoint rejects path traversal input", async () => {
+test('runtime probe endpoint rejects path traversal input', async () => {
   const app = buildEvaluatorServer({
-    BOSSRAID_EVAL_SANDBOX_TOKEN: "sandbox-secret",
+    BOSSRAID_EVAL_SANDBOX_TOKEN: 'sandbox-secret',
   });
 
   try {
     const payload = createRuntimeProbeInput();
     payload.files[0] = {
       ...payload.files[0],
-      path: "../escape.txt",
+      path: '../escape.txt',
     };
     payload.task.files[0] = {
       ...payload.task.files[0]!,
-      path: "../escape.txt",
+      path: '../escape.txt',
     };
 
     const response = await app.inject({
-      method: "POST",
-      url: "/v1/runtime-probes",
+      method: 'POST',
+      url: '/v1/runtime-probes',
       headers: {
-        authorization: "Bearer sandbox-secret",
+        authorization: 'Bearer sandbox-secret',
       },
       payload,
     });
 
     assert.equal(response.statusCode, 400);
     assert.deepEqual(response.json(), {
-      error: "invalid_runtime_probe_request",
-      message: "workspace path must stay relative: ../escape.txt",
+      error: 'invalid_runtime_probe_request',
+      message: 'workspace path must stay relative: ../escape.txt',
     });
   } finally {
     await app.close();
   }
 });
 
-test("runtime probe endpoint enforces configured file limits", async () => {
+test('runtime probe endpoint enforces configured file limits', async () => {
   const app = buildEvaluatorServer({
-    BOSSRAID_EVAL_SANDBOX_TOKEN: "sandbox-secret",
-    BOSSRAID_EVAL_MAX_FILES: "2",
+    BOSSRAID_EVAL_SANDBOX_TOKEN: 'sandbox-secret',
+    BOSSRAID_EVAL_MAX_FILES: '2',
   });
 
   try {
     const response = await app.inject({
-      method: "POST",
-      url: "/v1/runtime-probes",
+      method: 'POST',
+      url: '/v1/runtime-probes',
       headers: {
-        authorization: "Bearer sandbox-secret",
+        authorization: 'Bearer sandbox-secret',
       },
       payload: createRuntimeProbeInput(),
     });
 
     assert.equal(response.statusCode, 400);
     assert.deepEqual(response.json(), {
-      error: "invalid_runtime_probe_request",
-      message: "Runtime probe file count exceeds limit (2).",
+      error: 'invalid_runtime_probe_request',
+      message: 'Runtime probe file count exceeds limit (2).',
     });
   } finally {
     await app.close();
   }
 });
 
-test("runtime probe endpoint reports per-job worker isolation in health", async () => {
+test('runtime probe endpoint reports per-job worker isolation in health', async () => {
   const app = buildEvaluatorServer({
-    BOSSRAID_EVAL_SANDBOX_TOKEN: "sandbox-secret",
-    BOSSRAID_EVAL_JOB_TIMEOUT_MS: "1234",
+    BOSSRAID_EVAL_SANDBOX_TOKEN: 'sandbox-secret',
+    BOSSRAID_EVAL_JOB_TIMEOUT_MS: '1234',
   });
 
   try {
     const response = await app.inject({
-      method: "GET",
-      url: "/health",
+      method: 'GET',
+      url: '/health',
     });
 
     assert.equal(response.statusCode, 200);
@@ -225,7 +225,7 @@ test("runtime probe endpoint reports per-job worker isolation in health", async 
       maxConcurrentJobs: 2,
       authConfigured: true,
       bodyLimitBytes: 2097152,
-      listener: "tcp",
+      listener: 'tcp',
       jobTimeoutMs: 1234,
       limits: {
         maxFiles: 256,
@@ -233,64 +233,64 @@ test("runtime probe endpoint reports per-job worker isolation in health", async 
         maxFileBytes: 262144,
         maxPathLength: 240,
       },
-      sandbox: "per_job_process",
+      sandbox: 'per_job_process',
     });
   } finally {
     await app.close();
   }
 });
 
-test("runtime probe endpoint reports per-job container isolation in health", async () => {
+test('runtime probe endpoint reports per-job container isolation in health', async () => {
   const app = buildEvaluatorServer({
-    BOSSRAID_EVAL_SANDBOX_TOKEN: "sandbox-secret",
-    BOSSRAID_EVAL_JOB_ISOLATION: "container",
-    BOSSRAID_EVAL_JOB_TIMEOUT_MS: "1234",
+    BOSSRAID_EVAL_SANDBOX_TOKEN: 'sandbox-secret',
+    BOSSRAID_EVAL_JOB_ISOLATION: 'container',
+    BOSSRAID_EVAL_JOB_TIMEOUT_MS: '1234',
   });
 
   try {
     const response = await app.inject({
-      method: "GET",
-      url: "/health",
+      method: 'GET',
+      url: '/health',
     });
 
     assert.equal(response.statusCode, 200);
-    assert.equal(response.json().sandbox, "per_job_container");
+    assert.equal(response.json().sandbox, 'per_job_container');
     assert.equal(response.json().jobTimeoutMs, 1234);
   } finally {
     await app.close();
   }
 });
 
-test("runtime probe endpoint rejects container isolation when no job image is configured", async () => {
+test('runtime probe endpoint rejects container isolation when no job image is configured', async () => {
   const app = buildEvaluatorServer({
-    BOSSRAID_EVAL_SANDBOX_TOKEN: "sandbox-secret",
-    BOSSRAID_EVAL_JOB_ISOLATION: "container",
+    BOSSRAID_EVAL_SANDBOX_TOKEN: 'sandbox-secret',
+    BOSSRAID_EVAL_JOB_ISOLATION: 'container',
   });
 
   try {
     const response = await app.inject({
-      method: "POST",
-      url: "/v1/runtime-probes",
+      method: 'POST',
+      url: '/v1/runtime-probes',
       headers: {
-        authorization: "Bearer sandbox-secret",
+        authorization: 'Bearer sandbox-secret',
       },
       payload: createRuntimeProbeInput(),
     });
 
     assert.equal(response.statusCode, 503);
     assert.deepEqual(response.json(), {
-      error: "sandbox_not_configured",
-      message: "BOSSRAID_EVAL_JOB_CONTAINER_IMAGE is required for container job isolation.",
+      error: 'sandbox_not_configured',
+      message: 'BOSSRAID_EVAL_JOB_CONTAINER_IMAGE is required for container job isolation.',
     });
   } finally {
     await app.close();
   }
 });
 
-test("runtime probe endpoint terminates overlong worker jobs", async () => {
+test('runtime probe endpoint terminates overlong worker jobs', async () => {
   const app = buildEvaluatorServer({
-    BOSSRAID_EVAL_SANDBOX_TOKEN: "sandbox-secret",
-    BOSSRAID_EVAL_JOB_TIMEOUT_MS: "100",
+    BOSSRAID_EVAL_SANDBOX_TOKEN: 'sandbox-secret',
+    BOSSRAID_EVAL_JOB_TIMEOUT_MS: '100',
   });
 
   try {
@@ -298,41 +298,41 @@ test("runtime probe endpoint terminates overlong worker jobs", async () => {
     payload.files[0] = {
       ...payload.files[0],
       content: JSON.stringify({
-        name: "runtime-probe-fixture",
+        name: 'runtime-probe-fixture',
         private: true,
         scripts: {
-          test: "node --test",
+          test: 'node --test',
         },
       }),
-      sha256: "package-json-timeout-sha",
+      sha256: 'package-json-timeout-sha',
     };
     payload.task.files[0] = payload.files[0];
     payload.files[2] = {
       ...payload.files[2],
       content: [
         "const test = require('node:test');",
-        "",
+        '',
         "test('never resolves', async () => {",
-        "  await new Promise(() => {});",
-        "});",
-      ].join("\n"),
-      sha256: "sum-test-timeout-sha",
+        '  await new Promise(() => {});',
+        '});',
+      ].join('\n'),
+      sha256: 'sum-test-timeout-sha',
     };
     payload.task.files[2] = payload.files[2];
 
     const response = await app.inject({
-      method: "POST",
-      url: "/v1/runtime-probes",
+      method: 'POST',
+      url: '/v1/runtime-probes',
       headers: {
-        authorization: "Bearer sandbox-secret",
+        authorization: 'Bearer sandbox-secret',
       },
       payload,
     });
 
     assert.equal(response.statusCode, 504);
     assert.deepEqual(response.json(), {
-      error: "sandbox_timeout",
-      message: "Runtime probe exceeded 100 ms.",
+      error: 'sandbox_timeout',
+      message: 'Runtime probe exceeded 100 ms.',
     });
   } finally {
     await app.close();

@@ -20,8 +20,8 @@ type ActiveWave = {
 };
 
 export function bindAsciiRipple(root: HTMLElement): () => void {
-  const controllers = Array.from(root.querySelectorAll<HTMLElement>("[data-ascii-ripple]")).map((element) =>
-    createAsciiShift(element, { dur: 1000, spread: 1 }),
+  const controllers = Array.from(root.querySelectorAll<HTMLElement>('[data-ascii-ripple]')).map(
+    (element) => createAsciiShift(element, { dur: 1000, spread: 1 })
   );
 
   return () => {
@@ -31,9 +31,9 @@ export function bindAsciiRipple(root: HTMLElement): () => void {
 
 function createAsciiShift(
   element: HTMLElement,
-  options: Partial<AsciiShiftOptions> = {},
+  options: Partial<AsciiShiftOptions> = {}
 ): AsciiShiftController {
-  let originalText = element.textContent ?? "";
+  let originalText = element.textContent ?? '';
   let originalChars = [...originalText];
   let isAnimating = false;
   let isHovering = false;
@@ -45,7 +45,7 @@ function createAsciiShift(
 
   const config: AsciiShiftOptions = {
     dur: 600,
-    chars: ".,:;-=+*#%@!?/\\\\|[]{}()<>0123456789",
+    chars: '.,:;-=+*#%@!?/\\\\|[]{}()<>0123456789',
     preserveSpaces: true,
     spread: 0.3,
     ...options,
@@ -53,9 +53,9 @@ function createAsciiShift(
 
   function stop() {
     element.textContent = originalText;
-    element.classList.remove("ascii-ripple--active");
+    element.classList.remove('ascii-ripple--active');
     if (lockedWidth !== null) {
-      element.style.width = "";
+      element.style.width = '';
       lockedWidth = null;
     }
     isAnimating = false;
@@ -117,7 +117,8 @@ function createAsciiShift(
       const intensity = Math.max(0, radius - distance);
       if (intensity <= WAVE_THRESHOLD && intensity > 0) {
         const frameIndex =
-          (distance * CHARACTER_MULTIPLIER + Math.floor(age / ANIMATION_STEP_MS)) % config.chars.length;
+          (distance * CHARACTER_MULTIPLIER + Math.floor(age / ANIMATION_STEP_MS)) %
+          config.chars.length;
         nextChar = config.chars[frameIndex] ?? nextChar;
       }
     }
@@ -128,14 +129,14 @@ function createAsciiShift(
   function generateScrambledText(timestamp: number) {
     return originalChars
       .map((char, index) => {
-        if (config.preserveSpaces && char === " ") {
-          return " ";
+        if (config.preserveSpaces && char === ' ') {
+          return ' ';
         }
 
         const effect = calcWaveEffect(index, timestamp);
         return effect.shouldAnimate ? effect.nextChar : char;
       })
-      .join("");
+      .join('');
   }
 
   function start() {
@@ -151,7 +152,7 @@ function createAsciiShift(
     }
 
     isAnimating = true;
-    element.classList.add("ascii-ripple--active");
+    element.classList.add('ascii-ripple--active');
 
     const animate = () => {
       const timestamp = Date.now();
@@ -191,16 +192,16 @@ function createAsciiShift(
     isHovering = false;
   }
 
-  element.addEventListener("pointerenter", handlePointerEnter);
-  element.addEventListener("pointermove", handlePointerMove);
-  element.addEventListener("pointerleave", handlePointerLeave);
+  element.addEventListener('pointerenter', handlePointerEnter);
+  element.addEventListener('pointermove', handlePointerMove);
+  element.addEventListener('pointerleave', handlePointerLeave);
 
   observer = new MutationObserver(() => {
     if (isAnimating) {
       return;
     }
 
-    originalText = element.textContent ?? "";
+    originalText = element.textContent ?? '';
     originalChars = [...originalText];
   });
   observer.observe(element, {
@@ -217,9 +218,9 @@ function createAsciiShift(
       observer?.disconnect();
       waves = [];
       stop();
-      element.removeEventListener("pointerenter", handlePointerEnter);
-      element.removeEventListener("pointermove", handlePointerMove);
-      element.removeEventListener("pointerleave", handlePointerLeave);
+      element.removeEventListener('pointerenter', handlePointerEnter);
+      element.removeEventListener('pointermove', handlePointerMove);
+      element.removeEventListener('pointerleave', handlePointerLeave);
     },
   };
 }

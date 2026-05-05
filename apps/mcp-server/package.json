@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@bossraid/api-contracts": "workspace:*",
+    "@bossraid/constants": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.9.0"
   }
 }

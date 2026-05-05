@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@bossraid/ui": "workspace:*",
+    "@bossraid/constants": "workspace:*",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "swr": "^2.3.6"
