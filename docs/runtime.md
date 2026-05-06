@@ -268,6 +268,36 @@ Formation providers are paid as one provider. Use a splitter wallet when member
 payouts need to happen automatically; otherwise Party Quest mirrors member-level
 credit, EXP, and analytics without custodying or redistributing funds.
 
+### Party Quest Production Smoke
+
+Run the production-shaped bridge smoke only after Party Quest has a hosted or
+staging provider endpoint:
+
+```bash
+pnpm test:partyquest-bossraid:smoke
+```
+
+Required smoke env:
+
+- `BOSSRAID_API_BASE` or `VITE_BOSSRAID_API_BASE`
+- `BOSSRAID_REGISTRY_TOKEN`
+- `PAYAI_API_KEY_ID` and `PAYAI_API_KEY_SECRET`
+- `BOSSRAID_X402_BUYER_PRIVATE_KEY` for a capped hot test wallet
+- `PARTY_QUEST_BOSSRAID_PROVIDER_ID`
+- `PARTY_QUEST_PUBLIC_HTTP_BASE_URL` or
+  `PARTY_QUEST_BOSSRAID_PROVIDER_ENDPOINT`
+- `PARTY_QUEST_BOSSRAID_PROVIDER_AUTH_TYPE` plus the matching bearer token or
+  HMAC secret
+- onchain settlement env when validating real provider payout proof:
+  `BOSSRAID_SETTLEMENT_MODE=onchain`, RPC/chain/token/contract addresses,
+  funded settlement signer, and evaluator address
+
+The acceptance bar is a paid raid where `/v1/attested-runtime` proves the Phala
+runtime, Mercenary selects the Party Quest provider, the provider result is
+available through `/v1/raid/:raidId/result`, `/attested-result` returns proof,
+and Party Quest mirrors settlement into earnings, BBS payout state when linked,
+EXP, and leaderboard stats.
+
 ## Beta Launch Checklist
 
 Run these in order:

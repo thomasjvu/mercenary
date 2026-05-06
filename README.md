@@ -115,6 +115,7 @@ pnpm test:strict-private:e2e
 pnpm test:mcp:e2e
 pnpm test:evaluator:e2e
 pnpm test:x402:e2e
+pnpm test:partyquest-bossraid:smoke
 pnpm demo:rehearse
 pnpm export:proof-bundle -- --raid-id <raidId>
 pnpm verify:attestation
