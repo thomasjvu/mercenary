@@ -264,6 +264,15 @@ export async function probeProviderHealth(profile: ProviderProfile): Promise<Pro
       missing: Array.isArray(payload.missing)
         ? payload.missing.filter((item): item is string => typeof item === 'string')
         : undefined,
+      agentFramework: normalizeHealthAgentFramework(
+        payload.agentFramework ?? payload.agent_framework
+      ),
+      modelProvider:
+        typeof payload.modelProvider === 'string'
+          ? payload.modelProvider
+          : typeof payload.model_provider === 'string'
+            ? payload.model_provider
+            : undefined,
       model:
         typeof payload.model === 'string' || payload.model === null
           ? (payload.model as string | null)
@@ -290,6 +299,12 @@ export async function probeProviderHealth(profile: ProviderProfile): Promise<Pro
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function normalizeHealthAgentFramework(value: unknown): ProviderProfile['agentFramework'] {
+  return value === 'codex' || value === 'claude_code' || value === 'openclaw' || value === 'custom'
+    ? value
+    : undefined;
 }
 
 function readProviderHealthTimeoutMs(env: NodeJS.ProcessEnv = process.env): number {
@@ -369,6 +384,9 @@ export function buildProviderProfileFromRegistration(
     supportedFrameworks: input.supportedFrameworks ?? existing?.supportedFrameworks ?? [],
     outputTypes: input.outputTypes ?? existing?.outputTypes ?? [],
     modelFamily: input.modelFamily ?? existing?.modelFamily,
+    agentFramework: input.agentFramework ?? existing?.agentFramework,
+    modelProvider: input.modelProvider ?? existing?.modelProvider,
+    modelId: input.modelId ?? existing?.modelId,
     pricePerTaskUsd: input.pricing?.pricePerTaskUsd ?? existing?.pricePerTaskUsd ?? 1,
     maxConcurrency: input.maxConcurrency ?? existing?.maxConcurrency ?? 1,
     status: existing?.status ?? 'available',
@@ -427,6 +445,7 @@ export function buildProviderProfileFromRegistration(
     lastSeenAt: existing?.lastSeenAt ?? new Date().toISOString(),
     auth: input.auth ?? existing?.auth,
     source: input.source ?? existing?.source,
+    verification: input.verification ?? existing?.verification,
   });
 }
 
@@ -438,6 +457,13 @@ export function normalizeProviderProfile(profile: ProviderProfile): ProviderProf
     supportedLanguages: profile.supportedLanguages ?? [],
     supportedFrameworks: profile.supportedFrameworks ?? [],
     outputTypes: profile.outputTypes ?? [],
+    verification:
+      profile.verification == null
+        ? undefined
+        : {
+            ...profile.verification,
+            notes: profile.verification.notes ?? [],
+          },
     privacy: profile.privacy ?? {},
     erc8004:
       profile.erc8004 == null

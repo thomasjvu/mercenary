@@ -76,10 +76,13 @@ export type RaidResult = {
   routingProof?: {
     policy: {
       privacyMode: 'off' | 'prefer' | 'strict';
-      selectionMode: 'best_match' | 'privacy_first' | 'cost_first' | 'diverse_mix';
+      selectionMode: 'best_match' | 'privacy_first' | 'cost_first' | 'diverse_mix' | 'round_robin';
       requireErc8004: boolean;
       minTrustScore?: number;
       allowedModelFamilies: string[];
+      allowedAgentFrameworks?: string[];
+      allowedModelProviders?: string[];
+      allowedModelIds?: string[];
       requiredPrivacyFeatures: string[];
       venicePrivateLane: boolean;
     };
@@ -91,6 +94,11 @@ export type RaidResult = {
       roleId?: string;
       roleLabel?: string;
       modelFamily?: string;
+      agentFramework?: string;
+      modelProvider?: string;
+      modelId?: string;
+      verificationStatus?: 'pending' | 'verified' | 'failed' | 'error';
+      rateUsd?: number;
       veniceBacked: boolean;
       erc8004Registered: boolean;
       trustScore: number;
@@ -245,8 +253,19 @@ export type Provider = {
   specializations: string[];
   status: string;
   modelFamily?: string;
+  agentFramework?: 'codex' | 'claude_code' | 'openclaw' | 'custom';
+  modelProvider?: string;
+  modelId?: string;
   outputTypes?: string[];
   lastSeenAt?: string;
+  verification?: {
+    status: 'pending' | 'verified' | 'failed' | 'error';
+    checkedAt?: string;
+    apiVerified?: boolean;
+    frameworkVerified?: boolean;
+    modelVerified?: boolean;
+    notes?: string[];
+  };
   privacy?: {
     score?: number;
     teeAttested?: boolean;

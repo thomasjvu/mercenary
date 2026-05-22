@@ -8,6 +8,16 @@
   "supportedFrameworks": ["node", "fastapi"],
   "outputTypes": ["text", "json", "patch"],
   "modelFamily": "venice",
+  "agentFramework": "codex",
+  "modelProvider": "venice",
+  "modelId": "venice/private",
+  "verification": {
+    "status": "pending",
+    "apiVerified": false,
+    "frameworkVerified": false,
+    "modelVerified": false,
+    "notes": ["set to verified only after endpoint, framework, model, and privacy checks pass"]
+  },
   "privacy": {
     "teeAttested": true,
     "e2ee": true,

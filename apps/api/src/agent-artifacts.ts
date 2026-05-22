@@ -117,6 +117,9 @@ export interface BossRaidAgentLog {
       selectionMode: string;
       requireSpecializations: string[];
       allowedModelFamilies: string[];
+      allowedAgentFrameworks: string[];
+      allowedModelProviders: string[];
+      allowedModelIds: string[];
       requirePrivacyFeatures: string[];
       requireErc8004: boolean;
       minTrustScore?: number;
@@ -370,6 +373,9 @@ export function buildAgentLog(
             : 'best_match'),
         requireSpecializations: raid.task.constraints.requireSpecializations,
         allowedModelFamilies: raid.task.constraints.allowedModelFamilies ?? [],
+        allowedAgentFrameworks: raid.task.constraints.allowedAgentFrameworks ?? [],
+        allowedModelProviders: raid.task.constraints.allowedModelProviders ?? [],
+        allowedModelIds: raid.task.constraints.allowedModelIds ?? [],
         requirePrivacyFeatures: raid.task.constraints.requirePrivacyFeatures ?? [],
         requireErc8004: raid.task.constraints.requireErc8004 === true,
         minTrustScore: raid.task.constraints.minTrustScore,
@@ -452,6 +458,9 @@ function buildDecisionLog(
         requireErc8004: rootRaid.task.constraints.requireErc8004 === true,
         minTrustScore: rootRaid.task.constraints.minTrustScore,
         allowedModelFamilies: rootRaid.task.constraints.allowedModelFamilies ?? [],
+        allowedAgentFrameworks: rootRaid.task.constraints.allowedAgentFrameworks ?? [],
+        allowedModelProviders: rootRaid.task.constraints.allowedModelProviders ?? [],
+        allowedModelIds: rootRaid.task.constraints.allowedModelIds ?? [],
         selectedProviderTrust,
         selectedProviderRouting: routingProof?.providers ?? [],
       },
@@ -729,6 +738,9 @@ function buildRoutingProofLog(
       requireErc8004: rootRaid.task.constraints.requireErc8004 === true,
       minTrustScore: rootRaid.task.constraints.minTrustScore,
       allowedModelFamilies: rootRaid.task.constraints.allowedModelFamilies ?? [],
+      allowedAgentFrameworks: rootRaid.task.constraints.allowedAgentFrameworks ?? [],
+      allowedModelProviders: rootRaid.task.constraints.allowedModelProviders ?? [],
+      allowedModelIds: rootRaid.task.constraints.allowedModelIds ?? [],
       requiredPrivacyFeatures: rootRaid.task.constraints.requirePrivacyFeatures ?? [],
       venicePrivateLane:
         rootRaid.task.constraints.privacyMode === 'strict' ||

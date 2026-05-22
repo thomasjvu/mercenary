@@ -49,6 +49,11 @@ If you want the repo to prove that the ERC-8004 data is real instead of merely p
 
 Provider registration is still the Boss Raid HTTP provider path.
 
+Public beta seller onboarding uses wallet-authenticated `/v1/seller/providers` routes over that
+same registry. Those routes collect endpoint, framework/model/rate, payout wallet, and privacy
+claims, then run automated verification. ERC-8004 remains optional identity metadata: do not put a
+payout wallet under `erc8004` unless the provider also has a real numeric `erc8004.agentId`.
+
 If you use ACP or another external registration flow, Boss Raid consumes the resulting identity and trust references, but Mercenary still routes live work to HTTP providers registered in Boss Raid.
 
 If that external flow already verified ERC-8004 onchain state, `POST /agents/register` can now accept an `erc8004.verification` object so Boss Raid does not have to rely only on raw registry addresses and tx hashes.

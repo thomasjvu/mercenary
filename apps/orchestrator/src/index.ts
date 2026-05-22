@@ -8,7 +8,9 @@ import {
 import {
   FileBossRaidPersistence,
   InMemoryBossRaidPersistence,
+  createSecretCipher,
   type BossRaidPersistence,
+  type SecretCipher,
 } from '@bossraid/persistence';
 import { SqliteBossRaidPersistence } from '@bossraid/persistence-sqlite';
 import {
@@ -240,6 +242,7 @@ export class BossRaidOrchestrator {
   >();
   private readonly options: RuntimeOptions;
   private readonly persistence: BossRaidPersistence;
+  private readonly secretCipher: SecretCipher;
   private readonly settlementExecutor: {
     execute(
       raid: RaidRecord,
@@ -263,6 +266,7 @@ export class BossRaidOrchestrator {
   ) {
     this.options = { ...DEFAULT_TIMEOUTS, ...options };
     this.persistence = persistence;
+    this.secretCipher = createSecretCipher(process.env);
     this.settlementExecutor = settlementExecutor;
     for (const provider of seedProviders) {
       this.seededProviderIds.add(provider.profile.providerId);
@@ -924,7 +928,8 @@ export class BossRaidOrchestrator {
   restoreState(snapshot: BossRaidPersistenceSnapshot): boolean {
     let normalized = false;
 
-    for (const persisted of snapshot.providers) {
+    for (const persistedSnapshot of snapshot.providers) {
+      const persisted = decryptProviderProfileSecrets(persistedSnapshot, this.secretCipher);
       const existing =
         this.providers.get(persisted.providerId) ??
         (persisted.agentId
@@ -949,6 +954,7 @@ export class BossRaidOrchestrator {
       existing.privacy = persisted.privacy;
       existing.modelFamily = persisted.modelFamily;
       existing.outputTypes = persisted.outputTypes;
+      existing.auth = persisted.auth;
       existing.lastSeenAt = persisted.lastSeenAt;
       refreshProviderScores(existing);
       normalized =
@@ -2435,7 +2441,9 @@ export class BossRaidOrchestrator {
       version: 1,
       savedAt: new Date().toISOString(),
       raids: this.listAllRaids(),
-      providers: this.listProviders(),
+      providers: this.listProviders().map((provider) =>
+        encryptProviderProfileSecrets(provider, this.secretCipher)
+      ),
       launchReservations: [...this.launchReservations.values()],
     };
   }
@@ -2775,6 +2783,42 @@ export class BossRaidOrchestrator {
 
     return changed;
   }
+}
+
+function encryptProviderProfileSecrets(
+  provider: ProviderProfile,
+  cipher: SecretCipher
+): ProviderProfile {
+  if (!cipher.enabled || !provider.auth || provider.auth.type === 'none') {
+    return provider;
+  }
+
+  return {
+    ...provider,
+    auth: {
+      ...provider.auth,
+      token: provider.auth.token ? cipher.encrypt(provider.auth.token) : provider.auth.token,
+      secret: provider.auth.secret ? cipher.encrypt(provider.auth.secret) : provider.auth.secret,
+    },
+  };
+}
+
+function decryptProviderProfileSecrets(
+  provider: ProviderProfile,
+  cipher: SecretCipher
+): ProviderProfile {
+  if (!provider.auth || provider.auth.type === 'none') {
+    return provider;
+  }
+
+  return {
+    ...provider,
+    auth: {
+      ...provider.auth,
+      token: provider.auth.token ? cipher.decrypt(provider.auth.token) : provider.auth.token,
+      secret: provider.auth.secret ? cipher.decrypt(provider.auth.secret) : provider.auth.secret,
+    },
+  };
 }
 
 export async function createDefaultOrchestrator(

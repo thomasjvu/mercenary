@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
-import { BOSSRAID_DOCS_URL } from '@bossraid/ui';
 import heroImage from '../../../../assets/hero.webp';
 
 const PUBLIC_API_BASE = normalizePublicApiBase(
@@ -10,19 +9,18 @@ const PUBLIC_API_BASE = normalizePublicApiBase(
 );
 const PANELS = ['chat', 'raid', 'mcp'] as const;
 
-const CHAT_EXAMPLE = `curl -X POST ${PUBLIC_API_BASE}/v1/chat/completions \\
+const CHAT_EXAMPLE = `curl -X POST ${PUBLIC_API_BASE}/v1/inference/chat/completions \\
   -H "content-type: application/json" \\
   -d '{
-    "model": "mercenary-v1",
+    "model": "gpt-5.5",
     "messages": [
       {
         "role": "user",
-        "content": "Review this memo. Return risks, missing evidence, and next steps."
+        "content": "Answer through the cheapest verified GPT-5.5 seller."
       }
     ],
     "raid_policy": {
-      "max_agents": 3,
-      "max_total_cost": 12,
+      "allowed_model_providers": ["openai"],
       "privacy_mode": "prefer"
     }
   }'`;
@@ -33,14 +31,22 @@ const RAID_EXAMPLE = `curl -X POST ${PUBLIC_API_BASE}/v1/raid \\
     "agent": "mercenary-v1",
     "taskType": "document_analysis",
     "task": {
-      "title": "Audit the rollout plan",
-      "description": "Return the main risks, unsupported assumptions, and rollout constraints.",
+      "title": "Route to verified queued agents",
+      "description": "Use a verified OpenClaw lane under the request budget.",
       "language": "text",
       "files": [],
       "failingSignals": {"errors": []}
     },
     "output": {"primaryType":"text","artifactTypes":["text","json"]},
-    "raidPolicy": {"maxAgents":4,"maxTotalCost":16,"privacyMode":"strict"}
+    "raidPolicy": {
+      "maxAgents": 2,
+      "maxTotalCost": 2,
+      "allowedAgentFrameworks": ["openclaw"],
+      "allowedModelProviders": ["openrouter"],
+      "allowedModelIds": ["openai/gpt-5.5"],
+      "privacyMode": "strict",
+      "selectionMode": "round_robin"
+    }
   }'`;
 
 const MCP_EXAMPLE = `{
@@ -54,37 +60,47 @@ const MCP_EXAMPLE = `{
 }
 
 bossraid_delegate({
-  "prompt": "Review this refactor and return one recommendation.",
-  "language": "typescript",
-  "files": [{ "path": "src/app.ts", "content": "..." }],
-  "maxTotalCost": 9,
-  "raidPolicy": {"maxAgents": 3, "privacyMode": "strict"}
+  "prompt": "Use the cheapest verified Claude Code lane that fits this task.",
+  "language": "text",
+  "maxTotalCost": 1,
+  "allowedAgentFrameworks": ["claude_code"],
+  "allowedModelProviders": ["anthropic"],
+  "allowedModelIds": ["claude-opus-4.1"],
+  "selectionMode": "round_robin"
 })`;
 
 const WORKFLOW_ROWS = [
   {
     label: 'STEP 01',
-    value: 'Start from MCP, tool chat, or `POST /v1/raid`.',
+    value: 'Create an agent in Codex, Claude Code, OpenClaw, or your own framework.',
   },
   {
     label: 'STEP 02',
-    value: 'Mercenary splits the task, sets privacy mode, and routes specialists.',
+    value: 'Register the provider endpoint with framework, model, privacy, and rate metadata.',
   },
   {
     label: 'STEP 03',
-    value: 'Providers return scoped outputs. Weak work gets dropped.',
+    value: 'Boss Raid verifies the endpoint, API shape, framework, model, and TEE/private claims.',
   },
   {
     label: 'STEP 04',
-    value: 'Keep one verified result with receipt and settlement proof.',
+    value: 'Verified agents join the queued OpenAI-compatible API pool.',
   },
   {
     label: 'STEP 05',
-    value: 'Successful raiders split payout equally.',
+    value: 'Paid API calls route by buyer preference and successful providers get paid.',
   },
 ] as const;
 
-type AppRoute = '/' | '/demo' | '/raiders' | '/receipt';
+type AppRoute =
+  | '/'
+  | '/marketplace'
+  | '/onboarding/buyer'
+  | '/onboarding/seller'
+  | '/account'
+  | '/demo'
+  | '/raiders'
+  | '/receipt';
 type PanelKey = (typeof PANELS)[number];
 type PanelLayer = 'front' | 'mid' | 'back';
 
@@ -151,30 +167,41 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               <p className="brand">Boss Raid</p>
               <p className="subbrand">mercenary-v1 / public surface</p>
             </div>
-            <p className="hero__summary">private / verified / shareable</p>
+            <p className="hero__summary">queued / verified / paid</p>
           </div>
           <h1>
-            <span className="hero__headline-line">One tough job in.</span>
+            <span className="hero__headline-line">Need to</span>
             <span className="hero__headline-line">
-              <span className="hero__headline-accent">Mercenary</span> runs the raid.
+              <span className="hero__headline-accent">offload tokens?</span>
             </span>
-            <span className="hero__headline-line">One verified result out.</span>
+            <span className="hero__headline-line">Join the agent queue.</span>
           </h1>
-          <p className="lede">Make live raids from Claude Code, Codex, MCP, or native HTTP.</p>
+          <p className="lede">
+            Boss Raid turns clean agent endpoints into a verified general agent API. Owners list
+            unused capacity; buyers route cheap model calls or Mercenary raids by framework, model,
+            privacy, and budget preferences.
+          </p>
           <div className="hero__actions">
             <a
               className="button button--primary"
-              href="/demo"
+              href="/onboarding/seller"
               onClick={(event) => {
                 event.preventDefault();
-                onNavigate('/demo');
+                onNavigate('/onboarding/seller');
               }}
             >
               <Icon className="icon icon--pixel" icon="pixel:sparkles-solid" />
-              open live demo
+              sell capacity
             </a>
-            <a className="button" href={BOSSRAID_DOCS_URL} rel="noreferrer" target="_blank">
-              read docs
+            <a
+              className="button"
+              href="/marketplace"
+              onClick={(event) => {
+                event.preventDefault();
+                onNavigate('/marketplace');
+              }}
+            >
+              buy inference
             </a>
           </div>
         </div>
@@ -193,6 +220,46 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             ))}
           </div>
         </div>
+      </section>
+
+      <section className="lane-grid" aria-label="Buyer and seller lanes">
+        <article className="lane-panel">
+          <p className="eyebrow">buy cheap verified inference</p>
+          <h2>Pick model, privacy, and budget.</h2>
+          <p>
+            Buyers call an OpenAI-compatible route and Boss Raid selects the cheapest eligible
+            verified seller. Failure states are explicit: no seller under budget, strict privacy
+            unavailable, provider offline, or payment required.
+          </p>
+          <a
+            className="button button--primary"
+            href="/marketplace"
+            onClick={(event) => {
+              event.preventDefault();
+              onNavigate('/marketplace');
+            }}
+          >
+            view marketplace
+          </a>
+        </article>
+        <article className="lane-panel">
+          <p className="eyebrow">sell clean agent capacity</p>
+          <h2>Register endpoint, verify, get paid.</h2>
+          <p>
+            Sellers expose authorized agent endpoints, declare framework/model/rate metadata, pass
+            automated verification, and receive USDC settlement for successful work.
+          </p>
+          <a
+            className="button"
+            href="/onboarding/seller"
+            onClick={(event) => {
+              event.preventDefault();
+              onNavigate('/onboarding/seller');
+            }}
+          >
+            register seller
+          </a>
+        </article>
       </section>
 
       <section className="api-grid" id="surfaces">
@@ -225,8 +292,8 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           </div>
           <div className="terminal-stack">
             <CodePanel
-              label="/v1/chat/completions"
-              note="compatibility surface"
+              label="/v1/inference/chat/completions"
+              note="discount inference"
               code={CHAT_EXAMPLE}
               actionLabel={copiedKey === 'chat-panel' ? 'copied' : 'copy'}
               onAction={() => void copySnippet('chat-panel', CHAT_EXAMPLE)}
@@ -259,7 +326,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
 
         <aside className="api-notes">
           <section className="info-panel info-panel--compact">
-            <p className="eyebrow">how it works</p>
+            <p className="eyebrow">general service</p>
             <div className="info-spec">
               {WORKFLOW_ROWS.map((row) => (
                 <div className="info-spec__row" key={row.label}>
@@ -274,16 +341,17 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             </div>
             <a
               className="button button--primary info-panel__cta"
-              href="/demo"
+              href="/onboarding/buyer"
               onClick={(event) => {
                 event.preventDefault();
-                onNavigate('/demo');
+                onNavigate('/onboarding/buyer');
               }}
             >
-              start raid
+              create buyer key
             </a>
             <p className="info-panel__footnote">
-              * Pricing: set the budget. Buyer charge = budget + a small route surcharge.
+              * Pricing: provider rates are declared in Boss Raid. models.dev is a static market
+              benchmark reference, not a runtime dependency.
             </p>
           </section>
         </aside>

@@ -544,7 +544,7 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
             <article className="receipt-surface">
               <div className="receipt-surface__head">
                 <div>
-                  <p className="eyebrow">raiders</p>
+                  <p className="eyebrow">queued verified agents</p>
                   <h2>Providers</h2>
                 </div>
               </div>
@@ -552,7 +552,7 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                 {providerRows.length ? (
                   providerRows.map((row) => <ReceiptProviderRow key={row.providerId} row={row} />)
                 ) : (
-                  <p className="receipt-panel__muted">No routed providers recorded yet.</p>
+                  <p className="receipt-panel__muted">No routed queued agents recorded yet.</p>
                 )}
               </div>
             </article>
@@ -919,6 +919,15 @@ function buildProviderProofNote(
   const operatorMatchesOwner =
     decision?.operatorMatchesOwner ?? provider?.erc8004?.verification?.operatorMatchesOwner;
   const parts = [
+    decision?.verificationStatus === 'verified' || provider?.verification?.status === 'verified'
+      ? 'agent verified'
+      : null,
+    (decision?.agentFramework ?? provider?.agentFramework)
+      ? `framework ${decision?.agentFramework ?? provider?.agentFramework}`
+      : null,
+    (decision?.modelProvider ?? provider?.modelProvider)
+      ? `model ${[decision?.modelProvider ?? provider?.modelProvider, decision?.modelId ?? provider?.modelId].filter(Boolean).join('/')}`
+      : null,
     buildErc8004ProofLabel(verificationStatus, registered),
     registrationTxFound === false ? 'reg tx missing' : null,
     operatorMatchesOwner === false ? 'owner mismatch' : null,
@@ -954,6 +963,14 @@ function buildRoutingReasonNote(decision: RoutingDecision | undefined): string {
           return 'venice fallback';
         case 'allowed_model_family':
           return 'model family match';
+        case 'allowed_agent_framework':
+          return 'framework match';
+        case 'allowed_model_provider':
+          return 'model provider match';
+        case 'allowed_model_id':
+          return 'model id match';
+        case 'round_robin_selected':
+          return 'round robin';
         case 'required_privacy_features':
           return 'privacy features';
         case 'erc8004_required':

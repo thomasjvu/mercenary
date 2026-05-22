@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { InMemoryBossRaidPersistence, type BossRaidPersistence } from '@bossraid/persistence';
+import {
+  FileBossRaidPersistence,
+  InMemoryBossRaidPersistence,
+  type BossRaidPersistence,
+} from '@bossraid/persistence';
 import { SqliteBossRaidPersistence } from '@bossraid/persistence-sqlite';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import type {
@@ -22,6 +26,7 @@ import type {
 import { computeRewards, sanitizeTask, selectProviders } from '@bossraid/raid-core';
 import { BossRaidOrchestrator, NoEligibleProvidersError } from './index.js';
 import { buildHierarchicalRaidGraph } from './hierarchy.js';
+import { buildSettlementSummary } from './settlement.js';
 
 function createSpawnInput(): BossRaidSpawnInput {
   return {
@@ -611,6 +616,155 @@ test('explicit privacy_first still preserves privacy-led ordering for text chats
   const selection = selectProviders(task, [gamma, dottie], 60_000);
   assert.equal(selection.primaries.length, 1);
   assert.equal(selection.primaries[0]?.providerId, 'provider-dottie');
+});
+
+test('provider selection filters by general agent service metadata', () => {
+  const task = {
+    ...createSpawnInput(),
+    output: {
+      primaryType: 'text' as const,
+      artifactTypes: ['text', 'json'] as OutputType[],
+    },
+    language: 'text' as const,
+    framework: undefined,
+    constraints: {
+      ...createSpawnInput().constraints,
+      allowedOutputTypes: ['text', 'json'] as OutputType[],
+      allowedAgentFrameworks: ['codex' as const],
+      allowedModelProviders: ['openai'],
+      allowedModelIds: ['gpt-5.5'],
+    },
+  };
+  const claudeProvider = createProviderProfile('provider-claude', {
+    agentFramework: 'claude_code',
+    modelProvider: 'anthropic',
+    modelId: 'claude-opus-4.1',
+    supportedLanguages: ['text'],
+    outputTypes: ['text', 'json'],
+  });
+  const codexProvider = createProviderProfile('provider-codex', {
+    agentFramework: 'codex',
+    modelProvider: 'openai',
+    modelId: 'gpt-5.5',
+    supportedLanguages: ['text'],
+    outputTypes: ['text', 'json'],
+  });
+
+  const selection = selectProviders(task, [claudeProvider, codexProvider], 60_000);
+  assert.equal(selection.primaries.length, 1);
+  assert.equal(selection.primaries[0]?.providerId, 'provider-codex');
+});
+
+test('round_robin selection rotates among verified general service providers', () => {
+  const task = {
+    ...createSpawnInput(),
+    output: {
+      primaryType: 'text' as const,
+      artifactTypes: ['text', 'json'] as OutputType[],
+    },
+    language: 'text' as const,
+    framework: undefined,
+    constraints: {
+      ...createSpawnInput().constraints,
+      allowedOutputTypes: ['text', 'json'] as OutputType[],
+      selectionMode: 'round_robin' as const,
+    },
+  };
+  const providerA = createProviderProfile('provider-rr-a', {
+    supportedLanguages: ['text'],
+    outputTypes: ['text', 'json'],
+    verification: {
+      status: 'verified',
+      apiVerified: true,
+      frameworkVerified: true,
+      modelVerified: true,
+    },
+  });
+  const providerB = createProviderProfile('provider-rr-b', {
+    supportedLanguages: ['text'],
+    outputTypes: ['text', 'json'],
+    verification: {
+      status: 'verified',
+      apiVerified: true,
+      frameworkVerified: true,
+      modelVerified: true,
+    },
+  });
+
+  const first = selectProviders(task, [providerA, providerB], 60_000).primaries[0]?.providerId;
+  const second = selectProviders(task, [providerA, providerB], 60_000).primaries[0]?.providerId;
+  assert.notEqual(first, second);
+  assert.deepEqual(new Set([first, second]), new Set(['provider-rr-a', 'provider-rr-b']));
+});
+
+test('single-provider general service raids settle at the selected provider rate', async () => {
+  const provider: RaidProvider = {
+    profile: createProviderProfile('provider-general-rate', {
+      pricePerTaskUsd: 0.75,
+      supportedLanguages: ['text'],
+      outputTypes: ['text', 'json'],
+      agentFramework: 'codex',
+      modelProvider: 'openai',
+      modelId: 'gpt-5.5',
+      verification: {
+        status: 'verified',
+        apiVerified: true,
+        frameworkVerified: true,
+        modelVerified: true,
+      },
+    }),
+    async accept(_task: ProviderTaskPackage): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: 'run-general-rate',
+      };
+    },
+    async run(task, callbacks): Promise<void> {
+      await callbacks.onSubmit({
+        raidId: task.raidId,
+        providerId: 'provider-general-rate',
+        providerRunId: 'run-general-rate',
+        answerText: 'General service response.',
+        explanation: 'Successful single-provider response.',
+        confidence: 0.9,
+        filesTouched: [],
+        submittedAt: new Date().toISOString(),
+      });
+    },
+  };
+  const orchestrator = new BossRaidOrchestrator(
+    [provider],
+    undefined,
+    undefined,
+    undefined,
+    async (profile) => readyHealth(profile.providerId)
+  );
+  const spawn = await orchestrator.spawnRaid({
+    ...createSpawnInput(),
+    language: 'text',
+    framework: undefined,
+    files: [],
+    output: {
+      primaryType: 'text',
+      artifactTypes: ['text', 'json'],
+    },
+    constraints: {
+      ...createSpawnInput().constraints,
+      maxBudgetUsd: 5,
+      allowedOutputTypes: ['text', 'json'],
+      allowedAgentFrameworks: ['codex'],
+      allowedModelProviders: ['openai'],
+      allowedModelIds: ['gpt-5.5'],
+      selectionMode: 'round_robin',
+    },
+  });
+
+  await waitFor(() => orchestrator.getRaid(spawn.raidId)?.status === 'final');
+  const raid = orchestrator.getRaid(spawn.raidId);
+  assert.ok(raid);
+  const settlement = buildSettlementSummary(raid);
+  assert.equal(settlement?.payoutPerSuccessfulProvider, 0.75);
+  assert.equal(settlement?.successfulProvidersPaid, 0.75);
 });
 
 test('provider selection respects active maxConcurrency across raids', async () => {
@@ -1679,6 +1833,73 @@ test('sqlite persistence saves and reloads snapshot state', async () => {
     const loaded = await persistence.loadState();
     assert.deepEqual(loaded, snapshot);
   } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('provider auth secrets are encrypted in persisted orchestrator snapshots', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'bossraid-encrypted-provider-test-'));
+  const stateFile = join(dir, 'state.json');
+  const originalKey = process.env.BOSSRAID_SECRET_ENCRYPTION_KEY;
+  const originalPreviousKeys = process.env.BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS;
+  process.env.BOSSRAID_SECRET_ENCRYPTION_KEY = 'unit-test-secret-key-old';
+  delete process.env.BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS;
+  const persistence = new FileBossRaidPersistence(stateFile);
+  const provider = createProviderProfile('provider-encrypted-auth', {
+    auth: {
+      type: 'bearer',
+      token: 'super-secret-provider-token',
+    },
+  });
+  const orchestrator = new BossRaidOrchestrator(
+    [
+      {
+        profile: provider,
+        async accept(): Promise<ProviderAcceptance> {
+          return { accepted: true, providerRunId: 'run-encrypted-auth' };
+        },
+        async run(): Promise<void> {},
+      },
+    ],
+    {},
+    persistence
+  );
+
+  try {
+    await orchestrator.persistState();
+    const raw = await readFile(stateFile, 'utf8');
+    assert.equal(raw.includes('super-secret-provider-token'), false);
+    assert.equal(raw.includes('brenc:v1:'), true);
+
+    process.env.BOSSRAID_SECRET_ENCRYPTION_KEY = 'unit-test-secret-key-new';
+    process.env.BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS = 'unit-test-secret-key-old';
+    const restored = new BossRaidOrchestrator([], {}, persistence);
+    restored.restoreState(await persistence.loadState());
+    assert.equal(restored.listProviders()[0]?.auth?.token, 'super-secret-provider-token');
+
+    await restored.persistState();
+    const rotatedRaw = await readFile(stateFile, 'utf8');
+    assert.equal(rotatedRaw.includes('super-secret-provider-token'), false);
+    assert.equal(rotatedRaw.includes('brenc:v1:'), true);
+
+    delete process.env.BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS;
+    const restoredAfterRotation = new BossRaidOrchestrator([], {}, persistence);
+    restoredAfterRotation.restoreState(await persistence.loadState());
+    assert.equal(
+      restoredAfterRotation.listProviders()[0]?.auth?.token,
+      'super-secret-provider-token'
+    );
+  } finally {
+    if (originalKey == null) {
+      delete process.env.BOSSRAID_SECRET_ENCRYPTION_KEY;
+    } else {
+      process.env.BOSSRAID_SECRET_ENCRYPTION_KEY = originalKey;
+    }
+    if (originalPreviousKeys == null) {
+      delete process.env.BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS;
+    } else {
+      process.env.BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS = originalPreviousKeys;
+    }
     await rm(dir, { recursive: true, force: true });
   }
 });

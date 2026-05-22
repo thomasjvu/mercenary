@@ -57,6 +57,8 @@ export const DEFAULT_LIMITS = {
   duplicateSimilarityThreshold: 0.92,
 } as const;
 
+let roundRobinCursor = 0;
+
 const SECRET_PATTERNS = [
   /sk-[a-z0-9-]{12,}/gi,
   /ghp_[A-Za-z0-9]{20,}/g,
@@ -321,6 +323,10 @@ function normalizeModelFamily(value: string | undefined): string {
   return value?.trim().toLowerCase() ?? '';
 }
 
+function normalizeFilterValue(value: string | undefined): string {
+  return value?.trim().toLowerCase() ?? '';
+}
+
 function providerMatchesAllowedModelFamilies(
   provider: ProviderProfile,
   allowedFamilies: string[] | undefined
@@ -333,6 +339,59 @@ function providerMatchesAllowedModelFamilies(
   return (
     providerFamily.length > 0 &&
     allowedFamilies.some((family) => normalizeModelFamily(family) === providerFamily)
+  );
+}
+
+function providerMatchesAllowedAgentFrameworks(
+  provider: ProviderProfile,
+  allowedFrameworks: RaidTaskSpec['constraints']['allowedAgentFrameworks']
+): boolean {
+  if (!allowedFrameworks?.length) {
+    return true;
+  }
+
+  return Boolean(
+    provider.agentFramework &&
+    allowedFrameworks.some((framework) => framework === provider.agentFramework)
+  );
+}
+
+function providerMatchesAllowedModelProviders(
+  provider: ProviderProfile,
+  allowedProviders: string[] | undefined
+): boolean {
+  if (!allowedProviders?.length) {
+    return true;
+  }
+
+  const providerName = normalizeFilterValue(provider.modelProvider);
+  return (
+    providerName.length > 0 &&
+    allowedProviders.some((modelProvider) => normalizeFilterValue(modelProvider) === providerName)
+  );
+}
+
+function providerMatchesAllowedModelIds(
+  provider: ProviderProfile,
+  allowedModelIds: string[] | undefined
+): boolean {
+  if (!allowedModelIds?.length) {
+    return true;
+  }
+
+  const providerModelId = normalizeFilterValue(provider.modelId);
+  return (
+    providerModelId.length > 0 &&
+    allowedModelIds.some((modelId) => normalizeFilterValue(modelId) === providerModelId)
+  );
+}
+
+function providerHasVerifiedGeneralServiceMetadata(provider: ProviderProfile): boolean {
+  return (
+    provider.verification?.status === 'verified' &&
+    provider.verification.apiVerified !== false &&
+    provider.verification.frameworkVerified !== false &&
+    provider.verification.modelVerified !== false
   );
 }
 
@@ -426,6 +485,19 @@ function buildRoutingDecision(
     (task.constraints.allowedModelFamilies?.length ?? 0) > 0
       ? 'allowed_model_family'
       : null,
+    providerMatchesAllowedAgentFrameworks(provider, task.constraints.allowedAgentFrameworks) &&
+    (task.constraints.allowedAgentFrameworks?.length ?? 0) > 0
+      ? 'allowed_agent_framework'
+      : null,
+    providerMatchesAllowedModelProviders(provider, task.constraints.allowedModelProviders) &&
+    (task.constraints.allowedModelProviders?.length ?? 0) > 0
+      ? 'allowed_model_provider'
+      : null,
+    providerMatchesAllowedModelIds(provider, task.constraints.allowedModelIds) &&
+    (task.constraints.allowedModelIds?.length ?? 0) > 0
+      ? 'allowed_model_id'
+      : null,
+    task.constraints.selectionMode === 'round_robin' ? 'round_robin_selected' : null,
     privacyFeatureMatch && requiredPrivacyFeatures.length > 0 ? 'required_privacy_features' : null,
     task.constraints.requireErc8004 === true && providerHasErc8004Identity(provider)
       ? 'erc8004_required'
@@ -442,6 +514,11 @@ function buildRoutingDecision(
     providerId: provider.providerId,
     phase,
     modelFamily: provider.modelFamily,
+    agentFramework: provider.agentFramework,
+    modelProvider: provider.modelProvider,
+    modelId: provider.modelId,
+    verificationStatus: provider.verification?.status,
+    rateUsd: provider.pricePerTaskUsd,
     veniceBacked,
     erc8004Registered: providerHasErc8004Identity(provider),
     trustScore,
@@ -475,6 +552,9 @@ export function buildRoutingProof(
       requireErc8004: task.constraints.requireErc8004 === true,
       minTrustScore: task.constraints.minTrustScore,
       allowedModelFamilies: task.constraints.allowedModelFamilies ?? [],
+      allowedAgentFrameworks: task.constraints.allowedAgentFrameworks ?? [],
+      allowedModelProviders: task.constraints.allowedModelProviders ?? [],
+      allowedModelIds: task.constraints.allowedModelIds ?? [],
       requiredPrivacyFeatures: task.constraints.requirePrivacyFeatures ?? [],
       venicePrivateLane: taskUsesVenicePrivateLane(task),
     },
@@ -542,6 +622,15 @@ export function providerMatchesTask(
     provider,
     task.constraints.allowedModelFamilies
   );
+  const agentFrameworkMatch = providerMatchesAllowedAgentFrameworks(
+    provider,
+    task.constraints.allowedAgentFrameworks
+  );
+  const modelProviderMatch = providerMatchesAllowedModelProviders(
+    provider,
+    task.constraints.allowedModelProviders
+  );
+  const modelIdMatch = providerMatchesAllowedModelIds(provider, task.constraints.allowedModelIds);
   const primaryOutputMatch =
     requestedPrimaryOutputType == null ||
     provider.outputTypes?.includes(requestedPrimaryOutputType) === true;
@@ -570,6 +659,9 @@ export function providerMatchesTask(
     timeoutMatch &&
     priceMatch &&
     modelFamilyMatch &&
+    agentFrameworkMatch &&
+    modelProviderMatch &&
+    modelIdMatch &&
     primaryOutputMatch &&
     outputTypeMatch &&
     erc8004Match &&
@@ -601,9 +693,11 @@ export function selectProviders(
   const ranked = routingPool.sort((left, right) => compareProviders(left, right, task));
 
   const selected =
-    task.constraints.selectionMode === 'diverse_mix'
-      ? selectDiverseProviders(ranked, task.constraints.numExperts)
-      : ranked.slice(0, task.constraints.numExperts);
+    task.constraints.selectionMode === 'round_robin'
+      ? selectRoundRobinProviders(ranked, task.constraints.numExperts)
+      : task.constraints.selectionMode === 'diverse_mix'
+        ? selectDiverseProviders(ranked, task.constraints.numExperts)
+        : ranked.slice(0, task.constraints.numExperts);
 
   const primaries = selected.map((item) => item.provider);
   const reserveCount = primaries.length > 0 ? 1 : 0;
@@ -615,6 +709,28 @@ export function selectProviders(
     .map((item) => item.provider);
 
   return { primaries, reserves };
+}
+
+function selectRoundRobinProviders(
+  eligible: Array<{ provider: ProviderProfile; selectionScore: number; privacyScore: number }>,
+  maxProviders: number
+): Array<{ provider: ProviderProfile; selectionScore: number; privacyScore: number }> {
+  const verified = eligible.filter((item) =>
+    providerHasVerifiedGeneralServiceMetadata(item.provider)
+  );
+  const pool = (verified.length > 0 ? verified : eligible).sort((left, right) =>
+    left.provider.providerId.localeCompare(right.provider.providerId)
+  );
+
+  if (pool.length === 0 || maxProviders <= 0) {
+    return [];
+  }
+
+  const offset = roundRobinCursor % pool.length;
+  roundRobinCursor += 1;
+  return Array.from({ length: Math.min(maxProviders, pool.length) }, (_value, index) => {
+    return pool[(offset + index) % pool.length]!;
+  });
 }
 
 function compareProviders(

@@ -1,6 +1,8 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { BossRaidPersistenceSnapshot } from '@bossraid/shared-types';
+export { createSecretCipher, isEncryptedSecretValue } from './secret-encryption.js';
+export type { SecretCipher } from './secret-encryption.js';
 
 export interface BossRaidPersistence {
   loadState(): Promise<BossRaidPersistenceSnapshot>;

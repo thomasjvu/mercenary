@@ -36,6 +36,7 @@ const SELECTION_MODES = new Set<SelectionMode>([
   'privacy_first',
   'cost_first',
   'diverse_mix',
+  'round_robin',
 ]);
 const PRIVACY_FEATURES = new Set<PrivacyFeatureKey>([
   'tee_attested',
@@ -109,6 +110,18 @@ const tools = [
         },
         minReputationScore: { type: 'number' },
         allowedModelFamilies: {
+          type: 'array',
+          items: { type: 'string' },
+        },
+        allowedAgentFrameworks: {
+          type: 'array',
+          items: { type: 'string', enum: ['codex', 'claude_code', 'openclaw', 'custom'] },
+        },
+        allowedModelProviders: {
+          type: 'array',
+          items: { type: 'string' },
+        },
+        allowedModelIds: {
           type: 'array',
           items: { type: 'string' },
         },

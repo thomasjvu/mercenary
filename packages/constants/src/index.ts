@@ -87,6 +87,8 @@ export const API_ROUTES = {
   V1_ATTESTED_RUNTIME: '/v1/attested-runtime',
   V1_RUNTIME: '/v1/runtime',
   V1_OPS_SESSION: '/v1/ops/session',
+  V1_OPS_METRICS: '/v1/ops/metrics',
+  V1_OPS_PRODUCTION_READINESS: '/v1/ops/production-readiness',
   V1_OPS_SETTLEMENT_STATUS: '/v1/ops/settlement/status',
   V1_PROVIDERS: '/v1/providers',
   V1_EVALUATIONS_REPLAY: '/v1/evaluations/:raidId/replay',

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -236,6 +236,38 @@ async function waitFor(predicate: () => boolean, timeoutMs = 2_000): Promise<voi
   throw new Error('Timed out waiting for condition.');
 }
 
+async function createPublicSessionCookie(
+  app: ReturnType<typeof buildApiServer>,
+  walletIndex = 0
+): Promise<{ cookie: string; wallet: string }> {
+  const account = mnemonicToAccount(TEST_MNEMONIC, { addressIndex: walletIndex });
+  const nonce = await app.inject({
+    method: 'POST',
+    url: '/v1/auth/nonce',
+    payload: {
+      wallet: account.address,
+    },
+  });
+  assert.equal(nonce.statusCode, 200);
+  const message = nonce.json().message as string;
+  const signature = await account.signMessage({ message });
+  const verify = await app.inject({
+    method: 'POST',
+    url: '/v1/auth/verify',
+    payload: {
+      message,
+      signature,
+    },
+  });
+  assert.equal(verify.statusCode, 200);
+  const cookie = verify.headers['set-cookie'];
+  assert.equal(typeof cookie, 'string');
+  return {
+    cookie: cookie as string,
+    wallet: account.address.toLowerCase(),
+  };
+}
+
 test('POST /v1/raid returns 409 when no providers are eligible', async () => {
   const app = buildApiServer(new BossRaidOrchestrator());
 
@@ -386,6 +418,745 @@ test('chat completion requests can use a server-side default payout budget', asy
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().model, 'mercenary-v1');
   } finally {
+    await app.close();
+  }
+});
+
+test('POST /v1/chat/completions accepts general service routing filters', async () => {
+  const receivedProviders: string[] = [];
+  const matchingProvider: RaidProvider = {
+    profile: createProviderProfile('provider-general-codex', {
+      agentFramework: 'codex',
+      modelProvider: 'openai',
+      modelId: 'gpt-5.5',
+      outputTypes: ['text', 'json'],
+      supportedLanguages: ['text'],
+      verification: {
+        status: 'verified',
+        apiVerified: true,
+        frameworkVerified: true,
+        modelVerified: true,
+      },
+    }),
+    async accept(_task: ProviderTaskPackage): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: 'run-general-codex',
+      };
+    },
+    async run(task, callbacks): Promise<void> {
+      receivedProviders.push('provider-general-codex');
+      await callbacks.onSubmit({
+        raidId: task.raidId,
+        providerId: 'provider-general-codex',
+        providerRunId: 'run-general-codex',
+        answerText: 'Use the verified Codex provider.',
+        explanation: 'The provider matches framework, model provider, model id, and budget.',
+        confidence: 0.9,
+        filesTouched: [],
+        submittedAt: new Date().toISOString(),
+      });
+    },
+  };
+  const nonMatchingProvider: RaidProvider = {
+    profile: createProviderProfile('provider-general-claude', {
+      agentFramework: 'claude_code',
+      modelProvider: 'anthropic',
+      modelId: 'claude-opus-4.1',
+      outputTypes: ['text', 'json'],
+      supportedLanguages: ['text'],
+    }),
+    async accept(_task: ProviderTaskPackage): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: 'run-general-claude',
+      };
+    },
+    async run(): Promise<void> {
+      receivedProviders.push('provider-general-claude');
+    },
+  };
+  const orchestrator = new BossRaidOrchestrator(
+    [nonMatchingProvider, matchingProvider],
+    undefined,
+    undefined,
+    undefined,
+    async (profile) => readyHealth(profile.providerId)
+  );
+  const app = buildApiServer(orchestrator);
+
+  try {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/chat/completions',
+      payload: {
+        model: 'mercenary-v1',
+        messages: [
+          {
+            role: 'user',
+            content: 'Route this through the preferred general service lane.',
+          },
+        ],
+        raid_policy: {
+          max_agents: 1,
+          max_total_cost: 2,
+          allowed_agent_frameworks: ['codex'],
+          allowed_model_providers: ['openai'],
+          allowed_model_ids: ['gpt-5.5'],
+          selection_mode: 'round_robin',
+        },
+      },
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(receivedProviders, ['provider-general-codex']);
+  } finally {
+    await app.close();
+  }
+});
+
+test('GET /v1/models and /v1/markets expose discount inference marketplace data', async () => {
+  const cheapProvider: RaidProvider = {
+    profile: createProviderProfile('provider-market-cheap', {
+      agentFramework: 'codex',
+      modelProvider: 'openai',
+      modelId: 'gpt-5.5',
+      pricePerTaskUsd: 0.25,
+      outputTypes: ['text', 'json'],
+      supportedLanguages: ['text'],
+      verification: {
+        status: 'verified',
+        apiVerified: true,
+        frameworkVerified: true,
+        modelVerified: true,
+      },
+      privacy: {
+        teeAttested: true,
+        signedOutputs: true,
+        noDataRetention: true,
+      },
+    }),
+    async accept(): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: 'run-market-cheap',
+      };
+    },
+    async run(): Promise<void> {},
+  };
+  const expensiveProvider: RaidProvider = {
+    profile: createProviderProfile('provider-market-expensive', {
+      agentFramework: 'claude_code',
+      modelProvider: 'openai',
+      modelId: 'gpt-5.5',
+      pricePerTaskUsd: 1.25,
+      outputTypes: ['text', 'json'],
+      supportedLanguages: ['text'],
+    }),
+    async accept(): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: 'run-market-expensive',
+      };
+    },
+    async run(): Promise<void> {},
+  };
+  const app = buildApiServer(new BossRaidOrchestrator([expensiveProvider, cheapProvider]));
+
+  try {
+    const modelsResponse = await app.inject({
+      method: 'GET',
+      url: '/v1/models',
+    });
+    assert.equal(modelsResponse.statusCode, 200);
+    assert.deepEqual(
+      modelsResponse.json().data.map((model: { id: string }) => model.id),
+      ['gpt-5.5']
+    );
+    assert.equal(modelsResponse.json().data[0].bossraid.cheapest_rate_usd, 0.25);
+
+    const marketsResponse = await app.inject({
+      method: 'GET',
+      url: '/v1/markets?model_id=gpt-5.5',
+    });
+    assert.equal(marketsResponse.statusCode, 200);
+    const market = marketsResponse.json().data[0];
+    assert.equal(market.cheapestRateUsd, 0.25);
+    assert.deepEqual(
+      market.sellers.map((seller: { sellerId: string }) => seller.sellerId),
+      ['provider-market-cheap', 'provider-market-expensive']
+    );
+    assert.equal(marketsResponse.json().custody.sellerCredentialPolicy.includes('clean'), true);
+
+    const filteredMarketResponse = await app.inject({
+      method: 'GET',
+      url: '/v1/markets?model_id=gpt-5.5&max_budget_usd=0.5&privacy_mode=strict&verification_status=verified',
+    });
+    assert.equal(filteredMarketResponse.statusCode, 200);
+    assert.deepEqual(
+      filteredMarketResponse
+        .json()
+        .data[0].sellers.map((seller: { sellerId: string }) => seller.sellerId),
+      ['provider-market-cheap']
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('GET /ready reports public beta readiness gates', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        ready: true,
+        model: 'gpt-5.5',
+      }),
+      {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      }
+    );
+  const provider: RaidProvider = {
+    profile: createProviderProfile('provider-ready-market', {
+      modelProvider: 'openai',
+      modelId: 'gpt-5.5',
+      outputTypes: ['text'],
+      supportedLanguages: ['text'],
+    }),
+    async accept(): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: 'run-ready-market',
+      };
+    },
+    async run(): Promise<void> {},
+  };
+  const app = buildApiServer(
+    new BossRaidOrchestrator([provider], undefined, undefined, undefined, async (profile) =>
+      readyHealth(profile.providerId)
+    ),
+    {
+      ...process.env,
+      BOSSRAID_X402_ENABLED: 'false',
+      BOSSRAID_STORAGE_BACKEND: 'memory',
+    }
+  );
+
+  try {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/ready',
+    });
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().ok, true);
+    assert.equal(response.json().gates.storage, true);
+    assert.equal(response.json().gates.providers, true);
+    assert.equal(response.json().payment.enabled, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await app.close();
+  }
+});
+
+test('ops metrics are admin-gated and expose route counters', async () => {
+  const app = buildApiServer(new BossRaidOrchestrator([]), {
+    ...process.env,
+    BOSSRAID_ADMIN_TOKEN: 'admin-metrics-token-with-production-length',
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+  });
+
+  try {
+    const unauthenticatedPrometheus = await app.inject({
+      method: 'GET',
+      url: '/metrics',
+    });
+    assert.equal(unauthenticatedPrometheus.statusCode, 401);
+
+    await app.inject({
+      method: 'GET',
+      url: '/health',
+    });
+
+    const metrics = await app.inject({
+      method: 'GET',
+      url: '/v1/ops/metrics',
+      headers: {
+        authorization: 'Bearer admin-metrics-token-with-production-length',
+      },
+    });
+    assert.equal(metrics.statusCode, 200);
+    assert.equal(typeof metrics.json().counters['http.requests_total'], 'number');
+    assert.equal(Boolean(metrics.json().routes['GET /health']), true);
+
+    const prometheus = await app.inject({
+      method: 'GET',
+      url: '/metrics',
+      headers: {
+        authorization: 'Bearer admin-metrics-token-with-production-length',
+      },
+    });
+    assert.equal(prometheus.statusCode, 200);
+    assert.equal(prometheus.body.includes('bossraid_http_requests_total'), true);
+  } finally {
+    await app.close();
+  }
+});
+
+test('production readiness report surfaces full-production blockers', async () => {
+  const app = buildApiServer(new BossRaidOrchestrator([]), {
+    ...process.env,
+    NODE_ENV: 'test',
+    BOSSRAID_ADMIN_TOKEN: 'admin-readiness-token-with-production-length',
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+    BOSSRAID_X402_ENABLED: 'false',
+  });
+
+  try {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/ops/production-readiness',
+      headers: {
+        authorization: 'Bearer admin-readiness-token-with-production-length',
+      },
+    });
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().ok, false);
+    assert.equal(response.json().status, 'blocked');
+    assert.equal(
+      response
+        .json()
+        .checks.some(
+          (check: { id: string; status: string }) =>
+            check.id === 'onchain_settlement' && check.status === 'fail'
+        ),
+      true
+    );
+    assert.equal(
+      response
+        .json()
+        .nextActions.some((action: { check: string }) => action.check === 'tee_attestation'),
+      true
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('POST /v1/inference/chat/completions routes one model call to the cheapest seller', async () => {
+  const receivedProviders: string[] = [];
+  const cheapProvider: RaidProvider = {
+    profile: createProviderProfile('provider-inference-cheap', {
+      modelProvider: 'openai',
+      modelId: 'gpt-5.5',
+      pricePerTaskUsd: 0.25,
+      outputTypes: ['text', 'json'],
+      supportedLanguages: ['text'],
+    }),
+    async accept(): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: 'run-inference-cheap',
+      };
+    },
+    async run(task, callbacks): Promise<void> {
+      receivedProviders.push('provider-inference-cheap');
+      await callbacks.onSubmit({
+        raidId: task.raidId,
+        providerId: 'provider-inference-cheap',
+        providerRunId: 'run-inference-cheap',
+        answerText: 'Cheap seller response.',
+        explanation: 'The inference lane picked the cheapest eligible provider.',
+        confidence: 0.9,
+        filesTouched: [],
+        submittedAt: new Date().toISOString(),
+      });
+    },
+  };
+  const expensiveProvider: RaidProvider = {
+    profile: createProviderProfile('provider-inference-expensive', {
+      modelProvider: 'openai',
+      modelId: 'gpt-5.5',
+      pricePerTaskUsd: 1.25,
+      outputTypes: ['text', 'json'],
+      supportedLanguages: ['text'],
+    }),
+    async accept(): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: 'run-inference-expensive',
+      };
+    },
+    async run(): Promise<void> {
+      receivedProviders.push('provider-inference-expensive');
+    },
+  };
+  const orchestrator = new BossRaidOrchestrator(
+    [expensiveProvider, cheapProvider],
+    undefined,
+    undefined,
+    undefined,
+    async (profile) => readyHealth(profile.providerId)
+  );
+  const app = buildApiServer(orchestrator);
+
+  try {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/inference/chat/completions',
+      payload: {
+        model: 'gpt-5.5',
+        messages: [
+          {
+            role: 'user',
+            content: 'Answer with one sentence from the discount inference lane.',
+          },
+        ],
+      },
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(receivedProviders, ['provider-inference-cheap']);
+    assert.equal(response.json().raid.agents_invited, 1);
+  } finally {
+    await app.close();
+  }
+});
+
+test('public wallet auth creates a session and buyer API keys are hashed and revocable', async () => {
+  const app = buildApiServer(new BossRaidOrchestrator(), {
+    ...process.env,
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+  });
+
+  try {
+    const session = await createPublicSessionCookie(app);
+    const status = await app.inject({
+      method: 'GET',
+      url: '/v1/session',
+      headers: {
+        cookie: session.cookie,
+      },
+    });
+    assert.equal(status.statusCode, 200);
+    assert.equal(status.json().authenticated, true);
+    assert.equal(status.json().wallet, session.wallet);
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/buyer/api-keys',
+      headers: {
+        cookie: session.cookie,
+      },
+      payload: {
+        name: 'Beta buyer key',
+        spendLimitUsd: 2,
+      },
+    });
+    assert.equal(created.statusCode, 201);
+    assert.match(created.json().apiKey, /^br_/);
+    assert.equal(created.json().key.name, 'Beta buyer key');
+    assert.equal(created.json().key.spendLimitUsd, 2);
+    assert.equal(created.json().key.keyHash, undefined);
+
+    const listed = await app.inject({
+      method: 'GET',
+      url: '/v1/buyer/api-keys',
+      headers: {
+        cookie: session.cookie,
+      },
+    });
+    assert.equal(listed.statusCode, 200);
+    assert.equal(listed.json().data.length, 1);
+    assert.equal(listed.json().data[0].prefix, created.json().key.prefix);
+
+    const revoked = await app.inject({
+      method: 'DELETE',
+      url: `/v1/buyer/api-keys/${created.json().key.id}`,
+      headers: {
+        cookie: session.cookie,
+      },
+    });
+    assert.equal(revoked.statusCode, 200);
+    assert.equal(revoked.json().revoked, true);
+  } finally {
+    await app.close();
+  }
+});
+
+test('public session tokens and buyer key hashes are encrypted in API control state', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'bossraid-api-encrypted-state-test-'));
+  const stateFile = join(dir, 'state.json');
+  const env = {
+    ...process.env,
+    BOSSRAID_STORAGE_BACKEND: 'file',
+    BOSSRAID_STATE_FILE: stateFile,
+    BOSSRAID_SECRET_ENCRYPTION_KEY: 'unit-test-api-secret-key',
+  };
+  const app = buildApiServer(new BossRaidOrchestrator(), env);
+  let appClosed = false;
+
+  try {
+    const session = await createPublicSessionCookie(app);
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/buyer/api-keys',
+      headers: {
+        cookie: session.cookie,
+      },
+      payload: {
+        name: 'Encrypted buyer key',
+        spendLimitUsd: 0.2,
+      },
+    });
+    assert.equal(created.statusCode, 201);
+
+    const sessionToken = session.cookie.match(/bossraid_session=([^;]+)/)?.[1];
+    assert.ok(sessionToken);
+    const apiKey = created.json().apiKey as string;
+    const keyHash = createHash('sha256').update(apiKey).digest('hex');
+    const raw = await readFile(join(dir, 'state.api.json'), 'utf8');
+    assert.equal(raw.includes(sessionToken), false);
+    assert.equal(raw.includes(keyHash), false);
+    assert.equal(raw.includes('brenc:v1:'), true);
+
+    await app.close();
+    appClosed = true;
+    const restored = buildApiServer(new BossRaidOrchestrator(), env);
+    try {
+      const response = await restored.inject({
+        method: 'POST',
+        url: '/v1/inference/chat/completions',
+        headers: {
+          authorization: `Bearer ${apiKey}`,
+        },
+        payload: {
+          model: 'gpt-5.5',
+          messages: [{ role: 'user', content: 'Use the encrypted key.' }],
+          raid_policy: {
+            max_total_cost: 1,
+          },
+        },
+      });
+      assert.equal(response.statusCode, 402);
+      assert.equal(response.json().error, 'api_key_spend_limit_exceeded');
+    } finally {
+      await restored.close();
+    }
+  } finally {
+    if (!appClosed) {
+      await app.close();
+    }
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('buyer API keys enforce spend caps on discount inference requests', async () => {
+  const provider: RaidProvider = {
+    profile: createProviderProfile('provider-spend-cap', {
+      modelProvider: 'openai',
+      modelId: 'gpt-5.5',
+      pricePerTaskUsd: 0.25,
+      outputTypes: ['text', 'json'],
+      supportedLanguages: ['text'],
+    }),
+    async accept(): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: 'run-spend-cap',
+      };
+    },
+    async run(): Promise<void> {},
+  };
+  const app = buildApiServer(new BossRaidOrchestrator([provider]), {
+    ...process.env,
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+  });
+
+  try {
+    const session = await createPublicSessionCookie(app);
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/buyer/api-keys',
+      headers: {
+        cookie: session.cookie,
+      },
+      payload: {
+        name: 'Low cap',
+        spendLimitUsd: 0.2,
+      },
+    });
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/inference/chat/completions',
+      headers: {
+        authorization: `Bearer ${created.json().apiKey}`,
+      },
+      payload: {
+        model: 'gpt-5.5',
+        messages: [
+          {
+            role: 'user',
+            content: 'Use the discount inference lane.',
+          },
+        ],
+      },
+    });
+
+    assert.equal(response.statusCode, 402);
+    assert.equal(response.json().error, 'api_key_spend_limit_exceeded');
+  } finally {
+    await app.close();
+  }
+});
+
+test('buyer API keys enforce per-key rate limits before paid execution', async () => {
+  const provider: RaidProvider = {
+    profile: createProviderProfile('provider-key-rate-limit', {
+      modelProvider: 'openai',
+      modelId: 'gpt-5.5',
+      pricePerTaskUsd: 0.25,
+      outputTypes: ['text', 'json'],
+      supportedLanguages: ['text'],
+    }),
+    async accept(): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: 'run-key-rate-limit',
+      };
+    },
+    async run(): Promise<void> {},
+  };
+  const app = buildApiServer(new BossRaidOrchestrator([provider]), {
+    ...process.env,
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+    BOSSRAID_BUYER_KEY_RATE_LIMIT_MAX: '1',
+    BOSSRAID_BUYER_KEY_RATE_LIMIT_WINDOW_MS: '60000',
+  });
+
+  try {
+    const session = await createPublicSessionCookie(app);
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/buyer/api-keys',
+      headers: {
+        cookie: session.cookie,
+      },
+      payload: {
+        name: 'Rate limited',
+        spendLimitUsd: 10,
+      },
+    });
+    const payload = {
+      model: 'gpt-5.5',
+      messages: [
+        {
+          role: 'user',
+          content: 'Use the discount inference lane.',
+        },
+      ],
+      raid_policy: {
+        max_total_cost: 1,
+      },
+    };
+    await app.inject({
+      method: 'POST',
+      url: '/v1/inference/chat/completions',
+      headers: {
+        authorization: `Bearer ${created.json().apiKey}`,
+      },
+      payload,
+    });
+
+    const rateLimited = await app.inject({
+      method: 'POST',
+      url: '/v1/inference/chat/completions',
+      headers: {
+        authorization: `Bearer ${created.json().apiKey}`,
+      },
+      payload,
+    });
+
+    assert.equal(rateLimited.statusCode, 429);
+    assert.equal(rateLimited.json().error, 'rate_limited');
+  } finally {
+    await app.close();
+  }
+});
+
+test('seller self-serve registration verifies providers and adds them to marketplace', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        ready: true,
+        agentFramework: 'codex',
+        modelProvider: 'openai',
+        model: 'gpt-5.5',
+      }),
+      {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      }
+    );
+  const app = buildApiServer(new BossRaidOrchestrator(), {
+    ...process.env,
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+  });
+
+  try {
+    const session = await createPublicSessionCookie(app);
+    const registered = await app.inject({
+      method: 'POST',
+      url: '/v1/seller/providers',
+      headers: {
+        cookie: session.cookie,
+      },
+      payload: {
+        agentId: 'seller-self-serve-gpt55',
+        name: 'Self-Serve GPT-5.5',
+        endpoint: `http://${NETWORK.LOCALHOST}:${NETWORK.TEST_PROVIDER_PORT_START}`,
+        capabilities: ['analysis', 'text'],
+        supportedLanguages: ['text'],
+        outputTypes: ['text', 'json'],
+        agentFramework: 'codex',
+        modelProvider: 'openai',
+        modelId: 'gpt-5.5',
+        pricing: {
+          pricePerTaskUsd: 0.25,
+        },
+        auth: {
+          type: 'none',
+        },
+      },
+    });
+    assert.equal(registered.statusCode, 201);
+    assert.equal(registered.json().provider.verification.status, 'verified');
+    assert.equal(registered.json().provider.source.externalRef, session.wallet.toLowerCase());
+
+    const sellerProviders = await app.inject({
+      method: 'GET',
+      url: '/v1/seller/providers',
+      headers: {
+        cookie: session.cookie,
+      },
+    });
+    assert.equal(sellerProviders.statusCode, 200);
+    assert.equal(sellerProviders.json().data[0].providerId, 'seller-self-serve-gpt55');
+
+    const market = await app.inject({
+      method: 'GET',
+      url: '/v1/markets?model_id=gpt-5.5',
+    });
+    assert.equal(market.statusCode, 200);
+    assert.equal(market.json().data[0].verifiedSellerCount, 1);
+    assert.equal(market.json().data[0].privateSellerCount, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
     await app.close();
   }
 });
@@ -1753,6 +2524,75 @@ test('registry write routes require the configured registry token', async () => 
     assert.equal(authorized.statusCode, 200);
     assert.equal(authorized.json().providerId, 'secure-review-01');
   } finally {
+    await app.close();
+  }
+});
+
+test('registry verification probes provider health and stores separate verification state', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        ready: true,
+        agentFramework: 'codex',
+        modelProvider: 'openai',
+        model: 'gpt-5.5',
+      }),
+      {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      }
+    );
+  const app = buildApiServer(new BossRaidOrchestrator(), {
+    BOSSRAID_REGISTRY_TOKEN: 'registry-secret',
+  });
+
+  try {
+    await app.inject({
+      method: 'POST',
+      url: '/agents/register',
+      headers: {
+        authorization: 'Bearer registry-secret',
+      },
+      payload: {
+        agentId: 'seller-codex-gpt55',
+        name: 'Seller Codex GPT-5.5',
+        endpoint: `http://${NETWORK.LOCALHOST}:${NETWORK.TEST_PROVIDER_PORT_START}`,
+        supportedLanguages: ['text'],
+        outputTypes: ['text', 'json'],
+        agentFramework: 'codex',
+        modelProvider: 'openai',
+        modelId: 'gpt-5.5',
+        pricing: {
+          pricePerTaskUsd: 0.25,
+        },
+        auth: {
+          type: 'bearer',
+          token: 'provider-secret',
+        },
+      },
+    });
+
+    const verified = await app.inject({
+      method: 'POST',
+      url: '/agents/seller-codex-gpt55/verify',
+      headers: {
+        authorization: 'Bearer registry-secret',
+      },
+    });
+
+    assert.equal(verified.statusCode, 200);
+    const body = verified.json();
+    assert.equal(body.provider.verification.status, 'verified');
+    assert.equal(body.provider.verification.apiVerified, true);
+    assert.equal(body.provider.verification.frameworkVerified, true);
+    assert.equal(body.provider.verification.modelVerified, true);
+    assert.equal(body.provider.auth, undefined);
+    assert.equal(body.health.model, 'gpt-5.5');
+  } finally {
+    globalThis.fetch = originalFetch;
     await app.close();
   }
 });

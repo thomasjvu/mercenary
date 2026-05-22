@@ -108,9 +108,12 @@ test('buildBossRaidRequestFromChatCompletion synthesizes the shared chat raid sh
         requireErc8004: true,
         minTrustScore: '72',
         allowedModelFamilies: ['gpt-4.1'],
+        allowedAgentFrameworks: ['codex'],
+        allowedModelProviders: ['openai'],
+        allowedModelIds: ['gpt-5.5'],
         privacyMode: 'strict',
         requirePrivacyFeatures: ['signed_outputs'],
-        selectionMode: 'privacy_first',
+        selectionMode: 'round_robin',
       },
     })
   );
@@ -140,10 +143,13 @@ test('buildBossRaidRequestFromChatCompletion synthesizes the shared chat raid sh
     requireErc8004: true,
     minTrustScore: 72,
     allowedModelFamilies: ['gpt-4.1'],
+    allowedAgentFrameworks: ['codex'],
+    allowedModelProviders: ['openai'],
+    allowedModelIds: ['gpt-5.5'],
     allowedOutputTypes: ['text', 'json'],
     privacyMode: 'strict',
     requirePrivacyFeatures: ['signed_outputs'],
-    selectionMode: 'privacy_first',
+    selectionMode: 'round_robin',
   });
   assert.equal(request.hostContext?.host, 'codex');
 });
@@ -516,6 +522,40 @@ test('parseProviderRegistrationInput keeps ERC-8004 identity and trust metadata'
   assert.equal(registration.erc8004?.verification?.operatorMatchesOwner, true);
   assert.equal(registration.trust?.score, 88);
   assert.equal(registration.trust?.source, 'erc8004');
+});
+
+test('parseProviderRegistrationInput keeps general service metadata separate from trust', () => {
+  const registration = parseProviderRegistrationInput({
+    agentId: 'codex-gpt-55-worker',
+    name: 'Codex GPT-5.5 Worker',
+    endpoint: 'https://provider.example.com',
+    agentFramework: 'codex',
+    modelProvider: 'openai',
+    modelId: 'gpt-5.5',
+    verification: {
+      status: 'verified',
+      checked_at: '2026-05-21T00:00:00.000Z',
+      api_verified: true,
+      framework_verified: true,
+      model_verified: true,
+      notes: ['health endpoint matched declared framework and model'],
+    },
+    trust: {
+      score: 70,
+      source: 'erc8004',
+    },
+    pricing: {
+      price_per_task_usd: 1,
+    },
+  });
+
+  assert.equal(registration.agentFramework, 'codex');
+  assert.equal(registration.modelProvider, 'openai');
+  assert.equal(registration.modelId, 'gpt-5.5');
+  assert.equal(registration.verification?.status, 'verified');
+  assert.equal(registration.verification?.apiVerified, true);
+  assert.equal(registration.trust?.score, 70);
+  assert.equal(registration.pricing?.pricePerTaskUsd, 1);
 });
 
 test('parseProviderRegistrationInput keeps Party Quest provider source metadata', () => {

@@ -15,13 +15,15 @@ const apiBase = requiredUrlFrom([
   'BOSSRAID_X402_E2E_API_BASE',
   'VITE_BOSSRAID_API_BASE',
 ]);
-const registryToken = requiredEnv('BOSSRAID_REGISTRY_TOKEN');
 const providerId = requiredEnv('PARTY_QUEST_BOSSRAID_PROVIDER_ID');
 const providerEndpoint = resolveProviderEndpoint(providerId);
 const providerAuthType = process.env.PARTY_QUEST_BOSSRAID_PROVIDER_AUTH_TYPE ?? 'bearer';
 const providerToken = process.env.PARTY_QUEST_BOSSRAID_PROVIDER_TOKEN;
 const providerSecret = process.env.PARTY_QUEST_BOSSRAID_PROVIDER_SECRET;
 const skipProviderRegistration = parseBoolean(process.env.PARTY_QUEST_BOSSRAID_SKIP_REGISTER);
+const registryToken = skipProviderRegistration
+  ? process.env.BOSSRAID_REGISTRY_TOKEN?.trim()
+  : requiredEnv('BOSSRAID_REGISTRY_TOKEN');
 const timeoutMs = Number(process.env.BOSSRAID_SMOKE_TIMEOUT_MS ?? '600000');
 const payload = loadPayload();
 

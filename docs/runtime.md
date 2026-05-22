@@ -113,6 +113,9 @@ pnpm deploy:web:cloudflare
 pnpm docker:build
 pnpm docker:up
 pnpm docker:down
+pnpm infisical:phala:pull
+pnpm infisical:phala:push
+pnpm phala:secrets:check deploy/phala/.env
 pnpm deploy:contracts
 pnpm bootstrap:settlement-env
 pnpm bootstrap:onchain
@@ -148,7 +151,17 @@ The active hosted stack is the Phala CVM deployment. `pnpm eigencompute:build` a
 - `BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST`: fallback budget for `POST /v1/chat/completions` when clients omit `raid_policy.max_total_cost`; the Phala compose stack defaults it to `15` so Dottie, Riko, and Gamma can all clear a three-specialist raid
 - `BOSSRAID_API_BODY_LIMIT_BYTES`: public Fastify body limit; provider submission callbacks use a higher internal limit so inline artifact bundles can complete
 - `BOSSRAID_PUBLIC_RATE_LIMIT_MAX` and `BOSSRAID_PUBLIC_RATE_LIMIT_WINDOW_MS`: public spawn and chat rate limits
+- `BOSSRAID_BUYER_KEY_RATE_LIMIT_MAX` and `BOSSRAID_BUYER_KEY_RATE_LIMIT_WINDOW_MS`: per-buyer-API-key request limits for paid buyer calls; defaults mirror the public action rate limit
 - `BOSSRAID_OPS_SESSION_TTL_SEC`, `BOSSRAID_OPS_SESSION_RATE_LIMIT_MAX`, and `BOSSRAID_OPS_SESSION_RATE_LIMIT_WINDOW_MS`: ops session lifetime and login throttling
+- `BOSSRAID_PUBLIC_SESSION_TTL_SEC`: public wallet session cookie lifetime; defaults to seven days
+- `BOSSRAID_PUBLIC_AUTH_NONCE_TTL_SEC`: SIWE-style nonce lifetime for `POST /v1/auth/nonce`; defaults to `300`
+- `BOSSRAID_BUYER_KEY_DEFAULT_SPEND_LIMIT_USD`: optional default spend cap applied to newly created buyer API keys
+- `BOSSRAID_BUYER_MAX_REQUEST_BUDGET_USD`: optional server-side max budget for public buyer API-key calls
+- `BOSSRAID_METRICS_PUBLIC`: when `true`, exposes Prometheus metrics at `GET /metrics` without admin auth. Keep unset unless the endpoint is protected by network controls.
+- `BOSSRAID_OPERATOR_TERMS_ACK` and `BOSSRAID_INCIDENT_RESPONSE_ACK`: production-readiness acknowledgements that operators have reviewed clean-endpoint seller terms and incident-response ownership
+- `BOSSRAID_SECRET_ENCRYPTION_KEY`: key material used to encrypt persisted provider auth tokens/secrets, public session tokens, auth nonces, and buyer API key hashes in file/SQLite state. Hex, base64, or arbitrary high-entropy strings are accepted; arbitrary strings are SHA-256 normalized to an AES-256-GCM key.
+- `BOSSRAID_SECRET_ENCRYPTION_KEY_ID`: optional key id embedded in encrypted secret envelopes for rotation bookkeeping
+- `BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS`: optional comma-separated old encryption keys used only to decrypt old persisted state during key rotation. New writes always use `BOSSRAID_SECRET_ENCRYPTION_KEY`.
 - `BOSSRAID_PROVIDER_HEALTH_TIMEOUT_MS`: provider readiness probe timeout
 - `BOSSRAID_TRUST_PROXY`: trust forwarded headers when behind a proxy
 
@@ -177,6 +190,30 @@ The active hosted stack is the Phala CVM deployment. `pnpm eigencompute:build` a
 - `BOSSRAID_MODEL_API_KEY`, `BOSSRAID_MODEL`, `BOSSRAID_MODEL_API_BASE`, `BOSSRAID_MODEL_REASONING_EFFORT`, `BOSSRAID_MODEL_TIMEOUT_MS`, and `BOSSRAID_MAX_OUTPUT_TOKENS`: model runtime config
 - `BOSSRAID_ACCEPT_DELAY_MS` and `BOSSRAID_HEARTBEAT_INTERVAL_MS`: provider callback pacing
 - `BOSSRAID_VENICE_API_BASE`, `BOSSRAID_VENICE_MODEL`, `VENICE_API_BASE`, `VENICE_MODEL`, `VENICE_REASONING_EFFORT`, and `VENICE_API_KEY_{GAMMA,DOTTIE,RIKO}`: local `pnpm dev:providers` helpers for the default Venice-backed trio
+
+### General Agent Service Metadata
+
+The general agent service layer uses existing routes and commands. No new env vars are required.
+Provider owners register clean HTTP agent endpoints through `POST /agents/register` and may include
+`agentFramework`, `modelProvider`, `modelId`, `verification`, and `pricing.pricePerTaskUsd`.
+Buyers can route paid OpenAI-compatible calls with `raid_policy.allowed_agent_frameworks`,
+`raid_policy.allowed_model_providers`, `raid_policy.allowed_model_ids`, and
+`raid_policy.selection_mode = "round_robin"`.
+
+For discount inference, buyers can call `POST /v1/inference/chat/completions`. That route forces one
+seller, defaults routing to `cost_first`, and defaults `allowed_model_ids` to the request `model`.
+Marketplace discovery is available through `GET /v1/models`, `GET /v1/prices`, and
+`GET /v1/markets`. Those routes do not require new environment variables and do not expose provider
+auth material.
+
+Registry operators can run `POST /agents/:providerId/verify` with
+`Authorization: Bearer $BOSSRAID_REGISTRY_TOKEN` to probe a seller endpoint and persist framework,
+model provider, model id, and API verification state. This uses the existing
+`BOSSRAID_PROVIDER_HEALTH_TIMEOUT_MS` timeout and does not add a new environment variable.
+
+Pricing remains provider-declared inside Boss Raid. Use `https://models.dev/api.json` as a static
+market benchmark reference for copy, docs, or future benchmarking jobs; the runtime does not fetch
+models.dev while routing or settling work.
 
 ### Web, Gateway, And MCP
 
@@ -342,15 +379,58 @@ cat temp/settlement-keys.env temp/settlement-bootstrap.env > temp/bossraid-prod.
 ```bash
 # Use production.env.example as a reference
 cp deploy/phala/production.env.example deploy/phala/.env
-# Edit .env with real values, then:
+# Edit .env with real values, then verify required fields without printing secrets:
+pnpm phala:secrets:check deploy/phala/.env
+
+# Back up the same untracked env file to Infisical:
+pnpm infisical:phala:push
+
+# Later, recreate deploy/phala/.env from Infisical:
+pnpm infisical:phala:pull
+
+# Local compose rehearsal:
 docker compose -f deploy/phala/docker-compose.yml --env-file deploy/phala/.env up --build
 ```
+
+See [Infisical Secret Workflow](infisical.md) for the project/path mapping and
+machine-token setup.
+
+For the hosted Phala CVM, pass the same untracked env file through the Phala CLI.
+Phala encrypts the sealed environment for the target CVM, and the plaintext is
+only readable inside the TEE at boot/runtime:
+
+```bash
+# New or updated CVM deployment.
+phala deploy --cvm-id bossraid-main \
+  --compose deploy/phala/docker-compose.yml \
+  -e deploy/phala/.env \
+  --wait
+
+# Secret-only rotation/update on an existing CVM.
+phala envs update bossraid-main -e deploy/phala/.env
+```
+
+Use `BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS` during encryption-key rotation:
+put the old key there, set the new key in `BOSSRAID_SECRET_ENCRYPTION_KEY`, deploy
+once, let the API rewrite state, then remove the previous key on a later deploy.
+Do not commit `deploy/phala/.env` or paste secret values into tickets/logs.
 
 ### Step 6: Verify
 
 ```bash
 # Health check
 curl https://<your-api>/health | jq
+
+# Public beta readiness gates, including secret encryption and TEE metadata.
+curl https://<your-api>/ready | jq
+
+# Full-production checklist. This should be `ok: true` before unrestricted paid traffic.
+curl -H "Authorization: Bearer $BOSSRAID_ADMIN_TOKEN" \
+  https://<your-api>/v1/ops/production-readiness | jq
+
+# Operational metrics.
+curl -H "Authorization: Bearer $BOSSRAID_ADMIN_TOKEN" \
+  https://<your-api>/v1/ops/metrics | jq
 
 # Settlement status (admin auth required)
 curl -H "Authorization: Bearer $BOSSRAID_ADMIN_TOKEN" \

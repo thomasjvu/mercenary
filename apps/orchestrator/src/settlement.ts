@@ -7,7 +7,7 @@ export function buildSettlementAllocations(raid: RaidRecord): SettlementAllocati
   }
 
   const rewards = computeRewards(
-    raid.task.constraints.maxBudgetUsd,
+    readSettlementBudgetUsd(raid),
     raid.rankedSubmissions,
     raid.task.rewardPolicy
   );
@@ -37,7 +37,7 @@ export function buildSettlementSummary(raid: RaidRecord): SettlementSummary | un
   }
 
   const rewards = computeRewards(
-    raid.task.constraints.maxBudgetUsd,
+    readSettlementBudgetUsd(raid),
     raid.rankedSubmissions,
     raid.task.rewardPolicy
   );
@@ -51,4 +51,33 @@ export function buildSettlementSummary(raid: RaidRecord): SettlementSummary | un
     minimumPayoutThresholdUsd: raid.task.constraints.minimumPayoutThresholdUsd ?? 0.25,
     approvedProviderCount: raid.selectedProviders.length,
   };
+}
+
+function readSettlementBudgetUsd(raid: RaidRecord): number {
+  if (!isSingleProviderGeneralServiceRaid(raid)) {
+    return raid.task.constraints.maxBudgetUsd;
+  }
+
+  const providerId = raid.selectedProviders[0];
+  const providerRate = raid.routingProof?.providers.find(
+    (provider) => provider.providerId === providerId && provider.phase === 'primary'
+  )?.rateUsd;
+
+  if (typeof providerRate !== 'number' || !Number.isFinite(providerRate) || providerRate <= 0) {
+    return raid.task.constraints.maxBudgetUsd;
+  }
+
+  return Math.min(raid.task.constraints.maxBudgetUsd, providerRate);
+}
+
+function isSingleProviderGeneralServiceRaid(raid: RaidRecord): boolean {
+  const constraints = raid.task.constraints;
+  return (
+    constraints.numExperts === 1 &&
+    raid.selectedProviders.length === 1 &&
+    ((constraints.allowedAgentFrameworks?.length ?? 0) > 0 ||
+      (constraints.allowedModelProviders?.length ?? 0) > 0 ||
+      (constraints.allowedModelIds?.length ?? 0) > 0 ||
+      constraints.selectionMode === 'round_robin')
+  );
 }

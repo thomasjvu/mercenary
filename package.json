@@ -43,7 +43,11 @@
     "bootstrap:settlement-env": "pnpm build && pnpm --filter @bossraid/contracts run bootstrap:settlement-env",
     "bootstrap:onchain": "pnpm build && pnpm --filter @bossraid/contracts run bootstrap:onchain",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "infisical:phala:check": "node scripts/infisical-phala-secrets.mjs check",
+    "infisical:phala:pull": "node scripts/infisical-phala-secrets.mjs pull",
+    "infisical:phala:push": "node scripts/infisical-phala-secrets.mjs push",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint \"**/*.{ts,tsx}\" --max-warnings=0",
+    "phala:secrets:check": "node scripts/phala-secrets-preflight.mjs",
     "prepare": "husky install"
   },
   "devDependencies": {

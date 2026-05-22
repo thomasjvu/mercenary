@@ -2,7 +2,14 @@ export type SupportedLanguage = 'csharp' | 'typescript' | 'python' | 'solidity' 
 export type SupportedFramework = 'unity' | 'node' | 'react' | 'foundry' | 'django' | 'fastapi';
 export type OutputType = 'text' | 'json' | 'image' | 'video' | 'patch' | 'bundle';
 export type PrivacyRoutingMode = 'off' | 'prefer' | 'strict';
-export type SelectionMode = 'best_match' | 'privacy_first' | 'cost_first' | 'diverse_mix';
+export type SelectionMode =
+  | 'best_match'
+  | 'privacy_first'
+  | 'cost_first'
+  | 'diverse_mix'
+  | 'round_robin';
+export type AgentFramework = 'codex' | 'claude_code' | 'openclaw' | 'custom';
+export type ProviderVerificationStatus = 'pending' | 'verified' | 'failed' | 'error';
 export type PrivacyFeatureKey =
   | 'tee_attested'
   | 'e2ee'
@@ -40,7 +47,8 @@ export type ProviderStatus = 'available' | 'degraded' | 'offline';
 export type SubmissionFormat =
   | 'unified_diff_plus_explanation'
   | 'text_answer_plus_explanation'
-  | 'artifact_plus_explanation';
+  | 'artifact_plus_explanation'
+  | 'party_quest_provider_v1';
 
 export type ReputationEventType =
   | 'invite_timeout'
@@ -78,6 +86,9 @@ export interface RaidConstraints {
   maxDiffLines?: number;
   forbidPaths?: string[];
   allowedModelFamilies?: string[];
+  allowedAgentFrameworks?: AgentFramework[];
+  allowedModelProviders?: string[];
+  allowedModelIds?: string[];
   allowedOutputTypes?: OutputType[];
   privacyMode?: PrivacyRoutingMode;
   requirePrivacyFeatures?: PrivacyFeatureKey[];
@@ -204,6 +215,15 @@ export interface ProviderTrust {
   source?: 'erc8004';
 }
 
+export interface ProviderVerification {
+  status: ProviderVerificationStatus;
+  checkedAt?: string;
+  apiVerified?: boolean;
+  frameworkVerified?: boolean;
+  modelVerified?: boolean;
+  notes?: string[];
+}
+
 export interface ProviderSourceMetadata {
   type: string;
   targetType?: string;
@@ -226,7 +246,11 @@ export interface ProviderProfile {
   maxConcurrency: number;
   status: ProviderStatus;
   modelFamily?: string;
+  agentFramework?: AgentFramework;
+  modelProvider?: string;
+  modelId?: string;
   outputTypes?: OutputType[];
+  verification?: ProviderVerification;
   privacy?: ProviderPrivacy;
   erc8004?: Erc8004Identity;
   trust?: ProviderTrust;
@@ -247,6 +271,9 @@ export interface ProviderRegistrationInput {
   supportedFrameworks?: string[];
   outputTypes?: OutputType[];
   modelFamily?: string;
+  agentFramework?: AgentFramework;
+  modelProvider?: string;
+  modelId?: string;
   maxConcurrency?: number;
   source?: ProviderSourceMetadata;
   privacy?: ProviderPrivacy;
@@ -256,6 +283,7 @@ export interface ProviderRegistrationInput {
     pricePerTaskUsd?: number;
   };
   auth?: ProviderAuthConfig;
+  verification?: ProviderVerification;
   reputation?: Partial<ProviderReputation>;
 }
 
@@ -280,6 +308,8 @@ export interface ProviderHealthStatus {
   ready: boolean;
   statusCode?: number;
   missing?: string[];
+  agentFramework?: AgentFramework;
+  modelProvider?: string;
   model?: string | null;
   modelApiBase?: string;
   error?: string;
@@ -335,6 +365,9 @@ export interface BossRaidRoutingPolicy {
   requireErc8004: boolean;
   minTrustScore?: number;
   allowedModelFamilies: string[];
+  allowedAgentFrameworks: AgentFramework[];
+  allowedModelProviders: string[];
+  allowedModelIds: string[];
   requiredPrivacyFeatures: PrivacyFeatureKey[];
   venicePrivateLane: boolean;
 }
@@ -347,6 +380,11 @@ export interface BossRaidRoutingDecision {
   roleId?: string;
   roleLabel?: string;
   modelFamily?: string;
+  agentFramework?: AgentFramework;
+  modelProvider?: string;
+  modelId?: string;
+  verificationStatus?: ProviderVerificationStatus;
+  rateUsd?: number;
   veniceBacked: boolean;
   erc8004Registered: boolean;
   trustScore: number;
@@ -672,6 +710,9 @@ export interface BossRaidRequest {
     maxLatencySec?: number;
     requiredCapabilities?: string[];
     allowedModelFamilies?: string[];
+    allowedAgentFrameworks?: AgentFramework[];
+    allowedModelProviders?: string[];
+    allowedModelIds?: string[];
     minReputationScore?: number;
     requireErc8004?: boolean;
     minTrustScore?: number;
@@ -701,6 +742,9 @@ export interface ChatCompletionRequest {
 export interface ProviderDiscoveryQuery {
   capabilities?: string[];
   allowedModelFamilies?: string[];
+  allowedAgentFrameworks?: AgentFramework[];
+  allowedModelProviders?: string[];
+  allowedModelIds?: string[];
   allowedOutputTypes?: OutputType[];
   privacyMode?: PrivacyRoutingMode;
   requirePrivacyFeatures?: PrivacyFeatureKey[];

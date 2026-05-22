@@ -77,10 +77,13 @@ export type RaidResult = {
   routingProof?: {
     policy: {
       privacyMode: 'off' | 'prefer' | 'strict';
-      selectionMode: 'best_match' | 'privacy_first' | 'cost_first' | 'diverse_mix';
+      selectionMode: 'best_match' | 'privacy_first' | 'cost_first' | 'diverse_mix' | 'round_robin';
       requireErc8004: boolean;
       minTrustScore?: number;
       allowedModelFamilies: string[];
+      allowedAgentFrameworks?: string[];
+      allowedModelProviders?: string[];
+      allowedModelIds?: string[];
       requiredPrivacyFeatures: string[];
       venicePrivateLane: boolean;
     };
@@ -92,6 +95,11 @@ export type RaidResult = {
       roleId?: string;
       roleLabel?: string;
       modelFamily?: string;
+      agentFramework?: string;
+      modelProvider?: string;
+      modelId?: string;
+      verificationStatus?: 'pending' | 'verified' | 'failed' | 'error';
+      rateUsd?: number;
       veniceBacked: boolean;
       erc8004Registered: boolean;
       trustScore: number;
@@ -335,8 +343,19 @@ export type Provider = {
   specializations: string[];
   status: string;
   modelFamily?: string;
+  agentFramework?: 'codex' | 'claude_code' | 'openclaw' | 'custom';
+  modelProvider?: string;
+  modelId?: string;
   outputTypes?: string[];
   lastSeenAt?: string;
+  verification?: {
+    status: 'pending' | 'verified' | 'failed' | 'error';
+    checkedAt?: string;
+    apiVerified?: boolean;
+    frameworkVerified?: boolean;
+    modelVerified?: boolean;
+    notes?: string[];
+  };
   privacy?: {
     score?: number;
     teeAttested?: boolean;
@@ -399,6 +418,96 @@ export type ProviderHealth = {
   model?: string | null;
   modelApiBase?: string;
   error?: string;
+};
+
+export type InferenceMarketSeller = {
+  sellerId: string;
+  displayName: string;
+  modelProvider?: string;
+  agentFramework?: Provider['agentFramework'];
+  rateUsd: number;
+  status: string;
+  verificationStatus?: 'pending' | 'verified' | 'failed' | 'error';
+  privacy: {
+    teeAttested?: boolean;
+    signedOutputs?: boolean;
+    noDataRetention?: boolean;
+  };
+  outputTypes?: string[];
+  maxConcurrency: number;
+};
+
+export type InferenceMarket = {
+  object: 'inference.market';
+  modelId: string;
+  modelProvider?: string;
+  providerCount: number;
+  activeProviderCount: number;
+  verifiedSellerCount: number;
+  privateSellerCount: number;
+  recentSuccessRate: number | null;
+  p50LatencyMs: number | null;
+  p95LatencyMs: number | null;
+  cheapestRateUsd: number | null;
+  pricing: {
+    benchmarkSource: 'models.dev';
+    benchmarkUrl: string;
+    benchmarkMode: 'static_reference_only';
+    declaredUnit: 'task';
+    cheapestPricePerTaskUsd: number | null;
+  };
+  sellers: InferenceMarketSeller[];
+};
+
+export type BuyerApiKey = {
+  id: string;
+  name: string;
+  prefix: string;
+  createdAt: string;
+  revokedAt?: string;
+  lastUsedAt?: string;
+  spendLimitUsd?: number;
+  spentUsd: number;
+};
+
+export type PublicSession = {
+  authenticated: boolean;
+  wallet?: string;
+  account?: {
+    wallet: string;
+    createdAt: string;
+    sellerProviderIds: string[];
+    apiKeys: BuyerApiKey[];
+  };
+};
+
+export type AuthNonceResponse = {
+  wallet: string;
+  nonce: string;
+  message: string;
+  expiresAt: string;
+};
+
+export type ApiKeyCreateResponse = {
+  apiKey: string;
+  key: BuyerApiKey;
+};
+
+export type SellerProviderCreateResponse = {
+  provider: Provider;
+  health: ProviderHealth;
+};
+
+export type SellerEarnings = {
+  grossUsd: number;
+  payoutCount: number;
+  payouts: Array<{
+    raidId: string;
+    providerId: string;
+    amountUsd: number;
+    status: string;
+    settledAt?: string;
+  }>;
 };
 
 export type ApiResponse<T> = {
@@ -579,6 +688,93 @@ export async function requestChatCompletion(
     },
     body: JSON.stringify(payload),
   });
+}
+
+export async function fetchMarkets(params: Record<string, string> = {}) {
+  const query = new URLSearchParams(params);
+  return fetchJson<{ object: 'list'; data: InferenceMarket[] }>(
+    `/v1/markets${query.size > 0 ? `?${query.toString()}` : ''}`
+  );
+}
+
+export async function createAuthNonce(wallet: string): Promise<AuthNonceResponse> {
+  return fetchJson<AuthNonceResponse>('/v1/auth/nonce', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ wallet }),
+  });
+}
+
+export async function verifyAuth(wallet: string, message: string, signature: string) {
+  return fetchJson<PublicSession>('/v1/auth/verify', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ wallet, message, signature }),
+  });
+}
+
+export async function fetchSession(): Promise<PublicSession> {
+  return fetchJson<PublicSession>('/v1/session');
+}
+
+export async function deleteSession(): Promise<PublicSession> {
+  return fetchJson<PublicSession>('/v1/session', { method: 'DELETE' });
+}
+
+export async function listBuyerApiKeys(): Promise<{ object: 'list'; data: BuyerApiKey[] }> {
+  return fetchJson<{ object: 'list'; data: BuyerApiKey[] }>('/v1/buyer/api-keys');
+}
+
+export async function createBuyerApiKey(payload: {
+  name: string;
+  spendLimitUsd?: number;
+}): Promise<ApiKeyCreateResponse> {
+  return fetchJson<ApiKeyCreateResponse>('/v1/buyer/api-keys', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteBuyerApiKey(keyId: string): Promise<{ revoked: boolean }> {
+  return fetchJson<{ revoked: boolean }>(`/v1/buyer/api-keys/${encodeURIComponent(keyId)}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function listSellerProviders(): Promise<{ object: 'list'; data: Provider[] }> {
+  return fetchJson<{ object: 'list'; data: Provider[] }>('/v1/seller/providers');
+}
+
+export async function createSellerProvider(
+  payload: unknown
+): Promise<SellerProviderCreateResponse> {
+  return fetchJson<SellerProviderCreateResponse>('/v1/seller/providers', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function verifySellerProvider(
+  providerId: string
+): Promise<SellerProviderCreateResponse> {
+  return fetchJson<SellerProviderCreateResponse>(
+    `/v1/seller/providers/${encodeURIComponent(providerId)}/verify`,
+    { method: 'POST' }
+  );
+}
+
+export async function fetchSellerEarnings(): Promise<SellerEarnings> {
+  return fetchJson<SellerEarnings>('/v1/seller/earnings');
 }
 
 function formatActionTimeoutMs(timeoutMs: number): string {

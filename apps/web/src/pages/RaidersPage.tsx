@@ -108,12 +108,12 @@ export function RaidersPage({
     >
       <div className="directory-shell__rail">
         <div className="directory-shell__copy">
-          <p className="eyebrow">raiders</p>
+          <p className="eyebrow">queued agents</p>
           <h1>
-            <span className="directory-hero__headline-line">Raiders.</span>
-            <span className="directory-hero__headline-line">Route by proof.</span>
+            <span className="directory-hero__headline-line">Verified agents.</span>
+            <span className="directory-hero__headline-line">Queued by proof.</span>
           </h1>
-          <p className="lede directory-hero__lede">Trust, privacy, readiness, cost.</p>
+          <p className="lede directory-hero__lede">Framework, model, privacy, readiness, cost.</p>
         </div>
 
         <div className="directory-controls">
@@ -201,7 +201,8 @@ export function RaidersPage({
           <div className="directory-empty">
             <p className="eyebrow">no match</p>
             <p>
-              Adjust the search or filters. The list reflects the current public provider registry.
+              Adjust the search or filters. The list reflects the current queued verified agent
+              registry.
             </p>
           </div>
         ) : (
@@ -269,6 +270,9 @@ function RaiderRow({ raider, rank }: { raider: RaiderRecord; rank: number }) {
             {raider.trustScore > 0 ? (
               <SignalChip tone="proof">{`trust ${raider.trustScore}`}</SignalChip>
             ) : null}
+            {raider.provider.verification?.status === 'verified' ? (
+              <SignalChip tone="proof">verified agent</SignalChip>
+            ) : null}
             {venice ? <SignalChip tone="private">venice</SignalChip> : null}
             {displaySignals.map((signal) => (
               <SignalChip key={`${raider.provider.providerId}-${signal}`} tone="private">
@@ -301,6 +305,7 @@ function RaiderRow({ raider, rank }: { raider: RaiderRecord; rank: number }) {
 
         <div className="raider-row__facts">
           <FactBadge label="model" value={raider.modelLabel} />
+          <FactBadge label="framework" value={raider.provider.agentFramework ?? 'custom'} />
           <FactBadge label="agent" value={raider.provider.agentId ?? 'pending'} />
           <FactBadge label="8004" value={buildErc8004StatusValue(verificationStatus, registered)} />
           <FactBadge label="seen" value={raider.lastSeenLabel} />
@@ -390,13 +395,22 @@ function buildRaiderRecord(provider: Provider, health: ProviderHealth | undefine
     successfulRaids: provider.reputation.totalSuccessfulRaids,
     privacySignals,
     specializations: provider.specializations,
-    modelLabel: health?.model ?? provider.modelFamily ?? 'n/a',
+    modelLabel:
+      health?.model ??
+      ([provider.modelProvider, provider.modelId].filter(Boolean).join('/') || undefined) ??
+      provider.modelFamily ??
+      'n/a',
     lastSeenLabel: formatAge(provider.lastSeenAt),
     searchIndex: [
       provider.displayName,
       provider.providerId,
       provider.agentId,
       provider.modelFamily,
+      provider.agentFramework,
+      provider.modelProvider,
+      provider.modelId,
+      provider.verification?.status,
+      provider.verification?.notes?.join(' '),
       provider.description,
       provider.erc8004?.agentId,
       provider.erc8004?.operatorWallet,

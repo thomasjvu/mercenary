@@ -16,6 +16,10 @@ function normalizeModelFamily(value: string | undefined): string {
   return value?.trim().toLowerCase() ?? '';
 }
 
+function normalizeFilterValue(value: string | undefined): string {
+  return value?.trim().toLowerCase() ?? '';
+}
+
 export function computePrivacyScore(privacy: ProviderPrivacy | undefined): number {
   if (!privacy) {
     return 0;
@@ -198,6 +202,35 @@ export function providerMatchesDiscoveryQuery(
   }
 
   if (
+    query.allowedAgentFrameworks?.length &&
+    (!provider.agentFramework ||
+      !query.allowedAgentFrameworks.some((framework) => framework === provider.agentFramework))
+  ) {
+    return false;
+  }
+
+  if (
+    query.allowedModelProviders?.length &&
+    (!provider.modelProvider ||
+      !query.allowedModelProviders.some(
+        (modelProvider) =>
+          normalizeFilterValue(modelProvider) === normalizeFilterValue(provider.modelProvider)
+      ))
+  ) {
+    return false;
+  }
+
+  if (
+    query.allowedModelIds?.length &&
+    (!provider.modelId ||
+      !query.allowedModelIds.some(
+        (modelId) => normalizeFilterValue(modelId) === normalizeFilterValue(provider.modelId)
+      ))
+  ) {
+    return false;
+  }
+
+  if (
     query.allowedOutputTypes?.length &&
     !query.allowedOutputTypes.some((type) => provider.outputTypes?.includes(type))
   ) {
@@ -231,6 +264,9 @@ export function buildDiscoveryQueryFromTask(task: RaidTaskSpec): ProviderDiscove
   return {
     capabilities: task.constraints.requireSpecializations,
     allowedModelFamilies: task.constraints.allowedModelFamilies,
+    allowedAgentFrameworks: task.constraints.allowedAgentFrameworks,
+    allowedModelProviders: task.constraints.allowedModelProviders,
+    allowedModelIds: task.constraints.allowedModelIds,
     allowedOutputTypes: task.constraints.allowedOutputTypes,
     privacyMode: task.constraints.privacyMode,
     requirePrivacyFeatures: task.constraints.requirePrivacyFeatures,

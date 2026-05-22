@@ -22,6 +22,7 @@
     "@bossraid/constants": "workspace:*",
     "@bossraid/logger": "workspace:*",
     "@bossraid/orchestrator": "workspace:*",
+    "@bossraid/persistence": "workspace:*",
     "@bossraid/provider-registry": "workspace:*",
     "@bossraid/provider-sdk": "workspace:*",
     "@bossraid/sandbox-runner": "workspace:*",

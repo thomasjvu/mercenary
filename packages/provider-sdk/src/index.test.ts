@@ -200,6 +200,128 @@ test('HMAC provider auth signs and verifies the final provider endpoint path', (
   );
 });
 
+test('Party Quest Boss Raid fixture preserves accept callback and settlement contract fields', () => {
+  const profile = buildProviderProfileFromRegistration({
+    agentId: 'pqf-bbs-arcade',
+    name: 'BBS Arcade Squad',
+    endpoint: 'https://partyquest.example/boss-raid/providers/pqf-bbs-arcade/',
+    supportedLanguages: ['text', 'typescript'],
+    supportedFrameworks: ['party-quest'],
+    outputTypes: ['text', 'patch'],
+    auth: {
+      type: 'hmac',
+      secret: 'partyquest-secret',
+    },
+    source: {
+      type: 'party_quest',
+      targetType: 'formation',
+      externalRef: 'pqf-bbs-arcade',
+      displayIcon: 'fire-b-fill',
+      memberCount: 4,
+    },
+  });
+  const task: ProviderTaskPackage = {
+    raidId: 'raid-bbs-fixture',
+    submissionFormat: 'party_quest_provider_v1',
+    desiredOutput: {
+      primaryType: 'text',
+      artifactTypes: ['text', 'patch'],
+    },
+    task: {
+      title: 'Ship a BBS app/game landing page',
+      description: 'Exercise the Party Quest formation bridge.',
+      language: 'text',
+      framework: 'party-quest',
+    },
+    artifacts: {
+      files: [
+        {
+          path: 'README.md',
+          content: '# BBS fixture\n',
+          sha256: 'partyquest-bossraid-fixture',
+        },
+      ],
+      errors: [],
+      reproSteps: ['Register Party Quest provider', 'Accept paid raid', 'Submit result'],
+      tests: ['contract fixture'],
+      expectedBehavior: 'Party Quest mirrors Boss Raid settlement into BBS.',
+    },
+    constraints: {
+      maxChangedFiles: 8,
+      maxDiffLines: 400,
+      forbidPaths: [],
+      mustNot: [],
+    },
+    deadlineUnix: 1_900_000_000,
+  };
+  const accept = resolveProviderEndpointPath(profile, '/v1/raid/accept');
+  const body = JSON.stringify({
+    raidId: task.raidId,
+    providerId: profile.providerId,
+    task,
+    deadlineUnix: task.deadlineUnix,
+  });
+  const headers = buildProviderAuthHeaders(
+    profile.auth,
+    profile.providerId,
+    'POST',
+    accept.pathname,
+    body
+  );
+  const providerRunId = 'pqr_fixture_run';
+  const settlement = {
+    raidId: task.raidId,
+    providerId: profile.providerId,
+    providerRunId,
+    grossUsd: 100,
+    feesUsd: 5,
+    netUsd: 95,
+    currency: 'USDC',
+    valid: true,
+    receiptPath: `/receipt?raidId=${task.raidId}`,
+    assignment: {
+      providerRunId,
+    },
+  };
+
+  assert.equal(accept.pathname, '/boss-raid/providers/pqf-bbs-arcade/v1/raid/accept');
+  assert.equal(headers['x-bossraid-provider-id'], 'pqf-bbs-arcade');
+  assert.equal(
+    verifyProviderAuth({
+      auth: profile.auth,
+      providerId: profile.providerId,
+      method: 'POST',
+      path: accept.pathname,
+      body,
+      timestampHeader: headers['x-bossraid-timestamp'],
+      signatureHeader: headers['x-bossraid-signature'],
+      providerIdHeader: headers['x-bossraid-provider-id'],
+    }),
+    true
+  );
+  assert.deepEqual(profile.source, {
+    type: 'party_quest',
+    targetType: 'formation',
+    externalRef: 'pqf-bbs-arcade',
+    displayIcon: 'fire-b-fill',
+    memberCount: 4,
+  });
+  assert.deepEqual(settlement, {
+    raidId: 'raid-bbs-fixture',
+    providerId: 'pqf-bbs-arcade',
+    providerRunId,
+    grossUsd: 100,
+    feesUsd: 5,
+    netUsd: 95,
+    currency: 'USDC',
+    valid: true,
+    receiptPath: '/receipt?raidId=raid-bbs-fixture',
+    assignment: {
+      providerRunId,
+    },
+  });
+});
+
 async function withInviteTimeoutEnv<T>(inviteAcceptMs: string, fn: () => Promise<T>): Promise<T> {
   const previous = process.env.BOSSRAID_INVITE_ACCEPT_MS;
   process.env.BOSSRAID_INVITE_ACCEPT_MS = inviteAcceptMs;

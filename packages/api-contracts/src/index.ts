@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import type {
   AgentHeartbeatInput,
+  AgentFramework,
   BossRaidRequest,
   BossRaidSpawnInput,
   ChatCompletionMessage,
@@ -13,6 +14,8 @@ import type {
   PrivacyFeatureKey,
   PrivacyMode,
   PrivacyRoutingMode,
+  ProviderVerification,
+  ProviderVerificationStatus,
   ProviderAuthConfig,
   ProviderDiscoveryQuery,
   ProviderFailure,
@@ -41,6 +44,14 @@ const SELECTION_MODES = new Set<SelectionMode>([
   'privacy_first',
   'cost_first',
   'diverse_mix',
+  'round_robin',
+]);
+const AGENT_FRAMEWORKS = new Set<AgentFramework>(['codex', 'claude_code', 'openclaw', 'custom']);
+const PROVIDER_VERIFICATION_STATUSES = new Set<ProviderVerificationStatus>([
+  'pending',
+  'verified',
+  'failed',
+  'error',
 ]);
 const ERC8004_VERIFICATION_STATUSES = new Set<Erc8004Verification['status']>([
   'not_checked',
@@ -225,6 +236,33 @@ function ensureSelectionMode(value: unknown, label: string): SelectionMode {
   return normalized;
 }
 
+function ensureAgentFramework(value: unknown, label: string): AgentFramework {
+  const normalized = ensureString(value, label) as AgentFramework;
+  if (!AGENT_FRAMEWORKS.has(normalized)) {
+    throw new ApiContractError(`Unsupported agent framework for ${label}.`);
+  }
+
+  return normalized;
+}
+
+function ensureAgentFrameworkArray(value: unknown, label: string): AgentFramework[] {
+  return ensureStringArray(value, label).map((item, index) =>
+    ensureAgentFramework(item, `${label}[${index}]`)
+  );
+}
+
+function ensureProviderVerificationStatus(
+  value: unknown,
+  label: string
+): ProviderVerificationStatus {
+  const normalized = ensureString(value, label) as ProviderVerificationStatus;
+  if (!PROVIDER_VERIFICATION_STATUSES.has(normalized)) {
+    throw new ApiContractError(`Unsupported provider verification status for ${label}.`);
+  }
+
+  return normalized;
+}
+
 function ensureTrustSource(value: unknown, label: string): 'erc8004' {
   const normalized = ensureString(value, label);
   if (normalized !== 'erc8004') {
@@ -391,6 +429,27 @@ function parseRaidConstraints(value: unknown): RaidConstraints {
         : ensureStringArray(
             input.allowedModelFamilies ?? input.allowed_model_families,
             'constraints.allowed_model_families'
+          ),
+    allowedAgentFrameworks:
+      input.allowedAgentFrameworks == null && input.allowed_agent_frameworks == null
+        ? undefined
+        : ensureAgentFrameworkArray(
+            input.allowedAgentFrameworks ?? input.allowed_agent_frameworks,
+            'constraints.allowed_agent_frameworks'
+          ),
+    allowedModelProviders:
+      input.allowedModelProviders == null && input.allowed_model_providers == null
+        ? undefined
+        : ensureStringArray(
+            input.allowedModelProviders ?? input.allowed_model_providers,
+            'constraints.allowed_model_providers'
+          ),
+    allowedModelIds:
+      input.allowedModelIds == null && input.allowed_model_ids == null
+        ? undefined
+        : ensureStringArray(
+            input.allowedModelIds ?? input.allowed_model_ids,
+            'constraints.allowed_model_ids'
           ),
     allowedOutputTypes:
       input.allowedOutputTypes == null && input.allowed_output_types == null
@@ -576,6 +635,31 @@ function parseErc8004Verification(value: unknown, field: string): Erc8004Verific
   };
 }
 
+function parseProviderVerification(value: unknown, field: string): ProviderVerification {
+  const input = ensureRecord(value, field);
+
+  return {
+    status: ensureProviderVerificationStatus(input.status, `${field}.status`),
+    checkedAt: ensureOptionalString(input.checkedAt ?? input.checked_at, `${field}.checked_at`),
+    apiVerified:
+      input.apiVerified == null && input.api_verified == null
+        ? undefined
+        : ensureBooleanLike(input.apiVerified ?? input.api_verified, `${field}.api_verified`),
+    frameworkVerified:
+      input.frameworkVerified == null && input.framework_verified == null
+        ? undefined
+        : ensureBooleanLike(
+            input.frameworkVerified ?? input.framework_verified,
+            `${field}.framework_verified`
+          ),
+    modelVerified:
+      input.modelVerified == null && input.model_verified == null
+        ? undefined
+        : ensureBooleanLike(input.modelVerified ?? input.model_verified, `${field}.model_verified`),
+    notes: input.notes == null ? undefined : ensureStringArray(input.notes, `${field}.notes`),
+  };
+}
+
 export function parseBossRaidSpawnInput(value: unknown): BossRaidSpawnInput {
   const input = ensureRecord(value, 'spawn_input');
   return {
@@ -672,6 +756,27 @@ export function parseBossRaidRequest(value: unknown): BossRaidSpawnInput {
           : ensureStringArray(
               raidPolicy.allowedModelFamilies ?? raidPolicy.allowed_model_families,
               'raid_policy.allowed_model_families'
+            ),
+      allowedAgentFrameworks:
+        raidPolicy.allowedAgentFrameworks == null && raidPolicy.allowed_agent_frameworks == null
+          ? undefined
+          : ensureAgentFrameworkArray(
+              raidPolicy.allowedAgentFrameworks ?? raidPolicy.allowed_agent_frameworks,
+              'raid_policy.allowed_agent_frameworks'
+            ),
+      allowedModelProviders:
+        raidPolicy.allowedModelProviders == null && raidPolicy.allowed_model_providers == null
+          ? undefined
+          : ensureStringArray(
+              raidPolicy.allowedModelProviders ?? raidPolicy.allowed_model_providers,
+              'raid_policy.allowed_model_providers'
+            ),
+      allowedModelIds:
+        raidPolicy.allowedModelIds == null && raidPolicy.allowed_model_ids == null
+          ? undefined
+          : ensureStringArray(
+              raidPolicy.allowedModelIds ?? raidPolicy.allowed_model_ids,
+              'raid_policy.allowed_model_ids'
             ),
       allowedOutputTypes:
         raidPolicy.allowedOutputTypes == null && raidPolicy.allowed_output_types == null
@@ -845,6 +950,29 @@ export function buildBossRaidRequestFromChatCompletion(
           : ensureStringArray(
               rawRaidPolicy?.allowedModelFamilies ?? rawRaidPolicy?.allowed_model_families,
               'chat_completion_request.raid_policy.allowed_model_families'
+            ),
+      allowedAgentFrameworks:
+        rawRaidPolicy?.allowedAgentFrameworks == null &&
+        rawRaidPolicy?.allowed_agent_frameworks == null
+          ? undefined
+          : ensureAgentFrameworkArray(
+              rawRaidPolicy?.allowedAgentFrameworks ?? rawRaidPolicy?.allowed_agent_frameworks,
+              'chat_completion_request.raid_policy.allowed_agent_frameworks'
+            ),
+      allowedModelProviders:
+        rawRaidPolicy?.allowedModelProviders == null &&
+        rawRaidPolicy?.allowed_model_providers == null
+          ? undefined
+          : ensureStringArray(
+              rawRaidPolicy?.allowedModelProviders ?? rawRaidPolicy?.allowed_model_providers,
+              'chat_completion_request.raid_policy.allowed_model_providers'
+            ),
+      allowedModelIds:
+        rawRaidPolicy?.allowedModelIds == null && rawRaidPolicy?.allowed_model_ids == null
+          ? undefined
+          : ensureStringArray(
+              rawRaidPolicy?.allowedModelIds ?? rawRaidPolicy?.allowed_model_ids,
+              'chat_completion_request.raid_policy.allowed_model_ids'
             ),
       allowedOutputTypes: ['text', 'json'],
       privacyMode:
@@ -1073,6 +1201,21 @@ function normalizeDelegateRaidPolicy(
     args.allowed_model_families ??
     input?.allowedModelFamilies ??
     input?.allowed_model_families;
+  const allowedAgentFrameworksSource =
+    args.allowedAgentFrameworks ??
+    args.allowed_agent_frameworks ??
+    input?.allowedAgentFrameworks ??
+    input?.allowed_agent_frameworks;
+  const allowedModelProvidersSource =
+    args.allowedModelProviders ??
+    args.allowed_model_providers ??
+    input?.allowedModelProviders ??
+    input?.allowed_model_providers;
+  const allowedModelIdsSource =
+    args.allowedModelIds ??
+    args.allowed_model_ids ??
+    input?.allowedModelIds ??
+    input?.allowed_model_ids;
   const allowedOutputTypesSource =
     args.allowedOutputTypes ??
     args.allowed_output_types ??
@@ -1115,6 +1258,21 @@ function normalizeDelegateRaidPolicy(
       allowedModelFamiliesSource == null
         ? undefined
         : ensureStringArray(allowedModelFamiliesSource, 'raidPolicy.allowedModelFamilies'),
+    allowedAgentFrameworks:
+      allowedAgentFrameworksSource == null
+        ? undefined
+        : ensureAgentFrameworkArray(
+            allowedAgentFrameworksSource,
+            'raidPolicy.allowedAgentFrameworks'
+          ),
+    allowedModelProviders:
+      allowedModelProvidersSource == null
+        ? undefined
+        : ensureStringArray(allowedModelProvidersSource, 'raidPolicy.allowedModelProviders'),
+    allowedModelIds:
+      allowedModelIdsSource == null
+        ? undefined
+        : ensureStringArray(allowedModelIdsSource, 'raidPolicy.allowedModelIds'),
     allowedOutputTypes:
       allowedOutputTypesSource == null
         ? undefined
@@ -1394,6 +1552,10 @@ export function parseProviderRegistrationInput(value: unknown): ProviderRegistra
       : ensureRecord(input.erc8004, 'provider_registration.erc8004');
   const trust =
     input.trust == null ? undefined : ensureRecord(input.trust, 'provider_registration.trust');
+  const verification =
+    input.verification == null
+      ? undefined
+      : parseProviderVerification(input.verification, 'provider_registration.verification');
 
   return {
     agentId: ensureString(input.agentId ?? input.agent_id, 'provider_registration.agent_id'),
@@ -1430,6 +1592,21 @@ export function parseProviderRegistrationInput(value: unknown): ProviderRegistra
     modelFamily: ensureOptionalString(
       input.modelFamily ?? input.model_family,
       'provider_registration.model_family'
+    ),
+    agentFramework:
+      input.agentFramework == null && input.agent_framework == null
+        ? undefined
+        : ensureAgentFramework(
+            input.agentFramework ?? input.agent_framework,
+            'provider_registration.agent_framework'
+          ),
+    modelProvider: ensureOptionalString(
+      input.modelProvider ?? input.model_provider,
+      'provider_registration.model_provider'
+    ),
+    modelId: ensureOptionalString(
+      input.modelId ?? input.model_id,
+      'provider_registration.model_id'
     ),
     maxConcurrency:
       input.maxConcurrency == null && input.max_concurrency == null
@@ -1575,6 +1752,7 @@ export function parseProviderRegistrationInput(value: unknown): ProviderRegistra
         }
       : undefined,
     auth: parseProviderAuthConfig(input.auth),
+    verification,
     reputation: reputation
       ? {
           globalScore:
@@ -1664,6 +1842,25 @@ export function parseProviderDiscoveryQuery(value: unknown): ProviderDiscoveryQu
             .split(',')
             .map((item) => item.trim())
             .filter(Boolean),
+    allowedAgentFrameworks:
+      input.allowedAgentFrameworks == null && input.allowed_agent_frameworks == null
+        ? undefined
+        : splitCommaSeparatedStrings(
+            input.allowedAgentFrameworks ?? input.allowed_agent_frameworks
+          ).map((item, index) =>
+            ensureAgentFramework(
+              item,
+              `provider_discovery_query.allowed_agent_frameworks[${index}]`
+            )
+          ),
+    allowedModelProviders:
+      input.allowedModelProviders == null && input.allowed_model_providers == null
+        ? undefined
+        : splitCommaSeparatedStrings(input.allowedModelProviders ?? input.allowed_model_providers),
+    allowedModelIds:
+      input.allowedModelIds == null && input.allowed_model_ids == null
+        ? undefined
+        : splitCommaSeparatedStrings(input.allowedModelIds ?? input.allowed_model_ids),
     allowedOutputTypes:
       input.allowedOutputTypes == null && input.allowed_output_types == null
         ? undefined

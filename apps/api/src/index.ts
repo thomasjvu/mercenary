@@ -1,7 +1,8 @@
-import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { stat } from 'node:fs/promises';
 import { PassThrough } from 'node:stream';
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
+import { recoverMessageAddress } from 'viem';
 import { mnemonicToAccount } from 'viem/accounts';
 import {
   ApiContractError,
@@ -36,6 +37,7 @@ import {
   type Erc8004Identity,
   type ProviderHealthStatus,
   type ProviderProfile,
+  type ProviderRegistrationInput,
   type SanitizedTaskSpec,
   type TaskFile,
   asSingleHeader,
@@ -64,7 +66,7 @@ import {
   persistSettlementExecutionArtifact,
   settlementExecutionChanged,
 } from './settlement-proof.js';
-import { createApiControlState } from './control-state.js';
+import { createApiControlState, type ApiControlState } from './control-state.js';
 import { DEFAULTS, TIMEOUTS } from '@bossraid/constants';
 
 interface AttestedRuntimePayload {
@@ -115,6 +117,23 @@ export function buildApiServer(
     env.BOSSRAID_OPS_SESSION_TTL_SEC,
     DEFAULTS.OPS_SESSION_TTL_SEC
   );
+  const publicSessionTtlSec = readPositiveInteger(
+    env.BOSSRAID_PUBLIC_SESSION_TTL_SEC,
+    7 * 24 * 60 * 60
+  );
+  const publicAuthNonceTtlSec = readPositiveInteger(env.BOSSRAID_PUBLIC_AUTH_NONCE_TTL_SEC, 300);
+  const buyerKeyDefaultSpendLimitUsd = readPositiveNumber(
+    env.BOSSRAID_BUYER_KEY_DEFAULT_SPEND_LIMIT_USD
+  );
+  const buyerMaxRequestBudgetUsd = readPositiveNumber(env.BOSSRAID_BUYER_MAX_REQUEST_BUDGET_USD);
+  const buyerKeyRateLimitMax = readPositiveInteger(
+    env.BOSSRAID_BUYER_KEY_RATE_LIMIT_MAX,
+    DEFAULTS.PUBLIC_RATE_LIMIT_MAX
+  );
+  const buyerKeyRateLimitWindowMs = readPositiveInteger(
+    env.BOSSRAID_BUYER_KEY_RATE_LIMIT_WINDOW_MS,
+    DEFAULTS.PUBLIC_RATE_LIMIT_WINDOW_MS
+  );
   const publicRateLimitMax = readPositiveInteger(
     env.BOSSRAID_PUBLIC_RATE_LIMIT_MAX,
     DEFAULTS.PUBLIC_RATE_LIMIT_MAX
@@ -155,9 +174,30 @@ export function buildApiServer(
   const controlState = createApiControlState(env);
   const workerIsolation =
     env.BOSSRAID_EVAL_JOB_ISOLATION === 'container' ? 'per_job_container' : 'per_job_process';
+  const apiMetrics = createApiMetrics();
+  const metricsPublic = readBooleanEnv(env.BOSSRAID_METRICS_PUBLIC);
+  const requestStartTimes = new WeakMap<FastifyRequest, number>();
+
+  app.addHook('onRequest', (request, _reply, done) => {
+    requestStartTimes.set(request, Date.now());
+    done();
+  });
+
+  app.addHook('onResponse', (request, reply, done) => {
+    const startedAt = requestStartTimes.get(request);
+    requestStartTimes.delete(request);
+    apiMetrics.recordHttp({
+      method: request.method,
+      route: request.routeOptions.url ?? request.url.split('?')[0] ?? 'unknown',
+      statusCode: reply.statusCode,
+      durationMs: Math.max(0, Date.now() - (startedAt ?? Date.now())),
+    });
+    done();
+  });
 
   app.setErrorHandler((error, _request, reply) => {
     if (isX402ProtocolError(error)) {
+      apiMetrics.increment('x402.payment_required');
       const reservationId = error.paymentRequired.accepts[0]?.extra?.reservationId;
       if (typeof reservationId === 'string') {
         reply.header('X-BOSSRAID-LAUNCH-RESERVATION', reservationId);
@@ -176,6 +216,7 @@ export function buildApiServer(
     }
 
     if (error instanceof ApiContractError) {
+      apiMetrics.increment('requests.bad_request');
       reply.code(error.statusCode).send({
         error: 'bad_request',
         message: error.message,
@@ -184,6 +225,7 @@ export function buildApiServer(
     }
 
     if (error instanceof NoEligibleProvidersError) {
+      apiMetrics.increment('routing.no_eligible_providers');
       reply.code(409).send({
         error: 'no_eligible_providers',
         message: error.message,
@@ -208,6 +250,7 @@ export function buildApiServer(
     }
 
     if (error instanceof PersistenceUnavailableError) {
+      apiMetrics.increment('persistence.unavailable');
       reply.code(503).send({
         error: 'persistence_unavailable',
         message: error.message,
@@ -215,6 +258,7 @@ export function buildApiServer(
       return;
     }
 
+    apiMetrics.increment('requests.internal_error');
     logger.error(error);
     reply.code(500).send({
       error: 'internal_error',
@@ -269,6 +313,60 @@ export function buildApiServer(
 
     const session = readOpsSession(headers);
     return session != null;
+  }
+
+  function readPublicAuth(headers: Record<string, string | string[] | undefined>):
+    | { type: 'session'; wallet: string; token: string }
+    | {
+        type: 'api_key';
+        wallet: string;
+        apiKeyId: string;
+        spendLimitUsd?: number;
+        spentUsd: number;
+      }
+    | undefined {
+    const apiKey = readBuyerApiKey(headers);
+    if (apiKey) {
+      return {
+        type: 'api_key',
+        wallet: apiKey.wallet,
+        apiKeyId: apiKey.id,
+        spendLimitUsd: apiKey.spendLimitUsd,
+        spentUsd: apiKey.spentUsd,
+      };
+    }
+
+    const session = readPublicSession(headers);
+    return session
+      ? {
+          type: 'session',
+          wallet: session.wallet,
+          token: session.token,
+        }
+      : undefined;
+  }
+
+  function requirePublicSession(
+    reply: FastifyReply,
+    headers: Record<string, string | string[] | undefined>
+  ): { wallet: string; token: string } | { error: 'unauthorized' } {
+    const session = readPublicSession(headers);
+    if (!session) {
+      reply.code(401);
+      return { error: 'unauthorized' };
+    }
+    return {
+      wallet: session.wallet,
+      token: session.token,
+    };
+  }
+
+  function readBuyerApiKey(headers: Record<string, string | string[] | undefined>) {
+    const authorization = asSingleHeader(headers.authorization);
+    if (!authorization?.startsWith('Bearer br_')) {
+      return undefined;
+    }
+    return controlState.readActiveBuyerApiKeyByHash(hashBuyerApiKey(authorization.slice(7)));
   }
 
   function requireAdmin(
@@ -358,6 +456,40 @@ export function buildApiServer(
     };
   }
 
+  function requireBuyerApiKeyRateLimit(
+    auth:
+      | {
+          type: 'api_key';
+          wallet: string;
+          apiKeyId: string;
+          spendLimitUsd?: number;
+          spentUsd: number;
+        }
+      | { type: 'session'; wallet: string; token: string }
+      | undefined,
+    reply: FastifyReply
+  ): { error: string; message: string } | undefined {
+    if (auth?.type !== 'api_key' || buyerKeyRateLimitMax <= 0) {
+      return undefined;
+    }
+
+    const result = consumeRateLimit(
+      'buyer-api-key',
+      auth.apiKeyId,
+      buyerKeyRateLimitMax,
+      buyerKeyRateLimitWindowMs
+    );
+    if (result.allowed) {
+      return undefined;
+    }
+
+    reply.code(429).header('retry-after', String(result.retryAfterSec));
+    return {
+      error: 'rate_limited',
+      message: 'API key rate limit exceeded. Retry later.',
+    };
+  }
+
   function requireRaidReadAccess(
     reply: FastifyReply,
     raidId: string,
@@ -416,7 +548,11 @@ export function buildApiServer(
       maxConcurrency: provider.maxConcurrency,
       status: provider.status,
       modelFamily: provider.modelFamily,
+      agentFramework: provider.agentFramework,
+      modelProvider: provider.modelProvider,
+      modelId: provider.modelId,
       outputTypes: provider.outputTypes,
+      verification: provider.verification,
       privacy: provider.privacy,
       erc8004: provider.erc8004,
       trust: provider.trust,
@@ -554,6 +690,158 @@ export function buildApiServer(
     };
   }
 
+  function buildInferenceMarketSnapshot(
+    options: {
+      modelId?: string;
+      modelProvider?: string;
+      agentFramework?: string;
+      maxBudgetUsd?: number;
+      privacyMode?: string;
+      verificationStatus?: string;
+    } = {}
+  ) {
+    const providers = orchestrator.listProviders().filter((provider) => {
+      if (options.modelId && provider.modelId !== options.modelId) {
+        return false;
+      }
+      if (options.modelProvider && provider.modelProvider !== options.modelProvider) {
+        return false;
+      }
+      if (options.agentFramework && provider.agentFramework !== options.agentFramework) {
+        return false;
+      }
+      if (
+        typeof options.maxBudgetUsd === 'number' &&
+        provider.pricePerTaskUsd > options.maxBudgetUsd
+      ) {
+        return false;
+      }
+      if (
+        options.verificationStatus &&
+        (provider.verification?.status ?? 'pending') !== options.verificationStatus
+      ) {
+        return false;
+      }
+      if (options.privacyMode === 'strict' && !providerHasStrictPrivateMarketMetadata(provider)) {
+        return false;
+      }
+      return Boolean(resolveProviderMarketModelId(provider));
+    });
+
+    return buildInferenceMarkets(providers);
+  }
+
+  async function handleChatCompletionRequest(
+    request: FastifyRequest,
+    reply: FastifyReply,
+    options: {
+      discountInference?: boolean;
+    } = {}
+  ) {
+    const rateLimitError = requireRateLimit(
+      request,
+      reply,
+      'public-action',
+      publicRateLimitMax,
+      publicRateLimitWindowMs
+    );
+    if (rateLimitError) {
+      return rateLimitError;
+    }
+
+    const parsedChatRequest = parseChatCompletionRequest(request.body);
+    const discountDefaultMaxTotalCost = options.discountInference
+      ? resolveDiscountInferenceDefaultMaxTotalCost(parsedChatRequest, orchestrator.listProviders())
+      : undefined;
+    const chatRequest = options.discountInference
+      ? forceDiscountInferenceChatPolicy(parsedChatRequest, {
+          defaultMaxTotalCost: discountDefaultMaxTotalCost,
+        })
+      : parsedChatRequest;
+    const raidRequest =
+      chatRequest.raidRequest ??
+      parseBossRaidRequest(
+        buildBossRaidRequestFromChatCompletion(chatRequest, {
+          defaultMaxTotalCost: discountDefaultMaxTotalCost ?? chatDefaultMaxTotalCost,
+        })
+      );
+    const publicAuth = readPublicAuth(request.headers);
+    const apiKeyRateLimitError = requireBuyerApiKeyRateLimit(publicAuth, reply);
+    if (apiKeyRateLimitError) {
+      return apiKeyRateLimitError;
+    }
+    const budgetError = enforceBuyerBudget(
+      publicAuth,
+      raidRequest.constraints.maxBudgetUsd,
+      buyerMaxRequestBudgetUsd
+    );
+    if (budgetError) {
+      reply.code(budgetError.statusCode);
+      return {
+        error: budgetError.error,
+        message: budgetError.message,
+      };
+    }
+    const created = Math.floor(Date.now() / 1000);
+    const directResponse = options.discountInference
+      ? null
+      : buildDirectChatCompletionResponse(chatRequest, created);
+
+    if (directResponse) {
+      if (chatRequest.stream) {
+        await streamDirectChatCompletionResponse(reply, directResponse);
+        return;
+      }
+
+      return directResponse;
+    }
+
+    await ensureErc8004ProofState({ includeMercenary: false });
+    const payment = await requireReservedLaunchPayment('chat', request, raidRequest);
+    const spawn =
+      payment.reservationId && payment.requestKey
+        ? await orchestrator.spawnReservedRaid(payment.reservationId, payment.requestKey)
+        : await orchestrator.spawnRaid(raidRequest);
+
+    if (chatRequest.stream) {
+      if (publicAuth?.type === 'api_key') {
+        controlState.recordBuyerApiKeyUsage(
+          publicAuth.apiKeyId,
+          payment.escrowFundingUsd ?? raidRequest.constraints.maxBudgetUsd
+        );
+      }
+      applyX402Headers(reply, {
+        settlement: payment.settlement,
+      });
+      await streamChatCompletionResponse(reply, orchestrator, {
+        chatRequest,
+        raidRequest,
+        spawn,
+        created,
+        settleGraceMs: chatTerminalSettleGraceMs,
+      });
+      return;
+    }
+
+    const outcome = await waitForTerminalRaidOutput(
+      orchestrator,
+      spawn.raidId,
+      Math.max(raidRequest.constraints.maxLatencySec * 1000, TIMEOUTS.MIN_TIMEOUT_MS),
+      chatTerminalSettleGraceMs
+    );
+    const response = buildChatCompletionResponse(chatRequest, spawn, outcome, created);
+    if (publicAuth?.type === 'api_key') {
+      controlState.recordBuyerApiKeyUsage(
+        publicAuth.apiKeyId,
+        payment.escrowFundingUsd ?? raidRequest.constraints.maxBudgetUsd
+      );
+    }
+    applyX402Headers(reply, {
+      settlement: payment.settlement,
+    });
+    return response;
+  }
+
   function readOpsSession(
     headers: Record<string, string | string[] | undefined>
   ): { token: string; expiresAt: number } | undefined {
@@ -564,6 +852,18 @@ export function buildApiServer(
 
     const token = parseCookieHeader(cookieHeader)[OPS_SESSION_COOKIE_NAME];
     return controlState.readOpsSession(token);
+  }
+
+  function readPublicSession(
+    headers: Record<string, string | string[] | undefined>
+  ): { token: string; wallet: string; expiresAt: number } | undefined {
+    const cookieHeader = asSingleHeader(headers.cookie);
+    if (!cookieHeader) {
+      return undefined;
+    }
+
+    const token = parseCookieHeader(cookieHeader)[PUBLIC_SESSION_COOKIE_NAME];
+    return controlState.readPublicSession(token);
   }
 
   function issueOpsSession(reply: FastifyReply): { expiresAt: number } {
@@ -595,6 +895,41 @@ export function buildApiServer(
         httpOnly: true,
         sameSite: 'Strict',
         path: '/ops-api',
+        maxAge: 0,
+        secure: env.NODE_ENV === 'production',
+      })
+    );
+  }
+
+  function issuePublicSessionCookie(reply: FastifyReply, wallet: string): { expiresAt: number } {
+    const session = controlState.issuePublicSession(wallet, publicSessionTtlSec);
+    reply.header(
+      'set-cookie',
+      serializeCookie(PUBLIC_SESSION_COOKIE_NAME, session.token, {
+        httpOnly: true,
+        sameSite: 'Strict',
+        path: '/',
+        maxAge: publicSessionTtlSec,
+        secure: env.NODE_ENV === 'production',
+      })
+    );
+    return { expiresAt: session.expiresAt };
+  }
+
+  function clearPublicSession(
+    reply: FastifyReply,
+    headers: Record<string, string | string[] | undefined>
+  ): void {
+    const session = readPublicSession(headers);
+    if (session) {
+      controlState.clearPublicSession(session.token);
+    }
+    reply.header(
+      'set-cookie',
+      serializeCookie(PUBLIC_SESSION_COOKIE_NAME, '', {
+        httpOnly: true,
+        sameSite: 'Strict',
+        path: '/',
         maxAge: 0,
         secure: env.NODE_ENV === 'production',
       })
@@ -922,6 +1257,143 @@ export function buildApiServer(
     };
   });
 
+  app.get('/ready', async () => {
+    const providerHealth = await collectProviderHealth();
+    const persistence = orchestrator.getPersistenceStatus();
+    const x402Config = readX402Config(env);
+    const settlementMode = env.BOSSRAID_SETTLEMENT_MODE ?? 'off';
+    const settlementConfigured =
+      settlementMode === 'off' ||
+      Boolean(env.BOSSRAID_RPC_URL && env.BOSSRAID_REGISTRY_ADDRESS && env.BOSSRAID_ESCROW_ADDRESS);
+    const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/tappd.sock';
+    const tee = await readTeeSocketState(teeSocketPath);
+    const secretsEncrypted =
+      readStorageBackend(env) === 'memory' ||
+      Boolean((env.BOSSRAID_SECRET_ENCRYPTION_KEY ?? env.BOSSRAID_ENCRYPTION_KEY)?.trim());
+    const x402Configured =
+      !x402Config.enabled ||
+      (Boolean(x402Config.facilitatorUrl) &&
+        x402Config.payTo !== '0x0000000000000000000000000000000000000000');
+    const gates = {
+      api: true,
+      storage: persistence.healthy,
+      secretsEncrypted,
+      providers: providerHealth.length > 0 && providerHealth.some((provider) => provider.ready),
+      x402: x402Configured,
+      settlement: settlementConfigured,
+      tee: {
+        configured: Boolean(env.MNEMONIC),
+        platform: env.BOSSRAID_TEE_PLATFORM ?? null,
+        ...tee,
+      },
+    };
+
+    return {
+      ok:
+        gates.api &&
+        gates.storage &&
+        gates.secretsEncrypted &&
+        gates.providers &&
+        gates.x402 &&
+        gates.settlement,
+      gates,
+      providers: orchestrator.listProviders().length,
+      readyProviders: providerHealth.filter((provider) => provider.ready).length,
+      storage: persistence,
+      encryption: {
+        enabled: secretsEncrypted,
+        keyId: env.BOSSRAID_SECRET_ENCRYPTION_KEY_ID ?? null,
+      },
+      payment: {
+        enabled: x402Config.enabled,
+        network: x402Config.network,
+        asset: x402Config.asset,
+        facilitatorConfigured: Boolean(x402Config.facilitatorUrl),
+      },
+      settlement: {
+        mode: settlementMode,
+        configured: settlementConfigured,
+      },
+    };
+  });
+
+  app.get('/metrics', async (request, reply) => {
+    if (!metricsPublic) {
+      const adminError = requireAdmin(reply, request.headers);
+      if (adminError) {
+        return adminError;
+      }
+    }
+
+    reply.header('content-type', 'text/plain; version=0.0.4; charset=utf-8');
+    return apiMetrics.toPrometheus();
+  });
+
+  app.get('/v1/ops/metrics', async (request, reply) => {
+    const adminError = requireAdmin(reply, request.headers);
+    if (adminError) {
+      return adminError;
+    }
+
+    return apiMetrics.snapshot();
+  });
+
+  app.get('/v1/ops/production-readiness', async (request, reply) => {
+    const adminError = requireAdmin(reply, request.headers);
+    if (adminError) {
+      return adminError;
+    }
+
+    const providerHealth = await collectProviderHealth();
+    const persistence = orchestrator.getPersistenceStatus();
+    const x402Config = readX402Config(env);
+    const settlementMode = env.BOSSRAID_SETTLEMENT_MODE ?? 'off';
+    const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/tappd.sock';
+    const tee = await readTeeSocketState(teeSocketPath);
+    return buildProductionReadinessReport({
+      env,
+      storageBackend: readStorageBackend(env),
+      persistenceHealthy: persistence.healthy,
+      providers: orchestrator.listProviders(),
+      providerHealth,
+      x402: {
+        enabled: x402Config.enabled,
+        facilitatorConfigured: Boolean(x402Config.facilitatorUrl),
+        payToConfigured: x402Config.payTo !== '0x0000000000000000000000000000000000000000',
+        network: x402Config.network,
+        asset: x402Config.asset,
+      },
+      settlement: {
+        mode: settlementMode,
+        configured:
+          settlementMode === 'onchain' &&
+          Boolean(
+            env.BOSSRAID_RPC_URL &&
+            env.BOSSRAID_CHAIN_ID &&
+            env.BOSSRAID_REGISTRY_ADDRESS &&
+            env.BOSSRAID_ESCROW_ADDRESS &&
+            env.BOSSRAID_TOKEN_ADDRESS &&
+            env.BOSSRAID_CLIENT_PRIVATE_KEY &&
+            env.BOSSRAID_EVALUATOR_ADDRESS
+          ),
+      },
+      tee: {
+        configured: Boolean(env.MNEMONIC),
+        platform: env.BOSSRAID_TEE_PLATFORM ?? null,
+        ...tee,
+      },
+      limits: {
+        publicRateLimitMax,
+        publicRateLimitWindowMs,
+        buyerKeyRateLimitMax,
+        buyerKeyRateLimitWindowMs,
+        buyerKeyDefaultSpendLimitUsd,
+        buyerMaxRequestBudgetUsd,
+      },
+      workerIsolation,
+    });
+  });
+
   app.get('/v1/agent.json', async () => {
     await ensureErc8004ProofState();
     return buildAgentManifest(orchestrator, {
@@ -957,6 +1429,362 @@ export function buildApiServer(
       messageHash: hashAttestationText(message),
       signature,
       payload,
+    };
+  });
+
+  app.post('/v1/auth/nonce', async (request) => {
+    const input = ensureRecordInput(request.body, 'auth_nonce');
+    const wallet = ensureOptionalStringInput(input.wallet, 'auth_nonce.wallet')?.toLowerCase();
+    const nonce = controlState.createPublicAuthNonce(wallet, publicAuthNonceTtlSec);
+    return {
+      nonce: nonce.nonce,
+      message: buildPublicAuthMessage(nonce.nonce),
+      expiresAt: new Date(nonce.expiresAt).toISOString(),
+    };
+  });
+
+  app.post('/v1/auth/verify', async (request, reply) => {
+    const input = ensureRecordInput(request.body, 'auth_verify');
+    const message = ensureStringInput(input.message, 'auth_verify.message');
+    const signature = ensureStringInput(input.signature, 'auth_verify.signature') as `0x${string}`;
+    const nonce = readNonceFromAuthMessage(message);
+    if (!nonce) {
+      reply.code(400);
+      return {
+        error: 'bad_request',
+        message: 'Signed message is missing a Boss Raid nonce.',
+      };
+    }
+
+    let wallet: string;
+    try {
+      wallet = (await recoverMessageAddress({ message, signature })).toLowerCase();
+    } catch {
+      reply.code(401);
+      return {
+        error: 'unauthorized',
+        message: 'Wallet signature could not be verified.',
+      };
+    }
+
+    const consumed = controlState.consumePublicAuthNonce(nonce, wallet);
+    if (!consumed) {
+      reply.code(401);
+      return {
+        error: 'unauthorized',
+        message: 'Auth nonce is invalid or expired.',
+      };
+    }
+
+    const session = issuePublicSessionCookie(reply, wallet);
+    return {
+      authenticated: true,
+      wallet,
+      expiresAt: new Date(session.expiresAt).toISOString(),
+      account: buildPublicAccountResponse(controlState, wallet),
+    };
+  });
+
+  app.get('/v1/session', async (request) => {
+    const auth = readPublicAuth(request.headers);
+    if (!auth) {
+      return {
+        authenticated: false,
+      };
+    }
+
+    return {
+      authenticated: true,
+      wallet: auth.wallet,
+      authType: auth.type,
+      account: buildPublicAccountResponse(controlState, auth.wallet),
+    };
+  });
+
+  app.delete('/v1/session', async (request, reply) => {
+    clearPublicSession(reply, request.headers);
+    return {
+      authenticated: false,
+    };
+  });
+
+  app.get('/v1/buyer/api-keys', async (request, reply) => {
+    const session = requirePublicSession(reply, request.headers);
+    if ('error' in session) {
+      return session;
+    }
+    return {
+      data: controlState.listBuyerApiKeys(session.wallet).map((key) => sanitizeBuyerApiKey(key)),
+    };
+  });
+
+  app.post('/v1/buyer/api-keys', async (request, reply) => {
+    const session = requirePublicSession(reply, request.headers);
+    if ('error' in session) {
+      return session;
+    }
+    const input = ensureRecordInput(request.body, 'buyer_api_key');
+    const name = ensureOptionalStringInput(input.name, 'buyer_api_key.name') ?? 'Default key';
+    const requestedSpendLimit =
+      input.spendLimitUsd == null && input.spend_limit_usd == null
+        ? buyerKeyDefaultSpendLimitUsd
+        : ensurePositiveNumberInput(
+            input.spendLimitUsd ?? input.spend_limit_usd,
+            'buyer_api_key.spend_limit_usd'
+          );
+    const rawKey = `br_${randomBytes(24).toString('base64url')}`;
+    const key = controlState.createBuyerApiKey({
+      wallet: session.wallet,
+      name,
+      keyHash: hashBuyerApiKey(rawKey),
+      prefix: rawKey.slice(0, 10),
+      spendLimitUsd: requestedSpendLimit,
+    });
+    reply.code(201);
+    return {
+      apiKey: rawKey,
+      key: sanitizeBuyerApiKey(key),
+    };
+  });
+
+  app.delete('/v1/buyer/api-keys/:keyId', async (request, reply) => {
+    const session = requirePublicSession(reply, request.headers);
+    if ('error' in session) {
+      return session;
+    }
+    const keyId = (request.params as { keyId: string }).keyId;
+    const revoked = controlState.revokeBuyerApiKey(session.wallet, keyId);
+    if (!revoked) {
+      reply.code(404);
+      return { error: 'not_found' };
+    }
+    return { revoked: true };
+  });
+
+  app.get('/v1/seller/providers', async (request, reply) => {
+    const session = requirePublicSession(reply, request.headers);
+    if ('error' in session) {
+      return session;
+    }
+    const account = controlState.readPublicAccount(session.wallet);
+    return {
+      data: orchestrator
+        .listProviders()
+        .filter((provider) => account.sellerProviderIds.includes(provider.providerId))
+        .map((provider) => serializeProviderProfile(provider)),
+    };
+  });
+
+  app.post('/v1/seller/providers', async (request, reply) => {
+    const session = requirePublicSession(reply, request.headers);
+    if ('error' in session) {
+      return session;
+    }
+    const input = parseProviderRegistrationInput(
+      buildSelfServeProviderRegistrationInput(request.body, session.wallet)
+    );
+    const provider = await orchestrator.upsertRegisteredProvider(input);
+    controlState.linkSellerProvider(session.wallet, provider.providerId);
+    const health = await probeProviderHealth(provider);
+    const verification = buildProviderVerificationFromHealth(provider, health);
+    const verifiedProvider = await orchestrator.upsertRegisteredProvider(
+      buildProviderVerificationRegistrationInput(provider, verification)
+    );
+    await ensureErc8004ProofState({ includeMercenary: false, providers: [verifiedProvider] });
+    reply.code(201);
+    return {
+      provider: serializeProviderProfile(verifiedProvider, { includeEndpoint: true }),
+      health: serializeProviderHealth(health, { includeDiagnostics: true, includeEndpoint: true }),
+    };
+  });
+
+  app.patch('/v1/seller/providers/:providerId', async (request, reply) => {
+    const session = requirePublicSession(reply, request.headers);
+    if ('error' in session) {
+      return session;
+    }
+    const providerId = (request.params as { providerId: string }).providerId;
+    if (!controlState.sellerOwnsProvider(session.wallet, providerId)) {
+      reply.code(404);
+      return { error: 'not_found' };
+    }
+    const provider = orchestrator.listProviders().find((item) => item.providerId === providerId);
+    if (!provider) {
+      reply.code(404);
+      return { error: 'not_found' };
+    }
+    const input = parseProviderRegistrationInput(
+      buildSelfServeProviderRegistrationInput(request.body, session.wallet, provider)
+    );
+    const updatedProvider = await orchestrator.upsertRegisteredProvider(input);
+    await ensureErc8004ProofState({ includeMercenary: false, providers: [updatedProvider] });
+    return serializeProviderProfile(updatedProvider, { includeEndpoint: true });
+  });
+
+  app.post('/v1/seller/providers/:providerId/verify', async (request, reply) => {
+    const session = requirePublicSession(reply, request.headers);
+    if ('error' in session) {
+      return session;
+    }
+    const providerId = (request.params as { providerId: string }).providerId;
+    if (!controlState.sellerOwnsProvider(session.wallet, providerId)) {
+      reply.code(404);
+      return { error: 'not_found' };
+    }
+    const provider = orchestrator.listProviders().find((item) => item.providerId === providerId);
+    if (!provider) {
+      reply.code(404);
+      return { error: 'not_found' };
+    }
+    const health = await probeProviderHealth(provider);
+    const verification = buildProviderVerificationFromHealth(provider, health);
+    const updatedProvider = await orchestrator.upsertRegisteredProvider(
+      buildProviderVerificationRegistrationInput(provider, verification)
+    );
+    await ensureErc8004ProofState({ includeMercenary: false, providers: [updatedProvider] });
+    return {
+      provider: serializeProviderProfile(updatedProvider, { includeEndpoint: true }),
+      health: serializeProviderHealth(health, { includeDiagnostics: true, includeEndpoint: true }),
+    };
+  });
+
+  app.get('/v1/seller/earnings', async (request, reply) => {
+    const session = requirePublicSession(reply, request.headers);
+    if ('error' in session) {
+      return session;
+    }
+    const account = controlState.readPublicAccount(session.wallet);
+    const providerIds = new Set(account.sellerProviderIds);
+    let grossUsd = 0;
+    const payouts: Array<{ raidId: string; providerId: string; grossUsd: number; status: string }> =
+      [];
+    for (const raid of orchestrator.listRaids()) {
+      const result = orchestrator.getResult(raid.id);
+      for (const providerId of result.settlementExecution?.successfulProviderIds ?? []) {
+        if (!providerIds.has(providerId)) {
+          continue;
+        }
+        const payout = result.settlement?.payoutPerSuccessfulProvider ?? 0;
+        grossUsd += payout;
+        payouts.push({
+          raidId: raid.id,
+          providerId,
+          grossUsd: payout,
+          status: result.status,
+        });
+      }
+    }
+    return {
+      grossUsd,
+      payoutCount: payouts.length,
+      payouts,
+    };
+  });
+
+  app.get('/v1/models', async (request) => {
+    const query = request.query as {
+      model?: unknown;
+      model_id?: unknown;
+      provider?: unknown;
+      model_provider?: unknown;
+      framework?: unknown;
+      agent_framework?: unknown;
+      max_budget?: unknown;
+      max_budget_usd?: unknown;
+      privacy_mode?: unknown;
+      verification_status?: unknown;
+    };
+    const markets = buildInferenceMarketSnapshot({
+      modelId: asSingleQueryValue(query.model_id) ?? asSingleQueryValue(query.model),
+      modelProvider: asSingleQueryValue(query.model_provider) ?? asSingleQueryValue(query.provider),
+      agentFramework:
+        asSingleQueryValue(query.agent_framework) ?? asSingleQueryValue(query.framework),
+      maxBudgetUsd: readPositiveNumber(
+        asSingleQueryValue(query.max_budget_usd) ?? asSingleQueryValue(query.max_budget)
+      ),
+      privacyMode: asSingleQueryValue(query.privacy_mode),
+      verificationStatus: asSingleQueryValue(query.verification_status),
+    });
+
+    return {
+      object: 'list',
+      data: markets.map((market) => buildOpenAiCompatibleModelEntry(market)),
+    };
+  });
+
+  app.get('/v1/prices', async (request) => {
+    const query = request.query as {
+      model?: unknown;
+      model_id?: unknown;
+      provider?: unknown;
+      model_provider?: unknown;
+      framework?: unknown;
+      agent_framework?: unknown;
+      max_budget?: unknown;
+      max_budget_usd?: unknown;
+      privacy_mode?: unknown;
+      verification_status?: unknown;
+    };
+    return {
+      object: 'list',
+      benchmark: {
+        source: 'models.dev',
+        url: 'https://models.dev/api.json',
+        mode: 'static_reference_only',
+      },
+      data: buildInferenceMarketSnapshot({
+        modelId: asSingleQueryValue(query.model_id) ?? asSingleQueryValue(query.model),
+        modelProvider:
+          asSingleQueryValue(query.model_provider) ?? asSingleQueryValue(query.provider),
+        agentFramework:
+          asSingleQueryValue(query.agent_framework) ?? asSingleQueryValue(query.framework),
+        maxBudgetUsd: readPositiveNumber(
+          asSingleQueryValue(query.max_budget_usd) ?? asSingleQueryValue(query.max_budget)
+        ),
+        privacyMode: asSingleQueryValue(query.privacy_mode),
+        verificationStatus: asSingleQueryValue(query.verification_status),
+      }).map((market) => buildInferencePriceEntry(market)),
+    };
+  });
+
+  app.get('/v1/markets', async (request) => {
+    const query = request.query as {
+      model?: unknown;
+      model_id?: unknown;
+      provider?: unknown;
+      model_provider?: unknown;
+      framework?: unknown;
+      agent_framework?: unknown;
+      max_budget?: unknown;
+      max_budget_usd?: unknown;
+      privacy_mode?: unknown;
+      verification_status?: unknown;
+    };
+    return {
+      object: 'list',
+      settlement: {
+        asset: 'USDC',
+        network: env.BOSSRAID_X402_NETWORK ?? 'base-sepolia',
+        rule: 'single-provider inference pays the selected successful seller its declared rate; multi-agent raids split successful payouts equally.',
+      },
+      custody: {
+        sellerCredentialPolicy:
+          'Sellers expose clean authenticated endpoints. Boss Raid does not require buyers to receive seller provider keys or subscription credentials.',
+        privacyPolicy:
+          'Strict private routing requires privacy metadata and Phala/TEE attestation where configured.',
+      },
+      data: buildInferenceMarketSnapshot({
+        modelId: asSingleQueryValue(query.model_id) ?? asSingleQueryValue(query.model),
+        modelProvider:
+          asSingleQueryValue(query.model_provider) ?? asSingleQueryValue(query.provider),
+        agentFramework:
+          asSingleQueryValue(query.agent_framework) ?? asSingleQueryValue(query.framework),
+        maxBudgetUsd: readPositiveNumber(
+          asSingleQueryValue(query.max_budget_usd) ?? asSingleQueryValue(query.max_budget)
+        ),
+        privacyMode: asSingleQueryValue(query.privacy_mode),
+        verificationStatus: asSingleQueryValue(query.verification_status),
+      }),
     };
   });
 
@@ -1158,71 +1986,12 @@ export function buildApiServer(
         .length,
     }));
   });
-  app.post('/v1/chat/completions', async (request, reply) => {
-    const rateLimitError = requireRateLimit(
-      request,
-      reply,
-      'public-action',
-      publicRateLimitMax,
-      publicRateLimitWindowMs
-    );
-    if (rateLimitError) {
-      return rateLimitError;
-    }
-
-    const chatRequest = parseChatCompletionRequest(request.body);
-    const raidRequest =
-      chatRequest.raidRequest ??
-      parseBossRaidRequest(
-        buildBossRaidRequestFromChatCompletion(chatRequest, {
-          defaultMaxTotalCost: chatDefaultMaxTotalCost,
-        })
-      );
-    const created = Math.floor(Date.now() / 1000);
-    const directResponse = buildDirectChatCompletionResponse(chatRequest, created);
-
-    if (directResponse) {
-      if (chatRequest.stream) {
-        await streamDirectChatCompletionResponse(reply, directResponse);
-        return;
-      }
-
-      return directResponse;
-    }
-
-    await ensureErc8004ProofState({ includeMercenary: false });
-    const payment = await requireReservedLaunchPayment('chat', request, raidRequest);
-    const spawn =
-      payment.reservationId && payment.requestKey
-        ? await orchestrator.spawnReservedRaid(payment.reservationId, payment.requestKey)
-        : await orchestrator.spawnRaid(raidRequest);
-
-    if (chatRequest.stream) {
-      applyX402Headers(reply, {
-        settlement: payment.settlement,
-      });
-      await streamChatCompletionResponse(reply, orchestrator, {
-        chatRequest,
-        raidRequest,
-        spawn,
-        created,
-        settleGraceMs: chatTerminalSettleGraceMs,
-      });
-      return;
-    }
-
-    const outcome = await waitForTerminalRaidOutput(
-      orchestrator,
-      spawn.raidId,
-      Math.max(raidRequest.constraints.maxLatencySec * 1000, TIMEOUTS.MIN_TIMEOUT_MS),
-      chatTerminalSettleGraceMs
-    );
-    const response = buildChatCompletionResponse(chatRequest, spawn, outcome, created);
-    applyX402Headers(reply, {
-      settlement: payment.settlement,
-    });
-    return response;
-  });
+  app.post('/v1/inference/chat/completions', async (request, reply) =>
+    handleChatCompletionRequest(request, reply, { discountInference: true })
+  );
+  app.post('/v1/chat/completions', async (request, reply) =>
+    handleChatCompletionRequest(request, reply)
+  );
   app.post('/v1/raid', async (request, reply) => {
     return spawnParsedRaid(request, reply, parseBossRaidRequest);
   });
@@ -1405,6 +2174,36 @@ export function buildApiServer(
     await ensureErc8004ProofState({ includeMercenary: false, providers: [provider] });
     return serializeProviderProfile(provider, { includeEndpoint: true });
   });
+  app.post('/agents/:providerId/verify', async (request, reply) => {
+    if (!registryToken) {
+      reply.code(503);
+      return { error: 'registry_auth_not_configured' };
+    }
+    if (!registryIsAuthorized(request.headers)) {
+      reply.code(401);
+      return { error: 'unauthorized' };
+    }
+
+    const providerId = (request.params as { providerId: string }).providerId;
+    const provider = orchestrator
+      .listProviders()
+      .find((item) => item.providerId === providerId || item.agentId === providerId);
+    if (!provider) {
+      reply.code(404);
+      return { error: 'not_found' };
+    }
+
+    const health = await probeProviderHealth(provider);
+    const verification = buildProviderVerificationFromHealth(provider, health);
+    const updatedProvider = await orchestrator.upsertRegisteredProvider(
+      buildProviderVerificationRegistrationInput(provider, verification)
+    );
+    await ensureErc8004ProofState({ includeMercenary: false, providers: [updatedProvider] });
+    return {
+      provider: serializeProviderProfile(updatedProvider, { includeEndpoint: true }),
+      health: serializeProviderHealth(health, { includeDiagnostics: true, includeEndpoint: true }),
+    };
+  });
   app.post('/agents/heartbeat', async (request, reply) => {
     if (!registryToken) {
       reply.code(503);
@@ -1435,6 +2234,7 @@ export function buildApiServer(
 }
 
 const OPS_SESSION_COOKIE_NAME = 'bossraid_ops_session';
+const PUBLIC_SESSION_COOKIE_NAME = 'bossraid_session';
 const RAID_ACCESS_TOKEN_HEADER = 'x-bossraid-raid-token';
 
 function hashRaidAccessToken(token: string): string {
@@ -1449,6 +2249,605 @@ function asSingleQueryValue(value: unknown): string | undefined {
     return value[0];
   }
   return undefined;
+}
+
+interface InferenceMarketSeller {
+  sellerId: string;
+  displayName: string;
+  modelProvider?: string;
+  agentFramework?: string;
+  rateUsd: number;
+  pricing: {
+    unit: 'task';
+    pricePerTaskUsd: number;
+    pricePer1mInputTokensUsd: null;
+    pricePer1mOutputTokensUsd: null;
+  };
+  status: ProviderProfile['status'];
+  verificationStatus?: string;
+  privacy: {
+    teeAttested?: boolean;
+    signedOutputs?: boolean;
+    noDataRetention?: boolean;
+  };
+  outputTypes?: string[];
+  maxConcurrency: number;
+}
+
+interface InferenceMarket {
+  object: 'inference.market';
+  modelId: string;
+  modelProvider?: string;
+  providerCount: number;
+  activeProviderCount: number;
+  verifiedSellerCount: number;
+  privateSellerCount: number;
+  recentSuccessRate: number | null;
+  p50LatencyMs: number | null;
+  p95LatencyMs: number | null;
+  cheapestRateUsd: number | null;
+  pricing: {
+    benchmarkSource: 'models.dev';
+    benchmarkUrl: 'https://models.dev/api.json';
+    benchmarkMode: 'static_reference_only';
+    declaredUnit: 'task';
+    cheapestPricePerTaskUsd: number | null;
+    pricePer1mInputTokensUsd: null;
+    pricePer1mOutputTokensUsd: null;
+  };
+  sellers: InferenceMarketSeller[];
+}
+
+function forceDiscountInferenceChatPolicy(
+  chatRequest: ChatCompletionRequest,
+  options: {
+    defaultMaxTotalCost?: number;
+  } = {}
+): ChatCompletionRequest {
+  const policy = (chatRequest.raidPolicy ?? {}) as Record<string, unknown>;
+  const existingAllowedModelIds = readPolicyStringArray(
+    policy.allowedModelIds ?? policy.allowed_model_ids
+  );
+  const existingAllowedOutputTypes = readPolicyStringArray(
+    policy.allowedOutputTypes ?? policy.allowed_output_types
+  );
+  const maxTotalCost = policy.maxTotalCost ?? policy.max_total_cost ?? options.defaultMaxTotalCost;
+  const privacyMode =
+    readPrivacyMode(policy.privacyMode) ?? readPrivacyMode(policy.privacy_mode) ?? 'prefer';
+
+  return {
+    ...chatRequest,
+    raidPolicy: {
+      ...chatRequest.raidPolicy,
+      maxAgents: 1,
+      maxTotalCost: maxTotalCost as number | string | undefined,
+      allowedModelIds:
+        existingAllowedModelIds && existingAllowedModelIds.length > 0
+          ? existingAllowedModelIds
+          : [chatRequest.model],
+      allowedOutputTypes:
+        existingAllowedOutputTypes && existingAllowedOutputTypes.length > 0
+          ? (existingAllowedOutputTypes as NonNullable<
+              ChatCompletionRequest['raidPolicy']
+            >['allowedOutputTypes'])
+          : ['text', 'json'],
+      privacyMode,
+      selectionMode: 'cost_first',
+    },
+  };
+}
+
+function readPrivacyMode(
+  value: unknown
+): NonNullable<ChatCompletionRequest['raidPolicy']>['privacyMode'] {
+  return value === 'off' || value === 'prefer' || value === 'strict' ? value : undefined;
+}
+
+function resolveDiscountInferenceDefaultMaxTotalCost(
+  chatRequest: ChatCompletionRequest,
+  providers: ProviderProfile[]
+): number | undefined {
+  const policy = (chatRequest.raidPolicy ?? {}) as Record<string, unknown>;
+  if (policy.maxTotalCost != null || policy.max_total_cost != null) {
+    return undefined;
+  }
+
+  const modelIds = readPolicyStringArray(policy.allowedModelIds ?? policy.allowed_model_ids) ?? [
+    chatRequest.model,
+  ];
+  const modelProviders = readPolicyStringArray(
+    policy.allowedModelProviders ?? policy.allowed_model_providers
+  );
+  const agentFrameworks = readPolicyStringArray(
+    policy.allowedAgentFrameworks ?? policy.allowed_agent_frameworks
+  );
+  const rates = providers
+    .filter((provider) => {
+      if (modelIds.length > 0 && !provider.modelId) {
+        return false;
+      }
+      if (modelIds.length > 0 && provider.modelId && !modelIds.includes(provider.modelId)) {
+        return false;
+      }
+      if (
+        modelProviders &&
+        modelProviders.length > 0 &&
+        (!provider.modelProvider || !modelProviders.includes(provider.modelProvider))
+      ) {
+        return false;
+      }
+      if (
+        agentFrameworks &&
+        agentFrameworks.length > 0 &&
+        (!provider.agentFramework || !agentFrameworks.includes(provider.agentFramework))
+      ) {
+        return false;
+      }
+      return provider.status === 'available' && Number.isFinite(provider.pricePerTaskUsd);
+    })
+    .map((provider) => provider.pricePerTaskUsd)
+    .sort((left, right) => left - right);
+
+  return rates[0];
+}
+
+function readPolicyStringArray(value: unknown): string[] | undefined {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string');
+  }
+  return undefined;
+}
+
+function resolveProviderMarketModelId(provider: ProviderProfile): string | undefined {
+  return provider.modelId ?? provider.modelFamily;
+}
+
+function buildInferenceMarkets(providers: ProviderProfile[]): InferenceMarket[] {
+  const byModel = new Map<string, ProviderProfile[]>();
+  for (const provider of providers) {
+    const modelId = resolveProviderMarketModelId(provider);
+    if (!modelId) {
+      continue;
+    }
+    byModel.set(modelId, [...(byModel.get(modelId) ?? []), provider]);
+  }
+
+  return [...byModel.entries()]
+    .map(([modelId, marketProviders]) => {
+      const sellers = marketProviders
+        .map((provider) => buildInferenceMarketSeller(provider))
+        .sort(
+          (left, right) =>
+            left.rateUsd - right.rateUsd || left.sellerId.localeCompare(right.sellerId)
+        );
+      const activeSellers = sellers.filter((seller) => seller.status === 'available');
+      const cheapestRateUsd = activeSellers[0]?.rateUsd ?? sellers[0]?.rateUsd ?? null;
+      const successfulRaids = marketProviders.reduce(
+        (total, provider) => total + provider.reputation.totalSuccessfulRaids,
+        0
+      );
+      const totalRaids = marketProviders.reduce(
+        (total, provider) => total + provider.reputation.totalRaids,
+        0
+      );
+      const latencies = marketProviders
+        .map((provider) => provider.reputation.p50LatencyMs)
+        .filter((value) => Number.isFinite(value))
+        .sort((left, right) => left - right);
+      const p95Latencies = marketProviders
+        .map((provider) => provider.reputation.p95LatencyMs)
+        .filter((value) => Number.isFinite(value))
+        .sort((left, right) => left - right);
+      return {
+        object: 'inference.market' as const,
+        modelId,
+        modelProvider:
+          marketProviders.find((provider) => provider.modelProvider)?.modelProvider ?? undefined,
+        providerCount: sellers.length,
+        activeProviderCount: activeSellers.length,
+        verifiedSellerCount: marketProviders.filter(
+          (provider) => provider.verification?.status === 'verified'
+        ).length,
+        privateSellerCount: marketProviders.filter(
+          (provider) =>
+            provider.privacy?.teeAttested ||
+            provider.privacy?.signedOutputs ||
+            provider.privacy?.noDataRetention
+        ).length,
+        recentSuccessRate: totalRaids > 0 ? successfulRaids / totalRaids : null,
+        p50LatencyMs: latencies[0] ?? null,
+        p95LatencyMs: p95Latencies[p95Latencies.length - 1] ?? null,
+        cheapestRateUsd,
+        pricing: {
+          benchmarkSource: 'models.dev' as const,
+          benchmarkUrl: 'https://models.dev/api.json' as const,
+          benchmarkMode: 'static_reference_only' as const,
+          declaredUnit: 'task' as const,
+          cheapestPricePerTaskUsd: cheapestRateUsd,
+          pricePer1mInputTokensUsd: null,
+          pricePer1mOutputTokensUsd: null,
+        },
+        sellers,
+      };
+    })
+    .sort((left, right) => {
+      const leftRate = left.cheapestRateUsd ?? Number.POSITIVE_INFINITY;
+      const rightRate = right.cheapestRateUsd ?? Number.POSITIVE_INFINITY;
+      return leftRate - rightRate || left.modelId.localeCompare(right.modelId);
+    });
+}
+
+function buildInferenceMarketSeller(provider: ProviderProfile): InferenceMarketSeller {
+  return {
+    sellerId: provider.providerId,
+    displayName: provider.displayName,
+    modelProvider: provider.modelProvider,
+    agentFramework: provider.agentFramework,
+    rateUsd: provider.pricePerTaskUsd,
+    pricing: {
+      unit: 'task',
+      pricePerTaskUsd: provider.pricePerTaskUsd,
+      pricePer1mInputTokensUsd: null,
+      pricePer1mOutputTokensUsd: null,
+    },
+    status: provider.status,
+    verificationStatus: provider.verification?.status,
+    privacy: {
+      teeAttested: provider.privacy?.teeAttested,
+      signedOutputs: provider.privacy?.signedOutputs,
+      noDataRetention: provider.privacy?.noDataRetention,
+    },
+    outputTypes: provider.outputTypes,
+    maxConcurrency: provider.maxConcurrency,
+  };
+}
+
+function providerHasStrictPrivateMarketMetadata(provider: ProviderProfile): boolean {
+  return Boolean(
+    provider.privacy?.teeAttested ||
+    provider.privacy?.signedOutputs ||
+    provider.privacy?.noDataRetention
+  );
+}
+
+function buildOpenAiCompatibleModelEntry(market: InferenceMarket) {
+  return {
+    id: market.modelId,
+    object: 'model',
+    created: 0,
+    owned_by: market.modelProvider ?? 'bossraid-market',
+    pricing: market.pricing,
+    bossraid: {
+      provider_count: market.providerCount,
+      active_provider_count: market.activeProviderCount,
+      verified_seller_count: market.verifiedSellerCount,
+      private_seller_count: market.privateSellerCount,
+      cheapest_rate_usd: market.cheapestRateUsd,
+      settlement_asset: 'USDC',
+      route: '/v1/inference/chat/completions',
+    },
+  };
+}
+
+function buildInferencePriceEntry(market: InferenceMarket) {
+  return {
+    modelId: market.modelId,
+    modelProvider: market.modelProvider,
+    cheapestRateUsd: market.cheapestRateUsd,
+    declaredUnit: 'task',
+    providerCount: market.providerCount,
+    activeProviderCount: market.activeProviderCount,
+    verifiedSellerCount: market.verifiedSellerCount,
+    privateSellerCount: market.privateSellerCount,
+    recentSuccessRate: market.recentSuccessRate,
+    p50LatencyMs: market.p50LatencyMs,
+    p95LatencyMs: market.p95LatencyMs,
+    sellers: market.sellers.map((seller) => ({
+      sellerId: seller.sellerId,
+      rateUsd: seller.rateUsd,
+      status: seller.status,
+      verificationStatus: seller.verificationStatus,
+    })),
+  };
+}
+
+function buildPublicAuthMessage(nonce: string): string {
+  return [
+    'Boss Raid public beta sign-in',
+    '',
+    'Sign this message to create a wallet session. This does not authorize a transaction.',
+    '',
+    `Nonce: ${nonce}`,
+  ].join('\n');
+}
+
+function readNonceFromAuthMessage(message: string): string | undefined {
+  return message.match(/Nonce:\s*(nonce_[0-9a-f-]+)/i)?.[1];
+}
+
+function ensureRecordInput(value: unknown, label: string): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new ApiContractError(`Expected object for ${label}.`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function ensureOptionalRecordInput(
+  value: unknown,
+  label: string
+): Record<string, unknown> | undefined {
+  if (value == null) {
+    return undefined;
+  }
+  return ensureRecordInput(value, label);
+}
+
+function ensureStringInput(value: unknown, label: string): string {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new ApiContractError(`Expected non-empty string for ${label}.`);
+  }
+  return value.trim();
+}
+
+function ensureOptionalStringInput(value: unknown, label: string): string | undefined {
+  if (value == null) {
+    return undefined;
+  }
+  return ensureStringInput(value, label);
+}
+
+function ensurePositiveNumberInput(value: unknown, label: string): number {
+  const parsed = typeof value === 'string' ? Number(value) : value;
+  if (typeof parsed !== 'number' || !Number.isFinite(parsed) || parsed <= 0) {
+    throw new ApiContractError(`Expected positive number for ${label}.`);
+  }
+  return parsed;
+}
+
+function ensureOptionalStringArrayInput(value: unknown, label: string): string[] | undefined {
+  if (value == null) {
+    return undefined;
+  }
+  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
+    throw new ApiContractError(`Expected string array for ${label}.`);
+  }
+  return value;
+}
+
+function hashBuyerApiKey(value: string): string {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+function sanitizeBuyerApiKey(key: {
+  id: string;
+  name: string;
+  prefix: string;
+  createdAt: string;
+  lastUsedAt?: string;
+  spendLimitUsd?: number;
+  spentUsd: number;
+  status: string;
+}) {
+  return {
+    id: key.id,
+    name: key.name,
+    prefix: key.prefix,
+    createdAt: key.createdAt,
+    lastUsedAt: key.lastUsedAt,
+    spendLimitUsd: key.spendLimitUsd,
+    spentUsd: key.spentUsd,
+    status: key.status,
+  };
+}
+
+function enforceBuyerBudget(
+  auth:
+    | { type: 'session'; wallet: string; token: string }
+    | {
+        type: 'api_key';
+        wallet: string;
+        apiKeyId: string;
+        spendLimitUsd?: number;
+        spentUsd: number;
+      }
+    | undefined,
+  requestBudgetUsd: number,
+  buyerMaxRequestBudgetUsd?: number
+): { statusCode: number; error: string; message: string } | undefined {
+  if (buyerMaxRequestBudgetUsd != null && requestBudgetUsd > buyerMaxRequestBudgetUsd) {
+    return {
+      statusCode: 402,
+      error: 'budget_exceeds_limit',
+      message: `Request budget exceeds the public beta max of $${buyerMaxRequestBudgetUsd.toFixed(
+        2
+      )}.`,
+    };
+  }
+
+  if (
+    auth?.type === 'api_key' &&
+    auth.spendLimitUsd != null &&
+    auth.spentUsd + requestBudgetUsd > auth.spendLimitUsd
+  ) {
+    return {
+      statusCode: 402,
+      error: 'api_key_spend_limit_exceeded',
+      message: 'API key spend limit would be exceeded by this request.',
+    };
+  }
+
+  return undefined;
+}
+
+function buildSelfServeProviderRegistrationInput(
+  body: unknown,
+  wallet: string,
+  existing?: ProviderProfile
+): Record<string, unknown> {
+  const input = ensureRecordInput(body, 'seller_provider');
+  const pricing = ensureOptionalRecordInput(input.pricing, 'seller_provider.pricing') ?? {};
+  const payoutWallet =
+    ensureOptionalStringInput(input.payoutWallet, 'seller_provider.payoutWallet') ??
+    ensureOptionalStringInput(input.payout_wallet, 'seller_provider.payout_wallet') ??
+    existing?.erc8004?.operatorWallet ??
+    wallet;
+  const erc8004Input = ensureOptionalRecordInput(input.erc8004, 'seller_provider.erc8004');
+  const erc8004AgentId =
+    erc8004Input == null
+      ? existing?.erc8004?.agentId
+      : (ensureOptionalStringInput(erc8004Input.agentId, 'seller_provider.erc8004.agentId') ??
+        ensureOptionalStringInput(erc8004Input.agent_id, 'seller_provider.erc8004.agent_id') ??
+        existing?.erc8004?.agentId);
+  const agentId =
+    ensureOptionalStringInput(input.agentId, 'seller_provider.agentId') ??
+    ensureOptionalStringInput(input.agent_id, 'seller_provider.agent_id') ??
+    existing?.agentId ??
+    `seller-${wallet.slice(2, 8)}-${randomUUID().slice(0, 8)}`;
+  const name =
+    ensureOptionalStringInput(input.name, 'seller_provider.name') ??
+    existing?.displayName ??
+    `Seller ${agentId}`;
+  const endpoint =
+    ensureOptionalStringInput(input.endpoint, 'seller_provider.endpoint') ?? existing?.endpoint;
+
+  if (!endpoint) {
+    throw new ApiContractError('Expected non-empty string for seller_provider.endpoint.');
+  }
+
+  return {
+    agentId,
+    name,
+    description:
+      ensureOptionalStringInput(input.description, 'seller_provider.description') ??
+      existing?.description,
+    endpoint,
+    capabilities: ensureOptionalStringArrayInput(
+      input.capabilities,
+      'seller_provider.capabilities'
+    ) ??
+      existing?.specializations ?? ['analysis', 'text'],
+    supportedLanguages: ensureOptionalStringArrayInput(
+      input.supportedLanguages ?? input.supported_languages,
+      'seller_provider.supported_languages'
+    ) ??
+      existing?.supportedLanguages ?? ['text'],
+    supportedFrameworks:
+      ensureOptionalStringArrayInput(
+        input.supportedFrameworks ?? input.supported_frameworks,
+        'seller_provider.supported_frameworks'
+      ) ??
+      existing?.supportedFrameworks ??
+      [],
+    outputTypes: ensureOptionalStringArrayInput(
+      input.outputTypes ?? input.output_types,
+      'seller_provider.output_types'
+    ) ??
+      existing?.outputTypes ?? ['text', 'json'],
+    agentFramework:
+      input.agentFramework ?? input.agent_framework ?? existing?.agentFramework ?? 'custom',
+    modelProvider: input.modelProvider ?? input.model_provider ?? existing?.modelProvider,
+    modelId: input.modelId ?? input.model_id ?? existing?.modelId,
+    modelFamily: input.modelFamily ?? input.model_family ?? existing?.modelFamily,
+    maxConcurrency: input.maxConcurrency ?? input.max_concurrency ?? existing?.maxConcurrency ?? 1,
+    pricing: {
+      pricePerTaskUsd:
+        pricing.pricePerTaskUsd ??
+        pricing.price_per_task_usd ??
+        input.pricePerTaskUsd ??
+        input.price_per_task_usd ??
+        existing?.pricePerTaskUsd ??
+        1,
+    },
+    privacy: input.privacy ?? existing?.privacy ?? {},
+    erc8004: erc8004AgentId
+      ? {
+          ...(existing?.erc8004 ?? {}),
+          ...(erc8004Input ?? {}),
+          agentId: erc8004AgentId,
+          operatorWallet: payoutWallet,
+        }
+      : undefined,
+    source: {
+      type: 'self_serve',
+      externalRef: wallet.toLowerCase(),
+    },
+    auth: input.auth ?? existing?.auth ?? { type: 'none' },
+    verification: existing?.verification ?? { status: 'pending' },
+    reputation: existing?.reputation,
+  };
+}
+
+function buildPublicAccountResponse(controlState: ApiControlState, wallet: string) {
+  const account = controlState.readPublicAccount(wallet);
+  return {
+    wallet: account.wallet,
+    createdAt: account.createdAt,
+    sellerProviderIds: account.sellerProviderIds,
+    apiKeys: controlState.listBuyerApiKeys(wallet).map((key) => sanitizeBuyerApiKey(key)),
+  };
+}
+
+function buildProviderVerificationFromHealth(
+  provider: ProviderProfile,
+  health: ProviderHealthStatus
+): NonNullable<ProviderProfile['verification']> {
+  const apiVerified = health.reachable === true && health.ready === true && !health.missing?.length;
+  const frameworkVerified =
+    provider.agentFramework == null || health.agentFramework === provider.agentFramework;
+  const modelProviderVerified =
+    provider.modelProvider == null || health.modelProvider === provider.modelProvider;
+  const modelVerified = provider.modelId == null || health.model === provider.modelId;
+  const verified = apiVerified && frameworkVerified && modelProviderVerified && modelVerified;
+  const notes = [
+    apiVerified ? 'health_ready' : 'health_not_ready',
+    provider.agentFramework && health.agentFramework == null ? 'framework_not_reported' : null,
+    provider.modelProvider && health.modelProvider == null ? 'model_provider_not_reported' : null,
+    provider.modelId && health.model == null ? 'model_not_reported' : null,
+    frameworkVerified ? null : 'framework_mismatch',
+    modelProviderVerified ? null : 'model_provider_mismatch',
+    modelVerified ? null : 'model_mismatch',
+    health.error ? `health_error:${health.error}` : null,
+  ].filter((note): note is string => Boolean(note));
+
+  return {
+    status: verified ? 'verified' : 'failed',
+    checkedAt: new Date().toISOString(),
+    apiVerified,
+    frameworkVerified,
+    modelVerified: modelProviderVerified && modelVerified,
+    notes,
+  };
+}
+
+function buildProviderVerificationRegistrationInput(
+  provider: ProviderProfile,
+  verification: NonNullable<ProviderProfile['verification']>
+): ProviderRegistrationInput {
+  return {
+    agentId: provider.agentId ?? provider.providerId,
+    name: provider.displayName,
+    description: provider.description,
+    endpoint: provider.endpoint,
+    capabilities: provider.specializations,
+    supportedLanguages: provider.supportedLanguages,
+    supportedFrameworks: provider.supportedFrameworks,
+    outputTypes: provider.outputTypes,
+    modelFamily: provider.modelFamily,
+    agentFramework: provider.agentFramework,
+    modelProvider: provider.modelProvider,
+    modelId: provider.modelId,
+    maxConcurrency: provider.maxConcurrency,
+    source: provider.source,
+    privacy: provider.privacy,
+    erc8004: provider.erc8004,
+    trust: provider.trust,
+    pricing: {
+      pricePerTaskUsd: provider.pricePerTaskUsd,
+    },
+    auth: provider.auth,
+    verification,
+    reputation: provider.reputation,
+  };
 }
 
 function readClientRateLimitKey(request: FastifyRequest): string {
@@ -1834,6 +3233,378 @@ async function readTeeSocketState(
       socketMounted: false,
     };
   }
+}
+
+type ProductionReadinessStatus = 'pass' | 'warn' | 'fail';
+type ProductionReadinessSeverity = 'blocking' | 'warning' | 'info';
+
+interface ProductionReadinessCheck {
+  id: string;
+  status: ProductionReadinessStatus;
+  severity: ProductionReadinessSeverity;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+function buildProductionReadinessReport(input: {
+  env: NodeJS.ProcessEnv;
+  storageBackend: 'sqlite' | 'file' | 'memory';
+  persistenceHealthy: boolean;
+  providers: ProviderProfile[];
+  providerHealth: ProviderHealthStatus[];
+  x402: {
+    enabled: boolean;
+    facilitatorConfigured: boolean;
+    payToConfigured: boolean;
+    network: string;
+    asset: string;
+  };
+  settlement: {
+    mode: string;
+    configured: boolean;
+  };
+  tee: {
+    configured: boolean;
+    platform: string | null;
+    pathExists: boolean;
+    socketMounted: boolean;
+  };
+  limits: {
+    publicRateLimitMax: number;
+    publicRateLimitWindowMs: number;
+    buyerKeyRateLimitMax: number;
+    buyerKeyRateLimitWindowMs: number;
+    buyerKeyDefaultSpendLimitUsd?: number;
+    buyerMaxRequestBudgetUsd?: number;
+  };
+  workerIsolation: 'per_job_process' | 'per_job_container';
+}) {
+  const checks: ProductionReadinessCheck[] = [];
+  const verifiedProviders = input.providers.filter(
+    (provider) => provider.verification?.status === 'verified'
+  );
+  const readyProviders = input.providerHealth.filter((provider) => provider.ready);
+
+  const addCheck = (check: ProductionReadinessCheck) => {
+    checks.push(check);
+  };
+
+  addCheck({
+    id: 'node_env_production',
+    status: input.env.NODE_ENV === 'production' ? 'pass' : 'fail',
+    severity: 'blocking',
+    message:
+      input.env.NODE_ENV === 'production'
+        ? 'API is running with NODE_ENV=production.'
+        : 'Set NODE_ENV=production before public paid traffic.',
+  });
+
+  addCheck({
+    id: 'storage_backend',
+    status:
+      input.storageBackend === 'memory' || !input.persistenceHealthy
+        ? 'fail'
+        : input.storageBackend === 'sqlite'
+          ? 'warn'
+          : 'warn',
+    severity:
+      input.storageBackend === 'memory' || !input.persistenceHealthy ? 'blocking' : 'warning',
+    message:
+      input.storageBackend === 'memory'
+        ? 'Memory storage is not acceptable for production.'
+        : input.storageBackend === 'sqlite'
+          ? 'SQLite is acceptable for controlled launch only; full production needs managed durable SQL, backups, and restore drills.'
+          : 'File storage is acceptable for controlled launch only; full production needs managed durable SQL, backups, and restore drills.',
+    details: {
+      backend: input.storageBackend,
+      healthy: input.persistenceHealthy,
+    },
+  });
+
+  addCheck({
+    id: 'secret_encryption',
+    status:
+      input.storageBackend === 'memory' ||
+      hasStrongOperationalSecret(
+        input.env.BOSSRAID_SECRET_ENCRYPTION_KEY ?? input.env.BOSSRAID_ENCRYPTION_KEY
+      )
+        ? 'pass'
+        : 'fail',
+    severity: 'blocking',
+    message:
+      input.storageBackend === 'memory'
+        ? 'Memory storage does not persist encrypted secrets.'
+        : 'BOSSRAID_SECRET_ENCRYPTION_KEY is required for persisted provider auth, sessions, nonces, and buyer key hashes.',
+    details: {
+      keyId: input.env.BOSSRAID_SECRET_ENCRYPTION_KEY_ID ?? null,
+      previousKeysConfigured: Boolean(input.env.BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS?.trim()),
+    },
+  });
+
+  addCheck({
+    id: 'admin_auth',
+    status: hasStrongOperationalSecret(input.env.BOSSRAID_ADMIN_TOKEN) ? 'pass' : 'fail',
+    severity: 'blocking',
+    message: 'BOSSRAID_ADMIN_TOKEN must be a long non-placeholder secret.',
+  });
+
+  addCheck({
+    id: 'registry_auth',
+    status: hasStrongOperationalSecret(input.env.BOSSRAID_REGISTRY_TOKEN) ? 'pass' : 'fail',
+    severity: 'blocking',
+    message: 'BOSSRAID_REGISTRY_TOKEN must be configured for authenticated registry operations.',
+  });
+
+  addCheck({
+    id: 'x402_payment',
+    status:
+      !input.x402.enabled || (input.x402.facilitatorConfigured && input.x402.payToConfigured)
+        ? 'pass'
+        : 'fail',
+    severity: 'blocking',
+    message: input.x402.enabled
+      ? 'x402 must have facilitator and pay-to wallet configured.'
+      : 'x402 is disabled; only use this for private rehearsal environments.',
+    details: input.x402,
+  });
+
+  addCheck({
+    id: 'onchain_settlement',
+    status: input.settlement.configured ? 'pass' : 'fail',
+    severity: 'blocking',
+    message:
+      input.settlement.mode === 'onchain'
+        ? 'Onchain settlement requires RPC, chain id, contracts, client signer, and evaluator address.'
+        : 'Full production requires BOSSRAID_SETTLEMENT_MODE=onchain.',
+    details: {
+      mode: input.settlement.mode,
+      configured: input.settlement.configured,
+    },
+  });
+
+  addCheck({
+    id: 'tee_attestation',
+    status:
+      input.tee.configured &&
+      input.tee.platform === 'phala' &&
+      input.tee.pathExists &&
+      input.tee.socketMounted
+        ? 'pass'
+        : 'fail',
+    severity: 'blocking',
+    message: 'Phala TEE signer and tappd socket must be available for strict-private production.',
+    details: input.tee,
+  });
+
+  addCheck({
+    id: 'evaluator_isolation',
+    status:
+      input.workerIsolation === 'per_job_container' &&
+      !readBooleanEnv(input.env.BOSSRAID_EVAL_ALLOW_UNSAFE_HOST_EXECUTION)
+        ? 'pass'
+        : 'fail',
+    severity: 'blocking',
+    message:
+      'Production evaluator jobs must run in per-job containers without unsafe host execution.',
+    details: {
+      workerIsolation: input.workerIsolation,
+      unsafeHostExecution: readBooleanEnv(input.env.BOSSRAID_EVAL_ALLOW_UNSAFE_HOST_EXECUTION),
+    },
+  });
+
+  addCheck({
+    id: 'provider_pool',
+    status:
+      readyProviders.length > 0 && verifiedProviders.length > 0
+        ? 'pass'
+        : readyProviders.length > 0
+          ? 'warn'
+          : 'fail',
+    severity: readyProviders.length > 0 ? 'warning' : 'blocking',
+    message:
+      'Production requires at least one ready provider and should have multiple verified sellers per active market.',
+    details: {
+      providers: input.providers.length,
+      readyProviders: readyProviders.length,
+      verifiedProviders: verifiedProviders.length,
+    },
+  });
+
+  addCheck({
+    id: 'abuse_controls',
+    status:
+      input.limits.publicRateLimitMax > 0 &&
+      input.limits.buyerKeyRateLimitMax > 0 &&
+      input.limits.buyerKeyDefaultSpendLimitUsd != null &&
+      input.limits.buyerMaxRequestBudgetUsd != null
+        ? 'pass'
+        : 'fail',
+    severity: 'blocking',
+    message:
+      'Public launch requires IP limits, per-key limits, default spend caps, and max request budget.',
+    details: input.limits,
+  });
+
+  addCheck({
+    id: 'operator_trust_ack',
+    status:
+      readBooleanEnv(input.env.BOSSRAID_OPERATOR_TERMS_ACK) &&
+      readBooleanEnv(input.env.BOSSRAID_INCIDENT_RESPONSE_ACK)
+        ? 'pass'
+        : 'fail',
+    severity: 'blocking',
+    message:
+      'Operators must acknowledge clean-endpoint seller terms and incident-response ownership before full production.',
+  });
+
+  addCheck({
+    id: 'observability',
+    status: 'pass',
+    severity: 'info',
+    message: 'JSON metrics are available at /v1/ops/metrics and Prometheus metrics at /metrics.',
+    details: {
+      metricsPublic: readBooleanEnv(input.env.BOSSRAID_METRICS_PUBLIC),
+    },
+  });
+
+  const blockingFailures = checks.filter(
+    (check) => check.status === 'fail' && check.severity === 'blocking'
+  );
+  const warnings = checks.filter((check) => check.status === 'warn');
+
+  return {
+    ok: blockingFailures.length === 0,
+    status: blockingFailures.length === 0 ? 'ready' : 'blocked',
+    generatedAt: new Date().toISOString(),
+    summary: {
+      checks: checks.length,
+      blockingFailures: blockingFailures.length,
+      warnings: warnings.length,
+    },
+    checks,
+    nextActions: blockingFailures.map((check) => ({
+      check: check.id,
+      action: check.message,
+    })),
+  };
+}
+
+function hasStrongOperationalSecret(value: string | undefined, minLength = 32): boolean {
+  if (!value?.trim()) {
+    return false;
+  }
+
+  const trimmed = value.trim();
+  return (
+    trimmed.length >= minLength &&
+    !/^<.+>$/u.test(trimmed) &&
+    !/replace|changeme|todo|your-org/iu.test(trimmed)
+  );
+}
+
+type ApiMetricsRouteStats = {
+  count: number;
+  errorCount: number;
+  totalLatencyMs: number;
+  maxLatencyMs: number;
+};
+
+function createApiMetrics() {
+  const startedAt = new Date().toISOString();
+  const counters = new Map<string, number>();
+  const routes = new Map<string, ApiMetricsRouteStats>();
+
+  return {
+    increment(name: string, value = 1) {
+      counters.set(name, (counters.get(name) ?? 0) + value);
+    },
+    recordHttp(input: { method: string; route: string; statusCode: number; durationMs: number }) {
+      const key = `${input.method.toUpperCase()} ${input.route}`;
+      const current =
+        routes.get(key) ??
+        ({
+          count: 0,
+          errorCount: 0,
+          totalLatencyMs: 0,
+          maxLatencyMs: 0,
+        } satisfies ApiMetricsRouteStats);
+      current.count += 1;
+      current.errorCount += input.statusCode >= 500 ? 1 : 0;
+      current.totalLatencyMs += input.durationMs;
+      current.maxLatencyMs = Math.max(current.maxLatencyMs, input.durationMs);
+      routes.set(key, current);
+      counters.set('http.requests_total', (counters.get('http.requests_total') ?? 0) + 1);
+      if (input.statusCode >= 400) {
+        counters.set('http.errors_total', (counters.get('http.errors_total') ?? 0) + 1);
+      }
+    },
+    snapshot() {
+      return {
+        startedAt,
+        generatedAt: new Date().toISOString(),
+        counters: Object.fromEntries(
+          [...counters.entries()].sort(([left], [right]) => left.localeCompare(right))
+        ),
+        routes: Object.fromEntries(
+          [...routes.entries()]
+            .sort(([left], [right]) => left.localeCompare(right))
+            .map(([route, stats]) => [
+              route,
+              {
+                ...stats,
+                averageLatencyMs: stats.count > 0 ? stats.totalLatencyMs / stats.count : 0,
+              },
+            ])
+        ),
+      };
+    },
+    toPrometheus() {
+      const lines = [
+        '# HELP bossraid_http_requests_total Total HTTP requests observed by Boss Raid.',
+        '# TYPE bossraid_http_requests_total counter',
+      ];
+      for (const [route, stats] of [...routes.entries()].sort(([left], [right]) =>
+        left.localeCompare(right)
+      )) {
+        const [method, ...routeParts] = route.split(' ');
+        lines.push(
+          `bossraid_http_requests_total{method="${escapeMetricLabel(method)}",route="${escapeMetricLabel(
+            routeParts.join(' ')
+          )}"} ${stats.count}`
+        );
+      }
+
+      lines.push(
+        '# HELP bossraid_http_request_latency_ms_sum Total HTTP request latency in milliseconds.',
+        '# TYPE bossraid_http_request_latency_ms_sum counter'
+      );
+      for (const [route, stats] of [...routes.entries()].sort(([left], [right]) =>
+        left.localeCompare(right)
+      )) {
+        const [method, ...routeParts] = route.split(' ');
+        lines.push(
+          `bossraid_http_request_latency_ms_sum{method="${escapeMetricLabel(
+            method
+          )}",route="${escapeMetricLabel(routeParts.join(' '))}"} ${stats.totalLatencyMs}`
+        );
+      }
+
+      lines.push(
+        '# HELP bossraid_events_total Total named Boss Raid application events.',
+        '# TYPE bossraid_events_total counter'
+      );
+      for (const [name, value] of [...counters.entries()].sort(([left], [right]) =>
+        left.localeCompare(right)
+      )) {
+        lines.push(`bossraid_events_total{name="${escapeMetricLabel(name)}"} ${value}`);
+      }
+      return `${lines.join('\n')}\n`;
+    },
+  };
+}
+
+function escapeMetricLabel(value: string): string {
+  return value.replace(/\\/gu, '\\\\').replace(/"/gu, '\\"').replace(/\n/gu, '\\n');
 }
 
 function parseOpsSessionInput(value: unknown): { token: string } {

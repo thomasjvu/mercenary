@@ -5,12 +5,24 @@ import { BOSSRAID_DOCS_URL } from '@bossraid/ui';
 import useSWR from 'swr';
 import { bindAsciiRipple } from './ascii-ripple';
 import { fetchJson, type Provider, type ProviderHealth } from './api';
+import { AccountPage } from './pages/AccountPage';
+import { BuyerOnboardingPage } from './pages/BuyerOnboardingPage';
 import { DemoPage } from './pages/DemoPage';
 import { LandingPage } from './pages/LandingPage';
+import { MarketplacePage } from './pages/MarketplacePage';
 import { ReceiptPage } from './pages/ReceiptPage';
 import { RaidersPage } from './pages/RaidersPage';
+import { SellerOnboardingPage } from './pages/SellerOnboardingPage';
 
-type AppRoute = '/' | '/demo' | '/raiders' | '/receipt';
+type AppRoute =
+  | '/'
+  | '/marketplace'
+  | '/onboarding/buyer'
+  | '/onboarding/seller'
+  | '/account'
+  | '/demo'
+  | '/raiders'
+  | '/receipt';
 type AppTheme = 'light' | 'dark';
 
 const LANDING_THEME_STORAGE_KEY = 'bossraid.landing-theme';
@@ -22,6 +34,10 @@ export function App() {
   const pathname = useSyncExternalStore(subscribeToLocation, getCurrentRoute, () => '/');
   const [appTheme, setAppTheme] = useState<AppTheme>(() => getInitialTheme());
   const isLandingRoute = pathname === '/';
+  const isMarketplaceRoute = pathname === '/marketplace';
+  const isBuyerOnboardingRoute = pathname === '/onboarding/buyer';
+  const isSellerOnboardingRoute = pathname === '/onboarding/seller';
+  const isAccountRoute = pathname === '/account';
   const isDemoRoute = pathname === '/demo';
   const isRaidersRoute = pathname === '/raiders';
   const isReceiptRoute = pathname === '/receipt';
@@ -83,6 +99,14 @@ export function App() {
           providerHealth={providerHealth.data ?? []}
           onNavigate={navigate}
         />
+      ) : isMarketplaceRoute ? (
+        <MarketplacePage />
+      ) : isBuyerOnboardingRoute ? (
+        <BuyerOnboardingPage />
+      ) : isSellerOnboardingRoute ? (
+        <SellerOnboardingPage />
+      ) : isAccountRoute ? (
+        <AccountPage />
       ) : isDemoRoute ? (
         <DemoPage providerHealth={providerHealth.data ?? []} providers={providers.data ?? []} />
       ) : isReceiptRoute ? (
@@ -110,6 +134,30 @@ export function App() {
             |
           </span>
           <RouteLink active={pathname === '/'} label="home" onNavigate={navigate} path="/" />
+          <RouteLink
+            active={pathname === '/marketplace'}
+            label="market"
+            onNavigate={navigate}
+            path="/marketplace"
+          />
+          <RouteLink
+            active={pathname === '/onboarding/buyer'}
+            label="buyer"
+            onNavigate={navigate}
+            path="/onboarding/buyer"
+          />
+          <RouteLink
+            active={pathname === '/onboarding/seller'}
+            label="seller"
+            onNavigate={navigate}
+            path="/onboarding/seller"
+          />
+          <RouteLink
+            active={pathname === '/account'}
+            label="account"
+            onNavigate={navigate}
+            path="/account"
+          />
           <RouteLink
             active={pathname === '/demo'}
             label="demo"
@@ -190,6 +238,18 @@ function RouteLink({
 }
 
 function normalizePathname(pathname: string): AppRoute {
+  if (pathname === '/marketplace' || pathname === '/marketplace/') {
+    return '/marketplace';
+  }
+  if (pathname === '/onboarding/buyer' || pathname === '/onboarding/buyer/') {
+    return '/onboarding/buyer';
+  }
+  if (pathname === '/onboarding/seller' || pathname === '/onboarding/seller/') {
+    return '/onboarding/seller';
+  }
+  if (pathname === '/account' || pathname === '/account/') {
+    return '/account';
+  }
   if (pathname === '/demo' || pathname === '/demo/') {
     return '/demo';
   }

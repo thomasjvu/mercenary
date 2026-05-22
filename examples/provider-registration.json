@@ -8,6 +8,16 @@
   "supportedFrameworks": ["node", "fastapi"],
   "outputTypes": ["text", "json", "patch"],
   "modelFamily": "venice",
+  "agentFramework": "codex",
+  "modelProvider": "venice",
+  "modelId": "venice/private",
+  "verification": {
+    "status": "verified",
+    "apiVerified": true,
+    "frameworkVerified": true,
+    "modelVerified": true,
+    "notes": ["example metadata for the queued general agent service"]
+  },
   "privacy": {
     "teeAttested": true,
     "e2ee": true,
