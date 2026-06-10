@@ -10,6 +10,8 @@ export type SelectionMode =
   | 'round_robin';
 export type AgentFramework = 'codex' | 'claude_code' | 'openclaw' | 'custom';
 export type ProviderVerificationStatus = 'pending' | 'verified' | 'failed' | 'error';
+export type ProviderPricingMode = 'token_metered' | 'task';
+export type ProviderPricingCurrency = 'USD' | 'USDC';
 export type PrivacyFeatureKey =
   | 'tee_attested'
   | 'e2ee'
@@ -44,6 +46,7 @@ export type AssignmentStatus =
   | 'paid';
 
 export type ProviderStatus = 'available' | 'degraded' | 'offline';
+export type MarketplaceOfferStatus = 'active' | 'paused';
 export type SubmissionFormat =
   | 'unified_diff_plus_explanation'
   | 'text_answer_plus_explanation'
@@ -82,6 +85,9 @@ export interface RaidConstraints {
   minReputation: number;
   requireErc8004?: boolean;
   minTrustScore?: number;
+  requiredVerificationStatus?: ProviderVerificationStatus;
+  maxInputTokens?: number;
+  maxOutputTokens?: number;
   maxChangedFiles?: number;
   maxDiffLines?: number;
   forbidPaths?: string[];
@@ -232,6 +238,65 @@ export interface ProviderSourceMetadata {
   memberCount?: number;
 }
 
+export interface ProviderPricing {
+  mode: ProviderPricingMode;
+  currency: ProviderPricingCurrency;
+  pricePerTaskUsd?: number;
+  pricePer1mInputTokensUsd?: number;
+  pricePer1mOutputTokensUsd?: number;
+  minimumChargeUsd?: number;
+  validFrom?: string;
+  validUntil?: string;
+  rateCardVersion?: string;
+  rateCardHash?: string;
+  upstreamModelId?: string;
+  maxContextTokens?: number;
+}
+
+export interface ProviderQuoteSnapshot {
+  providerId: string;
+  phase: 'primary' | 'reserve';
+  rateCard: ProviderPricing;
+  modelProvider?: string;
+  modelId?: string;
+  upstreamModelId?: string;
+  maxContextTokens?: number;
+  endpointHash: string;
+  verificationStatus?: ProviderVerificationStatus;
+  trustScore: number;
+  privacyFeatures: PrivacyFeatureKey[];
+  erc8004Registered: boolean;
+  attestationSummary?: {
+    teeAttested?: boolean;
+    teeVendor?: string;
+    e2ee?: boolean;
+    signedOutputs?: boolean;
+    noDataRetention?: boolean;
+  };
+}
+
+export interface RaidQuoteSnapshot {
+  quoteId: string;
+  createdAt: string;
+  expiresAt: string;
+  modelId?: string;
+  selectedSellerIds: string[];
+  reserveSellerIds: string[];
+  privacyMode?: PrivacyRoutingMode;
+  requiredPrivacyFeatures: PrivacyFeatureKey[];
+  requiredVerificationStatus?: ProviderVerificationStatus;
+  requireErc8004: boolean;
+  minTrustScore?: number;
+  estimatedMaxInputTokens?: number;
+  estimatedMaxOutputTokens?: number;
+  maxChargeUsd: number;
+  manaQuote: {
+    manaPerUsd: number;
+    maxChargeMana: number;
+  };
+  providers: ProviderQuoteSnapshot[];
+}
+
 export interface ProviderProfile {
   providerId: string;
   agentId?: string;
@@ -242,9 +307,12 @@ export interface ProviderProfile {
   specializations: string[];
   supportedLanguages: SupportedLanguage[];
   supportedFrameworks: string[];
+  pricing?: ProviderPricing;
   pricePerTaskUsd: number;
   maxConcurrency: number;
   status: ProviderStatus;
+  marketplaceOfferStatus?: MarketplaceOfferStatus;
+  routingCooldownUntil?: string;
   modelFamily?: string;
   agentFramework?: AgentFramework;
   modelProvider?: string;
@@ -275,12 +343,24 @@ export interface ProviderRegistrationInput {
   modelProvider?: string;
   modelId?: string;
   maxConcurrency?: number;
+  marketplaceOfferStatus?: MarketplaceOfferStatus;
   source?: ProviderSourceMetadata;
   privacy?: ProviderPrivacy;
   erc8004?: Partial<Erc8004Identity>;
   trust?: Partial<ProviderTrust>;
   pricing?: {
+    mode?: ProviderPricingMode;
     pricePerTaskUsd?: number;
+    pricePer1mInputTokensUsd?: number;
+    pricePer1mOutputTokensUsd?: number;
+    minimumChargeUsd?: number;
+    currency?: ProviderPricingCurrency;
+    validFrom?: string;
+    validUntil?: string;
+    rateCardVersion?: string;
+    rateCardHash?: string;
+    upstreamModelId?: string;
+    maxContextTokens?: number;
   };
   auth?: ProviderAuthConfig;
   verification?: ProviderVerification;
@@ -364,6 +444,9 @@ export interface BossRaidRoutingPolicy {
   selectionMode: SelectionMode;
   requireErc8004: boolean;
   minTrustScore?: number;
+  requiredVerificationStatus?: ProviderVerificationStatus;
+  maxInputTokens?: number;
+  maxOutputTokens?: number;
   allowedModelFamilies: string[];
   allowedAgentFrameworks: AgentFramework[];
   allowedModelProviders: string[];
@@ -385,6 +468,8 @@ export interface BossRaidRoutingDecision {
   modelId?: string;
   verificationStatus?: ProviderVerificationStatus;
   rateUsd?: number;
+  pricing?: ProviderPricing;
+  rateCardHash?: string;
   veniceBacked: boolean;
   erc8004Registered: boolean;
   trustScore: number;
@@ -716,6 +801,9 @@ export interface BossRaidRequest {
     minReputationScore?: number;
     requireErc8004?: boolean;
     minTrustScore?: number;
+    requiredVerificationStatus?: ProviderVerificationStatus;
+    maxInputTokens?: number;
+    maxOutputTokens?: number;
     privacyMode?: PrivacyRoutingMode;
     requirePrivacyFeatures?: PrivacyFeatureKey[];
     allowedOutputTypes?: OutputType[];
@@ -750,7 +838,10 @@ export interface ProviderDiscoveryQuery {
   requirePrivacyFeatures?: PrivacyFeatureKey[];
   requireErc8004?: boolean;
   minTrustScore?: number;
+  requiredVerificationStatus?: ProviderVerificationStatus;
   minReputationScore?: number;
+  maxInputTokens?: number;
+  maxOutputTokens?: number;
   onlineOnly?: boolean;
   maxHeartbeatAgeMs?: number;
 }
@@ -792,6 +883,7 @@ export interface RaidLaunchReservationRecord {
   graph?: ReservedRaidNode;
   adaptiveProviderIds?: string[];
   reservedProviderIds: string[];
+  quoteSnapshot?: RaidQuoteSnapshot;
   spawnOutput?: BossRaidSpawnOutput;
   x402PaidAmountUsd?: number;
   escrowFundingUsd?: number;

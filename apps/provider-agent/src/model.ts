@@ -209,6 +209,22 @@ function normalizeSubmission(result: unknown, task: ProviderTaskPackage): ModelS
   );
 }
 
+function buildStubModelSubmission(task: ProviderTaskPackage): ModelSubmission {
+  const prompt =
+    task.task.description?.trim() ||
+    task.artifacts.expectedBehavior?.trim() ||
+    'Boss Raid smoke request';
+  return normalizeSubmission(
+    {
+      answerText: `Stub provider response for: ${prompt.slice(0, 240)}`,
+      explanation: 'Generated locally by BOSSRAID_PROVIDER_STUB_MODE.',
+      confidence: 0.9,
+      filesTouched: [],
+    },
+    task
+  );
+}
+
 export async function requestModelSubmission(
   task: ProviderTaskPackage,
   deadlineUnix: number
@@ -216,6 +232,10 @@ export async function requestModelSubmission(
   const specialized = await maybeRequestSpecializedSubmission(task);
   if (specialized && submissionSupportsRequestedOutput(specialized, task)) {
     return attachContributionRole(specialized, task);
+  }
+
+  if (providerConfig.stubMode) {
+    return buildStubModelSubmission(task);
   }
 
   if (!providerConfig.modelApiKey || !providerConfig.modelName) {

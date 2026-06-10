@@ -36,7 +36,9 @@ import {
   type BossRaidSpawnInput,
   type Erc8004Identity,
   type ProviderHealthStatus,
+  type ProviderPricing,
   type ProviderProfile,
+  type RaidQuoteSnapshot,
   type ProviderRegistrationInput,
   type SanitizedTaskSpec,
   type TaskFile,
@@ -67,6 +69,7 @@ import {
   settlementExecutionChanged,
 } from './settlement-proof.js';
 import { createApiControlState, type ApiControlState } from './control-state.js';
+import { computeSavingsUsd, estimateBenchmarkPriceUsd } from './marketplace-benchmark.js';
 import { DEFAULTS, TIMEOUTS } from '@bossraid/constants';
 
 interface AttestedRuntimePayload {
@@ -544,6 +547,7 @@ export function buildApiServer(
       specializations: provider.specializations,
       supportedLanguages: provider.supportedLanguages,
       supportedFrameworks: provider.supportedFrameworks,
+      pricing: provider.pricing,
       pricePerTaskUsd: provider.pricePerTaskUsd,
       maxConcurrency: provider.maxConcurrency,
       status: provider.status,
@@ -712,7 +716,7 @@ export function buildApiServer(
       }
       if (
         typeof options.maxBudgetUsd === 'number' &&
-        provider.pricePerTaskUsd > options.maxBudgetUsd
+        readProviderMarketRateUsd(provider) > options.maxBudgetUsd
       ) {
         return false;
       }
@@ -723,6 +727,9 @@ export function buildApiServer(
         return false;
       }
       if (options.privacyMode === 'strict' && !providerHasStrictPrivateMarketMetadata(provider)) {
+        return false;
+      }
+      if ((provider.marketplaceOfferStatus ?? 'active') === 'paused') {
         return false;
       }
       return Boolean(resolveProviderMarketModelId(provider));
@@ -750,12 +757,14 @@ export function buildApiServer(
     }
 
     const parsedChatRequest = parseChatCompletionRequest(request.body);
+    const strictAlkahestLane = readTrustedAlkahestClient(request.headers) != null;
     const discountDefaultMaxTotalCost = options.discountInference
       ? resolveDiscountInferenceDefaultMaxTotalCost(parsedChatRequest, orchestrator.listProviders())
       : undefined;
     const chatRequest = options.discountInference
       ? forceDiscountInferenceChatPolicy(parsedChatRequest, {
           defaultMaxTotalCost: discountDefaultMaxTotalCost,
+          strictAlkahestLane,
         })
       : parsedChatRequest;
     const raidRequest =
@@ -771,6 +780,7 @@ export function buildApiServer(
       return apiKeyRateLimitError;
     }
     const budgetError = enforceBuyerBudget(
+      controlState,
       publicAuth,
       raidRequest.constraints.maxBudgetUsd,
       buyerMaxRequestBudgetUsd
@@ -798,10 +808,25 @@ export function buildApiServer(
 
     await ensureErc8004ProofState({ includeMercenary: false });
     const payment = await requireReservedLaunchPayment('chat', request, raidRequest);
-    const spawn =
-      payment.reservationId && payment.requestKey
-        ? await orchestrator.spawnReservedRaid(payment.reservationId, payment.requestKey)
-        : await orchestrator.spawnRaid(raidRequest);
+    let spawn;
+    try {
+      spawn =
+        payment.reservationId && payment.requestKey
+          ? await orchestrator.spawnReservedRaid(
+              payment.reservationId,
+              payment.requestKey,
+              payment.escrowFundingUsd,
+              payment.platformMarkupUsd
+            )
+          : await orchestrator.spawnRaid(
+              raidRequest,
+              payment.escrowFundingUsd,
+              payment.platformMarkupUsd
+            );
+    } catch (error) {
+      await refundManaBilling({ manaBilling: payment.manaBilling, reason: 'spawn_failed' });
+      throw error;
+    }
 
     if (chatRequest.stream) {
       if (publicAuth?.type === 'api_key') {
@@ -819,23 +844,94 @@ export function buildApiServer(
         spawn,
         created,
         settleGraceMs: chatTerminalSettleGraceMs,
+        bossraidBilling: payment.manaBilling
+          ? {
+              capture: async (usage, selectedSeller) => {
+                const settlement = await captureManaBilling({
+                  manaBilling: payment.manaBilling,
+                  usage,
+                  raidId: spawn.raidId,
+                  receiptPath: spawn.receiptPath,
+                });
+                return buildBossRaidBillingMetadata({
+                  manaBilling: payment.manaBilling,
+                  settlement,
+                  selectedSeller,
+                  receiptPath: spawn.receiptPath,
+                });
+              },
+            }
+          : undefined,
       });
       return;
     }
 
-    const outcome = await waitForTerminalRaidOutput(
-      orchestrator,
-      spawn.raidId,
-      Math.max(raidRequest.constraints.maxLatencySec * 1000, TIMEOUTS.MIN_TIMEOUT_MS),
-      chatTerminalSettleGraceMs
-    );
-    const response = buildChatCompletionResponse(chatRequest, spawn, outcome, created);
-    if (publicAuth?.type === 'api_key') {
-      controlState.recordBuyerApiKeyUsage(
-        publicAuth.apiKeyId,
-        payment.escrowFundingUsd ?? raidRequest.constraints.maxBudgetUsd
+    let outcome;
+    try {
+      outcome = await waitForTerminalRaidOutput(
+        orchestrator,
+        spawn.raidId,
+        Math.max(raidRequest.constraints.maxLatencySec * 1000, TIMEOUTS.MIN_TIMEOUT_MS),
+        chatTerminalSettleGraceMs
       );
+    } catch (error) {
+      await refundManaBilling({
+        manaBilling: payment.manaBilling,
+        reason: 'terminal_output_failed',
+        raidId: spawn.raidId,
+      });
+      throw error;
     }
+    const response = buildChatCompletionResponse(
+      chatRequest,
+      spawn,
+      outcome,
+      created
+    ) as ReturnType<typeof buildChatCompletionResponse> & { bossraid?: unknown };
+    const manaSettlement = await captureManaBilling({
+      manaBilling: payment.manaBilling,
+      usage: response.usage,
+      raidId: spawn.raidId,
+      receiptPath: spawn.receiptPath,
+    });
+    const selectedSeller =
+      outcome.result.synthesizedOutput?.baseSubmissionProviderId ??
+      outcome.result.approvedSubmissions?.[0]?.submission.providerId;
+    const capturedCostUsd =
+      payment.escrowFundingUsd ??
+      outcome.result.settlement?.successfulProvidersPaid ??
+      raidRequest.constraints.maxBudgetUsd;
+    const bossraid = buildBossRaidBillingMetadata({
+      manaBilling: payment.manaBilling,
+      settlement: manaSettlement,
+      selectedSeller,
+      receiptPath: spawn.receiptPath,
+      modelId: chatRequest.model,
+      paidPriceUsd: capturedCostUsd,
+    });
+    if (bossraid) {
+      response.bossraid = bossraid;
+    }
+    captureApiKeyBilling({
+      apiKeyBilling: payment.apiKeyBilling,
+      actualCostUsd: capturedCostUsd,
+      route: options.discountInference ? 'inference' : 'chat',
+      raidId: spawn.raidId,
+      modelId: chatRequest.model,
+      sellerId: selectedSeller,
+    });
+    if (!payment.apiKeyBilling && publicAuth?.type === 'api_key') {
+      controlState.recordBuyerApiKeyUsage(publicAuth.apiKeyId, capturedCostUsd);
+    }
+    recordMarketplaceLedgersFromRaid({
+      raidId: spawn.raidId,
+      route: options.discountInference ? 'inference' : 'chat',
+      buyerWallet: publicAuth?.wallet,
+      apiKeyId: publicAuth?.type === 'api_key' ? publicAuth.apiKeyId : undefined,
+      modelId: chatRequest.model,
+      costUsd: capturedCostUsd,
+      skipBuyerPurchase: Boolean(payment.apiKeyBilling),
+    });
     applyX402Headers(reply, {
       settlement: payment.settlement,
     });
@@ -1023,6 +1119,335 @@ export function buildApiServer(
     return Math.max(1, Number.isFinite(derivedTimeoutSeconds) ? derivedTimeoutSeconds : 1);
   }
 
+  interface ManaBillingContext {
+    manaAccountId: string;
+    sourceAppId: 'alkahest';
+    reservationId: string;
+    reservedMana: number;
+    quoteSnapshot?: RaidQuoteSnapshot;
+  }
+
+  interface ApiKeyBillingContext {
+    apiKeyId: string;
+    wallet: string;
+    reservedUsd: number;
+    useBalance: boolean;
+  }
+
+  function readManaBillingHeaders(
+    headers: Record<string, string | string[] | undefined>
+  ): { manaAccountId: string; sourceAppId: 'alkahest' } | undefined {
+    const trustedClient = readTrustedAlkahestClient(headers);
+    const manaAccountId = asSingleHeader(headers['x-bossraid-mana-account-id']);
+    if (!trustedClient && !manaAccountId) {
+      return undefined;
+    }
+    if (!trustedClient || !manaAccountId) {
+      throw new ApiContractError('Trusted Alkahest mana billing headers are incomplete.', 401);
+    }
+    const trustedKey = env.BOSSRAID_API_KEY || env.BOSSRAID_TRUSTED_CLIENT_KEY;
+    if (!trustedKey) {
+      throw new ApiContractError('BOSSRAID_API_KEY is required for trusted mana billing.', 503);
+    }
+    if (!safeEqualString(asSingleHeader(headers.authorization), `Bearer ${trustedKey}`)) {
+      throw new ApiContractError('Invalid trusted Boss Raid client credential.', 401);
+    }
+    return { manaAccountId, sourceAppId: 'alkahest' };
+  }
+
+  function buildManaCoreUrl(path: string): string {
+    const rawBase = env.BOSSRAID_MANA_CORE_URL?.trim();
+    if (!rawBase) {
+      throw new ApiContractError('BOSSRAID_MANA_CORE_URL is required for mana billing.', 503);
+    }
+    const base = rawBase.replace(/\/$/, '');
+    if (base.endsWith('/v1/mana')) {
+      return `${base}${path}`;
+    }
+    if (base.endsWith('/v1')) {
+      return `${base}/mana${path}`;
+    }
+    return `${base}/v1/mana${path}`;
+  }
+
+  async function callManaCore(path: string, body: Record<string, unknown>) {
+    const key = env.BOSSRAID_MANA_CORE_KEY?.trim();
+    if (!key) {
+      throw new ApiContractError('BOSSRAID_MANA_CORE_KEY is required for mana billing.', 503);
+    }
+    const response = await fetch(buildManaCoreUrl(path), {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-mana-core-key': key,
+      },
+      body: JSON.stringify(body),
+    });
+    const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!response.ok) {
+      const message =
+        typeof payload.error === 'string'
+          ? payload.error
+          : typeof payload.message === 'string'
+            ? payload.message
+            : 'Mana Core request failed.';
+      throw new ApiContractError(message, response.status);
+    }
+    return payload;
+  }
+
+  async function reserveManaBilling(input: {
+    route: 'raid' | 'chat';
+    manaAccountId: string;
+    amount: number;
+    requestKey: string;
+    quoteSnapshot?: RaidQuoteSnapshot;
+  }): Promise<ManaBillingContext> {
+    const payload = await callManaCore('/reservations', {
+      manaAccountId: input.manaAccountId,
+      appId: env.BOSSRAID_MANA_CORE_APP_ID || 'bossraid',
+      action: input.route,
+      amount: input.amount,
+      idempotencyKey: `bossraid:${input.route}:${input.requestKey}`,
+      metadata: {
+        sourceAppId: 'alkahest',
+        quoteId: input.quoteSnapshot?.quoteId,
+        maxChargeMana: input.quoteSnapshot?.manaQuote.maxChargeMana,
+        maxChargeUsd: input.quoteSnapshot?.maxChargeUsd,
+      },
+    });
+    const reservation = payload.reservation as { id?: unknown; amount?: unknown } | undefined;
+    const reservationId = typeof reservation?.id === 'string' ? reservation.id : undefined;
+    if (!reservationId) {
+      throw new ApiContractError('Mana Core reservation response did not include an id.', 502);
+    }
+    return {
+      manaAccountId: input.manaAccountId,
+      sourceAppId: 'alkahest',
+      reservationId,
+      reservedMana: input.amount,
+      quoteSnapshot: input.quoteSnapshot,
+    };
+  }
+
+  function calculateManaCaptureAmount(
+    manaBilling: ManaBillingContext,
+    usage: { prompt_tokens?: number; completion_tokens?: number }
+  ): number {
+    const quote = manaBilling.quoteSnapshot;
+    const primary = quote?.providers.find((provider) => provider.phase === 'primary');
+    if (!quote || !primary) {
+      return manaBilling.reservedMana;
+    }
+    const pricing = primary.rateCard;
+    const promptTokens = Math.max(0, usage.prompt_tokens ?? 0);
+    const completionTokens = Math.max(0, usage.completion_tokens ?? 0);
+    const chargeUsd =
+      pricing.mode === 'token_metered'
+        ? Math.max(
+            (promptTokens / 1_000_000) * (pricing.pricePer1mInputTokensUsd ?? 0) +
+              (completionTokens / 1_000_000) * (pricing.pricePer1mOutputTokensUsd ?? 0),
+            pricing.minimumChargeUsd ?? 0
+          )
+        : (pricing.pricePerTaskUsd ?? quote.maxChargeUsd);
+    return Math.max(
+      1,
+      Math.min(manaBilling.reservedMana, Math.ceil(chargeUsd * quote.manaQuote.manaPerUsd))
+    );
+  }
+
+  async function captureManaBilling(input: {
+    manaBilling?: ManaBillingContext;
+    usage: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+    raidId: string;
+    receiptPath: string;
+  }): Promise<{ capturedMana?: number; refundedMana?: number } | undefined> {
+    if (!input.manaBilling) {
+      return undefined;
+    }
+    const capturedMana = calculateManaCaptureAmount(input.manaBilling, input.usage);
+    await callManaCore(
+      `/reservations/${encodeURIComponent(input.manaBilling.reservationId)}/capture`,
+      {
+        manaAccountId: input.manaBilling.manaAccountId,
+        amount: capturedMana,
+        metadata: {
+          sourceAppId: input.manaBilling.sourceAppId,
+          raidId: input.raidId,
+          receiptPath: input.receiptPath,
+          quoteId: input.manaBilling.quoteSnapshot?.quoteId,
+          usage: input.usage,
+        },
+      }
+    );
+    return {
+      capturedMana,
+      refundedMana: Math.max(0, input.manaBilling.reservedMana - capturedMana),
+    };
+  }
+
+  async function refundManaBilling(input: {
+    manaBilling?: ManaBillingContext;
+    reason: string;
+    raidId?: string;
+  }): Promise<void> {
+    if (!input.manaBilling) {
+      return;
+    }
+    await callManaCore(
+      `/reservations/${encodeURIComponent(input.manaBilling.reservationId)}/refund`,
+      {
+        manaAccountId: input.manaBilling.manaAccountId,
+        reason: input.reason,
+        metadata: {
+          sourceAppId: input.manaBilling.sourceAppId,
+          raidId: input.raidId,
+          quoteId: input.manaBilling.quoteSnapshot?.quoteId,
+        },
+      }
+    );
+  }
+
+  function buildBossRaidBillingMetadata(input: {
+    manaBilling?: ManaBillingContext;
+    settlement?: { capturedMana?: number; refundedMana?: number };
+    selectedSeller?: string;
+    receiptPath: string;
+    modelId?: string;
+    paidPriceUsd?: number;
+    quoteSnapshot?: RaidQuoteSnapshot;
+  }) {
+    const quote = input.manaBilling?.quoteSnapshot ?? input.quoteSnapshot;
+    const selected = quote?.providers.find(
+      (provider) => provider.providerId === input.selectedSeller || provider.phase === 'primary'
+    );
+    const benchmarkPriceUsd =
+      input.modelId != null || input.paidPriceUsd != null
+        ? estimateBenchmarkPriceUsd({
+            modelId: input.modelId,
+            flatTaskUsd: input.paidPriceUsd,
+          })
+        : undefined;
+    const savingsUsd =
+      input.paidPriceUsd != null
+        ? computeSavingsUsd(benchmarkPriceUsd, input.paidPriceUsd)
+        : undefined;
+
+    if (!input.manaBilling && !quote && input.paidPriceUsd == null) {
+      return undefined;
+    }
+
+    return {
+      quote_id: quote?.quoteId,
+      selected_seller: input.selectedSeller ?? selected?.providerId,
+      rate_card_hash: selected?.rateCard.rateCardHash,
+      mana_reserved: input.manaBilling?.reservedMana,
+      mana_captured: input.settlement?.capturedMana,
+      mana_refunded: input.settlement?.refundedMana,
+      benchmark_price_usd: benchmarkPriceUsd,
+      savings_usd: savingsUsd,
+      paid_price_usd: input.paidPriceUsd,
+      receipt_path: input.receiptPath,
+      attestation_result: selected?.attestationSummary,
+      routing_proof: {
+        strict_privacy: quote?.privacyMode === 'strict',
+        required_privacy_features: quote?.requiredPrivacyFeatures,
+        required_verification_status: quote?.requiredVerificationStatus,
+        require_erc8004: quote?.requireErc8004,
+        min_trust_score: quote?.minTrustScore,
+      },
+    };
+  }
+
+  function recordMarketplaceLedgersFromRaid(input: {
+    raidId: string;
+    route: 'raid' | 'chat' | 'inference';
+    buyerWallet?: string;
+    apiKeyId?: string;
+    modelId?: string;
+    costUsd?: number;
+    skipBuyerPurchase?: boolean;
+  }): void {
+    const result = orchestrator.getResult(input.raidId);
+    const costUsd =
+      input.costUsd ??
+      result.settlement?.successfulProvidersPaid ??
+      result.settlement?.escrowFundingUsd ??
+      0;
+    if (!input.skipBuyerPurchase && input.buyerWallet && costUsd > 0) {
+      const benchmarkPriceUsd = estimateBenchmarkPriceUsd({
+        modelId: input.modelId,
+        flatTaskUsd: costUsd,
+      });
+      controlState.recordBuyerPurchase({
+        wallet: input.buyerWallet,
+        apiKeyId: input.apiKeyId,
+        raidId: input.raidId,
+        modelId: input.modelId,
+        sellerId:
+          result.synthesizedOutput?.baseSubmissionProviderId ??
+          result.approvedSubmissions?.[0]?.submission.providerId,
+        costUsd,
+        benchmarkPriceUsd,
+        savingsUsd: computeSavingsUsd(benchmarkPriceUsd, costUsd),
+        route: input.route,
+      });
+    }
+
+    const payout = result.settlement?.payoutPerSuccessfulProvider ?? 0;
+    const successfulProviderIds =
+      result.settlementExecution?.successfulProviderIds ??
+      result.approvedSubmissions?.map((entry) => entry.submission.providerId) ??
+      [];
+    for (const providerId of successfulProviderIds) {
+      if (payout <= 0) {
+        continue;
+      }
+      const txHash =
+        result.settlementExecution?.childJobs?.find((job) => job.providerId === providerId)
+          ?.fundTxHash ?? result.settlementExecution?.finalizeTxHash;
+      controlState.recordSellerPayout({
+        providerId,
+        raidId: input.raidId,
+        grossUsd: payout,
+        status: result.status,
+        txHash,
+      });
+    }
+  }
+
+  function captureApiKeyBilling(input: {
+    apiKeyBilling?: ApiKeyBillingContext;
+    actualCostUsd: number;
+    route: 'raid' | 'chat' | 'inference';
+    raidId: string;
+    modelId?: string;
+    sellerId?: string;
+  }): void {
+    if (!input.apiKeyBilling || input.actualCostUsd <= 0) {
+      return;
+    }
+    controlState.recordBuyerApiKeyUsage(input.apiKeyBilling.apiKeyId, input.actualCostUsd);
+    if (input.apiKeyBilling.useBalance) {
+      controlState.debitBuyerBalance(input.apiKeyBilling.wallet, input.actualCostUsd);
+    }
+    const benchmarkPriceUsd = estimateBenchmarkPriceUsd({
+      modelId: input.modelId,
+      flatTaskUsd: input.actualCostUsd,
+    });
+    controlState.recordBuyerPurchase({
+      wallet: input.apiKeyBilling.wallet,
+      apiKeyId: input.apiKeyBilling.apiKeyId,
+      raidId: input.raidId,
+      modelId: input.modelId,
+      sellerId: input.sellerId,
+      costUsd: input.actualCostUsd,
+      benchmarkPriceUsd,
+      savingsUsd: computeSavingsUsd(benchmarkPriceUsd, input.actualCostUsd),
+      route: input.route,
+    });
+  }
+
   async function requireReservedLaunchPayment(
     route: 'raid' | 'chat',
     request: FastifyRequest,
@@ -1033,13 +1458,70 @@ export function buildApiServer(
     requestKey?: string;
     escrowFundingUsd?: number;
     platformMarkupUsd?: number;
+    manaBilling?: ManaBillingContext;
+    apiKeyBilling?: ApiKeyBillingContext;
   }> {
+    const manaBillingHeaders = readManaBillingHeaders(request.headers);
+    const requestKey = buildLaunchRequestKey(request, route, input);
+    if (manaBillingHeaders) {
+      const reservation = await orchestrator.reserveRaidLaunch(input, {
+        route,
+        requestKey,
+        holdUntilUnix: Math.floor(Date.now() / 1_000) + 60,
+      });
+      const amount =
+        reservation.quoteSnapshot?.manaQuote.maxChargeMana ??
+        Math.ceil(reservation.sanitized.constraints.maxBudgetUsd * 1_000);
+      const manaBilling = await reserveManaBilling({
+        route,
+        manaAccountId: manaBillingHeaders.manaAccountId,
+        amount,
+        requestKey,
+        quoteSnapshot: reservation.quoteSnapshot,
+      });
+      return {
+        reservationId: reservation.id,
+        requestKey,
+        manaBilling,
+      };
+    }
+
+    const apiKey = readBuyerApiKey(request.headers);
+    if (apiKey) {
+      const reservation = await orchestrator.reserveRaidLaunch(input, {
+        route,
+        requestKey,
+        holdUntilUnix: Math.floor(Date.now() / 1_000) + 60,
+      });
+      const amountUsd = reservation.sanitized.constraints.maxBudgetUsd;
+      const account = controlState.readPublicAccount(apiKey.wallet);
+      const spendCapOk =
+        apiKey.spendLimitUsd == null || apiKey.spentUsd + amountUsd <= apiKey.spendLimitUsd;
+      const balanceOk = account.balanceUsd >= amountUsd;
+      if (!spendCapOk && !balanceOk) {
+        throw new ApiContractError(
+          'Insufficient API key spend limit or prepaid balance for this request.',
+          402
+        );
+      }
+      return {
+        reservationId: reservation.id,
+        requestKey,
+        escrowFundingUsd: amountUsd,
+        apiKeyBilling: {
+          apiKeyId: apiKey.id,
+          wallet: apiKey.wallet,
+          reservedUsd: amountUsd,
+          useBalance: balanceOk,
+        },
+      };
+    }
+
     const x402Config = readX402Config(env);
     if (!x402Config.enabled) {
       return {};
     }
 
-    const requestKey = buildLaunchRequestKey(request, route, input);
     const paymentSignature = asSingleHeader(request.headers['payment-signature']);
     const explicitReservationId = readX402ReservationId(request.headers);
     if (paymentSignature && !explicitReservationId) {
@@ -1158,7 +1640,15 @@ export function buildApiServer(
       }
 
       await ensureSettlementProofState(raidId);
-      return orchestrator.getResult(raidId);
+      const result = orchestrator.getResult(raidId);
+      if (result.status === 'final') {
+        recordMarketplaceLedgersFromRaid({
+          raidId,
+          route: 'raid',
+          skipBuyerPurchase: true,
+        });
+      }
+      return result;
     });
 
     app.get(`${basePath}/:raidId/agent_log.json`, async (request, reply) => {
@@ -1654,30 +2144,105 @@ export function buildApiServer(
       return session;
     }
     const account = controlState.readPublicAccount(session.wallet);
-    const providerIds = new Set(account.sellerProviderIds);
-    let grossUsd = 0;
-    const payouts: Array<{ raidId: string; providerId: string; grossUsd: number; status: string }> =
-      [];
-    for (const raid of orchestrator.listRaids()) {
-      const result = orchestrator.getResult(raid.id);
-      for (const providerId of result.settlementExecution?.successfulProviderIds ?? []) {
-        if (!providerIds.has(providerId)) {
-          continue;
-        }
-        const payout = result.settlement?.payoutPerSuccessfulProvider ?? 0;
-        grossUsd += payout;
-        payouts.push({
-          raidId: raid.id,
-          providerId,
-          grossUsd: payout,
-          status: result.status,
-        });
-      }
-    }
+    const stats = controlState.getSellerStats(account.sellerProviderIds);
     return {
-      grossUsd,
-      payoutCount: payouts.length,
-      payouts,
+      grossUsd: stats.grossUsd,
+      payoutCount: stats.payoutCount,
+      earnings24hUsd: stats.earnings24hUsd,
+      routedRequests24h: stats.routedRequests24h,
+      payouts: stats.payouts.map((entry) => ({
+        raidId: entry.raidId,
+        providerId: entry.providerId,
+        grossUsd: entry.grossUsd,
+        status: entry.status,
+        txHash: entry.txHash,
+        createdAt: entry.createdAt,
+      })),
+    };
+  });
+
+  app.get('/v1/seller/stats', async (request, reply) => {
+    const session = requirePublicSession(reply, request.headers);
+    if ('error' in session) {
+      return session;
+    }
+    const account = controlState.readPublicAccount(session.wallet);
+    const stats = controlState.getSellerStats(account.sellerProviderIds);
+    const providers = orchestrator
+      .listProviders()
+      .filter((provider) => account.sellerProviderIds.includes(provider.providerId));
+    return {
+      grossUsd: stats.grossUsd,
+      payoutCount: stats.payoutCount,
+      earnings24hUsd: stats.earnings24hUsd,
+      routedRequests24h: stats.routedRequests24h,
+      activeOffers: providers.filter(
+        (provider) => (provider.marketplaceOfferStatus ?? 'active') === 'active'
+      ).length,
+      pausedOffers: providers.filter((provider) => provider.marketplaceOfferStatus === 'paused')
+        .length,
+      providers: providers.map((provider) => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        modelId: provider.modelId,
+        marketplaceOfferStatus: provider.marketplaceOfferStatus ?? 'active',
+        verificationStatus: provider.verification?.status,
+      })),
+    };
+  });
+
+  app.get('/v1/buyer/purchases', async (request, reply) => {
+    const session = requirePublicSession(reply, request.headers);
+    if ('error' in session) {
+      return session;
+    }
+    const query = request.query as { limit?: unknown };
+    const limit = readPositiveInteger(asSingleQueryValue(query.limit), 100);
+    const purchases = controlState.listBuyerPurchases(session.wallet, limit);
+    const totalSpentUsd = purchases.reduce((sum, entry) => sum + entry.costUsd, 0);
+    const totalSavingsUsd = purchases.reduce((sum, entry) => sum + (entry.savingsUsd ?? 0), 0);
+    return {
+      object: 'list',
+      totalSpentUsd,
+      totalSavingsUsd,
+      data: purchases,
+    };
+  });
+
+  app.get('/v1/buyer/balance', async (request, reply) => {
+    const session = requirePublicSession(reply, request.headers);
+    if ('error' in session) {
+      return session;
+    }
+    const account = controlState.readPublicAccount(session.wallet);
+    return {
+      wallet: account.wallet,
+      balanceUsd: account.balanceUsd,
+      currency: 'USD',
+    };
+  });
+
+  app.post('/v1/buyer/balance/fund', async (request, reply) => {
+    const session = requirePublicSession(reply, request.headers);
+    if ('error' in session) {
+      return session;
+    }
+    const body = ensureRecordInput(request.body, 'buyer_balance_fund');
+    const amountRaw = body.amountUsd ?? body.amount_usd;
+    const amountUsd =
+      typeof amountRaw === 'number'
+        ? amountRaw
+        : readPositiveNumber(typeof amountRaw === 'string' ? amountRaw : undefined);
+    if (amountUsd == null || amountUsd <= 0) {
+      reply.code(400);
+      return { error: 'invalid_amount', message: 'amountUsd must be a positive number.' };
+    }
+    const account = controlState.creditBuyerBalance(session.wallet, amountUsd);
+    return {
+      wallet: account.wallet,
+      balanceUsd: account.balanceUsd,
+      creditedUsd: amountUsd,
+      currency: 'USD',
     };
   });
 
@@ -1760,8 +2325,42 @@ export function buildApiServer(
       privacy_mode?: unknown;
       verification_status?: unknown;
     };
+    const marketData = buildInferenceMarketSnapshot({
+      modelId: asSingleQueryValue(query.model_id) ?? asSingleQueryValue(query.model),
+      modelProvider: asSingleQueryValue(query.model_provider) ?? asSingleQueryValue(query.provider),
+      agentFramework:
+        asSingleQueryValue(query.agent_framework) ?? asSingleQueryValue(query.framework),
+      maxBudgetUsd: readPositiveNumber(
+        asSingleQueryValue(query.max_budget_usd) ?? asSingleQueryValue(query.max_budget)
+      ),
+      privacyMode: asSingleQueryValue(query.privacy_mode),
+      verificationStatus: asSingleQueryValue(query.verification_status),
+    });
+    const providers = orchestrator.listProviders();
+    const activeOffers = providers.filter(
+      (provider) =>
+        (provider.marketplaceOfferStatus ?? 'active') === 'active' && provider.status !== 'offline'
+    ).length;
+    const sellerPayouts = controlState.listSellerPayouts(
+      providers.map((provider) => provider.providerId),
+      10_000
+    );
+    const since24h = Date.now() - 24 * 60 * 60 * 1_000;
+    const routedRequests24h = sellerPayouts.filter(
+      (entry) => Date.parse(entry.createdAt) >= since24h
+    ).length;
+    const earnedBySellers24hUsd = sellerPayouts
+      .filter((entry) => Date.parse(entry.createdAt) >= since24h)
+      .reduce((sum, entry) => sum + entry.grossUsd, 0);
+
     return {
       object: 'list',
+      stats: {
+        activeOffers,
+        modelsLive: marketData.length,
+        routedRequests24h,
+        earnedBySellers24hUsd,
+      },
       settlement: {
         asset: 'USDC',
         network: env.BOSSRAID_X402_NETWORK ?? 'base-sepolia',
@@ -1773,18 +2372,35 @@ export function buildApiServer(
         privacyPolicy:
           'Strict private routing requires privacy metadata and Phala/TEE attestation where configured.',
       },
-      data: buildInferenceMarketSnapshot({
-        modelId: asSingleQueryValue(query.model_id) ?? asSingleQueryValue(query.model),
-        modelProvider:
-          asSingleQueryValue(query.model_provider) ?? asSingleQueryValue(query.provider),
-        agentFramework:
-          asSingleQueryValue(query.agent_framework) ?? asSingleQueryValue(query.framework),
-        maxBudgetUsd: readPositiveNumber(
-          asSingleQueryValue(query.max_budget_usd) ?? asSingleQueryValue(query.max_budget)
-        ),
-        privacyMode: asSingleQueryValue(query.privacy_mode),
-        verificationStatus: asSingleQueryValue(query.verification_status),
-      }),
+      data: marketData,
+    };
+  });
+
+  app.get('/v1/marketplace/stats', async () => {
+    const providers = orchestrator.listProviders();
+    const markets = buildInferenceMarkets(
+      providers.filter(
+        (provider) => (provider.marketplaceOfferStatus ?? 'active') === 'active' && provider.modelId
+      )
+    );
+    const sellerPayouts = controlState.listSellerPayouts(
+      providers.map((provider) => provider.providerId),
+      10_000
+    );
+    const since24h = Date.now() - 24 * 60 * 60 * 1_000;
+    const recentPayouts = sellerPayouts.filter((entry) => Date.parse(entry.createdAt) >= since24h);
+    return {
+      activeOffers: providers.filter(
+        (provider) =>
+          (provider.marketplaceOfferStatus ?? 'active') === 'active' &&
+          provider.status !== 'offline'
+      ).length,
+      sellerOffersActive: providers.filter(
+        (provider) => (provider.marketplaceOfferStatus ?? 'active') === 'active'
+      ).length,
+      modelsLive: markets.length,
+      routedRequests24h: recentPayouts.length,
+      earnedBySellers24hUsd: recentPayouts.reduce((sum, entry) => sum + entry.grossUsd, 0),
     };
   });
 
@@ -2258,15 +2874,25 @@ interface InferenceMarketSeller {
   agentFramework?: string;
   rateUsd: number;
   pricing: {
-    unit: 'task';
-    pricePerTaskUsd: number;
-    pricePer1mInputTokensUsd: null;
-    pricePer1mOutputTokensUsd: null;
+    unit: 'task' | 'token_metered';
+    pricePerTaskUsd: number | null;
+    pricePer1mInputTokensUsd: number | null;
+    pricePer1mOutputTokensUsd: number | null;
+    minimumChargeUsd: number | null;
+    currency: string;
+    validFrom?: string;
+    validUntil?: string;
+    rateCardVersion?: string;
+    rateCardHash?: string;
+    upstreamModelId?: string;
+    maxContextTokens?: number;
   };
   status: ProviderProfile['status'];
+  marketplaceOfferStatus: 'active' | 'paused';
   verificationStatus?: string;
   privacy: {
     teeAttested?: boolean;
+    e2ee?: boolean;
     signedOutputs?: boolean;
     noDataRetention?: boolean;
   };
@@ -2290,10 +2916,10 @@ interface InferenceMarket {
     benchmarkSource: 'models.dev';
     benchmarkUrl: 'https://models.dev/api.json';
     benchmarkMode: 'static_reference_only';
-    declaredUnit: 'task';
+    declaredUnit: 'task' | 'token_metered';
     cheapestPricePerTaskUsd: number | null;
-    pricePer1mInputTokensUsd: null;
-    pricePer1mOutputTokensUsd: null;
+    pricePer1mInputTokensUsd: number | null;
+    pricePer1mOutputTokensUsd: number | null;
   };
   sellers: InferenceMarketSeller[];
 }
@@ -2302,6 +2928,7 @@ function forceDiscountInferenceChatPolicy(
   chatRequest: ChatCompletionRequest,
   options: {
     defaultMaxTotalCost?: number;
+    strictAlkahestLane?: boolean;
   } = {}
 ): ChatCompletionRequest {
   const policy = (chatRequest.raidPolicy ?? {}) as Record<string, unknown>;
@@ -2312,8 +2939,14 @@ function forceDiscountInferenceChatPolicy(
     policy.allowedOutputTypes ?? policy.allowed_output_types
   );
   const maxTotalCost = policy.maxTotalCost ?? policy.max_total_cost ?? options.defaultMaxTotalCost;
-  const privacyMode =
-    readPrivacyMode(policy.privacyMode) ?? readPrivacyMode(policy.privacy_mode) ?? 'prefer';
+  const privacyMode = options.strictAlkahestLane
+    ? 'strict'
+    : (readPrivacyMode(policy.privacyMode) ?? readPrivacyMode(policy.privacy_mode) ?? 'prefer');
+  const requiredPrivacyFeatures = options.strictAlkahestLane
+    ? (['tee_attested', 'e2ee', 'signed_outputs', 'no_data_retention'] as NonNullable<
+        ChatCompletionRequest['raidPolicy']
+      >['requirePrivacyFeatures'])
+    : undefined;
 
   return {
     ...chatRequest,
@@ -2332,9 +2965,32 @@ function forceDiscountInferenceChatPolicy(
             >['allowedOutputTypes'])
           : ['text', 'json'],
       privacyMode,
+      requirePrivacyFeatures:
+        requiredPrivacyFeatures ?? chatRequest.raidPolicy?.requirePrivacyFeatures,
+      requireErc8004: options.strictAlkahestLane ? true : chatRequest.raidPolicy?.requireErc8004,
+      minTrustScore: options.strictAlkahestLane
+        ? Math.max(Number(policy.minTrustScore ?? policy.min_trust_score ?? 0), 80)
+        : chatRequest.raidPolicy?.minTrustScore,
+      requiredVerificationStatus: options.strictAlkahestLane
+        ? 'verified'
+        : chatRequest.raidPolicy?.requiredVerificationStatus,
+      allowedModelProviders: options.strictAlkahestLane
+        ? ['google']
+        : chatRequest.raidPolicy?.allowedModelProviders,
       selectionMode: 'cost_first',
     },
   };
+}
+
+function readTrustedAlkahestClient(
+  headers: Record<string, string | string[] | undefined>
+): { sourceAppId: 'alkahest' } | undefined {
+  const clientId = asSingleHeader(headers['x-bossraid-client-id']);
+  const sourceAppId = asSingleHeader(headers['x-bossraid-source-app-id']);
+  if (clientId !== 'alkahest' && sourceAppId !== 'alkahest') {
+    return undefined;
+  }
+  return { sourceAppId: 'alkahest' };
 }
 
 function readPrivacyMode(
@@ -2361,8 +3017,21 @@ function resolveDiscountInferenceDefaultMaxTotalCost(
   const agentFrameworks = readPolicyStringArray(
     policy.allowedAgentFrameworks ?? policy.allowed_agent_frameworks
   );
+  const requiredVerificationStatus =
+    typeof policy.requiredVerificationStatus === 'string'
+      ? policy.requiredVerificationStatus
+      : typeof policy.required_verification_status === 'string'
+        ? policy.required_verification_status
+        : undefined;
+  const privacyMode = readPrivacyMode(policy.privacyMode) ?? readPrivacyMode(policy.privacy_mode);
+  const requireErc8004 = policy.requireErc8004 === true || policy.require_erc8004 === true;
+  const minTrustScoreValue = Number(policy.minTrustScore ?? policy.min_trust_score);
+  const minTrustScore = Number.isFinite(minTrustScoreValue) ? minTrustScoreValue : undefined;
   const rates = providers
     .filter((provider) => {
+      if ((provider.marketplaceOfferStatus ?? 'active') === 'paused') {
+        return false;
+      }
       if (modelIds.length > 0 && !provider.modelId) {
         return false;
       }
@@ -2383,9 +3052,29 @@ function resolveDiscountInferenceDefaultMaxTotalCost(
       ) {
         return false;
       }
-      return provider.status === 'available' && Number.isFinite(provider.pricePerTaskUsd);
+      if (
+        requiredVerificationStatus &&
+        provider.verification?.status !== requiredVerificationStatus
+      ) {
+        return false;
+      }
+      if (privacyMode === 'strict' && !providerHasStrictPrivateMarketMetadata(provider)) {
+        return false;
+      }
+      if (requireErc8004 && !provider.erc8004?.agentId) {
+        return false;
+      }
+      if (
+        typeof minTrustScore === 'number' &&
+        (provider.trust?.score ?? (provider.erc8004?.registrationTx ? 80 : 0)) < minTrustScore
+      ) {
+        return false;
+      }
+      return (
+        provider.status === 'available' && Number.isFinite(readProviderMarketRateUsd(provider))
+      );
     })
-    .map((provider) => provider.pricePerTaskUsd)
+    .map((provider) => readProviderMarketRateUsd(provider))
     .sort((left, right) => left - right);
 
   return rates[0];
@@ -2400,6 +3089,33 @@ function readPolicyStringArray(value: unknown): string[] | undefined {
 
 function resolveProviderMarketModelId(provider: ProviderProfile): string | undefined {
   return provider.modelId ?? provider.modelFamily;
+}
+
+function readProviderPricing(provider: ProviderProfile): ProviderPricing {
+  return (
+    provider.pricing ?? {
+      mode: 'task',
+      currency: 'USD',
+      pricePerTaskUsd: provider.pricePerTaskUsd,
+      rateCardHash: createHash('sha256')
+        .update(
+          JSON.stringify({
+            mode: 'task',
+            currency: 'USD',
+            pricePerTaskUsd: provider.pricePerTaskUsd,
+          })
+        )
+        .digest('hex'),
+    }
+  );
+}
+
+function readProviderMarketRateUsd(provider: ProviderProfile): number {
+  const pricing = readProviderPricing(provider);
+  if (pricing.mode === 'task') {
+    return pricing.pricePerTaskUsd ?? provider.pricePerTaskUsd;
+  }
+  return pricing.minimumChargeUsd ?? 0;
 }
 
 function buildInferenceMarkets(providers: ProviderProfile[]): InferenceMarket[] {
@@ -2420,8 +3136,16 @@ function buildInferenceMarkets(providers: ProviderProfile[]): InferenceMarket[] 
           (left, right) =>
             left.rateUsd - right.rateUsd || left.sellerId.localeCompare(right.sellerId)
         );
-      const activeSellers = sellers.filter((seller) => seller.status === 'available');
+      const activeSellers = sellers.filter(
+        (seller) =>
+          seller.status === 'available' && (seller.marketplaceOfferStatus ?? 'active') === 'active'
+      );
       const cheapestRateUsd = activeSellers[0]?.rateUsd ?? sellers[0]?.rateUsd ?? null;
+      const declaredUnit: InferenceMarket['pricing']['declaredUnit'] = sellers.some(
+        (seller) => seller.pricing.unit === 'token_metered'
+      )
+        ? 'token_metered'
+        : 'task';
       const successfulRaids = marketProviders.reduce(
         (total, provider) => total + provider.reputation.totalSuccessfulRaids,
         0
@@ -2462,10 +3186,14 @@ function buildInferenceMarkets(providers: ProviderProfile[]): InferenceMarket[] 
           benchmarkSource: 'models.dev' as const,
           benchmarkUrl: 'https://models.dev/api.json' as const,
           benchmarkMode: 'static_reference_only' as const,
-          declaredUnit: 'task' as const,
+          declaredUnit,
           cheapestPricePerTaskUsd: cheapestRateUsd,
-          pricePer1mInputTokensUsd: null,
-          pricePer1mOutputTokensUsd: null,
+          pricePer1mInputTokensUsd:
+            activeSellers.find((seller) => seller.pricing.pricePer1mInputTokensUsd != null)?.pricing
+              .pricePer1mInputTokensUsd ?? null,
+          pricePer1mOutputTokensUsd:
+            activeSellers.find((seller) => seller.pricing.pricePer1mOutputTokensUsd != null)
+              ?.pricing.pricePer1mOutputTokensUsd ?? null,
         },
         sellers,
       };
@@ -2478,22 +3206,33 @@ function buildInferenceMarkets(providers: ProviderProfile[]): InferenceMarket[] 
 }
 
 function buildInferenceMarketSeller(provider: ProviderProfile): InferenceMarketSeller {
+  const pricing = readProviderPricing(provider);
   return {
     sellerId: provider.providerId,
     displayName: provider.displayName,
     modelProvider: provider.modelProvider,
     agentFramework: provider.agentFramework,
-    rateUsd: provider.pricePerTaskUsd,
+    rateUsd: readProviderMarketRateUsd(provider),
     pricing: {
-      unit: 'task',
-      pricePerTaskUsd: provider.pricePerTaskUsd,
-      pricePer1mInputTokensUsd: null,
-      pricePer1mOutputTokensUsd: null,
+      unit: pricing.mode,
+      pricePerTaskUsd: pricing.pricePerTaskUsd ?? null,
+      pricePer1mInputTokensUsd: pricing.pricePer1mInputTokensUsd ?? null,
+      pricePer1mOutputTokensUsd: pricing.pricePer1mOutputTokensUsd ?? null,
+      minimumChargeUsd: pricing.minimumChargeUsd ?? null,
+      currency: pricing.currency,
+      validFrom: pricing.validFrom,
+      validUntil: pricing.validUntil,
+      rateCardVersion: pricing.rateCardVersion,
+      rateCardHash: pricing.rateCardHash,
+      upstreamModelId: pricing.upstreamModelId,
+      maxContextTokens: pricing.maxContextTokens,
     },
     status: provider.status,
+    marketplaceOfferStatus: provider.marketplaceOfferStatus ?? 'active',
     verificationStatus: provider.verification?.status,
     privacy: {
       teeAttested: provider.privacy?.teeAttested,
+      e2ee: provider.privacy?.e2ee,
       signedOutputs: provider.privacy?.signedOutputs,
       noDataRetention: provider.privacy?.noDataRetention,
     },
@@ -2504,8 +3243,9 @@ function buildInferenceMarketSeller(provider: ProviderProfile): InferenceMarketS
 
 function providerHasStrictPrivateMarketMetadata(provider: ProviderProfile): boolean {
   return Boolean(
-    provider.privacy?.teeAttested ||
-    provider.privacy?.signedOutputs ||
+    provider.privacy?.teeAttested &&
+    provider.privacy?.e2ee &&
+    provider.privacy?.signedOutputs &&
     provider.privacy?.noDataRetention
   );
 }
@@ -2534,7 +3274,9 @@ function buildInferencePriceEntry(market: InferenceMarket) {
     modelId: market.modelId,
     modelProvider: market.modelProvider,
     cheapestRateUsd: market.cheapestRateUsd,
-    declaredUnit: 'task',
+    declaredUnit: market.pricing.declaredUnit,
+    pricePer1mInputTokensUsd: market.pricing.pricePer1mInputTokensUsd,
+    pricePer1mOutputTokensUsd: market.pricing.pricePer1mOutputTokensUsd,
     providerCount: market.providerCount,
     activeProviderCount: market.activeProviderCount,
     verifiedSellerCount: market.verifiedSellerCount,
@@ -2545,6 +3287,7 @@ function buildInferencePriceEntry(market: InferenceMarket) {
     sellers: market.sellers.map((seller) => ({
       sellerId: seller.sellerId,
       rateUsd: seller.rateUsd,
+      pricing: seller.pricing,
       status: seller.status,
       verificationStatus: seller.verificationStatus,
     })),
@@ -2641,6 +3384,7 @@ function sanitizeBuyerApiKey(key: {
 }
 
 function enforceBuyerBudget(
+  controlState: ApiControlState,
   auth:
     | { type: 'session'; wallet: string; token: string }
     | {
@@ -2664,16 +3408,18 @@ function enforceBuyerBudget(
     };
   }
 
-  if (
-    auth?.type === 'api_key' &&
-    auth.spendLimitUsd != null &&
-    auth.spentUsd + requestBudgetUsd > auth.spendLimitUsd
-  ) {
-    return {
-      statusCode: 402,
-      error: 'api_key_spend_limit_exceeded',
-      message: 'API key spend limit would be exceeded by this request.',
-    };
+  if (auth?.type === 'api_key') {
+    const account = controlState.readPublicAccount(auth.wallet);
+    const spendCapOk =
+      auth.spendLimitUsd == null || auth.spentUsd + requestBudgetUsd <= auth.spendLimitUsd;
+    const balanceOk = account.balanceUsd >= requestBudgetUsd;
+    if (!spendCapOk && !balanceOk) {
+      return {
+        statusCode: 402,
+        error: 'api_key_spend_limit_exceeded',
+        message: 'API key spend limit or prepaid balance would be exceeded by this request.',
+      };
+    }
   }
 
   return undefined;
@@ -2750,13 +3496,41 @@ function buildSelfServeProviderRegistrationInput(
     modelFamily: input.modelFamily ?? input.model_family ?? existing?.modelFamily,
     maxConcurrency: input.maxConcurrency ?? input.max_concurrency ?? existing?.maxConcurrency ?? 1,
     pricing: {
+      mode: pricing.mode ?? existing?.pricing?.mode,
       pricePerTaskUsd:
         pricing.pricePerTaskUsd ??
         pricing.price_per_task_usd ??
         input.pricePerTaskUsd ??
         input.price_per_task_usd ??
-        existing?.pricePerTaskUsd ??
-        1,
+        existing?.pricing?.pricePerTaskUsd ??
+        (pricing.mode === 'token_metered' || existing?.pricing?.mode === 'token_metered'
+          ? undefined
+          : (existing?.pricePerTaskUsd ?? 1)),
+      pricePer1mInputTokensUsd:
+        pricing.pricePer1mInputTokensUsd ??
+        pricing.price_per_1m_input_tokens_usd ??
+        existing?.pricing?.pricePer1mInputTokensUsd,
+      pricePer1mOutputTokensUsd:
+        pricing.pricePer1mOutputTokensUsd ??
+        pricing.price_per_1m_output_tokens_usd ??
+        existing?.pricing?.pricePer1mOutputTokensUsd,
+      minimumChargeUsd:
+        pricing.minimumChargeUsd ??
+        pricing.minimum_charge_usd ??
+        existing?.pricing?.minimumChargeUsd,
+      currency: pricing.currency ?? existing?.pricing?.currency,
+      validFrom: pricing.validFrom ?? pricing.valid_from ?? existing?.pricing?.validFrom,
+      validUntil: pricing.validUntil ?? pricing.valid_until ?? existing?.pricing?.validUntil,
+      rateCardVersion:
+        pricing.rateCardVersion ?? pricing.rate_card_version ?? existing?.pricing?.rateCardVersion,
+      rateCardHash:
+        pricing.rateCardHash ?? pricing.rate_card_hash ?? existing?.pricing?.rateCardHash,
+      upstreamModelId:
+        pricing.upstreamModelId ?? pricing.upstream_model_id ?? existing?.pricing?.upstreamModelId,
+      maxContextTokens:
+        pricing.maxContextTokens ??
+        pricing.max_context_tokens ??
+        existing?.pricing?.maxContextTokens,
     },
     privacy: input.privacy ?? existing?.privacy ?? {},
     erc8004: erc8004AgentId
@@ -2774,16 +3548,25 @@ function buildSelfServeProviderRegistrationInput(
     auth: input.auth ?? existing?.auth ?? { type: 'none' },
     verification: existing?.verification ?? { status: 'pending' },
     reputation: existing?.reputation,
+    marketplaceOfferStatus:
+      input.marketplaceOfferStatus ??
+      input.marketplace_offer_status ??
+      existing?.marketplaceOfferStatus ??
+      'active',
   };
 }
 
 function buildPublicAccountResponse(controlState: ApiControlState, wallet: string) {
   const account = controlState.readPublicAccount(wallet);
+  const purchases = controlState.listBuyerPurchases(wallet, 20);
   return {
     wallet: account.wallet,
     createdAt: account.createdAt,
+    balanceUsd: account.balanceUsd,
     sellerProviderIds: account.sellerProviderIds,
     apiKeys: controlState.listBuyerApiKeys(wallet).map((key) => sanitizeBuyerApiKey(key)),
+    recentPurchases: purchases,
+    totalSavingsUsd: purchases.reduce((sum, entry) => sum + (entry.savingsUsd ?? 0), 0),
   };
 }
 
@@ -2841,7 +3624,9 @@ function buildProviderVerificationRegistrationInput(
     privacy: provider.privacy,
     erc8004: provider.erc8004,
     trust: provider.trust,
-    pricing: {
+    pricing: provider.pricing ?? {
+      mode: 'task',
+      currency: 'USD',
       pricePerTaskUsd: provider.pricePerTaskUsd,
     },
     auth: provider.auth,
@@ -3776,6 +4561,12 @@ async function streamChatCompletionResponse(
     };
     created: number;
     settleGraceMs: number;
+    bossraidBilling?: {
+      capture: (
+        usage: ReturnType<typeof estimateChatUsage>,
+        selectedSeller?: string
+      ) => Promise<unknown>;
+    };
   }
 ) {
   const stream = new PassThrough();
@@ -3840,6 +4631,16 @@ async function streamChatCompletionResponse(
         finalOutcome,
         input.chatRequest
       );
+      const usage = estimateChatUsage(input.chatRequest.messages, content);
+      const selectedSeller =
+        finalOutcome.result.synthesizedOutput?.baseSubmissionProviderId ??
+        finalOutcome.result.approvedSubmissions?.[0]?.submission.providerId;
+      let bossraid: unknown;
+      try {
+        bossraid = await input.bossraidBilling?.capture(usage, selectedSeller);
+      } catch (error) {
+        logger.error({ error, raidId: input.spawn.raidId }, 'Mana billing capture failed.');
+      }
 
       if (content.length > 0) {
         writeSseData(stream, {
@@ -3858,6 +4659,7 @@ async function streamChatCompletionResponse(
             },
           ],
           raid: buildChatRaidMetadata(input.spawn, finalOutcome),
+          bossraid,
         });
       }
 
@@ -3875,6 +4677,8 @@ async function streamChatCompletionResponse(
           },
         ],
         raid: buildChatRaidMetadata(input.spawn, finalOutcome),
+        bossraid,
+        usage,
       });
       stream.write('data: [DONE]\n\n');
     } finally {

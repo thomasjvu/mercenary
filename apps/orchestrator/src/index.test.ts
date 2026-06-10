@@ -17,6 +17,7 @@ import type {
   ProviderHealthStatus,
   ProviderHeartbeat,
   ProviderProfile,
+  PrivacyFeatureKey,
   ProviderSubmission,
   ProviderTaskPackage,
   RaidRecord,
@@ -488,6 +489,141 @@ test('selection can require ERC-8004 identity and a minimum trust score', () => 
   assert.equal(selection.primaries[0]?.providerId, 'provider-trusted');
 });
 
+test('selection can require verified provider status', () => {
+  const task = {
+    ...createSpawnInput(),
+    constraints: {
+      ...createSpawnInput().constraints,
+      requiredVerificationStatus: 'verified' as const,
+    },
+  };
+  const verifiedProvider = createProviderProfile('provider-verified-status', {
+    verification: {
+      status: 'verified',
+      apiVerified: true,
+      frameworkVerified: true,
+      modelVerified: true,
+    },
+  });
+  const pendingProvider = createProviderProfile('provider-pending-status', {
+    verification: {
+      status: 'pending',
+    },
+  });
+
+  const selection = selectProviders(task, [pendingProvider, verifiedProvider], 60_000);
+  assert.equal(selection.primaries.length, 1);
+  assert.equal(selection.primaries[0]?.providerId, 'provider-verified-status');
+});
+
+test('reserved launch quotes fail closed after provider rate-card changes', async () => {
+  const provider: RaidProvider = {
+    profile: createProviderProfile('provider-quoted-gemma', {
+      modelProvider: 'google',
+      modelId: 'gemma-4-31b-it',
+      supportedLanguages: ['text'],
+      supportedFrameworks: [],
+      outputTypes: ['text', 'json'],
+      pricing: {
+        mode: 'token_metered',
+        currency: 'USD',
+        pricePer1mInputTokensUsd: 0.08,
+        pricePer1mOutputTokensUsd: 0.16,
+        minimumChargeUsd: 0.01,
+        rateCardVersion: 'gemma-discount-v1',
+        rateCardHash: 'rate-card-v1',
+        maxContextTokens: 131_072,
+      },
+      verification: {
+        status: 'verified',
+        apiVerified: true,
+        frameworkVerified: true,
+        modelVerified: true,
+      },
+      privacy: {
+        teeAttested: true,
+        e2ee: true,
+        signedOutputs: true,
+        noDataRetention: true,
+      },
+      erc8004: {
+        agentId: '8004-quoted-gemma',
+        operatorWallet: '0x3333333333333333333333333333333333333333',
+        registrationTx: '0xquotedgemma',
+        identityRegistry: '0xidentityregistry',
+      },
+      trust: {
+        score: 91,
+        source: 'erc8004',
+      },
+    }),
+    async accept(_task: ProviderTaskPackage): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: 'run-quoted-gemma',
+      };
+    },
+    async run(): Promise<void> {},
+  };
+  const input: BossRaidSpawnInput = {
+    ...createSpawnInput(),
+    language: 'text',
+    framework: undefined,
+    files: [],
+    output: {
+      primaryType: 'text',
+      artifactTypes: ['text', 'json'] as OutputType[],
+    },
+    constraints: {
+      ...createSpawnInput().constraints,
+      numExperts: 1,
+      maxBudgetUsd: 1,
+      requireSpecializations: [],
+      allowedOutputTypes: ['text', 'json'] as OutputType[],
+      privacyMode: 'strict',
+      requirePrivacyFeatures: [
+        'tee_attested',
+        'e2ee',
+        'signed_outputs',
+        'no_data_retention',
+      ] as PrivacyFeatureKey[],
+      requireErc8004: true,
+      minTrustScore: 80,
+      requiredVerificationStatus: 'verified',
+      selectionMode: 'cost_first',
+      maxOutputTokens: 64,
+    },
+  };
+  const orchestrator = new BossRaidOrchestrator(
+    [provider],
+    undefined,
+    undefined,
+    undefined,
+    async (profile) => readyHealth(profile.providerId)
+  );
+
+  const reservation = await orchestrator.reserveRaidLaunch(input, {
+    route: 'chat',
+    requestKey: 'strict-quote-1',
+    holdUntilUnix: Math.floor(Date.now() / 1_000) + 60,
+  });
+  assert.equal(reservation.quoteSnapshot?.providers[0]?.rateCard.rateCardHash, 'rate-card-v1');
+
+  const current = orchestrator.getProviderProfile('provider-quoted-gemma');
+  assert.ok(current?.pricing);
+  current.pricing = {
+    ...current.pricing,
+    pricePer1mOutputTokensUsd: 0.5,
+    rateCardVersion: 'gemma-discount-v2',
+    rateCardHash: 'rate-card-v2',
+  };
+
+  await assert.rejects(
+    () => orchestrator.spawnReservedRaid(reservation.id, 'strict-quote-1'),
+    /changed its rate card/
+  );
+});
+
 test('strict privacy prefers Venice-backed providers when available', () => {
   const task = {
     ...createSpawnInput(),
@@ -893,6 +1029,59 @@ test('equal split settlement pays the full budget across successful providers on
   assert.equal(rewards.successfulProviderCount, 2);
   assert.equal(rewards.payoutPerSuccessfulProvider, 6);
   assert.equal(rewards.successfulProvidersPaid, 12);
+});
+
+test('computeRewards enforces minimum payout threshold', () => {
+  const ranked = [
+    {
+      submission: {
+        raidId: 'raid-1',
+        providerId: 'provider-a',
+        answerText: 'ok',
+        explanation: 'ok',
+        confidence: 0.9,
+        filesTouched: [],
+        submittedAt: new Date().toISOString(),
+      },
+      breakdown: {
+        schemaPass: true,
+        patchApplyPass: true,
+        buildScore: 1,
+        testScore: 1,
+        heuristicScore: 1,
+        correctnessRubric: 1,
+        sideEffectSafety: 1,
+        explanationScore: 1,
+        latencyScore: 1,
+        uniquenessScore: 1,
+        finalScore: 0.9,
+        valid: true,
+        invalidReasons: [],
+      },
+      rank: 1,
+    },
+  ];
+
+  const aboveThreshold = computeRewards(
+    0.5,
+    ranked,
+    { splitStrategy: 'equal_success_only' },
+    {
+      minimumPayoutThresholdUsd: 0.25,
+    }
+  );
+  assert.equal(aboveThreshold.payoutPerSuccessfulProvider, 0.5);
+
+  const belowThreshold = computeRewards(
+    0.1,
+    ranked,
+    { splitStrategy: 'equal_success_only' },
+    {
+      minimumPayoutThresholdUsd: 0.25,
+    }
+  );
+  assert.equal(belowThreshold.payoutPerSuccessfulProvider, 0);
+  assert.equal(belowThreshold.successfulProvidersPaid, 0);
 });
 
 test('settlement execution receives registered provider operator wallets', async () => {

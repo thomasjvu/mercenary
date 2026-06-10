@@ -34,6 +34,8 @@
     "test:strict-private:e2e": "node scripts/test-strict-private-raid-e2e.mjs",
     "test:mcp:e2e": "pnpm --filter @bossraid/mcp-server test:e2e",
     "test:x402:e2e": "node scripts/test-x402-e2e.mjs",
+    "test:x402:mock-facilitator": "node scripts/mock-x402-facilitator.mjs",
+    "test:surplus-parity:smoke": "node scripts/test-surplus-parity-smoke.mjs",
     "test:partyquest-bossraid:smoke": "node scripts/test-party-quest-bossraid-smoke.mjs",
     "verify:attestation": "node scripts/verify-attestation.mjs",
     "settle:raid": "pnpm --filter @bossraid/orchestrator settle",

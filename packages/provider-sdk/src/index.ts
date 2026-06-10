@@ -1,10 +1,11 @@
-import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { refreshProviderScores } from '@bossraid/provider-registry';
 import type {
   ProviderAcceptance,
   ProviderAuthConfig,
   ProviderHealthStatus,
+  ProviderPricing,
   ProviderHeartbeat,
   ProviderProfile,
   ProviderRegistrationInput,
@@ -16,6 +17,64 @@ import { DEFAULTS } from '@bossraid/constants';
 const HMAC_TIMESTAMP_MAX_SKEW_MS = 5 * 60_000;
 const DEFAULT_PROVIDER_HEALTH_TIMEOUT_MS = DEFAULTS.PROVIDER_HEALTH_TIMEOUT;
 const DEFAULT_PROVIDER_ACCEPT_TIMEOUT_MS = DEFAULTS.PROVIDER_ACCEPT_TIMEOUT;
+
+function hashRateCard(pricing: Omit<ProviderPricing, 'rateCardHash'>): string {
+  return createHash('sha256')
+    .update(
+      JSON.stringify({
+        mode: pricing.mode,
+        currency: pricing.currency,
+        pricePerTaskUsd: pricing.pricePerTaskUsd,
+        pricePer1mInputTokensUsd: pricing.pricePer1mInputTokensUsd,
+        pricePer1mOutputTokensUsd: pricing.pricePer1mOutputTokensUsd,
+        minimumChargeUsd: pricing.minimumChargeUsd,
+        validFrom: pricing.validFrom,
+        validUntil: pricing.validUntil,
+        rateCardVersion: pricing.rateCardVersion,
+        upstreamModelId: pricing.upstreamModelId,
+        maxContextTokens: pricing.maxContextTokens,
+      })
+    )
+    .digest('hex');
+}
+
+function normalizeProviderPricing(
+  pricing: ProviderRegistrationInput['pricing'] | ProviderProfile['pricing'] | undefined,
+  fallbackPricePerTaskUsd: number | undefined,
+  fallbackModelId: string | undefined
+): ProviderPricing {
+  const mode = pricing?.mode ?? 'task';
+  const currency = pricing?.currency ?? 'USD';
+  const normalized: Omit<ProviderPricing, 'rateCardHash'> = {
+    mode,
+    currency,
+    pricePerTaskUsd:
+      pricing?.pricePerTaskUsd ?? (mode === 'task' ? fallbackPricePerTaskUsd : undefined),
+    pricePer1mInputTokensUsd: pricing?.pricePer1mInputTokensUsd,
+    pricePer1mOutputTokensUsd: pricing?.pricePer1mOutputTokensUsd,
+    minimumChargeUsd: pricing?.minimumChargeUsd,
+    validFrom: pricing?.validFrom,
+    validUntil: pricing?.validUntil,
+    rateCardVersion: pricing?.rateCardVersion,
+    upstreamModelId: pricing?.upstreamModelId ?? fallbackModelId,
+    maxContextTokens: pricing?.maxContextTokens,
+  };
+
+  return {
+    ...normalized,
+    rateCardHash: pricing?.rateCardHash ?? hashRateCard(normalized),
+  };
+}
+
+function readCompatibilityTaskPrice(pricing: ProviderPricing): number {
+  if (typeof pricing.pricePerTaskUsd === 'number') {
+    return pricing.pricePerTaskUsd;
+  }
+  if (typeof pricing.minimumChargeUsd === 'number') {
+    return pricing.minimumChargeUsd;
+  }
+  return 0.01;
+}
 
 export interface RaidProvider {
   readonly profile: ProviderProfile;
@@ -387,9 +446,23 @@ export function buildProviderProfileFromRegistration(
     agentFramework: input.agentFramework ?? existing?.agentFramework,
     modelProvider: input.modelProvider ?? existing?.modelProvider,
     modelId: input.modelId ?? existing?.modelId,
-    pricePerTaskUsd: input.pricing?.pricePerTaskUsd ?? existing?.pricePerTaskUsd ?? 1,
+    pricing: normalizeProviderPricing(
+      input.pricing ?? existing?.pricing,
+      existing?.pricePerTaskUsd ?? 1,
+      input.modelId ?? existing?.modelId
+    ),
+    pricePerTaskUsd: readCompatibilityTaskPrice(
+      normalizeProviderPricing(
+        input.pricing ?? existing?.pricing,
+        existing?.pricePerTaskUsd ?? 1,
+        input.modelId ?? existing?.modelId
+      )
+    ),
     maxConcurrency: input.maxConcurrency ?? existing?.maxConcurrency ?? 1,
     status: existing?.status ?? 'available',
+    marketplaceOfferStatus:
+      input.marketplaceOfferStatus ?? existing?.marketplaceOfferStatus ?? 'active',
+    routingCooldownUntil: existing?.routingCooldownUntil,
     privacy: {
       ...existing?.privacy,
       ...input.privacy,
@@ -450,6 +523,11 @@ export function buildProviderProfileFromRegistration(
 }
 
 export function normalizeProviderProfile(profile: ProviderProfile): ProviderProfile {
+  const pricing = normalizeProviderPricing(
+    profile.pricing,
+    profile.pricePerTaskUsd ?? 1,
+    profile.modelId
+  );
   const normalized: ProviderProfile = {
     ...profile,
     agentId: profile.agentId ?? profile.providerId,
@@ -457,6 +535,8 @@ export function normalizeProviderProfile(profile: ProviderProfile): ProviderProf
     supportedLanguages: profile.supportedLanguages ?? [],
     supportedFrameworks: profile.supportedFrameworks ?? [],
     outputTypes: profile.outputTypes ?? [],
+    pricing,
+    pricePerTaskUsd: readCompatibilityTaskPrice(pricing),
     verification:
       profile.verification == null
         ? undefined

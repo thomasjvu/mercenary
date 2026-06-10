@@ -139,6 +139,9 @@ test('buildBossRaidRequestFromChatCompletion synthesizes the shared chat raid sh
     maxLatencySec: 45,
     maxTotalCost: 4.5,
     requiredCapabilities: undefined,
+    requiredVerificationStatus: undefined,
+    maxInputTokens: undefined,
+    maxOutputTokens: undefined,
     minReputationScore: 65,
     requireErc8004: true,
     minTrustScore: 72,
@@ -556,6 +559,40 @@ test('parseProviderRegistrationInput keeps general service metadata separate fro
   assert.equal(registration.verification?.apiVerified, true);
   assert.equal(registration.trust?.score, 70);
   assert.equal(registration.pricing?.pricePerTaskUsd, 1);
+});
+
+test('parseProviderRegistrationInput accepts token-metered rate cards', () => {
+  const registration = parseProviderRegistrationInput({
+    agent_id: 'gemma-surplus-seller',
+    name: 'Gemma Surplus Seller',
+    endpoint: 'https://provider.example.com',
+    model_provider: 'google',
+    model_id: 'gemma-4-31b-it',
+    pricing: {
+      mode: 'token_metered',
+      price_per_1m_input_tokens_usd: 0.08,
+      price_per_1m_output_tokens_usd: 0.16,
+      minimum_charge_usd: 0.01,
+      currency: 'USD',
+      valid_from: '2026-06-01T00:00:00.000Z',
+      valid_until: '2026-07-01T00:00:00.000Z',
+      rate_card_version: 'gemma-discount-v1',
+      rate_card_hash: 'rate-card-hash-v1',
+      upstream_model_id: 'google/gemma-4-31b-it',
+      max_context_tokens: 131_072,
+    },
+  });
+
+  assert.equal(registration.pricing?.mode, 'token_metered');
+  assert.equal(registration.pricing?.pricePer1mInputTokensUsd, 0.08);
+  assert.equal(registration.pricing?.pricePer1mOutputTokensUsd, 0.16);
+  assert.equal(registration.pricing?.minimumChargeUsd, 0.01);
+  assert.equal(registration.pricing?.validFrom, '2026-06-01T00:00:00.000Z');
+  assert.equal(registration.pricing?.validUntil, '2026-07-01T00:00:00.000Z');
+  assert.equal(registration.pricing?.rateCardVersion, 'gemma-discount-v1');
+  assert.equal(registration.pricing?.rateCardHash, 'rate-card-hash-v1');
+  assert.equal(registration.pricing?.upstreamModelId, 'google/gemma-4-31b-it');
+  assert.equal(registration.pricing?.maxContextTokens, 131_072);
 });
 
 test('parseProviderRegistrationInput keeps Party Quest provider source metadata', () => {

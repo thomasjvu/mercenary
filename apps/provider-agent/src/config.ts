@@ -113,9 +113,11 @@ export function buildProviderConfig(env: NodeJS.ProcessEnv = process.env) {
     providerInstructions:
       env.BOSSRAID_PROVIDER_INSTRUCTIONS ??
       'You are a specialist patch author. Return the smallest correct unified diff that addresses the reported issue without touching unrelated code.',
+    stubMode: readBoolean(env.BOSSRAID_PROVIDER_STUB_MODE),
     modelApiBase: env.BOSSRAID_MODEL_API_BASE ?? 'https://api.openai.com/v1',
     modelApiKey: env.BOSSRAID_MODEL_API_KEY,
-    modelName: env.BOSSRAID_MODEL,
+    modelName:
+      env.BOSSRAID_MODEL ?? (readBoolean(env.BOSSRAID_PROVIDER_STUB_MODE) ? 'gpt-5.5' : undefined),
     modelReasoningEffort: env.BOSSRAID_MODEL_REASONING_EFFORT ?? 'medium',
     modelTimeoutMs: Number(env.BOSSRAID_MODEL_TIMEOUT_MS ?? '45000'),
     maxOutputTokens: Number(env.BOSSRAID_MAX_OUTPUT_TOKENS ?? '2200'),
@@ -169,7 +171,7 @@ export const providerConfig = new Proxy({} as ProviderConfig, {
 export function getReadiness(): { ready: boolean; missing: string[] } {
   const config = getProviderConfig();
   const missing: string[] = [];
-  if (!config.modelApiKey) {
+  if (!config.stubMode && !config.modelApiKey) {
     missing.push('BOSSRAID_MODEL_API_KEY');
   }
   if (!config.modelName) {

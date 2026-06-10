@@ -16,10 +16,11 @@ if (args.has('help')) {
     [
       'Usage:',
       '  pnpm test:x402:e2e -- --mode wallet --route raid',
+      '  pnpm test:x402:e2e -- --mode mock --route inference --api-base http://127.0.0.1:8788',
       '',
       'Options:',
-      '  --mode wallet',
-      '  --route raid|chat',
+      '  --mode wallet|mock',
+      '  --route raid|chat|inference',
       '  --api-base <url>',
       '  --payload-file <path>',
     ].join('\n')
@@ -37,19 +38,19 @@ const apiBase =
 const payloadFile =
   readStringArg(args, 'payload-file') ?? resolve(rootDir, defaultPayloadForRoute(route));
 
-if (route !== 'raid' && route !== 'chat') {
-  throw new Error(`Unsupported --route "${route}". Use "raid" or "chat".`);
+if (route !== 'raid' && route !== 'chat' && route !== 'inference') {
+  throw new Error(`Unsupported --route "${route}". Use "raid", "chat", or "inference".`);
 }
 
-if (mode !== 'wallet') {
-  throw new Error(`Unsupported --mode "${mode}". Use "wallet".`);
+if (mode !== 'wallet' && mode !== 'mock') {
+  throw new Error(`Unsupported --mode "${mode}". Use "wallet" or "mock".`);
 }
 
 if (!existsSync(payloadFile)) {
   throw new Error(`Payload file not found: ${payloadFile}`);
 }
 
-const url = buildApiUrl(apiBase, route === 'chat' ? 'v1/chat/completions' : 'v1/raid');
+const url = buildApiUrl(apiBase, routePathFor(route));
 const payload = JSON.parse(readFileSync(payloadFile, 'utf8'));
 
 console.log(
@@ -95,7 +96,10 @@ console.log(
   )
 );
 
-const paidResponse = await runWalletPayment(url, payload, paymentRequired);
+const paidResponse =
+  mode === 'mock'
+    ? await runMockPayment(url, payload, paymentRequired, challengeResponse.headers)
+    : await runWalletPayment(url, payload, paymentRequired);
 
 const paymentResponseHeader = paidResponse.headers.get('payment-response');
 const settlement = paymentResponseHeader
@@ -116,18 +120,64 @@ if (!paymentResponseHeader) {
   throw new Error('Paid response succeeded but did not include PAYMENT-RESPONSE.');
 }
 
+const routerProof =
+  route === 'inference'
+    ? {
+        selectedSeller: responseBody?.bossraid?.selected_seller,
+        savingsUsd: responseBody?.bossraid?.savings_usd,
+        agentsInvited: responseBody?.raid?.agents_invited,
+        model: responseBody?.model,
+      }
+    : undefined;
+
+if (route === 'inference') {
+  if (!routerProof?.selectedSeller) {
+    throw new Error(
+      `Inference route did not return bossraid.selected_seller: ${JSON.stringify(responseBody)}`
+    );
+  }
+  if (routerProof.agentsInvited !== 1) {
+    throw new Error(
+      `Expected one-agent inference raid, got agents_invited=${routerProof.agentsInvited}`
+    );
+  }
+}
+
 console.log(
   JSON.stringify(
     {
       step: 'success',
       status: paidResponse.status,
       settlement,
+      routerProof,
       body: responseBody,
     },
     null,
     2
   )
 );
+
+async function runMockPayment(url, payload, paymentRequired, challengeHeaders) {
+  const reservationId =
+    challengeHeaders.get('x-bossraid-launch-reservation') ??
+    paymentRequired.accepts?.[0]?.extra?.reservationId;
+  if (typeof reservationId !== 'string' || reservationId.length === 0) {
+    throw new Error('Mock payment requires x-bossraid-launch-reservation from the 402 challenge.');
+  }
+
+  return fetch(url, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-bossraid-launch-reservation': reservationId,
+      'payment-signature': encodeBase64Json({
+        proof: 'facilitator-signed-payment',
+        payer: '0x000000000000000000000000000000000000dEaD',
+      }),
+    },
+    body: JSON.stringify(payload),
+  });
+}
 
 async function runWalletPayment(url, payload, paymentRequired) {
   const rawPrivateKey = process.env.BOSSRAID_X402_BUYER_PRIVATE_KEY ?? process.env.EVM_PRIVATE_KEY;
@@ -187,10 +237,27 @@ async function fetchJson(url, payload, extraHeaders = {}) {
   };
 }
 
+function routePathFor(route) {
+  if (route === 'chat') {
+    return 'v1/chat/completions';
+  }
+  if (route === 'inference') {
+    return 'v1/inference/chat/completions';
+  }
+  return 'v1/raid';
+}
+
 function defaultPayloadForRoute(route) {
+  if (route === 'inference') {
+    return 'examples/inference-chat-completion-request.json';
+  }
   return route === 'chat'
     ? 'examples/chat-completion-request.json'
     : 'examples/unity-bug/task.json';
+}
+
+function encodeBase64Json(value) {
+  return Buffer.from(JSON.stringify(value), 'utf8').toString('base64');
 }
 
 function decodeBase64Json(value) {

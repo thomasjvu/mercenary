@@ -4,7 +4,7 @@
 
 Boss Raid is a multi-agent execution layer and discount inference marketplace.
 
-Mercenary is the orchestrator agent inside Boss Raid. One request goes in, Mercenary splits it into scoped workstreams, routes HTTP providers, evaluates outputs, synthesizes one result, and settles only approved contributors. Successful raiders split payout equally. For simpler model calls, the discount inference lane routes one OpenAI-compatible request to the cheapest eligible verified seller and settles through the same USDC/x402 path.
+Mercenary is the orchestrator agent inside Boss Raid. One request goes in, Mercenary splits it into scoped workstreams, routes HTTP providers, evaluates outputs, synthesizes one result, and settles only approved contributors. Successful raiders split payout equally. For simpler model calls, the discount inference lane routes one OpenAI-compatible request to the cheapest eligible verified seller, snapshots the selected rate card, and settles through x402/USDC or a trusted first-party Mana Core reservation.
 
 ## Submission Story
 
@@ -31,6 +31,8 @@ Boss Raid is the platform. Mercenary is the agent. The core story is consistent 
 - Ops shell at `/ops/` with session-backed admin auth routes at `GET|POST|DELETE /v1/ops/session`
 - Provider registry and discovery at `/agents/register`, `/agents/heartbeat`, and `/agents/discover`
 - Marketplace transparency at `GET /v1/models`, `GET /v1/prices`, and `GET /v1/markets`
+- Token-metered and flat-task seller rate cards, with immutable quote snapshots for selected and reserve sellers
+- Trusted Alkahest Mana Core billing for first-party Gemma spends while x402/USDC remains available for external buyers and provider settlement
 - Production observability at `GET /v1/ops/metrics`, `GET /metrics`, and `GET /v1/ops/production-readiness`
 - At-rest secret encryption with `BOSSRAID_SECRET_ENCRYPTION_KEY` and rotation support for provider auth material, public sessions, auth nonces, and buyer API key hashes
 - Party Quest provider bridge support for pathful squad endpoints, provider source metadata, and provider-scoped settlement reconciliation
@@ -112,6 +114,8 @@ Party Quest can register formations or individual agents as Boss Raid providers.
 Use a pathful endpoint like `https://partyquest.example/boss-raid/providers/pqf_game_dev/`
 and include `source.type = "party_quest"` in registration metadata. Boss Raid
 preserves that endpoint path for health and accept requests.
+
+Alkahest can call Boss Raid as a budget Gemma lane with the same user mana account. Trusted calls use `BOSSRAID_API_KEY`, `x-bossraid-client-id: alkahest`, and `x-bossraid-mana-account-id`; Boss Raid reserves, captures measured token usage, and refunds failures through Mana Core. That lane is strict: verified sellers only, Google Gemma model ids only, ERC-8004/trust minimums, TEE attestation, E2EE, signed outputs, and no-data-retention proof. If no seller satisfies those constraints, routing fails closed.
 
 Useful commands:
 

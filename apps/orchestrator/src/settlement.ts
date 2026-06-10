@@ -9,7 +9,8 @@ export function buildSettlementAllocations(raid: RaidRecord): SettlementAllocati
   const rewards = computeRewards(
     readSettlementBudgetUsd(raid),
     raid.rankedSubmissions,
-    raid.task.rewardPolicy
+    raid.task.rewardPolicy,
+    { minimumPayoutThresholdUsd: raid.task.constraints.minimumPayoutThresholdUsd ?? 0.25 }
   );
 
   return raid.selectedProviders.map((providerId) => {
@@ -39,7 +40,8 @@ export function buildSettlementSummary(raid: RaidRecord): SettlementSummary | un
   const rewards = computeRewards(
     readSettlementBudgetUsd(raid),
     raid.rankedSubmissions,
-    raid.task.rewardPolicy
+    raid.task.rewardPolicy,
+    { minimumPayoutThresholdUsd: raid.task.constraints.minimumPayoutThresholdUsd ?? 0.25 }
   );
 
   return {
@@ -54,8 +56,14 @@ export function buildSettlementSummary(raid: RaidRecord): SettlementSummary | un
 }
 
 function readSettlementBudgetUsd(raid: RaidRecord): number {
+  const requestedBudget = raid.task.constraints.maxBudgetUsd;
+  const paidBudget =
+    typeof raid.escrowFundingUsd === 'number' && raid.escrowFundingUsd > 0
+      ? raid.escrowFundingUsd
+      : requestedBudget;
+
   if (!isSingleProviderGeneralServiceRaid(raid)) {
-    return raid.task.constraints.maxBudgetUsd;
+    return paidBudget;
   }
 
   const providerId = raid.selectedProviders[0];
@@ -64,10 +72,10 @@ function readSettlementBudgetUsd(raid: RaidRecord): number {
   )?.rateUsd;
 
   if (typeof providerRate !== 'number' || !Number.isFinite(providerRate) || providerRate <= 0) {
-    return raid.task.constraints.maxBudgetUsd;
+    return paidBudget;
   }
 
-  return Math.min(raid.task.constraints.maxBudgetUsd, providerRate);
+  return Math.min(paidBudget, providerRate);
 }
 
 function isSingleProviderGeneralServiceRaid(raid: RaidRecord): boolean {

@@ -24,15 +24,18 @@ import {
 import {
   DEFAULT_TIMEOUTS,
   annotateRoutingProof,
+  buildRaidQuoteSnapshot,
   buildRoutingProof,
   createRaidRecord,
   rankSubmissions,
+  readProviderPricing,
   sanitizeTask,
   selectProviders,
 } from '@bossraid/raid-core';
 import {
   buildDiscoveryQueryFromTask,
   providerHeartbeatAgeMs,
+  providerHasPrivacyFeature,
   providerIsFresh,
   providerMatchesDiscoveryQuery,
   refreshProviderScores,
@@ -57,6 +60,7 @@ import type {
   BossRaidPersistenceSnapshot,
   RaidRecord,
   RaidLaunchReservationRecord,
+  RaidQuoteSnapshot,
   RaidContributionPlan,
   RankedSubmission,
   ReputationEventType,
@@ -580,6 +584,7 @@ export class BossRaidOrchestrator {
       holdUntilUnix: number;
     }
   ): RaidLaunchReservationRecord {
+    const expiresAt = new Date(options.holdUntilUnix * 1_000).toISOString();
     const reservedProviderIds = [
       ...new Set(
         prepared.mode === 'hierarchical'
@@ -596,7 +601,7 @@ export class BossRaidOrchestrator {
       route: options.route,
       requestKey: options.requestKey,
       createdAt: new Date().toISOString(),
-      expiresAt: new Date(options.holdUntilUnix * 1_000).toISOString(),
+      expiresAt,
       paymentTimeoutSeconds: Math.max(1, options.holdUntilUnix - Math.floor(Date.now() / 1_000)),
       deadlineUnix: options.deadlineUnix,
       mode: prepared.mode,
@@ -604,6 +609,10 @@ export class BossRaidOrchestrator {
       selectedProviders:
         prepared.mode === 'single'
           ? this.toReservedSelectedProviders(prepared.selectedProviders)
+          : undefined,
+      quoteSnapshot:
+        prepared.mode === 'single'
+          ? buildRaidQuoteSnapshot(prepared.sanitized, prepared.selectedProviders, { expiresAt })
           : undefined,
       graph: prepared.mode === 'hierarchical' ? this.toReservedRaidNode(prepared.graph) : undefined,
       adaptiveProviderIds:
@@ -625,7 +634,10 @@ export class BossRaidOrchestrator {
       return {
         mode: 'single',
         sanitized: reservation.sanitized,
-        selectedProviders: this.fromReservedSelectedProviders(reservation.selectedProviders),
+        selectedProviders: this.fromReservedSelectedProviders(
+          reservation.selectedProviders,
+          reservation.quoteSnapshot
+        ),
       };
     }
 
@@ -653,12 +665,66 @@ export class BossRaidOrchestrator {
   }
 
   private fromReservedSelectedProviders(
-    selectedProviders: ReservedSelectedProviders
+    selectedProviders: ReservedSelectedProviders,
+    quoteSnapshot?: RaidQuoteSnapshot
   ): SelectedProviders {
-    return {
+    const selected = {
       primaries: selectedProviders.primaries.map((providerId) => this.requireProvider(providerId)),
       reserves: selectedProviders.reserves.map((providerId) => this.requireProvider(providerId)),
     };
+
+    if (quoteSnapshot) {
+      this.assertQuoteSnapshotStillValid(quoteSnapshot, selected);
+    }
+
+    return selected;
+  }
+
+  private assertQuoteSnapshotStillValid(
+    quoteSnapshot: RaidQuoteSnapshot,
+    selectedProviders: SelectedProviders
+  ): void {
+    const currentProviders = new Map(
+      [...selectedProviders.primaries, ...selectedProviders.reserves].map((provider) => [
+        provider.providerId,
+        provider,
+      ])
+    );
+
+    for (const snapshot of quoteSnapshot.providers) {
+      const current = currentProviders.get(snapshot.providerId);
+      if (!current) {
+        throw new InvalidRaidLaunchReservationError(
+          `Quoted provider ${snapshot.providerId} is no longer selected.`
+        );
+      }
+      const endpointHash = createHash('sha256').update(current.endpoint).digest('hex');
+      if (endpointHash !== snapshot.endpointHash) {
+        throw new InvalidRaidLaunchReservationError(
+          `Quoted provider ${snapshot.providerId} changed endpoint before execution.`
+        );
+      }
+      if (readProviderPricing(current).rateCardHash !== snapshot.rateCard.rateCardHash) {
+        throw new InvalidRaidLaunchReservationError(
+          `Quoted provider ${snapshot.providerId} changed its rate card before execution.`
+        );
+      }
+      if (
+        quoteSnapshot.requiredVerificationStatus &&
+        current.verification?.status !== quoteSnapshot.requiredVerificationStatus
+      ) {
+        throw new InvalidRaidLaunchReservationError(
+          `Quoted provider ${snapshot.providerId} no longer satisfies verification requirements.`
+        );
+      }
+      for (const feature of quoteSnapshot.requiredPrivacyFeatures) {
+        if (!providerHasPrivacyFeature(current, feature)) {
+          throw new InvalidRaidLaunchReservationError(
+            `Quoted provider ${snapshot.providerId} no longer satisfies privacy feature ${feature}.`
+          );
+        }
+      }
+    }
   }
 
   private toReservedRaidNode(node: PreparedRaidNode): ReservedRaidNode {
@@ -1701,6 +1767,7 @@ export class BossRaidOrchestrator {
     }
 
     this.clearProviderTimers(raidId, providerId);
+    this.applyProviderRoutingCooldown(providerId);
     if (raid.parentRaidId) {
       this.refreshRaidAncestry(raid.parentRaidId);
       this.maybeFinalizeAfterUpdate(raid.parentRaidId);
@@ -1708,6 +1775,19 @@ export class BossRaidOrchestrator {
     this.promoteReserve(raidId);
     this.maybeFinalizeAfterUpdate(raidId);
     this.queuePersistBestEffort();
+  }
+
+  private applyProviderRoutingCooldown(providerId: string, cooldownMs = 5 * 60_000): void {
+    const provider = this.providers.get(providerId);
+    if (!provider) {
+      return;
+    }
+    provider.routingCooldownUntil = new Date(Date.now() + cooldownMs).toISOString();
+    this.providers.set(providerId, provider);
+    const runtime = this.providerRuntimes.get(providerId);
+    if (runtime) {
+      runtime.profile.routingCooldownUntil = provider.routingCooldownUntil;
+    }
   }
 
   private expireRaidAtDeadline(raidId: string): void {

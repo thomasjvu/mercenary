@@ -33,7 +33,32 @@ export type PublicAccountEntry = {
   wallet: string;
   createdAt: string;
   updatedAt: string;
+  balanceUsd: number;
   sellerProviderIds: string[];
+};
+
+export type BuyerPurchaseEntry = {
+  id: string;
+  wallet: string;
+  apiKeyId?: string;
+  raidId: string;
+  modelId?: string;
+  sellerId?: string;
+  costUsd: number;
+  benchmarkPriceUsd?: number;
+  savingsUsd?: number;
+  route: 'raid' | 'chat' | 'inference';
+  createdAt: string;
+};
+
+export type SellerPayoutEntry = {
+  id: string;
+  providerId: string;
+  raidId: string;
+  grossUsd: number;
+  status: string;
+  txHash?: string;
+  createdAt: string;
 };
 
 export type BuyerApiKeyEntry = {
@@ -57,6 +82,8 @@ type ApiControlStateSnapshot = {
   publicSessions: PublicSessionEntry[];
   publicAccounts: PublicAccountEntry[];
   buyerApiKeys: BuyerApiKeyEntry[];
+  buyerPurchases: BuyerPurchaseEntry[];
+  sellerPayouts: SellerPayoutEntry[];
   rateLimits: ApiRateLimitEntry[];
 };
 
@@ -190,6 +217,8 @@ function createEmptyApiControlState(): ApiControlStateSnapshot {
     publicSessions: [],
     publicAccounts: [],
     buyerApiKeys: [],
+    buyerPurchases: [],
+    sellerPayouts: [],
     rateLimits: [],
   };
 }
@@ -217,6 +246,12 @@ function normalizeApiControlState(
       : [],
     buyerApiKeys: Array.isArray(snapshot?.buyerApiKeys)
       ? snapshot.buyerApiKeys.filter(isValidBuyerApiKeyEntry)
+      : [],
+    buyerPurchases: Array.isArray(snapshot?.buyerPurchases)
+      ? snapshot.buyerPurchases.filter(isValidBuyerPurchaseEntry)
+      : [],
+    sellerPayouts: Array.isArray(snapshot?.sellerPayouts)
+      ? snapshot.sellerPayouts.filter(isValidSellerPayoutEntry)
       : [],
     rateLimits: Array.isArray(snapshot?.rateLimits)
       ? snapshot.rateLimits.filter(isValidRateLimitEntry)
@@ -340,7 +375,37 @@ function isValidPublicAccountEntry(value: unknown): value is PublicAccountEntry 
     typeof (value as PublicAccountEntry).wallet === 'string' &&
     typeof (value as PublicAccountEntry).createdAt === 'string' &&
     typeof (value as PublicAccountEntry).updatedAt === 'string' &&
-    Array.isArray((value as PublicAccountEntry).sellerProviderIds)
+    Array.isArray((value as PublicAccountEntry).sellerProviderIds) &&
+    (typeof (value as PublicAccountEntry).balanceUsd === 'number' ||
+      (value as PublicAccountEntry).balanceUsd === undefined)
+  );
+}
+
+function isValidBuyerPurchaseEntry(value: unknown): value is BuyerPurchaseEntry {
+  return (
+    Boolean(value) &&
+    typeof value === 'object' &&
+    typeof (value as BuyerPurchaseEntry).id === 'string' &&
+    typeof (value as BuyerPurchaseEntry).wallet === 'string' &&
+    typeof (value as BuyerPurchaseEntry).raidId === 'string' &&
+    typeof (value as BuyerPurchaseEntry).costUsd === 'number' &&
+    ((value as BuyerPurchaseEntry).route === 'raid' ||
+      (value as BuyerPurchaseEntry).route === 'chat' ||
+      (value as BuyerPurchaseEntry).route === 'inference') &&
+    typeof (value as BuyerPurchaseEntry).createdAt === 'string'
+  );
+}
+
+function isValidSellerPayoutEntry(value: unknown): value is SellerPayoutEntry {
+  return (
+    Boolean(value) &&
+    typeof value === 'object' &&
+    typeof (value as SellerPayoutEntry).id === 'string' &&
+    typeof (value as SellerPayoutEntry).providerId === 'string' &&
+    typeof (value as SellerPayoutEntry).raidId === 'string' &&
+    typeof (value as SellerPayoutEntry).grossUsd === 'number' &&
+    typeof (value as SellerPayoutEntry).status === 'string' &&
+    typeof (value as SellerPayoutEntry).createdAt === 'string'
   );
 }
 
@@ -668,6 +733,124 @@ export class ApiControlState {
     return account.sellerProviderIds.includes(providerId);
   }
 
+  creditBuyerBalance(wallet: string, amountUsd: number, nowMs = Date.now()): PublicAccountEntry {
+    const normalizedWallet = wallet.toLowerCase();
+    const { snapshot } = this.readPrunedState(nowMs);
+    const account = this.ensurePublicAccountInSnapshot(snapshot, normalizedWallet);
+    account.balanceUsd += Math.max(0, amountUsd);
+    account.updatedAt = new Date(nowMs).toISOString();
+    this.writeState(snapshot);
+    return structuredClone(account);
+  }
+
+  debitBuyerBalance(wallet: string, amountUsd: number, nowMs = Date.now()): boolean {
+    const normalizedWallet = wallet.toLowerCase();
+    const { snapshot } = this.readPrunedState(nowMs);
+    const account = this.ensurePublicAccountInSnapshot(snapshot, normalizedWallet);
+    const charge = Math.max(0, amountUsd);
+    if (account.balanceUsd < charge) {
+      return false;
+    }
+    account.balanceUsd -= charge;
+    account.updatedAt = new Date(nowMs).toISOString();
+    this.writeState(snapshot);
+    return true;
+  }
+
+  recordBuyerPurchase(
+    input: Omit<BuyerPurchaseEntry, 'id' | 'createdAt'> & { id?: string; createdAt?: string }
+  ): BuyerPurchaseEntry {
+    const { snapshot } = this.readPrunedState(Date.now());
+    const entry: BuyerPurchaseEntry = {
+      id: input.id ?? `purchase_${randomUUID()}`,
+      wallet: input.wallet.toLowerCase(),
+      apiKeyId: input.apiKeyId,
+      raidId: input.raidId,
+      modelId: input.modelId,
+      sellerId: input.sellerId,
+      costUsd: Math.max(0, input.costUsd),
+      benchmarkPriceUsd: input.benchmarkPriceUsd,
+      savingsUsd: input.savingsUsd,
+      route: input.route,
+      createdAt: input.createdAt ?? new Date().toISOString(),
+    };
+    snapshot.buyerPurchases.unshift(entry);
+    snapshot.buyerPurchases = snapshot.buyerPurchases.slice(0, 5_000);
+    this.writeState(snapshot);
+    return structuredClone(entry);
+  }
+
+  listBuyerPurchases(wallet: string, limit = 100, nowMs = Date.now()): BuyerPurchaseEntry[] {
+    const normalizedWallet = wallet.toLowerCase();
+    const { snapshot, changed } = this.readPrunedState(nowMs);
+    if (changed) {
+      this.writeState(snapshot);
+    }
+    return snapshot.buyerPurchases
+      .filter((entry) => entry.wallet === normalizedWallet)
+      .slice(0, Math.max(1, limit))
+      .map((entry) => structuredClone(entry));
+  }
+
+  recordSellerPayout(
+    input: Omit<SellerPayoutEntry, 'id' | 'createdAt'> & { id?: string; createdAt?: string }
+  ): SellerPayoutEntry {
+    const { snapshot } = this.readPrunedState(Date.now());
+    const existing = snapshot.sellerPayouts.find(
+      (entry) => entry.raidId === input.raidId && entry.providerId === input.providerId
+    );
+    if (existing) {
+      return structuredClone(existing);
+    }
+    const entry: SellerPayoutEntry = {
+      id: input.id ?? `payout_${randomUUID()}`,
+      providerId: input.providerId,
+      raidId: input.raidId,
+      grossUsd: Math.max(0, input.grossUsd),
+      status: input.status,
+      txHash: input.txHash,
+      createdAt: input.createdAt ?? new Date().toISOString(),
+    };
+    snapshot.sellerPayouts.unshift(entry);
+    snapshot.sellerPayouts = snapshot.sellerPayouts.slice(0, 10_000);
+    this.writeState(snapshot);
+    return structuredClone(entry);
+  }
+
+  listSellerPayouts(providerIds: string[], limit = 500, nowMs = Date.now()): SellerPayoutEntry[] {
+    const allowed = new Set(providerIds);
+    const { snapshot, changed } = this.readPrunedState(nowMs);
+    if (changed) {
+      this.writeState(snapshot);
+    }
+    return snapshot.sellerPayouts
+      .filter((entry) => allowed.has(entry.providerId))
+      .slice(0, Math.max(1, limit))
+      .map((entry) => structuredClone(entry));
+  }
+
+  getSellerStats(
+    providerIds: string[],
+    nowMs = Date.now()
+  ): {
+    grossUsd: number;
+    payoutCount: number;
+    routedRequests24h: number;
+    earnings24hUsd: number;
+    payouts: SellerPayoutEntry[];
+  } {
+    const payouts = this.listSellerPayouts(providerIds, 500, nowMs);
+    const since24h = nowMs - 24 * 60 * 60 * 1_000;
+    const recent = payouts.filter((entry) => Date.parse(entry.createdAt) >= since24h);
+    return {
+      grossUsd: payouts.reduce((sum, entry) => sum + entry.grossUsd, 0),
+      payoutCount: payouts.length,
+      routedRequests24h: recent.length,
+      earnings24hUsd: recent.reduce((sum, entry) => sum + entry.grossUsd, 0),
+      payouts,
+    };
+  }
+
   consumeRateLimit(
     bucket: string,
     key: string,
@@ -739,6 +922,9 @@ export class ApiControlState {
     const normalizedWallet = wallet.toLowerCase();
     const existing = snapshot.publicAccounts.find((entry) => entry.wallet === normalizedWallet);
     if (existing) {
+      if (typeof existing.balanceUsd !== 'number') {
+        existing.balanceUsd = 0;
+      }
       return existing;
     }
     const now = new Date().toISOString();
@@ -746,6 +932,7 @@ export class ApiControlState {
       wallet: normalizedWallet,
       createdAt: now,
       updatedAt: now,
+      balanceUsd: 0,
       sellerProviderIds: [],
     };
     snapshot.publicAccounts.push(account);

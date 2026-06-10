@@ -119,6 +119,36 @@ test('buildProviderProfileFromRegistration canonicalizes providerId to the regis
   assert.equal(profile.agentId, 'riko');
 });
 
+test('buildProviderProfileFromRegistration normalizes token-metered rate cards', () => {
+  const profile = buildProviderProfileFromRegistration({
+    agentId: 'gemma-surplus-seller',
+    name: 'Gemma Surplus Seller',
+    endpoint: 'https://provider.example.com',
+    modelProvider: 'google',
+    modelId: 'gemma-4-31b-it',
+    pricing: {
+      mode: 'token_metered',
+      pricePer1mInputTokensUsd: 0.08,
+      pricePer1mOutputTokensUsd: 0.16,
+      minimumChargeUsd: 0.01,
+      currency: 'USD',
+      rateCardVersion: 'gemma-discount-v1',
+      upstreamModelId: 'google/gemma-4-31b-it',
+      maxContextTokens: 131_072,
+    },
+  });
+
+  assert.equal(profile.pricing?.mode, 'token_metered');
+  assert.equal(profile.pricing?.pricePer1mInputTokensUsd, 0.08);
+  assert.equal(profile.pricing?.pricePer1mOutputTokensUsd, 0.16);
+  assert.equal(profile.pricing?.minimumChargeUsd, 0.01);
+  assert.equal(profile.pricing?.rateCardVersion, 'gemma-discount-v1');
+  assert.equal(profile.pricing?.upstreamModelId, 'google/gemma-4-31b-it');
+  assert.equal(profile.pricing?.maxContextTokens, 131_072);
+  assert.equal(typeof profile.pricing?.rateCardHash, 'string');
+  assert.equal(profile.pricePerTaskUsd, 0.01);
+});
+
 test('buildProviderProfileFromRegistration preserves Party Quest source metadata', () => {
   const profile = buildProviderProfileFromRegistration({
     agentId: 'pqf-game-dev',

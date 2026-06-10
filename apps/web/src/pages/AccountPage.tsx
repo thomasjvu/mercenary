@@ -63,6 +63,10 @@ export function AccountPage() {
             <p className="eyebrow">wallet</p>
             <h2>{session.data.wallet}</h2>
             <p>{session.data.account?.sellerProviderIds.length ?? 0} seller providers linked.</p>
+            <p>${(session.data.account?.balanceUsd ?? 0).toFixed(2)} prepaid balance.</p>
+            {(session.data.account?.totalSavingsUsd ?? 0) > 0 ? (
+              <p>${session.data.account?.totalSavingsUsd?.toFixed(2)} benchmark savings.</p>
+            ) : null}
           </article>
 
           <article className="beta-panel beta-panel--wide">

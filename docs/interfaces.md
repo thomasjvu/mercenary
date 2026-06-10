@@ -4,17 +4,19 @@ Boss Raid is raid-oriented by design. `POST /v1/raid` is the native public write
 
 ## Public Write Routes
 
-| Route                                 | Purpose                                                                                                                                                                                                         |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POST /v1/raid`                       | Native raid submission. Returns `raidId`, `raidAccessToken`, and `receiptPath`.                                                                                                                                 |
-| `POST /v1/demo/raid`                  | Optional free demo launch route for the hosted `/demo` UI. Disabled unless `BOSSRAID_DEMO_ROUTE_ENABLED` is set. Can require `x-bossraid-demo-token`.                                                           |
-| `POST /v1/raids`                      | Alias spawn route that accepts the spawn-shape payload.                                                                                                                                                         |
-| `POST /v1/chat/completions`           | OpenAI-compatible text entrypoint over the same raid engine. Supports standard non-streaming replies and SSE streaming on the same v1 route. Returns chat output and usually raid metadata.                     |
-| `POST /v1/inference/chat/completions` | Discount inference entrypoint. Forces a single eligible seller, defaults to `cost_first`, defaults `allowed_model_ids` to `model`, and returns the same OpenAI-compatible response shape plus receipt metadata. |
+| Route                                 | Purpose                                                                                                                                                                                                                                           |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/raid`                       | Native raid submission. Returns `raidId`, `raidAccessToken`, and `receiptPath`.                                                                                                                                                                   |
+| `POST /v1/demo/raid`                  | Optional free demo launch route for the hosted `/demo` UI. Disabled unless `BOSSRAID_DEMO_ROUTE_ENABLED` is set. Can require `x-bossraid-demo-token`.                                                                                             |
+| `POST /v1/raids`                      | Alias spawn route that accepts the spawn-shape payload.                                                                                                                                                                                           |
+| `POST /v1/chat/completions`           | OpenAI-compatible text entrypoint over the same raid engine. Supports standard non-streaming replies and SSE streaming on the same v1 route. Returns chat output and usually raid metadata.                                                       |
+| `POST /v1/inference/chat/completions` | Discount inference entrypoint. Forces a single eligible seller, defaults to `cost_first`, defaults `allowed_model_ids` to `model`, snapshots the selected rate card, and returns the same OpenAI-compatible response shape plus receipt metadata. |
 
 `POST /v1/chat/completions` accepts `messages`, optional `stream`, optional `user`, optional `raid_policy`, and optional `raid_request`. Mercenary preserves `system`, `user`, and `assistant` turns when it builds the underlying raid task. When `raid_policy.selection_mode` is omitted on chat requests, Mercenary defaults that route to `best_match` even if `privacy_mode` is `prefer`, so ordinary chats stay domain-fit by default. `raid_policy.max_latency_sec` is honored on chat requests and becomes the underlying raid deadline. The response normalizes `model` to `mercenary-v1`, adds `created`, `system_fingerprint`, and `usage`, and usually includes a nonstandard `raid` object with `raid_id`, `raid_access_token`, `receipt_path`, routing counts, and final raid status.
 
-`POST /v1/inference/chat/completions` is the simpler Surplus-style mechanic inside Boss Raid. It still runs through provider verification, privacy filters, x402 payment, receipt, and settlement, but it is optimized for one cheap model response instead of multi-agent orchestration. If `raid_policy.max_total_cost` is omitted, Boss Raid uses the cheapest matching registered seller rate as the budget. This route does not use the low-signal direct Mercenary small-talk bypass.
+`POST /v1/inference/chat/completions` is the simpler Surplus-style mechanic inside Boss Raid. It still runs through provider verification, privacy filters, payment, receipt, and settlement, but it is optimized for one cheap model response instead of multi-agent orchestration. If `raid_policy.max_total_cost` is omitted, Boss Raid uses the cheapest matching registered seller rate as the budget. Token-metered sellers are charged from Boss Raid's measured prompt and output token counts, capped by the reservation. This route does not use the low-signal direct Mercenary small-talk bypass.
+
+Trusted Alkahest calls to this route are stricter than the general marketplace. With `x-bossraid-client-id: alkahest`, Boss Raid forces `privacy_mode=strict`, `require_privacy_features=["tee_attested","e2ee","signed_outputs","no_data_retention"]`, `verification_status=verified`, `require_erc8004=true`, `min_trust_score>=80`, `allowed_model_providers=["google"]`, and one seller. If no seller satisfies those constraints, the route returns no eligible provider instead of downgrading to a non-TEE or non-E2EE seller. Trusted Alkahest calls can reserve and capture user mana through Mana Core using `x-bossraid-mana-account-id`; public buyers still use the x402/USDC path when enabled.
 
 For the general agent service layer, `raid_policy` can also filter the queued provider pool with `allowed_agent_frameworks`, `allowed_model_providers`, and `allowed_model_ids`. Supported agent frameworks are `codex`, `claude_code`, `openclaw`, and `custom`. Model provider and model id values are plain strings intended to align with models.dev-style identifiers such as `openai` and `gpt-5.5`. `selection_mode: "round_robin"` rotates across verified eligible providers after budget, privacy, framework, model, health, and output filters pass. Existing `allowedModelFamilies`, `privacyMode`, `maxTotalCost`, and other raid policy fields continue to work.
 
@@ -52,12 +54,14 @@ When `stream=true`, the route returns `text/event-stream` and emits `chat.comple
 
 `receiptPath` points at `/receipt?raidId=<raidId>&token=<raidAccessToken>`.
 
-`GET /v1/markets` exposes seller id, display name, model provider, agent framework, provider-declared rate, verification status, privacy badges, output types, concurrency, active seller count, verified seller count, private seller count, recent success rate, and p50/p95 latency. It intentionally does not expose provider auth material or upstream account credentials. Sellers are expected to expose clean authenticated endpoints.
+`GET /v1/markets` exposes seller id, display name, model provider, agent framework, provider-declared rate, token-metered rate-card fields when present, verification status, privacy badges, output types, concurrency, active seller count, verified seller count, private seller count, recent success rate, and p50/p95 latency. It intentionally does not expose provider auth material or upstream account credentials. Sellers are expected to expose clean authenticated endpoints.
 
 `GET /v1/raid/:raidId/result` can return `synthesizedOutput.workstreams[].shortSummary` as a compact presentation string for receipts and chat-adjacent surfaces. The existing `summary`, `answerText`, `artifacts`, and proof fields stay unchanged.
 
 `GET /v1/raid/:raidId/result` and `agent_log.json` carry the routing snapshot Mercenary used for that run. When known, each routed provider includes `erc8004VerificationStatus`, `agentRegistry`, `agentUri`, `registrationTxFound`, and `operatorMatchesOwner`. `settlementExecution` also exposes `lifecycleStatus`, per-child `requestedAction`, `nextAction`, child-job tx hashes, optional `finalizeTxHash`, and `warnings`.
 For `mode: "onchain"`, Boss Raid attempts a live contract refresh before result, attested-result, MCP receipt, and run-log reads so late provider or evaluator actions can update the public proof state. When that refresh changes the proof, Boss Raid persists the updated `settlementExecution` back into raid storage and rewrites the settlement artifact JSON.
+
+OpenAI-compatible inference responses can include a nonstandard `bossraid` metadata object with `quote_id`, selected seller, rate-card hash, mana reserved/captured/refunded when Mana Core was used, receipt path, attestation summary, and routing proof. Clients should treat this as the per-request receipt boundary for marketplace-backed answers.
 
 ## Provider Callback And Registry Routes
 
@@ -83,6 +87,7 @@ General agent service registrations may include these additional fields:
 - `modelId` / `model_id`: models.dev-style model id
 - `verification`: `{ status, checkedAt, apiVerified, frameworkVerified, modelVerified, notes }`
 - `pricing.pricePerTaskUsd` / `pricing.price_per_task_usd`: provider-declared task rate
+- `marketplaceOfferStatus` / `marketplace_offer_status`: `active` or `paused`; paused sellers are excluded from routing and marketplace order books
 
 This verification object is separate from `privacy`, `erc8004`, `trust`, and `reputation`. Privacy and TEE claims remain under `privacy`, ERC-8004 identity proof remains under `erc8004`, trust scoring remains under `trust`, and observed performance remains under `reputation`.
 
@@ -105,9 +110,14 @@ When `BOSSRAID_ERC8004_VERIFY=true`, `GET /v1/providers`, `GET /v1/providers/:pr
 | `POST /v1/seller/providers`                    | Register a self-serve seller endpoint and run automated verification.                   |
 | `PATCH /v1/seller/providers/:providerId`       | Update metadata for a provider owned by the current wallet.                             |
 | `POST /v1/seller/providers/:providerId/verify` | Re-run automated verification for a provider owned by the current wallet.               |
-| `GET /v1/seller/earnings`                      | Return gross seller payouts from current settlement records.                            |
+| `GET /v1/seller/earnings`                      | Return gross seller payouts from the durable payout ledger.                             |
+| `GET /v1/seller/stats`                         | Seller dashboard metrics: 24h earnings, routed requests, active/paused offers.          |
+| `GET /v1/buyer/purchases`                      | Wallet session purchase history with benchmark savings metadata.                        |
+| `GET /v1/buyer/balance`                        | Return prepaid buyer balance for the current wallet session.                            |
+| `POST /v1/buyer/balance/fund`                  | Credit prepaid buyer balance for the current wallet session.                            |
+| `GET /v1/marketplace/stats`                    | Public marketplace counters: active offers, models live, 24h routed volume.             |
 
-Buyer calls may authenticate with `Authorization: Bearer br_...`. Boss Raid stores only the API key hash, encrypts that hash at rest when `BOSSRAID_SECRET_ENCRYPTION_KEY` is configured, tracks `spentUsd`, and enforces per-key spend caps plus the optional server request budget cap. Session cookies are for the public web app; API keys are for programmatic calls.
+Buyer calls may authenticate with `Authorization: Bearer br_...`. When a valid buyer API key is present on paid inference or chat routes, Boss Raid skips the x402 challenge and debits the request against the key spend cap and/or the wallet prepaid balance. Boss Raid stores only the API key hash, encrypts that hash at rest when `BOSSRAID_SECRET_ENCRYPTION_KEY` is configured, tracks `spentUsd`, and enforces per-key spend caps plus the optional server request budget cap. Session cookies are for the public web app; API keys are for programmatic calls.
 
 Self-serve seller routes sit over the same provider registry as `POST /agents/register`, but they are wallet-owned public beta routes. Public seller registration collects endpoint URL, auth mode, framework, model provider, model id, output types, declared task rate, payout wallet, and privacy claims. Provider ingress auth tokens and HMAC secrets are decrypted only in memory and encrypted before file/SQLite persistence when `BOSSRAID_SECRET_ENCRYPTION_KEY` is configured.
 

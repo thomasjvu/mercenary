@@ -14,9 +14,16 @@ if (!Array.isArray(providerProfiles) || providerProfiles.length === 0) {
   throw new Error(`No provider profiles found in ${providersFile}.`);
 }
 
-if (!inheritedEnv.BOSSRAID_MODEL_API_KEY || !inheritedEnv.BOSSRAID_MODEL) {
+const sharedModelConfigured =
+  Boolean(inheritedEnv.BOSSRAID_MODEL_API_KEY) && Boolean(inheritedEnv.BOSSRAID_MODEL);
+const providerStubMode =
+  inheritedEnv.BOSSRAID_PROVIDER_STUB_MODE === "1" ||
+  inheritedEnv.BOSSRAID_PROVIDER_STUB_MODE === "true" ||
+  inheritedEnv.BOSSRAID_PROVIDER_STUB_MODE === "yes";
+
+if (!sharedModelConfigured && !providerStubMode) {
   console.error(
-    "Missing shared model env. Provider processes can still become ready if the selected provider profile resolves to per-agent Venice credentials.",
+    "Missing shared model env. Falling back to BOSSRAID_PROVIDER_STUB_MODE for local provider responses.",
   );
 }
 
@@ -31,7 +38,10 @@ const children = providerProfiles.map((profile, index) => {
     : inheritedEnv.BOSSRAID_MODEL_API_BASE;
   const providerModel = usingVenice
     ? inheritedEnv.BOSSRAID_VENICE_MODEL ?? inheritedEnv.VENICE_MODEL ?? "minimax-m27"
-    : inheritedEnv.BOSSRAID_MODEL;
+    : inheritedEnv.BOSSRAID_MODEL ?? profile.modelId ?? "gpt-5.5";
+  const useStubMode =
+    providerStubMode ||
+    (!providerModelApiKey && !inheritedEnv.BOSSRAID_MODEL_API_KEY);
   const providerInstructions = buildProviderInstructions(profile, mode);
   const child = spawn(
     "pnpm",
@@ -49,9 +59,14 @@ const children = providerProfiles.map((profile, index) => {
         BOSSRAID_PROVIDER_AUTH_TYPE: profile.auth?.type ?? inheritedEnv.BOSSRAID_PROVIDER_AUTH_TYPE,
         BOSSRAID_PROVIDER_INSTRUCTIONS: providerInstructions,
         BOSSRAID_PROVIDER_MODE: mode,
+        BOSSRAID_PROVIDER_STUB_MODE: useStubMode ? "true" : inheritedEnv.BOSSRAID_PROVIDER_STUB_MODE,
         BOSSRAID_MODEL_API_KEY: providerModelApiKey ?? inheritedEnv.BOSSRAID_MODEL_API_KEY,
         BOSSRAID_MODEL: providerModel,
         BOSSRAID_MODEL_API_BASE: providerModelApiBase,
+        BOSSRAID_CALLBACK_BASE:
+          inheritedEnv.BOSSRAID_CALLBACK_BASE ??
+          inheritedEnv.BOSSRAID_API_BASE ??
+          `http://127.0.0.1:${inheritedEnv.BOSSRAID_API_PORT ?? "8787"}`,
         BOSSRAID_MODEL_REASONING_EFFORT:
           inheritedEnv.BOSSRAID_MODEL_REASONING_EFFORT ?? inheritedEnv.VENICE_REASONING_EFFORT ?? "medium",
       },

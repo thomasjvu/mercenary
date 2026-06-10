@@ -15,7 +15,9 @@ import type {
   BossRaidSpawnInput,
   EvaluationBreakdown,
   PrivacyFeatureKey,
+  ProviderPricing,
   ProviderProfile,
+  RaidQuoteSnapshot,
   RaidRecord,
   RaidContributionPlan,
   RaidTaskSpec,
@@ -288,6 +290,65 @@ export function normalizePrice(
   return clamp01(1 - pricePerTaskUsd / Math.max(perExpertBudget, 0.01));
 }
 
+export function readProviderPricing(provider: ProviderProfile): ProviderPricing {
+  return (
+    provider.pricing ?? {
+      mode: 'task',
+      currency: 'USD',
+      pricePerTaskUsd: provider.pricePerTaskUsd,
+      rateCardHash: sha256(
+        JSON.stringify({
+          mode: 'task',
+          currency: 'USD',
+          pricePerTaskUsd: provider.pricePerTaskUsd,
+        })
+      ),
+    }
+  );
+}
+
+export function estimateTaskInputTokens(task: RaidTaskSpec): number {
+  const text = [
+    task.taskTitle,
+    task.taskDescription,
+    task.failingSignals.expectedBehavior,
+    task.failingSignals.observedBehavior,
+    ...task.failingSignals.errors,
+    ...task.files.map((file) => file.content),
+  ]
+    .filter((value): value is string => typeof value === 'string' && value.length > 0)
+    .join('\n');
+  return Math.max(1, Math.ceil(text.length / 4));
+}
+
+export function estimateTaskOutputTokens(task: RaidTaskSpec): number {
+  return Math.max(1, task.constraints.maxOutputTokens ?? 1024);
+}
+
+export function estimateProviderChargeUsd(provider: ProviderProfile, task: RaidTaskSpec): number {
+  const pricing = readProviderPricing(provider);
+  if (pricing.mode === 'task') {
+    return pricing.pricePerTaskUsd ?? provider.pricePerTaskUsd;
+  }
+
+  const inputTokens = task.constraints.maxInputTokens ?? estimateTaskInputTokens(task);
+  const outputTokens = estimateTaskOutputTokens(task);
+  const inputCost = (inputTokens / 1_000_000) * Math.max(pricing.pricePer1mInputTokensUsd ?? 0, 0);
+  const outputCost =
+    (outputTokens / 1_000_000) * Math.max(pricing.pricePer1mOutputTokensUsd ?? 0, 0);
+  return Math.max(inputCost + outputCost, pricing.minimumChargeUsd ?? 0);
+}
+
+function providerContextWindowMatches(provider: ProviderProfile, task: RaidTaskSpec): boolean {
+  const maxContextTokens = readProviderPricing(provider).maxContextTokens;
+  if (typeof maxContextTokens !== 'number' || maxContextTokens <= 0) {
+    return true;
+  }
+  const inputTokens = task.constraints.maxInputTokens ?? estimateTaskInputTokens(task);
+  const outputTokens = estimateTaskOutputTokens(task);
+  return inputTokens + outputTokens <= maxContextTokens;
+}
+
 export function computeSelectionScore(provider: ProviderProfile, task: RaidTaskSpec): number {
   const specializationMatch = scoreSpecialization(provider, task);
   const textDomainFit = scoreTextDomainFit(provider, task);
@@ -298,7 +359,7 @@ export function computeSelectionScore(provider: ProviderProfile, task: RaidTaskS
   );
   const validity = provider.reputation.validityScore;
   const price = normalizePrice(
-    provider.pricePerTaskUsd,
+    estimateProviderChargeUsd(provider, task),
     task.constraints.maxBudgetUsd,
     task.constraints.numExperts
   );
@@ -518,7 +579,9 @@ function buildRoutingDecision(
     modelProvider: provider.modelProvider,
     modelId: provider.modelId,
     verificationStatus: provider.verification?.status,
-    rateUsd: provider.pricePerTaskUsd,
+    rateUsd: estimateProviderChargeUsd(provider, task),
+    pricing: readProviderPricing(provider),
+    rateCardHash: readProviderPricing(provider).rateCardHash,
     veniceBacked,
     erc8004Registered: providerHasErc8004Identity(provider),
     trustScore,
@@ -551,6 +614,9 @@ export function buildRoutingProof(
           : 'best_match'),
       requireErc8004: task.constraints.requireErc8004 === true,
       minTrustScore: task.constraints.minTrustScore,
+      requiredVerificationStatus: task.constraints.requiredVerificationStatus,
+      maxInputTokens: task.constraints.maxInputTokens,
+      maxOutputTokens: task.constraints.maxOutputTokens,
       allowedModelFamilies: task.constraints.allowedModelFamilies ?? [],
       allowedAgentFrameworks: task.constraints.allowedAgentFrameworks ?? [],
       allowedModelProviders: task.constraints.allowedModelProviders ?? [],
@@ -592,6 +658,74 @@ export function annotateRoutingProof(
   };
 }
 
+export function buildRaidQuoteSnapshot(
+  task: RaidTaskSpec,
+  selectedProviders: SelectedProviders,
+  options: { quoteId?: string; expiresAt?: string; manaPerUsd?: number } = {}
+): RaidQuoteSnapshot {
+  const now = new Date().toISOString();
+  const expiresAt =
+    options.expiresAt ?? new Date(Date.now() + DEFAULT_TIMEOUTS.raidAbsoluteMs).toISOString();
+  const manaPerUsd = options.manaPerUsd ?? 1_000;
+  const providers = [
+    ...selectedProviders.primaries.map((provider) => ({ provider, phase: 'primary' as const })),
+    ...selectedProviders.reserves.map((provider) => ({ provider, phase: 'reserve' as const })),
+  ].map(({ provider, phase }) => ({
+    providerId: provider.providerId,
+    phase,
+    rateCard: { ...readProviderPricing(provider) },
+    modelProvider: provider.modelProvider,
+    modelId: provider.modelId,
+    upstreamModelId: readProviderPricing(provider).upstreamModelId,
+    maxContextTokens: readProviderPricing(provider).maxContextTokens,
+    endpointHash: sha256(provider.endpoint),
+    verificationStatus: provider.verification?.status,
+    trustScore: computeTrustScore(provider),
+    privacyFeatures: readProviderPrivacyFeatures(provider),
+    erc8004Registered: providerHasErc8004Identity(provider),
+    attestationSummary: {
+      teeAttested: provider.privacy?.teeAttested,
+      teeVendor: provider.privacy?.teeVendor,
+      e2ee: provider.privacy?.e2ee,
+      signedOutputs: provider.privacy?.signedOutputs,
+      noDataRetention: provider.privacy?.noDataRetention,
+    },
+  }));
+
+  const maxChargeUsd = Math.min(
+    task.constraints.maxBudgetUsd,
+    Math.max(
+      task.constraints.maxBudgetUsd,
+      selectedProviders.primaries.reduce(
+        (sum, provider) => sum + estimateProviderChargeUsd(provider, task),
+        0
+      )
+    )
+  );
+
+  return {
+    quoteId: options.quoteId ?? randomUUID(),
+    createdAt: now,
+    expiresAt,
+    modelId: task.constraints.allowedModelIds?.[0],
+    selectedSellerIds: selectedProviders.primaries.map((provider) => provider.providerId),
+    reserveSellerIds: selectedProviders.reserves.map((provider) => provider.providerId),
+    privacyMode: task.constraints.privacyMode,
+    requiredPrivacyFeatures: task.constraints.requirePrivacyFeatures ?? [],
+    requiredVerificationStatus: task.constraints.requiredVerificationStatus,
+    requireErc8004: task.constraints.requireErc8004 === true,
+    minTrustScore: task.constraints.minTrustScore,
+    estimatedMaxInputTokens: task.constraints.maxInputTokens ?? estimateTaskInputTokens(task),
+    estimatedMaxOutputTokens: estimateTaskOutputTokens(task),
+    maxChargeUsd,
+    manaQuote: {
+      manaPerUsd,
+      maxChargeMana: Math.ceil(maxChargeUsd * manaPerUsd),
+    },
+    providers,
+  };
+}
+
 export function providerMatchesTask(
   provider: ProviderProfile,
   task: RaidTaskSpec,
@@ -611,13 +745,27 @@ export function providerMatchesTask(
 
   const languageMatch =
     !isPatchTask || task.language === 'text' || provider.supportedLanguages.includes(task.language);
+  if (provider.marketplaceOfferStatus === 'paused') {
+    return false;
+  }
+  if (
+    provider.routingCooldownUntil &&
+    Number.isFinite(Date.parse(provider.routingCooldownUntil)) &&
+    Date.parse(provider.routingCooldownUntil) > Date.now()
+  ) {
+    return false;
+  }
+
   const reputationMatch =
     (provider.scores?.reputationScore ?? computeReputationScore(provider)) / 100 >=
     task.constraints.minReputation;
   const timeoutMatch = provider.reputation.timeoutRate <= 0.25;
   const priceMatch =
-    provider.pricePerTaskUsd * Math.max(task.constraints.numExperts, 1) <=
+    estimateProviderChargeUsd(provider, task) * Math.max(task.constraints.numExperts, 1) <=
     task.constraints.maxBudgetUsd;
+  const verificationMatch =
+    task.constraints.requiredVerificationStatus == null ||
+    provider.verification?.status === task.constraints.requiredVerificationStatus;
   const modelFamilyMatch = providerMatchesAllowedModelFamilies(
     provider,
     task.constraints.allowedModelFamilies
@@ -666,7 +814,9 @@ export function providerMatchesTask(
     outputTypeMatch &&
     erc8004Match &&
     trustMatch &&
+    verificationMatch &&
     strictPrivacyMatch &&
+    providerContextWindowMatches(provider, task) &&
     freshMatch
   );
 }
@@ -750,9 +900,11 @@ function compareProviders(
   const trustAwareRouting =
     task.constraints.requireErc8004 === true || typeof task.constraints.minTrustScore === 'number';
   const venicePrivateLane = taskUsesVenicePrivateLane(task);
+  const leftChargeUsd = estimateProviderChargeUsd(left.provider, task);
+  const rightChargeUsd = estimateProviderChargeUsd(right.provider, task);
 
-  if (mode === 'cost_first' && left.provider.pricePerTaskUsd !== right.provider.pricePerTaskUsd) {
-    return left.provider.pricePerTaskUsd - right.provider.pricePerTaskUsd;
+  if (mode === 'cost_first' && leftChargeUsd !== rightChargeUsd) {
+    return leftChargeUsd - rightChargeUsd;
   }
 
   if (venicePrivateLane && leftVenice !== rightVenice) {
@@ -1074,11 +1226,14 @@ function summarizeSubmissionContent(submission: RankedSubmission['submission']):
 export function computeRewards(
   totalBudget: number,
   ranked: RankedSubmission[],
-  _rewardPolicy: RewardPolicy
+  _rewardPolicy: RewardPolicy,
+  options: { minimumPayoutThresholdUsd?: number } = {}
 ): RewardComputation {
   const successfulProviders = ranked.filter((item) => item.breakdown.valid);
-  const payoutPerSuccessfulProvider =
+  const rawPayoutPerProvider =
     successfulProviders.length > 0 ? totalBudget / successfulProviders.length : 0;
+  const threshold = Math.max(0, options.minimumPayoutThresholdUsd ?? 0);
+  const payoutPerSuccessfulProvider = rawPayoutPerProvider >= threshold ? rawPayoutPerProvider : 0;
 
   return {
     successfulProviderCount: successfulProviders.length,

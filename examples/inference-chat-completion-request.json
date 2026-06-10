@@ -1,0 +1,12 @@
+{
+  "model": "gpt-5.5",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Reply with one short sentence. Route through the cheapest verified seller."
+    }
+  ],
+  "raid_policy": {
+    "max_total_cost": 5
+  }
+}

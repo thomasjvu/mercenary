@@ -476,8 +476,10 @@ export type PublicSession = {
   account?: {
     wallet: string;
     createdAt: string;
+    balanceUsd?: number;
     sellerProviderIds: string[];
     apiKeys: BuyerApiKey[];
+    totalSavingsUsd?: number;
   };
 };
 

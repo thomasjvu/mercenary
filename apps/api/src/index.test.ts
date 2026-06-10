@@ -522,6 +522,17 @@ test('GET /v1/models and /v1/markets expose discount inference marketplace data'
       modelProvider: 'openai',
       modelId: 'gpt-5.5',
       pricePerTaskUsd: 0.25,
+      pricing: {
+        mode: 'token_metered',
+        currency: 'USD',
+        pricePer1mInputTokensUsd: 0.1,
+        pricePer1mOutputTokensUsd: 0.2,
+        minimumChargeUsd: 0.03,
+        rateCardVersion: 'market-v1',
+        rateCardHash: 'market-rate-card-v1',
+        upstreamModelId: 'google/gemma-4-31b-it',
+        maxContextTokens: 131_072,
+      },
       outputTypes: ['text', 'json'],
       supportedLanguages: ['text'],
       verification: {
@@ -532,6 +543,7 @@ test('GET /v1/models and /v1/markets expose discount inference marketplace data'
       },
       privacy: {
         teeAttested: true,
+        e2ee: true,
         signedOutputs: true,
         noDataRetention: true,
       },
@@ -573,7 +585,9 @@ test('GET /v1/models and /v1/markets expose discount inference marketplace data'
       modelsResponse.json().data.map((model: { id: string }) => model.id),
       ['gpt-5.5']
     );
-    assert.equal(modelsResponse.json().data[0].bossraid.cheapest_rate_usd, 0.25);
+    assert.equal(modelsResponse.json().data[0].bossraid.cheapest_rate_usd, 0.03);
+    assert.equal(modelsResponse.json().data[0].pricing.declaredUnit, 'token_metered');
+    assert.equal(modelsResponse.json().data[0].pricing.pricePer1mInputTokensUsd, 0.1);
 
     const marketsResponse = await app.inject({
       method: 'GET',
@@ -581,7 +595,10 @@ test('GET /v1/models and /v1/markets expose discount inference marketplace data'
     });
     assert.equal(marketsResponse.statusCode, 200);
     const market = marketsResponse.json().data[0];
-    assert.equal(market.cheapestRateUsd, 0.25);
+    assert.equal(market.cheapestRateUsd, 0.03);
+    assert.equal(market.pricing.declaredUnit, 'token_metered');
+    assert.equal(market.sellers[0].pricing.rateCardHash, 'market-rate-card-v1');
+    assert.equal(market.sellers[0].pricing.maxContextTokens, 131_072);
     assert.deepEqual(
       market.sellers.map((seller: { sellerId: string }) => seller.sellerId),
       ['provider-market-cheap', 'provider-market-expensive']
@@ -820,6 +837,93 @@ test('POST /v1/inference/chat/completions routes one model call to the cheapest 
     assert.equal(response.statusCode, 200);
     assert.deepEqual(receivedProviders, ['provider-inference-cheap']);
     assert.equal(response.json().raid.agents_invited, 1);
+  } finally {
+    await app.close();
+  }
+});
+
+test('POST /v1/inference/chat/completions fails closed for strict Alkahest Gemma lane', async () => {
+  const trustedButNotE2ee: RaidProvider = {
+    profile: createProviderProfile('provider-strict-no-e2ee', {
+      modelProvider: 'google',
+      modelId: 'gemma-4-31b-it',
+      outputTypes: ['text', 'json'],
+      supportedLanguages: ['text'],
+      pricing: {
+        mode: 'token_metered',
+        currency: 'USD',
+        pricePer1mInputTokensUsd: 0.1,
+        pricePer1mOutputTokensUsd: 0.2,
+        minimumChargeUsd: 0.01,
+        rateCardHash: 'strict-no-e2ee-rate-card',
+      },
+      verification: {
+        status: 'verified',
+        apiVerified: true,
+        frameworkVerified: true,
+        modelVerified: true,
+      },
+      privacy: {
+        teeAttested: true,
+        signedOutputs: true,
+        noDataRetention: true,
+      },
+      erc8004: {
+        agentId: '8004-no-e2ee',
+        operatorWallet: '0x1111111111111111111111111111111111111111',
+        registrationTx: '0xnoe2ee',
+        identityRegistry: '0xidentityregistry',
+      },
+      trust: {
+        score: 92,
+        source: 'erc8004',
+      },
+    }),
+    async accept(): Promise<ProviderAcceptance> {
+      return {
+        accepted: true,
+        providerRunId: 'run-strict-no-e2ee',
+      };
+    },
+    async run(): Promise<void> {},
+  };
+  const orchestrator = new BossRaidOrchestrator(
+    [trustedButNotE2ee],
+    undefined,
+    undefined,
+    undefined,
+    async (profile) => readyHealth(profile.providerId)
+  );
+  const app = buildApiServer(orchestrator, {
+    ...process.env,
+    BOSSRAID_API_KEY: 'trusted-client-key',
+    BOSSRAID_MANA_CORE_URL: 'https://mana.example.test',
+    BOSSRAID_MANA_CORE_KEY: 'mana-core-key',
+  });
+
+  try {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/inference/chat/completions',
+      headers: {
+        authorization: 'Bearer trusted-client-key',
+        'x-bossraid-client-id': 'alkahest',
+        'x-bossraid-mana-account-id': 'mana_shared',
+      },
+      payload: {
+        model: 'gemma-4-31b-it',
+        max_tokens: 64,
+        messages: [
+          {
+            role: 'user',
+            content: 'Use the discounted strict Gemma lane.',
+          },
+        ],
+      },
+    });
+
+    assert.equal(response.statusCode, 409);
+    assert.equal(response.json().error, 'no_eligible_providers');
   } finally {
     await app.close();
   }
@@ -1081,6 +1185,228 @@ test('buyer API keys enforce per-key rate limits before paid execution', async (
 
     assert.equal(rateLimited.statusCode, 429);
     assert.equal(rateLimited.json().error, 'rate_limited');
+  } finally {
+    await app.close();
+  }
+});
+
+test('surplus parity: API key skips x402, funds balance, records purchases and seller ledger', async () => {
+  const receivedProviders: string[] = [];
+  const cheapProvider: RaidProvider = {
+    profile: createProviderProfile('provider-parity-cheap', {
+      modelProvider: 'openai',
+      modelId: 'gpt-5.5',
+      pricePerTaskUsd: 0.25,
+      outputTypes: ['text', 'json'],
+      supportedLanguages: ['text'],
+    }),
+    async accept(): Promise<ProviderAcceptance> {
+      return { accepted: true, providerRunId: 'run-parity-cheap' };
+    },
+    async run(task, callbacks): Promise<void> {
+      receivedProviders.push('provider-parity-cheap');
+      await callbacks.onSubmit({
+        raidId: task.raidId,
+        providerId: 'provider-parity-cheap',
+        providerRunId: 'run-parity-cheap',
+        answerText: 'Parity lane response.',
+        explanation: 'Cheap seller served the API-key inference request.',
+        confidence: 0.91,
+        filesTouched: [],
+        submittedAt: new Date().toISOString(),
+      });
+    },
+  };
+  const pausedCheapProvider: RaidProvider = {
+    profile: createProviderProfile('provider-parity-paused', {
+      modelProvider: 'openai',
+      modelId: 'gpt-5.5',
+      pricePerTaskUsd: 0.05,
+      marketplaceOfferStatus: 'paused',
+      outputTypes: ['text', 'json'],
+      supportedLanguages: ['text'],
+    }),
+    async accept(): Promise<ProviderAcceptance> {
+      return { accepted: true, providerRunId: 'run-parity-paused' };
+    },
+    async run(): Promise<void> {
+      receivedProviders.push('provider-parity-paused');
+    },
+  };
+  const orchestrator = new BossRaidOrchestrator(
+    [pausedCheapProvider, cheapProvider],
+    undefined,
+    undefined,
+    undefined,
+    async (profile) => readyHealth(profile.providerId)
+  );
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        ready: true,
+        agentFramework: 'codex',
+        modelProvider: 'openai',
+        model: 'gpt-5.5',
+      }),
+      { status: 200, headers: { 'content-type': 'application/json' } }
+    );
+  const app = buildApiServer(orchestrator, {
+    ...process.env,
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+    BOSSRAID_X402_ENABLED: 'true',
+    BOSSRAID_X402_PAY_TO: '0xabc',
+  });
+
+  try {
+    const session = await createPublicSessionCookie(app, 7);
+    const funded = await app.inject({
+      method: 'POST',
+      url: '/v1/buyer/balance/fund',
+      headers: { cookie: session.cookie },
+      payload: { amountUsd: 5 },
+    });
+    assert.equal(funded.statusCode, 200);
+    assert.equal(funded.json().balanceUsd, 5);
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/buyer/api-keys',
+      headers: { cookie: session.cookie },
+      payload: { name: 'Parity key', spendLimitUsd: 10 },
+    });
+    const apiKey = created.json().apiKey as string;
+
+    const inference = await app.inject({
+      method: 'POST',
+      url: '/v1/inference/chat/completions',
+      headers: { authorization: `Bearer ${apiKey}` },
+      payload: {
+        model: 'gpt-5.5',
+        messages: [{ role: 'user', content: 'Route through the parity lane.' }],
+      },
+    });
+    assert.equal(inference.statusCode, 200, inference.body);
+    assert.deepEqual(receivedProviders, ['provider-parity-cheap']);
+    assert.equal(inference.json().bossraid?.selected_seller, 'provider-parity-cheap');
+    assert.equal(typeof inference.json().bossraid?.savings_usd, 'number');
+
+    const balance = await app.inject({
+      method: 'GET',
+      url: '/v1/buyer/balance',
+      headers: { cookie: session.cookie },
+    });
+    assert.equal(balance.statusCode, 200);
+    assert.ok(balance.json().balanceUsd < 5);
+
+    const purchases = await app.inject({
+      method: 'GET',
+      url: '/v1/buyer/purchases',
+      headers: { cookie: session.cookie },
+    });
+    assert.equal(purchases.statusCode, 200);
+    assert.equal(purchases.json().data.length, 1);
+    assert.equal(purchases.json().data[0].route, 'inference');
+
+    const stats = await app.inject({ method: 'GET', url: '/v1/marketplace/stats' });
+    assert.equal(stats.statusCode, 200);
+    assert.ok(stats.json().modelsLive >= 1);
+
+    const markets = await app.inject({ method: 'GET', url: '/v1/markets?model_id=gpt-5.5' });
+    const listedSellerIds = markets
+      .json()
+      .data[0].sellers.map((seller: { sellerId: string }) => seller.sellerId);
+    assert.equal(listedSellerIds.includes('provider-parity-paused'), false);
+
+    const sellerSession = await createPublicSessionCookie(app, 8);
+    await app.inject({
+      method: 'POST',
+      url: '/v1/seller/providers',
+      headers: { cookie: sellerSession.cookie },
+      payload: {
+        agentId: 'provider-parity-cheap',
+        name: 'Parity Cheap Seller',
+        endpoint: 'http://127.0.0.1/provider-parity-cheap',
+        modelProvider: 'openai',
+        modelId: 'gpt-5.5',
+        pricing: { pricePerTaskUsd: 0.25 },
+        auth: { type: 'none' },
+      },
+    });
+    const earnings = await app.inject({
+      method: 'GET',
+      url: '/v1/seller/earnings',
+      headers: { cookie: sellerSession.cookie },
+    });
+    assert.equal(earnings.statusCode, 200);
+    assert.ok(earnings.json().payoutCount >= 1);
+    assert.ok(earnings.json().grossUsd > 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await app.close();
+  }
+});
+
+test('POST /v1/chat/completions records escrow funding on the raid when x402 is enabled', async () => {
+  const provider: RaidProvider = {
+    profile: createProviderProfile('provider-chat-escrow', {
+      outputTypes: ['text', 'json'],
+      supportedLanguages: ['text'],
+      pricePerTaskUsd: 1,
+    }),
+    async accept(): Promise<ProviderAcceptance> {
+      return { accepted: true, providerRunId: 'run-chat-escrow' };
+    },
+    async run(task, callbacks): Promise<void> {
+      await callbacks.onSubmit({
+        raidId: task.raidId,
+        providerId: 'provider-chat-escrow',
+        providerRunId: 'run-chat-escrow',
+        answerText: 'Escrow path works.',
+        explanation: 'Chat spawn should persist escrow funding on the raid record.',
+        confidence: 0.9,
+        filesTouched: [],
+        submittedAt: new Date().toISOString(),
+      });
+    },
+  };
+  const orchestrator = new BossRaidOrchestrator(
+    [provider],
+    undefined,
+    undefined,
+    undefined,
+    async (profile) => readyHealth(profile.providerId)
+  );
+  const app = buildApiServer(orchestrator, {
+    ...process.env,
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+    BOSSRAID_X402_ENABLED: 'true',
+    BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: '5',
+  });
+
+  try {
+    const session = await createPublicSessionCookie(app, 9);
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/buyer/api-keys',
+      headers: { cookie: session.cookie },
+      payload: { name: 'Chat escrow', spendLimitUsd: 10 },
+    });
+    const response = await app.inject({
+      method: 'POST',
+      url: '/v1/chat/completions',
+      headers: { authorization: `Bearer ${created.json().apiKey}` },
+      payload: {
+        model: 'mercenary-v1',
+        messages: [{ role: 'user', content: 'Audit this escrow funding path.' }],
+        raid_policy: { max_agents: 1, max_total_cost: 3 },
+      },
+    });
+    assert.equal(response.statusCode, 200, response.body);
+    const raidId = response.json().raid.raid_id as string;
+    const raid = orchestrator.getRaid(raidId);
+    assert.ok(raid);
+    assert.equal(raid.escrowFundingUsd, 3);
   } finally {
     await app.close();
   }
@@ -3774,6 +4100,104 @@ test('x402 preflight still returns 409 when no providers are eligible', async ()
     assert.equal(response.statusCode, 409);
     assert.equal(response.headers['payment-required'], undefined);
   } finally {
+    await app.close();
+  }
+});
+
+test('x402 inference routes to the cheapest seller after payment', async () => {
+  const receivedProviders: string[] = [];
+  const cheapProvider: RaidProvider = {
+    profile: createProviderProfile('provider-x402-inference-cheap', {
+      modelProvider: 'openai',
+      modelId: 'gpt-5.5',
+      pricePerTaskUsd: 0.25,
+      outputTypes: ['text', 'json'],
+      supportedLanguages: ['text'],
+    }),
+    async accept(): Promise<ProviderAcceptance> {
+      return { accepted: true, providerRunId: 'run-x402-inference-cheap' };
+    },
+    async run(task, callbacks): Promise<void> {
+      receivedProviders.push('provider-x402-inference-cheap');
+      await callbacks.onSubmit({
+        raidId: task.raidId,
+        providerId: 'provider-x402-inference-cheap',
+        providerRunId: 'run-x402-inference-cheap',
+        answerText: 'Paid inference routed to the cheapest seller.',
+        explanation: 'x402 inference lane should settle after payment.',
+        confidence: 0.92,
+        filesTouched: [],
+        submittedAt: new Date().toISOString(),
+      });
+    },
+  };
+  const expensiveProvider: RaidProvider = {
+    profile: createProviderProfile('provider-x402-inference-expensive', {
+      modelProvider: 'openai',
+      modelId: 'gpt-5.5',
+      pricePerTaskUsd: 1.25,
+      outputTypes: ['text', 'json'],
+      supportedLanguages: ['text'],
+    }),
+    async accept(): Promise<ProviderAcceptance> {
+      return { accepted: true, providerRunId: 'run-x402-inference-expensive' };
+    },
+    async run(): Promise<void> {
+      receivedProviders.push('provider-x402-inference-expensive');
+    },
+  };
+  const facilitator = installMockX402Facilitator();
+  const app = buildApiServer(
+    new BossRaidOrchestrator(
+      [expensiveProvider, cheapProvider],
+      undefined,
+      undefined,
+      undefined,
+      async (profile) => readyHealth(profile.providerId)
+    ),
+    createX402PaidTestEnv({
+      BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: '5',
+    })
+  );
+
+  try {
+    const unpaid = await app.inject({
+      method: 'POST',
+      url: '/v1/inference/chat/completions',
+      payload: {
+        model: 'gpt-5.5',
+        messages: [{ role: 'user', content: 'Route through the paid inference lane.' }],
+        raid_policy: { max_total_cost: 5 },
+      },
+    });
+    assert.equal(unpaid.statusCode, 402);
+    const reservationId = String(unpaid.headers['x-bossraid-launch-reservation']);
+
+    const paid = await app.inject({
+      method: 'POST',
+      url: '/v1/inference/chat/completions',
+      headers: {
+        'x-bossraid-launch-reservation': reservationId,
+        'payment-signature': encodeBase64Json({
+          proof: 'facilitator-signed-payment',
+          payer: 'test-buyer',
+        }),
+      },
+      payload: {
+        model: 'gpt-5.5',
+        messages: [{ role: 'user', content: 'Route through the paid inference lane.' }],
+        raid_policy: { max_total_cost: 5 },
+      },
+    });
+
+    assert.equal(paid.statusCode, 200, paid.body);
+    assert.deepEqual(receivedProviders, ['provider-x402-inference-cheap']);
+    assert.equal(paid.json().bossraid?.selected_seller, 'provider-x402-inference-cheap');
+    assert.equal(paid.json().raid.agents_invited, 1);
+    assert.equal(typeof paid.headers['payment-response'], 'string');
+    assert.equal(facilitator.requests.length, 2);
+  } finally {
+    facilitator.restore();
     await app.close();
   }
 });

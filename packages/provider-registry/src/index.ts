@@ -184,6 +184,18 @@ export function providerMatchesDiscoveryQuery(
     return false;
   }
 
+  if ((provider.marketplaceOfferStatus ?? 'active') === 'paused') {
+    return false;
+  }
+
+  if (
+    provider.routingCooldownUntil &&
+    Number.isFinite(Date.parse(provider.routingCooldownUntil)) &&
+    Date.parse(provider.routingCooldownUntil) > Date.now()
+  ) {
+    return false;
+  }
+
   if (
     query.capabilities?.length &&
     !query.capabilities.every((capability) => provider.specializations.includes(capability))
@@ -241,6 +253,13 @@ export function providerMatchesDiscoveryQuery(
     return false;
   }
 
+  if (
+    query.requiredVerificationStatus &&
+    provider.verification?.status !== query.requiredVerificationStatus
+  ) {
+    return false;
+  }
+
   const trustScore = computeTrustScore(provider);
   if (typeof query.minTrustScore === 'number' && trustScore < query.minTrustScore) {
     return false;
@@ -272,6 +291,7 @@ export function buildDiscoveryQueryFromTask(task: RaidTaskSpec): ProviderDiscove
     requirePrivacyFeatures: task.constraints.requirePrivacyFeatures,
     requireErc8004: task.constraints.requireErc8004,
     minTrustScore: task.constraints.minTrustScore,
+    requiredVerificationStatus: task.constraints.requiredVerificationStatus,
     minReputationScore: clamp01(task.constraints.minReputation) * 100,
   };
 }

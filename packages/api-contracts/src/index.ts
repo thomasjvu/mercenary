@@ -16,10 +16,13 @@ import type {
   PrivacyRoutingMode,
   ProviderVerification,
   ProviderVerificationStatus,
+  ProviderPricingCurrency,
+  ProviderPricingMode,
   ProviderAuthConfig,
   ProviderDiscoveryQuery,
   ProviderFailure,
   ProviderHeartbeat,
+  MarketplaceOfferStatus,
   ProviderRegistrationInput,
   ProviderStatus,
   ProviderSubmission,
@@ -71,6 +74,9 @@ const PRIVACY_FEATURES = new Set<PrivacyFeatureKey>([
 const HOSTS = new Set<HostContext['host']>(['codex', 'claude_code']);
 const PROVIDER_AUTH_TYPES = new Set<ProviderAuthConfig['type']>(['bearer', 'hmac', 'none']);
 const PROVIDER_STATUSES = new Set<ProviderStatus>(['available', 'degraded', 'offline']);
+const PROVIDER_PRICING_MODES = new Set<ProviderPricingMode>(['token_metered', 'task']);
+const MARKETPLACE_OFFER_STATUSES = new Set<MarketplaceOfferStatus>(['active', 'paused']);
+const PROVIDER_PRICING_CURRENCIES = new Set<ProviderPricingCurrency>(['USD', 'USDC']);
 const CHAT_MESSAGE_ROLES = new Set<ChatCompletionMessage['role']>(['system', 'user', 'assistant']);
 
 export class ApiContractError extends Error {
@@ -263,6 +269,30 @@ function ensureProviderVerificationStatus(
   return normalized;
 }
 
+function ensureMarketplaceOfferStatus(value: unknown, label: string): MarketplaceOfferStatus {
+  const normalized = ensureString(value, label) as MarketplaceOfferStatus;
+  if (!MARKETPLACE_OFFER_STATUSES.has(normalized)) {
+    throw new ApiContractError(`Unsupported marketplace offer status for ${label}.`);
+  }
+  return normalized;
+}
+
+function ensureProviderPricingMode(value: unknown, label: string): ProviderPricingMode {
+  const normalized = ensureString(value, label) as ProviderPricingMode;
+  if (!PROVIDER_PRICING_MODES.has(normalized)) {
+    throw new ApiContractError(`Unsupported provider pricing mode for ${label}.`);
+  }
+  return normalized;
+}
+
+function ensureProviderPricingCurrency(value: unknown, label: string): ProviderPricingCurrency {
+  const normalized = ensureString(value, label).toUpperCase() as ProviderPricingCurrency;
+  if (!PROVIDER_PRICING_CURRENCIES.has(normalized)) {
+    throw new ApiContractError(`Unsupported provider pricing currency for ${label}.`);
+  }
+  return normalized;
+}
+
 function ensureTrustSource(value: unknown, label: string): 'erc8004' {
   const normalized = ensureString(value, label);
   if (normalized !== 'erc8004') {
@@ -408,6 +438,27 @@ function parseRaidConstraints(value: unknown): RaidConstraints {
       input.minTrustScore == null && input.min_trust_score == null
         ? undefined
         : ensureNumber(input.minTrustScore ?? input.min_trust_score, 'constraints.min_trust_score'),
+    requiredVerificationStatus:
+      input.requiredVerificationStatus == null && input.required_verification_status == null
+        ? undefined
+        : ensureProviderVerificationStatus(
+            input.requiredVerificationStatus ?? input.required_verification_status,
+            'constraints.required_verification_status'
+          ),
+    maxInputTokens:
+      input.maxInputTokens == null && input.max_input_tokens == null
+        ? undefined
+        : ensureNumber(
+            input.maxInputTokens ?? input.max_input_tokens,
+            'constraints.max_input_tokens'
+          ),
+    maxOutputTokens:
+      input.maxOutputTokens == null && input.max_output_tokens == null
+        ? undefined
+        : ensureNumber(
+            input.maxOutputTokens ?? input.max_output_tokens,
+            'constraints.max_output_tokens'
+          ),
     maxChangedFiles:
       input.maxChangedFiles == null && input.max_changed_files == null
         ? undefined
@@ -944,6 +995,29 @@ export function buildBossRaidRequestFromChatCompletion(
               rawRaidPolicy?.minTrustScore ?? rawRaidPolicy?.min_trust_score,
               'chat_completion_request.raid_policy.min_trust_score'
             ),
+      requiredVerificationStatus:
+        rawRaidPolicy?.requiredVerificationStatus == null &&
+        rawRaidPolicy?.required_verification_status == null
+          ? undefined
+          : ensureProviderVerificationStatus(
+              rawRaidPolicy?.requiredVerificationStatus ??
+                rawRaidPolicy?.required_verification_status,
+              'chat_completion_request.raid_policy.required_verification_status'
+            ),
+      maxInputTokens:
+        rawRaidPolicy?.maxInputTokens == null && rawRaidPolicy?.max_input_tokens == null
+          ? undefined
+          : ensurePositiveIntegerLike(
+              rawRaidPolicy?.maxInputTokens ?? rawRaidPolicy?.max_input_tokens,
+              'chat_completion_request.raid_policy.max_input_tokens'
+            ),
+      maxOutputTokens:
+        rawRaidPolicy?.maxOutputTokens == null && rawRaidPolicy?.max_output_tokens == null
+          ? undefined
+          : ensurePositiveIntegerLike(
+              rawRaidPolicy?.maxOutputTokens ?? rawRaidPolicy?.max_output_tokens,
+              'chat_completion_request.raid_policy.max_output_tokens'
+            ),
       allowedModelFamilies:
         rawRaidPolicy?.allowedModelFamilies == null && rawRaidPolicy?.allowed_model_families == null
           ? undefined
@@ -1196,6 +1270,21 @@ function normalizeDelegateRaidPolicy(
     args.requireErc8004 ?? args.require_erc8004 ?? input?.requireErc8004 ?? input?.require_erc8004;
   const minTrustScoreSource =
     args.minTrustScore ?? args.min_trust_score ?? input?.minTrustScore ?? input?.min_trust_score;
+  const requiredVerificationStatusSource =
+    args.requiredVerificationStatus ??
+    args.required_verification_status ??
+    input?.requiredVerificationStatus ??
+    input?.required_verification_status;
+  const maxInputTokensSource =
+    args.maxInputTokens ??
+    args.max_input_tokens ??
+    input?.maxInputTokens ??
+    input?.max_input_tokens;
+  const maxOutputTokensSource =
+    args.maxOutputTokens ??
+    args.max_output_tokens ??
+    input?.maxOutputTokens ??
+    input?.max_output_tokens;
   const allowedModelFamiliesSource =
     args.allowedModelFamilies ??
     args.allowed_model_families ??
@@ -1254,6 +1343,21 @@ function normalizeDelegateRaidPolicy(
       minTrustScoreSource == null
         ? undefined
         : ensureFiniteNumberLike(minTrustScoreSource, 'raidPolicy.minTrustScore'),
+    requiredVerificationStatus:
+      requiredVerificationStatusSource == null
+        ? undefined
+        : ensureProviderVerificationStatus(
+            requiredVerificationStatusSource,
+            'raidPolicy.requiredVerificationStatus'
+          ),
+    maxInputTokens:
+      maxInputTokensSource == null
+        ? undefined
+        : ensurePositiveIntegerLike(maxInputTokensSource, 'raidPolicy.maxInputTokens'),
+    maxOutputTokens:
+      maxOutputTokensSource == null
+        ? undefined
+        : ensurePositiveIntegerLike(maxOutputTokensSource, 'raidPolicy.maxOutputTokens'),
     allowedModelFamilies:
       allowedModelFamiliesSource == null
         ? undefined
@@ -1742,12 +1846,70 @@ export function parseProviderRegistrationInput(value: unknown): ProviderRegistra
           },
     pricing: pricing
       ? {
+          mode:
+            pricing.mode == null
+              ? undefined
+              : ensureProviderPricingMode(pricing.mode, 'pricing.mode'),
           pricePerTaskUsd:
             pricing.pricePerTaskUsd == null && pricing.price_per_task_usd == null
               ? undefined
-              : ensureNumber(
+              : ensureFiniteNumberLike(
                   pricing.pricePerTaskUsd ?? pricing.price_per_task_usd,
                   'pricing.price_per_task_usd'
+                ),
+          pricePer1mInputTokensUsd:
+            pricing.pricePer1mInputTokensUsd == null &&
+            pricing.price_per_1m_input_tokens_usd == null
+              ? undefined
+              : ensureFiniteNumberLike(
+                  pricing.pricePer1mInputTokensUsd ?? pricing.price_per_1m_input_tokens_usd,
+                  'pricing.price_per_1m_input_tokens_usd'
+                ),
+          pricePer1mOutputTokensUsd:
+            pricing.pricePer1mOutputTokensUsd == null &&
+            pricing.price_per_1m_output_tokens_usd == null
+              ? undefined
+              : ensureFiniteNumberLike(
+                  pricing.pricePer1mOutputTokensUsd ?? pricing.price_per_1m_output_tokens_usd,
+                  'pricing.price_per_1m_output_tokens_usd'
+                ),
+          minimumChargeUsd:
+            pricing.minimumChargeUsd == null && pricing.minimum_charge_usd == null
+              ? undefined
+              : ensureFiniteNumberLike(
+                  pricing.minimumChargeUsd ?? pricing.minimum_charge_usd,
+                  'pricing.minimum_charge_usd'
+                ),
+          currency:
+            pricing.currency == null
+              ? undefined
+              : ensureProviderPricingCurrency(pricing.currency, 'pricing.currency'),
+          validFrom: ensureOptionalString(
+            pricing.validFrom ?? pricing.valid_from,
+            'pricing.valid_from'
+          ),
+          validUntil: ensureOptionalString(
+            pricing.validUntil ?? pricing.valid_until,
+            'pricing.valid_until'
+          ),
+          rateCardVersion: ensureOptionalString(
+            pricing.rateCardVersion ?? pricing.rate_card_version,
+            'pricing.rate_card_version'
+          ),
+          rateCardHash: ensureOptionalString(
+            pricing.rateCardHash ?? pricing.rate_card_hash,
+            'pricing.rate_card_hash'
+          ),
+          upstreamModelId: ensureOptionalString(
+            pricing.upstreamModelId ?? pricing.upstream_model_id,
+            'pricing.upstream_model_id'
+          ),
+          maxContextTokens:
+            pricing.maxContextTokens == null && pricing.max_context_tokens == null
+              ? undefined
+              : ensureFiniteNumberLike(
+                  pricing.maxContextTokens ?? pricing.max_context_tokens,
+                  'pricing.max_context_tokens'
                 ),
         }
       : undefined,
@@ -1804,6 +1966,13 @@ export function parseProviderRegistrationInput(value: unknown): ProviderRegistra
               : ensureNumber(reputation.totalSuccessfulRaids, 'reputation.totalSuccessfulRaids'),
         }
       : undefined,
+    marketplaceOfferStatus:
+      input.marketplaceOfferStatus == null && input.marketplace_offer_status == null
+        ? undefined
+        : ensureMarketplaceOfferStatus(
+            input.marketplaceOfferStatus ?? input.marketplace_offer_status,
+            'provider_registration.marketplace_offer_status'
+          ),
   };
 }
 

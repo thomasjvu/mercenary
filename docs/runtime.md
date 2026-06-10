@@ -195,7 +195,19 @@ The active hosted stack is the Phala CVM deployment. `pnpm eigencompute:build` a
 
 The general agent service layer uses existing routes and commands. No new env vars are required.
 Provider owners register clean HTTP agent endpoints through `POST /agents/register` and may include
-`agentFramework`, `modelProvider`, `modelId`, `verification`, and `pricing.pricePerTaskUsd`.
+`agentFramework`, `modelProvider`, `modelId`, `verification`, and `pricing`. Pricing supports both
+flat task rates and token-metered rate cards:
+
+- `pricing.mode`: `"task"` or `"token_metered"`
+- `pricing.pricePerTaskUsd` for multi-agent raids and flat markets
+- `pricing.pricePer1mInputTokensUsd`, `pricing.pricePer1mOutputTokensUsd`, and `pricing.minimumChargeUsd` for inference markets
+- `pricing.currency`, `pricing.validFrom`, `pricing.validUntil`, `pricing.rateCardVersion`, and `pricing.rateCardHash`
+- `pricing.upstreamModelId` and `pricing.maxContextTokens`
+
+Provider rate-card changes only affect future quotes. Launch reservations store an immutable quote
+snapshot with seller ids, selected/reserve roles, endpoint hash, rate-card hash, privacy and
+verification state, token caps, and max charge. Settlement uses the snapshot rather than the live
+provider record.
 Buyers can route paid OpenAI-compatible calls with `raid_policy.allowed_agent_frameworks`,
 `raid_policy.allowed_model_providers`, `raid_policy.allowed_model_ids`, and
 `raid_policy.selection_mode = "round_robin"`.
@@ -214,6 +226,20 @@ model provider, model id, and API verification state. This uses the existing
 Pricing remains provider-declared inside Boss Raid. Use `https://models.dev/api.json` as a static
 market benchmark reference for copy, docs, or future benchmarking jobs; the runtime does not fetch
 models.dev while routing or settling work.
+
+### Mana Core Trusted Billing
+
+Boss Raid can act as a direct Mana Core client for trusted first-party apps such as Alkahest:
+
+- `BOSSRAID_MANA_CORE_URL`: Alkahest Mana Core API base, either the root API base, `/v1`, or `/v1/mana`
+- `BOSSRAID_MANA_CORE_KEY`: internal `x-mana-core-key` value used for reservations, capture, and refunds
+- `BOSSRAID_MANA_CORE_APP_ID`: app id recorded on Mana Core reservations; defaults to `bossraid`
+- `BOSSRAID_API_KEY` or `BOSSRAID_TRUSTED_CLIENT_KEY`: trusted client credential expected in `Authorization: Bearer ...`
+
+Trusted Alkahest calls also send `x-bossraid-client-id: alkahest` and
+`x-bossraid-mana-account-id: <manaAccountId>`. Boss Raid reserves before execution, captures server-measured
+successful usage, refunds failures, and records metadata with `sourceAppId: "alkahest"`. These calls bypass
+the x402 buyer challenge, but provider payout and receipt proof remain Boss Raid responsibilities.
 
 ### Web, Gateway, And MCP
 
