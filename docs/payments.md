@@ -38,22 +38,24 @@ x402 Payment (budget + 1% markup via PayAI facilitator)
 
 ## Environment Variables
 
-| Variable                             | Description                                                                                                           | Required                 |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| `BOSSRAID_X402_PAY_TO`               | Cold storage wallet (platform revenue)                                                                                | Yes                      |
-| `BOSSRAID_X402_PLATFORM_MARKUP_BPS`  | Basis points markup (100 = 1%)                                                                                        | Yes (default 100)        |
-| `PAYAI_API_KEY_ID`                   | PayAI facilitator API key                                                                                             | Yes                      |
-| `PAYAI_API_KEY_SECRET`               | PayAI facilitator API secret                                                                                          | Yes                      |
-| `BOSSRAID_X402_FACILITATOR_FALLBACK` | Enable CDP fallback                                                                                                   | No                       |
-| `CDP_API_KEY_ID`                     | CDP fallback API key                                                                                                  | No (if fallback enabled) |
-| `CDP_API_KEY_SECRET`                 | CDP fallback API secret                                                                                               | No (if fallback enabled) |
-| `BOSSRAID_SETTLEMENT_TREASURY_KEY`   | Private key for onchain payouts (hot wallet). Falls back to `BOSSRAID_CLIENT_PRIVATE_KEY` for backward compatibility. | Yes                      |
-| `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD` | Minimum payout threshold                                                                                              | Yes (default 0.25)       |
+| Variable                                 | Description                                                                                                           | Required                 |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `BOSSRAID_X402_PAY_TO`                   | Cold storage wallet (platform revenue)                                                                                | Yes                      |
+| `BOSSRAID_X402_RAID_ROUTE_SURCHARGE_USD` | Flat surcharge added to native raid payments on top of the reserved seller budget (default `0.01`)                    | No                       |
+| `BOSSRAID_X402_CHAT_ROUTE_SURCHARGE_USD` | Flat surcharge added to chat and inference payments on top of the reserved seller budget (default `0.002`)            | No                       |
+| `BOSSRAID_X402_PLATFORM_MARKUP_BPS`      | Basis points markup (100 = 1%) applied after the route surcharge is added to the reserved budget                      | Yes (default 100)        |
+| `PAYAI_API_KEY_ID`                       | PayAI facilitator API key                                                                                             | Yes                      |
+| `PAYAI_API_KEY_SECRET`                   | PayAI facilitator API secret                                                                                          | Yes                      |
+| `BOSSRAID_X402_FACILITATOR_FALLBACK`     | Enable CDP fallback                                                                                                   | No                       |
+| `CDP_API_KEY_ID`                         | CDP fallback API key                                                                                                  | No (if fallback enabled) |
+| `CDP_API_KEY_SECRET`                     | CDP fallback API secret                                                                                               | No (if fallback enabled) |
+| `BOSSRAID_SETTLEMENT_TREASURY_KEY`       | Private key for onchain payouts (hot wallet). Falls back to `BOSSRAID_CLIENT_PRIVATE_KEY` for backward compatibility. | Yes                      |
+| `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD`     | Minimum payout threshold                                                                                              | Yes (default 0.25)       |
 
 ## Payment Flow
 
-1. **Client requests raid** with budget
-2. **API builds x402 payment requirement** - budget + surcharge + 1% markup
+1. **Client requests raid or inference** with a budget cap and/or marketplace-selected seller rate
+2. **API builds x402 payment requirement** - reserved seller budget + flat route surcharge + platform markup bps
 3. **Client pays via facilitator** (PayAI or CDP)
 4. **Platform stores payment amounts**:
    - `x402PaidAmountUsd` - total paid

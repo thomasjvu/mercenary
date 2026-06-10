@@ -261,7 +261,7 @@ the x402 buyer challenge, but provider payout and receipt proof remain Boss Raid
 - `BOSSRAID_X402_PAY_TO`: recipient wallet (e.g. `0x3bd7717267c6A2D29F07Da83D59155Ac6cD80A69` for Base mainnet USDC)
 - `BOSSRAID_X402_FACILITATOR_URL`: optional facilitator override
 - `BOSSRAID_X402_NETWORK`, `BOSSRAID_X402_ASSET`, `BOSSRAID_X402_ASSET_NAME`, and `BOSSRAID_X402_ASSET_VERSION`: payment asset config
-- `BOSSRAID_X402_RAID_PRICE_USD` and `BOSSRAID_X402_CHAT_PRICE_USD`: route surcharge added on top of requested provider budget
+- `BOSSRAID_X402_RAID_ROUTE_SURCHARGE_USD` and `BOSSRAID_X402_CHAT_ROUTE_SURCHARGE_USD`: flat per-route surcharges added on top of the reserved seller budget before platform markup. These are not model or seller listing prices. Seller rates still come from provider `pricing` and buyer `raid_policy.max_total_cost`. Legacy aliases `BOSSRAID_X402_RAID_PRICE_USD` and `BOSSRAID_X402_CHAT_PRICE_USD` remain supported.
 - `BOSSRAID_X402_MAX_AMOUNT_REQUIRED`: override for unpaid budgetless raid requests
 - `BOSSRAID_X402_MAX_TIMEOUT_SECONDS`: max payment wait time
 - `BOSSRAID_X402_RESOURCE_BASE_URL`: absolute resource URL base encoded into x402 headers
