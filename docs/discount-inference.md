@@ -43,7 +43,7 @@ curl http://127.0.0.1:8787/v1/inference/chat/completions \
   }'
 ```
 
-The inference lane forces `max_agents = 1`, defaults `selection_mode` to `cost_first`, and defaults `allowed_model_ids` to the request `model`. If no explicit `raid_policy.max_total_cost` is supplied, Boss Raid uses the cheapest currently registered matching seller rate as the request budget. x402, when enabled, charges `reserved seller budget + BOSSRAID_X402_CHAT_ROUTE_SURCHARGE_USD + platform markup bps` against the USDC settlement path. The route surcharge is not the model price; seller rates remain per-provider `pricing`.
+The inference lane forces `max_agents = 1`, defaults `selection_mode` to `cost_first`, and defaults `allowed_model_ids` to the request `model`. If no explicit `raid_policy.max_total_cost` is supplied, Boss Raid uses the cheapest currently registered matching seller rate as the request budget. x402, when enabled, charges `reserved seller budget + BOSSRAID_X402_CHAT_SURCHARGE_USD + platform markup bps` against the USDC settlement path. The route surcharge is not the model price; seller rates remain per-provider `pricing`.
 Buyer API keys are subject to spend caps, max request budget, and per-key request
 rate limits before paid execution starts.
 

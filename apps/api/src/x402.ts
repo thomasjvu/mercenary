@@ -125,25 +125,17 @@ function usdToAtomicUsdc(amountUsd: number): string {
   return String(Math.max(1, Math.round(amountUsd * 1_000_000)));
 }
 
-function readX402RouteSurchargeUsd(
-  env: NodeJS.ProcessEnv,
-  route: X402RouteName,
-  defaultUsd: number
-): number {
-  const currentKey =
-    route === 'raid'
-      ? 'BOSSRAID_X402_RAID_ROUTE_SURCHARGE_USD'
-      : 'BOSSRAID_X402_CHAT_ROUTE_SURCHARGE_USD';
-  const legacyKey =
-    route === 'raid' ? 'BOSSRAID_X402_RAID_PRICE_USD' : 'BOSSRAID_X402_CHAT_PRICE_USD';
-  return readPositiveNumber(env[currentKey] ?? env[legacyKey], defaultUsd);
-}
-
 export function readX402Config(env: NodeJS.ProcessEnv = process.env): X402Config {
   const enabled =
     env.BOSSRAID_X402_ENABLED == null ? true : parseBoolean(env.BOSSRAID_X402_ENABLED);
-  const raidSurchargeUsd = readX402RouteSurchargeUsd(env, 'raid', DEFAULT_RAID_SURCHARGE_USD);
-  const chatSurchargeUsd = readX402RouteSurchargeUsd(env, 'chat', DEFAULT_CHAT_SURCHARGE_USD);
+  const raidSurchargeUsd = readPositiveNumber(
+    env.BOSSRAID_X402_RAID_SURCHARGE_USD,
+    DEFAULT_RAID_SURCHARGE_USD
+  );
+  const chatSurchargeUsd = readPositiveNumber(
+    env.BOSSRAID_X402_CHAT_SURCHARGE_USD,
+    DEFAULT_CHAT_SURCHARGE_USD
+  );
   const platformMarkupBps = readPositiveNumber(
     env.BOSSRAID_X402_PLATFORM_MARKUP_BPS,
     DEFAULT_PLATFORM_MARKUP_BPS

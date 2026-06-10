@@ -45,22 +45,13 @@ test('x402 can be disabled explicitly', () => {
   assert.equal(config.enabled, false);
 });
 
-test('x402 route surcharges prefer the renamed env vars and fall back to legacy names', () => {
-  const renamed = readX402Config({
-    BOSSRAID_X402_RAID_ROUTE_SURCHARGE_USD: '0.02',
-    BOSSRAID_X402_CHAT_ROUTE_SURCHARGE_USD: '0.003',
-    BOSSRAID_X402_RAID_PRICE_USD: '0.99',
-    BOSSRAID_X402_CHAT_PRICE_USD: '0.88',
+test('x402 route surcharges read BOSSRAID_X402_*_SURCHARGE_USD env vars', () => {
+  const config = readX402Config({
+    BOSSRAID_X402_RAID_SURCHARGE_USD: '0.02',
+    BOSSRAID_X402_CHAT_SURCHARGE_USD: '0.003',
   });
-  assert.equal(renamed.routeSurchargeUsd.raid, 0.02);
-  assert.equal(renamed.routeSurchargeUsd.chat, 0.003);
-
-  const legacy = readX402Config({
-    BOSSRAID_X402_RAID_PRICE_USD: '0.04',
-    BOSSRAID_X402_CHAT_PRICE_USD: '0.005',
-  });
-  assert.equal(legacy.routeSurchargeUsd.raid, 0.04);
-  assert.equal(legacy.routeSurchargeUsd.chat, 0.005);
+  assert.equal(config.routeSurchargeUsd.raid, 0.02);
+  assert.equal(config.routeSurchargeUsd.chat, 0.003);
 });
 
 test('x402 resource URLs preserve a configured path prefix', () => {
