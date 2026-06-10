@@ -92,6 +92,7 @@ pnpm test:strict-private:e2e
 pnpm test:mcp:e2e
 pnpm test:evaluator:e2e
 pnpm test:x402:e2e
+pnpm test:surplus-parity:smoke
 pnpm demo:rehearse
 pnpm game-raid:build-payload
 ```
@@ -266,6 +267,36 @@ the x402 buyer challenge, but provider payout and receipt proof remain Boss Raid
 - `BOSSRAID_X402_RESOURCE_BASE_URL`: absolute resource URL base encoded into x402 headers
 - `PAYAI_API_KEY_ID`, `PAYAI_API_KEY_SECRET`, `CDP_API_KEY_ID`, and `CDP_API_KEY_SECRET`: facilitator credentials
 - `BOSSRAID_X402_E2E_MODE`, `BOSSRAID_X402_E2E_ROUTE`, `BOSSRAID_X402_E2E_API_BASE`, `BOSSRAID_X402_BUYER_PRIVATE_KEY`, and `EVM_PRIVATE_KEY`: test client helpers
+- `BOSSRAID_PROVIDER_STUB_MODE`: local provider stub responses when no `BOSSRAID_MODEL_API_KEY` is configured; `pnpm dev:providers` enables this automatically in that case
+- `BOSSRAID_CALLBACK_BASE` or `BOSSRAID_API_BASE`: provider callback target when the API is not on the default `8787` port
+
+Local surplus parity smoke:
+
+```bash
+pnpm dev:providers
+PORT=8788 BOSSRAID_X402_ENABLED=false BOSSRAID_STORAGE_BACKEND=memory pnpm dev:api
+BOSSRAID_API_BASE=http://127.0.0.1:8788 pnpm test:surplus-parity:smoke
+```
+
+Local x402 inference e2e with mock facilitator:
+
+```bash
+pnpm test:x402:mock-facilitator
+BOSSRAID_CALLBACK_BASE=http://127.0.0.1:8788 pnpm dev:providers
+PORT=8788 BOSSRAID_X402_ENABLED=true \
+BOSSRAID_X402_FACILITATOR_URL=http://127.0.0.1:8791 \
+BOSSRAID_X402_PAY_TO=0x000000000000000000000000000000000000dEaD \
+BOSSRAID_X402_NETWORK=eip155:84532 \
+BOSSRAID_X402_RESOURCE_BASE_URL=http://127.0.0.1:8788 \
+pnpm dev:api
+node scripts/test-x402-e2e.mjs --mode mock --route inference --api-base http://127.0.0.1:8788
+```
+
+Wallet-mode x402 e2e still requires `BOSSRAID_X402_BUYER_PRIVATE_KEY` or `EVM_PRIVATE_KEY` plus facilitator credentials:
+
+```bash
+pnpm test:x402:e2e -- --mode wallet --route inference --api-base http://127.0.0.1:8788
+```
 
 ### Settlement, Contracts, And Proof
 
