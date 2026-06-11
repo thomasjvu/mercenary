@@ -1,5 +1,6 @@
 import { shortValue } from '@bossraid/proof-ui';
 import type { ReactNode } from 'react';
+import { ReceiptDetailRow, ReceiptStat } from './ReceiptPrimitives.js';
 
 type ReceiptProofPanelProps = {
   runtimeStatus: string;
@@ -72,23 +73,5 @@ function ReceiptLinkItem({ href, label, note }: { href: string; label: string; n
       <strong>{note}</strong>
       <small>open</small>
     </a>
-  );
-}
-
-function ReceiptStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="receipt-stat">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function ReceiptDetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="receipt-detail-row">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
   );
 }

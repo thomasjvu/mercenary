@@ -18,6 +18,14 @@ export function formatUsd(value?: number | null, digits = 2): string {
   return `$${value.toFixed(digits)}`;
 }
 
+export function formatUsdc(value?: number | null, digits = 2): string {
+  if (value == null || !Number.isFinite(value)) {
+    return digits === 2 ? '0.00 USDC' : 'n/a';
+  }
+
+  return `${value.toFixed(digits)} USDC`;
+}
+
 export function formatMs(value?: number): string {
   return value == null ? 'n/a' : `${value} ms`;
 }

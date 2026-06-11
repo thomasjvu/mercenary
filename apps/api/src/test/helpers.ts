@@ -4,6 +4,11 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mnemonicToAccount } from 'viem/accounts';
+import {
+  createProviderProfile as createFixtureProviderProfile,
+  createSpawnInput,
+  readyHealth as fixtureReadyHealth,
+} from '@bossraid/test-fixtures';
 import type { ProviderHealthStatus, ProviderProfile } from '@bossraid/shared-types';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
@@ -58,50 +63,11 @@ export function createRaidRequestBody() {
 
 export function createSpawnInputBody() {
   return {
-    taskTitle: 'Fix button state bug',
-    taskDescription: 'Save button stays disabled after valid form input.',
-    language: 'typescript',
-    framework: 'react',
-    files: [
-      {
-        path: 'src/components/Form.tsx',
-        content: [
-          'export function Form() {',
-          '  const disabled = true;',
-          '  return <button disabled={disabled}>Save</button>;',
-          '}',
-        ].join('\n'),
-        sha256: 'test-file-hash',
-      },
-    ],
-    failingSignals: {
-      errors: ['Save button never enables.'],
-      reproSteps: ['Open form', 'Enter valid values', 'Observe disabled button'],
-    },
-    output: {
-      primaryType: 'patch',
-      artifactTypes: ['patch', 'text'],
-    },
+    ...createSpawnInput(),
     constraints: {
-      numExperts: 1,
-      maxBudgetUsd: 10,
+      ...createSpawnInput().constraints,
       maxLatencySec: 60,
-      allowExternalSearch: false,
       requireSpecializations: ['react'],
-      minReputation: 0,
-      allowedOutputTypes: ['patch', 'text'],
-      privacyMode: 'prefer',
-    },
-    rewardPolicy: {
-      splitStrategy: 'equal_success_only',
-    },
-    privacyMode: {
-      redactSecrets: true,
-      redactIdentifiers: true,
-      allowFullRepo: false,
-    },
-    hostContext: {
-      host: 'codex',
     },
   };
 }
@@ -110,44 +76,21 @@ export function createProviderProfile(
   providerId: string,
   overrides: Partial<ProviderProfile> = {}
 ): ProviderProfile {
-  return {
-    providerId,
-    agentId: providerId,
+  return createFixtureProviderProfile(providerId, {
     displayName: providerId,
-    endpointType: 'http',
-    endpoint: `http://127.0.0.1/${providerId}`,
     specializations: ['react', 'analysis'],
     supportedLanguages: ['typescript', 'text'],
-    supportedFrameworks: ['react'],
-    pricePerTaskUsd: 2,
-    maxConcurrency: 1,
-    status: 'available',
-    outputTypes: ['patch', 'text'],
-    privacy: {},
     reputation: {
-      globalScore: 0.9,
-      responsivenessScore: 0.9,
-      validityScore: 0.9,
-      qualityScore: 0.9,
-      timeoutRate: 0,
-      duplicateRate: 0,
-      specializationScores: {},
+      ...createFixtureProviderProfile(providerId).reputation,
       p50LatencyMs: 500,
       p95LatencyMs: 1_000,
-      totalRaids: 10,
-      totalSuccessfulRaids: 9,
     },
     ...overrides,
-  };
+  });
 }
 
 export function readyHealth(providerId: string): ProviderHealthStatus {
-  return {
-    providerId,
-    endpoint: `http://127.0.0.1/${providerId}`,
-    reachable: true,
-    ready: true,
-  };
+  return fixtureReadyHealth(providerId);
 }
 
 export function encodeBase64Json(value: unknown): string {

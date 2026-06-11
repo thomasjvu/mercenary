@@ -28,6 +28,10 @@
     "@bossraid/provider-sdk": "workspace:*",
     "@bossraid/raid-core": "workspace:*",
     "@bossraid/shared-types": "workspace:*",
+    "@bossraid/test-fixtures": "workspace:*",
     "viem": "^2.47.5"
+  },
+  "devDependencies": {
+    "@bossraid/test-fixtures": "workspace:*"
   }
 }

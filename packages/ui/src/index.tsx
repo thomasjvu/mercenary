@@ -12,6 +12,7 @@ export { ArtifactPreview } from './receipt/ArtifactPreview.js';
 export { ArtifactStrip } from './receipt/ArtifactStrip.js';
 export { ProviderMesh } from './receipt/ProviderMesh.js';
 export { ReceiptProofPanel } from './receipt/ReceiptProofPanel.js';
+export { ReceiptDetailRow, ReceiptStat, SummaryPill } from './receipt/ReceiptPrimitives.js';
 
 export function DocsButton({
   className,

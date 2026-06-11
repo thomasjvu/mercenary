@@ -1,3 +1,4 @@
+import { ADAPTIVE_PLANNING } from '@bossraid/constants';
 import { annotateRoutingProof, buildRoutingProof, createRaidRecord } from '@bossraid/raid-core';
 import type {
   ProviderProfile,
@@ -14,13 +15,7 @@ import {
 } from './raid-launch.js';
 import { TERMINAL_RAID_STATUSES } from './raid-state.js';
 
-export const ADAPTIVE_PLANNING = {
-  MAX_REVISIONS_PER_WORKSTREAM: 2,
-  WEAK_SCORE_THRESHOLD: 0.72,
-  EXPANSION_MISSING_CAP: 3,
-  EXPANSION_WEAK_CAP: 2,
-  MIN_EXPANSION_TO_TRIGGER: 2,
-} as const;
+export { ADAPTIVE_PLANNING };
 
 export type AdaptiveReplanTarget = {
   strategy: 'expand' | 'repair';

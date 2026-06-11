@@ -1,3 +1,4 @@
+import { formatUsdc } from '@bossraid/proof-ui';
 import type { Provider, ProviderHealth } from '../api';
 
 export type Erc8004VerificationStatus = NonNullable<
@@ -200,9 +201,7 @@ export function pickDisplayPrivacySignals(signals: string[]) {
   return selected;
 }
 
-export function formatUsdc(value: number): string {
-  return `${value.toFixed(2)} USDC`;
-}
+export { formatUsdc };
 
 function formatAge(value: string | undefined): string {
   if (!value) {

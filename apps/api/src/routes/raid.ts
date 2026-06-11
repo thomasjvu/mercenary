@@ -8,7 +8,11 @@ import {
   hashAttestationText,
 } from '../lib/attestation.js';
 import { asSingleQueryValue, RAID_ACCESS_TOKEN_HEADER } from '../lib/http.js';
-import { toRaidListItemResponse } from '../lib/serializers.js';
+import {
+  serializeRaidResult,
+  serializeRaidStatus,
+  toRaidListItemResponse,
+} from '../lib/serializers.js';
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlers } from '../api-handlers.js';
 
@@ -34,7 +38,7 @@ function registerRaidDetailRoutes(
       return authorizationError;
     }
 
-    return ctx.orchestrator.getStatus(raidId);
+    return serializeRaidStatus(ctx.orchestrator.getStatus(raidId));
   });
 
   app.get(`${basePath}/:raidId/result`, async (request, reply) => {
@@ -53,7 +57,7 @@ function registerRaidDetailRoutes(
         skipBuyerPurchase: true,
       });
     }
-    return result;
+    return serializeRaidResult(result);
   });
 
   app.get(`${basePath}/:raidId/agent_log.json`, async (request, reply) => {

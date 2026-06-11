@@ -1,10 +1,19 @@
 import type {
+  BossRaidResultOutput,
+  BossRaidStatusOutput,
   ProviderHealthStatus,
   ProviderProfile,
   ProviderViewResponse,
   ProviderHealthViewResponse,
   RaidListItemResponse,
   RaidRecord,
+  RaidResultResponse,
+  RaidStatusResponse,
+  RankedSubmission,
+  RankedSubmissionResponse,
+  SanitizationReport,
+  SubmissionArtifact,
+  SubmissionArtifactView,
 } from '@bossraid/shared-types';
 
 export function serializeProviderProfile(
@@ -57,6 +66,102 @@ export function serializeProviderHealth(
     missing: options.includeDiagnostics ? health.missing : undefined,
     modelApiBase: options.includeDiagnostics ? health.modelApiBase : undefined,
     error: options.includeDiagnostics ? health.error : undefined,
+  };
+}
+
+function serializeSanitization(report: SanitizationReport): RaidStatusResponse['sanitization'] {
+  return {
+    riskTier: report.riskTier,
+    redactedSecrets: report.redactedSecrets,
+    redactedIdentifiers: report.redactedIdentifiers,
+    trimmedFiles: report.trimmedFiles,
+  };
+}
+
+function serializeSubmissionArtifact(artifact: SubmissionArtifact): SubmissionArtifactView {
+  return {
+    outputType: artifact.outputType,
+    label: artifact.label,
+    uri: artifact.uri,
+    mimeType: artifact.mimeType,
+    description: artifact.description,
+    sha256: artifact.sha256,
+  };
+}
+
+function serializeRankedSubmission(entry: RankedSubmission): RankedSubmissionResponse {
+  return {
+    submission: {
+      providerId: entry.submission.providerId,
+      explanation: entry.submission.explanation,
+      patchUnifiedDiff: entry.submission.patchUnifiedDiff,
+      answerText: entry.submission.answerText,
+      artifacts: entry.submission.artifacts?.map(serializeSubmissionArtifact),
+      confidence: entry.submission.confidence,
+      contributionRole: entry.submission.contributionRole,
+    },
+    breakdown: {
+      finalScore: entry.breakdown.finalScore,
+      buildScore: entry.breakdown.buildScore,
+      testScore: entry.breakdown.testScore,
+      correctnessRubric: entry.breakdown.correctnessRubric,
+      sideEffectSafety: entry.breakdown.sideEffectSafety,
+      explanationScore: entry.breakdown.explanationScore,
+      latencyScore: entry.breakdown.latencyScore,
+      uniquenessScore: entry.breakdown.uniquenessScore,
+      valid: entry.breakdown.valid,
+      invalidReasons: entry.breakdown.invalidReasons,
+      summary: entry.breakdown.summary,
+    },
+    rank: entry.rank,
+  };
+}
+
+export function serializeRaidStatus(status: BossRaidStatusOutput): RaidStatusResponse {
+  return {
+    raidId: status.raidId,
+    status: status.status,
+    experts: status.experts.map((expert) => ({
+      providerId: expert.providerId,
+      status: expert.status,
+      latencyMs: expert.latencyMs,
+      heartbeatAgeMs: expert.heartbeatAgeMs,
+      progress: expert.progress,
+      message: expert.message,
+    })),
+    firstValidAvailable: status.firstValidAvailable,
+    bestCurrentScore: status.bestCurrentScore,
+    sanitization: serializeSanitization(status.sanitization),
+  };
+}
+
+export function serializeRaidResult(result: BossRaidResultOutput): RaidResultResponse {
+  return {
+    raidId: result.raidId,
+    status: result.status,
+    routingProof: result.routingProof,
+    synthesizedOutput: result.synthesizedOutput
+      ? {
+          ...result.synthesizedOutput,
+          artifacts: result.synthesizedOutput.artifacts?.map(serializeSubmissionArtifact),
+          workstreams: result.synthesizedOutput.workstreams.map((workstream) => ({
+            ...workstream,
+            artifacts: workstream.artifacts?.map(serializeSubmissionArtifact),
+          })),
+        }
+      : undefined,
+    primarySubmission: result.primarySubmission
+      ? serializeRankedSubmission(result.primarySubmission)
+      : undefined,
+    approvedSubmissions: result.approvedSubmissions?.map(serializeRankedSubmission),
+    rankedSubmissions: result.rankedSubmissions?.map(serializeRankedSubmission),
+    settlement: result.settlement,
+    settlementExecution: result.settlementExecution,
+    reputationEvents: result.reputationEvents?.map((event) => ({
+      providerId: event.providerId,
+      type: event.type,
+      timestamp: event.timestamp,
+    })),
   };
 }
 

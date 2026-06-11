@@ -10,6 +10,7 @@ import {
 } from '@bossraid/orchestrator';
 import { NETWORK } from '@bossraid/constants';
 import logger from '@bossraid/logger';
+import { mapContractErrorCode } from './lib/contract-errors.js';
 import { applyX402Headers, isX402ProtocolError } from './x402.js';
 import { createApiContext } from './api-context.js';
 import { createApiHandlers } from './api-handlers.js';
@@ -73,7 +74,7 @@ export function buildApiServer(
     if (error instanceof ApiContractError) {
       apiMetrics.increment('requests.bad_request');
       reply.code(error.statusCode).send({
-        error: 'bad_request',
+        error: mapContractErrorCode(error.statusCode),
         message: error.message,
       });
       return;

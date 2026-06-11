@@ -4,8 +4,7 @@ import {
   buildOpenAiCompatibleModelEntry,
   buildInferencePriceEntry,
 } from '../lib/inference-marketplace.js';
-import { readPositiveNumber } from '../lib/env.js';
-import { asSingleQueryValue } from '../lib/http.js';
+import { parseMarketplaceQuery } from '../lib/marketplace-query.js';
 import {
   computeSellerPayout24hMetrics,
   MARKETPLACE_PUBLIC_PAYOUT_SCAN_LIMIT,
@@ -22,29 +21,7 @@ export function registerMarketplaceRoutes(
   const { buildInferenceMarketSnapshot } = handlers;
 
   app.get('/v1/models', async (request) => {
-    const query = request.query as {
-      model?: unknown;
-      model_id?: unknown;
-      provider?: unknown;
-      model_provider?: unknown;
-      framework?: unknown;
-      agent_framework?: unknown;
-      max_budget?: unknown;
-      max_budget_usd?: unknown;
-      privacy_mode?: unknown;
-      verification_status?: unknown;
-    };
-    const markets = buildInferenceMarketSnapshot({
-      modelId: asSingleQueryValue(query.model_id) ?? asSingleQueryValue(query.model),
-      modelProvider: asSingleQueryValue(query.model_provider) ?? asSingleQueryValue(query.provider),
-      agentFramework:
-        asSingleQueryValue(query.agent_framework) ?? asSingleQueryValue(query.framework),
-      maxBudgetUsd: readPositiveNumber(
-        asSingleQueryValue(query.max_budget_usd) ?? asSingleQueryValue(query.max_budget)
-      ),
-      privacyMode: asSingleQueryValue(query.privacy_mode),
-      verificationStatus: asSingleQueryValue(query.verification_status),
-    });
+    const markets = buildInferenceMarketSnapshot(parseMarketplaceQuery(request.query));
 
     return {
       object: 'list',
@@ -53,18 +30,6 @@ export function registerMarketplaceRoutes(
   });
 
   app.get('/v1/prices', async (request) => {
-    const query = request.query as {
-      model?: unknown;
-      model_id?: unknown;
-      provider?: unknown;
-      model_provider?: unknown;
-      framework?: unknown;
-      agent_framework?: unknown;
-      max_budget?: unknown;
-      max_budget_usd?: unknown;
-      privacy_mode?: unknown;
-      verification_status?: unknown;
-    };
     return {
       object: 'list',
       benchmark: {
@@ -72,45 +37,14 @@ export function registerMarketplaceRoutes(
         url: 'https://models.dev/api.json',
         mode: 'static_reference_only',
       },
-      data: buildInferenceMarketSnapshot({
-        modelId: asSingleQueryValue(query.model_id) ?? asSingleQueryValue(query.model),
-        modelProvider:
-          asSingleQueryValue(query.model_provider) ?? asSingleQueryValue(query.provider),
-        agentFramework:
-          asSingleQueryValue(query.agent_framework) ?? asSingleQueryValue(query.framework),
-        maxBudgetUsd: readPositiveNumber(
-          asSingleQueryValue(query.max_budget_usd) ?? asSingleQueryValue(query.max_budget)
-        ),
-        privacyMode: asSingleQueryValue(query.privacy_mode),
-        verificationStatus: asSingleQueryValue(query.verification_status),
-      }).map((market) => buildInferencePriceEntry(market)),
+      data: buildInferenceMarketSnapshot(parseMarketplaceQuery(request.query)).map((market) =>
+        buildInferencePriceEntry(market)
+      ),
     };
   });
 
   app.get('/v1/markets', async (request) => {
-    const query = request.query as {
-      model?: unknown;
-      model_id?: unknown;
-      provider?: unknown;
-      model_provider?: unknown;
-      framework?: unknown;
-      agent_framework?: unknown;
-      max_budget?: unknown;
-      max_budget_usd?: unknown;
-      privacy_mode?: unknown;
-      verification_status?: unknown;
-    };
-    const marketData = buildInferenceMarketSnapshot({
-      modelId: asSingleQueryValue(query.model_id) ?? asSingleQueryValue(query.model),
-      modelProvider: asSingleQueryValue(query.model_provider) ?? asSingleQueryValue(query.provider),
-      agentFramework:
-        asSingleQueryValue(query.agent_framework) ?? asSingleQueryValue(query.framework),
-      maxBudgetUsd: readPositiveNumber(
-        asSingleQueryValue(query.max_budget_usd) ?? asSingleQueryValue(query.max_budget)
-      ),
-      privacyMode: asSingleQueryValue(query.privacy_mode),
-      verificationStatus: asSingleQueryValue(query.verification_status),
-    });
+    const marketData = buildInferenceMarketSnapshot(parseMarketplaceQuery(request.query));
     const providers = orchestrator.listProviders();
     const activeOffers = providers.filter(
       (provider) =>

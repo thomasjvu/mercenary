@@ -1,4 +1,5 @@
 import type { BossRaidOrchestrator } from '@bossraid/orchestrator';
+import { readProviderPrivacyFeatures } from '@bossraid/raid-core';
 import {
   computeTrustScore,
   erc8004IdentityIsRegistered,
@@ -665,29 +666,6 @@ function collectSupportedLanguages(providers: ProviderProfile[]): SupportedLangu
   return uniqueSorted(
     providers.flatMap((provider) => provider.supportedLanguages)
   ) as SupportedLanguage[];
-}
-
-function readProviderPrivacyFeatures(provider: ProviderProfile): PrivacyFeatureKey[] {
-  const features: PrivacyFeatureKey[] = [];
-  if (provider.privacy?.teeAttested) {
-    features.push('tee_attested');
-  }
-  if (provider.privacy?.e2ee) {
-    features.push('e2ee');
-  }
-  if (provider.privacy?.noDataRetention) {
-    features.push('no_data_retention');
-  }
-  if (provider.privacy?.signedOutputs) {
-    features.push('signed_outputs');
-  }
-  if (provider.privacy?.provenanceAttested) {
-    features.push('provenance_attested');
-  }
-  if (provider.privacy?.operatorVerified) {
-    features.push('operator_verified');
-  }
-  return features;
 }
 
 function buildProviderTrustRecord(providerId: string, provider: ProviderProfile | undefined) {

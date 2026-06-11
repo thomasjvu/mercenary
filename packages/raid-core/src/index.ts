@@ -1,5 +1,4 @@
 import type {
-  EvaluationBreakdown,
   RankedSubmission,
   ReputationDelta,
   ReputationEvent,
@@ -42,6 +41,7 @@ export {
   computeSelectionScore,
   providerMatchesTask,
   createAssignmentRecords,
+  readProviderPrivacyFeatures,
   type ProviderSelectionResult,
 } from './selection.js';
 
@@ -112,12 +112,4 @@ export function hashSubmission(primaryContent: string, explanation: string): str
 
 export function estimateLatencyScore(elapsedMs: number, maxLatencySec: number): number {
   return clamp01(1 - elapsedMs / Math.max(maxLatencySec * 1_000, 1));
-}
-
-export function summarizeBreakdown(breakdown: EvaluationBreakdown): string {
-  if (!breakdown.valid) {
-    return `invalid: ${breakdown.invalidReasons.join(', ')}`;
-  }
-
-  return `valid score=${breakdown.finalScore.toFixed(3)} build=${breakdown.buildScore.toFixed(2)} test=${breakdown.testScore.toFixed(2)}`;
 }

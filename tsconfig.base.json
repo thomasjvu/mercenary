@@ -22,7 +22,8 @@
       "@bossraid/ui": ["packages/ui/src/index.tsx"],
       "@bossraid/constants": ["packages/constants/src/index.ts"],
       "@bossraid/http-client": ["packages/http-client/src/index.ts"],
-      "@bossraid/proof-ui": ["packages/proof-ui/src/index.ts"]
+      "@bossraid/proof-ui": ["packages/proof-ui/src/index.ts"],
+      "@bossraid/test-fixtures": ["packages/test-fixtures/src/index.ts"]
     },
     "strict": true,
     "declaration": true,

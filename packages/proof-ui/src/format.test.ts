@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { formatMs, formatTimestamp, formatUsd, shortValue, uniqueStrings } from './format.js';
+import {
+  formatMs,
+  formatTimestamp,
+  formatUsd,
+  formatUsdc,
+  shortValue,
+  uniqueStrings,
+} from './format.js';
 import { countProvidersWithSignal } from './routing.js';
 import { buildErc8004ProofLabel, hasErc8004Registration } from './erc8004.js';
 import { selectApprovedProviderIds } from './raid-result.js';
@@ -13,6 +20,11 @@ test('shortValue truncates long strings', () => {
 
 test('uniqueStrings drops blanks and duplicates', () => {
   assert.deepEqual(uniqueStrings(['a', 'a', '', 'b']), ['a', 'b']);
+});
+
+test('formatUsdc renders USDC suffix', () => {
+  assert.equal(formatUsdc(2), '2.00 USDC');
+  assert.equal(formatUsdc(null), '0.00 USDC');
 });
 
 test('formatUsd handles nullish and precision', () => {

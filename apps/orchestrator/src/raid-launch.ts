@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
+import { ADAPTIVE_PLANNING, TIMEOUTS } from '@bossraid/constants';
 import { providerHasPrivacyFeature } from '@bossraid/provider-registry';
 import {
   annotateRoutingProof,
@@ -29,14 +30,8 @@ import {
   shouldUseHierarchicalPlanning,
 } from './hierarchy.js';
 
-export const STALE_RESERVATION_TIMEOUT_MS = 15 * 60 * 1_000;
-export const DEFAULT_ESTIMATED_FIRST_RESULT_SEC = 25;
-
-const ADAPTIVE_PLANNING = {
-  MIN_EXPERTS_FOR_RESERVES: 6,
-  MAX_ADAPTIVE_RESERVES: 4,
-  RESERVE_RATIO: 5,
-} as const;
+export const STALE_RESERVATION_TIMEOUT_MS = TIMEOUTS.STALE_RESERVATION;
+export const DEFAULT_ESTIMATED_FIRST_RESULT_SEC = TIMEOUTS.DEFAULT_ESTIMATED_FIRST_RESULT_SEC;
 
 export class InvalidRaidLaunchReservationError extends Error {
   constructor(message: string) {

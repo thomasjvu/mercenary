@@ -113,6 +113,9 @@ importers:
       '@bossraid/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
+      '@bossraid/test-fixtures':
+        specifier: workspace:*
+        version: link:../../packages/test-fixtures
       '@bossraid/validator':
         specifier: workspace:*
         version: link:../../packages/validator
@@ -216,6 +219,9 @@ importers:
       '@bossraid/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
+      '@bossraid/test-fixtures':
+        specifier: workspace:*
+        version: link:../../packages/test-fixtures
       viem:
         specifier: ^2.47.5
         version: 2.47.5(typescript@5.9.3)(zod@4.3.6)
@@ -427,6 +433,12 @@ importers:
       '@bossraid/constants':
         specifier: workspace:*
         version: link:../constants
+
+  packages/test-fixtures:
+    dependencies:
+      '@bossraid/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
 
   packages/ui:
     dependencies:

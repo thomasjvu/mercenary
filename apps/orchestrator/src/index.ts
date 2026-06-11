@@ -1,6 +1,5 @@
 import { readStorageBackend } from '@bossraid/constants';
 import { evaluateSubmission } from '@bossraid/evaluation';
-import { computePrivacyCompliance, buildPrivacyComplianceRecord } from '@bossraid/privacy-engine';
 import {
   InMemoryBossRaidPersistence,
   createSecretCipher,
@@ -48,14 +47,11 @@ import {
 } from './reputation.js';
 import {
   buildAdaptivePlanningOutput,
-  applyDisqualificationToRaid,
   buildRaidStatusOutput,
-  finalizeRaidRecord,
-  shouldFinalizeRaid,
   TERMINAL_ASSIGNMENT_STATUSES,
   TERMINAL_RAID_STATUSES,
 } from './raid-state.js';
-import { delay, readRuntimeOptionsFromEnv, type RuntimeOptions } from './runtime.js';
+import { readRuntimeOptionsFromEnv, type RuntimeOptions } from './runtime.js';
 import { createSettlementExecutor, type SettlementExecuteOptions } from './settlement-executor.js';
 import { buildSettlementSummary } from './settlement.js';
 import { buildSynthesizedOutput } from './synthesis.js';
@@ -70,7 +66,7 @@ import {
   submitResult as submitProviderResult,
   type RaidProviderDispatchDeps,
 } from './raid-provider-dispatch.js';
-import { maybeReplanHierarchicalRaid } from './raid-adaptive.js';
+
 import {
   computeRootDeadlineUnix,
   countPreparedExperts,
@@ -100,10 +96,26 @@ import {
   restoreOrchestratorState,
 } from './orchestrator-persistence.js';
 import {
-  filterReadyProvidersForRaid,
   refreshProviderAvailability as refreshProviderAvailabilityState,
   refreshProviderLiveness as refreshProviderLivenessState,
 } from './orchestrator-provider-lifecycle.js';
+import {
+  discoverProvidersForRaid as discoverProvidersForRaidWithCapacity,
+  providerHasCapacity as providerHasCapacityForRaid,
+  type OrchestratorProviderCapacityDeps,
+} from './orchestrator-provider-capacity.js';
+import {
+  executeSettlement as executeRaidSettlement,
+  type OrchestratorSettlementRunnerDeps,
+} from './orchestrator-settlement-runner.js';
+import {
+  expireRaidAtDeadline as expireRaidAtDeadlineState,
+  finalizeRaid as finalizeRaidState,
+  maybeFinalizeAfterUpdate as maybeFinalizeAfterUpdateState,
+  shouldFinalizeHierarchicalRaid as shouldFinalizeHierarchicalRaidState,
+  waitForFinalization as waitForFinalizationState,
+  type OrchestratorFinalizationDeps,
+} from './orchestrator-finalization.js';
 import {
   buildAdaptiveReplanDeps,
   buildPrepareRaidDeps,
@@ -121,8 +133,6 @@ import { findWorkspaceRoot, resolveWorkspacePath } from './workspace.js';
 
 export { InvalidRaidLaunchReservationError, NoEligibleProvidersError } from './raid-launch.js';
 export { PersistenceUnavailableError } from './persistence-queue.js';
-
-const RAID_POLL_INTERVAL_MS = 250;
 
 export class UnknownRaidError extends Error {
   constructor(raidId: string) {
@@ -246,14 +256,7 @@ export class BossRaidOrchestrator {
   private async discoverProvidersForRaid(
     query: ProviderDiscoveryQuery = {}
   ): Promise<ProviderProfile[]> {
-    const readyProviderIds = await this.refreshProviderAvailability();
-    return filterReadyProvidersForRaid(
-      this.listProviders(),
-      readyProviderIds,
-      (providerId) => this.providerHasCapacity(providerId),
-      query,
-      this.options
-    );
+    return discoverProvidersForRaidWithCapacity(query, this.providerCapacityDeps());
   }
 
   private selectProvidersForTask(
@@ -278,7 +281,7 @@ export class BossRaidOrchestrator {
       this.listProviders(),
       query,
       this.options.providerFreshMs,
-      (providerId) => this.providerHasCapacity(providerId)
+      (providerId) => providerHasCapacityForRaid(providerId, this.providerCapacityDeps())
     );
   }
 
@@ -663,88 +666,15 @@ export class BossRaidOrchestrator {
   }
 
   private expireRaidAtDeadline(raidId: string): void {
-    const raid = this.requireRaid(raidId);
-    if (
-      TERMINAL_RAID_STATUSES.has(raid.status) ||
-      !this.raidDeadlineTimers.tryMarkExpiring(raidId)
-    ) {
-      return;
-    }
-    this.clearRaidDeadlineTimer(raidId);
-
-    try {
-      const reason = 'raid deadline reached before completion';
-      if (raid.childRaidIds?.length) {
-        for (const childRaidId of raid.childRaidIds) {
-          const childRaid = this.requireRaid(childRaidId);
-          if (!TERMINAL_RAID_STATUSES.has(childRaid.status)) {
-            this.expireRaidAtDeadline(childRaidId);
-          }
-        }
-      }
-      for (const providerId of raid.selectedProviders) {
-        const assignment = raid.assignments[providerId];
-        if (!assignment || TERMINAL_ASSIGNMENT_STATUSES.has(assignment.status)) {
-          continue;
-        }
-        if (!applyDisqualificationToRaid(raid, providerId, reason)) {
-          continue;
-        }
-
-        this.clearProviderTimers(raidId, providerId);
-        this.applyReputationEvent(
-          providerId,
-          assignment.acceptedAt ? 'heartbeat_timeout' : 'invite_timeout',
-          { raidId, reason }
-        );
-      }
-
-      if (raid.parentRaidId) {
-        this.refreshRaidAncestry(raid.parentRaidId);
-        this.maybeFinalizeAfterUpdate(raid.parentRaidId);
-      }
-      this.queuePersistBestEffort();
-      this.finalizeRaid(raid);
-    } finally {
-      this.raidDeadlineTimers.unmarkExpiring(raidId);
-    }
+    expireRaidAtDeadlineState(raidId, this.finalizationDeps());
   }
 
   private maybeFinalizeAfterUpdate(raidId: string): void {
-    const raid = this.requireRaid(raidId);
-    if (this.raidDeadlineReached(raid)) {
-      this.expireRaidAtDeadline(raidId);
-      return;
-    }
-    if (raid.childRaidIds?.length) {
-      refreshParentRaidFromChildren(raidId, (childRaidId) => this.requireRaid(childRaidId));
-      if (raid.adaptivePlanning && maybeReplanHierarchicalRaid(raidId, this.adaptiveReplanDeps())) {
-        return;
-      }
-      if (this.shouldFinalizeHierarchicalRaid(raid)) {
-        this.finalizeRaid(raid);
-        return;
-      }
-      if (raid.parentRaidId) {
-        this.maybeFinalizeAfterUpdate(raid.parentRaidId);
-      }
-      return;
-    }
-
-    if (shouldFinalizeRaid(raid)) {
-      this.finalizeRaid(raid);
-      return;
-    }
-
-    if (raid.parentRaidId) {
-      this.maybeFinalizeAfterUpdate(raid.parentRaidId);
-    }
+    maybeFinalizeAfterUpdateState(raidId, this.finalizationDeps());
   }
 
   private shouldFinalizeHierarchicalRaid(raid: RaidRecord): boolean {
-    return (raid.childRaidIds ?? []).every((childRaidId) =>
-      TERMINAL_RAID_STATUSES.has(this.requireRaid(childRaidId).status)
-    );
+    return shouldFinalizeHierarchicalRaidState(raid, this.finalizationDeps());
   }
 
   private refreshRaidAncestry(raidId: string | undefined): void {
@@ -757,45 +687,11 @@ export class BossRaidOrchestrator {
   }
 
   private finalizeRaid(raid: RaidRecord): void {
-    this.clearRaidDeadlineTimer(raid.id);
-    if (raid.childRaidIds?.length) {
-      refreshParentRaidFromChildren(raid.id, (childRaidId) => this.requireRaid(childRaidId));
-    }
-    finalizeRaidRecord(raid);
-
-    if (raid.parentRaidId == null) {
-      for (const submission of raid.rankedSubmissions.filter((item) => item.breakdown.valid)) {
-        this.applyReputationEvent(submission.submission.providerId, 'successful_provider', {
-          raidId: raid.id,
-        });
-      }
-    }
-
-    if (raid.parentRaidId) {
-      this.refreshRaidAncestry(raid.parentRaidId);
-      this.maybeFinalizeAfterUpdate(raid.parentRaidId);
-    }
-    this.queuePersistBestEffort();
-    if (raid.parentRaidId == null) {
-      void this.executeSettlement(raid.id);
-    }
+    finalizeRaidState(raid, this.finalizationDeps());
   }
 
   private async waitForFinalization(raidId: string): Promise<void> {
-    const deadline = this.requireRaid(raidId).deadlineUnix * 1_000;
-
-    while (Date.now() < deadline) {
-      const raid = this.requireRaid(raidId);
-      if (TERMINAL_RAID_STATUSES.has(raid.status)) {
-        return;
-      }
-      await delay(RAID_POLL_INTERVAL_MS);
-    }
-
-    const raid = this.requireRaid(raidId);
-    if (!TERMINAL_RAID_STATUSES.has(raid.status)) {
-      this.expireRaidAtDeadline(raidId);
-    }
+    await waitForFinalizationState(raidId, this.finalizationDeps());
   }
 
   private applyReputationEvent(
@@ -894,135 +790,12 @@ export class BossRaidOrchestrator {
     return provider;
   }
 
-  private providerHasCapacity(providerId: string): boolean {
-    const profile = this.providers.get(providerId);
-    if (!profile) {
-      return false;
-    }
-
-    return this.getActiveAssignmentCount(providerId) < Math.max(profile.maxConcurrency, 1);
-  }
-
-  private getActiveAssignmentCount(providerId: string): number {
-    let activeAssignments = 0;
-
-    for (const raid of this.raids.values()) {
-      if (TERMINAL_RAID_STATUSES.has(raid.status)) {
-        continue;
-      }
-
-      if (raid.adaptivePlanning?.availableProviderIds.includes(providerId)) {
-        activeAssignments += 1;
-      }
-
-      const assignment = raid.assignments[providerId];
-      if (!assignment || TERMINAL_ASSIGNMENT_STATUSES.has(assignment.status)) {
-        continue;
-      }
-
-      activeAssignments += 1;
-    }
-
-    for (const reservation of this.launchReservations.values()) {
-      if (reservation.spawnOutput || launchReservationExpired(reservation)) {
-        continue;
-      }
-      if (reservation.reservedProviderIds.includes(providerId)) {
-        activeAssignments += 1;
-      }
-    }
-
-    return activeAssignments;
-  }
-
   private refreshProviderLiveness(nowMs: number = Date.now()): void {
     refreshProviderLivenessState(this.providers.values(), this.options.providerFreshMs, nowMs);
   }
 
   private async executeSettlement(raidId: string): Promise<void> {
-    const raid = this.requireRaid(raidId);
-    if (raid.parentRaidId || raid.settlementExecution || raid.status !== 'final') {
-      return;
-    }
-
-    const privacyConstraints = raid.task.constraints;
-    const privacyMode = privacyConstraints.privacyMode ?? 'off';
-    if (privacyMode !== 'off' && privacyConstraints.requirePrivacyFeatures?.length) {
-      const complianceRecord = buildPrivacyComplianceRecord(
-        raid.id,
-        privacyMode,
-        privacyConstraints.requirePrivacyFeatures,
-        raid.rankedSubmissions,
-        raid.task.sanitizationReport
-      );
-      if (!complianceRecord.overallPassed) {
-        raid.settlementExecution = {
-          mode: 'file',
-          proofStandard: 'erc8183_aligned',
-          lifecycleStatus: 'synthetic',
-          executedAt: new Date().toISOString(),
-          artifactPath: '',
-          registryRaidRef: raid.id,
-          taskHash: '',
-          evaluationHash: '',
-          successfulProviderIds: [],
-          privacyCompliance: complianceRecord,
-          allocations: [],
-          contracts: {
-            registryAddress: null,
-            escrowAddress: null,
-            tokenAddress: null,
-            clientAddress: null,
-            evaluatorAddress: null,
-            chainId: null,
-            rpcUrl: null,
-          },
-          registryCall: {
-            method: 'finalizeRaid',
-            args: [raid.id, '0x0000000000000000000000000000000000000000'],
-          },
-          childJobs: [],
-          warnings: ['privacy-compliance-failed'],
-        };
-        raid.updatedAt = new Date().toISOString();
-        await this.queuePersist();
-        return;
-      }
-    }
-
-    const record = await this.settlementExecutor.execute(
-      raid,
-      this.buildSettlementExecuteOptions(raid)
-    );
-    if (!record) {
-      return;
-    }
-
-    raid.settlementExecution = record;
-    if (privacyMode !== 'off' && privacyConstraints.requirePrivacyFeatures?.length) {
-      const complianceRecord = buildPrivacyComplianceRecord(
-        raid.id,
-        privacyMode,
-        privacyConstraints.requirePrivacyFeatures,
-        raid.rankedSubmissions,
-        raid.task.sanitizationReport
-      );
-      raid.settlementExecution.privacyCompliance = complianceRecord;
-    }
-    raid.updatedAt = new Date().toISOString();
-    await this.queuePersist();
-  }
-
-  private buildSettlementExecuteOptions(raid: RaidRecord): SettlementExecuteOptions {
-    const providerAddressMap: Record<string, string> = {};
-    for (const providerId of raid.selectedProviders) {
-      const operatorWallet = this.providers.get(providerId)?.erc8004?.operatorWallet?.trim();
-      if (operatorWallet) {
-        providerAddressMap[providerId] = operatorWallet;
-      }
-    }
-
-    return { providerAddressMap };
+    await executeRaidSettlement(raidId, this.settlementRunnerDeps());
   }
 
   private async refreshProviderAvailability(): Promise<Set<string>> {
@@ -1096,6 +869,42 @@ export class BossRaidOrchestrator {
 
   private adaptiveReplanDeps() {
     return buildAdaptiveReplanDeps(this.raidRunnerContext());
+  }
+
+  private providerCapacityDeps(): OrchestratorProviderCapacityDeps {
+    return {
+      raids: this.raids,
+      launchReservations: this.launchReservations,
+      providers: this.providers,
+      listProviders: () => this.listProviders(),
+      refreshProviderAvailability: () => this.refreshProviderAvailability(),
+      options: this.options,
+    };
+  }
+
+  private settlementRunnerDeps(): OrchestratorSettlementRunnerDeps {
+    return {
+      requireRaid: (raidId) => this.requireRaid(raidId),
+      providers: this.providers,
+      settlementExecutor: this.settlementExecutor,
+      queuePersist: () => this.queuePersist(),
+    };
+  }
+
+  private finalizationDeps(): OrchestratorFinalizationDeps {
+    return {
+      requireRaid: (raidId) => this.requireRaid(raidId),
+      raidDeadlineTimers: this.raidDeadlineTimers,
+      clearRaidDeadlineTimer: (raidId) => this.clearRaidDeadlineTimer(raidId),
+      clearProviderTimers: (raidId, providerId) => this.clearProviderTimers(raidId, providerId),
+      applyReputationEvent: (providerId, type, context) =>
+        this.applyReputationEvent(providerId, type, context),
+      refreshRaidAncestry: (raidId) => this.refreshRaidAncestry(raidId),
+      queuePersistBestEffort: () => this.queuePersistBestEffort(),
+      executeSettlement: (raidId) => this.executeSettlement(raidId),
+      raidDeadlineReached: (raid) => this.raidDeadlineReached(raid),
+      adaptiveReplanDeps: () => this.adaptiveReplanDeps(),
+    };
   }
 
   private providerRegistryMaps() {

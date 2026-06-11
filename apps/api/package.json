@@ -28,6 +28,7 @@
     "@bossraid/provider-sdk": "workspace:*",
     "@bossraid/sandbox-runner": "workspace:*",
     "@bossraid/shared-types": "workspace:*",
+    "@bossraid/test-fixtures": "workspace:*",
     "@bossraid/validator": "workspace:*",
     "@payai/facilitator": "^2.3.4",
     "fastify": "^5.2.1",

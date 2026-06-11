@@ -3,6 +3,7 @@ export {
   formatScore,
   formatTimestamp,
   formatUsd,
+  formatUsdc,
   shortValue,
   uniqueStrings,
   type TimestampFormatStyle,

@@ -5,7 +5,7 @@ import type {
   PublicAuthNonceEntry,
   PublicSessionEntry,
   SellerPayoutEntry,
-} from './control-state.js';
+} from './control-state/types.js';
 
 type ApiOpsSessionEntry = {
   token: string;
