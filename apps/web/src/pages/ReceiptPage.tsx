@@ -1,17 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import useSWR from 'swr';
 import {
-  buildProviderProofNote,
-  buildRoutingReasonNote,
-  buildSettlementLifecycleLabel,
   countProvidersWithSignal,
-  DEFAULT_TERMINAL_RAID_STATUSES,
   formatUsd,
-  isRenderableImageArtifact,
-  isRenderableVideoArtifact,
-  matchRoutingDecision,
   raidPollingRefreshInterval,
-  shortValue,
   uniqueStrings,
 } from '@bossraid/proof-ui';
 import { ArtifactPreview, ReceiptProofPanel, useRaidPolling } from '@bossraid/ui';
@@ -27,8 +19,18 @@ import {
   type AttestedRuntimePayload,
   type Provider,
   type RaidResult,
-  type RaidStatus,
 } from '../api';
+import { ReceiptProviderList } from '../components/receipt/ReceiptProviderList';
+import { ReceiptQueryForm } from '../components/receipt/ReceiptQueryForm';
+import { ReceiptSettlementBlock } from '../components/receipt/ReceiptSettlementBlock';
+import { ReceiptStat, SummaryPill } from '../components/receipt/ReceiptPrimitives';
+import {
+  buildReceiptProviderRows,
+  compactText,
+  pickPreviewArtifacts,
+  readQueryErrorMessage,
+  summarizeCanonicalOutput,
+} from '../lib/receipt-helpers';
 import {
   buildAgentLogUrl,
   buildAgentManifestUrl,
@@ -48,21 +50,6 @@ type ReceiptPageProps = {
   onNavigate: (path: AppRoute) => void;
 };
 
-type RoutingDecision = NonNullable<RaidResult['routingProof']>['providers'][number];
-type SettlementExecution = NonNullable<RaidResult['settlementExecution']>;
-type SubmissionArtifact = NonNullable<
-  NonNullable<RaidResult['synthesizedOutput']>['artifacts']
->[number];
-type ReceiptProviderRowData = {
-  providerId: string;
-  displayName: string;
-  state: string;
-  assignment: string;
-  proof: string;
-  reason: string;
-};
-
-const TERMINAL_STATUSES = DEFAULT_TERMINAL_RAID_STATUSES;
 const PINNED_PROOF_RECEIPT_URL =
   (import.meta.env.VITE_BOSSRAID_PROOF_RECEIPT_URL as string | undefined)?.trim() ?? '';
 
@@ -73,15 +60,11 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
   const [activeQuery, setActiveQuery] = useState<ReceiptQuery | null>(initialQuery);
   const [shareCopied, setShareCopied] = useState(false);
 
-  const { status, result, statusIsTerminal } = useRaidPolling(
-    activeQuery?.raidId,
-    activeQuery?.token,
-    {
-      enabled: Boolean(activeQuery),
-      fetchStatus: () => fetchRaidStatus(activeQuery!.raidId, activeQuery!.token),
-      fetchResult: () => fetchRaidResult(activeQuery!.raidId, activeQuery!.token),
-    }
-  );
+  const { status, result } = useRaidPolling(activeQuery?.raidId, activeQuery?.token, {
+    enabled: Boolean(activeQuery),
+    fetchStatus: () => fetchRaidStatus(activeQuery!.raidId, activeQuery!.token),
+    fetchResult: () => fetchRaidResult(activeQuery!.raidId, activeQuery!.token),
+  });
   const providers = useSWR<Provider[]>(
     activeQuery ? '/v1/providers' : null,
     (path: string) => fetchJson(path),
@@ -171,7 +154,10 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
   const providerMap = new Map(
     (providers.data ?? []).map((provider) => [provider.providerId, provider])
   );
-  const routingDecisionMap = new Map<string, RoutingDecision[]>();
+  const routingDecisionMap = new Map<
+    string,
+    NonNullable<RaidResult['routingProof']>['providers']
+  >();
 
   for (const decision of routingDecisions) {
     const existing = routingDecisionMap.get(decision.providerId) ?? [];
@@ -258,7 +244,6 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
     droppedProviders
   );
   const settlementWarnings = settlementExecution?.warnings ?? [];
-  const childJobCount = settlementExecution?.childJobs.length ?? 0;
   const visibleWorkstreams = workstreams.slice(0, 4);
 
   return (
@@ -343,38 +328,13 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
         </aside>
       </div>
 
-      <form className="receipt-form" onSubmit={handleLoadReceipt}>
-        <label className="receipt-field">
-          <span>raid id</span>
-          <input
-            className="receipt-field__input"
-            onChange={(event) => setRaidIdInput(event.target.value)}
-            placeholder="raid_..."
-            spellCheck={false}
-            type="text"
-            value={raidIdInput}
-          />
-        </label>
-        <label className="receipt-field">
-          <span>raid access token</span>
-          <input
-            className="receipt-field__input"
-            onChange={(event) => setTokenInput(event.target.value)}
-            placeholder="paste raidAccessToken"
-            spellCheck={false}
-            type="text"
-            value={tokenInput}
-          />
-        </label>
-        <div className="receipt-form__actions">
-          <button className="button button--primary" type="submit">
-            load receipt
-          </button>
-          <a className="button" href={buildAttestedRuntimeUrl()} rel="noreferrer" target="_blank">
-            runtime proof
-          </a>
-        </div>
-      </form>
+      <ReceiptQueryForm
+        onRaidIdChange={setRaidIdInput}
+        onSubmit={handleLoadReceipt}
+        onTokenChange={setTokenInput}
+        raidIdInput={raidIdInput}
+        tokenInput={tokenInput}
+      />
 
       <div className="receipt-shell__body">
         {!activeQuery ? (
@@ -531,206 +491,21 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
               />
             </article>
 
-            <article className="receipt-surface">
-              <div className="receipt-surface__head">
-                <div>
-                  <p className="eyebrow">queued verified agents</p>
-                  <h2>Providers</h2>
-                </div>
-              </div>
-              <div className="receipt-provider-list">
-                {providerRows.length ? (
-                  providerRows.map((row) => <ReceiptProviderRow key={row.providerId} row={row} />)
-                ) : (
-                  <p className="receipt-panel__muted">No routed queued agents recorded yet.</p>
-                )}
-              </div>
-            </article>
+            <ReceiptProviderList rows={providerRows} />
 
-            <article className="receipt-surface">
-              <div className="receipt-surface__head">
-                <div>
-                  <p className="eyebrow">settlement</p>
-                  <h2>Settlement</h2>
-                </div>
-              </div>
-              <div className="receipt-stat-grid">
-                <ReceiptStat
-                  label="proof"
-                  value={settlementExecution?.proofStandard ?? 'pending'}
-                />
-                <ReceiptStat
-                  label="lifecycle"
-                  value={buildSettlementLifecycleLabel(settlementExecution?.lifecycleStatus)}
-                />
-                <ReceiptStat label="successful" value={String(successfulProviderCount)} />
-                <ReceiptStat
-                  label="payout each"
-                  value={
-                    payoutPerSuccessfulProvider == null
-                      ? 'pending'
-                      : formatUsd(payoutPerSuccessfulProvider)
-                  }
-                />
-              </div>
-              <div className="receipt-proof-note receipt-proof-note--inline">
-                <strong>Payout rule:</strong> Successful raiders split payout equally.
-              </div>
-              <div className="receipt-detail-list">
-                <ReceiptDetailRow label="mode" value={settlementExecution?.mode ?? 'pending'} />
-                <ReceiptDetailRow label="child jobs" value={String(childJobCount)} />
-                <ReceiptDetailRow
-                  label="8004 verified"
-                  value={`${verifiedErc8004ProviderCount}/${erc8004ProviderCount || routedProviderIds.length || 0}`}
-                />
-                <ReceiptDetailRow label="venice routed" value={String(veniceProviderCount)} />
-              </div>
-              <details className="receipt-disclosure">
-                <summary>show settlement fields</summary>
-                <div className="receipt-detail-list">
-                  <ReceiptDetailRow
-                    label="registry ref"
-                    value={shortValue(settlementExecution?.registryRaidRef ?? 'pending')}
-                  />
-                  <ReceiptDetailRow
-                    label="evaluation hash"
-                    value={shortValue(settlementExecution?.evaluationHash ?? 'pending')}
-                  />
-                  {settlementWarnings[0] ? (
-                    <ReceiptDetailRow label="warning" value={settlementWarnings[0]} />
-                  ) : null}
-                </div>
-              </details>
-            </article>
+            <ReceiptSettlementBlock
+              erc8004ProviderCount={erc8004ProviderCount}
+              payoutPerSuccessfulProvider={payoutPerSuccessfulProvider}
+              routedProviderCount={routedProviderIds.length}
+              settlementExecution={settlementExecution}
+              settlementWarnings={settlementWarnings}
+              successfulProviderCount={successfulProviderCount}
+              veniceProviderCount={veniceProviderCount}
+              verifiedErc8004ProviderCount={verifiedErc8004ProviderCount}
+            />
           </section>
         ) : null}
       </div>
     </section>
   );
-}
-
-function SummaryPill({ label, value }: { label: string; value: string }) {
-  return (
-    <article className="summary-pill">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </article>
-  );
-}
-
-function ReceiptStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="receipt-stat">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function ReceiptDetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="receipt-detail-row">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function ReceiptProviderRow({ row }: { row: ReceiptProviderRowData }) {
-  return (
-    <div className="receipt-provider-row">
-      <div className="receipt-provider-row__head">
-        <strong>{row.displayName}</strong>
-        <span className="receipt-provider-row__state">{row.state}</span>
-      </div>
-      <p>{compactText(row.assignment, 84)}</p>
-      <small>
-        {compactText([row.proof, row.reason].filter((value) => value.length > 0).join(' · '), 120)}
-      </small>
-    </div>
-  );
-}
-
-function pickPreviewArtifacts(artifacts: SubmissionArtifact[]): SubmissionArtifact[] {
-  return artifacts
-    .filter(
-      (artifact) => isRenderableImageArtifact(artifact) || isRenderableVideoArtifact(artifact)
-    )
-    .slice(0, 1);
-}
-
-function summarizeCanonicalOutput(result: RaidResult | undefined): string {
-  if (!result) {
-    return 'Loading receipt proof.';
-  }
-
-  const summary =
-    result.synthesizedOutput?.answerText ??
-    result.synthesizedOutput?.explanation ??
-    result.primarySubmission?.submission.answerText ??
-    result.primarySubmission?.submission.explanation;
-
-  if (summary && summary.trim().length > 0) {
-    return compactText(summary, 220);
-  }
-
-  if (
-    result.synthesizedOutput?.patchUnifiedDiff ||
-    result.primarySubmission?.submission.patchUnifiedDiff
-  ) {
-    return 'Patch-backed result is ready. Open the agent log for the full run trace and the attested result for the signed proof payload.';
-  }
-
-  return 'Waiting for an approved canonical output.';
-}
-
-function compactText(value: string, maxLength: number): string {
-  const normalized = value.replace(/\s+/g, ' ').trim();
-  if (normalized.length <= maxLength) {
-    return normalized;
-  }
-
-  const sentenceBoundary = normalized.slice(0, maxLength).match(/^(.+[.!?])\s/);
-  if (sentenceBoundary?.[1]) {
-    return sentenceBoundary[1];
-  }
-
-  return `${normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
-}
-
-function buildReceiptProviderRows(
-  providerIds: string[],
-  routingDecisionMap: Map<string, RoutingDecision[]>,
-  providerMap: Map<string, Provider>,
-  approvedProviders: string[],
-  supportingProviders: string[],
-  droppedProviders: string[]
-): ReceiptProviderRowData[] {
-  return providerIds.map((providerId) => {
-    const provider = providerMap.get(providerId);
-    const decision = matchRoutingDecision(routingDecisionMap.get(providerId));
-    const state = approvedProviders.includes(providerId)
-      ? 'approved'
-      : supportingProviders.includes(providerId)
-        ? 'supporting'
-        : droppedProviders.includes(providerId)
-          ? 'dropped'
-          : 'routed';
-
-    return {
-      providerId,
-      displayName: provider?.displayName ?? providerId,
-      state,
-      assignment:
-        [decision?.workstreamLabel, decision?.roleLabel]
-          .filter((value): value is string => Boolean(value))
-          .join(' / ') || 'routed provider',
-      proof: compactText(buildProviderProofNote(decision, provider), 72),
-      reason: compactText(buildRoutingReasonNote(decision), 96),
-    };
-  });
-}
-
-function readQueryErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Request failed.';
 }

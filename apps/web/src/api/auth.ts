@@ -1,57 +1,19 @@
+import type {
+  ApiKeyCreateResponseView,
+  AuthNonceResponseView,
+  BuyerApiKeyView,
+  PublicSessionView,
+  SellerEarningsView,
+  SellerProviderCreateResponseView,
+} from '@bossraid/shared-types';
 import { fetchJson, type Provider, type ProviderHealth } from './client.js';
 
-export type BuyerApiKey = {
-  id: string;
-  name: string;
-  prefix: string;
-  createdAt: string;
-  revokedAt?: string;
-  lastUsedAt?: string;
-  spendLimitUsd?: number;
-  spentUsd: number;
-};
-
-export type PublicSession = {
-  authenticated: boolean;
-  wallet?: string;
-  account?: {
-    wallet: string;
-    createdAt: string;
-    balanceUsd?: number;
-    sellerProviderIds: string[];
-    apiKeys: BuyerApiKey[];
-    totalSavingsUsd?: number;
-  };
-};
-
-export type AuthNonceResponse = {
-  wallet: string;
-  nonce: string;
-  message: string;
-  expiresAt: string;
-};
-
-export type ApiKeyCreateResponse = {
-  apiKey: string;
-  key: BuyerApiKey;
-};
-
-export type SellerProviderCreateResponse = {
-  provider: Provider;
-  health: ProviderHealth;
-};
-
-export type SellerEarnings = {
-  grossUsd: number;
-  payoutCount: number;
-  payouts: Array<{
-    raidId: string;
-    providerId: string;
-    amountUsd: number;
-    status: string;
-    settledAt?: string;
-  }>;
-};
+export type BuyerApiKey = BuyerApiKeyView;
+export type PublicSession = PublicSessionView;
+export type AuthNonceResponse = AuthNonceResponseView;
+export type ApiKeyCreateResponse = ApiKeyCreateResponseView;
+export type SellerProviderCreateResponse = SellerProviderCreateResponseView;
+export type SellerEarnings = SellerEarningsView;
 
 export async function createAuthNonce(wallet: string): Promise<AuthNonceResponse> {
   return fetchJson<AuthNonceResponse>('/v1/auth/nonce', {
