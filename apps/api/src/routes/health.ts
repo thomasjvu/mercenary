@@ -1,7 +1,7 @@
 import { type FastifyInstance } from 'fastify';
 import { readStorageBackend } from '@bossraid/constants';
 import { readTeeSocketState } from '../lib/tee.js';
-import { readX402Config } from '../x402.js';
+import { readX402ConfigForContext } from '../lib/x402-runtime.js';
 import { buildProductionReadinessReport } from '../lib/production-readiness.js';
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlers } from '../api-handlers.js';
@@ -41,7 +41,7 @@ export function registerHealthRoutes(
   app.get('/ready', async () => {
     const providerHealth = await collectProviderHealth();
     const persistence = orchestrator.getPersistenceStatus();
-    const x402Config = readX402Config(env);
+    const x402Config = readX402ConfigForContext(ctx);
     const settlementMode = env.BOSSRAID_SETTLEMENT_MODE ?? 'off';
     const settlementConfigured =
       settlementMode === 'off' ||
@@ -127,7 +127,7 @@ export function registerHealthRoutes(
 
     const providerHealth = await collectProviderHealth();
     const persistence = orchestrator.getPersistenceStatus();
-    const x402Config = readX402Config(env);
+    const x402Config = readX402ConfigForContext(ctx);
     const settlementMode = env.BOSSRAID_SETTLEMENT_MODE ?? 'off';
     const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/tappd.sock';
     const tee = await readTeeSocketState(teeSocketPath);

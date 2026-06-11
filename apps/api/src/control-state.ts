@@ -4,7 +4,7 @@ import { dirname, extname, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { readStorageBackend, type StorageBackend } from '@bossraid/constants';
 import { findWorkspaceRoot, resolveWorkspacePath } from '@bossraid/constants/workspace';
-import { createSecretCipher, type SecretCipher } from '@bossraid/persistence';
+import { createSecretCipher, createStorageBackend, type SecretCipher } from '@bossraid/persistence';
 import {
   isValidBuyerApiKeyEntry,
   isValidBuyerPurchaseEntry,
@@ -26,6 +26,11 @@ type ApiRateLimitEntry = {
   key: string;
   count: number;
   resetAt: number;
+};
+
+export type ApiRuntimeSettings = {
+  x402Enabled: boolean;
+  seeded: boolean;
 };
 
 export type PublicAuthNonceEntry = {
@@ -96,6 +101,7 @@ type ApiControlStateSnapshot = {
   buyerPurchases: BuyerPurchaseEntry[];
   sellerPayouts: SellerPayoutEntry[];
   rateLimits: ApiRateLimitEntry[];
+  settings: ApiRuntimeSettings;
 };
 
 const SNAPSHOT_KEY = 1;
@@ -231,6 +237,10 @@ function createEmptyApiControlState(): ApiControlStateSnapshot {
     buyerPurchases: [],
     sellerPayouts: [],
     rateLimits: [],
+    settings: {
+      x402Enabled: false,
+      seeded: false,
+    },
   };
 }
 
@@ -267,6 +277,10 @@ function normalizeApiControlState(
     rateLimits: Array.isArray(snapshot?.rateLimits)
       ? snapshot.rateLimits.filter(isValidRateLimitEntry)
       : [],
+    settings: {
+      x402Enabled: snapshot?.settings?.x402Enabled === true,
+      seeded: snapshot?.settings?.seeded === true,
+    },
   };
 }
 
@@ -353,27 +367,21 @@ function createApiControlStateStore(env: NodeJS.ProcessEnv): ApiControlStateStor
   });
   const cipher = createSecretCipher(env);
 
-  switch (storageBackend) {
-    case 'memory':
-      return new InMemoryApiControlStateStore();
-    case 'file': {
-      const stateFile = resolveWorkspacePath(env.BOSSRAID_STATE_FILE, workspaceCwd);
-      if (!stateFile) {
-        throw new Error('BOSSRAID_STATE_FILE is required when BOSSRAID_STORAGE_BACKEND=file.');
-      }
-      return new FileApiControlStateStore(deriveApiStateFile(stateFile), cipher);
-    }
-    case 'sqlite': {
-      const sqliteFile = resolveWorkspacePath(
+  return createStorageBackend<ApiControlStateStore>(
+    storageBackend,
+    {
+      memory: () => new InMemoryApiControlStateStore(),
+      file: (stateFile) => new FileApiControlStateStore(deriveApiStateFile(stateFile), cipher),
+      sqlite: (sqliteFile) => new SqliteApiControlStateStore(sqliteFile, cipher),
+    },
+    {
+      stateFile: resolveWorkspacePath(env.BOSSRAID_STATE_FILE, workspaceCwd),
+      sqliteFile: resolveWorkspacePath(
         env.BOSSRAID_SQLITE_FILE ?? './temp/bossraid-state.sqlite',
         workspaceCwd
-      );
-      if (!sqliteFile) {
-        throw new Error('BOSSRAID_SQLITE_FILE is required when BOSSRAID_STORAGE_BACKEND=sqlite.');
-      }
-      return new SqliteApiControlStateStore(sqliteFile, cipher);
+      ),
     }
-  }
+  );
 }
 
 export class ApiControlState {
@@ -822,6 +830,46 @@ export class ApiControlState {
     return account;
   }
 
+  readRuntimeSettings(nowMs = Date.now()): ApiRuntimeSettings {
+    const { snapshot } = this.readPrunedState(nowMs);
+    return structuredClone(snapshot.settings);
+  }
+
+  readX402Enabled(nowMs = Date.now()): boolean {
+    const { snapshot } = this.readPrunedState(nowMs);
+    return snapshot.settings.x402Enabled;
+  }
+
+  setX402Enabled(enabled: boolean, nowMs = Date.now()): ApiRuntimeSettings {
+    const { snapshot } = this.readPrunedState(nowMs);
+    snapshot.settings = {
+      x402Enabled: enabled,
+      seeded: true,
+    };
+    this.writeState(snapshot);
+    return structuredClone(snapshot.settings);
+  }
+
+  ensureRuntimeSettingsSeeded(env: NodeJS.ProcessEnv, nowMs = Date.now()): ApiRuntimeSettings {
+    const { snapshot } = this.readPrunedState(nowMs);
+    if (snapshot.settings.seeded) {
+      return structuredClone(snapshot.settings);
+    }
+
+    const x402Enabled =
+      env.BOSSRAID_X402_ENABLED == null
+        ? false
+        : env.BOSSRAID_X402_ENABLED === 'true' ||
+          env.BOSSRAID_X402_ENABLED === '1' ||
+          env.BOSSRAID_X402_ENABLED === 'yes';
+    snapshot.settings = {
+      x402Enabled,
+      seeded: true,
+    };
+    this.writeState(snapshot);
+    return structuredClone(snapshot.settings);
+  }
+
   private writeState(snapshot: ApiControlStateSnapshot): void {
     snapshot.savedAt = new Date().toISOString();
     this.workingSnapshot = snapshot;
@@ -830,5 +878,7 @@ export class ApiControlState {
 }
 
 export function createApiControlState(env: NodeJS.ProcessEnv = process.env): ApiControlState {
-  return new ApiControlState(createApiControlStateStore(env));
+  const controlState = new ApiControlState(createApiControlStateStore(env));
+  controlState.ensureRuntimeSettingsSeeded(env);
+  return controlState;
 }

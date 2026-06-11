@@ -205,6 +205,115 @@ pre {
   flex-wrap: wrap;
 }
 
+.ops-x402-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgb(255 196 77 / 0.08), rgb(255 255 255 / 0.02));
+}
+
+.ops-x402-panel__copy {
+  display: grid;
+  gap: 6px;
+  max-width: 42ch;
+}
+
+.ops-x402-panel__lede {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.ops-x402-panel__controls {
+  display: grid;
+  gap: 10px;
+  min-width: min(100%, 320px);
+}
+
+.ops-x402-toggle {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.03);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.ops-x402-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.ops-x402-toggle--on {
+  border-color: rgb(255 196 77 / 0.55);
+  background: rgb(255 196 77 / 0.12);
+}
+
+.ops-x402-toggle__track {
+  position: relative;
+  width: 52px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.12);
+  flex: 0 0 auto;
+}
+
+.ops-x402-toggle--on .ops-x402-toggle__track {
+  background: rgb(255 196 77 / 0.45);
+}
+
+.ops-x402-toggle__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--text);
+  transition: transform 160ms ease;
+}
+
+.ops-x402-toggle--on .ops-x402-toggle__thumb {
+  transform: translateX(22px);
+  background: #111;
+}
+
+.ops-x402-toggle__label {
+  display: grid;
+  gap: 2px;
+}
+
+.ops-x402-toggle__label strong {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ops-x402-toggle__label span {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.ops-x402-panel__meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
 .stat-chip {
   display: grid;
   gap: 2px;

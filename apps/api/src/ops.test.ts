@@ -75,6 +75,58 @@ test('GET /ready reports public beta readiness gates', async () => {
   }
 });
 
+test('ops settings expose and toggle the runtime x402 gate', async () => {
+  const app = buildApiServer(new BossRaidOrchestrator([]), {
+    ...process.env,
+    BOSSRAID_ADMIN_TOKEN: 'admin-settings-token-with-production-length',
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+    BOSSRAID_X402_ENABLED: 'false',
+    BOSSRAID_X402_PAY_TO: '0xabc',
+  });
+
+  try {
+    const unauthorized = await app.inject({
+      method: 'GET',
+      url: '/v1/ops/settings',
+    });
+    assert.equal(unauthorized.statusCode, 401);
+
+    const initial = await app.inject({
+      method: 'GET',
+      url: '/v1/ops/settings',
+      headers: {
+        authorization: 'Bearer admin-settings-token-with-production-length',
+      },
+    });
+    assert.equal(initial.statusCode, 200);
+    assert.equal(initial.json().x402.enabled, false);
+    assert.equal(initial.json().x402.canEnable, true);
+
+    const enabled = await app.inject({
+      method: 'PATCH',
+      url: '/v1/ops/settings',
+      headers: {
+        authorization: 'Bearer admin-settings-token-with-production-length',
+        'content-type': 'application/json',
+      },
+      payload: {
+        x402Enabled: true,
+      },
+    });
+    assert.equal(enabled.statusCode, 200);
+    assert.equal(enabled.json().x402.enabled, true);
+
+    const ready = await app.inject({
+      method: 'GET',
+      url: '/ready',
+    });
+    assert.equal(ready.statusCode, 200);
+    assert.equal(ready.json().payment.enabled, true);
+  } finally {
+    await app.close();
+  }
+});
+
 test('ops metrics are admin-gated and expose route counters', async () => {
   const app = buildApiServer(new BossRaidOrchestrator([]), {
     ...process.env,

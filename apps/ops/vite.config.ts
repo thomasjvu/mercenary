@@ -15,6 +15,9 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@bossraid/ui': fileURLToPath(new URL('../../packages/ui/src/index.tsx', import.meta.url)),
+        '@bossraid/proof-ui': fileURLToPath(
+          new URL('../../packages/proof-ui/src/index.ts', import.meta.url)
+        ),
       },
     },
     server: {

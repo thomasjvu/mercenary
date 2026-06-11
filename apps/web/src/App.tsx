@@ -5,24 +5,24 @@ import { BOSSRAID_DOCS_URL } from '@bossraid/ui';
 import useSWR from 'swr';
 import { bindAsciiRipple } from './ascii-ripple';
 import { fetchJson, type Provider, type ProviderHealth } from './api';
+import { AppHeader, type AppRoute } from './components/AppHeader';
 import { AccountPage } from './pages/AccountPage';
 import { BuyerOnboardingPage } from './pages/BuyerOnboardingPage';
 import { DemoPage } from './pages/DemoPage';
 import { LandingPage } from './pages/LandingPage';
 import { MarketplacePage } from './pages/MarketplacePage';
+import { ModelDetailPage } from './pages/ModelDetailPage';
+import { PlaygroundPage } from './pages/PlaygroundPage';
+import {
+  isMarketplaceDetailPath,
+  isMarketplaceListPath,
+  marketplaceModelPath,
+  readMarketplaceModelId,
+  readPlaygroundModelId,
+} from './lib/routing.js';
 import { ReceiptPage } from './pages/ReceiptPage';
 import { RaidersPage } from './pages/RaidersPage';
 import { SellerOnboardingPage } from './pages/SellerOnboardingPage';
-
-type AppRoute =
-  | '/'
-  | '/marketplace'
-  | '/onboarding/buyer'
-  | '/onboarding/seller'
-  | '/account'
-  | '/demo'
-  | '/raiders'
-  | '/receipt';
 type AppTheme = 'light' | 'dark';
 
 const LANDING_THEME_STORAGE_KEY = 'bossraid.landing-theme';
@@ -31,10 +31,18 @@ addCollection(pixelIcons);
 
 export function App() {
   const appShellRef = useRef<HTMLElement | null>(null);
-  const pathname = useSyncExternalStore(subscribeToLocation, getCurrentRoute, () => '/');
+  const pathname = useSyncExternalStore(
+    subscribeToLocation,
+    () => (typeof window === 'undefined' ? '/' : window.location.pathname),
+    () => '/'
+  );
+  const appRoute = useSyncExternalStore(subscribeToLocation, getCurrentRoute, () => '/');
   const [appTheme, setAppTheme] = useState<AppTheme>(() => getInitialTheme());
   const isLandingRoute = pathname === '/';
-  const isMarketplaceRoute = pathname === '/marketplace';
+  const isMarketplaceListRoute = isMarketplaceListPath(pathname);
+  const marketplaceModelId = readMarketplaceModelId(pathname);
+  const isMarketplaceDetailRoute = isMarketplaceDetailPath(pathname);
+  const isPlaygroundRoute = pathname === '/playground';
   const isBuyerOnboardingRoute = pathname === '/onboarding/buyer';
   const isSellerOnboardingRoute = pathname === '/onboarding/seller';
   const isAccountRoute = pathname === '/account';
@@ -42,8 +50,14 @@ export function App() {
   const isRaidersRoute = pathname === '/raiders';
   const isReceiptRoute = pathname === '/receipt';
   const usesDirectoryLayout = isDemoRoute || isRaidersRoute || isReceiptRoute;
+  const usesAppHeader = !isLandingRoute && !isReceiptRoute;
+  const playgroundModelId =
+    isPlaygroundRoute && typeof window !== 'undefined'
+      ? readPlaygroundModelId(window.location.search)
+      : undefined;
 
-  const shouldLoadProviderData = isDemoRoute || isRaidersRoute;
+  const shouldLoadProviderData =
+    isDemoRoute || isRaidersRoute || isMarketplaceListRoute || isMarketplaceDetailRoute;
   const providers = useSWR<Provider[]>(
     shouldLoadProviderData ? '/v1/providers' : null,
     (path: string) => fetchJson(path),
@@ -74,13 +88,20 @@ export function App() {
     window.localStorage.setItem(LANDING_THEME_STORAGE_KEY, appTheme);
   }, [appTheme]);
 
-  function navigate(path: AppRoute) {
-    if (getCurrentRoute() === path) {
+  function navigate(path: AppRoute, options?: { modelId?: string; marketplaceModelId?: string }) {
+    let nextUrl: string = path;
+    if (path === '/marketplace' && options?.marketplaceModelId) {
+      nextUrl = marketplaceModelPath(options.marketplaceModelId);
+    } else if (path === '/playground' && options?.modelId) {
+      nextUrl = `${path}?model=${encodeURIComponent(options.modelId)}`;
+    }
+
+    if (window.location.pathname + window.location.search === nextUrl) {
       return;
     }
 
     startTransition(() => {
-      window.history.pushState({}, '', path);
+      window.history.pushState({}, '', nextUrl);
       window.dispatchEvent(new PopStateEvent('popstate'));
       window.scrollTo({ top: 0 });
     });
@@ -93,14 +114,27 @@ export function App() {
     >
       <div className="bg-grid" aria-hidden="true" />
 
+      {usesAppHeader ? <AppHeader onNavigate={navigate} pathname={pathname} /> : null}
+
       {isRaidersRoute ? (
         <RaidersPage
           providers={providers.data ?? []}
           providerHealth={providerHealth.data ?? []}
           onNavigate={navigate}
         />
-      ) : isMarketplaceRoute ? (
-        <MarketplacePage />
+      ) : isMarketplaceDetailRoute && marketplaceModelId ? (
+        <ModelDetailPage
+          modelId={marketplaceModelId}
+          onBack={() => navigate('/marketplace')}
+          onTryModel={(modelId) => navigate('/playground', { modelId })}
+          providerHealth={providerHealth.data ?? []}
+        />
+      ) : isMarketplaceListRoute ? (
+        <MarketplacePage
+          onOpenModel={(modelId) => navigate('/marketplace', { marketplaceModelId: modelId })}
+        />
+      ) : isPlaygroundRoute ? (
+        <PlaygroundPage initialModelId={playgroundModelId} />
       ) : isBuyerOnboardingRoute ? (
         <BuyerOnboardingPage />
       ) : isSellerOnboardingRoute ? (
@@ -133,12 +167,18 @@ export function App() {
           <span aria-hidden="true" className="footer__separator">
             |
           </span>
-          <RouteLink active={pathname === '/'} label="home" onNavigate={navigate} path="/" />
+          <RouteLink active={appRoute === '/'} label="home" onNavigate={navigate} path="/" />
           <RouteLink
-            active={pathname === '/marketplace'}
+            active={isMarketplaceListRoute || isMarketplaceDetailRoute}
             label="market"
             onNavigate={navigate}
             path="/marketplace"
+          />
+          <RouteLink
+            active={appRoute === '/playground'}
+            label="try"
+            onNavigate={navigate}
+            path="/playground"
           />
           <RouteLink
             active={pathname === '/onboarding/buyer'}
@@ -240,6 +280,9 @@ function RouteLink({
 function normalizePathname(pathname: string): AppRoute {
   if (pathname === '/marketplace' || pathname === '/marketplace/') {
     return '/marketplace';
+  }
+  if (pathname === '/playground' || pathname === '/playground/') {
+    return '/playground';
   }
   if (pathname === '/onboarding/buyer' || pathname === '/onboarding/buyer/') {
     return '/onboarding/buyer';

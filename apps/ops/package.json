@@ -9,8 +9,10 @@
     "dev": "vite"
   },
   "dependencies": {
+    "@bossraid/proof-ui": "workspace:*",
     "@bossraid/ui": "workspace:*",
     "@bossraid/constants": "workspace:*",
+    "@bossraid/shared-types": "workspace:*",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "swr": "^2.3.6"

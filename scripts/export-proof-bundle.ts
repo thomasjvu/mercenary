@@ -4,6 +4,7 @@ import { FileBossRaidPersistence, type BossRaidPersistence } from '@bossraid/per
 import { SqliteBossRaidPersistence } from '@bossraid/persistence-sqlite';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import { runtimeExecutionEnabled, runtimeExecutionTransport } from '@bossraid/sandbox-runner';
+import { readBooleanEnv, readPositiveInteger } from '@bossraid/constants';
 import type { BossRaidPersistenceSnapshot, RaidRecord } from '@bossraid/shared-types';
 import { mnemonicToAccount } from 'viem/accounts';
 import { buildAgentLog, buildAgentManifest } from '../apps/api/src/agent-artifacts.ts';
@@ -241,15 +242,6 @@ async function refreshPersistedSettlementProof(input: {
     ),
   });
   await persistSettlementExecutionArtifact(refreshed);
-}
-
-function readBooleanEnv(value: string | undefined): boolean {
-  return value === '1' || value === 'true' || value === 'yes';
-}
-
-function readPositiveInteger(value: string | undefined, fallback: number): number {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
 }
 
 function readMercenaryErc8004Identity(env: NodeJS.ProcessEnv) {

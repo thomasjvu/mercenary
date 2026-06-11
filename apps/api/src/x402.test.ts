@@ -30,19 +30,20 @@ function createPayAISecret(): string {
   return `payai_sk_${privateKey.export({ format: 'der', type: 'pkcs8' }).toString('base64')}`;
 }
 
-test('x402 defaults to enabled with the PayAI facilitator path', () => {
+test('x402 defaults to disabled until explicitly enabled', () => {
   const config = readX402Config({});
+
+  assert.equal(config.enabled, false);
+  assert.equal(config.facilitatorUrl, undefined);
+});
+
+test('x402 can be enabled explicitly', () => {
+  const config = readX402Config({
+    BOSSRAID_X402_ENABLED: 'true',
+  });
 
   assert.equal(config.enabled, true);
   assert.equal(config.facilitatorUrl, 'https://facilitator.payai.network');
-});
-
-test('x402 can be disabled explicitly', () => {
-  const config = readX402Config({
-    BOSSRAID_X402_ENABLED: 'false',
-  });
-
-  assert.equal(config.enabled, false);
 });
 
 test('x402 route surcharges read BOSSRAID_X402_*_SURCHARGE_USD env vars', () => {

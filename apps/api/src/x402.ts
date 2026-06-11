@@ -4,6 +4,7 @@ import {
   buildX402PaymentRequired,
   computeChargeUsd,
   readX402Config,
+  type X402Config,
   type X402PaymentRequired,
   type X402PaymentRequirement,
   type X402RouteName,
@@ -20,7 +21,7 @@ export type {
 };
 
 export { applyX402Headers, readX402ReservationId } from './x402-verify.js';
-export { buildX402PaymentRequired, readX402Config };
+export { buildPaymentRequiredForRoute, buildX402PaymentRequired, readX402Config };
 
 class X402ProtocolError extends Error {
   readonly statusCode: number;
@@ -47,6 +48,7 @@ export async function requireX402Payment(input: {
   route: X402RouteName;
   headers: RawHeaders;
   env?: NodeJS.ProcessEnv;
+  config?: X402Config;
   budgetUsd?: number;
   paymentRequired?: X402PaymentRequired;
 }): Promise<{
@@ -56,7 +58,7 @@ export async function requireX402Payment(input: {
   escrowFundingUsd: number;
   platformMarkupUsd: number;
 }> {
-  const config = readX402Config(input.env);
+  const config = input.config ?? readX402Config(input.env);
   if (!config.enabled) {
     return {
       paidAmountUsd: 0,

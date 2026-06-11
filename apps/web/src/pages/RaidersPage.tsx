@@ -1,4 +1,5 @@
 import { useDeferredValue, useState } from 'react';
+import { buildErc8004ProofLabel, hasErc8004Registration } from '@bossraid/proof-ui';
 import heroImage from '../../../../assets/hero.webp';
 import type { Provider, ProviderHealth } from '../api';
 
@@ -265,7 +266,7 @@ function RaiderRow({ raider, rank }: { raider: RaiderRecord; rank: number }) {
           <strong className="raider-price">{formatUsdc(raider.provider.pricePerTaskUsd)}</strong>
           <div className="signal-strip">
             <SignalChip tone={erc8004Tone}>
-              {buildErc8004StatusLabel(verificationStatus, registered)}
+              {buildErc8004ProofLabel(verificationStatus, registered, { style: 'long' })}
             </SignalChip>
             {raider.trustScore > 0 ? (
               <SignalChip tone="proof">{`trust ${raider.trustScore}`}</SignalChip>
@@ -451,33 +452,8 @@ function compareRaiders(left: RaiderRecord, right: RaiderRecord, sortKey: SortKe
   }
 }
 
-function hasErc8004Registration(provider: Provider): boolean {
-  return (
-    typeof provider.erc8004?.registrationTx === 'string' &&
-    provider.erc8004.registrationTx.length > 0
-  );
-}
-
 function readErc8004VerificationStatus(provider: Provider): Erc8004VerificationStatus | undefined {
   return provider.erc8004?.verification?.status;
-}
-
-function buildErc8004StatusLabel(
-  verificationStatus: Erc8004VerificationStatus | undefined,
-  registered: boolean
-): string {
-  switch (verificationStatus) {
-    case 'verified':
-      return 'erc8004 verified';
-    case 'partial':
-      return 'erc8004 partial';
-    case 'failed':
-      return 'erc8004 failed';
-    case 'error':
-      return 'erc8004 error';
-    default:
-      return registered ? 'erc8004 registered' : 'erc8004 pending';
-  }
 }
 
 function buildErc8004StatusValue(

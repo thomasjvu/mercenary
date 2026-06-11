@@ -129,9 +129,7 @@ export function mapStatusTone(status: string): SpecialistTone {
   return 'working';
 }
 
-export function uniqueStrings(values: string[]): string[] {
-  return [...new Set(values.filter((value) => value.trim().length > 0))];
-}
+export { uniqueStrings } from '@bossraid/proof-ui';
 
 export function readErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unexpected error';

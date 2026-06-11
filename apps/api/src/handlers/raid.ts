@@ -68,6 +68,7 @@ export function createRaidHandlers(
       scores: provider.scores,
       lastSeenAt: provider.lastSeenAt,
       source: provider.source,
+      marketplaceOfferStatus: provider.marketplaceOfferStatus ?? 'active',
     };
   }
 
@@ -314,7 +315,7 @@ export function createRaidHandlers(
     return response;
   }
 
-  function registerRaidRoutes(basePath: '/v1/raid' | '/v1/raids'): void {
+  function registerRaidDetailRoutes(basePath: '/v1/raid' | '/v1/raids'): void {
     ctx.app.get(`${basePath}/:raidId`, async (request, reply) => {
       const raidId = getRaidId(request);
       const authorizationError = requireRaidReadAccess(reply, raidId, request.headers);
@@ -435,7 +436,7 @@ export function createRaidHandlers(
     validateProviderCallback,
     getRaidId,
     spawnParsedRaid,
-    registerRaidRoutes,
+    registerRaidDetailRoutes,
     collectProviderHealth,
   };
 }

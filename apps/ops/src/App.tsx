@@ -1,60 +1,45 @@
-import { startTransition, useDeferredValue, useEffect, useState, type CSSProperties } from 'react';
-import { DocsButton } from '@bossraid/ui';
+import { startTransition, useDeferredValue, useEffect, useState } from 'react';
+import {
+  buildChildJobSummary,
+  buildSettlementLifecycleLabel,
+  shortValue,
+} from '@bossraid/proof-ui';
+import { ArtifactStrip, DocsButton, ProviderMesh, useRaidPolling } from '@bossraid/ui';
 import useSWR from 'swr';
 import {
   createOpsSession,
   deleteOpsSession,
   fetchOpsSessionStatus,
+  fetchOpsSettings,
   fetchJson,
+  updateOpsX402Enabled,
+  type OpsSettings,
   type OpsSessionStatus,
   type Provider,
   type ProviderHealth,
   type RaidListItem,
-  type RankedSubmission,
   type RaidResult,
   type RaidStatus,
 } from './api';
+import {
+  buildRoutingDecisionSummary,
+  countUniqueProviders,
+  formatMs,
+  formatScore,
+  formatTimestamp,
+  formatUsd,
+  Metric,
+  ProviderRow,
+  ReceiptRow,
+  ScoreCard,
+  SignalMeter,
+  SignalTag,
+  SnapshotRow,
+  StatChip,
+  WorkstreamCard,
+  X402PaymentsToggle,
+} from './components/ops-ui';
 import { DEFAULT_SPAWN_PAYLOAD } from './default-payload';
-
-type RoutingDecision = NonNullable<RaidResult['routingProof']>['providers'][number];
-type SettlementExecution = NonNullable<RaidResult['settlementExecution']>;
-type SettlementChildJob = SettlementExecution['childJobs'][number];
-type SubmissionArtifact = NonNullable<
-  NonNullable<RaidResult['synthesizedOutput']>['artifacts']
->[number];
-type Erc8004VerificationStatus = NonNullable<
-  NonNullable<Provider['erc8004']>['verification']
->['status'];
-
-function formatMs(value?: number): string {
-  return value == null ? 'n/a' : `${value} ms`;
-}
-
-function formatUsd(value?: number): string {
-  return value == null ? '$0.00' : `$${value.toFixed(2)}`;
-}
-
-function formatScore(value?: number): string {
-  return value == null ? '0.00' : value.toFixed(2);
-}
-
-function formatTimestamp(value?: string): string {
-  if (!value) {
-    return 'n/a';
-  }
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-
-  return parsed.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 export function App() {
   const [adminTokenInput, setAdminTokenInput] = useState('');
@@ -67,12 +52,18 @@ export function App() {
   const [providerQuery, setProviderQuery] = useState('');
   const [spawnPayload, setSpawnPayload] = useState(DEFAULT_SPAWN_PAYLOAD);
   const [spawnError, setSpawnError] = useState<string | null>(null);
+  const [x402TogglePending, setX402TogglePending] = useState(false);
+  const [x402ToggleError, setX402ToggleError] = useState<string | null>(null);
   const deferredProviderQuery = useDeferredValue(providerQuery);
   const opsSession = useSWR<OpsSessionStatus>('ops-session', fetchOpsSessionStatus, {
     refreshInterval: 60_000,
     revalidateOnFocus: true,
   });
   const opsReady = opsSession.data?.authenticated === true;
+  const opsSettings = useSWR<OpsSettings>(opsReady ? 'ops-settings' : null, fetchOpsSettings, {
+    refreshInterval: 15_000,
+    revalidateOnFocus: true,
+  });
 
   const health = useSWR<{ ok: boolean; providers: number; readyProviders: number }>(
     opsReady ? '/health' : null,
@@ -100,24 +91,15 @@ export function App() {
       refreshInterval: 8_000,
     }
   );
-  const raidStatus = useSWR<RaidStatus>(
-    opsReady && raidId ? `/v1/raids/${raidId}` : null,
-    (path: string) => fetchJson(path),
-    { refreshInterval: raidId ? 1_000 : 0 }
-  );
-  const raidResult = useSWR<RaidResult>(
-    opsReady && raidId ? `/v1/raids/${raidId}/result` : null,
-    (path: string) => fetchJson(path),
-    { refreshInterval: raidId ? 1_200 : 0 }
-  );
-
-  useEffect(() => {
-    if (raidStatus.data?.status === 'final' || raidStatus.data?.status === 'cancelled') {
-      void raidStatus.mutate();
-      void raidResult.mutate();
-      void raids.mutate();
+  const { status: raidStatus, result: raidResult } = useRaidPolling<RaidStatus, RaidResult>(
+    opsReady ? raidId : null,
+    opsReady ? 'ops' : null,
+    {
+      intervalMs: 2_000,
+      fetchStatus: () => fetchJson<RaidStatus>(`/v1/raids/${raidId}`),
+      fetchResult: () => fetchJson<RaidResult>(`/v1/raids/${raidId}/result`),
     }
-  }, [raidResult, raidStatus, raids]);
+  );
 
   useEffect(() => {
     if (!opsReady) {
@@ -187,6 +169,20 @@ export function App() {
       setAuthError(error instanceof Error ? error.message : 'Ops login failed.');
     } finally {
       setAuthPending(false);
+    }
+  }
+
+  async function handleX402Toggle(nextEnabled: boolean) {
+    setX402TogglePending(true);
+    setX402ToggleError(null);
+
+    try {
+      const settings = await updateOpsX402Enabled(nextEnabled);
+      await opsSettings.mutate(settings, false);
+    } catch (error) {
+      setX402ToggleError(error instanceof Error ? error.message : 'Failed to update x402 setting.');
+    } finally {
+      setX402TogglePending(false);
     }
   }
 
@@ -376,6 +372,16 @@ export function App() {
             </div>
           </div>
 
+          <X402PaymentsToggle
+            disabled={x402TogglePending || opsSettings.isLoading}
+            enabled={opsSettings.data?.x402.enabled ?? false}
+            error={x402ToggleError}
+            settings={opsSettings.data?.x402}
+            onToggle={(nextEnabled) => {
+              void handleX402Toggle(nextEnabled);
+            }}
+          />
+
           <h1>
             <span className="ops-headline-line">Command the mesh.</span>
             <span className="ops-headline-line">
@@ -461,7 +467,7 @@ export function App() {
                 />
               </div>
               <div className="ops-window__body">
-                <MeshActivity
+                <ProviderMesh
                   providers={providers.data ?? []}
                   providerHealth={providerHealth.data ?? []}
                   experts={raidStatus.data?.experts ?? []}
@@ -846,475 +852,5 @@ export function App() {
         </article>
       </section>
     </main>
-  );
-}
-
-function countUniqueProviders(
-  decisions: RoutingDecision[],
-  predicate: (decision: RoutingDecision) => boolean
-): number {
-  let count = 0;
-  const grouped = new Map<string, RoutingDecision[]>();
-
-  for (const decision of decisions) {
-    const existing = grouped.get(decision.providerId) ?? [];
-    existing.push(decision);
-    grouped.set(decision.providerId, existing);
-  }
-
-  for (const providerDecisions of grouped.values()) {
-    if (providerDecisions.some(predicate)) {
-      count += 1;
-    }
-  }
-
-  return count;
-}
-
-function buildRoutingDecisionSummary(decision: RoutingDecision): string {
-  const workstream =
-    decision.workstreamLabel && decision.roleLabel
-      ? `${decision.workstreamLabel} / ${decision.roleLabel}`
-      : (decision.workstreamLabel ?? decision.roleLabel ?? 'root raid');
-  const privacySignals = [
-    buildErc8004ProofLabel(decision.erc8004VerificationStatus, decision.erc8004Registered),
-    decision.registrationTxFound === false ? 'reg tx missing' : null,
-    decision.operatorMatchesOwner === false ? 'owner mismatch' : null,
-    decision.veniceBacked ? 'venice' : null,
-    decision.registrationTx ? `reg ${shortValue(decision.registrationTx)}` : null,
-    decision.trustScore > 0 ? `trust ${decision.trustScore}` : null,
-    decision.privacyFeatures.includes('no_data_retention') ? 'no-retention' : null,
-    decision.privacyFeatures.includes('tee_attested') ? 'tee' : null,
-  ].filter((value): value is string => value != null);
-  const reasons = decision.reasons
-    .filter(
-      (reason) => !['selected_primary', 'reserved_fallback', 'workstream_scoped'].includes(reason)
-    )
-    .map((reason) => reason.replaceAll('_', ' '))
-    .join(' / ');
-
-  return [
-    `${decision.phase} · ${workstream}`,
-    privacySignals.join(' · '),
-    reasons ? `why ${reasons}` : null,
-  ]
-    .filter((value): value is string => value != null && value.length > 0)
-    .join(' · ');
-}
-
-function shortValue(value: string): string {
-  if (value.length <= 18) {
-    return value;
-  }
-
-  return `${value.slice(0, 8)}…${value.slice(-8)}`;
-}
-
-function ReceiptRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="receipt-card">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function StatChip({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="stat-chip">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="metric-card">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function SnapshotRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="snapshot-row">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function ScoreCard({ entry }: { entry: RankedSubmission }) {
-  const breakdown = entry.breakdown;
-  const roleLabel = entry.submission.contributionRole?.label;
-  const workstreamLabel = entry.submission.contributionRole?.workstreamLabel;
-  const contributionLabel =
-    workstreamLabel && roleLabel
-      ? `${workstreamLabel} / ${roleLabel}`
-      : (workstreamLabel ?? roleLabel);
-
-  return (
-    <article className="scorecard">
-      <div className="scorecard__head">
-        <div>
-          <span className="ops-label">rank {entry.rank}</span>
-          <h3>{entry.submission.providerId}</h3>
-          {contributionLabel ? <p className="quiet-note">{contributionLabel}</p> : null}
-        </div>
-        <SignalTag
-          label={breakdown.valid ? 'approved' : 'rejected'}
-          variant={breakdown.valid ? 'default' : 'danger'}
-        />
-      </div>
-      <div className="scorecard__metrics">
-        <span>final {formatScore(breakdown.finalScore)}</span>
-        <span>build {formatScore(breakdown.buildScore)}</span>
-        <span>tests {formatScore(breakdown.testScore)}</span>
-        <span>latency {formatScore(breakdown.latencyScore)}</span>
-      </div>
-      <p className="scorecard__summary">{breakdown.summary ?? 'No evaluation summary yet.'}</p>
-      {entry.submission.artifacts?.length ? (
-        <ArtifactStrip artifacts={entry.submission.artifacts} compact />
-      ) : null}
-      {breakdown.invalidReasons.length ? (
-        <div className="scorecard__issues">
-          {breakdown.invalidReasons.map((reason) => (
-            <span key={reason}>{reason}</span>
-          ))}
-        </div>
-      ) : null}
-    </article>
-  );
-}
-
-function WorkstreamCard({
-  workstream,
-}: {
-  workstream: NonNullable<RaidResult['synthesizedOutput']>['workstreams'][number];
-}) {
-  return (
-    <article className="scorecard">
-      <div className="scorecard__head">
-        <div>
-          <span className="ops-label">workstream</span>
-          <h3>{workstream.label}</h3>
-          <p className="quiet-note">{workstream.roleLabels.join(' / ') || workstream.objective}</p>
-        </div>
-        <SignalTag
-          label={`${workstream.contributingProviderIds.length} providers`}
-          variant="internal"
-        />
-      </div>
-      <p className="scorecard__summary">{workstream.summary}</p>
-      {workstream.artifacts?.length ? (
-        <ArtifactStrip artifacts={workstream.artifacts} compact />
-      ) : null}
-    </article>
-  );
-}
-
-function ArtifactStrip({
-  artifacts,
-  compact = false,
-}: {
-  artifacts: SubmissionArtifact[];
-  compact?: boolean;
-}) {
-  const visibleArtifacts = compact ? artifacts.slice(0, 3) : artifacts;
-
-  return (
-    <div
-      style={{
-        display: 'grid',
-        gap: '0.75rem',
-        gridTemplateColumns: compact ? '1fr' : 'repeat(auto-fit, minmax(220px, 1fr))',
-        marginTop: '1rem',
-      }}
-    >
-      {visibleArtifacts.map((artifact) => (
-        <article
-          className="scorecard"
-          key={`${artifact.outputType}-${artifact.uri}`}
-          style={{ gap: '0.6rem' }}
-        >
-          {isRenderableImageArtifact(artifact) ? (
-            <img
-              alt={artifact.label}
-              loading="lazy"
-              src={artifact.uri}
-              style={{
-                width: '100%',
-                maxHeight: compact ? '120px' : '220px',
-                objectFit: 'cover',
-                borderRadius: '0.9rem',
-              }}
-            />
-          ) : null}
-          {isRenderableVideoArtifact(artifact) ? (
-            <video
-              controls
-              preload="metadata"
-              src={artifact.uri}
-              style={{
-                width: '100%',
-                maxHeight: compact ? '150px' : '240px',
-                borderRadius: '0.9rem',
-              }}
-            />
-          ) : null}
-          <div>
-            <span className="ops-label">
-              {artifact.mimeType
-                ? `${artifact.outputType} · ${artifact.mimeType}`
-                : artifact.outputType}
-            </span>
-            <h3>{artifact.label}</h3>
-            {!compact && artifact.description ? (
-              <p className="scorecard__summary">{artifact.description}</p>
-            ) : null}
-            <p className="quiet-note">
-              <a href={artifact.uri} rel="noreferrer" target="_blank">
-                {compact ? 'open artifact' : shortValue(artifact.uri)}
-              </a>
-              {artifact.sha256 ? ` · sha ${shortValue(artifact.sha256)}` : ''}
-            </p>
-          </div>
-        </article>
-      ))}
-      {artifacts.length > visibleArtifacts.length ? (
-        <p className="quiet-note">
-          +{artifacts.length - visibleArtifacts.length} more artifact refs
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-function isRenderableImageArtifact(artifact: SubmissionArtifact): boolean {
-  return artifact.outputType === 'image' || (artifact.mimeType?.startsWith('image/') ?? false);
-}
-
-function isRenderableVideoArtifact(artifact: SubmissionArtifact): boolean {
-  return artifact.outputType === 'video' || (artifact.mimeType?.startsWith('video/') ?? false);
-}
-
-function hasErc8004Registration(provider: Provider): boolean {
-  return (
-    typeof provider.erc8004?.registrationTx === 'string' &&
-    provider.erc8004.registrationTx.length > 0
-  );
-}
-
-function buildErc8004ProofLabel(
-  verificationStatus: Erc8004VerificationStatus | undefined,
-  registered: boolean
-): string {
-  switch (verificationStatus) {
-    case 'verified':
-      return '8004 verified';
-    case 'partial':
-      return '8004 partial';
-    case 'failed':
-      return '8004 failed';
-    case 'error':
-      return '8004 error';
-    default:
-      return registered ? '8004 registered' : '8004 pending';
-  }
-}
-
-function buildSettlementLifecycleLabel(
-  lifecycleStatus: SettlementExecution['lifecycleStatus'] | undefined
-): string {
-  switch (lifecycleStatus) {
-    case 'terminal':
-      return 'terminal';
-    case 'partial':
-      return 'partial';
-    case 'synthetic':
-      return 'synthetic';
-    default:
-      return 'pending';
-  }
-}
-
-function findLatestChildJobTxHash(job: SettlementChildJob): string | undefined {
-  return (
-    job.completeTxHash ??
-    job.rejectTxHash ??
-    job.submitTxHash ??
-    job.fundTxHash ??
-    job.budgetTxHash ??
-    job.linkTxHash ??
-    job.createTxHash
-  );
-}
-
-function buildChildJobSummary(job: SettlementChildJob): string {
-  const txHash = findLatestChildJobTxHash(job);
-
-  return [
-    job.role,
-    job.status,
-    job.lifecycleStatus,
-    `action ${job.requestedAction}`,
-    job.jobId ?? job.syntheticJobId ?? 'pending',
-    job.nextAction ? `next ${job.nextAction}` : null,
-    txHash ? shortValue(txHash) : null,
-  ]
-    .filter((value): value is string => value != null)
-    .join(' · ');
-}
-
-function ProviderRow({
-  provider,
-  health,
-}: {
-  provider: Provider;
-  health: ProviderHealth | undefined;
-}) {
-  const readyState = health?.ready ? 'ready' : health?.reachable ? 'warm' : 'down';
-  const erc8004Label = buildErc8004ProofLabel(
-    provider.erc8004?.verification?.status,
-    hasErc8004Registration(provider)
-  );
-
-  return (
-    <div className="provider-row">
-      <div className="provider-row__main">
-        <strong>{provider.displayName}</strong>
-        <span>
-          {provider.modelFamily ?? 'unknown'} · {provider.outputTypes?.join(' / ') || 'n/a'} ·{' '}
-          {erc8004Label}
-        </span>
-      </div>
-      <div className="provider-row__scores">
-        <span>rep {provider.scores?.reputationScore ?? 0}</span>
-        <span>priv {provider.scores?.privacyScore ?? 0}</span>
-        <span>trust {provider.trust?.score ?? 0}</span>
-        <span className={`status-dot status-dot--${readyState}`}>{readyState}</span>
-      </div>
-    </div>
-  );
-}
-
-function SignalTag({
-  label,
-  variant,
-  blinking = false,
-}: {
-  label: string;
-  variant: 'default' | 'danger' | 'internal';
-  blinking?: boolean;
-}) {
-  return (
-    <span className={`signal-tag signal-tag--${variant} ${blinking ? 'signal-tag--blink' : ''}`}>
-      {label}
-    </span>
-  );
-}
-
-function SignalMeter({
-  value,
-  total,
-  className,
-}: {
-  value: number;
-  total: number;
-  className?: string;
-}) {
-  const segments = Math.max(total, 6);
-  const filled = Math.min(value, segments);
-
-  return (
-    <div className={className ? `signal-meter ${className}` : 'signal-meter'}>
-      <div className="signal-meter__bars" aria-hidden="true">
-        {Array.from({ length: segments }).map((_, index) => (
-          <span
-            className={`signal-meter__bar ${index < filled ? 'signal-meter__bar--on' : ''}`}
-            key={index}
-            style={{ '--meter-index': index } as CSSProperties}
-          />
-        ))}
-      </div>
-      <div className="signal-meter__meta">
-        <span>ready mesh</span>
-        <strong>{value}</strong>
-      </div>
-    </div>
-  );
-}
-
-function MeshActivity({
-  providers,
-  providerHealth,
-  experts,
-}: {
-  providers: Provider[];
-  providerHealth: ProviderHealth[];
-  experts: RaidStatus['experts'];
-}) {
-  const cells = Array.from({ length: 15 }, (_, index) => {
-    const provider = providers[index];
-    if (!provider) {
-      return { key: `empty-${index}`, state: 'empty' as const, label: 'empty' };
-    }
-
-    const health = providerHealth.find((item) => item.providerId === provider.providerId);
-    const expert = experts.find((item) => item.providerId === provider.providerId);
-
-    let state: 'active' | 'ready' | 'warm' | 'down';
-    if (expert && !['timed_out', 'failed', 'invalid'].includes(expert.status)) {
-      state = 'active';
-    } else if (health?.ready) {
-      state = 'ready';
-    } else if (health?.reachable || provider.status === 'available') {
-      state = 'warm';
-    } else {
-      state = 'down';
-    }
-
-    return {
-      key: provider.providerId,
-      state,
-      label: provider.displayName,
-    };
-  });
-
-  const rows = [cells.slice(0, 5), cells.slice(5, 10), cells.slice(10, 15)];
-
-  return (
-    <div className="mesh-panel">
-      <div className="mesh-summary">
-        <div>
-          <span>armed</span>
-          <strong>{cells.filter((cell) => cell.state === 'active').length}</strong>
-        </div>
-        <div>
-          <span>ready</span>
-          <strong>{cells.filter((cell) => cell.state === 'ready').length}</strong>
-        </div>
-        <div>
-          <span>down</span>
-          <strong>{cells.filter((cell) => cell.state === 'down').length}</strong>
-        </div>
-      </div>
-      <div className="mesh-board" aria-label="Provider mesh activity">
-        {rows.map((row, rowIndex) => (
-          <div
-            className={`mesh-row ${rowIndex % 2 === 1 ? 'mesh-row--offset' : ''}`}
-            key={rowIndex}
-          >
-            {row.map((cell) => (
-              <div className={`mesh-cell mesh-cell--${cell.state}`} key={cell.key}>
-                <span>{cell.label}</span>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }

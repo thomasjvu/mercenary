@@ -1,5 +1,6 @@
 import { rm } from 'node:fs/promises';
 import Fastify, { type FastifyInstance } from 'fastify';
+import { readPositiveInteger } from '@bossraid/constants';
 import { normalizeWorkspaceRelativePath } from '@bossraid/sandbox-runner';
 import type { RuntimeProbeInput } from '@bossraid/shared-types';
 import {
@@ -24,15 +25,6 @@ type RuntimeProbeLimits = {
   maxFileBytes: number;
   maxPathLength: number;
 };
-
-function readPositiveInteger(value: string | undefined, fallback: number): number {
-  if (!value) {
-    return fallback;
-  }
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
-}
 
 function readRuntimeProbeLimits(env: NodeJS.ProcessEnv): RuntimeProbeLimits {
   return {

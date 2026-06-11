@@ -6,11 +6,11 @@ import {
   type Hex,
   type PublicClient,
 } from 'viem';
+import { readBooleanEnv } from '@bossraid/constants';
 import {
   type Erc8004Identity,
   type Erc8004Verification,
   type ProviderProfile,
-  readBooleanEnv as readBooleanEnvUtil,
 } from '@bossraid/shared-types';
 
 const ERC8004_VERIFICATION_CACHE_MS = 60_000;
@@ -355,8 +355,4 @@ function buildVerificationStatus(input: {
   ].filter((value) => value !== undefined);
 
   return optionalChecks.every(Boolean) ? 'verified' : 'partial';
-}
-
-function readBooleanEnv(value: string | undefined): boolean {
-  return readBooleanEnvUtil(value);
 }

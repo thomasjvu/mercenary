@@ -1,6 +1,11 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { BossRaidPersistenceSnapshot } from '@bossraid/shared-types';
+export {
+  createStorageBackend,
+  type StorageBackendFactories,
+  type StorageBackendKind,
+} from './storage-backend.js';
 export { createSecretCipher, isEncryptedSecretValue } from './secret-encryption.js';
 export type { SecretCipher } from './secret-encryption.js';
 

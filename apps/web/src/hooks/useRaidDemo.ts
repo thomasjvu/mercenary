@@ -14,6 +14,7 @@ import {
   type ProviderHealth,
   type RaidSpawnOutput,
 } from '../api';
+import { pollRaidSnapshot } from '@bossraid/proof-ui';
 import { isTerminalRaidStatus, readErrorMessage } from '../demo-format';
 import {
   buildAbsolutePath,
@@ -104,7 +105,7 @@ export function useRaidDemo({ providers, providerHealth }: UseRaidDemoOptions) {
     const spawn = liveRaidRun.spawn;
     const pollTimer = window.setInterval(() => {
       void refreshLiveRaid(spawn);
-    }, 3_000);
+    }, 2_000);
 
     return () => window.clearInterval(pollTimer);
   }, [liveRaidRun?.spawn.raidId, viewState.raidIsTerminal]);
@@ -195,11 +196,15 @@ export function useRaidDemo({ providers, providerHealth }: UseRaidDemoOptions) {
   }
 
   async function refreshLiveRaid(spawn: RaidSpawnOutput) {
-    const [statusResult, resultResult, agentLogResult] = await Promise.allSettled([
-      fetchRaidStatus(spawn.raidId, spawn.raidAccessToken),
-      fetchRaidResult(spawn.raidId, spawn.raidAccessToken),
-      fetchRaidAgentLog(spawn.raidId, spawn.raidAccessToken),
-    ]);
+    const {
+      status: statusResult,
+      result: resultResult,
+      agentLog: agentLogResult,
+    } = await pollRaidSnapshot({
+      fetchStatus: () => fetchRaidStatus(spawn.raidId, spawn.raidAccessToken),
+      fetchResult: () => fetchRaidResult(spawn.raidId, spawn.raidAccessToken),
+      fetchAgentLog: () => fetchRaidAgentLog(spawn.raidId, spawn.raidAccessToken),
+    });
 
     setLiveRaidRun((current) => {
       if (!current || current.spawn.raidId !== spawn.raidId) {
@@ -209,7 +214,7 @@ export function useRaidDemo({ providers, providerHealth }: UseRaidDemoOptions) {
       const nextStatus = statusResult.status === 'fulfilled' ? statusResult.value : current.status;
       const nextResult = resultResult.status === 'fulfilled' ? resultResult.value : current.result;
       const nextAgentLog =
-        agentLogResult.status === 'fulfilled' ? agentLogResult.value : current.agentLog;
+        agentLogResult?.status === 'fulfilled' ? agentLogResult.value : current.agentLog;
       const nextRaidStatus = nextStatus?.status ?? current.spawn.status;
       const pollError =
         statusResult.status === 'rejected'

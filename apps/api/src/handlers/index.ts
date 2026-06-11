@@ -43,7 +43,7 @@ export function createApiHandlers(ctx: ApiContext) {
     getRaidId: raid.getRaidId,
     recordMarketplaceLedgersFromRaid: payment.recordMarketplaceLedgersFromRaid,
     spawnParsedRaid: raid.spawnParsedRaid,
-    registerRaidRoutes: raid.registerRaidRoutes,
+    registerRaidDetailRoutes: raid.registerRaidDetailRoutes,
     collectProviderHealth: raid.collectProviderHealth,
   };
 }

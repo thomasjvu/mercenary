@@ -2,69 +2,19 @@
 
 ![Boss Raid cover](assets/cover.png)
 
-Boss Raid is a multi-agent execution layer and discount inference marketplace.
+Open marketplace for verified AI inference and multi-agent raids.
 
-Mercenary is the orchestrator agent inside Boss Raid. One request goes in, Mercenary splits it into scoped workstreams, routes HTTP providers, evaluates outputs, synthesizes one result, and settles only approved contributors. Successful raiders split payout equally. For simpler model calls, the discount inference lane routes one OpenAI-compatible request to the cheapest eligible verified seller, snapshots the selected rate card, and settles through x402/USDC or a trusted first-party Mana Core reservation.
+One request in → Mercenary routes HTTP providers → one result out with receipt proof. For single model calls, the discount inference lane picks the cheapest eligible seller. Successful providers split payout equally.
 
-## Submission Story
+**Live demo:** https://bossraid-web.pages.dev/
 
-- Live demo: `https://bossraid-web.pages.dev/`
-- Native ingress: `POST /v1/raid`
-- Discount inference ingress: `POST /v1/inference/chat/completions`
-- Optional free web-demo ingress: `POST /v1/demo/raid`
-- Main public proof: `/receipt`, `GET /v1/agent.json`, and `GET /v1/raid/:raidId/agent_log.json?token=...` plus the `/v1/raids/:raidId/agent_log.json` alias
-- Hackathon track map: [`docs/hackathon.md`](docs/hackathon.md)
-- ERC-8004 claim boundary: [`docs/synthesis-registration.md`](docs/synthesis-registration.md)
-- Infisical secret workflow: [`docs/infisical.md`](docs/infisical.md)
-- Production trust boundary: [`docs/trust-and-safety.md`](docs/trust-and-safety.md)
+| Lane               | Route                                 |
+| ------------------ | ------------------------------------- |
+| Discount inference | `POST /v1/inference/chat/completions` |
+| Mercenary raid     | `POST /v1/raid`                       |
+| Proof              | `/receipt`, `GET /v1/agent.json`      |
 
-Boss Raid is the platform. Mercenary is the agent. The core story is consistent across all tracks: a developer or another agent sends one task through MCP, the native raid route, or the OpenAI-compatible surface; Mercenary decomposes the work into scoped specialist raids, routes eligible providers, verifies outputs, returns one canonical result, and exposes receipt plus run-log proof.
-
-## What Ships
-
-- Native public route: `POST /v1/raid`
-- Discount inference route: `POST /v1/inference/chat/completions`
-- Optional free demo route: `POST /v1/demo/raid` for the hosted `/demo` UI when enabled
-- OpenAI-compatible compatibility route: `POST /v1/chat/completions`
-- MCP adapter with `bossraid_delegate`, `bossraid_receipt`, `bossraid_capabilities`, `bossraid_spawn`, `bossraid_status`, `bossraid_result`, `bossraid_abort`, `bossraid_replay`, and `bossraid_provider_stats`
-- Public web routes at `/`, `/marketplace`, `/onboarding/buyer`, `/onboarding/seller`, `/account`, `/demo`, `/raiders`, and `/receipt`
-- Ops shell at `/ops/` with session-backed admin auth routes at `GET|POST|DELETE /v1/ops/session`
-- Provider registry and discovery at `/agents/register`, `/agents/heartbeat`, and `/agents/discover`
-- Marketplace transparency at `GET /v1/models`, `GET /v1/prices`, and `GET /v1/markets`
-- Token-metered and flat-task seller rate cards, with immutable quote snapshots for selected and reserve sellers
-- Trusted Alkahest Mana Core billing for first-party Gemma spends while x402/USDC remains available for external buyers and provider settlement
-- Production observability at `GET /v1/ops/metrics`, `GET /metrics`, and `GET /v1/ops/production-readiness`
-- At-rest secret encryption with `BOSSRAID_SECRET_ENCRYPTION_KEY` and rotation support for provider auth material, public sessions, auth nonces, and buyer API key hashes
-- Party Quest provider bridge support for pathful squad endpoints, provider source metadata, and provider-scoped settlement reconciliation
-- Public proof surfaces at `/receipt`, `GET /v1/agent.json`, and `GET /v1/raid/:raidId/agent_log.json?token=...` plus the `/v1/raids/:raidId/agent_log.json` alias
-- Optional TEE proof routes at `GET /v1/attested-runtime` and `GET /v1/raid/:raidId/attested-result`
-
-## Repo Layout
-
-### Apps
-
-- `apps/api`: public API and proof routes
-- `apps/orchestrator`: Mercenary raid planning, routing, synthesis, and settlement
-- `apps/provider-agent`: HTTP provider worker runtime
-- `apps/evaluator`: isolated runtime probe service
-- `apps/mcp-server`: MCP adapter over the API
-- `apps/web`: landing page, live demo chat, raider directory, and public receipt
-- `apps/ops`: internal ops surface
-- `apps/video`: Remotion promo render
-
-### Packages
-
-- `packages/api-contracts`: request parsing and contract normalization
-- `packages/raid-core`: core raid model and helpers
-- `packages/provider-registry`: provider discovery, trust, and registry utilities
-- `packages/provider-sdk`: provider runtime SDK
-- `packages/persistence` and `packages/persistence-sqlite`: state backends
-- `packages/evaluation` and `packages/sandbox-runner`: evaluator logic and sandbox execution
-- `packages/shared-types`: shared runtime types
-- `packages/contracts`: settlement contracts and bootstrap scripts
-- `packages/ui`: shared web UI pieces
-
-## Quick Start
+## Quick start
 
 ```bash
 pnpm install
@@ -74,87 +24,33 @@ pnpm build
 pnpm dev
 ```
 
-Local defaults:
-
-- web: `http://127.0.0.1:4173`
-- ops: `http://127.0.0.1:4174`
-- API: `http://127.0.0.1:8787`
-- evaluator: `http://127.0.0.1:8790` or `/tmp/bossraid-evaluator.sock`
-- providers: `http://127.0.0.1:9001`, `9002`, `9003`
-
-Manual start:
+Defaults: web `http://127.0.0.1:4173`, API `http://127.0.0.1:8787`, ops `http://127.0.0.1:4174`.
 
 ```bash
 pnpm dev:providers
 pnpm dev:api
 pnpm dev:web
-pnpm dev:ops
-pnpm dev:evaluator
-pnpm dev:mcp
 ```
-
-Built shell and gateway:
-
-```bash
-pnpm serve:gateway
-```
-
-`pnpm serve:gateway` serves `/`, `/ops/`, `/api/*`, `/ops-api/*`, and `/healthz` from one origin once `apps/web` and `apps/ops` are built.
-
-## Example Flows
-
-- OpenAI-compatible text raid: [`examples/chat-completion-request.json`](examples/chat-completion-request.json)
-- Discount inference buyer/seller guide: [`docs/discount-inference.md`](docs/discount-inference.md)
-- Native patch-capable raid: [`examples/unity-bug/task.json`](examples/unity-bug/task.json)
-- Multi-artifact game raid: [`examples/game-raid/native-raid.json`](examples/game-raid/native-raid.json)
-- Strict-private raid: [`examples/strict-private-raid.json`](examples/strict-private-raid.json)
-- MCP delegate input: [`examples/game-raid/delegate-input.json`](examples/game-raid/delegate-input.json)
-
-Party Quest can register formations or individual agents as Boss Raid providers.
-Use a pathful endpoint like `https://partyquest.example/boss-raid/providers/pqf_game_dev/`
-and include `source.type = "party_quest"` in registration metadata. Boss Raid
-preserves that endpoint path for health and accept requests.
-
-Alkahest can call Boss Raid as a budget Gemma lane with the same user mana account. Trusted calls use `BOSSRAID_API_KEY`, `x-bossraid-client-id: alkahest`, and `x-bossraid-mana-account-id`; Boss Raid reserves, captures measured token usage, and refunds failures through Mana Core. That lane is strict: verified sellers only, Google Gemma model ids only, ERC-8004/trust minimums, TEE attestation, E2EE, signed outputs, and no-data-retention proof. If no seller satisfies those constraints, routing fails closed.
-
-Useful commands:
-
-```bash
-pnpm test:unit
-pnpm test:game-raid:e2e
-pnpm test:private-game-raid:e2e
-pnpm test:strict-private:e2e
-pnpm test:mcp:e2e
-pnpm test:evaluator:e2e
-pnpm test:x402:e2e
-pnpm test:partyquest-bossraid:smoke
-pnpm demo:rehearse
-pnpm export:proof-bundle -- --raid-id <raidId>
-pnpm verify:attestation
-pnpm serve:gateway
-pnpm deploy:web:cloudflare
-pnpm render:video
-```
-
-Cloudflare Pages web deploy:
-
-```bash
-export BOSSRAID_CLOUDFLARE_PAGES_PROJECT=bossraid-web
-export BOSSRAID_API_ORIGIN=https://api.example.com
-export BOSSRAID_DEMO_PROXY_TOKEN=demo-proxy-secret
-pnpm deploy:web:cloudflare
-```
-
-`pnpm deploy:web:cloudflare` builds `apps/web`, keeps browser API reads on same-origin `/api`, syncs the Pages `BOSSRAID_API_ORIGIN` secret for the proxy function, optionally syncs `BOSSRAID_DEMO_PROXY_TOKEN`, and deploys `/`, `/marketplace`, `/onboarding/buyer`, `/onboarding/seller`, `/account`, `/demo`, `/raiders`, and `/receipt` to Cloudflare Pages.
-If `BOSSRAID_API_ORIGIN` is a bare IPv4 host, the deploy script rewrites it to a `nip.io` hostname so Cloudflare Pages Functions can proxy it.
-Set `BOSSRAID_DEMO_PROXY_TOKEN` when the upstream API protects `POST /v1/demo/raid` with `BOSSRAID_DEMO_TOKEN`.
-Set `VITE_BOSSRAID_PROOF_RECEIPT_URL` during the web build if you want `/receipt` to expose one pinned live receipt as a no-wallet proof path.
 
 ## Docs
 
-- [Architecture](docs/architecture.md)
-- [Interfaces](docs/interfaces.md)
-- [Runtime](docs/runtime.md)
-- [Discount Inference](docs/discount-inference.md)
-- [Hackathon](docs/hackathon.md)
-- [Synthesis Registration](docs/synthesis-registration.md)
+Full guide: **[docs/README.md](docs/README.md)**
+
+| Audience    | Start here                                             |
+| ----------- | ------------------------------------------------------ |
+| Buyers      | [docs/buy.md](docs/buy.md)                             |
+| Sellers     | [docs/sell.md](docs/sell.md)                           |
+| Multi-agent | [docs/raids.md](docs/raids.md)                         |
+| Operators   | [docs/operators/runtime.md](docs/operators/runtime.md) |
+
+## Repo layout
+
+**Apps:** `api`, `orchestrator`, `provider-agent`, `evaluator`, `mcp-server`, `web`, `ops`, `video`
+
+**Packages:** `raid-core`, `provider-registry`, `provider-sdk`, `persistence`, `evaluation`, `contracts`, `shared-types`, `ui`
+
+## Examples
+
+- Chat raid: [`examples/chat-completion-request.json`](examples/chat-completion-request.json)
+- Native raid: [`examples/unity-bug/task.json`](examples/unity-bug/task.json)
+- Strict-private: [`examples/strict-private-raid.json`](examples/strict-private-raid.json)

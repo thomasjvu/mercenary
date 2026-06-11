@@ -613,6 +613,7 @@ test('demo raid route can stay free while native raid stays paid', async () => {
   }));
   const env = {
     BOSSRAID_DEMO_ROUTE_ENABLED: 'true',
+    BOSSRAID_DEMO_TOKEN: 'demo-secret',
     ...createX402PaidTestEnv(),
   };
 
@@ -633,6 +634,9 @@ test('demo raid route can stay free while native raid stays paid', async () => {
     const demoResponse = await demoApp.inject({
       method: 'POST',
       url: '/v1/demo/raid',
+      headers: {
+        'x-bossraid-demo-token': 'demo-secret',
+      },
       payload: createRaidRequestBody(),
     });
 
@@ -688,6 +692,18 @@ test('demo raid route returns 404 when disabled', async () => {
   } finally {
     await app.close();
   }
+});
+
+test('demo route startup fails closed when enabled without a demo token', () => {
+  assert.throws(
+    () =>
+      buildApiServer(new BossRaidOrchestrator([]), {
+        ...process.env,
+        BOSSRAID_STORAGE_BACKEND: 'memory',
+        BOSSRAID_DEMO_ROUTE_ENABLED: 'true',
+      }),
+    /BOSSRAID_DEMO_TOKEN is required/
+  );
 });
 
 test('demo raid route can require a dedicated demo token', async () => {

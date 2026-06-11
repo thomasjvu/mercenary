@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import useSWR from 'swr';
-import { API_BASE, fetchMarkets, type InferenceMarket } from '../api';
+import { API_BASE, fetchMarkets } from '../api';
+import { ModelCatalog } from '../components/marketplace/ModelCatalog.js';
+import { MarketStatsRibbon } from '../components/marketplace/MarketStatsRibbon.js';
+import { MarketVolumePanel } from '../components/marketplace/MarketVolumePanel.js';
 
 const FILTER_DEFAULTS = {
   model: '',
@@ -13,107 +16,115 @@ const FILTER_DEFAULTS = {
 
 type MarketplaceFilters = typeof FILTER_DEFAULTS;
 
-export function MarketplacePage() {
+export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string) => void }) {
   const [filters, setFilters] = useState<MarketplaceFilters>(FILTER_DEFAULTS);
   const params = useMemo(() => buildMarketParams(filters), [filters]);
-  const markets = useSWR(['markets', params.toString()], () =>
-    fetchMarkets(Object.fromEntries(params.entries()))
+  const markets = useSWR(
+    ['markets', params.toString()],
+    () => fetchMarkets(Object.fromEntries(params.entries())),
+    { refreshInterval: 15_000 }
   );
   const visibleMarkets = markets.data?.data ?? [];
 
   return (
-    <section className="beta-page">
-      <header className="beta-hero beta-hero--compact">
+    <section className="beta-page market-page">
+      <header className="beta-hero beta-hero--compact market-page__hero">
         <div>
-          <p className="eyebrow">marketplace</p>
-          <h1>Buy cheap verified inference.</h1>
+          <p className="eyebrow">open market for models</p>
+          <h1>Buy discounted verified inference.</h1>
           <p className="lede">
-            Route OpenAI-compatible chat calls to verified sellers by model, provider, framework,
-            privacy mode, and max budget. Settlement stays in USDC; seller credentials stay hidden.
+            Browse live seller order books by model, compare rates against static benchmark
+            references, and route OpenAI-compatible calls through the cheapest eligible seller.
+            Settlement stays in USDC; seller credentials stay hidden.
           </p>
         </div>
-        <QuickstartCard market={visibleMarkets[0]} />
+        <QuickstartCard marketModelId={visibleMarkets[0]?.modelId} />
       </header>
 
-      <div className="marketplace-layout">
+      <MarketStatsRibbon markets={markets.data} />
+
+      <div className="market-page__volume-row">
+        <MarketVolumePanel stats={markets.data?.stats} />
+      </div>
+
+      <div className="marketplace-layout market-page__layout">
         <aside className="beta-panel beta-panel--filters">
-          <label className="field">
-            <span>model id</span>
-            <input
-              onChange={(event) => setFilters({ ...filters, model: event.target.value })}
-              placeholder="gpt-5.5"
-              value={filters.model}
-            />
-          </label>
-          <label className="field">
-            <span>model provider</span>
-            <input
-              onChange={(event) => setFilters({ ...filters, provider: event.target.value })}
-              placeholder="openai"
-              value={filters.provider}
-            />
-          </label>
-          <label className="field">
-            <span>agent framework</span>
-            <select
-              onChange={(event) => setFilters({ ...filters, framework: event.target.value })}
-              value={filters.framework}
-            >
-              <option value="">any</option>
-              <option value="codex">codex</option>
-              <option value="claude_code">claude code</option>
-              <option value="openclaw">openclaw</option>
-              <option value="custom">custom</option>
-            </select>
-          </label>
-          <label className="field">
-            <span>privacy</span>
-            <select
-              onChange={(event) => setFilters({ ...filters, privacy: event.target.value })}
-              value={filters.privacy}
-            >
-              <option value="any">any</option>
-              <option value="strict">strict private</option>
-            </select>
-          </label>
-          <label className="field">
-            <span>verification</span>
-            <select
-              onChange={(event) => setFilters({ ...filters, verification: event.target.value })}
-              value={filters.verification}
-            >
-              <option value="any">any</option>
-              <option value="verified">verified</option>
-              <option value="pending">pending</option>
-              <option value="failed">failed</option>
-            </select>
-          </label>
-          <label className="field">
-            <span>max budget</span>
-            <input
-              inputMode="decimal"
-              onChange={(event) => setFilters({ ...filters, budget: event.target.value })}
-              placeholder="1.00"
-              value={filters.budget}
-            />
-          </label>
+          <p className="eyebrow">filters</p>
+          <FilterField
+            label="model id"
+            onChange={(value) => setFilters({ ...filters, model: value })}
+            placeholder="gpt-5.5"
+            value={filters.model}
+          />
+          <FilterField
+            label="model provider"
+            onChange={(value) => setFilters({ ...filters, provider: value })}
+            placeholder="openai"
+            value={filters.provider}
+          />
+          <FilterSelect
+            label="agent framework"
+            onChange={(value) => setFilters({ ...filters, framework: value })}
+            options={[
+              ['', 'any'],
+              ['codex', 'codex'],
+              ['claude_code', 'claude code'],
+              ['openclaw', 'openclaw'],
+              ['custom', 'custom'],
+            ]}
+            value={filters.framework}
+          />
+          <FilterSelect
+            label="privacy"
+            onChange={(value) => setFilters({ ...filters, privacy: value })}
+            options={[
+              ['any', 'any'],
+              ['strict', 'strict private'],
+            ]}
+            value={filters.privacy}
+          />
+          <FilterSelect
+            label="verification"
+            onChange={(value) => setFilters({ ...filters, verification: value })}
+            options={[
+              ['any', 'any'],
+              ['verified', 'verified'],
+              ['pending', 'pending'],
+              ['failed', 'failed'],
+            ]}
+            value={filters.verification}
+          />
+          <FilterField
+            inputMode="decimal"
+            label="max budget"
+            onChange={(value) => setFilters({ ...filters, budget: value })}
+            placeholder="1.00"
+            value={filters.budget}
+          />
+
+          {markets.data?.custody ? (
+            <div className="market-page__policy">
+              <p className="eyebrow">custody</p>
+              <p>{markets.data.custody.sellerCredentialPolicy}</p>
+            </div>
+          ) : null}
         </aside>
 
-        <div className="market-list">
+        <div className="market-page__main">
           {markets.error ? (
             <EmptyState
-              title="Marketplace unavailable"
               body="The API did not return market data. Check API origin and readiness."
+              title="Marketplace unavailable"
             />
           ) : markets.isLoading ? (
-            <EmptyState title="Loading markets" body="Reading verified seller order books." />
+            <EmptyState body="Reading verified seller order books." title="Loading markets" />
           ) : visibleMarkets.length === 0 ? (
             <EmptyState
-              title="No eligible sellers"
               body="No seller currently matches this model, budget, verification, and privacy filter."
+              title="No eligible sellers"
             />
           ) : (
-            visibleMarkets.map((market) => <MarketCard key={market.modelId} market={market} />)
+            <ModelCatalog markets={visibleMarkets} onOpenModel={onOpenModel} />
           )}
         </div>
       </div>
@@ -121,57 +132,69 @@ export function MarketplacePage() {
   );
 }
 
-function MarketCard({ market }: { market: InferenceMarket }) {
-  const topSeller = market.sellers[0];
-  return (
-    <article className="market-card">
-      <div className="market-card__header">
-        <div>
-          <p className="eyebrow">{market.modelProvider ?? 'mixed providers'}</p>
-          <h2>{market.modelId}</h2>
-        </div>
-        <strong>{formatUsd(market.cheapestRateUsd)}</strong>
-      </div>
-      <div className="metric-grid">
-        <Metric label="active" value={String(market.activeProviderCount)} />
-        <Metric label="verified" value={String(market.verifiedSellerCount)} />
-        <Metric label="private" value={String(market.privateSellerCount)} />
-        <Metric label="success" value={formatPercent(market.recentSuccessRate)} />
-        <Metric label="p50" value={formatLatency(market.p50LatencyMs)} />
-        <Metric label="p95" value={formatLatency(market.p95LatencyMs)} />
-      </div>
-      <div className="seller-strip">
-        {market.sellers.slice(0, 4).map((seller) => (
-          <span key={seller.sellerId}>
-            {seller.displayName} · {formatUsd(seller.rateUsd)} ·{' '}
-            {seller.verificationStatus ?? 'pending'}
-          </span>
-        ))}
-      </div>
-      {topSeller ? (
-        <p className="market-card__note">
-          Cheapest seller is {topSeller.displayName}. Strict-private routing requires attested
-          privacy metadata before matching.
-        </p>
-      ) : (
-        <p className="market-card__note">Provider offline. New calls should expect no seller.</p>
-      )}
-    </article>
-  );
-}
-
-function QuickstartCard({ market }: { market?: InferenceMarket }) {
-  const model = market?.modelId ?? 'gpt-5.5';
+function QuickstartCard({ marketModelId }: { marketModelId?: string }) {
+  const model = marketModelId ?? 'gpt-5.5';
   const code = `curl -X POST ${API_BASE}/v1/inference/chat/completions \\
   -H "authorization: Bearer br_..." \\
   -H "content-type: application/json" \\
-  -d '{"model":"${model}","messages":[{"role":"user","content":"Run this on the cheapest verified seller."}],"raid_policy":{"max_total_cost":1,"privacy_mode":"prefer"}}'`;
+  -d '{"model":"${model}","messages":[{"role":"user","content":"Run on the cheapest verified seller."}],"raid_policy":{"max_total_cost":1,"privacy_mode":"prefer"}}'`;
 
   return (
     <aside className="quickstart-card">
       <p className="eyebrow">buyer quickstart</p>
       <pre className="code-panel">{code}</pre>
     </aside>
+  );
+}
+
+function FilterField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  inputMode,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  inputMode?: 'decimal' | 'text';
+}) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <input
+        inputMode={inputMode}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        value={value}
+      />
+    </label>
+  );
+}
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<[string, string]>;
+}) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <select onChange={(event) => onChange(event.target.value)} value={value}>
+        {options.map(([optionValue, optionLabel]) => (
+          <option key={optionValue || 'any'} value={optionValue}>
+            {optionLabel}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -184,15 +207,6 @@ function EmptyState({ title, body }: { title: string; body: string }) {
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="metric">
-      <small>{label}</small>
-      <strong>{value}</strong>
-    </span>
-  );
-}
-
 function buildMarketParams(filters: MarketplaceFilters) {
   const params = new URLSearchParams();
   if (filters.model.trim()) params.set('model_id', filters.model.trim());
@@ -202,16 +216,4 @@ function buildMarketParams(filters: MarketplaceFilters) {
   if (filters.verification !== 'any') params.set('verification_status', filters.verification);
   if (filters.budget.trim()) params.set('max_budget_usd', filters.budget.trim());
   return params;
-}
-
-function formatUsd(value: number | null | undefined) {
-  return typeof value === 'number' ? `$${value.toFixed(2)}` : 'n/a';
-}
-
-function formatPercent(value: number | null) {
-  return typeof value === 'number' ? `${Math.round(value * 100)}%` : 'n/a';
-}
-
-function formatLatency(value: number | null) {
-  return typeof value === 'number' ? `${Math.round(value)}ms` : 'n/a';
 }

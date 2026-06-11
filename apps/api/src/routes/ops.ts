@@ -19,6 +19,7 @@ import {
 import { buildAgentManifest } from '../agent-artifacts.js';
 import { buildEvaluatorSmokeTask } from '../lib/evaluator-smoke.js';
 import { readTeeSocketState } from '../lib/tee.js';
+import { buildX402SettingsView } from '../lib/x402-runtime.js';
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlers } from '../api-handlers.js';
 
@@ -30,6 +31,7 @@ export function registerOpsRoutes(
   const {
     orchestrator,
     env,
+    controlState,
     adminToken,
     apiBodyLimitBytes,
     trustProxy,
@@ -245,6 +247,51 @@ export function registerOpsRoutes(
     clearOpsSession(reply, request.headers);
     return {
       authenticated: false,
+    };
+  });
+
+  app.get('/v1/ops/settings', async (request, reply) => {
+    const adminError = requireAdmin(reply, request.headers);
+    if (adminError) {
+      return adminError;
+    }
+
+    return {
+      x402: buildX402SettingsView(ctx),
+    };
+  });
+
+  app.patch('/v1/ops/settings', async (request, reply) => {
+    const adminError = requireAdmin(reply, request.headers);
+    if (adminError) {
+      return adminError;
+    }
+
+    const body = request.body as { x402Enabled?: unknown };
+    if (typeof body?.x402Enabled !== 'boolean') {
+      reply.code(400);
+      return {
+        error: 'bad_request',
+        message: 'PATCH /v1/ops/settings expects { "x402Enabled": boolean }.',
+      };
+    }
+
+    if (body.x402Enabled) {
+      const settingsView = buildX402SettingsView(ctx);
+      if (!settingsView.canEnable) {
+        reply.code(400);
+        return {
+          error: 'bad_request',
+          message:
+            'Configure BOSSRAID_X402_PAY_TO with a real recipient wallet before enabling x402 payments.',
+        };
+      }
+    }
+
+    controlState.setX402Enabled(body.x402Enabled);
+
+    return {
+      x402: buildX402SettingsView(ctx),
     };
   });
 

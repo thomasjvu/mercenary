@@ -95,7 +95,7 @@ function usdToAtomicUsdc(amountUsd: number): string {
 
 export function readX402Config(env: NodeJS.ProcessEnv = process.env): X402Config {
   const enabled =
-    env.BOSSRAID_X402_ENABLED == null ? true : parseBoolean(env.BOSSRAID_X402_ENABLED);
+    env.BOSSRAID_X402_ENABLED == null ? false : parseBoolean(env.BOSSRAID_X402_ENABLED);
   const raidSurchargeUsd = readPositiveNumber(
     env.BOSSRAID_X402_RAID_SURCHARGE_USD,
     DEFAULT_RAID_SURCHARGE_USD

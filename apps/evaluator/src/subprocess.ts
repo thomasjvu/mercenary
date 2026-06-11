@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { readPositiveInteger, readPositiveNumber } from '@bossraid/constants';
 import type { RuntimeProbeInput, RuntimeProbeResult } from '@bossraid/shared-types';
 
 const DEFAULT_JOB_TIMEOUT_MS = 45_000;
@@ -322,24 +323,6 @@ async function removeContainer(
     child.on('error', () => resolve());
     child.on('close', () => resolve());
   });
-}
-
-function readPositiveInteger(value: string | undefined, fallback: number): number {
-  if (!value) {
-    return fallback;
-  }
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
-}
-
-function readPositiveNumber(value: string | undefined, fallback: number): number {
-  if (!value) {
-    return fallback;
-  }
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 function buildWorkerEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {

@@ -1,5 +1,18 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import useSWR from 'swr';
+import {
+  buildProviderProofNote,
+  buildRoutingReasonNote,
+  buildSettlementLifecycleLabel,
+  DEFAULT_TERMINAL_RAID_STATUSES,
+  isRenderableImageArtifact,
+  isRenderableVideoArtifact,
+  matchRoutingDecision,
+  raidPollingRefreshInterval,
+  shortValue,
+  uniqueStrings,
+} from '@bossraid/proof-ui';
+import { ArtifactPreview, ReceiptProofPanel, useRaidPolling } from '@bossraid/ui';
 import heroImage from '../../../../assets/hero.webp';
 import {
   API_BASE,
@@ -32,9 +45,6 @@ type SettlementExecution = NonNullable<RaidResult['settlementExecution']>;
 type SubmissionArtifact = NonNullable<
   NonNullable<RaidResult['synthesizedOutput']>['artifacts']
 >[number];
-type Erc8004VerificationStatus = NonNullable<
-  NonNullable<Provider['erc8004']>['verification']
->['status'];
 type ReceiptProviderRowData = {
   providerId: string;
   displayName: string;
@@ -44,7 +54,7 @@ type ReceiptProviderRowData = {
   reason: string;
 };
 
-const TERMINAL_STATUSES = new Set(['final', 'cancelled', 'expired']);
+const TERMINAL_STATUSES = DEFAULT_TERMINAL_RAID_STATUSES;
 const PINNED_PROOF_RECEIPT_URL =
   (import.meta.env.VITE_BOSSRAID_PROOF_RECEIPT_URL as string | undefined)?.trim() ?? '';
 
@@ -55,26 +65,13 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
   const [activeQuery, setActiveQuery] = useState<ReceiptQuery | null>(initialQuery);
   const [shareCopied, setShareCopied] = useState(false);
 
-  const status = useSWR(
-    activeQuery ? (['receipt-status', activeQuery.raidId, activeQuery.token] as const) : null,
-    ([, raidId, token]) => fetchRaidStatus(raidId, token),
+  const { status, result, statusIsTerminal } = useRaidPolling(
+    activeQuery?.raidId,
+    activeQuery?.token,
     {
-      refreshInterval: (latestData?: RaidStatus) =>
-        activeQuery && !TERMINAL_STATUSES.has(latestData?.status ?? '') ? 2_000 : 0,
-      revalidateOnFocus: true,
-    }
-  );
-
-  const statusIsTerminal = status.data ? TERMINAL_STATUSES.has(status.data.status) : false;
-  const result = useSWR(
-    activeQuery ? (['receipt-result', activeQuery.raidId, activeQuery.token] as const) : null,
-    ([, raidId, token]) => fetchRaidResult(raidId, token),
-    {
-      refreshInterval: (latestData?: RaidResult) =>
-        activeQuery && !statusIsTerminal && !TERMINAL_STATUSES.has(latestData?.status ?? '')
-          ? 2_000
-          : 0,
-      revalidateOnFocus: true,
+      enabled: Boolean(activeQuery),
+      fetchStatus: () => fetchRaidStatus(activeQuery!.raidId, activeQuery!.token),
+      fetchResult: () => fetchRaidResult(activeQuery!.raidId, activeQuery!.token),
     }
   );
   const providers = useSWR<Provider[]>(
@@ -98,7 +95,11 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
     ([, raidId, token]: readonly [string, string, string]) =>
       fetchAttestedRaidResult(raidId, token),
     {
-      refreshInterval: () => (activeQuery && !statusIsTerminal ? 2_000 : 0),
+      refreshInterval: () =>
+        raidPollingRefreshInterval({
+          enabled: Boolean(activeQuery),
+          status: status.data?.status,
+        }),
       revalidateOnFocus: true,
     }
   );
@@ -476,69 +477,50 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                   <h2>Attestation</h2>
                 </div>
               </div>
-              <div className="receipt-stat-grid">
-                <ReceiptStat label="runtime" value={runtimeAttestationStatus} />
-                <ReceiptStat label="result" value={resultAttestationStatus} />
-                <ReceiptStat label="target" value={attestationTarget} />
-                <ReceiptStat label="tee" value={attestationTee} />
-                <ReceiptStat
-                  label="tee providers"
-                  value={`${teeProviderCount}/${routedProviderIds.length || 0}`}
-                />
-                <ReceiptStat
-                  label="signed"
-                  value={`${signedProviderCount}/${routedProviderIds.length || 0}`}
-                />
-              </div>
-              <div className="receipt-proof-note receipt-proof-note--inline">
-                <strong>TEE proof:</strong>{' '}
-                {runtimeSignerDisabled || resultSignerDisabled
-                  ? 'Provider TEE and signed-output counts still reflect routed provider proofs, but this host is not publishing signed runtime/result envelopes because MNEMONIC is not configured.'
-                  : `${attestationSurfaceLabel} runtime proof and signed raid result proof are exposed here when the host signer is configured.`}
-              </div>
-              <div className="receipt-link-list">
-                <ReceiptLinkItem
-                  href={buildAttestedRuntimeUrl()}
-                  label="runtime attestation"
-                  note={`${attestationSurfaceLabel} runtime proof`}
-                />
-                <ReceiptLinkItem
-                  href={buildAttestedResultUrl(activeQuery)}
-                  label="result attestation"
-                  note={`${attestationSurfaceLabel} result proof`}
-                />
-                <ReceiptLinkItem
-                  href={buildAgentLogUrl(activeQuery)}
-                  label="agent log"
-                  note="token-gated run log"
-                />
-                <ReceiptLinkItem
-                  href={buildAgentManifestUrl()}
-                  label="Mercenary manifest"
-                  note="public orchestrator manifest"
-                />
-              </div>
-              <details className="receipt-disclosure">
-                <summary>show hashes</summary>
-                <div className="receipt-detail-list">
-                  <ReceiptDetailRow
-                    label="runtime signer"
-                    value={shortValue(attestedRuntime.data?.signer ?? 'pending')}
-                  />
-                  <ReceiptDetailRow
-                    label="result hash"
-                    value={shortValue(
-                      attestedResult.data?.payload.resultHash ??
-                        settlementExecution?.evaluationHash ??
-                        'pending'
-                    )}
-                  />
-                  <ReceiptDetailRow
-                    label="message hash"
-                    value={shortValue(attestedResult.data?.messageHash ?? 'pending')}
-                  />
-                </div>
-              </details>
+              <ReceiptProofPanel
+                attestationTarget={attestationTarget}
+                attestationTee={attestationTee}
+                links={[
+                  {
+                    href: buildAttestedRuntimeUrl(),
+                    label: 'runtime attestation',
+                    note: `${attestationSurfaceLabel} runtime proof`,
+                  },
+                  {
+                    href: buildAttestedResultUrl(activeQuery),
+                    label: 'result attestation',
+                    note: `${attestationSurfaceLabel} result proof`,
+                  },
+                  {
+                    href: buildAgentLogUrl(activeQuery),
+                    label: 'agent log',
+                    note: 'token-gated run log',
+                  },
+                  {
+                    href: buildAgentManifestUrl(),
+                    label: 'Mercenary manifest',
+                    note: 'public orchestrator manifest',
+                  },
+                ]}
+                messageHash={attestedResult.data?.messageHash}
+                proofNote={
+                  <>
+                    <strong>TEE proof:</strong>{' '}
+                    {runtimeSignerDisabled || resultSignerDisabled
+                      ? 'Provider TEE and signed-output counts still reflect routed provider proofs, but this host is not publishing signed runtime/result envelopes because MNEMONIC is not configured.'
+                      : `${attestationSurfaceLabel} runtime proof and signed raid result proof are exposed here when the host signer is configured.`}
+                  </>
+                }
+                resultHash={
+                  attestedResult.data?.payload.resultHash ?? settlementExecution?.evaluationHash
+                }
+                resultStatus={resultAttestationStatus}
+                routedProviderCount={routedProviderIds.length}
+                runtimeSigner={attestedRuntime.data?.signer}
+                runtimeStatus={runtimeAttestationStatus}
+                signedProviderCount={signedProviderCount}
+                teeProviderCount={teeProviderCount}
+              />
             </article>
 
             <article className="receipt-surface">
@@ -628,16 +610,6 @@ function SummaryPill({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ReceiptLinkItem({ href, label, note }: { href: string; label: string; note: string }) {
-  return (
-    <a className="receipt-link-item" href={href} rel="noreferrer" target="_blank">
-      <span>{label}</span>
-      <strong>{note}</strong>
-      <small>open</small>
-    </a>
-  );
-}
-
 function ReceiptStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="receipt-stat">
@@ -667,32 +639,6 @@ function ReceiptProviderRow({ row }: { row: ReceiptProviderRowData }) {
       <small>
         {compactText([row.proof, row.reason].filter((value) => value.length > 0).join(' · '), 120)}
       </small>
-    </div>
-  );
-}
-
-function ArtifactPreview({ artifact }: { artifact: SubmissionArtifact }) {
-  if (isRenderableImageArtifact(artifact)) {
-    return (
-      <img
-        alt={artifact.label}
-        className="receipt-preview-media"
-        loading="lazy"
-        src={artifact.uri}
-      />
-    );
-  }
-
-  if (isRenderableVideoArtifact(artifact)) {
-    return (
-      <video className="receipt-preview-media" controls preload="metadata" src={artifact.uri} />
-    );
-  }
-
-  return (
-    <div className="receipt-preview-fallback">
-      <span>{artifact.outputType}</span>
-      <strong>{artifact.label}</strong>
     </div>
   );
 }
@@ -781,45 +727,6 @@ function formatUsd(value?: number): string {
   return value == null ? '$0.00' : `$${value.toFixed(2)}`;
 }
 
-function shortValue(value: string): string {
-  if (value.length <= 18) {
-    return value;
-  }
-
-  return `${value.slice(0, 8)}…${value.slice(-8)}`;
-}
-
-function uniqueStrings(values: string[]): string[] {
-  return [...new Set(values.filter((value) => value.trim().length > 0))];
-}
-
-function isRenderableImageArtifact(artifact: SubmissionArtifact): boolean {
-  if (artifact.mimeType?.startsWith('image/')) {
-    return true;
-  }
-
-  return artifact.mimeType == null && artifact.outputType === 'image';
-}
-
-function isRenderableVideoArtifact(artifact: SubmissionArtifact): boolean {
-  if (artifact.mimeType?.startsWith('video/')) {
-    return true;
-  }
-
-  return artifact.mimeType == null && artifact.outputType === 'video';
-}
-
-function hasErc8004Registration(provider: Provider): boolean {
-  return (
-    typeof provider.erc8004?.registrationTx === 'string' &&
-    provider.erc8004.registrationTx.length > 0
-  );
-}
-
-function isVeniceProvider(provider: Provider): boolean {
-  return (provider.modelFamily ?? '').toLowerCase().includes('venice');
-}
-
 function countProvidersWithSignal(
   routingDecisionMap: Map<string, RoutingDecision[]>,
   predicate: (decision: RoutingDecision) => boolean
@@ -833,162 +740,6 @@ function countProvidersWithSignal(
   }
 
   return count;
-}
-
-function matchRoutingDecision(
-  decisions: RoutingDecision[] | undefined,
-  workstreamLabel?: string,
-  roleLabel?: string
-): RoutingDecision | undefined {
-  if (!decisions?.length) {
-    return undefined;
-  }
-
-  if (workstreamLabel || roleLabel) {
-    const exactMatch = decisions.find(
-      (decision) =>
-        (workstreamLabel == null || decision.workstreamLabel === workstreamLabel) &&
-        (roleLabel == null || decision.roleLabel === roleLabel)
-    );
-    if (exactMatch) {
-      return exactMatch;
-    }
-  }
-
-  return decisions.find((decision) => decision.phase === 'primary') ?? decisions[0];
-}
-
-function buildSettlementLifecycleLabel(
-  lifecycleStatus: SettlementExecution['lifecycleStatus'] | undefined
-): string {
-  switch (lifecycleStatus) {
-    case 'terminal':
-      return 'terminal';
-    case 'partial':
-      return 'partial';
-    case 'synthetic':
-      return 'synthetic';
-    default:
-      return 'pending';
-  }
-}
-
-function buildErc8004ProofLabel(
-  verificationStatus: Erc8004VerificationStatus | undefined,
-  registered: boolean
-): string {
-  switch (verificationStatus) {
-    case 'verified':
-      return '8004 verified';
-    case 'partial':
-      return '8004 partial';
-    case 'failed':
-      return '8004 failed';
-    case 'error':
-      return '8004 error';
-    default:
-      return registered ? '8004 registered' : '8004 pending';
-  }
-}
-
-function buildProviderProofNote(
-  decision: RoutingDecision | undefined,
-  provider: Provider | undefined
-): string {
-  const privacyFeatures = new Set<string>(decision?.privacyFeatures ?? []);
-  if (provider?.privacy?.noDataRetention) {
-    privacyFeatures.add('no_data_retention');
-  }
-  if (provider?.privacy?.signedOutputs) {
-    privacyFeatures.add('signed_outputs');
-  }
-  if (provider?.privacy?.teeAttested) {
-    privacyFeatures.add('tee_attested');
-  }
-
-  const trustScore =
-    decision?.trustScore ??
-    (typeof provider?.trust?.score === 'number' ? provider.trust.score : undefined);
-  const verificationStatus =
-    decision?.erc8004VerificationStatus ?? provider?.erc8004?.verification?.status;
-  const registered =
-    decision?.erc8004Registered ?? (provider ? hasErc8004Registration(provider) : false);
-  const registrationTx = decision?.registrationTx ?? provider?.erc8004?.registrationTx;
-  const registrationTxFound =
-    decision?.registrationTxFound ?? provider?.erc8004?.verification?.registrationTxFound;
-  const operatorMatchesOwner =
-    decision?.operatorMatchesOwner ?? provider?.erc8004?.verification?.operatorMatchesOwner;
-  const parts = [
-    decision?.verificationStatus === 'verified' || provider?.verification?.status === 'verified'
-      ? 'agent verified'
-      : null,
-    (decision?.agentFramework ?? provider?.agentFramework)
-      ? `framework ${decision?.agentFramework ?? provider?.agentFramework}`
-      : null,
-    (decision?.modelProvider ?? provider?.modelProvider)
-      ? `model ${[decision?.modelProvider ?? provider?.modelProvider, decision?.modelId ?? provider?.modelId].filter(Boolean).join('/')}`
-      : null,
-    buildErc8004ProofLabel(verificationStatus, registered),
-    registrationTxFound === false ? 'reg tx missing' : null,
-    operatorMatchesOwner === false ? 'owner mismatch' : null,
-    registrationTx ? `reg ${shortValue(registrationTx)}` : null,
-    typeof trustScore === 'number' && trustScore > 0 ? `trust ${trustScore}` : null,
-    (decision?.veniceBacked ?? (provider ? isVeniceProvider(provider) : false)) ? 'venice' : null,
-    privacyFeatures.has('no_data_retention') ? 'no-retention' : null,
-    privacyFeatures.has('signed_outputs') ? 'signed outputs' : null,
-    privacyFeatures.has('tee_attested') ? 'tee attested' : null,
-  ].filter((value): value is string => value != null);
-
-  return parts.join(' · ');
-}
-
-function buildRoutingReasonNote(decision: RoutingDecision | undefined): string {
-  if (!decision) {
-    return '';
-  }
-
-  const reasonLabels = decision.reasons
-    .filter(
-      (reason) => !['selected_primary', 'reserved_fallback', 'workstream_scoped'].includes(reason)
-    )
-    .map((reason) => {
-      switch (reason) {
-        case 'strict_privacy':
-          return 'strict privacy';
-        case 'privacy_requested':
-          return 'privacy preferred';
-        case 'venice_private_lane':
-          return 'venice lane';
-        case 'venice_fallback':
-          return 'venice fallback';
-        case 'allowed_model_family':
-          return 'model family match';
-        case 'allowed_agent_framework':
-          return 'framework match';
-        case 'allowed_model_provider':
-          return 'model provider match';
-        case 'allowed_model_id':
-          return 'model id match';
-        case 'round_robin_selected':
-          return 'round robin';
-        case 'required_privacy_features':
-          return 'privacy features';
-        case 'erc8004_required':
-          return 'erc-8004 required';
-        case 'trust_threshold_met':
-          return 'trust threshold';
-        case 'trust_ranked':
-          return 'trust-ranked';
-        case 'specialization_match':
-          return 'specialist match';
-        case 'promoted_from_reserve':
-          return 'reserve promotion';
-        default:
-          return reason.replaceAll('_', ' ');
-      }
-    });
-
-  return reasonLabels.join(' / ');
 }
 
 function buildAgentManifestUrl(): string {

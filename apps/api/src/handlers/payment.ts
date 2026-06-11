@@ -3,11 +3,11 @@ import { ApiContractError } from '@bossraid/api-contracts';
 import { InvalidRaidLaunchReservationError } from '@bossraid/orchestrator';
 import { asSingleHeader, type BossRaidSpawnInput } from '@bossraid/shared-types';
 import {
-  buildX402PaymentRequired,
-  readX402Config,
+  buildPaymentRequiredForRoute,
   readX402ReservationId,
   requireX402Payment,
 } from '../x402.js';
+import { readX402ConfigForContext } from '../lib/x402-runtime.js';
 import { buildLaunchRequestKey } from '../lib/http.js';
 import { computeSavingsUsd, estimateBenchmarkPriceUsd } from '../marketplace-benchmark.js';
 import { type ApiContext } from '../api-context.js';
@@ -205,7 +205,7 @@ export function createPaymentHandlers(
       };
     }
 
-    const x402Config = readX402Config(ctx.env);
+    const x402Config = readX402ConfigForContext(ctx);
     if (!x402Config.enabled) {
       return {};
     }
@@ -238,20 +238,22 @@ export function createPaymentHandlers(
       );
     }
 
-    const paymentRequired = buildX402PaymentRequired({
+    const paymentRequired = buildPaymentRequiredForRoute(
+      x402Config,
       route,
-      env: ctx.env,
-      budgetUsd: reservation.sanitized.constraints.maxBudgetUsd,
-      extra: {
-        reservationId: reservation.id,
-      },
-      maxTimeoutSeconds: getLaunchReservationPaymentTimeoutSeconds(reservation),
-    });
+      reservation.sanitized.constraints.maxBudgetUsd,
+      {
+        extra: {
+          reservationId: reservation.id,
+        },
+        maxTimeoutSeconds: getLaunchReservationPaymentTimeoutSeconds(reservation),
+      }
+    );
 
     const payment = await requireX402Payment({
       route,
       headers: request.headers,
-      env: ctx.env,
+      config: x402Config,
       budgetUsd: reservation.sanitized.constraints.maxBudgetUsd,
       paymentRequired,
     });

@@ -16,6 +16,9 @@
     "check": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "react": "^19.1.1"
+    "@bossraid/proof-ui": "workspace:*",
+    "@bossraid/shared-types": "workspace:*",
+    "react": "^19.1.1",
+    "swr": "^2.3.6"
   }
 }

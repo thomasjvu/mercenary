@@ -7,7 +7,7 @@ import type {
   RaidStatus as RaidStatusSnapshot,
 } from './api';
 import { isLowSignalChatPrompt } from './demo-chat.js';
-import { uniqueStrings } from './demo-format';
+import { selectApprovedProviderIds as selectApprovedProviderIdsShared } from '@bossraid/proof-ui';
 
 export type DemoRequestMode = 'raid' | 'chat_v1';
 
@@ -69,21 +69,7 @@ export function selectArtifacts(result: RaidResult | undefined): SubmissionArtif
 }
 
 export function selectApprovedProviderIds(result: RaidResult | undefined): string[] {
-  if (!result) {
-    return [];
-  }
-
-  if (result.settlementExecution?.successfulProviderIds.length) {
-    return uniqueStrings(result.settlementExecution.successfulProviderIds);
-  }
-
-  if (result.synthesizedOutput?.contributingProviderIds.length) {
-    return uniqueStrings(result.synthesizedOutput.contributingProviderIds);
-  }
-
-  return uniqueStrings(
-    (result.approvedSubmissions ?? []).map((entry) => entry.submission.providerId)
-  );
+  return selectApprovedProviderIdsShared(result);
 }
 
 export function buildDemoChatCompletionPayload(brief: string) {

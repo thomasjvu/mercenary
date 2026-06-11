@@ -67,7 +67,7 @@ export type DropProviderAliasesOptions = {
 export type ProviderRegistryMaps = {
   providers: Map<string, ProviderProfile>;
   providerRuntimes: Map<string, RaidProvider>;
-  providerHealthCache: Map<string, { checkedAt: number; health: ProviderHealthStatus }>;
+  providerHealthCache: { delete: (providerId: string) => void };
   seededProviderIds: Set<string>;
 };
 

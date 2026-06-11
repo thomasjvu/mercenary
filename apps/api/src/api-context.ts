@@ -59,6 +59,11 @@ export function createApiContext(
   const adminToken = env.BOSSRAID_ADMIN_TOKEN;
   const demoRouteEnabled = readBooleanEnv(env.BOSSRAID_DEMO_ROUTE_ENABLED);
   const demoToken = env.BOSSRAID_DEMO_TOKEN?.trim() || undefined;
+  if (demoRouteEnabled && !demoToken) {
+    throw new Error(
+      'BOSSRAID_DEMO_TOKEN is required when BOSSRAID_DEMO_ROUTE_ENABLED=true. Set a demo token before enabling the demo route.'
+    );
+  }
   const apiBodyLimitBytes = readPositiveInteger(
     env.BOSSRAID_API_BODY_LIMIT_BYTES,
     DEFAULTS.API_BODY_LIMIT_BYTES

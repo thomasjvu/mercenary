@@ -18,6 +18,7 @@
     "test": "node --import tsx --test src/**/*.test.ts"
   },
   "dependencies": {
+    "@bossraid/constants": "workspace:*",
     "@bossraid/sandbox-runner": "workspace:*",
     "@bossraid/shared-types": "workspace:*",
     "fastify": "^5.2.1"

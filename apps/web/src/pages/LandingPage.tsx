@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import heroImage from '../../../../assets/hero.webp';
+import { LiveMarketPulse } from '../components/marketplace/LiveMarketPulse.js';
 
 const PUBLIC_API_BASE = normalizePublicApiBase(
   (import.meta.env.VITE_BOSSRAID_API_BASE as string | undefined) ??
@@ -95,6 +96,7 @@ const WORKFLOW_ROWS = [
 type AppRoute =
   | '/'
   | '/marketplace'
+  | '/playground'
   | '/onboarding/buyer'
   | '/onboarding/seller'
   | '/account'
@@ -203,7 +205,18 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             >
               buy inference
             </a>
+            <a
+              className="button"
+              href="/playground"
+              onClick={(event) => {
+                event.preventDefault();
+                onNavigate('/playground');
+              }}
+            >
+              try a model
+            </a>
           </div>
+          <LiveMarketPulse />
         </div>
 
         <div className="hero__art" aria-hidden="true">
@@ -240,6 +253,34 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             }}
           >
             view marketplace
+          </a>
+          <a
+            className="button"
+            href="/playground"
+            onClick={(event) => {
+              event.preventDefault();
+              onNavigate('/playground');
+            }}
+          >
+            open playground
+          </a>
+        </article>
+        <article className="lane-panel">
+          <p className="eyebrow">run mercenary raids</p>
+          <h2>Multi-agent orchestration when one model is not enough.</h2>
+          <p>
+            Route complex tasks through Mercenary: scoped workstreams, synthesis, evaluation, and
+            equal payout splits across successful raiders.
+          </p>
+          <a
+            className="button button--primary"
+            href="/demo"
+            onClick={(event) => {
+              event.preventDefault();
+              onNavigate('/demo');
+            }}
+          >
+            launch raid demo
           </a>
         </article>
         <article className="lane-panel">

@@ -12,8 +12,10 @@
   "dependencies": {
     "@iconify-json/pixel": "^1.2.1",
     "@iconify/react": "^6.0.2",
+    "@bossraid/proof-ui": "workspace:*",
     "@bossraid/ui": "workspace:*",
     "@bossraid/constants": "workspace:*",
+    "@bossraid/shared-types": "workspace:*",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "swr": "^2.3.6"

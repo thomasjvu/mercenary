@@ -28,7 +28,6 @@ import type {
   BossRaidResultOutput,
   BossRaidRoutingProof,
   ProviderFailure,
-  ProviderHealthStatus,
   BossRaidSpawnInput,
   BossRaidSpawnOutput,
   BossRaidStatusOutput,
@@ -85,13 +84,11 @@ import {
   createLaunchReservationRecord,
   findReusableLaunchReservation,
   hydrateLaunchReservation,
-  instantiatePreparedChildren,
   launchReservationExpired,
   prepareRaid,
   pruneLaunchReservations,
   spawnPreparedRaid,
   InvalidRaidLaunchReservationError,
-  type PreparedRaidNode,
 } from './raid-launch.js';
 import { RaidDeadlineTimerRegistry } from './raid-timers.js';
 import {
@@ -103,6 +100,15 @@ import {
 } from './provider-registry-local.js';
 import { ProviderTimerRegistry } from './timer-registry.js';
 import { createPersistenceBackend } from './persistence-backend.js';
+import { ProviderHealthCache } from './provider-health-cache.js';
+import { PersistenceQueue, PersistenceUnavailableError } from './persistence-queue.js';
+import {
+  buildAdaptiveReplanDeps,
+  buildPrepareRaidDeps,
+  buildRaidProviderDispatchDeps,
+  buildSpawnPreparedRaidDeps,
+  type RaidRunnerContext,
+} from './raid-runner-deps.js';
 import {
   buildRaidRoutingProofOutput,
   collectLeafRaids,
@@ -112,8 +118,7 @@ import {
 import { findWorkspaceRoot, resolveWorkspacePath } from './workspace.js';
 
 export { InvalidRaidLaunchReservationError, NoEligibleProvidersError } from './raid-launch.js';
-
-const PROVIDER_HEALTH_CACHE_TTL_MS = 5_000;
+export { PersistenceUnavailableError } from './persistence-queue.js';
 
 const RAID_POLL_INTERVAL_MS = 250;
 
@@ -121,13 +126,6 @@ export class UnknownRaidError extends Error {
   constructor(raidId: string) {
     super(`Unknown raid: ${raidId}`);
     this.name = 'UnknownRaidError';
-  }
-}
-
-export class PersistenceUnavailableError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'PersistenceUnavailableError';
   }
 }
 
@@ -158,10 +156,7 @@ export class BossRaidOrchestrator {
   private readonly launchReservations = new Map<string, RaidLaunchReservationRecord>();
   private readonly timers = new ProviderTimerRegistry();
   private readonly raidDeadlineTimers = new RaidDeadlineTimerRegistry();
-  private readonly providerHealthCache = new Map<
-    string,
-    { checkedAt: number; health: ProviderHealthStatus }
-  >();
+  private readonly providerHealthCache: ProviderHealthCache;
   private readonly options: RuntimeOptions;
   private readonly persistence: BossRaidPersistence;
   private readonly secretCipher: SecretCipher;
@@ -171,8 +166,7 @@ export class BossRaidOrchestrator {
       options?: SettlementExecuteOptions
     ): Promise<import('@bossraid/shared-types').SettlementExecutionRecord | undefined>;
   };
-  private persistenceQueue: Promise<void> = Promise.resolve();
-  private lastPersistenceError?: Error;
+  private readonly persistenceQueue = new PersistenceQueue();
   private roundRobinCursor = 0;
 
   constructor(
@@ -185,12 +179,13 @@ export class BossRaidOrchestrator {
         options?: SettlementExecuteOptions
       ): Promise<import('@bossraid/shared-types').SettlementExecutionRecord | undefined>;
     } = { execute: async () => undefined },
-    private readonly providerHealthProbe: ProviderHealthProbe = probeProviderHealth
+    providerHealthProbe: ProviderHealthProbe = probeProviderHealth
   ) {
     this.options = { ...DEFAULT_TIMEOUTS, ...options };
     this.persistence = persistence;
     this.secretCipher = createSecretCipher(process.env);
     this.settlementExecutor = settlementExecutor;
+    this.providerHealthCache = new ProviderHealthCache(undefined, providerHealthProbe);
     for (const provider of seedProviders) {
       this.seededProviderIds.add(provider.profile.providerId);
       this.registerProvider(provider);
@@ -443,8 +438,8 @@ export class BossRaidOrchestrator {
 
   getPersistenceStatus(): { healthy: boolean; lastError?: string } {
     return {
-      healthy: this.lastPersistenceError == null,
-      lastError: this.lastPersistenceError?.message,
+      healthy: this.persistenceQueue.lastPersistenceError == null,
+      lastError: this.persistenceQueue.lastPersistenceError?.message,
     };
   }
 
@@ -898,33 +893,15 @@ export class BossRaidOrchestrator {
   }
 
   private queuePersist(): Promise<void> {
-    this.persistenceQueue = this.persistenceQueue
-      .catch(() => undefined)
-      .then(async () => {
-        try {
-          await this.persistence.saveState(this.snapshotState());
-          this.lastPersistenceError = undefined;
-        } catch (error) {
-          this.lastPersistenceError = error instanceof Error ? error : new Error(String(error));
-          console.error('Mercenary persistence error', error);
-          throw this.lastPersistenceError;
-        }
-      });
-    return this.persistenceQueue;
+    return this.persistenceQueue.enqueue(() => this.persistence.saveState(this.snapshotState()));
   }
 
   private queuePersistBestEffort(): void {
-    void this.queuePersist().catch(() => undefined);
+    this.persistenceQueue.enqueueBestEffort(() => this.persistence.saveState(this.snapshotState()));
   }
 
   private assertPersistenceWritable(): void {
-    if (!this.lastPersistenceError) {
-      return;
-    }
-
-    throw new PersistenceUnavailableError(
-      `Mercenary persistence is unavailable: ${this.lastPersistenceError.message}`
-    );
+    this.persistenceQueue.assertWritable();
   }
 
   private requireRaid(raidId: string): RaidRecord {
@@ -1120,7 +1097,7 @@ export class BossRaidOrchestrator {
     const results = await Promise.all(
       providers.map(async (provider) => ({
         provider,
-        health: await this.readProviderHealth(provider, nowMs),
+        health: await this.providerHealthCache.read(provider, nowMs),
       }))
     );
 
@@ -1139,24 +1116,7 @@ export class BossRaidOrchestrator {
     return readyProviderIds;
   }
 
-  private async readProviderHealth(
-    provider: ProviderProfile,
-    nowMs: number
-  ): Promise<ProviderHealthStatus> {
-    const cached = this.providerHealthCache.get(provider.providerId);
-    if (cached && nowMs - cached.checkedAt <= PROVIDER_HEALTH_CACHE_TTL_MS) {
-      return cached.health;
-    }
-
-    const health = await this.providerHealthProbe(provider);
-    this.providerHealthCache.set(provider.providerId, {
-      checkedAt: nowMs,
-      health,
-    });
-    return health;
-  }
-
-  private providerDispatchDeps(): RaidProviderDispatchDeps {
+  private raidRunnerContext(): RaidRunnerContext {
     return {
       requireRaid: (raidId) => this.requireRaid(raidId),
       getProvider: (providerId) => this.providers.get(providerId),
@@ -1175,8 +1135,11 @@ export class BossRaidOrchestrator {
       },
       options: this.options,
       timers: this.timers,
+      raids: this.raids,
+      providers: this.providers,
       clearProviderTimers: (raidId, providerId) => this.clearProviderTimers(raidId, providerId),
       queuePersistBestEffort: () => this.queuePersistBestEffort(),
+      queuePersist: () => this.queuePersist(),
       raidDeadlineReached: (raid) => this.raidDeadlineReached(raid),
       expireRaidAtDeadline: (raidId) => this.expireRaidAtDeadline(raidId),
       scheduleRaidDeadline: (raidId) => this.scheduleRaidDeadline(raidId),
@@ -1187,65 +1150,35 @@ export class BossRaidOrchestrator {
       applyProviderRoutingCooldown: (providerId, cooldownMs) =>
         this.applyProviderRoutingCooldown(providerId, cooldownMs),
       finalizeRaid: (raid) => this.finalizeRaid(raid),
-      maybeReplanHierarchicalRaid: (raidId) =>
-        maybeReplanHierarchicalRaid(raidId, this.adaptiveReplanDeps()),
       shouldFinalizeHierarchicalRaid: (raid) => this.shouldFinalizeHierarchicalRaid(raid),
       waitForFinalization: (raidId) => this.waitForFinalization(raidId),
+      runRaid: (raidId) => {
+        void this.runRaid(raidId);
+      },
+      discoverProvidersForRaid: (query) => this.discoverProvidersForRaid(query),
+      selectProvidersForTask: (task, providers) => this.selectProvidersForTask(task, providers),
+      instantiatePreparedChildrenDeps: () => ({
+        raids: this.raids,
+        requireRaid: (raidId: string) => this.requireRaid(raidId),
+        scheduleRaidDeadline: (raidId: string) => this.scheduleRaidDeadline(raidId),
+      }),
     };
+  }
+
+  private providerDispatchDeps(): RaidProviderDispatchDeps {
+    return buildRaidProviderDispatchDeps(this.raidRunnerContext());
   }
 
   private prepareRaidDeps() {
-    return {
-      discoverProvidersForRaid: (query?: ProviderDiscoveryQuery) =>
-        this.discoverProvidersForRaid(query),
-      selectProvidersForTask: (task: SanitizedTaskSpec, providers: ProviderProfile[]) =>
-        this.selectProvidersForTask(task, providers),
-    };
+    return buildPrepareRaidDeps(this.raidRunnerContext());
   }
 
   private spawnPreparedRaidDeps() {
-    return {
-      raids: this.raids,
-      scheduleRaidDeadline: (raidId: string) => this.scheduleRaidDeadline(raidId),
-      instantiatePreparedChildren: (
-        parentRaidId: string,
-        children: PreparedRaidNode[],
-        deadlineUnix: number
-      ) =>
-        instantiatePreparedChildren(
-          parentRaidId,
-          children,
-          deadlineUnix,
-          this.instantiatePreparedChildrenDeps()
-        ),
-      queuePersist: () => this.queuePersist(),
-      runRaid: (raidId: string) => {
-        void this.runRaid(raidId);
-      },
-    };
-  }
-
-  private instantiatePreparedChildrenDeps() {
-    return {
-      raids: this.raids,
-      requireRaid: (raidId: string) => this.requireRaid(raidId),
-      scheduleRaidDeadline: (raidId: string) => this.scheduleRaidDeadline(raidId),
-    };
+    return buildSpawnPreparedRaidDeps(this.raidRunnerContext());
   }
 
   private adaptiveReplanDeps() {
-    return {
-      raids: this.raids,
-      providers: this.providers,
-      requireRaid: (raidId: string) => this.requireRaid(raidId),
-      queuePersistBestEffort: () => this.queuePersistBestEffort(),
-      scheduleRaidDeadline: (raidId: string) => this.scheduleRaidDeadline(raidId),
-      runRaid: (raidId: string) => {
-        void this.runRaid(raidId);
-      },
-      raidDeadlineReached: (raid: RaidRecord) => this.raidDeadlineReached(raid),
-      instantiatePreparedChildrenDeps: () => this.instantiatePreparedChildrenDeps(),
-    };
+    return buildAdaptiveReplanDeps(this.raidRunnerContext());
   }
 
   private providerRegistryMaps() {

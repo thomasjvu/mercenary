@@ -8,11 +8,12 @@ Mercenary is the orchestrator inside Boss Raid.
 
 Read these first:
 
-- [README.md](/Users/area/Desktop/boss-raid/README.md)
-- [docs/architecture.md](/Users/area/Desktop/boss-raid/docs/architecture.md)
-- [docs/interfaces.md](/Users/area/Desktop/boss-raid/docs/interfaces.md)
-- [docs/runtime.md](/Users/area/Desktop/boss-raid/docs/runtime.md)
-- [AGENTS.md](/Users/area/Desktop/boss-raid/AGENTS.md)
+- [README.md](/Users/area/repos/boss-raid/README.md)
+- [docs/README.md](/Users/area/repos/boss-raid/docs/README.md)
+- [docs/operators/architecture.md](/Users/area/repos/boss-raid/docs/operators/architecture.md)
+- [docs/reference/routes.md](/Users/area/repos/boss-raid/docs/reference/routes.md)
+- [docs/operators/runtime.md](/Users/area/repos/boss-raid/docs/operators/runtime.md)
+- [AGENTS.md](/Users/area/repos/boss-raid/AGENTS.md)
 
 ## Rules
 

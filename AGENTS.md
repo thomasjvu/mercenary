@@ -9,9 +9,11 @@ Boss Raid is the platform. Mercenary is the orchestrator agent.
 ## Read First
 
 - [README.md](/Users/area/repos/boss-raid/README.md)
-- [docs/architecture.md](/Users/area/repos/boss-raid/docs/architecture.md)
-- [docs/interfaces.md](/Users/area/repos/boss-raid/docs/interfaces.md)
-- [docs/runtime.md](/Users/area/repos/boss-raid/docs/runtime.md)
+- [docs/README.md](/Users/area/repos/boss-raid/docs/README.md)
+- [docs/getting-started.md](/Users/area/repos/boss-raid/docs/getting-started.md)
+- [docs/operators/architecture.md](/Users/area/repos/boss-raid/docs/operators/architecture.md)
+- [docs/reference/routes.md](/Users/area/repos/boss-raid/docs/reference/routes.md)
+- [docs/operators/runtime.md](/Users/area/repos/boss-raid/docs/operators/runtime.md)
 
 ## Rules
 
@@ -52,10 +54,10 @@ pnpm dev:web
 
 ## If You Change
 
-- architecture: update [docs/architecture.md](/Users/area/repos/boss-raid/docs/architecture.md)
-- routes or payloads: update [docs/interfaces.md](/Users/area/repos/boss-raid/docs/interfaces.md)
-- commands or env: update [docs/runtime.md](/Users/area/repos/boss-raid/docs/runtime.md)
-- registration story: update [docs/synthesis-registration.md](/Users/area/repos/boss-raid/docs/synthesis-registration.md)
+- architecture: update [docs/operators/architecture.md](/Users/area/repos/boss-raid/docs/operators/architecture.md)
+- routes or payloads: update [docs/reference/routes.md](/Users/area/repos/boss-raid/docs/reference/routes.md) and the matching buyer/seller page in `docs/`
+- commands or env: update [docs/operators/runtime.md](/Users/area/repos/boss-raid/docs/operators/runtime.md) and [docs/reference/env.md](/Users/area/repos/boss-raid/docs/reference/env.md)
+- registration story: update [docs/operators/appendix/synthesis-registration.md](/Users/area/repos/boss-raid/docs/operators/appendix/synthesis-registration.md)
 
 ## Coding Standards
 

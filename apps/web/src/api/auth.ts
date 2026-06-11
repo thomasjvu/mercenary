@@ -120,6 +120,33 @@ export async function createSellerProvider(
   });
 }
 
+export async function updateSellerProvider(
+  providerId: string,
+  payload: Record<string, unknown>
+): Promise<Provider> {
+  return fetchJson<Provider>(`/v1/seller/providers/${encodeURIComponent(providerId)}`, {
+    method: 'PATCH',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function verifySellerProvider(
+  providerId: string
+): Promise<SellerProviderCreateResponse> {
+  return fetchJson<SellerProviderCreateResponse>(
+    `/v1/seller/providers/${encodeURIComponent(providerId)}/verify`,
+    {
+      method: 'POST',
+    }
+  );
+}
+
 export async function fetchSellerEarnings(): Promise<SellerEarnings> {
   return fetchJson<SellerEarnings>('/v1/seller/earnings');
 }
+
+export type { BuyerPurchase, BuyerPurchasesResponse, SellerStats } from './marketplace.js';
+export { fetchBuyerPurchases, fetchSellerStats, fundBuyerBalance } from './marketplace.js';

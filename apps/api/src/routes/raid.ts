@@ -14,7 +14,7 @@ export function registerRaidRoutes(
     requireAdmin,
     requireDemoRouteAccess,
     spawnParsedRaid,
-    registerRaidRoutes: registerRaidDetailRoutes,
+    registerRaidDetailRoutes,
     requireProviderOrRaidReadAccess,
     buildProviderSettlementPayload,
   } = handlers;

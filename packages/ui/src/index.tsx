@@ -7,6 +7,12 @@ type DocsButtonProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href' | 'c
   label?: string;
 };
 
+export { useRaidPolling } from './useRaidPolling.js';
+export { ArtifactPreview } from './receipt/ArtifactPreview.js';
+export { ArtifactStrip } from './receipt/ArtifactStrip.js';
+export { ProviderMesh } from './receipt/ProviderMesh.js';
+export { ReceiptProofPanel } from './receipt/ReceiptProofPanel.js';
+
 export function DocsButton({
   className,
   href = BOSSRAID_DOCS_URL,
