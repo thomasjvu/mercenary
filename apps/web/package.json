@@ -6,7 +6,8 @@
   "scripts": {
     "build": "vite build",
     "check": "tsc -p tsconfig.json --noEmit",
-    "dev": "vite"
+    "dev": "vite",
+    "test": "node --import tsx --test 'src/**/*.test.ts'"
   },
   "dependencies": {
     "@iconify-json/pixel": "^1.2.1",
@@ -19,6 +20,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.2",
+    "tsx": "^4.19.3",
     "vite": "^7.1.7"
   }
 }

@@ -20,6 +20,7 @@
   "dependencies": {
     "@bossraid/api-contracts": "workspace:*",
     "@bossraid/constants": "workspace:*",
+    "@bossraid/raid-core": "workspace:*",
     "@bossraid/logger": "workspace:*",
     "@bossraid/orchestrator": "workspace:*",
     "@bossraid/persistence": "workspace:*",

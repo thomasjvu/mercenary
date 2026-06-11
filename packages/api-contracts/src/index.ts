@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import type {
   AgentHeartbeatInput,
-  AgentFramework,
   BossRaidRequest,
   BossRaidSpawnInput,
   ChatCompletionMessage,
@@ -11,361 +10,61 @@ import type {
   HostContext,
   OutputType,
   PrivacyAttestation,
-  PrivacyFeatureKey,
   PrivacyMode,
-  PrivacyRoutingMode,
-  ProviderVerification,
-  ProviderVerificationStatus,
-  ProviderPricingCurrency,
-  ProviderPricingMode,
   ProviderAuthConfig,
+  ProviderVerification,
   ProviderDiscoveryQuery,
   ProviderFailure,
   ProviderHeartbeat,
-  MarketplaceOfferStatus,
   ProviderRegistrationInput,
-  ProviderStatus,
   ProviderSubmission,
   RaidConstraints,
   RewardPolicy,
-  SelectionMode,
   SupportedLanguage,
   TaskFile,
 } from '@bossraid/shared-types';
+import {
+  buildNormalizedDelegateRaidPolicy,
+  buildRaidConstraintsFromFields,
+  constraintsFromRaidPolicy,
+  raidConstraintsFieldLabels,
+  readRaidConstraintsFields,
+} from './raid-policy.js';
+import {
+  ApiContractError,
+  ensureAgentFramework,
+  ensureAgentFrameworkArray,
+  ensureBoolean,
+  ensureBooleanLike,
+  ensureChatMessageRole,
+  ensureErc8004VerificationStatus,
+  ensureFiniteNumberLike,
+  ensureHost,
+  ensureLanguage,
+  ensureMarketplaceOfferStatus,
+  ensureMessageArray,
+  ensureNumber,
+  ensureOptionalRecord,
+  ensureOptionalString,
+  ensureOutputType,
+  ensureOutputTypeArray,
+  ensurePositiveIntegerLike,
+  ensurePrivacyFeature,
+  ensurePrivacyFeatureArray,
+  ensurePrivacyRoutingMode,
+  ensureProviderAuthType,
+  ensureProviderPricingCurrency,
+  ensureProviderPricingMode,
+  ensureProviderStatus,
+  ensureProviderVerificationStatus,
+  ensureRecord,
+  ensureSelectionMode,
+  ensureString,
+  ensureStringArray,
+  ensureTrustSource,
+} from './validation.js';
 
-const SUPPORTED_LANGUAGES = new Set<SupportedLanguage>([
-  'csharp',
-  'typescript',
-  'python',
-  'solidity',
-  'text',
-]);
-const OUTPUT_TYPES = new Set<OutputType>(['text', 'json', 'image', 'video', 'patch', 'bundle']);
-const PRIVACY_ROUTING_MODES = new Set<PrivacyRoutingMode>(['off', 'prefer', 'strict']);
-const SELECTION_MODES = new Set<SelectionMode>([
-  'best_match',
-  'privacy_first',
-  'cost_first',
-  'diverse_mix',
-  'round_robin',
-]);
-const AGENT_FRAMEWORKS = new Set<AgentFramework>(['codex', 'claude_code', 'openclaw', 'custom']);
-const PROVIDER_VERIFICATION_STATUSES = new Set<ProviderVerificationStatus>([
-  'pending',
-  'verified',
-  'failed',
-  'error',
-]);
-const ERC8004_VERIFICATION_STATUSES = new Set<Erc8004Verification['status']>([
-  'not_checked',
-  'verified',
-  'partial',
-  'failed',
-  'error',
-]);
-const PRIVACY_FEATURES = new Set<PrivacyFeatureKey>([
-  'tee_attested',
-  'e2ee',
-  'no_data_retention',
-  'signed_outputs',
-  'provenance_attested',
-  'operator_verified',
-]);
-const HOSTS = new Set<HostContext['host']>(['codex', 'claude_code']);
-const PROVIDER_AUTH_TYPES = new Set<ProviderAuthConfig['type']>(['bearer', 'hmac', 'none']);
-const PROVIDER_STATUSES = new Set<ProviderStatus>(['available', 'degraded', 'offline']);
-const PROVIDER_PRICING_MODES = new Set<ProviderPricingMode>(['token_metered', 'task']);
-const MARKETPLACE_OFFER_STATUSES = new Set<MarketplaceOfferStatus>(['active', 'paused']);
-const PROVIDER_PRICING_CURRENCIES = new Set<ProviderPricingCurrency>(['USD', 'USDC']);
-const CHAT_MESSAGE_ROLES = new Set<ChatCompletionMessage['role']>(['system', 'user', 'assistant']);
-
-export class ApiContractError extends Error {
-  readonly statusCode: number;
-
-  constructor(message: string, statusCode = 400) {
-    super(message);
-    this.name = 'ApiContractError';
-    this.statusCode = statusCode;
-  }
-}
-
-function ensureRecord(value: unknown, label: string): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new ApiContractError(`Expected object for ${label}.`);
-  }
-
-  return value as Record<string, unknown>;
-}
-
-function ensureString(value: unknown, label: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new ApiContractError(`Expected non-empty string for ${label}.`);
-  }
-
-  return value;
-}
-
-function ensureOptionalString(value: unknown, label: string): string | undefined {
-  if (value == null) {
-    return undefined;
-  }
-
-  return ensureString(value, label);
-}
-
-function ensureNumber(value: unknown, label: string): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    throw new ApiContractError(`Expected finite number for ${label}.`);
-  }
-
-  return value;
-}
-
-function ensureFiniteNumberLike(value: unknown, label: string): number {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-  if (typeof value === 'string' && value.trim().length > 0) {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed)) {
-      return parsed;
-    }
-  }
-
-  throw new ApiContractError(`Expected finite number for ${label}.`);
-}
-
-function ensureBoolean(value: unknown, label: string): boolean {
-  if (typeof value !== 'boolean') {
-    throw new ApiContractError(`Expected boolean for ${label}.`);
-  }
-
-  return value;
-}
-
-function ensureBooleanLike(value: unknown, label: string): boolean {
-  if (typeof value === 'boolean') {
-    return value;
-  }
-
-  if (typeof value === 'string') {
-    if (value === 'true') {
-      return true;
-    }
-    if (value === 'false') {
-      return false;
-    }
-  }
-
-  throw new ApiContractError(`Expected boolean for ${label}.`);
-}
-
-function ensureStringArray(value: unknown, label: string): string[] {
-  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
-    throw new ApiContractError(`Expected string array for ${label}.`);
-  }
-
-  return value;
-}
-
-function ensureOptionalRecord(value: unknown, label: string): Record<string, unknown> | undefined {
-  if (value == null) {
-    return undefined;
-  }
-
-  return ensureRecord(value, label);
-}
-
-function ensurePositiveIntegerLike(value: unknown, label: string): number {
-  const parsed = ensureFiniteNumberLike(value, label);
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw new ApiContractError(`Expected positive integer for ${label}.`);
-  }
-
-  return parsed;
-}
-
-function ensureLanguage(value: unknown, label: string): SupportedLanguage {
-  const normalized = ensureString(value, label) as SupportedLanguage;
-  if (!SUPPORTED_LANGUAGES.has(normalized)) {
-    throw new ApiContractError(`Unsupported language for ${label}.`);
-  }
-
-  return normalized;
-}
-
-function ensureOutputType(value: unknown, label: string): OutputType {
-  const normalized = ensureString(value, label) as OutputType;
-  if (!OUTPUT_TYPES.has(normalized)) {
-    throw new ApiContractError(`Unsupported output type for ${label}.`);
-  }
-
-  return normalized;
-}
-
-function ensureOutputTypeArray(value: unknown, label: string): OutputType[] {
-  return ensureStringArray(value, label).map((item, index) =>
-    ensureOutputType(item, `${label}[${index}]`)
-  );
-}
-
-function ensurePrivacyRoutingMode(value: unknown, label: string): PrivacyRoutingMode {
-  const normalized = ensureString(value, label) as PrivacyRoutingMode;
-  if (!PRIVACY_ROUTING_MODES.has(normalized)) {
-    throw new ApiContractError(`Unsupported privacy mode for ${label}.`);
-  }
-
-  return normalized;
-}
-
-function ensurePrivacyFeatureArray(value: unknown, label: string): PrivacyFeatureKey[] {
-  return ensureStringArray(value, label).map((item, index) =>
-    ensurePrivacyFeature(item, `${label}[${index}]`)
-  );
-}
-
-function ensurePrivacyFeature(value: unknown, label: string): PrivacyFeatureKey {
-  const normalized = ensureString(value, label) as PrivacyFeatureKey;
-  if (!PRIVACY_FEATURES.has(normalized)) {
-    throw new ApiContractError(`Unsupported privacy feature for ${label}.`);
-  }
-
-  return normalized;
-}
-
-function ensureSelectionMode(value: unknown, label: string): SelectionMode {
-  const normalized = ensureString(value, label) as SelectionMode;
-  if (!SELECTION_MODES.has(normalized)) {
-    throw new ApiContractError(`Unsupported selection mode for ${label}.`);
-  }
-
-  return normalized;
-}
-
-function ensureAgentFramework(value: unknown, label: string): AgentFramework {
-  const normalized = ensureString(value, label) as AgentFramework;
-  if (!AGENT_FRAMEWORKS.has(normalized)) {
-    throw new ApiContractError(`Unsupported agent framework for ${label}.`);
-  }
-
-  return normalized;
-}
-
-function ensureAgentFrameworkArray(value: unknown, label: string): AgentFramework[] {
-  return ensureStringArray(value, label).map((item, index) =>
-    ensureAgentFramework(item, `${label}[${index}]`)
-  );
-}
-
-function ensureProviderVerificationStatus(
-  value: unknown,
-  label: string
-): ProviderVerificationStatus {
-  const normalized = ensureString(value, label) as ProviderVerificationStatus;
-  if (!PROVIDER_VERIFICATION_STATUSES.has(normalized)) {
-    throw new ApiContractError(`Unsupported provider verification status for ${label}.`);
-  }
-
-  return normalized;
-}
-
-function ensureMarketplaceOfferStatus(value: unknown, label: string): MarketplaceOfferStatus {
-  const normalized = ensureString(value, label) as MarketplaceOfferStatus;
-  if (!MARKETPLACE_OFFER_STATUSES.has(normalized)) {
-    throw new ApiContractError(`Unsupported marketplace offer status for ${label}.`);
-  }
-  return normalized;
-}
-
-function ensureProviderPricingMode(value: unknown, label: string): ProviderPricingMode {
-  const normalized = ensureString(value, label) as ProviderPricingMode;
-  if (!PROVIDER_PRICING_MODES.has(normalized)) {
-    throw new ApiContractError(`Unsupported provider pricing mode for ${label}.`);
-  }
-  return normalized;
-}
-
-function ensureProviderPricingCurrency(value: unknown, label: string): ProviderPricingCurrency {
-  const normalized = ensureString(value, label).toUpperCase() as ProviderPricingCurrency;
-  if (!PROVIDER_PRICING_CURRENCIES.has(normalized)) {
-    throw new ApiContractError(`Unsupported provider pricing currency for ${label}.`);
-  }
-  return normalized;
-}
-
-function ensureTrustSource(value: unknown, label: string): 'erc8004' {
-  const normalized = ensureString(value, label);
-  if (normalized !== 'erc8004') {
-    throw new ApiContractError(`Unsupported trust source for ${label}.`);
-  }
-
-  return normalized;
-}
-
-function ensureErc8004VerificationStatus(
-  value: unknown,
-  label: string
-): Erc8004Verification['status'] {
-  const normalized = ensureString(value, label) as Erc8004Verification['status'];
-  if (!ERC8004_VERIFICATION_STATUSES.has(normalized)) {
-    throw new ApiContractError(`Unsupported ERC-8004 verification status for ${label}.`);
-  }
-
-  return normalized;
-}
-
-function ensureHost(value: unknown, label: string): HostContext['host'] {
-  const normalized = ensureString(value, label) as HostContext['host'];
-  if (!HOSTS.has(normalized)) {
-    throw new ApiContractError(`Unsupported host for ${label}.`);
-  }
-
-  return normalized;
-}
-
-function ensureProviderAuthType(value: unknown, label: string): ProviderAuthConfig['type'] {
-  const normalized = ensureString(value, label) as ProviderAuthConfig['type'];
-  if (!PROVIDER_AUTH_TYPES.has(normalized)) {
-    throw new ApiContractError(`Unsupported provider auth type for ${label}.`);
-  }
-
-  return normalized;
-}
-
-function ensureProviderStatus(value: unknown, label: string): ProviderStatus {
-  const normalized = ensureString(value, label) as ProviderStatus;
-  if (!PROVIDER_STATUSES.has(normalized)) {
-    throw new ApiContractError(`Unsupported provider status for ${label}.`);
-  }
-
-  return normalized;
-}
-
-function ensureChatMessageRole(value: unknown, label: string): ChatCompletionMessage['role'] {
-  const normalized = ensureString(value, label) as ChatCompletionMessage['role'];
-  if (!CHAT_MESSAGE_ROLES.has(normalized)) {
-    throw new ApiContractError(`Unsupported chat message role for ${label}.`);
-  }
-
-  return normalized;
-}
-
-function ensureMessageArray(value: unknown, label: string): ChatCompletionMessage[] {
-  if (!Array.isArray(value)) {
-    throw new ApiContractError(`Expected array for ${label}.`);
-  }
-  if (value.length === 0) {
-    throw new ApiContractError(`Expected non-empty array for ${label}.`);
-  }
-
-  return value.map((item, index) => {
-    const message = ensureRecord(item, `${label}[${index}]`);
-    return {
-      role: ensureChatMessageRole(message.role, `${label}[${index}].role`),
-      content: ensureString(message.content, `${label}[${index}].content`),
-    };
-  });
-}
+export { ApiContractError };
 
 function parseTaskFiles(value: unknown): TaskFile[] {
   if (!Array.isArray(value)) {
@@ -405,132 +104,34 @@ function parseFailingSignals(value: unknown): FailingSignals {
 
 function parseRaidConstraints(value: unknown): RaidConstraints {
   const input = ensureRecord(value, 'constraints');
-  return {
-    numExperts: ensureNumber(input.numExperts ?? input.num_experts, 'constraints.num_experts'),
-    maxBudgetUsd: ensureNumber(
-      input.maxBudgetUsd ?? input.max_budget_usd,
-      'constraints.max_budget_usd'
-    ),
-    maxLatencySec: ensureNumber(
-      input.maxLatencySec ?? input.max_latency_sec,
-      'constraints.max_latency_sec'
-    ),
-    allowExternalSearch: ensureBoolean(
-      input.allowExternalSearch ?? input.allow_external_search,
-      'constraints.allow_external_search'
-    ),
-    requireSpecializations: ensureStringArray(
-      input.requireSpecializations ?? input.require_specializations ?? [],
-      'constraints.require_specializations'
-    ),
-    minReputation: ensureNumber(
-      input.minReputation ?? input.min_reputation,
-      'constraints.min_reputation'
-    ),
-    requireErc8004:
-      input.requireErc8004 == null && input.require_erc8004 == null
-        ? undefined
-        : ensureBooleanLike(
-            input.requireErc8004 ?? input.require_erc8004,
-            'constraints.require_erc8004'
-          ),
-    minTrustScore:
-      input.minTrustScore == null && input.min_trust_score == null
-        ? undefined
-        : ensureNumber(input.minTrustScore ?? input.min_trust_score, 'constraints.min_trust_score'),
-    requiredVerificationStatus:
-      input.requiredVerificationStatus == null && input.required_verification_status == null
-        ? undefined
-        : ensureProviderVerificationStatus(
-            input.requiredVerificationStatus ?? input.required_verification_status,
-            'constraints.required_verification_status'
-          ),
-    maxInputTokens:
-      input.maxInputTokens == null && input.max_input_tokens == null
-        ? undefined
-        : ensureNumber(
-            input.maxInputTokens ?? input.max_input_tokens,
-            'constraints.max_input_tokens'
-          ),
-    maxOutputTokens:
-      input.maxOutputTokens == null && input.max_output_tokens == null
-        ? undefined
-        : ensureNumber(
-            input.maxOutputTokens ?? input.max_output_tokens,
-            'constraints.max_output_tokens'
-          ),
-    maxChangedFiles:
-      input.maxChangedFiles == null && input.max_changed_files == null
-        ? undefined
-        : ensureNumber(
-            input.maxChangedFiles ?? input.max_changed_files,
-            'constraints.max_changed_files'
-          ),
-    maxDiffLines:
-      input.maxDiffLines == null && input.max_diff_lines == null
-        ? undefined
-        : ensureNumber(input.maxDiffLines ?? input.max_diff_lines, 'constraints.max_diff_lines'),
-    forbidPaths:
-      input.forbidPaths == null && input.forbid_paths == null
-        ? undefined
-        : ensureStringArray(input.forbidPaths ?? input.forbid_paths, 'constraints.forbid_paths'),
-    allowedModelFamilies:
-      input.allowedModelFamilies == null && input.allowed_model_families == null
-        ? undefined
-        : ensureStringArray(
-            input.allowedModelFamilies ?? input.allowed_model_families,
-            'constraints.allowed_model_families'
-          ),
-    allowedAgentFrameworks:
-      input.allowedAgentFrameworks == null && input.allowed_agent_frameworks == null
-        ? undefined
-        : ensureAgentFrameworkArray(
-            input.allowedAgentFrameworks ?? input.allowed_agent_frameworks,
-            'constraints.allowed_agent_frameworks'
-          ),
-    allowedModelProviders:
-      input.allowedModelProviders == null && input.allowed_model_providers == null
-        ? undefined
-        : ensureStringArray(
-            input.allowedModelProviders ?? input.allowed_model_providers,
-            'constraints.allowed_model_providers'
-          ),
-    allowedModelIds:
-      input.allowedModelIds == null && input.allowed_model_ids == null
-        ? undefined
-        : ensureStringArray(
-            input.allowedModelIds ?? input.allowed_model_ids,
-            'constraints.allowed_model_ids'
-          ),
-    allowedOutputTypes:
-      input.allowedOutputTypes == null && input.allowed_output_types == null
-        ? undefined
-        : ensureOutputTypeArray(
-            input.allowedOutputTypes ?? input.allowed_output_types,
-            'constraints.allowed_output_types'
-          ),
-    privacyMode:
-      input.privacyMode == null && input.privacy_mode == null
-        ? undefined
-        : ensurePrivacyRoutingMode(
-            input.privacyMode ?? input.privacy_mode,
-            'constraints.privacy_mode'
-          ),
-    requirePrivacyFeatures:
-      input.requirePrivacyFeatures == null && input.require_privacy_features == null
-        ? undefined
-        : ensurePrivacyFeatureArray(
-            input.requirePrivacyFeatures ?? input.require_privacy_features,
-            'constraints.require_privacy_features'
-          ),
-    selectionMode:
-      input.selectionMode == null && input.selection_mode == null
-        ? undefined
-        : ensureSelectionMode(
-            input.selectionMode ?? input.selection_mode,
-            'constraints.selection_mode'
-          ),
-  };
+
+  return buildRaidConstraintsFromFields(
+    readRaidConstraintsFields(input),
+    {
+      numExperts: ensureNumber(input.numExperts ?? input.num_experts, 'constraints.num_experts'),
+      maxBudgetUsd: ensureNumber(
+        input.maxBudgetUsd ?? input.max_budget_usd,
+        'constraints.max_budget_usd'
+      ),
+      maxLatencySec: ensureNumber(
+        input.maxLatencySec ?? input.max_latency_sec,
+        'constraints.max_latency_sec'
+      ),
+      allowExternalSearch: ensureBoolean(
+        input.allowExternalSearch ?? input.allow_external_search,
+        'constraints.allow_external_search'
+      ),
+      requireSpecializations: ensureStringArray(
+        input.requireSpecializations ?? input.require_specializations ?? [],
+        'constraints.require_specializations'
+      ),
+      minReputation: ensureNumber(
+        input.minReputation ?? input.min_reputation,
+        'constraints.min_reputation'
+      ),
+    },
+    raidConstraintsFieldLabels('constraints')
+  );
 }
 
 function parseRewardPolicy(value: unknown): RewardPolicy {
@@ -736,10 +337,6 @@ export function parseBossRaidRequest(value: unknown): BossRaidSpawnInput {
   const input = ensureRecord(value, 'raid_request');
   const task = ensureRecord(input.task, 'task');
   const raidPolicy = input.raidPolicy == null ? {} : ensureRecord(input.raidPolicy, 'raid_policy');
-  const maxTotalCost = ensureFiniteNumberLike(
-    raidPolicy.maxTotalCost ?? raidPolicy.max_total_cost,
-    'raid_policy.max_total_cost'
-  );
 
   return {
     taskTitle: ensureString(task.title, 'task.title'),
@@ -758,106 +355,7 @@ export function parseBossRaidRequest(value: unknown): BossRaidSpawnInput {
             artifactTypes: ['patch', 'text'],
           }
         : parseOutputConfig(input.output, 'raid_request.output'),
-    constraints: {
-      numExperts:
-        typeof raidPolicy.maxAgents === 'number'
-          ? raidPolicy.maxAgents
-          : typeof raidPolicy.max_agents === 'number'
-            ? (raidPolicy.max_agents as number)
-            : 3,
-      maxBudgetUsd: maxTotalCost,
-      maxLatencySec:
-        raidPolicy.maxLatencySec == null && raidPolicy.max_latency_sec == null
-          ? 60
-          : ensureFiniteNumberLike(
-              raidPolicy.maxLatencySec ?? raidPolicy.max_latency_sec,
-              'raid_policy.max_latency_sec'
-            ),
-      allowExternalSearch: false,
-      requireSpecializations:
-        raidPolicy.requiredCapabilities == null && raidPolicy.required_capabilities == null
-          ? []
-          : ensureStringArray(
-              raidPolicy.requiredCapabilities ?? raidPolicy.required_capabilities,
-              'raid_policy.required_capabilities'
-            ),
-      minReputation:
-        typeof raidPolicy.minReputationScore === 'number'
-          ? raidPolicy.minReputationScore / 100
-          : typeof raidPolicy.min_reputation_score === 'number'
-            ? (raidPolicy.min_reputation_score as number) / 100
-            : 0,
-      requireErc8004:
-        raidPolicy.requireErc8004 == null && raidPolicy.require_erc8004 == null
-          ? undefined
-          : ensureBooleanLike(
-              raidPolicy.requireErc8004 ?? raidPolicy.require_erc8004,
-              'raid_policy.require_erc8004'
-            ),
-      minTrustScore:
-        raidPolicy.minTrustScore == null && raidPolicy.min_trust_score == null
-          ? undefined
-          : ensureFiniteNumberLike(
-              raidPolicy.minTrustScore ?? raidPolicy.min_trust_score,
-              'raid_policy.min_trust_score'
-            ),
-      allowedModelFamilies:
-        raidPolicy.allowedModelFamilies == null && raidPolicy.allowed_model_families == null
-          ? undefined
-          : ensureStringArray(
-              raidPolicy.allowedModelFamilies ?? raidPolicy.allowed_model_families,
-              'raid_policy.allowed_model_families'
-            ),
-      allowedAgentFrameworks:
-        raidPolicy.allowedAgentFrameworks == null && raidPolicy.allowed_agent_frameworks == null
-          ? undefined
-          : ensureAgentFrameworkArray(
-              raidPolicy.allowedAgentFrameworks ?? raidPolicy.allowed_agent_frameworks,
-              'raid_policy.allowed_agent_frameworks'
-            ),
-      allowedModelProviders:
-        raidPolicy.allowedModelProviders == null && raidPolicy.allowed_model_providers == null
-          ? undefined
-          : ensureStringArray(
-              raidPolicy.allowedModelProviders ?? raidPolicy.allowed_model_providers,
-              'raid_policy.allowed_model_providers'
-            ),
-      allowedModelIds:
-        raidPolicy.allowedModelIds == null && raidPolicy.allowed_model_ids == null
-          ? undefined
-          : ensureStringArray(
-              raidPolicy.allowedModelIds ?? raidPolicy.allowed_model_ids,
-              'raid_policy.allowed_model_ids'
-            ),
-      allowedOutputTypes:
-        raidPolicy.allowedOutputTypes == null && raidPolicy.allowed_output_types == null
-          ? undefined
-          : ensureOutputTypeArray(
-              raidPolicy.allowedOutputTypes ?? raidPolicy.allowed_output_types,
-              'raid_policy.allowed_output_types'
-            ),
-      privacyMode:
-        raidPolicy.privacyMode == null && raidPolicy.privacy_mode == null
-          ? undefined
-          : ensurePrivacyRoutingMode(
-              raidPolicy.privacyMode ?? raidPolicy.privacy_mode,
-              'raid_policy.privacy_mode'
-            ),
-      requirePrivacyFeatures:
-        raidPolicy.requirePrivacyFeatures == null && raidPolicy.require_privacy_features == null
-          ? undefined
-          : ensurePrivacyFeatureArray(
-              raidPolicy.requirePrivacyFeatures ?? raidPolicy.require_privacy_features,
-              'raid_policy.require_privacy_features'
-            ),
-      selectionMode:
-        raidPolicy.selectionMode == null && raidPolicy.selection_mode == null
-          ? undefined
-          : ensureSelectionMode(
-              raidPolicy.selectionMode ?? raidPolicy.selection_mode,
-              'raid_policy.selection_mode'
-            ),
-    },
+    constraints: constraintsFromRaidPolicy(raidPolicy),
     rewardPolicy: {
       splitStrategy: 'equal_success_only',
     },
@@ -1124,7 +622,7 @@ export function buildBossRaidRequestFromDelegateInput(value: unknown): BossRaidR
       failingSignals: normalizeDelegateFailingSignals(args),
     },
     output,
-    raidPolicy: normalizeDelegateRaidPolicy(args),
+    raidPolicy: buildNormalizedDelegateRaidPolicy(args),
     hostContext: normalizeDelegateHostContext(args),
   };
 }
@@ -1246,159 +744,6 @@ function normalizeDelegateFailingSignals(args: Record<string, unknown>): Failing
       'failingSignals.observedBehavior'
     ),
   };
-}
-
-function normalizeDelegateRaidPolicy(
-  args: Record<string, unknown>
-): BossRaidRequest['raidPolicy'] | undefined {
-  const input = ensureOptionalRecord(args.raidPolicy ?? args.raid_policy, 'raid_policy');
-  const maxAgentsSource =
-    args.maxAgents ?? args.max_agents ?? input?.maxAgents ?? input?.max_agents;
-  const maxTotalCostSource =
-    args.maxTotalCost ?? args.max_total_cost ?? input?.maxTotalCost ?? input?.max_total_cost;
-  const requiredCapabilitiesSource =
-    args.requiredCapabilities ??
-    args.required_capabilities ??
-    input?.requiredCapabilities ??
-    input?.required_capabilities;
-  const minReputationScoreSource =
-    args.minReputationScore ??
-    args.min_reputation_score ??
-    input?.minReputationScore ??
-    input?.min_reputation_score;
-  const requireErc8004Source =
-    args.requireErc8004 ?? args.require_erc8004 ?? input?.requireErc8004 ?? input?.require_erc8004;
-  const minTrustScoreSource =
-    args.minTrustScore ?? args.min_trust_score ?? input?.minTrustScore ?? input?.min_trust_score;
-  const requiredVerificationStatusSource =
-    args.requiredVerificationStatus ??
-    args.required_verification_status ??
-    input?.requiredVerificationStatus ??
-    input?.required_verification_status;
-  const maxInputTokensSource =
-    args.maxInputTokens ??
-    args.max_input_tokens ??
-    input?.maxInputTokens ??
-    input?.max_input_tokens;
-  const maxOutputTokensSource =
-    args.maxOutputTokens ??
-    args.max_output_tokens ??
-    input?.maxOutputTokens ??
-    input?.max_output_tokens;
-  const allowedModelFamiliesSource =
-    args.allowedModelFamilies ??
-    args.allowed_model_families ??
-    input?.allowedModelFamilies ??
-    input?.allowed_model_families;
-  const allowedAgentFrameworksSource =
-    args.allowedAgentFrameworks ??
-    args.allowed_agent_frameworks ??
-    input?.allowedAgentFrameworks ??
-    input?.allowed_agent_frameworks;
-  const allowedModelProvidersSource =
-    args.allowedModelProviders ??
-    args.allowed_model_providers ??
-    input?.allowedModelProviders ??
-    input?.allowed_model_providers;
-  const allowedModelIdsSource =
-    args.allowedModelIds ??
-    args.allowed_model_ids ??
-    input?.allowedModelIds ??
-    input?.allowed_model_ids;
-  const allowedOutputTypesSource =
-    args.allowedOutputTypes ??
-    args.allowed_output_types ??
-    input?.allowedOutputTypes ??
-    input?.allowed_output_types;
-  const privacyModeSource =
-    args.privacyMode ?? args.privacy_mode ?? input?.privacyMode ?? input?.privacy_mode;
-  const requirePrivacyFeaturesSource =
-    args.requirePrivacyFeatures ??
-    args.require_privacy_features ??
-    input?.requirePrivacyFeatures ??
-    input?.require_privacy_features;
-  const selectionModeSource =
-    args.selectionMode ?? args.selection_mode ?? input?.selectionMode ?? input?.selection_mode;
-  const maxTotalCost = ensureFiniteNumberLike(maxTotalCostSource, 'raidPolicy.maxTotalCost');
-
-  const result = {
-    maxAgents:
-      maxAgentsSource == null
-        ? undefined
-        : ensurePositiveIntegerLike(maxAgentsSource, 'raidPolicy.maxAgents'),
-    maxTotalCost,
-    requiredCapabilities:
-      requiredCapabilitiesSource == null
-        ? undefined
-        : ensureStringArray(requiredCapabilitiesSource, 'raidPolicy.requiredCapabilities'),
-    minReputationScore:
-      minReputationScoreSource == null
-        ? undefined
-        : ensureFiniteNumberLike(minReputationScoreSource, 'raidPolicy.minReputationScore'),
-    requireErc8004:
-      requireErc8004Source == null
-        ? undefined
-        : ensureBooleanLike(requireErc8004Source, 'raidPolicy.requireErc8004'),
-    minTrustScore:
-      minTrustScoreSource == null
-        ? undefined
-        : ensureFiniteNumberLike(minTrustScoreSource, 'raidPolicy.minTrustScore'),
-    requiredVerificationStatus:
-      requiredVerificationStatusSource == null
-        ? undefined
-        : ensureProviderVerificationStatus(
-            requiredVerificationStatusSource,
-            'raidPolicy.requiredVerificationStatus'
-          ),
-    maxInputTokens:
-      maxInputTokensSource == null
-        ? undefined
-        : ensurePositiveIntegerLike(maxInputTokensSource, 'raidPolicy.maxInputTokens'),
-    maxOutputTokens:
-      maxOutputTokensSource == null
-        ? undefined
-        : ensurePositiveIntegerLike(maxOutputTokensSource, 'raidPolicy.maxOutputTokens'),
-    allowedModelFamilies:
-      allowedModelFamiliesSource == null
-        ? undefined
-        : ensureStringArray(allowedModelFamiliesSource, 'raidPolicy.allowedModelFamilies'),
-    allowedAgentFrameworks:
-      allowedAgentFrameworksSource == null
-        ? undefined
-        : ensureAgentFrameworkArray(
-            allowedAgentFrameworksSource,
-            'raidPolicy.allowedAgentFrameworks'
-          ),
-    allowedModelProviders:
-      allowedModelProvidersSource == null
-        ? undefined
-        : ensureStringArray(allowedModelProvidersSource, 'raidPolicy.allowedModelProviders'),
-    allowedModelIds:
-      allowedModelIdsSource == null
-        ? undefined
-        : ensureStringArray(allowedModelIdsSource, 'raidPolicy.allowedModelIds'),
-    allowedOutputTypes:
-      allowedOutputTypesSource == null
-        ? undefined
-        : ensureOutputTypeArray(allowedOutputTypesSource, 'raidPolicy.allowedOutputTypes'),
-    privacyMode:
-      privacyModeSource == null
-        ? undefined
-        : ensurePrivacyRoutingMode(privacyModeSource, 'raidPolicy.privacyMode'),
-    requirePrivacyFeatures:
-      requirePrivacyFeaturesSource == null
-        ? undefined
-        : ensurePrivacyFeatureArray(
-            requirePrivacyFeaturesSource,
-            'raidPolicy.requirePrivacyFeatures'
-          ),
-    selectionMode:
-      selectionModeSource == null
-        ? undefined
-        : ensureSelectionMode(selectionModeSource, 'raidPolicy.selectionMode'),
-  };
-
-  return Object.values(result).some((item) => item !== undefined) ? result : undefined;
 }
 
 function normalizeDelegateHostContext(args: Record<string, unknown>): HostContext {

@@ -1,17 +1,23 @@
 import { computeRewards, hashSubmission } from '@bossraid/raid-core';
 import type { RaidRecord, SettlementAllocation, SettlementSummary } from '@bossraid/shared-types';
 
+function computeSettlementRewards(raid: RaidRecord) {
+  return computeRewards(
+    readSettlementBudgetUsd(raid),
+    raid.rankedSubmissions,
+    raid.task.rewardPolicy,
+    {
+      minimumPayoutThresholdUsd: raid.task.constraints.minimumPayoutThresholdUsd ?? 0.25,
+    }
+  );
+}
+
 export function buildSettlementAllocations(raid: RaidRecord): SettlementAllocation[] {
   if (raid.rankedSubmissions.length === 0) {
     return [];
   }
 
-  const rewards = computeRewards(
-    readSettlementBudgetUsd(raid),
-    raid.rankedSubmissions,
-    raid.task.rewardPolicy,
-    { minimumPayoutThresholdUsd: raid.task.constraints.minimumPayoutThresholdUsd ?? 0.25 }
-  );
+  const rewards = computeSettlementRewards(raid);
 
   return raid.selectedProviders.map((providerId) => {
     const ranked = raid.rankedSubmissions.find((item) => item.submission.providerId === providerId);
@@ -37,12 +43,7 @@ export function buildSettlementSummary(raid: RaidRecord): SettlementSummary | un
     return undefined;
   }
 
-  const rewards = computeRewards(
-    readSettlementBudgetUsd(raid),
-    raid.rankedSubmissions,
-    raid.task.rewardPolicy,
-    { minimumPayoutThresholdUsd: raid.task.constraints.minimumPayoutThresholdUsd ?? 0.25 }
-  );
+  const rewards = computeSettlementRewards(raid);
 
   return {
     successfulProviderCount: rewards.successfulProviderCount,

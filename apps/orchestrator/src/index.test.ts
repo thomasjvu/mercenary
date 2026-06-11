@@ -827,8 +827,16 @@ test('round_robin selection rotates among verified general service providers', (
     },
   });
 
-  const first = selectProviders(task, [providerA, providerB], 60_000).primaries[0]?.providerId;
-  const second = selectProviders(task, [providerA, providerB], 60_000).primaries[0]?.providerId;
+  let roundRobinCursor = 0;
+  const firstSelection = selectProviders(task, [providerA, providerB], 60_000, {
+    roundRobinCursor,
+  });
+  roundRobinCursor = firstSelection.roundRobinCursor ?? roundRobinCursor;
+  const secondSelection = selectProviders(task, [providerA, providerB], 60_000, {
+    roundRobinCursor,
+  });
+  const first = firstSelection.primaries[0]?.providerId;
+  const second = secondSelection.primaries[0]?.providerId;
   assert.notEqual(first, second);
   assert.deepEqual(new Set([first, second]), new Set(['provider-rr-a', 'provider-rr-b']));
 });

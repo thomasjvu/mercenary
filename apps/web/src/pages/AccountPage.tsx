@@ -4,16 +4,11 @@ import {
   deleteSession,
   fetchSellerEarnings,
   fetchSession,
-  listBuyerApiKeys,
   listSellerProviders,
 } from '../api';
 
 export function AccountPage() {
   const session = useSWR('/v1/session', fetchSession);
-  const apiKeys = useSWR(
-    session.data?.authenticated ? '/v1/buyer/api-keys' : null,
-    listBuyerApiKeys
-  );
   const sellers = useSWR(
     session.data?.authenticated ? '/v1/seller/providers' : null,
     listSellerProviders
@@ -25,7 +20,6 @@ export function AccountPage() {
 
   async function revokeKey(keyId: string) {
     await deleteBuyerApiKey(keyId);
-    await apiKeys.mutate();
     await session.mutate();
   }
 
@@ -72,10 +66,10 @@ export function AccountPage() {
           <article className="beta-panel beta-panel--wide">
             <p className="eyebrow">buyer API keys</p>
             <div className="table-list">
-              {(apiKeys.data?.data ?? []).length === 0 ? (
+              {(session.data.account?.apiKeys ?? []).length === 0 ? (
                 <p>No API keys yet.</p>
               ) : (
-                apiKeys.data?.data.map((key) => (
+                session.data.account?.apiKeys.map((key) => (
                   <div className="table-row" key={key.id}>
                     <span>{key.name}</span>
                     <span>{key.prefix}</span>

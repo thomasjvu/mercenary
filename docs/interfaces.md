@@ -54,7 +54,7 @@ When `stream=true`, the route returns `text/event-stream` and emits `chat.comple
 
 `receiptPath` points at `/receipt?raidId=<raidId>&token=<raidAccessToken>`.
 
-`GET /v1/markets` exposes seller id, display name, model provider, agent framework, provider-declared rate, token-metered rate-card fields when present, verification status, privacy badges, output types, concurrency, active seller count, verified seller count, private seller count, recent success rate, and p50/p95 latency. It intentionally does not expose provider auth material or upstream account credentials. Sellers are expected to expose clean authenticated endpoints.
+`GET /v1/markets` exposes seller id, display name, model provider, agent framework, provider-declared rate, token-metered rate-card fields when present, verification status, privacy badges, output types, concurrency, active seller count, verified seller count, private seller count, recent success rate, and p50/p95 latency. For `token_metered` sellers, `rateUsd` and `cheapestRateUsd` use a fixed reference profile of 1,000 input tokens and 1,024 output tokens, floored at `minimumChargeUsd`; `pricing.referenceInputTokens` and `pricing.referenceOutputTokens` document that profile. It intentionally does not expose provider auth material or upstream account credentials. Sellers are expected to expose clean authenticated endpoints.
 
 `GET /v1/raid/:raidId/result` can return `synthesizedOutput.workstreams[].shortSummary` as a compact presentation string for receipts and chat-adjacent surfaces. The existing `summary`, `answerText`, `artifacts`, and proof fields stay unchanged.
 

@@ -1,18 +1,12 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { readStorageBackend } from '@bossraid/constants';
 import { evaluateSubmission } from '@bossraid/evaluation';
+import { computePrivacyCompliance, buildPrivacyComplianceRecord } from '@bossraid/privacy-engine';
 import {
-  computePrivacyCompliance,
-  buildPrivacyComplianceRecord,
-  validateSubmissionPrivacy,
-} from '@bossraid/privacy-engine';
-import {
-  FileBossRaidPersistence,
   InMemoryBossRaidPersistence,
   createSecretCipher,
   type BossRaidPersistence,
   type SecretCipher,
 } from '@bossraid/persistence';
-import { SqliteBossRaidPersistence } from '@bossraid/persistence-sqlite';
 import {
   buildProviderProfileFromRegistration,
   createProviderFromProfile,
@@ -21,27 +15,15 @@ import {
   probeProviderHealth,
   type RaidProvider,
 } from '@bossraid/provider-sdk';
-import {
-  DEFAULT_TIMEOUTS,
-  annotateRoutingProof,
-  buildRaidQuoteSnapshot,
-  buildRoutingProof,
-  createRaidRecord,
-  rankSubmissions,
-  readProviderPricing,
-  sanitizeTask,
-  selectProviders,
-} from '@bossraid/raid-core';
+import { DEFAULT_TIMEOUTS, rankSubmissions, selectProviders } from '@bossraid/raid-core';
 import {
   buildDiscoveryQueryFromTask,
   providerHeartbeatAgeMs,
-  providerHasPrivacyFeature,
   providerIsFresh,
   providerMatchesDiscoveryQuery,
   refreshProviderScores,
 } from '@bossraid/provider-registry';
 import type {
-  AssignmentRecord,
   BossRaidReplayOutput,
   BossRaidResultOutput,
   BossRaidRoutingProof,
@@ -55,17 +37,12 @@ import type {
   ProviderProfile,
   ProviderDiscoveryQuery,
   ProviderRegistrationInput,
-  ProviderTaskPackage,
   ProviderSubmission,
   BossRaidPersistenceSnapshot,
   RaidRecord,
   RaidLaunchReservationRecord,
-  RaidQuoteSnapshot,
-  RaidContributionPlan,
   RankedSubmission,
   ReputationEventType,
-  ReservedRaidNode,
-  ReservedSelectedProviders,
   SanitizedTaskSpec,
   SelectedProviders,
   SettlementExecutionRecord,
@@ -79,67 +56,71 @@ import {
 import {
   buildAdaptivePlanningOutput,
   applyDisqualificationToRaid,
-  applyFailureToRaid,
-  applyHeartbeatToRaid,
-  applySubmissionToRaid,
-  applyTimeoutToRaid,
   buildRaidStatusOutput,
   finalizeRaidRecord,
-  promoteReserveProvider,
   restorePersistedRaid,
   shouldFinalizeRaid,
   TERMINAL_ASSIGNMENT_STATUSES,
   TERMINAL_RAID_STATUSES,
 } from './raid-state.js';
-import { delay, readRuntimeOptionsFromEnv, timeoutReject, type RuntimeOptions } from './runtime.js';
+import { delay, readRuntimeOptionsFromEnv, type RuntimeOptions } from './runtime.js';
 import { createSettlementExecutor, type SettlementExecuteOptions } from './settlement-executor.js';
 import { buildSettlementSummary } from './settlement.js';
 import { buildSynthesizedOutput } from './synthesis.js';
-import { buildProviderTaskPackage } from './task-package.js';
 import {
-  buildContributionFamilyRaidGraph,
-  buildHierarchicalRaidGraph,
-  type PlannedRaidNode,
-  shouldUseHierarchicalPlanning,
-} from './hierarchy.js';
-import { getContributionWorkstreamTemplate, type ContributionFamilyId } from './partition.js';
+  dispatchProvider as dispatchProviderToRuntime,
+  markAssignmentFailed as markProviderAssignmentFailed,
+  markHeartbeat as markProviderHeartbeat,
+  markTimedOut as markProviderTimedOut,
+  resumeRaid as resumeRaidDispatch,
+  runHierarchicalRaid as runHierarchicalRaidDispatch,
+  runRaid as runRaidDispatch,
+  submitResult as submitProviderResult,
+  type RaidProviderDispatchDeps,
+} from './raid-provider-dispatch.js';
+import { maybeReplanHierarchicalRaid } from './raid-adaptive.js';
+import {
+  computeRootDeadlineUnix,
+  countPreparedExperts,
+  createLaunchReservationRecord,
+  findReusableLaunchReservation,
+  hydrateLaunchReservation,
+  instantiatePreparedChildren,
+  launchReservationExpired,
+  prepareRaid,
+  pruneLaunchReservations,
+  spawnPreparedRaid,
+  InvalidRaidLaunchReservationError,
+  type PreparedRaidNode,
+} from './raid-launch.js';
+import { RaidDeadlineTimerRegistry } from './raid-timers.js';
+import {
+  decryptProviderProfileSecrets,
+  dropProviderAliases,
+  encryptProviderProfileSecrets,
+  filterProvidersByDiscoveryQuery,
+  normalizeProviderEndpoint,
+} from './provider-registry-local.js';
 import { ProviderTimerRegistry } from './timer-registry.js';
+import { createPersistenceBackend } from './persistence-backend.js';
+import {
+  buildRaidRoutingProofOutput,
+  collectLeafRaids,
+  getRaidStatusOutput,
+  refreshParentRaidFromChildren,
+} from './raid-hierarchical.js';
 import { findWorkspaceRoot, resolveWorkspacePath } from './workspace.js';
+
+export { InvalidRaidLaunchReservationError, NoEligibleProvidersError } from './raid-launch.js';
 
 const PROVIDER_HEALTH_CACHE_TTL_MS = 5_000;
 
 const RAID_POLL_INTERVAL_MS = 250;
-const STALE_RESERVATION_TIMEOUT_MS = 15 * 60 * 1_000;
-const DEFAULT_ESTIMATED_FIRST_RESULT_SEC = 25;
-const ADAPTIVE_PLANNING = {
-  MIN_EXPERTS_FOR_RESERVES: 6,
-  MAX_ADAPTIVE_RESERVES: 4,
-  RESERVE_RATIO: 5,
-  MAX_REVISIONS_PER_WORKSTREAM: 2,
-  WEAK_SCORE_THRESHOLD: 0.72,
-  EXPANSION_MISSING_CAP: 3,
-  EXPANSION_WEAK_CAP: 2,
-  MIN_EXPANSION_TO_TRIGGER: 2,
-} as const;
-
-export class NoEligibleProvidersError extends Error {
-  constructor() {
-    super('No eligible providers are currently available for this raid request.');
-    this.name = 'NoEligibleProvidersError';
-  }
-}
 
 export class UnknownRaidError extends Error {
   constructor(raidId: string) {
     super(`Unknown raid: ${raidId}`);
     this.name = 'UnknownRaidError';
-  }
-}
-
-export class InvalidRaidLaunchReservationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'InvalidRaidLaunchReservationError';
   }
 }
 
@@ -150,75 +131,13 @@ export class PersistenceUnavailableError extends Error {
   }
 }
 
-function normalizeProviderEndpoint(endpoint: string | undefined): string | undefined {
-  if (!endpoint) {
-    return undefined;
-  }
-
-  try {
-    const url = new URL(endpoint);
-    url.hash = '';
-    url.search = '';
-    const normalized = url.toString();
-    return normalized.endsWith('/') ? normalized.slice(0, -1) : normalized;
-  } catch {
-    console.warn(`normalizeProviderEndpoint: invalid URL '${endpoint}', falling back to trimmed`);
-    return endpoint.trim().replace(/\/+$/, '');
-  }
-}
-
 type ProviderHealthProbe = typeof probeProviderHealth;
-
-type PreparedLeafRaid = {
-  mode: 'single';
-  sanitized: SanitizedTaskSpec;
-  selectedProviders: SelectedProviders;
-};
-
-type PreparedHierarchicalRaid = {
-  mode: 'hierarchical';
-  sanitized: SanitizedTaskSpec;
-  graph: PreparedRaidNode;
-  adaptiveProviderIds: string[];
-};
-
-type PreparedRaidNode = PlannedRaidNode & {
-  selectedProviders?: SelectedProviders;
-  children?: PreparedRaidNode[];
-};
 
 type LaunchReservationOptions = {
   route: 'raid' | 'chat';
   requestKey: string;
   holdUntilUnix?: number;
 };
-
-type AdaptiveReplanTarget = {
-  strategy: 'expand' | 'repair';
-  parentRaid: RaidRecord;
-  sourceRaid: RaidRecord;
-  workstreamId: string;
-  workstreamLabel: string;
-  reason: string;
-  expertCount: number;
-  childFamilyId?: ContributionFamilyId;
-};
-
-type AdaptiveTargetGroup = {
-  parentRaid: RaidRecord;
-  workstreamId: string;
-  workstreamLabel: string;
-  children: RaidRecord[];
-  depth: number;
-};
-
-function createRaidAccessToken(): string {
-  return randomBytes(24).toString('base64url');
-}
-
-function hashRaidAccessToken(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
-}
 
 function settlementExecutionEquals(
   left: SettlementExecutionRecord | undefined,
@@ -238,8 +157,7 @@ export class BossRaidOrchestrator {
   private readonly raids = new Map<string, RaidRecord>();
   private readonly launchReservations = new Map<string, RaidLaunchReservationRecord>();
   private readonly timers = new ProviderTimerRegistry();
-  private readonly raidDeadlineTimers = new Map<string, ReturnType<typeof setTimeout>>();
-  private readonly expiringRaids = new Set<string>();
+  private readonly raidDeadlineTimers = new RaidDeadlineTimerRegistry();
   private readonly providerHealthCache = new Map<
     string,
     { checkedAt: number; health: ProviderHealthStatus }
@@ -255,6 +173,7 @@ export class BossRaidOrchestrator {
   };
   private persistenceQueue: Promise<void> = Promise.resolve();
   private lastPersistenceError?: Error;
+  private roundRobinCursor = 0;
 
   constructor(
     seedProviders: RaidProvider[] = [],
@@ -299,7 +218,7 @@ export class BossRaidOrchestrator {
     profile.lastSeenAt = new Date().toISOString();
 
     this.registerProvider(createProviderFromProfile(profile));
-    this.dropProviderAliases(profile, { preserveSeededProvider: false });
+    dropProviderAliases(profile, this.providerRegistryMaps(), { preserveSeededProvider: false });
     await this.queuePersist();
     return profile;
   }
@@ -346,13 +265,30 @@ export class BossRaidOrchestrator {
       );
   }
 
+  private selectProvidersForTask(
+    task: SanitizedTaskSpec,
+    providers: ProviderProfile[]
+  ): SelectedProviders {
+    const selectedProviders = selectProviders(task, providers, this.options.providerFreshMs, {
+      skipFreshnessCheck: true,
+      roundRobinCursor: this.roundRobinCursor,
+    });
+
+    if (selectedProviders.roundRobinCursor !== undefined) {
+      this.roundRobinCursor = selectedProviders.roundRobinCursor;
+    }
+
+    return selectedProviders;
+  }
+
   private filterDiscoverableProviders(query: ProviderDiscoveryQuery = {}): ProviderProfile[] {
     this.refreshProviderLiveness();
-    return this.listProviders()
-      .filter((provider) => this.providerHasCapacity(provider.providerId))
-      .filter((provider) =>
-        providerMatchesDiscoveryQuery(provider, query, this.options.providerFreshMs)
-      );
+    return filterProvidersByDiscoveryQuery(
+      this.listProviders(),
+      query,
+      this.options.providerFreshMs,
+      (providerId) => this.providerHasCapacity(providerId)
+    );
   }
 
   listProviders(): ProviderProfile[] {
@@ -373,7 +309,7 @@ export class BossRaidOrchestrator {
 
   async preflightRaid(input: BossRaidSpawnInput): Promise<void> {
     this.assertPersistenceWritable();
-    await this.prepareRaid(input);
+    await prepareRaid(input, this.prepareRaidDeps());
   }
 
   async reserveRaidLaunch(
@@ -382,15 +318,19 @@ export class BossRaidOrchestrator {
   ): Promise<RaidLaunchReservationRecord> {
     this.assertPersistenceWritable();
     this.pruneLaunchReservations();
-    const existing = this.findReusableLaunchReservation(options.route, options.requestKey);
+    const existing = findReusableLaunchReservation(
+      this.launchReservations,
+      options.route,
+      options.requestKey
+    );
     if (existing) {
       return existing;
     }
 
-    const prepared = await this.prepareRaid(input);
-    const deadlineUnix = this.computeRootDeadlineUnix(prepared.sanitized);
+    const prepared = await prepareRaid(input, this.prepareRaidDeps());
+    const deadlineUnix = computeRootDeadlineUnix(prepared.sanitized, this.options.raidAbsoluteMs);
     const holdUntilUnix = Math.min(options.holdUntilUnix ?? deadlineUnix, deadlineUnix);
-    const record = this.createLaunchReservationRecord(prepared, {
+    const record = createLaunchReservationRecord(prepared, {
       route: options.route,
       requestKey: options.requestKey,
       deadlineUnix,
@@ -413,7 +353,7 @@ export class BossRaidOrchestrator {
     if (reservation.requestKey !== requestKey) {
       return undefined;
     }
-    if (!reservation.spawnOutput && this.launchReservationExpired(reservation)) {
+    if (!reservation.spawnOutput && launchReservationExpired(reservation)) {
       this.launchReservations.delete(reservation.id);
       this.queuePersistBestEffort();
       return undefined;
@@ -447,12 +387,15 @@ export class BossRaidOrchestrator {
       );
     }
 
-    const prepared = this.hydrateLaunchReservation(reservation);
-    const spawn = await this.spawnPreparedRaid(
+    const prepared = hydrateLaunchReservation(reservation, (providerId) =>
+      this.requireProvider(providerId)
+    );
+    const spawn = await spawnPreparedRaid(
       prepared,
       reservation.deadlineUnix,
       escrowFundingUsd,
-      platformMarkupUsd
+      platformMarkupUsd,
+      this.spawnPreparedRaidDeps()
     );
     reservation.spawnOutput = spawn;
     await this.queuePersist();
@@ -465,500 +408,14 @@ export class BossRaidOrchestrator {
     platformMarkupUsd?: number
   ): Promise<BossRaidSpawnOutput> {
     this.assertPersistenceWritable();
-    const prepared = await this.prepareRaid(input);
-    return this.spawnPreparedRaid(
+    const prepared = await prepareRaid(input, this.prepareRaidDeps());
+    return spawnPreparedRaid(
       prepared,
-      this.computeRootDeadlineUnix(prepared.sanitized),
+      computeRootDeadlineUnix(prepared.sanitized, this.options.raidAbsoluteMs),
       escrowFundingUsd,
-      platformMarkupUsd
+      platformMarkupUsd,
+      this.spawnPreparedRaidDeps()
     );
-  }
-
-  private async spawnPreparedRaid(
-    prepared: PreparedLeafRaid | PreparedHierarchicalRaid,
-    deadlineUnix: number,
-    escrowFundingUsd?: number,
-    platformMarkupUsd?: number
-  ): Promise<BossRaidSpawnOutput> {
-    const raidAccessToken = createRaidAccessToken();
-
-    if (prepared.mode === 'hierarchical') {
-      const raid = createRaidRecord(
-        prepared.sanitized,
-        { primaries: [], reserves: [] },
-        { deadlineUnix }
-      );
-      raid.status = 'sanitizing';
-      raid.planningMode = 'hierarchical_parent';
-      raid.childRaidIds = [];
-      raid.escrowFundingUsd = escrowFundingUsd;
-      raid.platformMarkupUsd = platformMarkupUsd;
-      raid.adaptivePlanning =
-        prepared.adaptiveProviderIds.length === 0
-          ? undefined
-          : {
-              availableProviderIds: [...prepared.adaptiveProviderIds],
-              plannedReserveExperts: prepared.adaptiveProviderIds.length,
-              revisionCount: 0,
-              maxRevisions: prepared.adaptiveProviderIds.length,
-              spawnedChildRaidIds: [],
-              history: [],
-            };
-      raid.raidAccessTokenHash = hashRaidAccessToken(raidAccessToken);
-      this.raids.set(raid.id, raid);
-      this.scheduleRaidDeadline(raid.id);
-      this.instantiatePreparedChildren(raid.id, prepared.graph.children ?? [], deadlineUnix);
-
-      await this.queuePersist();
-      void this.runRaid(raid.id);
-
-      return {
-        raidId: raid.id,
-        raidAccessToken,
-        receiptPath: `/receipt?raidId=${encodeURIComponent(raid.id)}&token=${encodeURIComponent(raidAccessToken)}`,
-        status: raid.status,
-        selectedExperts: this.countPreparedExperts(prepared.graph, 'selected'),
-        reserveExperts:
-          this.countPreparedExperts(prepared.graph, 'reserve') +
-          prepared.adaptiveProviderIds.length,
-        estimatedFirstResultSec: Math.min(
-          DEFAULT_ESTIMATED_FIRST_RESULT_SEC,
-          prepared.sanitized.constraints.maxLatencySec
-        ),
-        sanitization: prepared.sanitized.sanitizationReport,
-      };
-    }
-
-    const raid = createRaidRecord(prepared.sanitized, prepared.selectedProviders, { deadlineUnix });
-    raid.status = 'sanitizing';
-    raid.planningMode = 'single_raid';
-    raid.raidAccessTokenHash = hashRaidAccessToken(raidAccessToken);
-    raid.escrowFundingUsd = escrowFundingUsd;
-    raid.platformMarkupUsd = platformMarkupUsd;
-    this.raids.set(raid.id, raid);
-    this.scheduleRaidDeadline(raid.id);
-    await this.queuePersist();
-    void this.runRaid(raid.id);
-
-    return {
-      raidId: raid.id,
-      raidAccessToken,
-      receiptPath: `/receipt?raidId=${encodeURIComponent(raid.id)}&token=${encodeURIComponent(raidAccessToken)}`,
-      status: raid.status,
-      selectedExperts: prepared.selectedProviders.primaries.length,
-      reserveExperts: prepared.selectedProviders.reserves.length,
-      estimatedFirstResultSec: Math.min(
-        DEFAULT_ESTIMATED_FIRST_RESULT_SEC,
-        prepared.sanitized.constraints.maxLatencySec
-      ),
-      sanitization: prepared.sanitized.sanitizationReport,
-    };
-  }
-
-  private computeRootDeadlineUnix(task: SanitizedTaskSpec): number {
-    return Math.ceil(
-      (Date.now() + Math.min(this.options.raidAbsoluteMs, task.constraints.maxLatencySec * 1_000)) /
-        1_000
-    );
-  }
-
-  private findReusableLaunchReservation(
-    route: RaidLaunchReservationRecord['route'],
-    requestKey: string
-  ): RaidLaunchReservationRecord | undefined {
-    return [...this.launchReservations.values()].find(
-      (reservation) =>
-        reservation.route === route &&
-        reservation.requestKey === requestKey &&
-        reservation.spawnOutput == null &&
-        !this.launchReservationExpired(reservation)
-    );
-  }
-
-  private createLaunchReservationRecord(
-    prepared: PreparedLeafRaid | PreparedHierarchicalRaid,
-    options: {
-      route: RaidLaunchReservationRecord['route'];
-      requestKey: string;
-      deadlineUnix: number;
-      holdUntilUnix: number;
-    }
-  ): RaidLaunchReservationRecord {
-    const expiresAt = new Date(options.holdUntilUnix * 1_000).toISOString();
-    const reservedProviderIds = [
-      ...new Set(
-        prepared.mode === 'hierarchical'
-          ? [...this.collectPreparedProviderIds(prepared.graph), ...prepared.adaptiveProviderIds]
-          : [
-              ...prepared.selectedProviders.primaries.map((provider) => provider.providerId),
-              ...prepared.selectedProviders.reserves.map((provider) => provider.providerId),
-            ]
-      ),
-    ];
-
-    return {
-      id: `reservation_${randomBytes(12).toString('hex')}`,
-      route: options.route,
-      requestKey: options.requestKey,
-      createdAt: new Date().toISOString(),
-      expiresAt,
-      paymentTimeoutSeconds: Math.max(1, options.holdUntilUnix - Math.floor(Date.now() / 1_000)),
-      deadlineUnix: options.deadlineUnix,
-      mode: prepared.mode,
-      sanitized: prepared.sanitized,
-      selectedProviders:
-        prepared.mode === 'single'
-          ? this.toReservedSelectedProviders(prepared.selectedProviders)
-          : undefined,
-      quoteSnapshot:
-        prepared.mode === 'single'
-          ? buildRaidQuoteSnapshot(prepared.sanitized, prepared.selectedProviders, { expiresAt })
-          : undefined,
-      graph: prepared.mode === 'hierarchical' ? this.toReservedRaidNode(prepared.graph) : undefined,
-      adaptiveProviderIds:
-        prepared.mode === 'hierarchical' ? [...prepared.adaptiveProviderIds] : undefined,
-      reservedProviderIds,
-    };
-  }
-
-  private hydrateLaunchReservation(
-    reservation: RaidLaunchReservationRecord
-  ): PreparedLeafRaid | PreparedHierarchicalRaid {
-    if (reservation.mode === 'single') {
-      if (!reservation.selectedProviders) {
-        throw new InvalidRaidLaunchReservationError(
-          `Raid launch reservation ${reservation.id} is missing its selected provider set.`
-        );
-      }
-
-      return {
-        mode: 'single',
-        sanitized: reservation.sanitized,
-        selectedProviders: this.fromReservedSelectedProviders(
-          reservation.selectedProviders,
-          reservation.quoteSnapshot
-        ),
-      };
-    }
-
-    if (!reservation.graph) {
-      throw new InvalidRaidLaunchReservationError(
-        `Raid launch reservation ${reservation.id} is missing its hierarchical graph.`
-      );
-    }
-
-    return {
-      mode: 'hierarchical',
-      sanitized: reservation.sanitized,
-      graph: this.fromReservedRaidNode(reservation.graph),
-      adaptiveProviderIds: [...(reservation.adaptiveProviderIds ?? [])],
-    };
-  }
-
-  private toReservedSelectedProviders(
-    selectedProviders: SelectedProviders
-  ): ReservedSelectedProviders {
-    return {
-      primaries: selectedProviders.primaries.map((provider) => provider.providerId),
-      reserves: selectedProviders.reserves.map((provider) => provider.providerId),
-    };
-  }
-
-  private fromReservedSelectedProviders(
-    selectedProviders: ReservedSelectedProviders,
-    quoteSnapshot?: RaidQuoteSnapshot
-  ): SelectedProviders {
-    const selected = {
-      primaries: selectedProviders.primaries.map((providerId) => this.requireProvider(providerId)),
-      reserves: selectedProviders.reserves.map((providerId) => this.requireProvider(providerId)),
-    };
-
-    if (quoteSnapshot) {
-      this.assertQuoteSnapshotStillValid(quoteSnapshot, selected);
-    }
-
-    return selected;
-  }
-
-  private assertQuoteSnapshotStillValid(
-    quoteSnapshot: RaidQuoteSnapshot,
-    selectedProviders: SelectedProviders
-  ): void {
-    const currentProviders = new Map(
-      [...selectedProviders.primaries, ...selectedProviders.reserves].map((provider) => [
-        provider.providerId,
-        provider,
-      ])
-    );
-
-    for (const snapshot of quoteSnapshot.providers) {
-      const current = currentProviders.get(snapshot.providerId);
-      if (!current) {
-        throw new InvalidRaidLaunchReservationError(
-          `Quoted provider ${snapshot.providerId} is no longer selected.`
-        );
-      }
-      const endpointHash = createHash('sha256').update(current.endpoint).digest('hex');
-      if (endpointHash !== snapshot.endpointHash) {
-        throw new InvalidRaidLaunchReservationError(
-          `Quoted provider ${snapshot.providerId} changed endpoint before execution.`
-        );
-      }
-      if (readProviderPricing(current).rateCardHash !== snapshot.rateCard.rateCardHash) {
-        throw new InvalidRaidLaunchReservationError(
-          `Quoted provider ${snapshot.providerId} changed its rate card before execution.`
-        );
-      }
-      if (
-        quoteSnapshot.requiredVerificationStatus &&
-        current.verification?.status !== quoteSnapshot.requiredVerificationStatus
-      ) {
-        throw new InvalidRaidLaunchReservationError(
-          `Quoted provider ${snapshot.providerId} no longer satisfies verification requirements.`
-        );
-      }
-      for (const feature of quoteSnapshot.requiredPrivacyFeatures) {
-        if (!providerHasPrivacyFeature(current, feature)) {
-          throw new InvalidRaidLaunchReservationError(
-            `Quoted provider ${snapshot.providerId} no longer satisfies privacy feature ${feature}.`
-          );
-        }
-      }
-    }
-  }
-
-  private toReservedRaidNode(node: PreparedRaidNode): ReservedRaidNode {
-    return {
-      task: node.task,
-      contributionPlan: node.contributionPlan,
-      selectedProviders: node.selectedProviders
-        ? this.toReservedSelectedProviders(node.selectedProviders)
-        : undefined,
-      children: node.children?.map((child) => this.toReservedRaidNode(child)),
-    };
-  }
-
-  private fromReservedRaidNode(node: ReservedRaidNode): PreparedRaidNode {
-    return {
-      task: node.task,
-      contributionPlan: node.contributionPlan,
-      selectedProviders: node.selectedProviders
-        ? this.fromReservedSelectedProviders(node.selectedProviders)
-        : undefined,
-      children: node.children?.map((child) => this.fromReservedRaidNode(child)),
-    };
-  }
-
-  private async prepareRaid(
-    input: BossRaidSpawnInput
-  ): Promise<PreparedLeafRaid | PreparedHierarchicalRaid> {
-    const sanitized = sanitizeTask(input);
-
-    if (shouldUseHierarchicalPlanning(sanitized)) {
-      const graph = await this.prepareHierarchicalGraph(sanitized);
-      if (graph != null) {
-        return {
-          mode: 'hierarchical',
-          sanitized,
-          graph: graph.graph,
-          adaptiveProviderIds: graph.adaptiveProviderIds,
-        };
-      }
-    }
-
-    const discoverableProviders = await this.discoverProvidersForRaid(
-      buildDiscoveryQueryFromTask(sanitized)
-    );
-    const selectedProviders = selectProviders(
-      sanitized,
-      discoverableProviders,
-      this.options.providerFreshMs,
-      { skipFreshnessCheck: true }
-    );
-    if (selectedProviders.primaries.length === 0) {
-      throw new NoEligibleProvidersError();
-    }
-
-    return {
-      mode: 'single',
-      sanitized,
-      selectedProviders,
-    };
-  }
-
-  private async prepareHierarchicalGraph(
-    sanitized: SanitizedTaskSpec
-  ): Promise<{ graph: PreparedRaidNode; adaptiveProviderIds: string[] } | undefined> {
-    const adaptiveReserveExperts = this.computeAdaptiveReserveExperts(
-      sanitized.constraints.numExperts
-    );
-    const initialExperts = Math.max(1, sanitized.constraints.numExperts - adaptiveReserveExperts);
-    const graph = buildHierarchicalRaidGraph({
-      ...sanitized,
-      constraints: {
-        ...sanitized.constraints,
-        numExperts: initialExperts,
-      },
-    });
-    if (!graph.children?.length) {
-      return undefined;
-    }
-
-    const preparedGraph = await this.assignProvidersToGraph(
-      graph,
-      new Set<string>(),
-      adaptiveReserveExperts === 0
-    );
-    if (!preparedGraph) {
-      return undefined;
-    }
-
-    const discoverableProviders = await this.discoverProvidersForRaid(
-      buildDiscoveryQueryFromTask(sanitized)
-    );
-    const usedProviderIds = this.collectPreparedProviderIds(preparedGraph);
-    const adaptiveProviderIds = discoverableProviders
-      .map((provider) => provider.providerId)
-      .filter((providerId) => !usedProviderIds.has(providerId))
-      .slice(0, adaptiveReserveExperts);
-
-    return {
-      graph: preparedGraph,
-      adaptiveProviderIds,
-    };
-  }
-
-  private async assignProvidersToGraph(
-    node: PlannedRaidNode,
-    reservedProviderIds: Set<string>,
-    includeLeafReserves: boolean
-  ): Promise<PreparedRaidNode | undefined> {
-    const prepared: PreparedRaidNode = {
-      task: node.task,
-      contributionPlan: node.contributionPlan,
-    };
-
-    if (node.children?.length) {
-      const preparedChildren: PreparedRaidNode[] = [];
-      for (const child of node.children) {
-        const preparedChild = await this.assignProvidersToGraph(
-          child,
-          reservedProviderIds,
-          includeLeafReserves
-        );
-        if (!preparedChild) {
-          return undefined;
-        }
-        preparedChildren.push(preparedChild);
-      }
-      prepared.children = preparedChildren;
-      return prepared;
-    }
-
-    const discoverableProviders = await this.discoverProvidersForRaid(
-      buildDiscoveryQueryFromTask(node.task)
-    );
-    const selectedProviders = selectProviders(
-      node.task,
-      discoverableProviders.filter((provider) => !reservedProviderIds.has(provider.providerId)),
-      this.options.providerFreshMs,
-      { skipFreshnessCheck: true }
-    );
-
-    if (selectedProviders.primaries.length === 0) {
-      return undefined;
-    }
-
-    for (const provider of selectedProviders.primaries) {
-      reservedProviderIds.add(provider.providerId);
-    }
-
-    prepared.selectedProviders = includeLeafReserves
-      ? selectedProviders
-      : {
-          primaries: selectedProviders.primaries,
-          reserves: [],
-        };
-    return prepared;
-  }
-
-  private computeAdaptiveReserveExperts(totalExperts: number): number {
-    if (totalExperts < ADAPTIVE_PLANNING.MIN_EXPERTS_FOR_RESERVES) {
-      return 0;
-    }
-
-    return Math.min(
-      ADAPTIVE_PLANNING.MAX_ADAPTIVE_RESERVES,
-      Math.max(1, Math.floor(totalExperts / ADAPTIVE_PLANNING.RESERVE_RATIO))
-    );
-  }
-
-  private collectPreparedProviderIds(node: PreparedRaidNode): Set<string> {
-    const providerIds = new Set<string>();
-
-    const visit = (current: PreparedRaidNode): void => {
-      for (const provider of current.selectedProviders?.primaries ?? []) {
-        providerIds.add(provider.providerId);
-      }
-      for (const provider of current.selectedProviders?.reserves ?? []) {
-        providerIds.add(provider.providerId);
-      }
-      for (const child of current.children ?? []) {
-        visit(child);
-      }
-    };
-
-    visit(node);
-    return providerIds;
-  }
-
-  private instantiatePreparedChildren(
-    parentRaidId: string,
-    children: PreparedRaidNode[],
-    deadlineUnix: number
-  ): void {
-    const parentRaid = this.requireRaid(parentRaidId);
-    parentRaid.childRaidIds ??= [];
-
-    for (const child of children) {
-      const childRaid = createRaidRecord(
-        child.task,
-        child.selectedProviders ?? { primaries: [], reserves: [] },
-        {
-          deadlineUnix,
-        }
-      );
-      childRaid.planningMode = 'hierarchical_child';
-      childRaid.parentRaidId = parentRaidId;
-      childRaid.contributionPlan = child.contributionPlan;
-      childRaid.routingProof = annotateRoutingProof(
-        childRaid.routingProof ??
-          buildRoutingProof(child.task, child.selectedProviders ?? { primaries: [], reserves: [] }),
-        child.contributionPlan
-      );
-      childRaid.childRaidIds = [];
-      this.raids.set(childRaid.id, childRaid);
-      this.scheduleRaidDeadline(childRaid.id);
-      parentRaid.childRaidIds.push(childRaid.id);
-
-      if (child.children?.length) {
-        this.instantiatePreparedChildren(childRaid.id, child.children, deadlineUnix);
-      }
-    }
-  }
-
-  private countPreparedExperts(node: PreparedRaidNode, mode: 'selected' | 'reserve'): number {
-    if (node.children?.length) {
-      return node.children.reduce((sum, child) => sum + this.countPreparedExperts(child, mode), 0);
-    }
-
-    if (!node.selectedProviders) {
-      return 0;
-    }
-
-    return mode === 'selected'
-      ? node.selectedProviders.primaries.length
-      : node.selectedProviders.reserves.length;
   }
 
   getRaid(raidId: string): RaidRecord | undefined {
@@ -1024,7 +481,9 @@ export class BossRaidOrchestrator {
       existing.lastSeenAt = persisted.lastSeenAt;
       refreshProviderScores(existing);
       normalized =
-        this.dropProviderAliases(existing, { preserveSeededProvider: true }) || normalized;
+        dropProviderAliases(existing, this.providerRegistryMaps(), {
+          preserveSeededProvider: true,
+        }) || normalized;
     }
 
     for (const raid of snapshot.raids) {
@@ -1036,14 +495,14 @@ export class BossRaidOrchestrator {
     }
 
     for (const reservation of snapshot.launchReservations ?? []) {
-      if (reservation.spawnOutput || !this.launchReservationExpired(reservation)) {
+      if (reservation.spawnOutput || !launchReservationExpired(reservation)) {
         this.launchReservations.set(reservation.id, reservation);
       }
     }
 
     for (const raid of this.listAllRaids()) {
       if (raid.parentRaidId == null && raid.childRaidIds?.length) {
-        this.refreshParentRaidFromChildren(raid.id);
+        refreshParentRaidFromChildren(raid.id, (childRaidId) => this.requireRaid(childRaidId));
       }
     }
 
@@ -1066,22 +525,23 @@ export class BossRaidOrchestrator {
   }
 
   getStatus(raidId: string): BossRaidStatusOutput {
-    const raid = this.requireRaid(raidId);
-    if (raid.childRaidIds?.length) {
-      this.refreshParentRaidFromChildren(raidId);
-      return this.buildHierarchicalRaidStatusOutput(raid);
-    }
-    return buildRaidStatusOutput(raid);
+    return getRaidStatusOutput(this.requireRaid(raidId), (childRaidId) =>
+      this.requireRaid(childRaidId)
+    );
   }
 
   getResult(raidId: string): BossRaidResultOutput {
     const raid = this.requireRaid(raidId);
     if (raid.childRaidIds?.length) {
-      this.refreshParentRaidFromChildren(raidId);
+      refreshParentRaidFromChildren(raidId, (childRaidId) => this.requireRaid(childRaidId));
     }
     const ranked = raid.rankedSubmissions;
     const settlement = buildSettlementSummary(raid);
-    const routingProof = this.buildRaidRoutingProofOutput(raid);
+    const routingProof = buildRaidRoutingProofOutput(
+      raid,
+      (childRaidId) => this.requireRaid(childRaidId),
+      (providerId) => this.providers.get(providerId)
+    );
 
     return {
       raidId,
@@ -1100,129 +560,6 @@ export class BossRaidOrchestrator {
 
   private listAllRaids(): RaidRecord[] {
     return [...this.raids.values()];
-  }
-
-  private buildRaidRoutingProofOutput(raid: RaidRecord): BossRaidRoutingProof | undefined {
-    if (raid.childRaidIds?.length) {
-      const providers = this.collectLeafRaids(raid).flatMap(
-        (childRaid) => this.buildRaidRoutingProofOutput(childRaid)?.providers ?? []
-      );
-
-      if (providers.length === 0) {
-        return undefined;
-      }
-
-      return {
-        policy:
-          raid.routingProof?.policy ??
-          buildRoutingProof(raid.task, { primaries: [], reserves: [] }).policy,
-        providers,
-      };
-    }
-
-    if (raid.routingProof) {
-      return raid.contributionPlan
-        ? annotateRoutingProof(raid.routingProof, raid.contributionPlan)
-        : raid.routingProof;
-    }
-
-    const selectedProviders: SelectedProviders = {
-      primaries: raid.selectedProviders
-        .map((providerId) => this.providers.get(providerId))
-        .filter((provider): provider is ProviderProfile => provider != null),
-      reserves: raid.reserveProviders
-        .map((providerId) => this.providers.get(providerId))
-        .filter((provider): provider is ProviderProfile => provider != null),
-    };
-
-    if (selectedProviders.primaries.length === 0 && selectedProviders.reserves.length === 0) {
-      return undefined;
-    }
-
-    const derived = buildRoutingProof(raid.task, selectedProviders);
-    return raid.contributionPlan ? annotateRoutingProof(derived, raid.contributionPlan) : derived;
-  }
-
-  private buildHierarchicalRaidStatusOutput(raid: RaidRecord): BossRaidStatusOutput {
-    const now = Date.now();
-    const childRaids = this.collectLeafRaids(raid);
-
-    return {
-      raidId: raid.id,
-      status: raid.status,
-      experts: childRaids.flatMap((childRaid) =>
-        Object.values(childRaid.assignments).map((assignment) => ({
-          providerId: assignment.providerId,
-          status: assignment.status,
-          latencyMs: assignment.latencyMs,
-          heartbeatAgeMs: assignment.lastHeartbeatAt
-            ? now - Date.parse(assignment.lastHeartbeatAt)
-            : undefined,
-          progress: assignment.progress,
-          message: childRaid.contributionPlan?.workstreamLabel
-            ? `${childRaid.contributionPlan.workstreamLabel}: ${assignment.message ?? assignment.status}`
-            : assignment.message,
-        }))
-      ),
-      firstValidAvailable: Boolean(raid.firstValidSubmissionId),
-      bestCurrentScore: raid.bestCurrentScore,
-      adaptivePlanning: buildAdaptivePlanningOutput(raid),
-      sanitization: raid.task.sanitizationReport,
-    };
-  }
-
-  private refreshParentRaidFromChildren(raidId: string): void {
-    const raid = this.requireRaid(raidId);
-    if (!raid.childRaidIds?.length) {
-      return;
-    }
-
-    const childRaids = raid.childRaidIds.map((childRaidId) => {
-      const childRaid = this.requireRaid(childRaidId);
-      if (childRaid.childRaidIds?.length) {
-        this.refreshParentRaidFromChildren(childRaidId);
-      }
-      return childRaid;
-    });
-    const rankedSubmissions = rankSubmissions(
-      childRaids.flatMap((childRaid) => childRaid.rankedSubmissions)
-    );
-    const firstValidSubmission = rankedSubmissions.find((entry) => entry.breakdown.valid);
-
-    raid.rankedSubmissions = rankedSubmissions;
-    raid.bestCurrentScore = rankedSubmissions[0]?.breakdown.finalScore;
-    raid.primarySubmissionId = firstValidSubmission?.submission.providerId;
-    raid.firstValidSubmissionId = firstValidSubmission?.submission.providerId;
-    raid.synthesizedOutput = buildSynthesizedOutput(raid);
-    raid.updatedAt = new Date().toISOString();
-
-    if (TERMINAL_RAID_STATUSES.has(raid.status)) {
-      return;
-    }
-
-    const hasDispatchingChild = childRaids.some((childRaid) =>
-      ['sanitizing', 'queued', 'dispatching'].includes(childRaid.status)
-    );
-    const hasRunningChild = childRaids.some((childRaid) =>
-      ['running', 'first_valid', 'evaluating'].includes(childRaid.status)
-    );
-
-    if (firstValidSubmission) {
-      raid.status = 'first_valid';
-      return;
-    }
-
-    raid.status = hasRunningChild ? 'running' : hasDispatchingChild ? 'dispatching' : raid.status;
-  }
-
-  private collectLeafRaids(raid: RaidRecord): RaidRecord[] {
-    if (!raid.childRaidIds?.length) {
-      return [raid];
-    }
-
-    return raid.childRaidIds.flatMap((childRaidId) =>
-      this.collectLeafRaids(this.requireRaid(childRaidId))
-    );
   }
 
   recordProviderHeartbeat(
@@ -1266,7 +603,7 @@ export class BossRaidOrchestrator {
   async replayEvaluation(raidId: string): Promise<BossRaidReplayOutput> {
     const raid = this.requireRaid(raidId);
     if (raid.childRaidIds?.length) {
-      const leafRaids = this.collectLeafRaids(raid);
+      const leafRaids = collectLeafRaids(raid, (childRaidId) => this.requireRaid(childRaidId));
       let reEvaluated = 0;
       for (const leafRaid of leafRaids) {
         const leafResults = await Promise.all(
@@ -1282,7 +619,7 @@ export class BossRaidOrchestrator {
         reEvaluated += leafRaid.rankedSubmissions.length;
       }
 
-      this.refreshParentRaidFromChildren(raidId);
+      refreshParentRaidFromChildren(raidId, (childRaidId) => this.requireRaid(childRaidId));
       this.refreshRaidAncestry(raid.parentRaidId);
       await this.queuePersist();
       return {
@@ -1336,445 +673,35 @@ export class BossRaidOrchestrator {
   }
 
   private async resumeRaid(raidId: string): Promise<void> {
-    const raid = this.requireRaid(raidId);
-    if (TERMINAL_RAID_STATUSES.has(raid.status)) {
-      return;
-    }
-    if (this.raidDeadlineReached(raid)) {
-      this.expireRaidAtDeadline(raidId);
-      return;
-    }
-
-    this.scheduleRaidDeadline(raidId);
-
-    if (raid.childRaidIds?.length) {
-      for (const childRaidId of raid.childRaidIds) {
-        if (!TERMINAL_RAID_STATUSES.has(this.requireRaid(childRaidId).status)) {
-          await this.resumeRaid(childRaidId);
-        }
-      }
-      this.refreshParentRaidFromChildren(raidId);
-      if (this.maybeReplanHierarchicalRaid(raidId)) {
-        return;
-      }
-      if (this.shouldFinalizeHierarchicalRaid(raid)) {
-        this.finalizeRaid(raid);
-        return;
-      }
-      this.queuePersistBestEffort();
-      return;
-    }
-
-    let dispatchedProvider = false;
-    for (const assignment of Object.values(raid.assignments)) {
-      if (TERMINAL_ASSIGNMENT_STATUSES.has(assignment.status)) {
-        continue;
-      }
-
-      if (
-        assignment.status === 'selected' &&
-        !raid.selectedProviders.includes(assignment.providerId)
-      ) {
-        continue;
-      }
-
-      if (
-        assignment.providerRunId &&
-        (assignment.status === 'accepted' || assignment.status === 'running')
-      ) {
-        this.resumeProviderAssignment(raidId, assignment);
-        continue;
-      }
-
-      dispatchedProvider = true;
-      void this.dispatchProvider(raidId, assignment.providerId);
-    }
-
-    if (!dispatchedProvider) {
-      this.maybeFinalizeAfterUpdate(raidId);
-    }
-
-    this.queuePersistBestEffort();
-  }
-
-  private resumeProviderAssignment(raidId: string, assignment: AssignmentRecord): void {
-    const raid = this.requireRaid(raidId);
-    const nowMs = Date.now();
-
-    this.clearProviderTimers(raidId, assignment.providerId);
-
-    const remainingHardMs = Math.max(
-      1,
-      Math.min(
-        raid.deadlineUnix * 1_000 - nowMs,
-        this.options.hardExecutionMs -
-          Math.max(
-            0,
-            nowMs - Date.parse(assignment.acceptedAt ?? assignment.invitedAt ?? raid.createdAt)
-          )
-      )
-    );
-    this.timers.setHardTimeout(raidId, assignment.providerId, remainingHardMs, () => {
-      this.markTimedOut(raidId, assignment.providerId, 'hard execution timeout');
-    });
-
-    if (!assignment.firstHeartbeatAt) {
-      const remainingFirstHeartbeatMs =
-        this.options.firstHeartbeatMs -
-        Math.max(
-          0,
-          nowMs - Date.parse(assignment.acceptedAt ?? assignment.invitedAt ?? raid.createdAt)
-        );
-      if (remainingFirstHeartbeatMs <= 0) {
-        this.markTimedOut(raidId, assignment.providerId, 'first heartbeat timeout');
-        return;
-      }
-
-      this.timers.setFirstHeartbeatTimeout(
-        raidId,
-        assignment.providerId,
-        remainingFirstHeartbeatMs,
-        () => {
-          const current = this.requireRaid(raidId).assignments[assignment.providerId];
-          if (!current.firstHeartbeatAt && !TERMINAL_ASSIGNMENT_STATUSES.has(current.status)) {
-            this.markTimedOut(raidId, assignment.providerId, 'first heartbeat timeout');
-          }
-        }
-      );
-      return;
-    }
-
-    const remainingHeartbeatMs =
-      this.options.heartbeatStaleMs -
-      Math.max(0, nowMs - Date.parse(assignment.lastHeartbeatAt ?? assignment.firstHeartbeatAt));
-    if (remainingHeartbeatMs <= 0) {
-      this.markTimedOut(raidId, assignment.providerId, 'heartbeat stale');
-      return;
-    }
-
-    this.timers.setHeartbeatStaleTimeout(
-      raidId,
-      assignment.providerId,
-      remainingHeartbeatMs,
-      () => {
-        const current = this.requireRaid(raidId).assignments[assignment.providerId];
-        if (!TERMINAL_ASSIGNMENT_STATUSES.has(current.status)) {
-          this.markTimedOut(raidId, assignment.providerId, 'heartbeat stale');
-        }
-      }
-    );
+    await resumeRaidDispatch(raidId, this.providerDispatchDeps());
   }
 
   private async runRaid(raidId: string): Promise<void> {
-    const raid = this.requireRaid(raidId);
-    if (TERMINAL_RAID_STATUSES.has(raid.status)) {
-      return;
-    }
-    if (this.raidDeadlineReached(raid)) {
-      this.expireRaidAtDeadline(raidId);
-      return;
-    }
-    if (raid.childRaidIds?.length) {
-      await this.runHierarchicalRaid(raidId);
-      return;
-    }
-    raid.status = 'dispatching';
-    raid.updatedAt = new Date().toISOString();
-    this.queuePersistBestEffort();
-
-    const runs = raid.selectedProviders.map((providerId) =>
-      this.dispatchProvider(raidId, providerId)
-    );
-    await Promise.allSettled(runs);
-
-    await this.waitForFinalization(raidId);
-    const fresh = this.requireRaid(raidId);
-    if (!TERMINAL_RAID_STATUSES.has(fresh.status)) {
-      this.finalizeRaid(fresh);
-    }
+    await runRaidDispatch(raidId, this.providerDispatchDeps());
   }
 
   private async runHierarchicalRaid(raidId: string): Promise<void> {
-    const raid = this.requireRaid(raidId);
-    if (TERMINAL_RAID_STATUSES.has(raid.status)) {
-      return;
-    }
-    if (this.raidDeadlineReached(raid)) {
-      this.expireRaidAtDeadline(raidId);
-      return;
-    }
-
-    raid.status = 'dispatching';
-    raid.updatedAt = new Date().toISOString();
-    this.queuePersistBestEffort();
-
-    const childRuns = (raid.childRaidIds ?? []).map((childRaidId) => this.runRaid(childRaidId));
-    await Promise.allSettled(childRuns);
-
-    const fresh = this.requireRaid(raidId);
-    if (TERMINAL_RAID_STATUSES.has(fresh.status)) {
-      return;
-    }
-    if (this.raidDeadlineReached(fresh)) {
-      this.expireRaidAtDeadline(raidId);
-      return;
-    }
-
-    this.refreshParentRaidFromChildren(raidId);
-    if (this.maybeReplanHierarchicalRaid(raidId)) {
-      return;
-    }
-    if (this.shouldFinalizeHierarchicalRaid(fresh)) {
-      this.finalizeRaid(fresh);
-      return;
-    }
-
-    this.queuePersistBestEffort();
+    await runHierarchicalRaidDispatch(raidId, this.providerDispatchDeps());
   }
 
   private async dispatchProvider(raidId: string, providerId: string): Promise<void> {
-    const raid = this.requireRaid(raidId);
-    if (TERMINAL_RAID_STATUSES.has(raid.status)) {
-      return;
-    }
-    if (this.raidDeadlineReached(raid)) {
-      this.expireRaidAtDeadline(raidId);
-      return;
-    }
-    const provider = this.providerRuntimes.get(providerId);
-
-    if (!provider) {
-      this.markAssignmentFailed(raidId, providerId, 'provider runtime missing');
-      return;
-    }
-
-    const taskPackage: ProviderTaskPackage = buildProviderTaskPackage(raid.id, raid.task, {
-      deadlineUnix: raid.deadlineUnix,
-      providerIndex:
-        raid.contributionPlan?.providerIndex ??
-        Math.max(raid.selectedProviders.indexOf(providerId), 0) + 1,
-      totalExperts:
-        raid.contributionPlan?.totalExperts ?? Math.max(raid.selectedProviders.length, 1),
-      providerSpecializations: provider.profile.specializations,
-      contributionPlan: raid.contributionPlan,
-    });
-
-    const assignment = raid.assignments[providerId];
-    assignment.contributionRole =
-      taskPackage.synthesis == null
-        ? undefined
-        : {
-            id: taskPackage.synthesis.roleId,
-            label: taskPackage.synthesis.roleLabel,
-            objective: taskPackage.synthesis.roleObjective,
-            workstreamId: taskPackage.synthesis.workstreamId,
-            workstreamLabel: taskPackage.synthesis.workstreamLabel,
-            workstreamObjective: taskPackage.synthesis.workstreamObjective,
-          };
-    assignment.status = 'invited';
-    assignment.invitedAt = new Date().toISOString();
-    assignment.message = 'dispatching';
-    raid.status = 'running';
-    raid.updatedAt = new Date().toISOString();
-    this.queuePersistBestEffort();
-
-    this.clearProviderTimers(raidId, providerId);
-    this.timers.setHardTimeout(raidId, providerId, this.options.hardExecutionMs, () => {
-      this.markTimedOut(raidId, providerId, 'hard execution timeout');
-    });
-
-    try {
-      const acceptance = await Promise.race([
-        provider.accept(taskPackage),
-        timeoutReject(this.options.inviteAcceptMs, 'invite timeout'),
-      ]);
-
-      if (!acceptance.accepted) {
-        this.markTimedOut(raidId, providerId, 'invite rejected');
-        return;
-      }
-
-      const acceptedAt = new Date().toISOString();
-      const activeRaid = this.requireRaid(raidId);
-      if (TERMINAL_RAID_STATUSES.has(activeRaid.status)) {
-        this.clearProviderTimers(raidId, providerId);
-        return;
-      }
-
-      const activeAssignment = activeRaid.assignments[providerId];
-      if (TERMINAL_ASSIGNMENT_STATUSES.has(activeAssignment.status)) {
-        this.clearProviderTimers(raidId, providerId);
-        return;
-      }
-
-      activeAssignment.status = 'accepted';
-      activeAssignment.acceptedAt = acceptedAt;
-      activeAssignment.providerRunId = acceptance.providerRunId;
-      activeAssignment.message = 'accepted';
-      const profile = this.providers.get(providerId);
-      if (profile) {
-        profile.status = 'available';
-        profile.lastSeenAt = acceptedAt;
-      }
-      this.queuePersistBestEffort();
-
-      this.timers.setFirstHeartbeatTimeout(
-        raidId,
-        providerId,
-        this.options.firstHeartbeatMs,
-        () => {
-          const current = this.requireRaid(raidId).assignments[providerId];
-          if (!current.firstHeartbeatAt && !TERMINAL_ASSIGNMENT_STATUSES.has(current.status)) {
-            this.markTimedOut(raidId, providerId, 'first heartbeat timeout');
-          }
-        }
-      );
-
-      void Promise.resolve(
-        provider.run(taskPackage, {
-          onHeartbeat: async (heartbeat) => {
-            this.markHeartbeat(raidId, providerId, heartbeat);
-          },
-          onSubmit: async (submission) => {
-            await this.submitResult(raidId, submission);
-          },
-          onFailure: async (error) => {
-            this.markAssignmentFailed(raidId, providerId, error.message);
-          },
-        })
-      ).catch((error) => {
-        this.markAssignmentFailed(
-          raidId,
-          providerId,
-          error instanceof Error ? error.message : 'provider run failed'
-        );
-      });
-    } catch (error) {
-      this.markTimedOut(
-        raidId,
-        providerId,
-        error instanceof Error ? error.message : 'provider dispatch failed'
-      );
-    }
+    await dispatchProviderToRuntime(raidId, providerId, this.providerDispatchDeps());
   }
 
   private markHeartbeat(raidId: string, providerId: string, heartbeat: ProviderHeartbeat): void {
-    const raid = this.requireRaid(raidId);
-    if (TERMINAL_RAID_STATUSES.has(raid.status)) {
-      return;
-    }
-    if (!applyHeartbeatToRaid(raid, providerId, heartbeat)) {
-      return;
-    }
-    this.timers.clearFirstHeartbeat(raidId, providerId);
-    this.timers.setHeartbeatStaleTimeout(raidId, providerId, this.options.heartbeatStaleMs, () => {
-      const current = this.requireRaid(raidId).assignments[providerId];
-      if (!TERMINAL_ASSIGNMENT_STATUSES.has(current.status)) {
-        this.markTimedOut(raidId, providerId, 'heartbeat stale');
-      }
-    });
-    const profile = this.providers.get(providerId);
-    if (profile) {
-      profile.status = 'available';
-      profile.lastSeenAt = heartbeat.timestamp;
-    }
-    if (raid.parentRaidId) {
-      this.refreshRaidAncestry(raid.parentRaidId);
-    }
-    this.queuePersistBestEffort();
+    markProviderHeartbeat(raidId, providerId, heartbeat, this.providerDispatchDeps());
   }
 
   private async submitResult(raidId: string, submission: ProviderSubmission): Promise<void> {
-    const raid = this.requireRaid(raidId);
-    if (TERMINAL_RAID_STATUSES.has(raid.status)) {
-      return;
-    }
-    const assignment = raid.assignments[submission.providerId];
-    const normalizedSubmission =
-      submission.contributionRole == null && assignment?.contributionRole != null
-        ? {
-            ...submission,
-            contributionRole: assignment.contributionRole,
-          }
-        : submission;
-    const breakdown = await evaluateSubmission(raid, normalizedSubmission);
-    const privacyConstraints = raid.task.constraints;
-    if (
-      privacyConstraints.privacyMode !== 'off' &&
-      privacyConstraints.requirePrivacyFeatures?.length
-    ) {
-      const privacyResult = validateSubmissionPrivacy(
-        normalizedSubmission,
-        privacyConstraints.requirePrivacyFeatures,
-        raid.task.sanitizationReport
-      );
-      breakdown.privacyComplianceScore = privacyResult.score;
-      breakdown.privacyComplianceDetails = privacyResult;
-    }
-
-    this.clearProviderTimers(raidId, submission.providerId);
-    applySubmissionToRaid(raid, normalizedSubmission, breakdown);
-
-    this.applyReputationEvent(
-      submission.providerId,
-      breakdown.valid ? 'valid_submission' : 'invalid_submission',
-      { raidId, finalScore: breakdown.finalScore }
-    );
-
-    if (breakdown.invalidReasons.includes('duplicate_submission')) {
-      this.applyReputationEvent(submission.providerId, 'duplicate_submission', { raidId });
-    }
-
-    if (raid.parentRaidId) {
-      this.refreshRaidAncestry(raid.parentRaidId);
-      this.maybeFinalizeAfterUpdate(raid.parentRaidId);
-    }
-    this.maybeFinalizeAfterUpdate(raidId);
-    this.queuePersistBestEffort();
+    await submitProviderResult(raidId, submission, this.providerDispatchDeps());
   }
 
   private markTimedOut(raidId: string, providerId: string, reason: string): void {
-    const raid = this.requireRaid(raidId);
-    if (TERMINAL_RAID_STATUSES.has(raid.status)) {
-      return;
-    }
-    if (!applyTimeoutToRaid(raid, providerId, reason)) {
-      return;
-    }
-
-    this.clearProviderTimers(raidId, providerId);
-    this.applyReputationEvent(
-      providerId,
-      reason.includes('invite') ? 'invite_timeout' : 'heartbeat_timeout',
-      { raidId, reason }
-    );
-    if (raid.parentRaidId) {
-      this.refreshRaidAncestry(raid.parentRaidId);
-      this.maybeFinalizeAfterUpdate(raid.parentRaidId);
-    }
-    this.promoteReserve(raidId);
-    this.maybeFinalizeAfterUpdate(raidId);
-    this.queuePersistBestEffort();
+    markProviderTimedOut(raidId, providerId, reason, this.providerDispatchDeps());
   }
 
   private markAssignmentFailed(raidId: string, providerId: string, reason: string): void {
-    const raid = this.requireRaid(raidId);
-    if (TERMINAL_RAID_STATUSES.has(raid.status)) {
-      return;
-    }
-    if (!applyFailureToRaid(raid, providerId, reason)) {
-      return;
-    }
-
-    this.clearProviderTimers(raidId, providerId);
-    this.applyProviderRoutingCooldown(providerId);
-    if (raid.parentRaidId) {
-      this.refreshRaidAncestry(raid.parentRaidId);
-      this.maybeFinalizeAfterUpdate(raid.parentRaidId);
-    }
-    this.promoteReserve(raidId);
-    this.maybeFinalizeAfterUpdate(raidId);
-    this.queuePersistBestEffort();
+    markProviderAssignmentFailed(raidId, providerId, reason, this.providerDispatchDeps());
   }
 
   private applyProviderRoutingCooldown(providerId: string, cooldownMs = 5 * 60_000): void {
@@ -1786,16 +713,18 @@ export class BossRaidOrchestrator {
     this.providers.set(providerId, provider);
     const runtime = this.providerRuntimes.get(providerId);
     if (runtime) {
-      runtime.profile.routingCooldownUntil = provider.routingCooldownUntil;
+      (runtime.profile as ProviderProfile).routingCooldownUntil = provider.routingCooldownUntil;
     }
   }
 
   private expireRaidAtDeadline(raidId: string): void {
     const raid = this.requireRaid(raidId);
-    if (TERMINAL_RAID_STATUSES.has(raid.status) || this.expiringRaids.has(raidId)) {
+    if (
+      TERMINAL_RAID_STATUSES.has(raid.status) ||
+      !this.raidDeadlineTimers.tryMarkExpiring(raidId)
+    ) {
       return;
     }
-    this.expiringRaids.add(raidId);
     this.clearRaidDeadlineTimer(raidId);
 
     try {
@@ -1832,34 +761,8 @@ export class BossRaidOrchestrator {
       this.queuePersistBestEffort();
       this.finalizeRaid(raid);
     } finally {
-      this.expiringRaids.delete(raidId);
+      this.raidDeadlineTimers.unmarkExpiring(raidId);
     }
-  }
-
-  private promoteReserve(raidId: string): void {
-    const raid = this.requireRaid(raidId);
-    const nextReserveId = promoteReserveProvider(raid);
-    if (!nextReserveId) {
-      return;
-    }
-    if (raid.routingProof) {
-      raid.routingProof.providers = raid.routingProof.providers.map((decision) =>
-        decision.providerId !== nextReserveId || decision.phase !== 'reserve'
-          ? decision
-          : {
-              ...decision,
-              phase: 'primary',
-              reasons: decision.reasons.includes('promoted_from_reserve')
-                ? decision.reasons.filter((reason) => reason !== 'reserved_fallback')
-                : [
-                    ...decision.reasons.filter((reason) => reason !== 'reserved_fallback'),
-                    'promoted_from_reserve',
-                  ],
-            }
-      );
-    }
-    this.queuePersistBestEffort();
-    void this.dispatchProvider(raidId, nextReserveId);
   }
 
   private maybeFinalizeAfterUpdate(raidId: string): void {
@@ -1869,8 +772,8 @@ export class BossRaidOrchestrator {
       return;
     }
     if (raid.childRaidIds?.length) {
-      this.refreshParentRaidFromChildren(raidId);
-      if (raid.adaptivePlanning && this.maybeReplanHierarchicalRaid(raidId)) {
+      refreshParentRaidFromChildren(raidId, (childRaidId) => this.requireRaid(childRaidId));
+      if (raid.adaptivePlanning && maybeReplanHierarchicalRaid(raidId, this.adaptiveReplanDeps())) {
         return;
       }
       if (this.shouldFinalizeHierarchicalRaid(raid)) {
@@ -1899,545 +802,11 @@ export class BossRaidOrchestrator {
     );
   }
 
-  private maybeReplanHierarchicalRaid(raidId: string): boolean {
-    const raid = this.requireRaid(raidId);
-    const adaptivePlanning = raid.adaptivePlanning;
-    if (
-      !raid.childRaidIds?.length ||
-      !adaptivePlanning ||
-      adaptivePlanning.availableProviderIds.length === 0 ||
-      adaptivePlanning.revisionCount >= adaptivePlanning.maxRevisions ||
-      TERMINAL_RAID_STATUSES.has(raid.status) ||
-      this.raidDeadlineReached(raid)
-    ) {
-      return false;
-    }
-
-    const target = this.selectAdaptiveReplanTarget(raid);
-    if (!target) {
-      return false;
-    }
-
-    const providers = this.takeAdaptiveProviders(adaptivePlanning, target.expertCount);
-    if (providers.length === 0) {
-      return false;
-    }
-
-    const actualStrategy =
-      target.strategy === 'expand' && target.childFamilyId && providers.length > 1
-        ? 'expand'
-        : 'repair';
-    const spawnedRaid =
-      actualStrategy === 'expand'
-        ? this.spawnAdaptiveExpansionRaid(
-            target.parentRaid,
-            target,
-            target.childFamilyId!,
-            providers
-          )
-        : this.spawnAdaptiveRepairRaid(target.parentRaid, target, providers[0]!);
-
-    const createdAt = new Date().toISOString();
-    adaptivePlanning.revisionCount += 1;
-    adaptivePlanning.spawnedChildRaidIds.push(spawnedRaid.id);
-    adaptivePlanning.history.push({
-      targetRaidId: target.sourceRaid.id,
-      targetParentRaidId: target.parentRaid.id,
-      workstreamId: target.workstreamId,
-      workstreamLabel: target.workstreamLabel,
-      strategy: actualStrategy,
-      reason: target.reason,
-      spawnedRaidIds: [spawnedRaid.id],
-      createdAt,
-    });
-    raid.status = 'dispatching';
-    raid.updatedAt = createdAt;
-    this.queuePersistBestEffort();
-    void this.runRaid(spawnedRaid.id);
-    return true;
-  }
-
-  private selectAdaptiveReplanTarget(raid: RaidRecord): AdaptiveReplanTarget | undefined {
-    const adaptivePlanning = raid.adaptivePlanning;
-    if (!adaptivePlanning) {
-      return undefined;
-    }
-
-    const candidates = this.collectAdaptiveTargetGroups(raid).flatMap((group) => {
-      if (group.children.some((child) => !TERMINAL_RAID_STATUSES.has(child.status))) {
-        return [];
-      }
-
-      const revisionCount = this.countAdaptiveRevisions(
-        raid,
-        group.parentRaid.id,
-        group.workstreamId
-      );
-      if (revisionCount >= ADAPTIVE_PLANNING.MAX_REVISIONS_PER_WORKSTREAM) {
-        return [];
-      }
-
-      const validChildren = group.children.filter((child) => this.raidHasValidOutput(child));
-      const sourceRaid = [...(validChildren.length > 0 ? validChildren : group.children)].sort(
-        (left, right) => (right.bestCurrentScore ?? 0) - (left.bestCurrentScore ?? 0)
-      )[0];
-
-      if (!sourceRaid?.contributionPlan) {
-        return [];
-      }
-
-      const template = getContributionWorkstreamTemplate(
-        sourceRaid.task,
-        sourceRaid.contributionPlan.workstreamId
-      );
-      const expansionCount = this.computeAdaptiveExpansionExperts(
-        adaptivePlanning.availableProviderIds.length,
-        validChildren.length === 0 ? 'missing' : 'weak'
-      );
-      const canExpand =
-        template?.childFamilyId != null &&
-        expansionCount >= ADAPTIVE_PLANNING.MIN_EXPANSION_TO_TRIGGER &&
-        this.countAdaptiveRevisions(raid, group.parentRaid.id, group.workstreamId, 'expand') === 0;
-
-      const candidatesForGroup: Array<
-        AdaptiveReplanTarget & { priority: number; depth: number; bestScore: number }
-      > = [];
-
-      if (validChildren.length === 0) {
-        candidatesForGroup.push({
-          strategy: canExpand ? 'expand' : 'repair',
-          parentRaid: group.parentRaid,
-          sourceRaid,
-          workstreamId: group.workstreamId,
-          workstreamLabel: group.workstreamLabel,
-          reason: this.summarizeAdaptiveGap(group.children),
-          expertCount: canExpand ? expansionCount : 1,
-          childFamilyId: canExpand ? template?.childFamilyId : undefined,
-          priority: 0,
-          depth: group.depth,
-          bestScore: 0,
-        });
-      }
-
-      const bestScore = Math.max(...group.children.map((child) => child.bestCurrentScore ?? 0), 0);
-      if (validChildren.length > 0 && bestScore < ADAPTIVE_PLANNING.WEAK_SCORE_THRESHOLD) {
-        candidatesForGroup.push({
-          strategy: canExpand ? 'expand' : 'repair',
-          parentRaid: group.parentRaid,
-          sourceRaid,
-          workstreamId: group.workstreamId,
-          workstreamLabel: group.workstreamLabel,
-          reason: `Best ${group.workstreamLabel.toLowerCase()} score remained weak at ${bestScore.toFixed(2)}.`,
-          expertCount: canExpand ? expansionCount : 1,
-          childFamilyId: canExpand ? template?.childFamilyId : undefined,
-          priority: this.isPriorityAdaptiveGroup(group.parentRaid, group.workstreamId) ? 1 : 2,
-          depth: group.depth,
-          bestScore,
-        });
-      }
-
-      return candidatesForGroup;
-    });
-
-    const next = candidates.sort((left, right) => {
-      if (left.priority !== right.priority) {
-        return left.priority - right.priority;
-      }
-      if (left.depth !== right.depth) {
-        return right.depth - left.depth;
-      }
-      return left.bestScore - right.bestScore;
-    })[0];
-
-    if (!next) {
-      return undefined;
-    }
-
-    return {
-      strategy: next.strategy,
-      parentRaid: next.parentRaid,
-      sourceRaid: next.sourceRaid,
-      workstreamId: next.workstreamId,
-      workstreamLabel: next.workstreamLabel,
-      reason: next.reason,
-      expertCount: next.expertCount,
-      childFamilyId: next.childFamilyId,
-    };
-  }
-
-  private collectAdaptiveTargetGroups(raid: RaidRecord): AdaptiveTargetGroup[] {
-    const groups: AdaptiveTargetGroup[] = [];
-    const visit = (parentRaid: RaidRecord, depth: number): void => {
-      if (!parentRaid.childRaidIds?.length) {
-        return;
-      }
-
-      for (const group of this.groupDirectChildRaidsByWorkstream(parentRaid)) {
-        groups.push({
-          parentRaid,
-          workstreamId: group.workstreamId,
-          workstreamLabel: group.workstreamLabel,
-          children: group.children,
-          depth,
-        });
-      }
-
-      for (const childRaidId of parentRaid.childRaidIds) {
-        visit(this.requireRaid(childRaidId), depth + 1);
-      }
-    };
-
-    visit(raid, 0);
-    return groups;
-  }
-
-  private countAdaptiveRevisions(
-    raid: RaidRecord,
-    parentRaidId: string,
-    workstreamId: string,
-    strategy?: 'expand' | 'repair'
-  ): number {
-    return (
-      raid.adaptivePlanning?.history.filter(
-        (entry) =>
-          entry.targetParentRaidId === parentRaidId &&
-          entry.workstreamId === workstreamId &&
-          (strategy == null || entry.strategy === strategy)
-      ).length ?? 0
-    );
-  }
-
-  private isPriorityAdaptiveGroup(parentRaid: RaidRecord, workstreamId: string): boolean {
-    if (workstreamId.endsWith('-core')) {
-      return true;
-    }
-
-    const primaryType = parentRaid.task.output?.primaryType ?? 'patch';
-    return primaryType === 'patch'
-      ? workstreamId === 'implementation' || workstreamId.startsWith('implementation-')
-      : workstreamId === 'answer' || workstreamId.startsWith('answer-');
-  }
-
-  private groupDirectChildRaidsByWorkstream(raid: RaidRecord): Array<{
-    workstreamId: string;
-    workstreamLabel: string;
-    children: RaidRecord[];
-  }> {
-    const groups = new Map<
-      string,
-      { workstreamId: string; workstreamLabel: string; children: RaidRecord[] }
-    >();
-
-    for (const childRaidId of raid.childRaidIds ?? []) {
-      const childRaid = this.requireRaid(childRaidId);
-      const workstreamId = childRaid.contributionPlan?.workstreamId ?? childRaid.id;
-      const workstreamLabel = childRaid.contributionPlan?.workstreamLabel ?? childRaid.id;
-      const current = groups.get(workstreamId);
-      if (current) {
-        current.children.push(childRaid);
-        continue;
-      }
-
-      groups.set(workstreamId, {
-        workstreamId,
-        workstreamLabel,
-        children: [childRaid],
-      });
-    }
-
-    return [...groups.values()];
-  }
-
-  private summarizeAdaptiveGap(childRaids: RaidRecord[]): string {
-    const invalidReasons = childRaids
-      .flatMap((child) =>
-        child.rankedSubmissions.flatMap((entry) => entry.breakdown.invalidReasons)
-      )
-      .slice(0, 3);
-    if (invalidReasons.length > 0) {
-      return `No valid output yet. Invalid signals: ${invalidReasons.join(', ')}.`;
-    }
-
-    const failureMessages = childRaids
-      .flatMap((child) => Object.values(child.assignments).map((assignment) => assignment.message))
-      .filter((message): message is string => Boolean(message))
-      .slice(0, 2);
-
-    return failureMessages.length > 0
-      ? `No valid output yet. Latest signals: ${failureMessages.join(' | ')}.`
-      : 'No valid output yet for this workstream.';
-  }
-
-  private raidHasValidOutput(raid: RaidRecord): boolean {
-    return raid.rankedSubmissions.some((entry) => entry.breakdown.valid);
-  }
-
-  private computeAdaptiveExpansionExperts(
-    availableExperts: number,
-    mode: 'missing' | 'weak'
-  ): number {
-    const cap =
-      mode === 'missing'
-        ? ADAPTIVE_PLANNING.EXPANSION_MISSING_CAP
-        : ADAPTIVE_PLANNING.EXPANSION_WEAK_CAP;
-    return Math.max(0, Math.min(availableExperts, cap));
-  }
-
-  private takeAdaptiveProviders(
-    adaptivePlanning: NonNullable<RaidRecord['adaptivePlanning']>,
-    count: number
-  ): ProviderProfile[] {
-    const providers: ProviderProfile[] = [];
-
-    while (providers.length < count && adaptivePlanning.availableProviderIds.length > 0) {
-      const providerId = adaptivePlanning.availableProviderIds.shift();
-      if (!providerId) {
-        continue;
-      }
-
-      const provider = this.providers.get(providerId);
-      if (provider) {
-        providers.push(provider);
-      }
-    }
-
-    return providers;
-  }
-
-  private spawnAdaptiveExpansionRaid(
-    parentRaid: RaidRecord,
-    target: AdaptiveReplanTarget,
-    childFamilyId: ContributionFamilyId,
-    providers: ProviderProfile[]
-  ): RaidRecord {
-    const childTask = this.buildAdaptiveExpansionTask(target.sourceRaid.task, providers.length);
-    const childRaid = createRaidRecord(
-      childTask,
-      {
-        primaries: [],
-        reserves: [],
-      },
-      {
-        deadlineUnix: parentRaid.deadlineUnix,
-      }
-    );
-    childRaid.planningMode = 'hierarchical_child';
-    childRaid.parentRaidId = parentRaid.id;
-    childRaid.contributionPlan = this.buildAdaptiveExpansionPlan(
-      target.sourceRaid,
-      target.reason,
-      providers.length
-    );
-    childRaid.routingProof = annotateRoutingProof(
-      childRaid.routingProof ?? buildRoutingProof(childTask, { primaries: [], reserves: [] }),
-      childRaid.contributionPlan
-    );
-    childRaid.childRaidIds = [];
-    this.raids.set(childRaid.id, childRaid);
-    this.scheduleRaidDeadline(childRaid.id);
-
-    const graph = buildContributionFamilyRaidGraph(childTask, childFamilyId, providers.length);
-    const preparedChildren = this.assignAdaptiveProvidersToGraph(graph, providers, target.reason);
-
-    this.reopenRaidAncestry(parentRaid.id);
-    parentRaid.childRaidIds ??= [];
-    parentRaid.childRaidIds.push(childRaid.id);
-    this.instantiatePreparedChildren(childRaid.id, preparedChildren, parentRaid.deadlineUnix);
-    return childRaid;
-  }
-
-  private assignAdaptiveProvidersToGraph(
-    nodes: PlannedRaidNode[],
-    providers: ProviderProfile[],
-    reason: string
-  ): PreparedRaidNode[] {
-    let providerIndex = 0;
-
-    const assignNode = (node: PlannedRaidNode): PreparedRaidNode => {
-      const prepared: PreparedRaidNode = {
-        task: node.task,
-        contributionPlan: this.annotateAdaptiveContributionPlan(node.contributionPlan, reason),
-      };
-
-      if (node.children?.length) {
-        prepared.children = node.children.map(assignNode);
-        return prepared;
-      }
-
-      const provider = providers[providerIndex];
-      providerIndex += 1;
-      if (!provider) {
-        throw new Error('Adaptive provider allocation underflow while revising the raid graph.');
-      }
-
-      prepared.selectedProviders = {
-        primaries: [provider],
-        reserves: [],
-      };
-      return prepared;
-    };
-
-    return nodes.map(assignNode);
-  }
-
-  private annotateAdaptiveContributionPlan(
-    plan: RaidContributionPlan | undefined,
-    reason: string
-  ): RaidContributionPlan | undefined {
-    if (!plan) {
-      return undefined;
-    }
-
-    return {
-      ...plan,
-      prompt: [
-        plan.prompt,
-        reason,
-        'Close the observed gap directly and avoid repeating the earlier miss.',
-      ].join(' '),
-    };
-  }
-
-  private spawnAdaptiveRepairRaid(
-    parentRaid: RaidRecord,
-    target: AdaptiveReplanTarget,
-    provider: ProviderProfile
-  ): RaidRecord {
-    const childTask = this.buildAdaptiveRepairTask(target.sourceRaid.task);
-    const childRaid = createRaidRecord(
-      childTask,
-      {
-        primaries: [provider],
-        reserves: [],
-      },
-      {
-        deadlineUnix: parentRaid.deadlineUnix,
-      }
-    );
-    childRaid.planningMode = 'hierarchical_child';
-    childRaid.parentRaidId = parentRaid.id;
-    childRaid.contributionPlan = this.buildAdaptiveRepairPlan(target.sourceRaid, target.reason);
-    childRaid.routingProof = annotateRoutingProof(
-      childRaid.routingProof ??
-        buildRoutingProof(childTask, { primaries: [provider], reserves: [] }),
-      childRaid.contributionPlan
-    );
-    childRaid.childRaidIds = [];
-    this.raids.set(childRaid.id, childRaid);
-    this.scheduleRaidDeadline(childRaid.id);
-    this.reopenRaidAncestry(parentRaid.id);
-    parentRaid.childRaidIds ??= [];
-    parentRaid.childRaidIds.push(childRaid.id);
-    return childRaid;
-  }
-
-  private reopenRaidAncestry(raidId: string | undefined): void {
-    const reopenedAt = new Date().toISOString();
-    let currentRaidId = raidId;
-
-    while (currentRaidId) {
-      const currentRaid = this.requireRaid(currentRaidId);
-      if (TERMINAL_RAID_STATUSES.has(currentRaid.status)) {
-        currentRaid.status = 'dispatching';
-      }
-      currentRaid.updatedAt = reopenedAt;
-      currentRaidId = currentRaid.parentRaidId;
-    }
-  }
-
-  private buildAdaptiveRepairTask(task: SanitizedTaskSpec): SanitizedTaskSpec {
-    const perExpertBudget = Number(
-      (task.constraints.maxBudgetUsd / Math.max(task.constraints.numExperts, 1)).toFixed(2)
-    );
-
-    return {
-      ...task,
-      constraints: {
-        ...task.constraints,
-        numExperts: 1,
-        maxBudgetUsd: Math.max(perExpertBudget, 0.01),
-      },
-    };
-  }
-
-  private buildAdaptiveExpansionTask(
-    task: SanitizedTaskSpec,
-    expertCount: number
-  ): SanitizedTaskSpec {
-    const perExpertBudget = Number(
-      (task.constraints.maxBudgetUsd / Math.max(task.constraints.numExperts, 1)).toFixed(2)
-    );
-
-    return {
-      ...task,
-      constraints: {
-        ...task.constraints,
-        numExperts: expertCount,
-        maxBudgetUsd: Math.max(Number((perExpertBudget * expertCount).toFixed(2)), 0.01),
-      },
-    };
-  }
-
-  private buildAdaptiveExpansionPlan(
-    sourceRaid: RaidRecord,
-    reason: string,
-    expertCount: number
-  ): RaidContributionPlan {
-    const sourcePlan = sourceRaid.contributionPlan;
-    if (!sourcePlan) {
-      throw new Error(
-        `Cannot build adaptive expansion plan for raid ${sourceRaid.id} without contribution metadata.`
-      );
-    }
-
-    return {
-      providerIndex: 1,
-      totalExperts: expertCount,
-      roleId: `${sourcePlan.roleId}-expansion`,
-      roleLabel: `${sourcePlan.workstreamLabel} Expansion`,
-      roleObjective: `Split ${sourcePlan.workstreamLabel} into narrower sub-workstreams and close the gap.`,
-      workstreamId: sourcePlan.workstreamId,
-      workstreamLabel: sourcePlan.workstreamLabel,
-      workstreamObjective: sourcePlan.workstreamObjective,
-      prompt: [
-        sourcePlan.prompt,
-        `Adaptive expansion reason: ${reason}`,
-        'Break this workstream into narrower sub-workstreams and close the missing or weak coverage directly.',
-      ].join(' '),
-    };
-  }
-
-  private buildAdaptiveRepairPlan(sourceRaid: RaidRecord, reason: string): RaidContributionPlan {
-    const sourcePlan = sourceRaid.contributionPlan;
-    if (!sourcePlan) {
-      throw new Error(
-        `Cannot build adaptive repair plan for raid ${sourceRaid.id} without contribution metadata.`
-      );
-    }
-
-    return {
-      providerIndex: 1,
-      totalExperts: 1,
-      roleId: `${sourcePlan.roleId}-repair`,
-      roleLabel: `${sourcePlan.workstreamLabel} Repair`,
-      roleObjective: `Repair the missing or weak coverage for ${sourcePlan.workstreamLabel}.`,
-      workstreamId: sourcePlan.workstreamId,
-      workstreamLabel: sourcePlan.workstreamLabel,
-      workstreamObjective: sourcePlan.workstreamObjective,
-      prompt: [
-        sourcePlan.prompt,
-        `Previous ${sourcePlan.workstreamLabel.toLowerCase()} coverage was missing, invalid, or too weak.`,
-        reason,
-        'Fill the gap directly and avoid repeating the earlier failure.',
-      ].join(' '),
-    };
-  }
-
   private refreshRaidAncestry(raidId: string | undefined): void {
     let currentRaidId = raidId;
 
     while (currentRaidId) {
-      this.refreshParentRaidFromChildren(currentRaidId);
+      refreshParentRaidFromChildren(currentRaidId, (childRaidId) => this.requireRaid(childRaidId));
       currentRaidId = this.requireRaid(currentRaidId).parentRaidId;
     }
   }
@@ -2445,7 +814,7 @@ export class BossRaidOrchestrator {
   private finalizeRaid(raid: RaidRecord): void {
     this.clearRaidDeadlineTimer(raid.id);
     if (raid.childRaidIds?.length) {
-      this.refreshParentRaidFromChildren(raid.id);
+      refreshParentRaidFromChildren(raid.id, (childRaidId) => this.requireRaid(childRaidId));
     }
     finalizeRaidRecord(raid);
 
@@ -2571,60 +940,20 @@ export class BossRaidOrchestrator {
   }
 
   private scheduleRaidDeadline(raidId: string): void {
-    this.clearRaidDeadlineTimer(raidId);
     const raid = this.requireRaid(raidId);
-    if (TERMINAL_RAID_STATUSES.has(raid.status)) {
-      return;
-    }
-
-    const delayMs = raid.deadlineUnix * 1_000 - Date.now();
-    if (delayMs <= 0) {
-      queueMicrotask(() => this.expireRaidAtDeadline(raidId));
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      this.expireRaidAtDeadline(raidId);
-    }, delayMs);
-    this.raidDeadlineTimers.set(raidId, timer);
+    this.raidDeadlineTimers.schedule(raidId, raid, (id) => this.expireRaidAtDeadline(id));
   }
 
   private clearRaidDeadlineTimer(raidId: string): void {
-    const timer = this.raidDeadlineTimers.get(raidId);
-    if (timer) {
-      clearTimeout(timer);
-      this.raidDeadlineTimers.delete(raidId);
-    }
+    this.raidDeadlineTimers.clear(raidId);
   }
 
   private raidDeadlineReached(raid: RaidRecord): boolean {
-    return raid.deadlineUnix * 1_000 <= Date.now();
-  }
-
-  private launchReservationExpired(reservation: RaidLaunchReservationRecord): boolean {
-    return Date.parse(reservation.expiresAt) <= Date.now();
+    return RaidDeadlineTimerRegistry.deadlineReached(raid);
   }
 
   private pruneLaunchReservations(persist = true): void {
-    const nowMs = Date.now();
-    let changed = false;
-
-    for (const [reservationId, reservation] of this.launchReservations.entries()) {
-      const staleReplay =
-        reservation.spawnOutput != null &&
-        Date.parse(reservation.createdAt) + STALE_RESERVATION_TIMEOUT_MS <= nowMs;
-      const expired = reservation.spawnOutput == null && Date.parse(reservation.expiresAt) <= nowMs;
-      if (!expired && !staleReplay) {
-        continue;
-      }
-
-      this.launchReservations.delete(reservationId);
-      changed = true;
-    }
-
-    if (changed && persist) {
-      this.queuePersistBestEffort();
-    }
+    pruneLaunchReservations(this.launchReservations, () => this.queuePersistBestEffort(), persist);
   }
 
   private requireProvider(providerId: string): ProviderProfile {
@@ -2667,7 +996,7 @@ export class BossRaidOrchestrator {
     }
 
     for (const reservation of this.launchReservations.values()) {
-      if (reservation.spawnOutput || this.launchReservationExpired(reservation)) {
+      if (reservation.spawnOutput || launchReservationExpired(reservation)) {
         continue;
       }
       if (reservation.reservedProviderIds.includes(providerId)) {
@@ -2827,78 +1156,106 @@ export class BossRaidOrchestrator {
     return health;
   }
 
-  private dropProviderAliases(
-    provider: ProviderProfile,
-    options: { preserveSeededProvider: boolean }
-  ): boolean {
-    const providerEndpoint = normalizeProviderEndpoint(provider.endpoint);
-    let changed = false;
-
-    for (const candidate of [...this.providers.values()]) {
-      if (candidate.providerId === provider.providerId) {
-        continue;
-      }
-
-      const sameAgentId = provider.agentId != null && candidate.agentId === provider.agentId;
-      const sameEndpoint =
-        providerEndpoint != null &&
-        normalizeProviderEndpoint(candidate.endpoint) === providerEndpoint;
-      if (!sameAgentId && !sameEndpoint) {
-        continue;
-      }
-
-      if (
-        options.preserveSeededProvider &&
-        this.seededProviderIds.has(candidate.providerId) &&
-        !this.seededProviderIds.has(provider.providerId)
-      ) {
-        continue;
-      }
-
-      this.providers.delete(candidate.providerId);
-      this.providerRuntimes.delete(candidate.providerId);
-      this.providerHealthCache.delete(candidate.providerId);
-      changed = true;
-    }
-
-    return changed;
-  }
-}
-
-function encryptProviderProfileSecrets(
-  provider: ProviderProfile,
-  cipher: SecretCipher
-): ProviderProfile {
-  if (!cipher.enabled || !provider.auth || provider.auth.type === 'none') {
-    return provider;
+  private providerDispatchDeps(): RaidProviderDispatchDeps {
+    return {
+      requireRaid: (raidId) => this.requireRaid(raidId),
+      getProvider: (providerId) => this.providers.get(providerId),
+      getProviderRuntime: (providerId) => this.providerRuntimes.get(providerId),
+      updateProviderProfile: (providerId, update) => {
+        const profile = this.providers.get(providerId);
+        if (!profile) {
+          return;
+        }
+        update(profile);
+        this.providers.set(providerId, profile);
+        const runtime = this.providerRuntimes.get(providerId);
+        if (runtime) {
+          Object.assign(runtime.profile as ProviderProfile, profile);
+        }
+      },
+      options: this.options,
+      timers: this.timers,
+      clearProviderTimers: (raidId, providerId) => this.clearProviderTimers(raidId, providerId),
+      queuePersistBestEffort: () => this.queuePersistBestEffort(),
+      raidDeadlineReached: (raid) => this.raidDeadlineReached(raid),
+      expireRaidAtDeadline: (raidId) => this.expireRaidAtDeadline(raidId),
+      scheduleRaidDeadline: (raidId) => this.scheduleRaidDeadline(raidId),
+      refreshRaidAncestry: (raidId) => this.refreshRaidAncestry(raidId),
+      maybeFinalizeAfterUpdate: (raidId) => this.maybeFinalizeAfterUpdate(raidId),
+      applyReputationEvent: (providerId, type, context) =>
+        this.applyReputationEvent(providerId, type, context),
+      applyProviderRoutingCooldown: (providerId, cooldownMs) =>
+        this.applyProviderRoutingCooldown(providerId, cooldownMs),
+      finalizeRaid: (raid) => this.finalizeRaid(raid),
+      maybeReplanHierarchicalRaid: (raidId) =>
+        maybeReplanHierarchicalRaid(raidId, this.adaptiveReplanDeps()),
+      shouldFinalizeHierarchicalRaid: (raid) => this.shouldFinalizeHierarchicalRaid(raid),
+      waitForFinalization: (raidId) => this.waitForFinalization(raidId),
+    };
   }
 
-  return {
-    ...provider,
-    auth: {
-      ...provider.auth,
-      token: provider.auth.token ? cipher.encrypt(provider.auth.token) : provider.auth.token,
-      secret: provider.auth.secret ? cipher.encrypt(provider.auth.secret) : provider.auth.secret,
-    },
-  };
-}
-
-function decryptProviderProfileSecrets(
-  provider: ProviderProfile,
-  cipher: SecretCipher
-): ProviderProfile {
-  if (!provider.auth || provider.auth.type === 'none') {
-    return provider;
+  private prepareRaidDeps() {
+    return {
+      discoverProvidersForRaid: (query?: ProviderDiscoveryQuery) =>
+        this.discoverProvidersForRaid(query),
+      selectProvidersForTask: (task: SanitizedTaskSpec, providers: ProviderProfile[]) =>
+        this.selectProvidersForTask(task, providers),
+    };
   }
 
-  return {
-    ...provider,
-    auth: {
-      ...provider.auth,
-      token: provider.auth.token ? cipher.decrypt(provider.auth.token) : provider.auth.token,
-      secret: provider.auth.secret ? cipher.decrypt(provider.auth.secret) : provider.auth.secret,
-    },
-  };
+  private spawnPreparedRaidDeps() {
+    return {
+      raids: this.raids,
+      scheduleRaidDeadline: (raidId: string) => this.scheduleRaidDeadline(raidId),
+      instantiatePreparedChildren: (
+        parentRaidId: string,
+        children: PreparedRaidNode[],
+        deadlineUnix: number
+      ) =>
+        instantiatePreparedChildren(
+          parentRaidId,
+          children,
+          deadlineUnix,
+          this.instantiatePreparedChildrenDeps()
+        ),
+      queuePersist: () => this.queuePersist(),
+      runRaid: (raidId: string) => {
+        void this.runRaid(raidId);
+      },
+    };
+  }
+
+  private instantiatePreparedChildrenDeps() {
+    return {
+      raids: this.raids,
+      requireRaid: (raidId: string) => this.requireRaid(raidId),
+      scheduleRaidDeadline: (raidId: string) => this.scheduleRaidDeadline(raidId),
+    };
+  }
+
+  private adaptiveReplanDeps() {
+    return {
+      raids: this.raids,
+      providers: this.providers,
+      requireRaid: (raidId: string) => this.requireRaid(raidId),
+      queuePersistBestEffort: () => this.queuePersistBestEffort(),
+      scheduleRaidDeadline: (raidId: string) => this.scheduleRaidDeadline(raidId),
+      runRaid: (raidId: string) => {
+        void this.runRaid(raidId);
+      },
+      raidDeadlineReached: (raid: RaidRecord) => this.raidDeadlineReached(raid),
+      instantiatePreparedChildrenDeps: () => this.instantiatePreparedChildrenDeps(),
+    };
+  }
+
+  private providerRegistryMaps() {
+    return {
+      providers: this.providers,
+      providerRuntimes: this.providerRuntimes,
+      providerHealthCache: this.providerHealthCache,
+      seededProviderIds: this.seededProviderIds,
+    };
+  }
 }
 
 export async function createDefaultOrchestrator(
@@ -2911,7 +1268,7 @@ export async function createDefaultOrchestrator(
     workspaceCwd
   );
   const providersFile = resolveWorkspacePath(process.env.BOSSRAID_PROVIDERS_FILE, workspaceCwd);
-  const storageBackend = readStorageBackend(process.env);
+  const storageBackend = readStorageBackend(process.env, { strict: true });
 
   const persistence = createPersistenceBackend({
     storageBackend,
@@ -2945,40 +1302,6 @@ export async function createDefaultOrchestrator(
   }
   await orchestrator.resumeActiveRaids();
   return orchestrator;
-}
-
-function createPersistenceBackend(input: {
-  storageBackend: 'sqlite' | 'file' | 'memory';
-  stateFile?: string;
-  sqliteFile?: string;
-}): BossRaidPersistence {
-  switch (input.storageBackend) {
-    case 'sqlite':
-      if (!input.sqliteFile) {
-        throw new Error('BOSSRAID_SQLITE_FILE is required when BOSSRAID_STORAGE_BACKEND=sqlite.');
-      }
-      return new SqliteBossRaidPersistence(input.sqliteFile);
-    case 'file':
-      if (!input.stateFile) {
-        throw new Error('BOSSRAID_STATE_FILE is required when BOSSRAID_STORAGE_BACKEND=file.');
-      }
-      return new FileBossRaidPersistence(input.stateFile);
-    case 'memory':
-      return new InMemoryBossRaidPersistence();
-  }
-}
-
-function readStorageBackend(env: NodeJS.ProcessEnv): 'sqlite' | 'file' | 'memory' {
-  const configured = env.BOSSRAID_STORAGE_BACKEND;
-  if (configured === 'sqlite' || configured === 'file' || configured === 'memory') {
-    return configured;
-  }
-
-  if (configured != null) {
-    throw new Error('BOSSRAID_STORAGE_BACKEND must be sqlite, file, or memory.');
-  }
-
-  return env.BOSSRAID_STATE_FILE ? 'file' : 'sqlite';
 }
 
 export function runtimeOptionsFromEnv(

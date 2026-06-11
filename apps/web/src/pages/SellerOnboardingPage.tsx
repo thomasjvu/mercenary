@@ -1,20 +1,11 @@
 import { useState } from 'react';
-import {
-  createAuthNonce,
-  createSellerProvider,
-  fetchSession,
-  verifyAuth,
-  type Provider,
-  type PublicSession,
-} from '../api';
-
-type EthereumProvider = {
-  request(args: { method: string; params?: unknown[] }): Promise<unknown>;
-};
+import { createSellerProvider, fetchSession, type Provider } from '../api';
+import { useWalletAuth } from '../hooks/useWalletAuth';
 
 export function SellerOnboardingPage() {
-  const [session, setSession] = useState<PublicSession | null>(null);
-  const [status, setStatus] = useState('Connect a wallet before registering a seller endpoint.');
+  const { session, setSession, status, setStatus, connectWallet } = useWalletAuth(
+    'Connect a wallet before registering a seller endpoint.'
+  );
   const [provider, setProvider] = useState<Provider | null>(null);
   const [form, setForm] = useState({
     name: 'Verified GPT seller',
@@ -28,30 +19,6 @@ export function SellerOnboardingPage() {
     signedOutputs: false,
     noDataRetention: true,
   });
-
-  async function connectWallet() {
-    const ethereum = readEthereum();
-    if (!ethereum) {
-      setStatus('No wallet provider found. Install a wallet that supports personal_sign.');
-      return;
-    }
-
-    const accounts = (await ethereum.request({ method: 'eth_requestAccounts' })) as string[];
-    const wallet = accounts[0];
-    if (!wallet) {
-      setStatus('Wallet did not return an account.');
-      return;
-    }
-
-    const nonce = await createAuthNonce(wallet);
-    const signature = (await ethereum.request({
-      method: 'personal_sign',
-      params: [nonce.message, wallet],
-    })) as string;
-    const verified = await verifyAuth(wallet, nonce.message, signature);
-    setSession(verified);
-    setStatus(`Signed in as ${wallet}.`);
-  }
 
   async function registerProvider() {
     const registered = await createSellerProvider({
@@ -232,8 +199,4 @@ function TextField({
       <input onChange={(event) => onChange(event.target.value)} value={value} />
     </label>
   );
-}
-
-function readEthereum(): EthereumProvider | undefined {
-  return (globalThis as typeof globalThis & { ethereum?: EthereumProvider }).ethereum;
 }

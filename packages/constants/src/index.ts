@@ -1,3 +1,5 @@
+export { readStorageBackend, type ReadStorageBackendOptions, type StorageBackend } from './env.js';
+
 // Network Constants
 export const NETWORK = {
   LOCALHOST: '127.0.0.1',

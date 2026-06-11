@@ -1,6 +1,7 @@
-import { createHash, createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { refreshProviderScores } from '@bossraid/provider-registry';
+import { buildRateCardHash } from '@bossraid/raid-core';
 import type {
   ProviderAcceptance,
   ProviderAuthConfig,
@@ -17,26 +18,6 @@ import { DEFAULTS } from '@bossraid/constants';
 const HMAC_TIMESTAMP_MAX_SKEW_MS = 5 * 60_000;
 const DEFAULT_PROVIDER_HEALTH_TIMEOUT_MS = DEFAULTS.PROVIDER_HEALTH_TIMEOUT;
 const DEFAULT_PROVIDER_ACCEPT_TIMEOUT_MS = DEFAULTS.PROVIDER_ACCEPT_TIMEOUT;
-
-function hashRateCard(pricing: Omit<ProviderPricing, 'rateCardHash'>): string {
-  return createHash('sha256')
-    .update(
-      JSON.stringify({
-        mode: pricing.mode,
-        currency: pricing.currency,
-        pricePerTaskUsd: pricing.pricePerTaskUsd,
-        pricePer1mInputTokensUsd: pricing.pricePer1mInputTokensUsd,
-        pricePer1mOutputTokensUsd: pricing.pricePer1mOutputTokensUsd,
-        minimumChargeUsd: pricing.minimumChargeUsd,
-        validFrom: pricing.validFrom,
-        validUntil: pricing.validUntil,
-        rateCardVersion: pricing.rateCardVersion,
-        upstreamModelId: pricing.upstreamModelId,
-        maxContextTokens: pricing.maxContextTokens,
-      })
-    )
-    .digest('hex');
-}
 
 function normalizeProviderPricing(
   pricing: ProviderRegistrationInput['pricing'] | ProviderProfile['pricing'] | undefined,
@@ -62,7 +43,7 @@ function normalizeProviderPricing(
 
   return {
     ...normalized,
-    rateCardHash: pricing?.rateCardHash ?? hashRateCard(normalized),
+    rateCardHash: pricing?.rateCardHash ?? buildRateCardHash(normalized),
   };
 }
 

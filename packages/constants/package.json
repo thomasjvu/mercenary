@@ -4,6 +4,16 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./workspace": {
+      "types": "./dist/workspace-entry.d.ts",
+      "default": "./dist/workspace-entry.js"
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit"

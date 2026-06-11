@@ -1,10 +1,21 @@
 import { randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
-import { dirname, extname, isAbsolute, resolve } from 'node:path';
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { dirname, extname, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { readStorageBackend, type StorageBackend } from '@bossraid/constants';
+import { findWorkspaceRoot, resolveWorkspacePath } from '@bossraid/constants/workspace';
 import { createSecretCipher, type SecretCipher } from '@bossraid/persistence';
-
-type StorageBackend = 'sqlite' | 'file' | 'memory';
+import {
+  isValidBuyerApiKeyEntry,
+  isValidBuyerPurchaseEntry,
+  isValidOpsSessionEntry,
+  isValidPublicAccountEntry,
+  isValidPublicAuthNonceEntry,
+  isValidPublicSessionEntry,
+  isValidRateLimitEntry,
+  isValidSellerPayoutEntry,
+} from './control-state-validators.js';
+import { computeSellerPayout24hMetrics, SELLER_PAYOUT_STORE_LIMIT } from './marketplace-stats.js';
 
 type ApiOpsSessionEntry = {
   token: string;
@@ -325,155 +336,6 @@ function decryptApiControlStateSnapshot(
   };
 }
 
-function isValidOpsSessionEntry(value: unknown): value is ApiOpsSessionEntry {
-  return (
-    Boolean(value) &&
-    typeof value === 'object' &&
-    typeof (value as ApiOpsSessionEntry).token === 'string' &&
-    typeof (value as ApiOpsSessionEntry).expiresAt === 'number' &&
-    Number.isFinite((value as ApiOpsSessionEntry).expiresAt)
-  );
-}
-
-function isValidRateLimitEntry(value: unknown): value is ApiRateLimitEntry {
-  return (
-    Boolean(value) &&
-    typeof value === 'object' &&
-    typeof (value as ApiRateLimitEntry).key === 'string' &&
-    typeof (value as ApiRateLimitEntry).count === 'number' &&
-    Number.isFinite((value as ApiRateLimitEntry).count) &&
-    typeof (value as ApiRateLimitEntry).resetAt === 'number' &&
-    Number.isFinite((value as ApiRateLimitEntry).resetAt)
-  );
-}
-
-function isValidPublicAuthNonceEntry(value: unknown): value is PublicAuthNonceEntry {
-  return (
-    Boolean(value) &&
-    typeof value === 'object' &&
-    typeof (value as PublicAuthNonceEntry).nonce === 'string' &&
-    typeof (value as PublicAuthNonceEntry).expiresAt === 'number' &&
-    Number.isFinite((value as PublicAuthNonceEntry).expiresAt)
-  );
-}
-
-function isValidPublicSessionEntry(value: unknown): value is PublicSessionEntry {
-  return (
-    Boolean(value) &&
-    typeof value === 'object' &&
-    typeof (value as PublicSessionEntry).token === 'string' &&
-    typeof (value as PublicSessionEntry).wallet === 'string' &&
-    typeof (value as PublicSessionEntry).expiresAt === 'number' &&
-    Number.isFinite((value as PublicSessionEntry).expiresAt)
-  );
-}
-
-function isValidPublicAccountEntry(value: unknown): value is PublicAccountEntry {
-  return (
-    Boolean(value) &&
-    typeof value === 'object' &&
-    typeof (value as PublicAccountEntry).wallet === 'string' &&
-    typeof (value as PublicAccountEntry).createdAt === 'string' &&
-    typeof (value as PublicAccountEntry).updatedAt === 'string' &&
-    Array.isArray((value as PublicAccountEntry).sellerProviderIds) &&
-    (typeof (value as PublicAccountEntry).balanceUsd === 'number' ||
-      (value as PublicAccountEntry).balanceUsd === undefined)
-  );
-}
-
-function isValidBuyerPurchaseEntry(value: unknown): value is BuyerPurchaseEntry {
-  return (
-    Boolean(value) &&
-    typeof value === 'object' &&
-    typeof (value as BuyerPurchaseEntry).id === 'string' &&
-    typeof (value as BuyerPurchaseEntry).wallet === 'string' &&
-    typeof (value as BuyerPurchaseEntry).raidId === 'string' &&
-    typeof (value as BuyerPurchaseEntry).costUsd === 'number' &&
-    ((value as BuyerPurchaseEntry).route === 'raid' ||
-      (value as BuyerPurchaseEntry).route === 'chat' ||
-      (value as BuyerPurchaseEntry).route === 'inference') &&
-    typeof (value as BuyerPurchaseEntry).createdAt === 'string'
-  );
-}
-
-function isValidSellerPayoutEntry(value: unknown): value is SellerPayoutEntry {
-  return (
-    Boolean(value) &&
-    typeof value === 'object' &&
-    typeof (value as SellerPayoutEntry).id === 'string' &&
-    typeof (value as SellerPayoutEntry).providerId === 'string' &&
-    typeof (value as SellerPayoutEntry).raidId === 'string' &&
-    typeof (value as SellerPayoutEntry).grossUsd === 'number' &&
-    typeof (value as SellerPayoutEntry).status === 'string' &&
-    typeof (value as SellerPayoutEntry).createdAt === 'string'
-  );
-}
-
-function isValidBuyerApiKeyEntry(value: unknown): value is BuyerApiKeyEntry {
-  return (
-    Boolean(value) &&
-    typeof value === 'object' &&
-    typeof (value as BuyerApiKeyEntry).id === 'string' &&
-    typeof (value as BuyerApiKeyEntry).wallet === 'string' &&
-    typeof (value as BuyerApiKeyEntry).name === 'string' &&
-    typeof (value as BuyerApiKeyEntry).keyHash === 'string' &&
-    typeof (value as BuyerApiKeyEntry).prefix === 'string' &&
-    typeof (value as BuyerApiKeyEntry).createdAt === 'string' &&
-    typeof (value as BuyerApiKeyEntry).spentUsd === 'number' &&
-    ((value as BuyerApiKeyEntry).status === 'active' ||
-      (value as BuyerApiKeyEntry).status === 'revoked')
-  );
-}
-
-function readStorageBackend(env: NodeJS.ProcessEnv): StorageBackend {
-  const configured = env.BOSSRAID_STORAGE_BACKEND;
-  if (configured === 'sqlite' || configured === 'file' || configured === 'memory') {
-    return configured;
-  }
-
-  if (configured != null) {
-    throw new Error('BOSSRAID_STORAGE_BACKEND must be sqlite, file, or memory.');
-  }
-
-  if (env !== process.env) {
-    return 'memory';
-  }
-
-  return env.BOSSRAID_STATE_FILE ? 'file' : 'sqlite';
-}
-
-function findWorkspaceRoot(startDir: string): string {
-  let currentDir = startDir;
-
-  while (true) {
-    if (existsSync(resolve(currentDir, 'pnpm-workspace.yaml'))) {
-      return currentDir;
-    }
-
-    const parentDir = dirname(currentDir);
-    if (parentDir === currentDir) {
-      return startDir;
-    }
-
-    currentDir = parentDir;
-  }
-}
-
-function resolveWorkspacePath(
-  pathValue: string | undefined,
-  workspaceCwd: string
-): string | undefined {
-  if (!pathValue) {
-    return undefined;
-  }
-
-  if (isAbsolute(pathValue)) {
-    return pathValue;
-  }
-
-  return resolve(workspaceCwd, pathValue);
-}
-
 function deriveApiStateFile(path: string): string {
   const extension = extname(path);
   if (extension.length > 0) {
@@ -485,7 +347,10 @@ function deriveApiStateFile(path: string): string {
 
 function createApiControlStateStore(env: NodeJS.ProcessEnv): ApiControlStateStore {
   const workspaceCwd = findWorkspaceRoot(process.env.INIT_CWD ?? process.cwd());
-  const storageBackend = readStorageBackend(env);
+  const storageBackend = readStorageBackend(env, {
+    strict: true,
+    isolateNonProcessEnv: true,
+  });
   const cipher = createSecretCipher(env);
 
   switch (storageBackend) {
@@ -512,6 +377,8 @@ function createApiControlStateStore(env: NodeJS.ProcessEnv): ApiControlStateStor
 }
 
 export class ApiControlState {
+  private workingSnapshot: ApiControlStateSnapshot | null = null;
+
   constructor(private readonly store: ApiControlStateStore) {}
 
   readOpsSession(token: string | undefined, nowMs = Date.now()): ApiOpsSessionEntry | undefined {
@@ -634,7 +501,17 @@ export class ApiControlState {
     this.writeState(snapshot);
   }
 
-  readPublicAccount(wallet: string, nowMs = Date.now()): PublicAccountEntry {
+  readPublicAccount(wallet: string, nowMs = Date.now()): PublicAccountEntry | undefined {
+    const normalizedWallet = wallet.toLowerCase();
+    const { snapshot, changed } = this.readPrunedState(nowMs);
+    if (changed) {
+      this.writeState(snapshot);
+    }
+    const account = snapshot.publicAccounts.find((entry) => entry.wallet === normalizedWallet);
+    return account ? structuredClone(account) : undefined;
+  }
+
+  ensurePublicAccount(wallet: string, nowMs = Date.now()): PublicAccountEntry {
     const normalizedWallet = wallet.toLowerCase();
     const { snapshot } = this.readPrunedState(nowMs);
     const account = this.ensurePublicAccountInSnapshot(snapshot, normalizedWallet);
@@ -730,7 +607,7 @@ export class ApiControlState {
 
   sellerOwnsProvider(wallet: string, providerId: string, nowMs = Date.now()): boolean {
     const account = this.readPublicAccount(wallet, nowMs);
-    return account.sellerProviderIds.includes(providerId);
+    return account?.sellerProviderIds.includes(providerId) ?? false;
   }
 
   creditBuyerBalance(wallet: string, amountUsd: number, nowMs = Date.now()): PublicAccountEntry {
@@ -812,7 +689,7 @@ export class ApiControlState {
       createdAt: input.createdAt ?? new Date().toISOString(),
     };
     snapshot.sellerPayouts.unshift(entry);
-    snapshot.sellerPayouts = snapshot.sellerPayouts.slice(0, 10_000);
+    snapshot.sellerPayouts = snapshot.sellerPayouts.slice(0, SELLER_PAYOUT_STORE_LIMIT);
     this.writeState(snapshot);
     return structuredClone(entry);
   }
@@ -840,13 +717,12 @@ export class ApiControlState {
     payouts: SellerPayoutEntry[];
   } {
     const payouts = this.listSellerPayouts(providerIds, 500, nowMs);
-    const since24h = nowMs - 24 * 60 * 60 * 1_000;
-    const recent = payouts.filter((entry) => Date.parse(entry.createdAt) >= since24h);
+    const metrics24h = computeSellerPayout24hMetrics(payouts, nowMs);
     return {
       grossUsd: payouts.reduce((sum, entry) => sum + entry.grossUsd, 0),
       payoutCount: payouts.length,
-      routedRequests24h: recent.length,
-      earnings24hUsd: recent.reduce((sum, entry) => sum + entry.grossUsd, 0),
+      routedRequests24h: metrics24h.routedRequests24h,
+      earnings24hUsd: metrics24h.earnedBySellers24hUsd,
       payouts,
     };
   }
@@ -890,8 +766,15 @@ export class ApiControlState {
     return { allowed: true };
   }
 
+  private loadWorkingSnapshot(): ApiControlStateSnapshot {
+    if (!this.workingSnapshot) {
+      this.workingSnapshot = this.store.loadState();
+    }
+    return this.workingSnapshot;
+  }
+
   private readPrunedState(nowMs: number): { snapshot: ApiControlStateSnapshot; changed: boolean } {
-    const snapshot = this.store.loadState();
+    const snapshot = this.loadWorkingSnapshot();
     const nextSessions = snapshot.opsSessions.filter((entry) => entry.expiresAt > nowMs);
     const nextPublicAuthNonces = snapshot.publicAuthNonces.filter(
       (entry) => entry.expiresAt > nowMs
@@ -941,6 +824,7 @@ export class ApiControlState {
 
   private writeState(snapshot: ApiControlStateSnapshot): void {
     snapshot.savedAt = new Date().toISOString();
+    this.workingSnapshot = snapshot;
     this.store.saveState(snapshot);
   }
 }

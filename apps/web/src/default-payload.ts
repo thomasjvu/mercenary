@@ -1,42 +1,4 @@
-export const DEFAULT_SPAWN_PAYLOAD = `{
-  "agent": "mercenary-v1",
-  "taskType": "code_debugging",
-  "task": {
-    "title": "Fix Unity 4D movement bug",
-    "description": "Player teleports when crossing a rotated hypersurface boundary.",
-    "language": "csharp",
-    "framework": "unity",
-    "files": [
-      {
-        "path": "Assets/Scripts/Player/FourDMovement.cs",
-        "content": "public class FourDMovement {\\n  void Move() {\\n    return;\\n  }\\n}\\n",
-        "sha256": "replace_me"
-      }
-    ],
-    "failingSignals": {
-      "errors": ["NullReferenceException at line 184"],
-      "reproSteps": ["Start level 2", "Rotate on W axis", "Cross boundary"]
-    }
-  },
-  "output": {
-    "primaryType": "patch",
-    "artifactTypes": ["patch", "text"]
-  },
-  "raidPolicy": {
-    "maxAgents": 3,
-    "requiredCapabilities": ["unity", "debugging", "physics"],
-    "allowedModelFamilies": ["openai", "venice"],
-    "minReputationScore": 70,
-    "privacyMode": "prefer",
-    "requirePrivacyFeatures": ["signed_outputs"],
-    "allowedOutputTypes": ["patch", "text"],
-    "maxTotalCost": 20,
-    "selectionMode": "privacy_first"
-  },
-  "hostContext": {
-    "host": "codex"
-  }
-}`;
+import { isLowSignalChatPrompt } from './demo-chat.js';
 
 export const DEFAULT_LIVE_DEMO_BRIEF =
   'Create a one-room GB Studio microgame called Boss Raid: Slime Panic. Mercenary should split this into gameplay, pixel art, and trailer work, keep the creative direction consistent, and return one verified receipt-backed result.';
@@ -65,19 +27,6 @@ const EXPLICIT_WORK_SIGNALS = [
   /\b(can you|could you|please|help me|i want you to|i need you to)\s+(build|create|make|ship|design|generate|draft|produce|implement)\b/,
   /\bmake me\b/,
   /\bcreate me\b/,
-];
-
-const LOW_SIGNAL_CHAT_PATTERNS = [
-  /^(hi|hello|hey|yo|sup|hiya|howdy)\b/,
-  /^what'?s up\b/,
-  /^who are you\b/,
-  /^what can you do\b/,
-  /^tell me (a )?joke\b/,
-  /^can you tell me (a )?joke\b/,
-  /^give me (a )?joke\b/,
-  /^share (a )?joke\b/,
-  /^make me laugh\b/,
-  /^say something funny\b/,
 ];
 
 function buildLiveDemoFiles(normalizedBrief: string) {
@@ -368,14 +317,6 @@ function isSeededGameBuildRequest(brief: string): boolean {
     pattern.test(normalizedBrief)
   );
   return hasWorkSignal && hasSeededGameSignal;
-}
-
-function isLowSignalChatPrompt(brief: string): boolean {
-  const normalizedBrief = brief.trim().toLowerCase();
-  return (
-    normalizedBrief.length > 0 &&
-    LOW_SIGNAL_CHAT_PATTERNS.some((pattern) => pattern.test(normalizedBrief))
-  );
 }
 
 export function buildLiveDemoPayload(brief: string) {

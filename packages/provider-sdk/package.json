@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@bossraid/provider-registry": "workspace:*",
+    "@bossraid/raid-core": "workspace:*",
     "@bossraid/shared-types": "workspace:*"
   }
 }

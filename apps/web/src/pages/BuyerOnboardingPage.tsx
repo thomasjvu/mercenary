@@ -1,46 +1,14 @@
 import { useState } from 'react';
-import {
-  createAuthNonce,
-  createBuyerApiKey,
-  fetchSession,
-  verifyAuth,
-  type PublicSession,
-} from '../api';
-
-type EthereumProvider = {
-  request(args: { method: string; params?: unknown[] }): Promise<unknown>;
-};
+import { createBuyerApiKey, fetchSession } from '../api';
+import { useWalletAuth } from '../hooks/useWalletAuth';
 
 export function BuyerOnboardingPage() {
-  const [session, setSession] = useState<PublicSession | null>(null);
+  const { session, setSession, status, setStatus, connectWallet } = useWalletAuth(
+    'Connect a wallet to create a buyer account.'
+  );
   const [apiKey, setApiKey] = useState<string>('');
-  const [status, setStatus] = useState('Connect a wallet to create a buyer account.');
   const [keyName, setKeyName] = useState('Beta buyer key');
   const [spendLimit, setSpendLimit] = useState('5');
-
-  async function connectWallet() {
-    const ethereum = readEthereum();
-    if (!ethereum) {
-      setStatus('No wallet provider found. Install a wallet that supports personal_sign.');
-      return;
-    }
-
-    const accounts = (await ethereum.request({ method: 'eth_requestAccounts' })) as string[];
-    const wallet = accounts[0];
-    if (!wallet) {
-      setStatus('Wallet did not return an account.');
-      return;
-    }
-
-    const nonce = await createAuthNonce(wallet);
-    const signature = (await ethereum.request({
-      method: 'personal_sign',
-      params: [nonce.message, wallet],
-    })) as string;
-    const verified = await verifyAuth(wallet, nonce.message, signature);
-    setSession(verified);
-    setStatus(`Signed in as ${wallet}.`);
-  }
 
   async function createKey() {
     const created = await createBuyerApiKey({
@@ -120,8 +88,4 @@ export function BuyerOnboardingPage() {
       </div>
     </section>
   );
-}
-
-function readEthereum(): EthereumProvider | undefined {
-  return (globalThis as typeof globalThis & { ethereum?: EthereumProvider }).ethereum;
 }

@@ -19,6 +19,7 @@
     "test": "node --import tsx --test src/**/*.test.ts"
   },
   "dependencies": {
+    "@bossraid/constants": "workspace:*",
     "@bossraid/evaluation": "workspace:*",
     "@bossraid/persistence": "workspace:*",
     "@bossraid/persistence-sqlite": "workspace:*",

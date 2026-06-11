@@ -1,6 +1,6 @@
-import { FileBossRaidPersistence } from '@bossraid/persistence';
-import { SqliteBossRaidPersistence } from '@bossraid/persistence-sqlite';
+import { readStorageBackend } from '@bossraid/constants';
 import { createSettlementExecutor } from './settlement-executor.js';
+import { createPersistenceBackend } from './persistence-backend.js';
 import { findWorkspaceRoot, resolveWorkspacePath } from './workspace.js';
 
 type CliArgs = {
@@ -81,7 +81,7 @@ function selectRaidId(
 async function main(): Promise<void> {
   const workspaceRoot = findWorkspaceRoot(process.cwd());
   const args = parseArgs(process.argv.slice(2));
-  const storageBackend = readStorageBackend(process.env);
+  const storageBackend = readStorageBackend(process.env, { strict: true });
   const persistence = createCliPersistence(args, workspaceRoot, storageBackend);
   const snapshot = await persistence.loadState();
   const raidId = selectRaidId(snapshot.raids, args);
@@ -146,37 +146,18 @@ function createCliPersistence(
     throw new Error('Settlement CLI does not support BOSSRAID_STORAGE_BACKEND=memory.');
   }
 
-  if (storageBackend === 'sqlite') {
-    const sqlitePath = resolveWorkspacePath(
-      args.sqliteFile ?? process.env.BOSSRAID_SQLITE_FILE ?? './temp/bossraid-state.sqlite',
-      workspaceRoot
-    );
-    if (!sqlitePath) {
-      throw new Error('Set BOSSRAID_SQLITE_FILE or pass --sqlite-file.');
-    }
-    return new SqliteBossRaidPersistence(sqlitePath);
-  }
-
-  const statePath = resolveWorkspacePath(
+  const sqliteFile = resolveWorkspacePath(
+    args.sqliteFile ?? process.env.BOSSRAID_SQLITE_FILE ?? './temp/bossraid-state.sqlite',
+    workspaceRoot
+  );
+  const stateFile = resolveWorkspacePath(
     args.stateFile ?? process.env.BOSSRAID_STATE_FILE,
     workspaceRoot
   );
-  if (!statePath) {
-    throw new Error('Set BOSSRAID_STATE_FILE or pass --state-file.');
-  }
 
-  return new FileBossRaidPersistence(statePath);
-}
-
-function readStorageBackend(env: NodeJS.ProcessEnv): 'sqlite' | 'file' | 'memory' {
-  const configured = env.BOSSRAID_STORAGE_BACKEND;
-  if (configured === 'sqlite' || configured === 'file' || configured === 'memory') {
-    return configured;
-  }
-
-  if (configured != null) {
-    throw new Error('BOSSRAID_STORAGE_BACKEND must be sqlite, file, or memory.');
-  }
-
-  return env.BOSSRAID_STATE_FILE ? 'file' : 'sqlite';
+  return createPersistenceBackend({
+    storageBackend,
+    sqliteFile: storageBackend === 'sqlite' ? sqliteFile : undefined,
+    stateFile: storageBackend === 'file' ? stateFile : undefined,
+  });
 }
