@@ -1,4 +1,12 @@
-export { shortValue, uniqueStrings } from './format.js';
+export {
+  formatMs,
+  formatScore,
+  formatTimestamp,
+  formatUsd,
+  shortValue,
+  uniqueStrings,
+  type TimestampFormatStyle,
+} from './format.js';
 export {
   buildErc8004ProofLabel,
   hasErc8004Registration,
@@ -21,7 +29,10 @@ export {
 } from './polling.js';
 export {
   buildProviderProofNote,
+  buildRoutingDecisionSummary,
   buildRoutingReasonNote,
+  countProvidersMatchingSignal,
+  countProvidersWithSignal,
   matchRoutingDecision,
   type RoutingDecisionLike,
   type RoutingProviderLike,

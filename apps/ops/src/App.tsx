@@ -21,6 +21,8 @@ import {
   type RaidResult,
   type RaidStatus,
 } from './api';
+import { OpsAuthGate } from './components/OpsAuthGate';
+import { OpsRaidList } from './components/OpsRaidList';
 import {
   buildRoutingDecisionSummary,
   countUniqueProviders,
@@ -307,50 +309,13 @@ export function App() {
 
   if (!opsReady) {
     return (
-      <main className="ops-shell ops-shell--locked">
-        <div className="ops-bg-grid" aria-hidden="true" />
-        <section className="ops-auth-card">
-          <div className="ops-auth-card__copy">
-            <p className="ops-label">Boss Raid Ops</p>
-            <h1>Unlock the internal control plane.</h1>
-            <p className="ops-lede">
-              Use the server-side ops session. The browser no longer ships a reusable admin bearer
-              in the bundle.
-            </p>
-          </div>
-
-          <form
-            className="ops-auth-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void handleOpsLogin();
-            }}
-          >
-            <label className="ops-auth-field">
-              <span className="ops-label">admin token</span>
-              <input
-                autoComplete="current-password"
-                className="search ops-auth-input"
-                onChange={(event) => setAdminTokenInput(event.target.value)}
-                placeholder="paste BOSSRAID_ADMIN_TOKEN"
-                type="password"
-                value={adminTokenInput}
-              />
-            </label>
-            <div className="ops-auth-actions">
-              <button className="button button--primary" disabled={authPending} type="submit">
-                {authPending ? 'unlocking' : 'unlock ops'}
-              </button>
-              <DocsButton className="button ops-docs-link" />
-            </div>
-            {authMessage ? (
-              <p className="error-note">{authMessage}</p>
-            ) : (
-              <p className="quiet-note">Session cookie lifetime follows the API runtime TTL.</p>
-            )}
-          </form>
-        </section>
-      </main>
+      <OpsAuthGate
+        adminTokenInput={adminTokenInput}
+        authMessage={authMessage}
+        authPending={authPending}
+        onSubmit={() => void handleOpsLogin()}
+        onTokenChange={setAdminTokenInput}
+      />
     );
   }
 
@@ -513,21 +478,11 @@ export function App() {
               </div>
               <SignalTag label="internal" variant="internal" />
             </div>
-            <div className="raid-list">
-              {(raids.data ?? []).slice(0, 8).map((raid) => (
-                <button
-                  key={raid.raidId}
-                  className={`raid-list__item ${raid.raidId === raidId ? 'raid-list__item--active' : ''}`}
-                  onClick={() => setRaidId(raid.raidId)}
-                  type="button"
-                >
-                  <strong>{raid.raidId}</strong>
-                  <span>{raid.status}</span>
-                  <small>{formatTimestamp(raid.updatedAt)}</small>
-                </button>
-              ))}
-              {!raids.data?.length ? <p className="quiet-note">No raids yet.</p> : null}
-            </div>
+            <OpsRaidList
+              raids={raids.data ?? []}
+              selectedRaidId={raidId}
+              onSelect={(nextRaidId) => setRaidId(nextRaidId)}
+            />
           </article>
 
           <article className="ops-panel ops-panel--timeline">

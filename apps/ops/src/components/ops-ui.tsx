@@ -1,4 +1,23 @@
-import { buildErc8004ProofLabel, hasErc8004Registration, shortValue } from '@bossraid/proof-ui';
+import {
+  buildErc8004ProofLabel,
+  buildRoutingDecisionSummary,
+  countProvidersMatchingSignal,
+  formatMs,
+  formatScore,
+  formatTimestamp,
+  formatUsd,
+  hasErc8004Registration,
+  shortValue,
+} from '@bossraid/proof-ui';
+
+export { buildRoutingDecisionSummary, formatMs, formatScore, formatTimestamp, formatUsd };
+
+export function countUniqueProviders<T extends { providerId: string }>(
+  decisions: T[],
+  predicate: (decision: T) => boolean
+): number {
+  return countProvidersMatchingSignal(decisions, predicate);
+}
 import { ArtifactStrip } from '@bossraid/ui';
 import type { CSSProperties } from 'react';
 import type {
@@ -8,91 +27,6 @@ import type {
   RaidResult,
   RankedSubmission,
 } from '../api';
-
-type RoutingDecision = NonNullable<RaidResult['routingProof']>['providers'][number];
-
-export function formatMs(value?: number): string {
-  return value == null ? 'n/a' : `${value} ms`;
-}
-
-export function formatUsd(value?: number): string {
-  return value == null ? '$0.00' : `$${value.toFixed(2)}`;
-}
-
-export function formatScore(value?: number): string {
-  return value == null ? '0.00' : value.toFixed(2);
-}
-
-export function formatTimestamp(value?: string): string {
-  if (!value) {
-    return 'n/a';
-  }
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-
-  return parsed.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-export function countUniqueProviders(
-  decisions: RoutingDecision[],
-  predicate: (decision: RoutingDecision) => boolean
-): number {
-  let count = 0;
-  const grouped = new Map<string, RoutingDecision[]>();
-
-  for (const decision of decisions) {
-    const existing = grouped.get(decision.providerId) ?? [];
-    existing.push(decision);
-    grouped.set(decision.providerId, existing);
-  }
-
-  for (const providerDecisions of grouped.values()) {
-    if (providerDecisions.some(predicate)) {
-      count += 1;
-    }
-  }
-
-  return count;
-}
-
-export function buildRoutingDecisionSummary(decision: RoutingDecision): string {
-  const workstream =
-    decision.workstreamLabel && decision.roleLabel
-      ? `${decision.workstreamLabel} / ${decision.roleLabel}`
-      : (decision.workstreamLabel ?? decision.roleLabel ?? 'root raid');
-  const privacySignals = [
-    buildErc8004ProofLabel(decision.erc8004VerificationStatus, decision.erc8004Registered),
-    decision.registrationTxFound === false ? 'reg tx missing' : null,
-    decision.operatorMatchesOwner === false ? 'owner mismatch' : null,
-    decision.veniceBacked ? 'venice' : null,
-    decision.registrationTx ? `reg ${shortValue(decision.registrationTx)}` : null,
-    decision.trustScore > 0 ? `trust ${decision.trustScore}` : null,
-    decision.privacyFeatures.includes('no_data_retention') ? 'no-retention' : null,
-    decision.privacyFeatures.includes('tee_attested') ? 'tee' : null,
-  ].filter((value): value is string => value != null);
-  const reasons = decision.reasons
-    .filter(
-      (reason) => !['selected_primary', 'reserved_fallback', 'workstream_scoped'].includes(reason)
-    )
-    .map((reason) => reason.replaceAll('_', ' '))
-    .join(' / ');
-
-  return [
-    `${decision.phase} · ${workstream}`,
-    privacySignals.join(' · '),
-    reasons ? `why ${reasons}` : null,
-  ]
-    .filter((value): value is string => value != null && value.length > 0)
-    .join(' · ');
-}
 
 export function ReceiptRow({ label, value }: { label: string; value: string }) {
   return (

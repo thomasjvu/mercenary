@@ -1,4 +1,5 @@
 import { type ApiContext } from '../api-context.js';
+import { serializeProviderHealth, serializeProviderProfile } from '../lib/serializers.js';
 import { createAuthHandlers } from './auth.js';
 import { createManaBillingHandlers } from './billing-mana.js';
 import { createPaymentHandlers } from './payment.js';
@@ -25,12 +26,12 @@ export function createApiHandlers(ctx: ApiContext) {
     requireBuyerApiKeyRateLimit: auth.requireBuyerApiKeyRateLimit,
     requireRaidReadAccess: auth.requireRaidReadAccess,
     readRaidAccessTokenQuery: auth.readRaidAccessTokenQuery,
-    serializeProviderProfile: raid.serializeProviderProfile,
+    serializeProviderProfile,
     requireProviderOrRaidReadAccess: auth.requireProviderOrRaidReadAccess,
     buildProviderSettlementPayload: raid.buildProviderSettlementPayload,
     ensureErc8004ProofState: raid.ensureErc8004ProofState,
     ensureSettlementProofState: raid.ensureSettlementProofState,
-    serializeProviderHealth: raid.serializeProviderHealth,
+    serializeProviderHealth,
     buildInferenceMarketSnapshot: raid.buildInferenceMarketSnapshot,
     handleChatCompletionRequest: chat.handleChatCompletionRequest,
     readOpsSession: auth.readOpsSession,
@@ -43,7 +44,6 @@ export function createApiHandlers(ctx: ApiContext) {
     getRaidId: raid.getRaidId,
     recordMarketplaceLedgersFromRaid: payment.recordMarketplaceLedgersFromRaid,
     spawnParsedRaid: raid.spawnParsedRaid,
-    registerRaidDetailRoutes: raid.registerRaidDetailRoutes,
     collectProviderHealth: raid.collectProviderHealth,
   };
 }

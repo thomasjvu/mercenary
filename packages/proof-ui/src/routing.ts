@@ -7,6 +7,7 @@ import { shortValue } from './format.js';
 import type { Erc8004VerificationStatus } from './types.js';
 
 export type RoutingDecisionLike = {
+  providerId?: string;
   phase?: 'primary' | 'reserve';
   workstreamId?: string;
   workstreamLabel?: string;
@@ -171,4 +172,74 @@ export function buildRoutingReasonNote(decision: RoutingDecisionLike | undefined
     });
 
   return reasonLabels.join(' / ');
+}
+
+export function countProvidersMatchingSignal<T extends RoutingDecisionLike>(
+  decisions: T[],
+  predicate: (decision: T) => boolean
+): number {
+  let count = 0;
+  const grouped = new Map<string, T[]>();
+
+  for (const decision of decisions) {
+    const existing = grouped.get(decision.providerId ?? '') ?? [];
+    existing.push(decision);
+    grouped.set(decision.providerId ?? '', existing);
+  }
+
+  for (const providerDecisions of grouped.values()) {
+    if (providerDecisions.some(predicate)) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
+export function countProvidersWithSignal<T extends RoutingDecisionLike>(
+  routingDecisionMap: Map<string, T[]>,
+  predicate: (decision: T) => boolean
+): number {
+  let count = 0;
+
+  for (const decisions of routingDecisionMap.values()) {
+    if (decisions.some(predicate)) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
+export function buildRoutingDecisionSummary(decision: RoutingDecisionLike): string {
+  const workstream =
+    decision.workstreamLabel && decision.roleLabel
+      ? `${decision.workstreamLabel} / ${decision.roleLabel}`
+      : (decision.workstreamLabel ?? decision.roleLabel ?? 'root raid');
+  const privacySignals = [
+    buildErc8004ProofLabel(decision.erc8004VerificationStatus, decision.erc8004Registered ?? false),
+    decision.registrationTxFound === false ? 'reg tx missing' : null,
+    decision.operatorMatchesOwner === false ? 'owner mismatch' : null,
+    decision.veniceBacked ? 'venice' : null,
+    decision.registrationTx ? `reg ${shortValue(decision.registrationTx)}` : null,
+    typeof decision.trustScore === 'number' && decision.trustScore > 0
+      ? `trust ${decision.trustScore}`
+      : null,
+    decision.privacyFeatures?.includes('no_data_retention') ? 'no-retention' : null,
+    decision.privacyFeatures?.includes('tee_attested') ? 'tee' : null,
+  ].filter((value): value is string => value != null);
+  const reasons = (decision.reasons ?? [])
+    .filter(
+      (reason) => !['selected_primary', 'reserved_fallback', 'workstream_scoped'].includes(reason)
+    )
+    .map((reason) => reason.replaceAll('_', ' '))
+    .join(' / ');
+
+  return [
+    `${decision.phase ?? 'primary'} · ${workstream}`,
+    privacySignals.join(' · '),
+    reasons ? `why ${reasons}` : null,
+  ]
+    .filter((value): value is string => value != null && value.length > 0)
+    .join(' · ');
 }

@@ -1,3 +1,4 @@
+import { formatTimestamp as formatTimestampBase, uniqueStrings } from '@bossraid/proof-ui';
 import type { SpecialistTone } from './components/demo/demo-ui';
 
 export function humanizeStatus(status: string): string {
@@ -9,16 +10,7 @@ export function formatTimestamp(value: string | undefined): string {
     return 'waiting';
   }
 
-  const timestamp = new Date(value);
-  if (Number.isNaN(timestamp.getTime())) {
-    return value;
-  }
-
-  return timestamp.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
+  return formatTimestampBase(value, 'time');
 }
 
 export function formatElapsedMs(startedAtMs: number, completedAtMs?: number): string {
@@ -129,7 +121,7 @@ export function mapStatusTone(status: string): SpecialistTone {
   return 'working';
 }
 
-export { uniqueStrings } from '@bossraid/proof-ui';
+export { uniqueStrings };
 
 export function readErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unexpected error';

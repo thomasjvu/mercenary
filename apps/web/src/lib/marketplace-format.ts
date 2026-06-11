@@ -1,6 +1,4 @@
-export function formatUsd(value: number | null | undefined, digits = 2): string {
-  return typeof value === 'number' && Number.isFinite(value) ? `$${value.toFixed(digits)}` : 'n/a';
-}
+export { formatUsd } from '@bossraid/proof-ui';
 
 export function formatPercent(value: number | null | undefined): string {
   return typeof value === 'number' && Number.isFinite(value)
@@ -21,8 +19,8 @@ export function formatSavingsLabel(
   }
 
   if (savingsPercent != null && savingsPercent > 0) {
-    return `${savingsPercent}% off ref · save ${formatUsd(savingsUsd)}`;
+    return `${savingsPercent}% off ref · save $${savingsUsd.toFixed(2)}`;
   }
 
-  return `save ${formatUsd(savingsUsd)} vs ref`;
+  return `save $${savingsUsd.toFixed(2)} vs ref`;
 }

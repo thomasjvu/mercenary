@@ -12,7 +12,7 @@ import type {
 } from '@bossraid/shared-types';
 import {
   fetchJson,
-  requestJsonDetailed,
+  requestJsonDetailedWeb as requestJsonDetailed,
   RAID_ACCESS_TOKEN_HEADER,
   type ApiResponse,
 } from './client.js';

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { shortValue, uniqueStrings } from './format.js';
+import { formatMs, formatTimestamp, formatUsd, shortValue, uniqueStrings } from './format.js';
+import { countProvidersWithSignal } from './routing.js';
 import { buildErc8004ProofLabel, hasErc8004Registration } from './erc8004.js';
 import { selectApprovedProviderIds } from './raid-result.js';
 import { raidPollingRefreshInterval } from './polling.js';
@@ -12,6 +13,30 @@ test('shortValue truncates long strings', () => {
 
 test('uniqueStrings drops blanks and duplicates', () => {
   assert.deepEqual(uniqueStrings(['a', 'a', '', 'b']), ['a', 'b']);
+});
+
+test('formatUsd handles nullish and precision', () => {
+  assert.equal(formatUsd(undefined), '$0.00');
+  assert.equal(formatUsd(1.2345, 3), '$1.234');
+});
+
+test('formatMs and formatTimestamp render stable labels', () => {
+  assert.equal(formatMs(undefined), 'n/a');
+  assert.equal(formatMs(42), '42 ms');
+  assert.equal(formatTimestamp(undefined), 'n/a');
+  assert.match(formatTimestamp('2026-06-11T12:34:56.000Z'), /Jun/);
+});
+
+test('countProvidersWithSignal groups by provider map entries', () => {
+  const map = new Map([
+    ['p1', [{ providerId: 'p1', veniceBacked: true }]],
+    ['p2', [{ providerId: 'p2', veniceBacked: false }]],
+  ]);
+
+  assert.equal(
+    countProvidersWithSignal(map, (decision) => decision.veniceBacked === true),
+    1
+  );
 });
 
 test('hasErc8004Registration requires registration tx', () => {

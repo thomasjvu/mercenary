@@ -388,7 +388,26 @@ export type ProviderViewResponse = {
   agentId?: string;
   displayName: string;
   description?: string;
+  endpointType?: string;
+  endpoint?: string;
   specializations: string[];
+  supportedLanguages?: string[];
+  supportedFrameworks?: string[];
+  pricing?: {
+    mode?: 'task' | 'token_metered';
+    pricePerTaskUsd?: number;
+    pricePer1mInputTokensUsd?: number;
+    pricePer1mOutputTokensUsd?: number;
+    minimumChargeUsd?: number;
+    currency?: string;
+  };
+  maxConcurrency?: number;
+  source?: {
+    type?: string;
+    partyQuestFormationId?: string;
+    partyQuestAgentId?: string;
+    endpointPath?: string;
+  };
   status: string;
   modelFamily?: string;
   agentFramework?: 'codex' | 'claude_code' | 'openclaw' | 'custom';

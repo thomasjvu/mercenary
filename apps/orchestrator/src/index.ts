@@ -16,13 +16,7 @@ import {
   type RaidProvider,
 } from '@bossraid/provider-sdk';
 import { DEFAULT_TIMEOUTS, rankSubmissions, selectProviders } from '@bossraid/raid-core';
-import {
-  buildDiscoveryQueryFromTask,
-  providerHeartbeatAgeMs,
-  providerIsFresh,
-  providerMatchesDiscoveryQuery,
-  refreshProviderScores,
-} from '@bossraid/provider-registry';
+import { buildDiscoveryQueryFromTask, refreshProviderScores } from '@bossraid/provider-registry';
 import type {
   BossRaidReplayOutput,
   BossRaidResultOutput,
@@ -57,7 +51,6 @@ import {
   applyDisqualificationToRaid,
   buildRaidStatusOutput,
   finalizeRaidRecord,
-  restorePersistedRaid,
   shouldFinalizeRaid,
   TERMINAL_ASSIGNMENT_STATUSES,
   TERMINAL_RAID_STATUSES,
@@ -92,9 +85,7 @@ import {
 } from './raid-launch.js';
 import { RaidDeadlineTimerRegistry } from './raid-timers.js';
 import {
-  decryptProviderProfileSecrets,
   dropProviderAliases,
-  encryptProviderProfileSecrets,
   filterProvidersByDiscoveryQuery,
   normalizeProviderEndpoint,
 } from './provider-registry-local.js';
@@ -102,6 +93,17 @@ import { ProviderTimerRegistry } from './timer-registry.js';
 import { createPersistenceBackend } from './persistence-backend.js';
 import { ProviderHealthCache } from './provider-health-cache.js';
 import { PersistenceQueue, PersistenceUnavailableError } from './persistence-queue.js';
+import {
+  buildOrchestratorSnapshot,
+  queueOrchestratorPersist,
+  queueOrchestratorPersistBestEffort,
+  restoreOrchestratorState,
+} from './orchestrator-persistence.js';
+import {
+  filterReadyProvidersForRaid,
+  refreshProviderAvailability as refreshProviderAvailabilityState,
+  refreshProviderLiveness as refreshProviderLivenessState,
+} from './orchestrator-provider-lifecycle.js';
 import {
   buildAdaptiveReplanDeps,
   buildPrepareRaidDeps,
@@ -245,19 +247,13 @@ export class BossRaidOrchestrator {
     query: ProviderDiscoveryQuery = {}
   ): Promise<ProviderProfile[]> {
     const readyProviderIds = await this.refreshProviderAvailability();
-    return this.listProviders()
-      .filter((provider) => readyProviderIds.has(provider.providerId))
-      .filter((provider) => this.providerHasCapacity(provider.providerId))
-      .filter((provider) =>
-        providerMatchesDiscoveryQuery(
-          provider,
-          {
-            ...query,
-            onlineOnly: false,
-          },
-          this.options.providerFreshMs
-        )
-      );
+    return filterReadyProvidersForRaid(
+      this.listProviders(),
+      readyProviderIds,
+      (providerId) => this.providerHasCapacity(providerId),
+      query,
+      this.options
+    );
   }
 
   private selectProvidersForTask(
@@ -444,65 +440,19 @@ export class BossRaidOrchestrator {
   }
 
   restoreState(snapshot: BossRaidPersistenceSnapshot): boolean {
-    let normalized = false;
-
-    for (const persistedSnapshot of snapshot.providers) {
-      const persisted = decryptProviderProfileSecrets(persistedSnapshot, this.secretCipher);
-      const existing =
-        this.providers.get(persisted.providerId) ??
-        (persisted.agentId
-          ? [...this.providers.values()].find((provider) => provider.agentId === persisted.agentId)
-          : undefined) ??
-        [...this.providers.values()].find(
-          (provider) =>
-            normalizeProviderEndpoint(provider.endpoint) ===
-            normalizeProviderEndpoint(persisted.endpoint)
-        );
-      if (!existing) {
-        this.registerProvider(createProviderFromProfile(persisted));
-        continue;
-      }
-
-      if (existing.providerId !== persisted.providerId) {
-        normalized = true;
-      }
-
-      existing.status = persisted.status;
-      existing.reputation = persisted.reputation;
-      existing.privacy = persisted.privacy;
-      existing.modelFamily = persisted.modelFamily;
-      existing.outputTypes = persisted.outputTypes;
-      existing.auth = persisted.auth;
-      existing.lastSeenAt = persisted.lastSeenAt;
-      refreshProviderScores(existing);
-      normalized =
-        dropProviderAliases(existing, this.providerRegistryMaps(), {
-          preserveSeededProvider: true,
-        }) || normalized;
-    }
-
-    for (const raid of snapshot.raids) {
-      const restored = restorePersistedRaid(raid);
-      this.raids.set(restored.id, restored);
-      if (!TERMINAL_RAID_STATUSES.has(restored.status)) {
-        this.scheduleRaidDeadline(restored.id);
-      }
-    }
-
-    for (const reservation of snapshot.launchReservations ?? []) {
-      if (reservation.spawnOutput || !launchReservationExpired(reservation)) {
-        this.launchReservations.set(reservation.id, reservation);
-      }
-    }
-
-    for (const raid of this.listAllRaids()) {
-      if (raid.parentRaidId == null && raid.childRaidIds?.length) {
-        refreshParentRaidFromChildren(raid.id, (childRaidId) => this.requireRaid(childRaidId));
-      }
-    }
-
-    this.pruneLaunchReservations();
-    return normalized;
+    return restoreOrchestratorState({
+      snapshot,
+      secretCipher: this.secretCipher,
+      providerRegistryMaps: () => this.providerRegistryMaps(),
+      registerProvider: (provider) => this.registerProvider(provider),
+      raids: this.raids,
+      launchReservations: this.launchReservations,
+      listAllRaids: () => this.listAllRaids(),
+      requireRaid: (raidId) => this.requireRaid(raidId),
+      scheduleRaidDeadline: (raidId) => this.scheduleRaidDeadline(raidId),
+      pruneLaunchReservations: (persist) => this.pruneLaunchReservations(persist),
+      refreshProviderLiveness: (nowMs) => this.refreshProviderLiveness(nowMs),
+    });
   }
 
   async persistState(): Promise<void> {
@@ -879,25 +829,26 @@ export class BossRaidOrchestrator {
   }
 
   private snapshotState(): BossRaidPersistenceSnapshot {
-    this.refreshProviderLiveness();
-    this.pruneLaunchReservations(false);
-    return {
-      version: 1,
-      savedAt: new Date().toISOString(),
-      raids: this.listAllRaids(),
-      providers: this.listProviders().map((provider) =>
-        encryptProviderProfileSecrets(provider, this.secretCipher)
-      ),
-      launchReservations: [...this.launchReservations.values()],
-    };
+    return buildOrchestratorSnapshot({
+      listAllRaids: () => this.listAllRaids(),
+      listProviders: () => this.listProviders(),
+      launchReservations: this.launchReservations,
+      secretCipher: this.secretCipher,
+      refreshProviderLiveness: (nowMs) => this.refreshProviderLiveness(nowMs),
+      pruneLaunchReservations: (persist) => this.pruneLaunchReservations(persist),
+    });
   }
 
   private queuePersist(): Promise<void> {
-    return this.persistenceQueue.enqueue(() => this.persistence.saveState(this.snapshotState()));
+    return queueOrchestratorPersist(this.persistenceQueue, this.persistence, () =>
+      this.snapshotState()
+    );
   }
 
   private queuePersistBestEffort(): void {
-    this.persistenceQueue.enqueueBestEffort(() => this.persistence.saveState(this.snapshotState()));
+    queueOrchestratorPersistBestEffort(this.persistenceQueue, this.persistence, () =>
+      this.snapshotState()
+    );
   }
 
   private assertPersistenceWritable(): void {
@@ -985,20 +936,7 @@ export class BossRaidOrchestrator {
   }
 
   private refreshProviderLiveness(nowMs: number = Date.now()): void {
-    for (const provider of this.providers.values()) {
-      if (provider.status === 'offline') {
-        continue;
-      }
-
-      const ageMs = providerHeartbeatAgeMs(provider, nowMs);
-      if (ageMs == null) {
-        continue;
-      }
-
-      provider.status = providerIsFresh(provider, this.options.providerFreshMs, nowMs)
-        ? 'available'
-        : 'degraded';
-    }
+    refreshProviderLivenessState(this.providers.values(), this.options.providerFreshMs, nowMs);
   }
 
   private async executeSettlement(raidId: string): Promise<void> {
@@ -1088,32 +1026,11 @@ export class BossRaidOrchestrator {
   }
 
   private async refreshProviderAvailability(): Promise<Set<string>> {
-    const providers = [...this.providers.values()];
-    if (providers.length === 0) {
-      return new Set<string>();
-    }
-
-    const nowMs = Date.now();
-    const results = await Promise.all(
-      providers.map(async (provider) => ({
-        provider,
-        health: await this.providerHealthCache.read(provider, nowMs),
-      }))
-    );
-
-    const readyProviderIds = new Set<string>();
-    for (const { provider, health } of results) {
-      if (health.ready) {
-        provider.status = 'available';
-        readyProviderIds.add(provider.providerId);
-        continue;
-      }
-
-      provider.status = health.reachable ? 'degraded' : 'offline';
-    }
-
-    this.refreshProviderLiveness();
-    return readyProviderIds;
+    return refreshProviderAvailabilityState({
+      providers: [...this.providers.values()],
+      providerHealthCache: this.providerHealthCache,
+      providerFreshMs: this.options.providerFreshMs,
+    });
   }
 
   private raidRunnerContext(): RaidRunnerContext {

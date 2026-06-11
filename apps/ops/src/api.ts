@@ -1,3 +1,4 @@
+import { createFetchJson, parseJsonErrorMessage } from '@bossraid/http-client';
 import type {
   OpsSessionStatusResponse,
   OpsSettingsResponse,
@@ -30,26 +31,7 @@ async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   });
 }
 
-export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await apiFetch(path, init);
-  if (!response.ok) {
-    let message = `Request failed: ${response.status}`;
-
-    try {
-      const payload = (await response.json()) as { message?: string; error?: string };
-      if (typeof payload.message === 'string' && payload.message.length > 0) {
-        message = payload.message;
-      } else if (typeof payload.error === 'string' && payload.error.length > 0) {
-        message = payload.error;
-      }
-    } catch {
-      // Ignore parse errors and keep the status-based message.
-    }
-
-    throw new Error(message);
-  }
-  return response.json() as Promise<T>;
-}
+export const fetchJson = createFetchJson(API_BASE, { credentials: 'same-origin' });
 
 export async function fetchOpsSessionStatus(): Promise<OpsSessionStatus> {
   const response = await apiFetch('/v1/ops/session');
@@ -61,11 +43,7 @@ export async function fetchOpsSessionStatus(): Promise<OpsSessionStatus> {
 
     try {
       const payload = (await response.json()) as { message?: string; error?: string };
-      if (typeof payload.message === 'string' && payload.message.length > 0) {
-        message = payload.message;
-      } else if (typeof payload.error === 'string' && payload.error.length > 0) {
-        message = payload.error;
-      }
+      message = parseJsonErrorMessage(payload, response.status);
     } catch {
       // Ignore parse errors and keep the status-based message.
     }

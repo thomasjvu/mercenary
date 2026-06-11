@@ -15,6 +15,7 @@
     "@bossraid/proof-ui": "workspace:*",
     "@bossraid/ui": "workspace:*",
     "@bossraid/constants": "workspace:*",
+    "@bossraid/http-client": "workspace:*",
     "@bossraid/shared-types": "workspace:*",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

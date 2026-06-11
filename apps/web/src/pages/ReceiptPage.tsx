@@ -4,7 +4,9 @@ import {
   buildProviderProofNote,
   buildRoutingReasonNote,
   buildSettlementLifecycleLabel,
+  countProvidersWithSignal,
   DEFAULT_TERMINAL_RAID_STATUSES,
+  formatUsd,
   isRenderableImageArtifact,
   isRenderableVideoArtifact,
   matchRoutingDecision,
@@ -15,7 +17,6 @@ import {
 import { ArtifactPreview, ReceiptProofPanel, useRaidPolling } from '@bossraid/ui';
 import heroImage from '../../../../assets/hero.webp';
 import {
-  API_BASE,
   fetchAttestedRaidResult,
   fetchAttestedRuntime,
   fetchJson,
@@ -28,16 +29,23 @@ import {
   type RaidResult,
   type RaidStatus,
 } from '../api';
+import {
+  buildAgentLogUrl,
+  buildAgentManifestUrl,
+  buildAttestedResultUrl,
+  buildAttestedRuntimeUrl,
+  buildAttestationSurfaceLabel,
+  buildReceiptPath,
+  buildReceiptUrl,
+  isAttestationSignerUnavailable,
+  readReceiptQuery,
+  type ReceiptQuery,
+} from '../lib/receipt-url';
 
 type AppRoute = '/' | '/demo' | '/raiders' | '/receipt';
 
 type ReceiptPageProps = {
   onNavigate: (path: AppRoute) => void;
-};
-
-type ReceiptQuery = {
-  raidId: string;
-  token: string;
 };
 
 type RoutingDecision = NonNullable<RaidResult['routingProof']>['providers'][number];
@@ -721,93 +729,6 @@ function buildReceiptProviderRows(
       reason: compactText(buildRoutingReasonNote(decision), 96),
     };
   });
-}
-
-function formatUsd(value?: number): string {
-  return value == null ? '$0.00' : `$${value.toFixed(2)}`;
-}
-
-function countProvidersWithSignal(
-  routingDecisionMap: Map<string, RoutingDecision[]>,
-  predicate: (decision: RoutingDecision) => boolean
-): number {
-  let count = 0;
-
-  for (const decisions of routingDecisionMap.values()) {
-    if (decisions.some(predicate)) {
-      count += 1;
-    }
-  }
-
-  return count;
-}
-
-function buildAgentManifestUrl(): string {
-  return `${API_BASE}/v1/agent.json`;
-}
-
-function buildAttestedRuntimeUrl(): string {
-  return `${API_BASE}/v1/attested-runtime`;
-}
-
-function buildAttestedResultUrl(query: ReceiptQuery): string {
-  return `${API_BASE}/v1/raid/${encodeURIComponent(query.raidId)}/attested-result?token=${encodeURIComponent(query.token)}`;
-}
-
-function buildAgentLogUrl(query: ReceiptQuery): string {
-  return `${API_BASE}/v1/raids/${encodeURIComponent(query.raidId)}/agent_log.json?token=${encodeURIComponent(query.token)}`;
-}
-
-function buildAttestationSurfaceLabel(
-  target: string | null | undefined,
-  teePlatform: string | null | undefined
-): string {
-  const haystack = `${target ?? ''} ${teePlatform ?? ''}`.toLowerCase();
-  if (haystack.includes('phala')) {
-    return 'Phala TEE-attested';
-  }
-  if (haystack.includes('eigen')) {
-    return 'EigenCompute TEE-attested';
-  }
-  if (teePlatform != null && teePlatform.trim().length > 0) {
-    return `${teePlatform} TEE-attested`;
-  }
-  return 'TEE-attested';
-}
-
-function isAttestationSignerUnavailable(message: string | undefined): boolean {
-  return (
-    typeof message === 'string' && message.includes('MNEMONIC environment variable is required')
-  );
-}
-
-function buildReceiptUrl(query: ReceiptQuery): string {
-  return new URL(buildReceiptPath(query), window.location.origin).toString();
-}
-
-function buildReceiptPath(query: ReceiptQuery): string {
-  const params = new URLSearchParams({
-    raidId: query.raidId,
-    token: query.token,
-  });
-  return `/receipt?${params.toString()}`;
-}
-
-function readReceiptQuery(): ReceiptQuery | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  const params = new URLSearchParams(window.location.search);
-  const raidId = params.get('raidId') ?? params.get('raid_id') ?? '';
-  const token =
-    params.get('token') ?? params.get('raidAccessToken') ?? params.get('raid_access_token') ?? '';
-
-  if (!raidId || !token) {
-    return null;
-  }
-
-  return { raidId, token };
 }
 
 function readQueryErrorMessage(error: unknown): string {
