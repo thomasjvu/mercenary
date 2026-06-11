@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { DEFAULTS } from '@bossraid/constants';
 import { ensurePublicAccountInSnapshot } from './sessions.js';
 import type { ControlStateContext } from './state-context.js';
 import type { BuyerApiKeyEntry, BuyerPurchaseEntry, PublicAccountEntry } from './types.js';
@@ -159,7 +160,7 @@ export function recordBuyerPurchase(
 export function listBuyerPurchases(
   ctx: ControlStateContext,
   wallet: string,
-  limit = 100,
+  limit = DEFAULTS.BUYER_PURCHASE_LIST_LIMIT,
   nowMs = Date.now()
 ): BuyerPurchaseEntry[] {
   const normalizedWallet = wallet.toLowerCase();

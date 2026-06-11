@@ -4,24 +4,19 @@ import {
   parseProviderHeartbeat,
   parseProviderSubmission,
 } from '@bossraid/api-contracts';
-import { probeProviderHealth } from '@bossraid/provider-sdk';
+import { probeAllProviderHealth } from '../lib/provider-health.js';
 import { type ApiContext } from '../api-context.js';
-import { type ApiHandlers } from '../api-handlers.js';
+import { type ApiHandlerGroups } from '../api-handlers.js';
 
 export function registerProviderRoutes(
   app: FastifyInstance,
   ctx: ApiContext,
-  handlers: ApiHandlers
+  handlers: ApiHandlerGroups
 ): void {
   const { orchestrator, providerSubmissionBodyLimitBytes } = ctx;
-  const {
-    providerIsAuthorized,
-    validateProviderCallback,
-    serializeProviderProfile,
-    serializeProviderHealth,
-    ensureErc8004ProofState,
-    requireAdmin,
-  } = handlers;
+  const { providerIsAuthorized, requireAdmin } = handlers.auth;
+  const { validateProviderCallback, ensureErc8004ProofState } = handlers.raid;
+  const { serializeProviderProfile, serializeProviderHealth } = handlers;
 
   app.post('/v1/providers/:providerId/heartbeat', async (request, reply) => {
     const params = request.params as { providerId: string };
@@ -113,11 +108,7 @@ export function registerProviderRoutes(
   });
 
   app.get('/v1/providers/health', async () =>
-    (
-      await Promise.all(
-        orchestrator.listProviders().map((provider) => probeProviderHealth(provider))
-      )
-    ).map((health) => serializeProviderHealth(health))
+    (await probeAllProviderHealth(orchestrator)).map((health) => serializeProviderHealth(health))
   );
 
   app.get('/v1/providers/:providerId/stats', async (request, reply) => {

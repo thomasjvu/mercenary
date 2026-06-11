@@ -4,15 +4,16 @@ import { readTeeSocketState } from '../lib/tee.js';
 import { readX402ConfigForContext } from '../lib/x402-runtime.js';
 import { buildProductionReadinessReport } from '../lib/production-readiness.js';
 import { type ApiContext } from '../api-context.js';
-import { type ApiHandlers } from '../api-handlers.js';
+import { type ApiHandlerGroups } from '../api-handlers.js';
 
 export function registerHealthRoutes(
   app: FastifyInstance,
   ctx: ApiContext,
-  handlers: ApiHandlers
+  handlers: ApiHandlerGroups
 ): void {
   const { orchestrator, env, apiMetrics, metricsPublic } = ctx;
-  const { requireAdmin, collectProviderHealth } = handlers;
+  const { requireAdmin } = handlers.auth;
+  const { collectProviderHealth } = handlers.raid;
   const {
     publicRateLimitMax,
     publicRateLimitWindowMs,

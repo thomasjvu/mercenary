@@ -1,6 +1,6 @@
 import { type FastifyInstance } from 'fastify';
 import { parseProviderRegistrationInput } from '@bossraid/api-contracts';
-import { probeProviderHealth } from '@bossraid/provider-sdk';
+import { probeRegisteredProviderHealth } from '../lib/provider-health.js';
 import {
   buildSelfServeProviderRegistrationInput,
   buildProviderVerificationFromHealth,
@@ -10,20 +10,17 @@ import { readPositiveInteger, readPositiveNumber } from '../lib/env.js';
 import { asSingleQueryValue } from '../lib/http.js';
 import { ensureRecordInput } from '../lib/account.js';
 import { type ApiContext } from '../api-context.js';
-import { type ApiHandlers } from '../api-handlers.js';
+import { type ApiHandlerGroups } from '../api-handlers.js';
 
 export function registerAccountRoutes(
   app: FastifyInstance,
   ctx: ApiContext,
-  handlers: ApiHandlers
+  handlers: ApiHandlerGroups
 ): void {
   const { orchestrator, controlState } = ctx;
-  const {
-    requirePublicSession,
-    serializeProviderProfile,
-    serializeProviderHealth,
-    ensureErc8004ProofState,
-  } = handlers;
+  const { requirePublicSession } = handlers.auth;
+  const { ensureErc8004ProofState } = handlers.raid;
+  const { serializeProviderProfile, serializeProviderHealth } = handlers;
 
   app.get('/v1/seller/providers', async (request, reply) => {
     const session = requirePublicSession(reply, request.headers);
@@ -50,7 +47,7 @@ export function registerAccountRoutes(
     );
     const provider = await orchestrator.upsertRegisteredProvider(input);
     controlState.linkSellerProvider(session.wallet, provider.providerId);
-    const health = await probeProviderHealth(provider);
+    const health = await probeRegisteredProviderHealth(provider);
     const verification = buildProviderVerificationFromHealth(provider, health);
     const verifiedProvider = await orchestrator.upsertRegisteredProvider(
       buildProviderVerificationRegistrationInput(provider, verification)
@@ -101,7 +98,7 @@ export function registerAccountRoutes(
       reply.code(404);
       return { error: 'not_found' };
     }
-    const health = await probeProviderHealth(provider);
+    const health = await probeRegisteredProviderHealth(provider);
     const verification = buildProviderVerificationFromHealth(provider, health);
     const updatedProvider = await orchestrator.upsertRegisteredProvider(
       buildProviderVerificationRegistrationInput(provider, verification)

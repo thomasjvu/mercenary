@@ -13,16 +13,16 @@ import {
   buildPublicAccountResponse,
 } from '../lib/account.js';
 import { type ApiContext } from '../api-context.js';
-import { type ApiHandlers } from '../api-handlers.js';
+import { type ApiHandlerGroups } from '../api-handlers.js';
 
 export function registerAuthRoutes(
   app: FastifyInstance,
   ctx: ApiContext,
-  handlers: ApiHandlers
+  handlers: ApiHandlerGroups
 ): void {
   const { controlState, publicAuthNonceTtlSec, buyerKeyDefaultSpendLimitUsd } = ctx;
   const { readPublicAuth, requirePublicSession, issuePublicSessionCookie, clearPublicSession } =
-    handlers;
+    handlers.auth;
 
   app.post('/v1/auth/nonce', async (request) => {
     const input = ensureRecordInput(request.body, 'auth_nonce');

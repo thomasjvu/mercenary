@@ -80,7 +80,10 @@ export function createApiContext(
     env.BOSSRAID_PUBLIC_SESSION_TTL_SEC,
     DEFAULT_PUBLIC_SESSION_TTL_SEC
   );
-  const publicAuthNonceTtlSec = readPositiveInteger(env.BOSSRAID_PUBLIC_AUTH_NONCE_TTL_SEC, 300);
+  const publicAuthNonceTtlSec = readPositiveInteger(
+    env.BOSSRAID_PUBLIC_AUTH_NONCE_TTL_SEC,
+    DEFAULTS.PUBLIC_AUTH_NONCE_TTL_SEC
+  );
   const buyerKeyDefaultSpendLimitUsd = readPositiveNumber(
     env.BOSSRAID_BUYER_KEY_DEFAULT_SPEND_LIMIT_USD
   );

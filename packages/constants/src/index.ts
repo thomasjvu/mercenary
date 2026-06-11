@@ -51,6 +51,13 @@ export const ADAPTIVE_PLANNING = {
   MIN_EXPANSION_TO_TRIGGER: 2,
 };
 
+// Raid lifecycle
+export const TERMINAL_RAID_STATUSES = new Set(['final', 'cancelled', 'expired']);
+
+export function isTerminalRaidStatus(status: string | undefined): boolean {
+  return status != null && TERMINAL_RAID_STATUSES.has(status);
+}
+
 // Default Values
 export const DEFAULTS = {
   API_BODY_LIMIT_BYTES: 524_288, // 512 KB
@@ -72,6 +79,9 @@ export const DEFAULTS = {
   SANDBOX_TIMEOUT_MS: 30_000,
   PROVIDER_HEALTH_TIMEOUT: 5_000,
   PROVIDER_ACCEPT_TIMEOUT: 20_000,
+  BUYER_PURCHASE_LIST_LIMIT: 100,
+  SELLER_PAYOUT_LIST_LIMIT: 500,
+  PUBLIC_AUTH_NONCE_TTL_SEC: 300,
 };
 
 // HTTP Constants

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { DEFAULTS } from '@bossraid/constants';
 import { computeSellerPayout24hMetrics, SELLER_PAYOUT_STORE_LIMIT } from '../marketplace-stats.js';
 import { ensurePublicAccountInSnapshot, readPublicAccount } from './sessions.js';
 import type { ControlStateContext } from './state-context.js';
@@ -60,7 +61,7 @@ export function recordSellerPayout(
 export function listSellerPayouts(
   ctx: ControlStateContext,
   providerIds: string[],
-  limit = 500,
+  limit = DEFAULTS.SELLER_PAYOUT_LIST_LIMIT,
   nowMs = Date.now()
 ): SellerPayoutEntry[] {
   const allowed = new Set(providerIds);

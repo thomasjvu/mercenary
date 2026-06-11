@@ -1,5 +1,5 @@
 import { useDeferredValue, useState } from 'react';
-import { hasErc8004Registration } from '@bossraid/proof-ui';
+import { formatUsdc, hasErc8004Registration } from '@bossraid/proof-ui';
 import heroImage from '../../../../assets/hero.webp';
 import type { Provider, ProviderHealth } from '../api';
 import { RaiderRow } from '../components/raiders/RaiderRow';
@@ -8,7 +8,6 @@ import { SummaryPill } from '../components/receipt/ReceiptPrimitives';
 import {
   buildRaiderRecord,
   compareRaiders,
-  formatUsdc,
   isVeniceProvider,
   readErc8004VerificationStatus,
   type SortKey,

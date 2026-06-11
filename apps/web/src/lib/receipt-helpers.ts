@@ -4,6 +4,7 @@ import {
   isRenderableImageArtifact,
   isRenderableVideoArtifact,
   matchRoutingDecision,
+  truncateText,
 } from '@bossraid/proof-ui';
 import type { Provider, RaidResult } from '../api';
 
@@ -20,19 +21,7 @@ export type ReceiptProviderRowData = {
   reason: string;
 };
 
-export function compactText(value: string, maxLength: number): string {
-  const normalized = value.replace(/\s+/g, ' ').trim();
-  if (normalized.length <= maxLength) {
-    return normalized;
-  }
-
-  const sentenceBoundary = normalized.slice(0, maxLength).match(/^(.+[.!?])\s/);
-  if (sentenceBoundary?.[1]) {
-    return sentenceBoundary[1];
-  }
-
-  return `${normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
-}
+export const compactText = truncateText;
 
 export function pickPreviewArtifacts(artifacts: SubmissionArtifact[]): SubmissionArtifact[] {
   return artifacts

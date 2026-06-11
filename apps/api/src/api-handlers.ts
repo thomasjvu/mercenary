@@ -1,1 +1,1 @@
-export { createApiHandlers, type ApiHandlers } from './handlers/index.js';
+export { createApiHandlers, type ApiHandlerGroups } from './handlers/index.js';

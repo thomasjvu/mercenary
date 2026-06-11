@@ -24,6 +24,7 @@
     "@bossraid/persistence": "workspace:*",
     "@bossraid/persistence-sqlite": "workspace:*",
     "@bossraid/privacy-engine": "workspace:*",
+    "@bossraid/proof-ui": "workspace:*",
     "@bossraid/provider-registry": "workspace:*",
     "@bossraid/provider-sdk": "workspace:*",
     "@bossraid/raid-core": "workspace:*",

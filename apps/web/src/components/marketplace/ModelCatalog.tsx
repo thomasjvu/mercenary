@@ -5,12 +5,8 @@ import {
   computeSavingsUsd,
   estimateBenchmarkTaskUsd,
 } from '../../lib/marketplace-benchmark.js';
-import {
-  formatLatency,
-  formatPercent,
-  formatSavingsLabel,
-  formatUsd,
-} from '../../lib/marketplace-format.js';
+import { formatUsd } from '@bossraid/proof-ui';
+import { formatLatency, formatPercent, formatSavingsLabel } from '../../lib/marketplace-format.js';
 
 export type ModelSortKey = 'price' | 'sellers' | 'success' | 'latency' | 'model';
 

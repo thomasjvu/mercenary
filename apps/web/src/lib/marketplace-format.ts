@@ -1,5 +1,3 @@
-export { formatUsd } from '@bossraid/proof-ui';
-
 export function formatPercent(value: number | null | undefined): string {
   return typeof value === 'number' && Number.isFinite(value)
     ? `${Math.round(value * 100)}%`

@@ -1,6 +1,6 @@
 import type { ProviderHealth } from '../../api/client.js';
 import type { InferenceMarket } from '../../api/marketplace.js';
-import { formatUsd } from '../../lib/marketplace-format.js';
+import { formatUsd } from '@bossraid/proof-ui';
 import { SellerHealthBadge } from './SellerHealthBadge.js';
 
 export function SellerOrderBook({

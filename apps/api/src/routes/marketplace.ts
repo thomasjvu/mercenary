@@ -10,15 +10,15 @@ import {
   MARKETPLACE_PUBLIC_PAYOUT_SCAN_LIMIT,
 } from '../marketplace-stats.js';
 import { type ApiContext } from '../api-context.js';
-import { type ApiHandlers } from '../api-handlers.js';
+import { type ApiHandlerGroups } from '../api-handlers.js';
 
 export function registerMarketplaceRoutes(
   app: FastifyInstance,
   ctx: ApiContext,
-  handlers: ApiHandlers
+  handlers: ApiHandlerGroups
 ): void {
   const { orchestrator, env, controlState } = ctx;
-  const { buildInferenceMarketSnapshot } = handlers;
+  const { buildInferenceMarketSnapshot } = handlers.raid;
 
   app.get('/v1/models', async (request) => {
     const markets = buildInferenceMarketSnapshot(parseMarketplaceQuery(request.query));

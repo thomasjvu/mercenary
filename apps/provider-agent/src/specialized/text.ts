@@ -1,3 +1,4 @@
+import { truncateText } from '@bossraid/proof-ui';
 import type { ProviderTaskPackage } from '@bossraid/shared-types';
 import { providerConfig } from '../config.js';
 import { buildGbStudioPlan, type GbStudioPlan } from './gbstudio.js';
@@ -17,7 +18,7 @@ type ProviderMode = 'generic' | 'gbstudio' | 'pixel_art' | 'remotion';
 export async function buildGenericTextPlan(task: ProviderTaskPackage): Promise<TextPlan> {
   const fallback: TextPlan = {
     answerText:
-      trimSentence(task.task.description, 220) ||
+      truncateText(task.task.description, 220) ||
       `Mercenary asked ${providerConfig.displayName} for a scoped contribution.`,
     explanation:
       'Produced a constrained text contribution aligned to the supplied workstream scope.',
@@ -46,20 +47,6 @@ export async function buildGenericTextPlan(task: ProviderTaskPackage): Promise<T
     )
   ).catch(() => undefined);
   return planned ?? fallback;
-}
-
-function trimSentence(value: string, maxLength: number): string {
-  const normalized = value.replace(/\s+/g, ' ').trim();
-  if (normalized.length <= maxLength) {
-    return normalized;
-  }
-
-  const boundary = normalized.slice(0, maxLength).match(/^(.+[.!?])\s/);
-  if (boundary?.[1]) {
-    return boundary[1];
-  }
-
-  return `${normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
 }
 
 function buildTaskHaystack(task: ProviderTaskPackage): string {
@@ -129,7 +116,7 @@ function readTextContributionRole(task: ProviderTaskPackage): TextContributionRo
 
 function summarizeItems(values: string[], limit = 3): string {
   return values
-    .map((value) => trimSentence(value, 72))
+    .map((value) => truncateText(value, 72))
     .filter((value) => value.length > 0)
     .slice(0, limit)
     .join(', ');

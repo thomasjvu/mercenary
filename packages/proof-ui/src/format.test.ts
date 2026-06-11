@@ -5,6 +5,7 @@ import {
   formatTimestamp,
   formatUsd,
   formatUsdc,
+  truncateText,
   shortValue,
   uniqueStrings,
 } from './format.js';
@@ -20,6 +21,15 @@ test('shortValue truncates long strings', () => {
 
 test('uniqueStrings drops blanks and duplicates', () => {
   assert.deepEqual(uniqueStrings(['a', 'a', '', 'b']), ['a', 'b']);
+});
+
+test('truncateText trims long strings at sentence boundaries', () => {
+  assert.equal(truncateText('Short text', 80), 'Short text');
+  assert.equal(
+    truncateText('First sentence. Second sentence keeps going for a while.', 20),
+    'First sentence.'
+  );
+  assert.equal(truncateText('abcdefghijklmnopqrstuvwxyz', 10), 'abcdefghi…');
 });
 
 test('formatUsdc renders USDC suffix', () => {

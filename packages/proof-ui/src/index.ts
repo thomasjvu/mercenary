@@ -4,6 +4,7 @@ export {
   formatTimestamp,
   formatUsd,
   formatUsdc,
+  truncateText,
   shortValue,
   uniqueStrings,
   type TimestampFormatStyle,

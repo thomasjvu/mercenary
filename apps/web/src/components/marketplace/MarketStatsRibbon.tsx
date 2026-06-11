@@ -1,5 +1,5 @@
 import type { MarketsResponse } from '../../api/marketplace.js';
-import { formatUsd } from '../../lib/marketplace-format.js';
+import { formatUsd } from '@bossraid/proof-ui';
 
 export function MarketStatsRibbon({ markets }: { markets?: MarketsResponse }) {
   const stats = markets?.stats;

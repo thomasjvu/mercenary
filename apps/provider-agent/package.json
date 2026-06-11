@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@bossraid/privacy-engine": "workspace:*",
+    "@bossraid/proof-ui": "workspace:*",
     "@bossraid/provider-sdk": "workspace:*",
     "@bossraid/shared-types": "workspace:*",
     "fastify": "^5.2.1"

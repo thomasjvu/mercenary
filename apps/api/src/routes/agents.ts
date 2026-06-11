@@ -4,26 +4,23 @@ import {
   parseProviderDiscoveryQuery,
   parseProviderRegistrationInput,
 } from '@bossraid/api-contracts';
-import { probeProviderHealth } from '@bossraid/provider-sdk';
+import { probeRegisteredProviderHealth } from '../lib/provider-health.js';
 import {
   buildProviderVerificationFromHealth,
   buildProviderVerificationRegistrationInput,
 } from '../lib/account.js';
 import { type ApiContext } from '../api-context.js';
-import { type ApiHandlers } from '../api-handlers.js';
+import { type ApiHandlerGroups } from '../api-handlers.js';
 
 export function registerAgentRoutes(
   app: FastifyInstance,
   ctx: ApiContext,
-  handlers: ApiHandlers
+  handlers: ApiHandlerGroups
 ): void {
   const { orchestrator, registryToken } = ctx;
-  const {
-    registryIsAuthorized,
-    serializeProviderProfile,
-    serializeProviderHealth,
-    ensureErc8004ProofState,
-  } = handlers;
+  const { registryIsAuthorized } = handlers.auth;
+  const { ensureErc8004ProofState } = handlers.raid;
+  const { serializeProviderProfile, serializeProviderHealth } = handlers;
 
   app.post('/agents/register', async (request, reply) => {
     if (!registryToken) {
@@ -60,7 +57,7 @@ export function registerAgentRoutes(
       return { error: 'not_found' };
     }
 
-    const health = await probeProviderHealth(provider);
+    const health = await probeRegisteredProviderHealth(provider);
     const verification = buildProviderVerificationFromHealth(provider, health);
     const updatedProvider = await orchestrator.upsertRegisteredProvider(
       buildProviderVerificationRegistrationInput(provider, verification)

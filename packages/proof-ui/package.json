@@ -16,7 +16,9 @@
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test src/**/*.test.ts"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@bossraid/constants": "workspace:*"
+  },
   "devDependencies": {
     "tsx": "^4.19.3"
   }

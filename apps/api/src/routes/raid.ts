@@ -14,22 +14,17 @@ import {
   toRaidListItemResponse,
 } from '../lib/serializers.js';
 import { type ApiContext } from '../api-context.js';
-import { type ApiHandlers } from '../api-handlers.js';
+import { type ApiHandlerGroups } from '../api-handlers.js';
 
 function registerRaidDetailRoutes(
   app: FastifyInstance,
   ctx: ApiContext,
-  handlers: ApiHandlers,
+  handlers: ApiHandlerGroups,
   basePath: '/v1/raid' | '/v1/raids'
 ): void {
-  const {
-    requireRaidReadAccess,
-    readRaidAccessTokenQuery,
-    requireAdmin,
-    ensureSettlementProofState,
-    recordMarketplaceLedgersFromRaid,
-    getRaidId,
-  } = handlers;
+  const { requireRaidReadAccess, readRaidAccessTokenQuery, requireAdmin } = handlers.auth;
+  const { ensureSettlementProofState, getRaidId } = handlers.raid;
+  const { recordMarketplaceLedgersFromRaid } = handlers.payment;
 
   app.get(`${basePath}/:raidId`, async (request, reply) => {
     const raidId = getRaidId(request);
@@ -84,7 +79,7 @@ function registerRaidDetailRoutes(
 
     reply.header('cache-control', 'private, no-store');
     await ensureSettlementProofState(raidId);
-    await handlers.ensureErc8004ProofState({ includeMercenary: false });
+    await handlers.raid.ensureErc8004ProofState({ includeMercenary: false });
     return buildAgentLog(raid, {
       getRaid: (currentRaidId) => ctx.orchestrator.getRaid(currentRaidId),
       getProvider: (providerId) => ctx.orchestrator.getProviderProfile(providerId),
@@ -138,16 +133,11 @@ function registerRaidDetailRoutes(
 export function registerRaidRoutes(
   app: FastifyInstance,
   ctx: ApiContext,
-  handlers: ApiHandlers
+  handlers: ApiHandlerGroups
 ): void {
   const { orchestrator } = ctx;
-  const {
-    requireAdmin,
-    requireDemoRouteAccess,
-    spawnParsedRaid,
-    requireProviderOrRaidReadAccess,
-    buildProviderSettlementPayload,
-  } = handlers;
+  const { requireAdmin, requireDemoRouteAccess, requireProviderOrRaidReadAccess } = handlers.auth;
+  const { spawnParsedRaid, buildProviderSettlementPayload } = handlers.raid;
 
   app.get('/v1/raids', async (request, reply) => {
     const adminError = requireAdmin(reply, request.headers);

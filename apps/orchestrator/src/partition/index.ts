@@ -1,4 +1,5 @@
 import { basename } from 'node:path';
+import { truncateText } from '@bossraid/proof-ui';
 import type { SanitizedTaskSpec } from '@bossraid/shared-types';
 import { FAMILIES } from './families.js';
 import {
@@ -162,7 +163,7 @@ function buildTaskPlanningContext(task: SanitizedTaskSpec): TaskPlanningContext 
   return {
     focusLabel,
     surfacePhrase: buildSurfacePhrase(task),
-    signalLabel: signalCandidate == null ? undefined : trimSentence(signalCandidate, 100),
+    signalLabel: signalCandidate == null ? undefined : truncateText(signalCandidate, 100),
   };
 }
 
@@ -318,7 +319,7 @@ function normalizeFocusCandidate(value: string | undefined): string | undefined 
     return undefined;
   }
 
-  return trimSentence(normalized, 64);
+  return truncateText(normalized, 64);
 }
 
 function buildSurfacePhrase(task: SanitizedTaskSpec): string {
@@ -670,17 +671,4 @@ function authorRolePrompt(roleId: string, context: TaskPlanningContext, fallback
     default:
       return `${fallback}${signalNote}`.trim();
   }
-}
-
-function trimSentence(value: string, maxLength: number): string {
-  const normalized = value.replace(/\s+/g, ' ').trim();
-  if (normalized.length <= maxLength) {
-    return normalized;
-  }
-
-  const clipped = normalized
-    .slice(0, maxLength)
-    .replace(/\s+\S*$/, '')
-    .trim();
-  return `${clipped}...`;
 }

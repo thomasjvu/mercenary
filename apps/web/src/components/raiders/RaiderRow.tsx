@@ -1,9 +1,8 @@
-import { buildErc8004ProofLabel, hasErc8004Registration } from '@bossraid/proof-ui';
+import { buildErc8004ProofLabel, formatUsdc, hasErc8004Registration } from '@bossraid/proof-ui';
 import heroImage from '../../../../../assets/hero.webp';
 import {
   buildErc8004StatusValue,
   formatPrivacySignalLabel,
-  formatUsdc,
   isVeniceProvider,
   pickDisplayPrivacySignals,
   readErc8004VerificationStatus,

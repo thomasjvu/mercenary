@@ -12,12 +12,6 @@ import {
 
 export { buildRoutingDecisionSummary, formatMs, formatScore, formatTimestamp, formatUsd };
 
-export function countUniqueProviders<T extends { providerId: string }>(
-  decisions: T[],
-  predicate: (decision: T) => boolean
-): number {
-  return countProvidersMatchingSignal(decisions, predicate);
-}
 import { ArtifactStrip } from '@bossraid/ui';
 import type { CSSProperties } from 'react';
 import type {
@@ -28,13 +22,34 @@ import type {
   RankedSubmission,
 } from '../api';
 
-export function ReceiptRow({ label, value }: { label: string; value: string }) {
+export function OpsLabelValue({
+  label,
+  value,
+  variant = 'receipt',
+}: {
+  label: string;
+  value: string;
+  variant?: 'receipt' | 'stat' | 'metric' | 'snapshot';
+}) {
+  const className =
+    variant === 'stat'
+      ? 'stat-chip'
+      : variant === 'metric'
+        ? 'metric-card'
+        : variant === 'snapshot'
+          ? 'snapshot-row'
+          : 'receipt-card';
+
   return (
-    <div className="receipt-card">
+    <div className={className}>
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
   );
+}
+
+export function ReceiptRow({ label, value }: { label: string; value: string }) {
+  return <OpsLabelValue label={label} value={value} variant="receipt" />;
 }
 
 export function X402PaymentsToggle({
@@ -100,30 +115,15 @@ export function X402PaymentsToggle({
 }
 
 export function StatChip({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="stat-chip">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
+  return <OpsLabelValue label={label} value={value} variant="stat" />;
 }
 
 export function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="metric-card">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
+  return <OpsLabelValue label={label} value={value} variant="metric" />;
 }
 
 export function SnapshotRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="snapshot-row">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
+  return <OpsLabelValue label={label} value={value} variant="snapshot" />;
 }
 
 export function ScoreCard({ entry }: { entry: RankedSubmission }) {

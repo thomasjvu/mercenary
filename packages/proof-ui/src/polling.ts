@@ -1,11 +1,6 @@
-export const DEFAULT_TERMINAL_RAID_STATUSES = new Set(['final', 'cancelled', 'expired']);
+import { isTerminalRaidStatus, TERMINAL_RAID_STATUSES } from '@bossraid/constants';
 
-export function isTerminalRaidStatus(
-  status: string | undefined,
-  terminalStatuses: Set<string> = DEFAULT_TERMINAL_RAID_STATUSES
-): boolean {
-  return status != null && terminalStatuses.has(status);
-}
+export { TERMINAL_RAID_STATUSES as DEFAULT_TERMINAL_RAID_STATUSES, isTerminalRaidStatus };
 
 export function raidPollingRefreshInterval(input: {
   enabled: boolean;
@@ -17,7 +12,8 @@ export function raidPollingRefreshInterval(input: {
     return 0;
   }
 
-  if (isTerminalRaidStatus(input.status, input.terminalStatuses)) {
+  const terminalStatuses = input.terminalStatuses ?? TERMINAL_RAID_STATUSES;
+  if (input.status != null && terminalStatuses.has(input.status)) {
     return 0;
   }
 

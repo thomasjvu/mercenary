@@ -1,5 +1,5 @@
 import type { MarketplaceStats } from '../../api/marketplace.js';
-import { formatUsd } from '../../lib/marketplace-format.js';
+import { formatUsd } from '@bossraid/proof-ui';
 
 export function MarketVolumePanel({ stats }: { stats?: MarketplaceStats }) {
   const rows = [

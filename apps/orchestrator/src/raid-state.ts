@@ -1,3 +1,4 @@
+import { TERMINAL_RAID_STATUSES } from '@bossraid/constants';
 import { rankSubmissions } from '@bossraid/raid-core';
 import type {
   BossRaidAdaptivePlanningOutput,
@@ -18,7 +19,7 @@ export const TERMINAL_ASSIGNMENT_STATUSES = new Set([
   'disqualified',
 ]);
 
-export const TERMINAL_RAID_STATUSES = new Set(['final', 'cancelled', 'expired']);
+export { TERMINAL_RAID_STATUSES };
 
 export function restorePersistedRaid(raid: RaidRecord): RaidRecord {
   const restored = structuredClone(raid) as RaidRecord;

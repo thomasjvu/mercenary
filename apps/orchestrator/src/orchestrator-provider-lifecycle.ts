@@ -83,4 +83,4 @@ export function filterReadyProvidersForRaid(
     );
 }
 
-export type ProviderHealthProbe = typeof probeProviderHealth;
+export type { ProviderHealthProbe } from './provider-health-cache.js';

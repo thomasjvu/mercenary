@@ -1,3 +1,4 @@
+import { DEFAULTS } from '@bossraid/constants';
 import * as buyerLedger from './control-state/buyer-ledger.js';
 import * as rateLimits from './control-state/rate-limits.js';
 import * as sellerLedger from './control-state/seller-ledger.js';
@@ -129,7 +130,11 @@ export class ApiControlState {
     return buyerLedger.recordBuyerPurchase(this.ctx, input);
   }
 
-  listBuyerPurchases(wallet: string, limit = 100, nowMs = Date.now()): BuyerPurchaseEntry[] {
+  listBuyerPurchases(
+    wallet: string,
+    limit = DEFAULTS.BUYER_PURCHASE_LIST_LIMIT,
+    nowMs = Date.now()
+  ): BuyerPurchaseEntry[] {
     return buyerLedger.listBuyerPurchases(this.ctx, wallet, limit, nowMs);
   }
 
@@ -139,7 +144,11 @@ export class ApiControlState {
     return sellerLedger.recordSellerPayout(this.ctx, input);
   }
 
-  listSellerPayouts(providerIds: string[], limit = 500, nowMs = Date.now()): SellerPayoutEntry[] {
+  listSellerPayouts(
+    providerIds: string[],
+    limit = DEFAULTS.SELLER_PAYOUT_LIST_LIMIT,
+    nowMs = Date.now()
+  ): SellerPayoutEntry[] {
     return sellerLedger.listSellerPayouts(this.ctx, providerIds, limit, nowMs);
   }
 

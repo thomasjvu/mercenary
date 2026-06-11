@@ -1,6 +1,6 @@
 import useSWR from 'swr';
 import { fetchMarkets } from '../../api/marketplace.js';
-import { formatUsd } from '../../lib/marketplace-format.js';
+import { formatUsd } from '@bossraid/proof-ui';
 
 export function LiveMarketPulse() {
   const markets = useSWR('landing-markets', () => fetchMarkets(), { refreshInterval: 30_000 });

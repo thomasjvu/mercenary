@@ -1,3 +1,4 @@
+import { truncateText } from '@bossraid/proof-ui';
 import type {
   BossRaidSynthesizedOutput,
   BossRaidSynthesizedWorkstream,
@@ -297,7 +298,7 @@ function pickWorkstreamNarrative(workstream: BossRaidSynthesizedWorkstream): str
 }
 
 function buildWorkstreamShortSummary(baseText: string): string {
-  return trimSentence(cleanText(baseText), 160);
+  return truncateText(cleanText(baseText), 160);
 }
 
 function selectBaseWorkstream(
@@ -528,19 +529,6 @@ function summarizeArtifactLabels(artifacts: SubmissionArtifact[] | undefined): s
 
 function cleanText(value: string): string {
   return value.replace(/\s+/g, ' ').trim();
-}
-
-function trimSentence(value: string, maxLength: number): string {
-  if (value.length <= maxLength) {
-    return value;
-  }
-
-  const boundary = value.slice(0, maxLength).match(/^(.+[.!?])\s/);
-  if (boundary?.[1]) {
-    return boundary[1];
-  }
-
-  return `${value.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
 }
 
 function ensureSentence(value: string): string {

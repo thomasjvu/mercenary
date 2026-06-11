@@ -1,5 +1,5 @@
 import { type FastifyReply, type FastifyRequest } from 'fastify';
-import { probeProviderHealth } from '@bossraid/provider-sdk';
+import { probeAllProviderHealth } from '../lib/provider-health.js';
 import logger from '@bossraid/logger';
 import { type BossRaidSpawnInput, type ProviderProfile } from '@bossraid/shared-types';
 import { applyX402Headers } from '../x402.js';
@@ -251,9 +251,7 @@ export function createRaidHandlers(
   }
 
   async function collectProviderHealth() {
-    return Promise.all(
-      ctx.orchestrator.listProviders().map((provider) => probeProviderHealth(provider))
-    );
+    return probeAllProviderHealth(ctx.orchestrator);
   }
 
   return {

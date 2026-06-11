@@ -21,12 +21,12 @@ import { buildEvaluatorSmokeTask } from '../lib/evaluator-smoke.js';
 import { readTeeSocketState } from '../lib/tee.js';
 import { buildX402SettingsView } from '../lib/x402-runtime.js';
 import { type ApiContext } from '../api-context.js';
-import { type ApiHandlers } from '../api-handlers.js';
+import { type ApiHandlerGroups } from '../api-handlers.js';
 
 export function registerOpsRoutes(
   app: FastifyInstance,
   ctx: ApiContext,
-  handlers: ApiHandlers
+  handlers: ApiHandlerGroups
 ): void {
   const {
     orchestrator,
@@ -46,15 +46,9 @@ export function registerOpsRoutes(
     teeSigner,
     mercenaryIdentity,
   } = ctx;
-  const {
-    requireAdmin,
-    requireRateLimit,
-    collectProviderHealth,
-    ensureErc8004ProofState,
-    readOpsSession,
-    issueOpsSession,
-    clearOpsSession,
-  } = handlers;
+  const { requireAdmin, requireRateLimit, readOpsSession, issueOpsSession, clearOpsSession } =
+    handlers.auth;
+  const { collectProviderHealth, ensureErc8004ProofState } = handlers.raid;
 
   app.get('/v1/agent.json', async () => {
     await ensureErc8004ProofState();

@@ -127,11 +127,7 @@ export function readErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unexpected error';
 }
 
-const TERMINAL_RAID_STATUSES = new Set(['final', 'cancelled', 'expired']);
-
-export function isTerminalRaidStatus(status: string): boolean {
-  return TERMINAL_RAID_STATUSES.has(status);
-}
+export { isTerminalRaidStatus } from '@bossraid/constants';
 
 export function humanizeToolCall(tool: string): string {
   switch (tool) {

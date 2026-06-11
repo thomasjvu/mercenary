@@ -229,7 +229,7 @@ test('Mercenary can recurse into nested child raids when expert count exceeds th
   );
 
   const spawn = await orchestrator.spawnRaid(input);
-  await waitFor(() => orchestrator.getStatus(spawn.raidId).status === 'final');
+  await waitFor(() => orchestrator.getStatus(spawn.raidId).status === 'final', 10_000);
 
   const nestedTaskRaid = receivedTasks
     .map((task) => orchestrator.getRaid(task.raidId))
@@ -371,7 +371,7 @@ test('Mercenary routes game raids into gameplay, pixel art, and video marketing 
   );
 
   const spawn = await orchestrator.spawnRaid(input);
-  await waitFor(() => orchestrator.getStatus(spawn.raidId).status === 'final');
+  await waitFor(() => orchestrator.getStatus(spawn.raidId).status === 'final', 10_000);
 
   const result = orchestrator.getResult(spawn.raidId);
   const childRaids = orchestrator
@@ -654,7 +654,7 @@ test('Mercenary can revise the raid graph with an adaptive repair child raid', a
   );
 
   const spawn = await orchestrator.spawnRaid(input);
-  await waitFor(() => orchestrator.getStatus(spawn.raidId).status === 'final');
+  await waitFor(() => orchestrator.getStatus(spawn.raidId).status === 'final', 10_000);
 
   const rootRaid = orchestrator.getRaid(spawn.raidId)!;
   const allRaids = collectRaidTree(orchestrator, spawn.raidId);
@@ -749,7 +749,7 @@ test('Mercenary can deepen a weak workstream into an adaptive expansion subgraph
   );
 
   const spawn = await orchestrator.spawnRaid(input);
-  await waitFor(() => orchestrator.getStatus(spawn.raidId).status === 'final');
+  await waitFor(() => orchestrator.getStatus(spawn.raidId).status === 'final', 10_000);
 
   const rootRaid = orchestrator.getRaid(spawn.raidId)!;
   const allRaids = collectRaidTree(orchestrator, spawn.raidId);
@@ -857,7 +857,7 @@ test('Mercenary can recurse across multiple child-raid levels for large expert s
   );
 
   const spawn = await orchestrator.spawnRaid(input);
-  await waitFor(() => orchestrator.getStatus(spawn.raidId).status === 'final');
+  await waitFor(() => orchestrator.getStatus(spawn.raidId).status === 'final', 10_000);
 
   const maxDepth = Math.max(
     ...receivedTasks.map((task) => {

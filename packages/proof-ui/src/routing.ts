@@ -200,15 +200,7 @@ export function countProvidersWithSignal<T extends RoutingDecisionLike>(
   routingDecisionMap: Map<string, T[]>,
   predicate: (decision: T) => boolean
 ): number {
-  let count = 0;
-
-  for (const decisions of routingDecisionMap.values()) {
-    if (decisions.some(predicate)) {
-      count += 1;
-    }
-  }
-
-  return count;
+  return countProvidersMatchingSignal([...routingDecisionMap.values()].flat(), predicate);
 }
 
 export function buildRoutingDecisionSummary(decision: RoutingDecisionLike): string {

@@ -14,38 +14,14 @@ export function createApiHandlers(ctx: ApiContext) {
   const chat = createChatHandlers(ctx, auth, manaBilling, payment, raid);
 
   return {
-    providerIsAuthorized: auth.providerIsAuthorized,
-    registryIsAuthorized: auth.registryIsAuthorized,
-    adminIsAuthorized: auth.adminIsAuthorized,
-    readPublicAuth: auth.readPublicAuth,
-    requirePublicSession: auth.requirePublicSession,
-    readBuyerApiKey: auth.readBuyerApiKey,
-    requireAdmin: auth.requireAdmin,
-    requireDemoRouteAccess: auth.requireDemoRouteAccess,
-    requireRateLimit: auth.requireRateLimit,
-    requireBuyerApiKeyRateLimit: auth.requireBuyerApiKeyRateLimit,
-    requireRaidReadAccess: auth.requireRaidReadAccess,
-    readRaidAccessTokenQuery: auth.readRaidAccessTokenQuery,
+    auth,
+    manaBilling,
+    payment,
+    raid,
+    chat,
     serializeProviderProfile,
-    requireProviderOrRaidReadAccess: auth.requireProviderOrRaidReadAccess,
-    buildProviderSettlementPayload: raid.buildProviderSettlementPayload,
-    ensureErc8004ProofState: raid.ensureErc8004ProofState,
-    ensureSettlementProofState: raid.ensureSettlementProofState,
     serializeProviderHealth,
-    buildInferenceMarketSnapshot: raid.buildInferenceMarketSnapshot,
-    handleChatCompletionRequest: chat.handleChatCompletionRequest,
-    readOpsSession: auth.readOpsSession,
-    readPublicSession: auth.readPublicSession,
-    issueOpsSession: auth.issueOpsSession,
-    clearOpsSession: auth.clearOpsSession,
-    issuePublicSessionCookie: auth.issuePublicSessionCookie,
-    clearPublicSession: auth.clearPublicSession,
-    validateProviderCallback: raid.validateProviderCallback,
-    getRaidId: raid.getRaidId,
-    recordMarketplaceLedgersFromRaid: payment.recordMarketplaceLedgersFromRaid,
-    spawnParsedRaid: raid.spawnParsedRaid,
-    collectProviderHealth: raid.collectProviderHealth,
   };
 }
 
-export type ApiHandlers = ReturnType<typeof createApiHandlers>;
+export type ApiHandlerGroups = ReturnType<typeof createApiHandlers>;
