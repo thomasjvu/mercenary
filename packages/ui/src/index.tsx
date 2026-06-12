@@ -14,6 +14,9 @@ export { ProviderMesh } from './receipt/ProviderMesh.js';
 export { ReceiptProofPanel } from './receipt/ReceiptProofPanel.js';
 export { SettlementProofPanel } from './receipt/SettlementProofPanel.js';
 export { ReceiptDetailRow, ReceiptStat, SummaryPill } from './receipt/ReceiptPrimitives.js';
+export { ActivityMeter } from './ActivityMeter.js';
+export { cssCustomProperty } from './css-vars.js';
+export { LoadingPulse } from './LoadingPulse.js';
 
 export function DocsButton({
   className,

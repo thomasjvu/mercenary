@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import useSWR from 'swr';
 import { API_BASE, fetchMarkets } from '../api';
 import { ApiReadinessBanner } from '../components/system/ApiReadinessBanner.js';
@@ -24,12 +24,19 @@ type MarketplaceFilters = typeof FILTER_DEFAULTS;
 export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string) => void }) {
   const [filters, setFilters] = useState<MarketplaceFilters>(FILTER_DEFAULTS);
   const params = useMemo(() => buildMarketParams(filters), [filters]);
+  const filtersActive = useMemo(() => hasActiveFilters(filters), [filters]);
   const markets = useSWR(
     ['markets', params.toString()],
     () => fetchMarkets(Object.fromEntries(params.entries())),
     { refreshInterval: 15_000 }
   );
+  const unfilteredMarkets = useSWR(
+    filtersActive ? ['markets', 'unfiltered'] : null,
+    () => fetchMarkets(),
+    { refreshInterval: 15_000 }
+  );
   const visibleMarkets = markets.data?.data ?? [];
+  const totalMarketCount = unfilteredMarkets.data?.data.length ?? 0;
 
   return (
     <section className="beta-page market-page">
@@ -43,7 +50,7 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
       </header>
 
       <ApiReadinessBanner error={markets.error} label="Marketplace unavailable" />
-      <MarketStatsRibbon markets={markets.data} />
+      <MarketStatsRibbon isLoading={markets.isLoading} markets={markets.data} variant="quest" />
       <MarketSavingsSummary
         activeOffers={markets.data?.stats.activeOffers}
         markets={visibleMarkets}
@@ -127,7 +134,25 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
           ) : markets.isLoading ? (
             <EmptyState body="Reading seller order books." title="Loading markets" />
           ) : visibleMarkets.length === 0 ? (
-            <EmptyState body="No seller matches this filter." title="No eligible sellers" />
+            <EmptyState
+              action={
+                filtersActive && totalMarketCount > 0 ? (
+                  <button
+                    className="button"
+                    onClick={() => setFilters({ ...FILTER_DEFAULTS })}
+                    type="button"
+                  >
+                    clear filters
+                  </button>
+                ) : null
+              }
+              body={
+                filtersActive && totalMarketCount > 0
+                  ? 'No seller matches this filter, but other models are available.'
+                  : 'No seller matches this filter.'
+              }
+              title="No eligible sellers"
+            />
           ) : (
             <ModelCatalog markets={visibleMarkets} onOpenModel={onOpenModel} />
           )}
@@ -223,12 +248,24 @@ function FilterSelect({
   );
 }
 
-function EmptyState({ title, body }: { title: string; body: string }) {
+function EmptyState({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
   return (
     <div className="empty-state">
       <p className="eyebrow">{title}</p>
       <p>{body}</p>
+      {action}
     </div>
+  );
+}
+
+function hasActiveFilters(filters: MarketplaceFilters) {
+  return (
+    filters.model.trim() !== '' ||
+    filters.provider.trim() !== '' ||
+    filters.framework !== '' ||
+    filters.privacy !== 'any' ||
+    filters.verification !== 'any' ||
+    filters.budget.trim() !== ''
   );
 }
 

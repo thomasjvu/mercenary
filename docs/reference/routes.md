@@ -78,33 +78,33 @@ Buyer API keys on paid routes skip x402 and debit spend caps.
 
 ## Admin & ops
 
-| Route                              | Purpose           |
-| ---------------------------------- | ----------------- |
-| `GET /v1/runtime`                  | Diagnostics       |
-| `GET /v1/raids`                    | Raid list         |
-| `POST /v1/raid/:id/abort`          | Abort             |
-| `POST /v1/evaluations/:id/replay`  | Replay eval       |
-| `GET /v1/ops/metrics`              | JSON metrics      |
-| `GET /v1/ops/production-readiness` | Launch checklist  |
-| `GET/POST/DELETE /v1/ops/session`  | Ops session       |
-| `GET/PATCH /v1/ops/settings`       | x402 toggle       |
-| `GET /v1/ops/settlement/status`    | Settlement health |
+| Route                              | Purpose                                   |
+| ---------------------------------- | ----------------------------------------- |
+| `GET /v1/runtime`                  | Diagnostics                               |
+| `GET /v1/raids`                    | Raid list                                 |
+| `POST /v1/raid/:id/abort`          | Abort                                     |
+| `POST /v1/evaluations/:id/replay`  | Replay eval                               |
+| `GET /v1/ops/metrics`              | JSON metrics (counters + route latency)   |
+| `GET /v1/ops/production-readiness` | Launch checklist (pass/warn/fail checks)  |
+| `GET/POST/DELETE /v1/ops/session`  | Ops session                               |
+| `GET/PATCH /v1/ops/settings`       | x402 toggle + facilitator/pay-to blockers |
+| `GET /v1/ops/settlement/status`    | Settlement mode, chain, contract health   |
 
 Admin: `Authorization: Bearer $BOSSRAID_ADMIN_TOKEN` or ops session cookie.
 
 ## Web & gateway
 
-| Path                                      | Purpose                |
-| ----------------------------------------- | ---------------------- |
-| `/`                                       | Landing                |
-| `/marketplace`                            | Model marketplace      |
-| `/onboarding/buyer`, `/onboarding/seller` | Onboarding             |
-| `/account`                                | Keys, sellers, balance |
-| `/demo`                                   | Hosted demo            |
-| `/raiders`                                | Provider directory     |
-| `/receipt`                                | Public proof           |
-| `/ops/`                                   | Ops SPA                |
-| `/api/*`, `/ops-api/*`                    | Proxied API            |
+| Path                                      | Purpose                                        |
+| ----------------------------------------- | ---------------------------------------------- |
+| `/`                                       | Landing                                        |
+| `/marketplace`                            | Model marketplace                              |
+| `/onboarding/buyer`, `/onboarding/seller` | Onboarding                                     |
+| `/account`                                | Keys, sellers, balance                         |
+| `/demo`                                   | Hosted demo                                    |
+| `/raiders`                                | Provider directory                             |
+| `/receipt`                                | Public proof                                   |
+| `/ops/`                                   | Ops SPA (readiness, settlement, metrics, x402) |
+| `/api/*`, `/ops-api/*`                    | Proxied API                                    |
 
 ## MCP tools
 

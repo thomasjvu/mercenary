@@ -67,7 +67,12 @@ export const tools = [
           description: 'Required unless raidPolicy.maxTotalCost is provided.',
           anyOf: [{ type: 'number' }, { type: 'string' }],
         },
-        privacyMode: { type: 'string', enum: [...PRIVACY_ROUTING_MODES] },
+        privacyMode: {
+          type: 'string',
+          enum: [...PRIVACY_ROUTING_MODES],
+          description:
+            'Routing privacy posture. `off` ignores privacy features, `prefer` boosts private providers (playground: prefer private), and `strict` requires verified privacy features and rejects non-compliant routes (playground: strict private).',
+        },
         requiredCapabilities: {
           type: 'array',
           items: { type: 'string' },
@@ -97,7 +102,12 @@ export const tools = [
           type: 'array',
           items: { type: 'string', enum: [...PRIVACY_FEATURES] },
         },
-        selectionMode: { type: 'string', enum: [...SELECTION_MODES] },
+        selectionMode: {
+          type: 'string',
+          enum: [...SELECTION_MODES],
+          description:
+            'How experts are ranked and selected. `best_match` scores fit, `privacy_first` prioritizes privacy-verified providers, `cost_first` minimizes spend, `diverse_mix` spreads model families, and `round_robin` rotates providers across launches (matches raid playground presets).',
+        },
       },
       required: ['prompt'],
       additionalProperties: true,

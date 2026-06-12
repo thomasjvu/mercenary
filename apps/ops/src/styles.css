@@ -1,17 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Oxanium:wght@400;500;600;700;800&family=Sora:wght@400;600;700&display=swap');
+@import '../../../packages/ui/src/theme/tokens.css';
+
+/* =============================================================================
+   Ops shell tokens
+   ============================================================================= */
 
 :root {
   color-scheme: dark;
-  --rx-white: #ffffff;
-  --rx-yellow: #fff867;
-  --rx-red: #fb2f38;
-  --rx-blue: #2c52b3;
-  --rx-steel: #5a5b6d;
   --bg: #090909;
   --bg-2: #0c0e12;
-  --surface: rgba(18, 20, 27, 0.72);
-  --surface-elevated: rgba(24, 27, 36, 0.88);
-  --surface-muted: rgba(18, 20, 27, 0.42);
   --panel: var(--surface-elevated);
   --panel-2: rgba(12, 14, 18, 0.92);
   --line: rgba(241, 244, 251, 0.14);
@@ -339,6 +336,98 @@ pre {
   flex-wrap: wrap;
   font-size: 0.78rem;
   color: var(--muted);
+}
+
+.ops-x402-panel__blockers {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.ops-reliability {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.ops-settlement-runbook ul {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ops-settlement-runbook li {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgb(255 255 255 / 0.02);
+  font-size: 0.84rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.ops-readiness-summary,
+.ops-settlement-grid,
+.ops-metrics-counters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ops-readiness-list,
+.ops-metrics-routes ul,
+.ops-readiness-actions ul {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ops-readiness-item,
+.ops-metrics-routes li,
+.ops-readiness-actions li {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgb(255 255 255 / 0.02);
+}
+
+.ops-readiness-item__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ops-readiness-item p,
+.ops-readiness-actions span,
+.ops-metrics-routes span {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.ops-payload-presets {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.button--compact {
+  padding: 8px 12px;
+  font-size: 0.78rem;
 }
 
 .stat-chip {
@@ -1167,7 +1256,8 @@ h3 {
 @media (max-width: 1180px) {
   .ops-hero,
   .ops-workbench,
-  .ops-proof {
+  .ops-proof,
+  .ops-reliability {
     grid-template-columns: 1fr;
   }
 
@@ -1181,7 +1271,10 @@ h3 {
     padding: 18px;
   }
 
-  .ops-metrics {
+  .ops-metrics,
+  .ops-readiness-summary,
+  .ops-settlement-grid,
+  .ops-metrics-counters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

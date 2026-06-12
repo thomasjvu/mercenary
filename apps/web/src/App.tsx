@@ -26,6 +26,7 @@ import { useLocationKey, useLocationPathname } from './lib/use-location.js';
 import { ReceiptPage } from './pages/ReceiptPage';
 import { RaidersPage } from './pages/RaidersPage';
 import { SellerOnboardingPage } from './pages/SellerOnboardingPage';
+import { HttpSellerWizardPage } from './pages/HttpSellerWizardPage';
 import { ManageOffersPage } from './pages/ManageOffersPage';
 type AppTheme = 'light' | 'dark';
 
@@ -51,6 +52,7 @@ export function App() {
   const isLegacyDemoRoute = pathname === '/demo';
   const isBuyerOnboardingRoute = pathname === '/onboarding/buyer';
   const isSellerOnboardingRoute = pathname === '/onboarding/seller';
+  const isHttpSellerOnboardingRoute = pathname === '/onboarding/seller/http';
   const isManageOffersRoute = pathname === '/sell/offers';
   const isAccountRoute = pathname === '/account';
   const isRaidersRoute = pathname === '/raiders';
@@ -177,6 +179,7 @@ export function App() {
               />
             ) : isPlaygroundRoute ? (
               <PlaygroundPage
+                apiError={providers.error ?? providerHealth.error}
                 initialModelId={playgroundModelId}
                 mode={playgroundMode}
                 onModeChange={(mode) => navigate('/playground', { mode })}
@@ -186,7 +189,9 @@ export function App() {
             ) : isLegacyDemoRoute ? null : isBuyerOnboardingRoute ? (
               <BuyerOnboardingPage />
             ) : isSellerOnboardingRoute ? (
-              <SellerOnboardingPage />
+              <SellerOnboardingPage onNavigate={navigate} />
+            ) : isHttpSellerOnboardingRoute ? (
+              <HttpSellerWizardPage onNavigate={navigate} />
             ) : isManageOffersRoute ? (
               <ManageOffersPage />
             ) : isAccountRoute ? (

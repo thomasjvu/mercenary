@@ -51,6 +51,7 @@ import {
   type RaidLifecycleCoordinatorDeps,
 } from './orchestrator-raid-lifecycle.js';
 import type { OrchestratorProviderCapacityDeps } from './orchestrator-provider-capacity.js';
+import { readRaidRetentionTtlMs } from './raid-retention.js';
 import { findWorkspaceRoot, resolveWorkspacePath } from './workspace.js';
 
 export { InvalidRaidLaunchReservationError, NoEligibleProvidersError } from './raid-launch.js';
@@ -68,6 +69,7 @@ export class BossRaidOrchestrator {
     ): Promise<SettlementExecutionRecord | undefined>;
   };
   private readonly persistenceQueue = new PersistenceQueue();
+  private readonly raidRetentionTtlMs = readRaidRetentionTtlMs();
   private readonly providerRegistry: ProviderRegistryCoordinator;
   private readonly raidLifecycle: RaidLifecycleCoordinator;
 
@@ -180,10 +182,7 @@ export class BossRaidOrchestrator {
   }
 
   getPersistenceStatus(): { healthy: boolean; lastError?: string } {
-    return {
-      healthy: this.persistenceQueue.lastPersistenceError == null,
-      lastError: this.persistenceQueue.lastPersistenceError?.message,
-    };
+    return this.persistenceQueue.getHealth();
   }
 
   restoreState(snapshot: BossRaidPersistenceSnapshot): boolean {
@@ -257,6 +256,12 @@ export class BossRaidOrchestrator {
       secretCipher: this.secretCipher,
       refreshProviderLiveness: (nowMs) => this.providerRegistry.refreshProviderLiveness(nowMs),
       pruneLaunchReservations: (persist) => this.raidLifecycle.pruneLaunchReservations(persist),
+      raidRetentionTtlMs: this.raidRetentionTtlMs,
+      dropRaids: (raidIds) => {
+        for (const raidId of raidIds) {
+          this.raidLifecycle.raids.delete(raidId);
+        }
+      },
     });
   }
 

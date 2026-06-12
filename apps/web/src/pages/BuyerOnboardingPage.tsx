@@ -1,23 +1,47 @@
 import { useState } from 'react';
+import { Icon } from '@iconify/react';
 import { createBuyerApiKey, fetchSession } from '../api';
 import { useWalletAuth } from '../hooks/useWalletAuth';
 
 export function BuyerOnboardingPage() {
-  const { session, setSession, status, setStatus, connectWallet, isAuthenticated } = useWalletAuth(
+  const { session, setSession, status, setStatus, isAuthenticated } = useWalletAuth(
     'Use connect wallet in the sidebar to create a buyer account.'
   );
   const [apiKey, setApiKey] = useState<string>('');
   const [keyName, setKeyName] = useState('Beta buyer key');
   const [spendLimit, setSpendLimit] = useState('5');
+  const [keyError, setKeyError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   async function createKey() {
-    const created = await createBuyerApiKey({
-      name: keyName,
-      spendLimitUsd: spendLimit.trim() ? Number(spendLimit) : undefined,
-    });
-    setApiKey(created.apiKey);
-    await setSession(await fetchSession());
-    setStatus('API key created. It is only shown once.');
+    setKeyError(null);
+    try {
+      const created = await createBuyerApiKey({
+        name: keyName,
+        spendLimitUsd: spendLimit.trim() ? Number(spendLimit) : undefined,
+      });
+      setApiKey(created.apiKey);
+      await setSession(await fetchSession());
+      setStatus('API key created. It is only shown once.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create API key.';
+      setKeyError(message);
+      setStatus(message);
+    }
+  }
+
+  async function copyKey() {
+    if (!apiKey) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(apiKey);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1200);
+    } catch {
+      setCopied(false);
+    }
   }
 
   return (
@@ -38,16 +62,7 @@ export function BuyerOnboardingPage() {
           {isAuthenticated ? (
             <p className="form-status">Signed in as {session?.wallet}.</p>
           ) : (
-            <>
-              <button
-                className="button button--primary"
-                onClick={() => void connectWallet()}
-                type="button"
-              >
-                connect wallet
-              </button>
-              <p className="form-status">{status}</p>
-            </>
+            <p className="form-status">{status}</p>
           )}
         </article>
 
@@ -74,7 +89,21 @@ export function BuyerOnboardingPage() {
           >
             create key
           </button>
-          {apiKey ? <pre className="code-panel">{apiKey}</pre> : null}
+          {keyError ? <p className="form-status form-status--error">{keyError}</p> : null}
+          {apiKey ? (
+            <>
+              <p className="form-status form-status--warning">
+                Copy this key now. Boss Raid will not show it again.
+              </p>
+              <div className="code-panel-row">
+                <pre className="code-panel">{apiKey}</pre>
+                <button className="button" onClick={() => void copyKey()} type="button">
+                  <Icon aria-hidden="true" className="icon icon--pixel" icon="pixel:copy-solid" />
+                  {copied ? 'copied' : 'copy key'}
+                </button>
+              </div>
+            </>
+          ) : null}
         </article>
 
         <article className="beta-panel beta-panel--wide">

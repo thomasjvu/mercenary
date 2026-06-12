@@ -1,14 +1,17 @@
 import { createFetchJson, parseJsonErrorMessage } from '@bossraid/http-client';
 import type {
+  OpsMetricsResponse,
   OpsSessionStatusResponse,
   OpsSettingsResponse,
   OpsX402SettingsResponse,
+  ProductionReadinessResponse,
   ProviderHealthViewResponse,
   ProviderViewResponse,
   RaidListItemResponse,
   RaidResultResponse,
   RaidStatusResponse,
   RankedSubmissionResponse,
+  SettlementStatusResponse,
 } from '@bossraid/shared-types';
 
 export type RaidListItem = RaidListItemResponse;
@@ -20,6 +23,9 @@ export type ProviderHealth = ProviderHealthViewResponse;
 export type OpsSessionStatus = OpsSessionStatusResponse;
 export type OpsX402Settings = OpsX402SettingsResponse;
 export type OpsSettings = OpsSettingsResponse;
+export type ProductionReadiness = ProductionReadinessResponse;
+export type SettlementStatus = SettlementStatusResponse;
+export type OpsMetrics = OpsMetricsResponse;
 
 export const API_BASE =
   (import.meta.env.VITE_BOSSRAID_OPS_API_BASE as string | undefined) ?? '/ops-api';
@@ -82,4 +88,16 @@ export async function updateOpsX402Enabled(enabled: boolean): Promise<OpsSetting
     },
     body: JSON.stringify({ x402Enabled: enabled }),
   });
+}
+
+export async function fetchProductionReadiness(): Promise<ProductionReadiness> {
+  return fetchJson<ProductionReadiness>('/v1/ops/production-readiness');
+}
+
+export async function fetchSettlementStatus(): Promise<SettlementStatus> {
+  return fetchJson<SettlementStatus>('/v1/ops/settlement/status');
+}
+
+export async function fetchOpsMetrics(): Promise<OpsMetrics> {
+  return fetchJson<OpsMetrics>('/v1/ops/metrics');
 }

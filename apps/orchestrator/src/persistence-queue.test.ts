@@ -31,6 +31,24 @@ test('PersistenceQueue records the latest persistence failure', async () => {
   assert.match(queue.lastPersistenceError?.message ?? '', /disk full/);
 });
 
+test('PersistenceQueue exposes health for readiness gates', async () => {
+  const queue = new PersistenceQueue();
+
+  assert.deepEqual(queue.getHealth(), { healthy: true });
+
+  await assert.rejects(
+    queue.enqueue(async () => {
+      throw new Error('disk full');
+    }),
+    /disk full/
+  );
+
+  assert.deepEqual(queue.getHealth(), {
+    healthy: false,
+    lastError: 'disk full',
+  });
+});
+
 test('PersistenceQueue clears the last error after a successful write', async () => {
   const queue = new PersistenceQueue();
 

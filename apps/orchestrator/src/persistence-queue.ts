@@ -13,6 +13,17 @@ export class PersistenceQueue {
     return this.lastError;
   }
 
+  getHealth(): { healthy: boolean; lastError?: string } {
+    if (this.lastError == null) {
+      return { healthy: true };
+    }
+
+    return {
+      healthy: false,
+      lastError: this.lastError.message,
+    };
+  }
+
   enqueue(task: () => Promise<void>): Promise<void> {
     this.queue = this.queue
       .catch(() => undefined)

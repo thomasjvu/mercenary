@@ -108,7 +108,12 @@ export function ReceiptAttestationSection({
           <p className="eyebrow">upstream tee proof</p>
           <button
             className="button button--ghost"
-            onClick={() => openInspector({ upstreamAttestations })}
+            onClick={() =>
+              openInspector({
+                raidId: activeQuery.raidId,
+                upstreamAttestations,
+              })
+            }
             type="button"
           >
             open inspector

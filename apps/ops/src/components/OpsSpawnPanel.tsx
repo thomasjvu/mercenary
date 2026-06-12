@@ -1,4 +1,5 @@
 import { DocsButton } from '@bossraid/ui';
+import { SPAWN_PAYLOAD_PRESETS } from '../default-payload';
 
 type OpsSpawnPanelProps = {
   spawnPayload: string;
@@ -7,6 +8,9 @@ type OpsSpawnPanelProps = {
 };
 
 export function OpsSpawnPanel({ spawnPayload, spawnError, onPayloadChange }: OpsSpawnPanelProps) {
+  const activePreset =
+    SPAWN_PAYLOAD_PRESETS.find((preset) => preset.payload === spawnPayload)?.id ?? 'custom';
+
   return (
     <article className="ops-panel ops-panel--payload">
       <div className="panel-head">
@@ -14,7 +18,19 @@ export function OpsSpawnPanel({ spawnPayload, spawnError, onPayloadChange }: Ops
           <p className="ops-label">payload</p>
           <h3>Launch spec</h3>
         </div>
-        <DocsButton className="button ops-docs-button ops-docs-button--compact" />
+        <div className="ops-payload-presets">
+          {SPAWN_PAYLOAD_PRESETS.map((preset) => (
+            <button
+              className={`button button--compact${activePreset === preset.id ? ' button--primary' : ''}`}
+              key={preset.id}
+              onClick={() => onPayloadChange(preset.payload)}
+              type="button"
+            >
+              {preset.label}
+            </button>
+          ))}
+          <DocsButton className="button ops-docs-button ops-docs-button--compact" />
+        </div>
       </div>
       <textarea
         className="payload-editor"

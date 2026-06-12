@@ -24,7 +24,8 @@ export function createRaidHandlers(
   payment: ReturnType<typeof createPaymentHandlers>
 ) {
   const { requireRateLimit } = auth;
-  const { requireReservedLaunchPayment, recordMarketplaceLedgersFromRaid } = payment;
+  const { requireReservedLaunchPayment, recordMarketplaceLedgersFromRaid, reconcileLaunchPayment } =
+    payment;
 
   async function ensureErc8004ProofState(
     options: {
@@ -239,19 +240,31 @@ export function createRaidHandlers(
       options.requirePayment === false
         ? {}
         : await requireReservedLaunchPayment('raid', request, input);
-    const response =
-      launchPayment.reservationId && launchPayment.requestKey
-        ? await ctx.orchestrator.spawnReservedRaid(
-            launchPayment.reservationId,
-            launchPayment.requestKey,
-            launchPayment.escrowFundingUsd,
-            launchPayment.platformMarkupUsd
-          )
-        : await ctx.orchestrator.spawnRaid(
-            input,
-            launchPayment.escrowFundingUsd,
-            launchPayment.platformMarkupUsd
-          );
+    let response;
+    try {
+      response =
+        launchPayment.reservationId && launchPayment.requestKey
+          ? await ctx.orchestrator.spawnReservedRaid(
+              launchPayment.reservationId,
+              launchPayment.requestKey,
+              launchPayment.escrowFundingUsd,
+              launchPayment.platformMarkupUsd
+            )
+          : await ctx.orchestrator.spawnRaid(
+              input,
+              launchPayment.escrowFundingUsd,
+              launchPayment.platformMarkupUsd
+            );
+    } catch (error) {
+      await reconcileLaunchPayment({
+        route: 'raid',
+        request,
+        raidRequest: input,
+        launchPayment,
+        reason: 'spawn_failed',
+      });
+      throw error;
+    }
     applyX402Headers(reply, {
       settlement: launchPayment.settlement,
     });

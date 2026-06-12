@@ -19,6 +19,7 @@ import {
   waitForTerminalRaidOutput,
 } from '../lib/chat-completion.js';
 import { enforceBuyerBudget } from '../lib/account.js';
+import { resolveChatE2eeRoute, runServerE2eeChatCompletion } from '../lib/e2ee-chat-hook.js';
 import { type ApiContext } from '../api-context.js';
 import { createAuthHandlers } from './auth.js';
 import { createManaBillingHandlers } from './billing-mana.js';
@@ -96,6 +97,11 @@ export function createChatHandlers(
       };
     }
     const created = Math.floor(Date.now() / 1000);
+    const e2eeRoute = options.discountInference ? resolveChatE2eeRoute(chatRequest) : undefined;
+    if (e2eeRoute) {
+      return runServerE2eeChatCompletion({ chatRequest, route: e2eeRoute });
+    }
+
     const directResponse = options.discountInference
       ? null
       : buildDirectChatCompletionResponse(chatRequest, created);

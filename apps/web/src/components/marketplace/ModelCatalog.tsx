@@ -37,7 +37,7 @@ export function ModelCatalog({ markets, onOpenModel }: ModelCatalogProps) {
   }, [markets, query, sortKey]);
 
   return (
-    <div className="model-catalog">
+    <div className="model-catalog model-catalog--cards">
       <div className="model-catalog__toolbar">
         <label className="field field--inline">
           <span>search models</span>
@@ -88,16 +88,37 @@ export function ModelCatalog({ markets, onOpenModel }: ModelCatalogProps) {
           </tbody>
         </table>
       </div>
+
+      <div className="model-catalog__cards">
+        {filtered.map((market) => (
+          <ModelCard
+            key={market.modelId}
+            market={market}
+            onOpen={() => onOpenModel(market.modelId)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
-function ModelRow({ market, onOpen }: { market: InferenceMarket; onOpen: () => void }) {
+function useMarketPresentation(market: InferenceMarket) {
   const benchmark = resolveMarketBenchmarkTaskUsd(market);
   const teeSellerCount = market.sellers.filter((seller) => seller.privacy.teeAttested).length;
   const savingsUsd = computeSavingsUsd(benchmark, market.cheapestRateUsd);
   const savingsPercent = computeSavingsPercent(benchmark, market.cheapestRateUsd);
   const savingsLabel = formatSavingsLabel(savingsUsd, savingsPercent);
+
+  return {
+    benchmark,
+    teeSellerCount,
+    savingsPercent,
+    savingsLabel,
+  };
+}
+
+function ModelRow({ market, onOpen }: { market: InferenceMarket; onOpen: () => void }) {
+  const { teeSellerCount, savingsPercent, savingsLabel } = useMarketPresentation(market);
 
   return (
     <tr>
@@ -141,6 +162,69 @@ function ModelRow({ market, onOpen }: { market: InferenceMarket; onOpen: () => v
       </td>
       <td>{market.pricing.declaredUnit}</td>
     </tr>
+  );
+}
+
+function ModelCard({ market, onOpen }: { market: InferenceMarket; onOpen: () => void }) {
+  const { teeSellerCount, savingsPercent, savingsLabel } = useMarketPresentation(market);
+
+  return (
+    <article className="model-catalog__card">
+      <button className="model-catalog__model-button" onClick={onOpen} type="button">
+        <ProviderBrandIcon modelProvider={market.modelProvider} />
+        <span className="model-catalog__model-copy">
+          <strong>{market.modelId}</strong>
+          <span>
+            {market.modelProvider ?? 'mixed'}
+            {market.activeProviderCount === 0 ? ' · catalog only' : ''}
+          </span>
+        </span>
+      </button>
+
+      <dl className="model-catalog__card-stats">
+        <div>
+          <dt>from</dt>
+          <dd>{formatUsd(market.cheapestRateUsd)}</dd>
+        </div>
+        <div>
+          <dt>savings</dt>
+          <dd>{savingsLabel ?? '—'}</dd>
+        </div>
+        <div>
+          <dt>sellers</dt>
+          <dd>
+            {market.activeProviderCount}/{market.providerCount}
+          </dd>
+        </div>
+        <div>
+          <dt>success</dt>
+          <dd>{formatPercent(market.recentSuccessRate)}</dd>
+        </div>
+        <div>
+          <dt>p50</dt>
+          <dd>{formatLatency(market.p50LatencyMs)}</dd>
+        </div>
+        <div>
+          <dt>tee</dt>
+          <dd>
+            {teeSellerCount > 0 ? (
+              <span className="trust-badge trust-badge--tee">{teeSellerCount} tee</span>
+            ) : (
+              '—'
+            )}
+          </dd>
+        </div>
+      </dl>
+
+      {savingsPercent != null && savingsPercent > 0 ? (
+        <div className="model-catalog__savings-bar" aria-hidden="true">
+          <span
+            className="model-catalog__savings-fill"
+            style={{ width: `${Math.min(100, savingsPercent)}%` }}
+          />
+        </div>
+      ) : null}
+    </article>
   );
 }
 

@@ -12,11 +12,17 @@ import {
 } from '../api/seller-upstream.js';
 import { useWalletAuth } from '../hooks/useWalletAuth.js';
 import { ModelPickerModal } from '../components/seller/ModelPickerModal.js';
+import { SellerPathSwitcher } from '../components/seller/SellerPathSwitcher.js';
 import { UpstreamTeeVerificationPanel } from '../components/trust/UpstreamTeeVerificationPanel.js';
+import type { AppRoute } from '../lib/app-routes.js';
 
 const PROVIDER_ORDER: UpstreamProviderId[] = ['venice', 'redpill', 'near', 'chutes', 'phala'];
 
-export function SellerOnboardingPage() {
+type SellerOnboardingPageProps = {
+  onNavigate: (path: AppRoute) => void;
+};
+
+export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) {
   const { session, status, setStatus, connectWallet, isAuthenticated } = useWalletAuth(
     'Connect wallet in the sidebar before selling inference.'
   );
@@ -106,6 +112,12 @@ export function SellerOnboardingPage() {
           </p>
         </div>
       </header>
+
+      <SellerPathSwitcher
+        active="upstream"
+        onSelectHttp={() => onNavigate('/onboarding/seller/http')}
+        onSelectUpstream={() => onNavigate('/onboarding/seller')}
+      />
 
       <div className="seller-wizard__steps">
         <WizardStep done={isAuthenticated} title="1 / wallet">
@@ -235,6 +247,26 @@ export function SellerOnboardingPage() {
           {publishResult ? <p className="form-status">{publishResult}</p> : null}
           <p className="form-status">{status}</p>
         </WizardStep>
+
+        {publishResult ? (
+          <article className="beta-panel seller-wizard__summary seller-wizard__step--done">
+            <p className="eyebrow">published</p>
+            <h2>Offers are live.</h2>
+            <p className="lede">{publishResult}</p>
+            <div className="seller-wizard__summary-actions">
+              <button
+                className="button button--primary"
+                onClick={() => onNavigate('/sell/offers')}
+                type="button"
+              >
+                manage offers
+              </button>
+              <button className="button" onClick={() => onNavigate('/marketplace')} type="button">
+                view marketplace
+              </button>
+            </div>
+          </article>
+        ) : null}
       </div>
 
       {pickerOpen ? (

@@ -66,10 +66,11 @@ export function X402PaymentsToggle({
   onToggle: (nextEnabled: boolean) => void;
 }) {
   const canEnable = settings?.canEnable ?? false;
-  const blockedReason =
-    !canEnable && !enabled
-      ? 'Set BOSSRAID_X402_PAY_TO on the API host before enabling paid routes.'
-      : null;
+  const blockers =
+    settings?.blockers ??
+    (!canEnable && !enabled
+      ? ['Set BOSSRAID_X402_PAY_TO on the API host before enabling paid routes.']
+      : []);
 
   return (
     <section className="ops-x402-panel" aria-label="x402 payment controls">
@@ -102,12 +103,26 @@ export function X402PaymentsToggle({
         </button>
 
         <div className="ops-x402-panel__meta">
+          <span>facilitator {settings?.facilitator ?? 'n/a'}</span>
           <span>network {settings?.network ?? 'n/a'}</span>
           <span>asset {settings?.asset ?? 'n/a'}</span>
-          <span>pay-to {settings?.payToConfigured ? 'configured' : 'missing'}</span>
+          <span>
+            pay-to{' '}
+            {settings?.payToConfigured
+              ? settings.payTo
+                ? `${settings.payTo.slice(0, 6)}…${settings.payTo.slice(-4)}`
+                : 'configured'
+              : 'missing'}
+          </span>
         </div>
 
-        {blockedReason ? <p className="quiet-note">{blockedReason}</p> : null}
+        {blockers.length > 0 ? (
+          <ul className="ops-x402-panel__blockers">
+            {blockers.map((blocker) => (
+              <li key={blocker}>{blocker}</li>
+            ))}
+          </ul>
+        ) : null}
         {error ? <p className="error-note">{error}</p> : null}
       </div>
     </section>

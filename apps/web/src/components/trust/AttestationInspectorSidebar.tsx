@@ -6,6 +6,7 @@ import { buildAttestedRuntimeUrl, buildAgentManifestUrl } from '../../lib/receip
 import type { AttestationInspectorContextInput } from '../../contexts/AttestationInspectorContext.js';
 import type { ReceiptUpstreamAttestationRow } from '../../lib/receipt-attestation-view.js';
 import { ReceiptUpstreamAttestationPanel } from '../receipt/ReceiptUpstreamAttestationPanel.js';
+import { CopyableAddress } from './CopyableAddress.js';
 
 type ModelTeeSummary = {
   modelId: string;
@@ -31,6 +32,7 @@ type AttestationInspectorSidebarProps = {
   runtimeError: unknown;
   modelTee: ModelTeeSummary | undefined;
   modelTeeError: unknown;
+  modelTeeLoading: boolean;
 };
 
 function SignalRow({ label, value }: { label: string; value: string }) {
@@ -39,6 +41,30 @@ function SignalRow({ label, value }: { label: string; value: string }) {
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
+  );
+}
+
+function InspectorContextHeader({ context }: { context: AttestationInspectorContextInput }) {
+  if (!context.raidId && !context.modelId && !context.provider) {
+    return (
+      <section className="attestation-inspector__panel attestation-inspector__panel--context">
+        <p className="attestation-inspector__section-label">context</p>
+        <p className="attestation-inspector__note">
+          Host runtime proof. Open from a model or receipt for upstream context.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="attestation-inspector__panel attestation-inspector__panel--context">
+      <p className="attestation-inspector__section-label">context</p>
+      <div className="attestation-inspector__signal-strip">
+        {context.raidId ? <SignalRow label="raid" value={context.raidId} /> : null}
+        {context.modelId ? <SignalRow label="model" value={context.modelId} /> : null}
+        {context.provider ? <SignalRow label="provider" value={context.provider} /> : null}
+      </div>
+    </section>
   );
 }
 
@@ -52,6 +78,7 @@ export function AttestationInspectorSidebar({
   runtimeError,
   modelTee,
   modelTeeError,
+  modelTeeLoading,
 }: AttestationInspectorSidebarProps) {
   const deploymentTarget =
     runtime?.payload.deploymentTarget ?? ready?.gates.tee.platform ?? 'pending';
@@ -86,6 +113,8 @@ export function AttestationInspectorSidebar({
           </button>
         </div>
 
+        <InspectorContextHeader context={context} />
+
         <section className="attestation-inspector__panel">
           <p className="attestation-inspector__section-label">host runtime</p>
           <div className="attestation-inspector__signal-strip">
@@ -101,6 +130,9 @@ export function AttestationInspectorSidebar({
               }
             />
           </div>
+          {runtime?.signer ? (
+            <CopyableAddress label="runtime signer" value={runtime.signer} />
+          ) : null}
           {runtimeError && !runtime ? (
             <p className="attestation-inspector__note">
               {runtimeError instanceof Error
@@ -129,6 +161,11 @@ export function AttestationInspectorSidebar({
             <p className="attestation-inspector__note">
               {context.provider ?? modelTee?.provider ?? 'upstream'} · {context.modelId}
             </p>
+            {modelTeeLoading && !modelTee && !modelTeeError ? (
+              <p className="attestation-inspector__note attestation-inspector__note--loading">
+                Loading upstream TEE summary…
+              </p>
+            ) : null}
             {modelTee?.lastAttestation ? (
               <>
                 <div className="attestation-inspector__signal-strip">
@@ -136,10 +173,13 @@ export function AttestationInspectorSidebar({
                     label="status"
                     value={modelTee.lastAttestation.valid ? 'verified' : 'failed'}
                   />
-                  {modelTee.lastAttestation.signingAddress ? (
-                    <SignalRow label="signing" value={modelTee.lastAttestation.signingAddress} />
-                  ) : null}
                 </div>
+                {modelTee.lastAttestation.signingAddress ? (
+                  <CopyableAddress
+                    label="signing address"
+                    value={modelTee.lastAttestation.signingAddress}
+                  />
+                ) : null}
                 {modelTee.lastAttestation.checks && modelTee.lastAttestation.checks.length > 0 ? (
                   <ul className="upstream-tee-panel__checks">
                     {modelTee.lastAttestation.checks.map((check) => (
@@ -173,8 +213,8 @@ export function AttestationInspectorSidebar({
                   ? modelTeeError.message
                   : 'Upstream TEE summary unavailable.'}
               </p>
-            ) : (
-              <p className="attestation-inspector__note">Loading upstream TEE summary.</p>
+            ) : modelTeeLoading ? null : (
+              <p className="attestation-inspector__note">No cached upstream TEE summary yet.</p>
             )}
           </section>
         ) : null}
@@ -182,6 +222,15 @@ export function AttestationInspectorSidebar({
         {upstreamRows.length > 0 ? (
           <section className="attestation-inspector__panel">
             <p className="attestation-inspector__section-label">raid upstream proof</p>
+            {upstreamRows.map((row) =>
+              row.attestation.teeAttestation?.signingAddress ? (
+                <CopyableAddress
+                  key={`${row.providerId}-signing`}
+                  label={`${row.displayName} signing`}
+                  value={row.attestation.teeAttestation.signingAddress}
+                />
+              ) : null
+            )}
             <ReceiptUpstreamAttestationPanel rows={upstreamRows} />
           </section>
         ) : null}

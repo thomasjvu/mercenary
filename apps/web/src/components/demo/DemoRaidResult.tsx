@@ -32,6 +32,10 @@ type DemoRaidResultProps = {
   expandedArtifact: SubmissionArtifact | null;
   onOpenArtifact: (artifact: SubmissionArtifact) => void;
   onCloseArtifact: () => void;
+  onCopyReceiptLink?: () => void;
+  onViewReceipt?: () => void;
+  receiptCopied?: boolean;
+  receiptPath?: string | null;
 };
 
 export function DemoRaidResult({
@@ -49,6 +53,10 @@ export function DemoRaidResult({
   expandedArtifact,
   onOpenArtifact,
   onCloseArtifact,
+  onCopyReceiptLink,
+  onViewReceipt,
+  receiptCopied = false,
+  receiptPath,
 }: DemoRaidResultProps) {
   useEffect(() => {
     if (!expandedArtifact) {
@@ -87,6 +95,19 @@ export function DemoRaidResult({
           ) : null}
 
           {livePatch ? <pre className="code-panel mercenary-final__code">{livePatch}</pre> : null}
+
+          {raidIsTerminal && receiptPath ? (
+            <div className="mercenary-receipt-cta">
+              <a className="button button--primary" href={receiptPath}>
+                view receipt
+              </a>
+              {onCopyReceiptLink ? (
+                <button className="button" onClick={onCopyReceiptLink} type="button">
+                  {receiptCopied ? 'copied' : 'copy receipt link'}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </ChatMessage>
       ) : null}
 

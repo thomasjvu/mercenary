@@ -1,5 +1,5 @@
-import type { CSSProperties } from 'react';
 import useSWR from 'swr';
+import { ActivityMeter } from '@bossraid/ui';
 import { fetchMarkets } from '../../api/marketplace.js';
 
 const XP_PER_LEVEL = 24;
@@ -22,21 +22,20 @@ export function QuestXpMeter() {
   const litBars = Math.round((fill / 100) * BAR_COUNT);
 
   return (
-    <div aria-label={`Raid queue level ${level}`} className="quest-xp-meter">
+    <ActivityMeter
+      ariaLabel={`Raid queue level ${level}`}
+      barClassName="quest-xp-meter__bar"
+      barCount={BAR_COUNT}
+      className="quest-xp-meter"
+      litBarClassName="quest-xp-meter__bar--on"
+      litBars={litBars}
+      trackClassName="quest-xp-meter__track"
+    >
       <div className="quest-xp-meter__meta">
         <span className="quest-xp-meter__label">raid lv</span>
         <strong className="quest-xp-meter__level">{level}</strong>
       </div>
-      <div className="quest-xp-meter__track" aria-hidden="true">
-        {Array.from({ length: BAR_COUNT }, (_, index) => (
-          <span
-            className={`quest-xp-meter__bar ${index < litBars ? 'quest-xp-meter__bar--on' : ''}`}
-            key={index}
-            style={{ '--meter-index': index } as CSSProperties}
-          />
-        ))}
-      </div>
       <span className="quest-xp-meter__caption">{routed24h} routed / 24h</span>
-    </div>
+    </ActivityMeter>
   );
 }

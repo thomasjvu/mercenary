@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { BossRaidOrchestrator } from '@bossraid/orchestrator';
+import { buildPrivacyAttestation } from '@bossraid/privacy-engine';
 import type { PrivacyFeatureKey } from '@bossraid/shared-types';
 import type { ProviderProfile, ProviderTaskPackage } from '@bossraid/shared-types';
 import type { ApiControlState } from '../control-state.js';
@@ -50,12 +51,10 @@ export async function runInferenceGatewayJob(input: {
       prompt,
     });
 
+    const providerClaimsE2ee = input.provider.privacy?.e2ee === true;
     const featuresClaimed: PrivacyFeatureKey[] = [];
     if (input.provider.privacy?.teeAttested) {
       featuresClaimed.push('tee_attested');
-    }
-    if (input.provider.privacy?.e2ee) {
-      featuresClaimed.push('e2ee');
     }
     if (input.provider.privacy?.signedOutputs) {
       featuresClaimed.push('signed_outputs');
@@ -65,7 +64,7 @@ export async function runInferenceGatewayJob(input: {
     }
 
     let privacyAttestation;
-    if (featuresClaimed.length > 0) {
+    if (featuresClaimed.length > 0 || providerClaimsE2ee || input.provider.privacy?.teeAttested) {
       const teeResult = await verifySellerUpstreamTeeAttestation({
         provider: upstream,
         modelId: upstreamModelId,
@@ -77,7 +76,8 @@ export async function runInferenceGatewayJob(input: {
       if (teeResult.valid && featuresClaimed.includes('tee_attested')) {
         featuresVerified.push('tee_attested');
       }
-      if (teeResult.valid && featuresClaimed.includes('e2ee') && teeResult.e2eeReady) {
+      if (teeResult.valid && providerClaimsE2ee && teeResult.e2eeReady) {
+        featuresClaimed.push('e2ee');
         featuresVerified.push('e2ee');
       }
       if (teeResult.valid && featuresClaimed.includes('signed_outputs')) {
@@ -87,17 +87,15 @@ export async function runInferenceGatewayJob(input: {
         featuresVerified.push('no_data_retention');
       }
 
-      privacyAttestation = {
+      privacyAttestation = buildPrivacyAttestation({
         providerId: input.body.providerId,
         raidId: input.body.raidId,
-        submittedAt: new Date().toISOString(),
         featuresClaimed,
         featuresVerified,
         teeAttestation: teeResult,
         externalApiCalls: [`${upstream}:chat/completions`],
         dataRetained: false,
-        signedDeclaration: `PRIVACY_DECLARATION:${input.body.providerId}|${input.body.raidId}|${featuresClaimed.join(',')}|${teeResult.valid ? 'attested' : 'unattested'}|0|false`,
-      };
+      });
     }
 
     await input.orchestrator.recordProviderSubmission(input.body.raidId, {

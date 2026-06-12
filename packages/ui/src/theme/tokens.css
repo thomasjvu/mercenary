@@ -1,4 +1,12 @@
 :root {
+  /* Brand palette */
+  --rx-white: #ffffff;
+  --rx-yellow: #fff867;
+  --rx-red: #fb2f38;
+  --rx-blue: #2c52b3;
+  --rx-steel: #5a5b6d;
+
+  /* Light surfaces */
   --surface: rgba(255, 255, 255, 0.58);
   --surface-elevated: rgba(255, 255, 255, 0.9);
   --surface-inset: rgba(255, 255, 255, 0.96);
@@ -10,7 +18,8 @@
   --chart-savings: rgba(251, 47, 56, 0.65);
 }
 
-.app-shell--theme-dark {
+.app-frame--theme-dark,
+.bossraid-surface-dark {
   --surface: rgba(18, 20, 27, 0.72);
   --surface-elevated: rgba(24, 27, 36, 0.88);
   --surface-inset: rgba(12, 14, 18, 0.92);

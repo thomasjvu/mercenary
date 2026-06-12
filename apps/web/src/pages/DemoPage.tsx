@@ -110,8 +110,11 @@ export function DemoPage({ providers, providerHealth, embedded = false }: DemoPa
               livePatch={demo.livePatch}
               liveResultText={demo.liveResultText}
               onCloseArtifact={() => demo.setExpandedArtifact(null)}
+              onCopyReceiptLink={() => void demo.copyReceiptLink()}
               onOpenArtifact={demo.setExpandedArtifact}
               raidIsTerminal={demo.raidIsTerminal}
+              receiptCopied={demo.receiptCopied}
+              receiptPath={demo.liveRaidRun.spawn.receiptPath ?? null}
               requestMode={demo.liveRaidRun.requestMode}
             />
           ) : null}

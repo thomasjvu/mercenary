@@ -55,6 +55,25 @@ export function isVerificationSuccessful(verification: X402VerificationResponse)
   );
 }
 
+export async function refundPayment(
+  config: X402Config,
+  signatureHeader: string | undefined,
+  paymentRequired: X402PaymentRequired,
+  reason: string
+): Promise<X402SettlementResponse> {
+  if (!config.facilitatorUrl) {
+    throw new Error('x402 payment refund requires a configured facilitator.');
+  }
+
+  const paymentPayload = decodeHeaderValue<unknown>(signatureHeader, 'PAYMENT-SIGNATURE');
+  return facilitatorRequest<X402SettlementResponse>(config, '/refund', {
+    x402Version: 1,
+    paymentPayload,
+    paymentRequirements: paymentRequired.accepts[0],
+    reason,
+  });
+}
+
 export async function settlePayment(
   config: X402Config,
   signatureHeader: string | undefined,

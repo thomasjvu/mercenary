@@ -17,6 +17,7 @@ import {
 import { launchReservationExpired } from './raid-launch.js';
 import { refreshParentRaidFromChildren } from './raid-hierarchical.js';
 import type { PersistenceQueue } from './persistence-queue.js';
+import { pruneTerminalRaidsForRetention } from './raid-retention.js';
 
 export type ProviderRegistryMaps = {
   providers: Map<string, ProviderProfile>;
@@ -46,13 +47,27 @@ export function buildOrchestratorSnapshot(input: {
   secretCipher: SecretCipher;
   refreshProviderLiveness: (nowMs?: number) => void;
   pruneLaunchReservations: (persist?: boolean) => void;
+  raidRetentionTtlMs?: number;
+  dropRaids?: (raidIds: string[]) => void;
 }): BossRaidPersistenceSnapshot {
   input.refreshProviderLiveness();
   input.pruneLaunchReservations(false);
+
+  let raids = input.listAllRaids();
+  if (input.raidRetentionTtlMs != null && input.raidRetentionTtlMs > 0) {
+    const retention = pruneTerminalRaidsForRetention(raids, {
+      ttlMs: input.raidRetentionTtlMs,
+    });
+    if (retention.prunedRaidIds.length > 0) {
+      input.dropRaids?.(retention.prunedRaidIds);
+    }
+    raids = retention.raids;
+  }
+
   return {
     version: 1,
     savedAt: new Date().toISOString(),
-    raids: input.listAllRaids(),
+    raids,
     providers: input
       .listProviders()
       .map((provider) => encryptProviderProfileSecrets(provider, input.secretCipher)),

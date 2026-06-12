@@ -9,6 +9,7 @@ type PlaygroundPageProps = {
   initialModelId?: string;
   providers: Provider[];
   providerHealth: ProviderHealth[];
+  apiError?: unknown;
   onModeChange: (mode: PlaygroundMode) => void;
 };
 
@@ -17,36 +18,28 @@ export function PlaygroundPage({
   initialModelId,
   providers,
   providerHealth,
+  apiError,
   onModeChange,
 }: PlaygroundPageProps) {
   return (
-    <section className="beta-page playground-page">
-      <header className="playground-page__header">
-        <div>
-          <p className="eyebrow">playground</p>
-          <h1>Try models and raids.</h1>
+    <section
+      className={`beta-page playground-page${mode === 'raid' ? ' playground-page--raid' : ''}`}
+    >
+      {mode !== 'raid' ? (
+        <header className="playground-page__header">
+          <div>
+            <p className="eyebrow">playground</p>
+            <h1>Try models and raids.</h1>
+          </div>
+          <PlaygroundModeTabs mode={mode} onModeChange={onModeChange} />
+        </header>
+      ) : (
+        <div className="playground-page__mode-bar">
+          <PlaygroundModeTabs mode={mode} onModeChange={onModeChange} />
         </div>
-        <div className="playground-page__modes" role="tablist" aria-label="Playground mode">
-          <button
-            aria-selected={mode === 'inference'}
-            className={`playground-page__mode${mode === 'inference' ? ' playground-page__mode--active' : ''}`}
-            onClick={() => onModeChange('inference')}
-            type="button"
-          >
-            inference
-          </button>
-          <button
-            aria-selected={mode === 'raid'}
-            className={`playground-page__mode${mode === 'raid' ? ' playground-page__mode--active' : ''}`}
-            onClick={() => onModeChange('raid')}
-            type="button"
-          >
-            mercenary raid
-          </button>
-        </div>
-      </header>
+      )}
 
-      <ApiReadinessBanner label="Playground API unavailable" />
+      <ApiReadinessBanner error={apiError} label="Playground API unavailable" />
 
       {mode === 'raid' ? (
         <DemoPage providerHealth={providerHealth} providers={providers} embedded />
@@ -54,5 +47,34 @@ export function PlaygroundPage({
         <InferencePlayground initialModelId={initialModelId} />
       )}
     </section>
+  );
+}
+
+function PlaygroundModeTabs({
+  mode,
+  onModeChange,
+}: {
+  mode: PlaygroundMode;
+  onModeChange: (mode: PlaygroundMode) => void;
+}) {
+  return (
+    <div className="terminal-deck__tabs" role="tablist" aria-label="Playground mode">
+      <button
+        aria-selected={mode === 'inference'}
+        className={`deck-tab deck-tab--chat${mode === 'inference' ? ' deck-tab--active' : ''}`}
+        onClick={() => onModeChange('inference')}
+        type="button"
+      >
+        inference
+      </button>
+      <button
+        aria-selected={mode === 'raid'}
+        className={`deck-tab deck-tab--raid${mode === 'raid' ? ' deck-tab--active' : ''}`}
+        onClick={() => onModeChange('raid')}
+        type="button"
+      >
+        mercenary raid
+      </button>
+    </div>
   );
 }

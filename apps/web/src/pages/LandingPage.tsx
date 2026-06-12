@@ -90,6 +90,7 @@ function getPanelLayer(activePanel: PanelKey, panel: PanelKey): TerminalPanelLay
 export function LandingPage({ onNavigate }: LandingPageProps) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<(typeof PANELS)[number]>('chat');
+  const [autoRotateTabs, setAutoRotateTabs] = useState(true);
 
   useEffect(() => {
     if (!copiedKey) {
@@ -101,12 +102,16 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
   }, [copiedKey]);
 
   useEffect(() => {
+    if (!autoRotateTabs) {
+      return;
+    }
+
     const timer = window.setInterval(() => {
       setActivePanel((current) => PANELS[(PANELS.indexOf(current) + 1) % PANELS.length]);
     }, 45_000);
 
     return () => window.clearInterval(timer);
-  }, []);
+  }, [autoRotateTabs]);
 
   async function copySnippet(key: string, value: string) {
     try {
@@ -169,7 +174,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               try a model
             </a>
           </div>
-          <LiveMarketPulse />
+          <LiveMarketPulse variant="quest" />
         </div>
 
         <div className="hero__art quest-pixel-frame" aria-hidden="true">
@@ -253,21 +258,30 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             <div className="terminal-deck__tabs" role="tablist" aria-label="Integration surfaces">
               <button
                 className={`deck-tab deck-tab--chat ${activePanel === 'chat' ? 'deck-tab--active' : ''}`}
-                onClick={() => setActivePanel('chat')}
+                onClick={() => {
+                  setAutoRotateTabs(false);
+                  setActivePanel('chat');
+                }}
                 type="button"
               >
                 tool
               </button>
               <button
                 className={`deck-tab deck-tab--raid ${activePanel === 'raid' ? 'deck-tab--active' : ''}`}
-                onClick={() => setActivePanel('raid')}
+                onClick={() => {
+                  setAutoRotateTabs(false);
+                  setActivePanel('raid');
+                }}
                 type="button"
               >
                 raid
               </button>
               <button
                 className={`deck-tab deck-tab--mcp ${activePanel === 'mcp' ? 'deck-tab--active' : ''}`}
-                onClick={() => setActivePanel('mcp')}
+                onClick={() => {
+                  setAutoRotateTabs(false);
+                  setActivePanel('mcp');
+                }}
                 type="button"
               >
                 mcp

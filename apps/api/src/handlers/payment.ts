@@ -1,15 +1,18 @@
 import { type FastifyRequest } from 'fastify';
 import { ApiContractError } from '@bossraid/api-contracts';
+import logger from '@bossraid/logger';
 import { InvalidRaidLaunchReservationError } from '@bossraid/orchestrator';
 import { asSingleHeader, type BossRaidSpawnInput } from '@bossraid/shared-types';
 import {
   buildPaymentRequiredForRoute,
   readX402ReservationId,
   requireX402Payment,
+  type X402SettlementResponse,
 } from '../x402.js';
 import { readX402ConfigForContext } from '../lib/x402-runtime.js';
 import { buildLaunchRequestKey } from '../lib/http.js';
 import { computeSavingsUsd, estimateBenchmarkPriceUsd } from '../marketplace-benchmark.js';
+import { refundPayment } from '../x402-verify.js';
 import { type ApiContext } from '../api-context.js';
 import { createManaBillingHandlers, type ManaBillingContext } from './billing-mana.js';
 import { createAuthHandlers } from './auth.js';
@@ -19,6 +22,16 @@ export interface ApiKeyBillingContext {
   wallet: string;
   reservedUsd: number;
   useBalance: boolean;
+}
+
+export interface LaunchPaymentContext {
+  settlement?: X402SettlementResponse;
+  reservationId?: string;
+  requestKey?: string;
+  escrowFundingUsd?: number;
+  platformMarkupUsd?: number;
+  manaBilling?: ManaBillingContext;
+  apiKeyBilling?: ApiKeyBillingContext;
 }
 
 function getLaunchReservationPaymentTimeoutSeconds(reservation: {
@@ -45,7 +58,7 @@ export function createPaymentHandlers(
   manaBilling: ReturnType<typeof createManaBillingHandlers>
 ) {
   const { readBuyerApiKey } = auth;
-  const { readManaBillingHeaders, reserveManaBilling } = manaBilling;
+  const { readManaBillingHeaders, reserveManaBilling, refundManaBilling } = manaBilling;
 
   function recordMarketplaceLedgersFromRaid(input: {
     raidId: string;
@@ -136,19 +149,83 @@ export function createPaymentHandlers(
     });
   }
 
+  async function reconcileLaunchPayment(input: {
+    route: 'raid' | 'chat' | 'inference';
+    request: FastifyRequest;
+    raidRequest: BossRaidSpawnInput;
+    launchPayment: LaunchPaymentContext;
+    reason: string;
+    raidId?: string;
+  }): Promise<void> {
+    await refundManaBilling({
+      manaBilling: input.launchPayment.manaBilling,
+      reason: input.reason,
+      raidId: input.raidId,
+    });
+
+    if (!input.launchPayment.settlement?.success) {
+      return;
+    }
+
+    ctx.apiMetrics.increment('x402.spawn_reconciliation');
+    const signatureHeader = asSingleHeader(input.request.headers['payment-signature']);
+    if (!signatureHeader || !input.launchPayment.reservationId || !input.launchPayment.requestKey) {
+      ctx.apiMetrics.increment('x402.spawn_reconciliation_failed');
+      logger.error(
+        {
+          reason: input.reason,
+          reservationId: input.launchPayment.reservationId,
+          route: input.route,
+        },
+        'x402 spawn failure missing payment context for refund'
+      );
+      return;
+    }
+
+    const reservation = ctx.orchestrator.getRaidLaunchReservation(
+      input.launchPayment.reservationId,
+      input.launchPayment.requestKey
+    );
+    if (!reservation) {
+      ctx.apiMetrics.increment('x402.spawn_reconciliation_failed');
+      logger.error(
+        {
+          reason: input.reason,
+          reservationId: input.launchPayment.reservationId,
+          route: input.route,
+        },
+        'x402 spawn failure could not reload launch reservation for refund'
+      );
+      return;
+    }
+
+    const x402Config = readX402ConfigForContext(ctx);
+    const paymentRequired = buildPaymentRequiredForRoute(
+      x402Config,
+      input.route,
+      reservation.sanitized.constraints.maxBudgetUsd,
+      {
+        extra: {
+          reservationId: reservation.id,
+        },
+        maxTimeoutSeconds: getLaunchReservationPaymentTimeoutSeconds(reservation),
+      }
+    );
+
+    try {
+      await refundPayment(x402Config, signatureHeader, paymentRequired, input.reason);
+      ctx.apiMetrics.increment('x402.spawn_refunded');
+    } catch (error) {
+      ctx.apiMetrics.increment('x402.spawn_reconciliation_failed');
+      logger.error(error, 'x402 spawn failure refund failed');
+    }
+  }
+
   async function requireReservedLaunchPayment(
     route: 'raid' | 'chat' | 'inference',
     request: FastifyRequest,
     input: BossRaidSpawnInput
-  ): Promise<{
-    settlement?: import('../x402.js').X402SettlementResponse;
-    reservationId?: string;
-    requestKey?: string;
-    escrowFundingUsd?: number;
-    platformMarkupUsd?: number;
-    manaBilling?: ManaBillingContext;
-    apiKeyBilling?: ApiKeyBillingContext;
-  }> {
+  ): Promise<LaunchPaymentContext> {
     const manaBillingHeaders = readManaBillingHeaders(request.headers);
     const requestKey = buildLaunchRequestKey(request, route, input);
     if (manaBillingHeaders) {
@@ -275,5 +352,6 @@ export function createPaymentHandlers(
     recordMarketplaceLedgersFromRaid,
     captureApiKeyBilling,
     requireReservedLaunchPayment,
+    reconcileLaunchPayment,
   };
 }

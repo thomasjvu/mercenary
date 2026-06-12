@@ -1,12 +1,16 @@
 import { Icon } from '@iconify/react';
 import { BOSSRAID_DOCS_URL } from '@bossraid/ui';
 import { AppHeaderWallet } from './AppHeaderWallet.js';
+import { BossRaidMark } from './BossRaidMark.js';
+import { AttestationProofSidebarTrigger } from '../contexts/AttestationInspectorContext.js';
 import { HostTeeTrustStrip } from './trust/HostTeeTrustStrip.js';
+import { useAttestationInspector } from '../contexts/AttestationInspectorContext.js';
 import {
   isSidebarNavActive,
   SIDEBAR_ACCOUNT_LINKS,
   SIDEBAR_EXPLORE_LINKS,
   type AppRoute,
+  type SidebarNavItem,
 } from '../lib/app-routes.js';
 
 type AppTheme = 'light' | 'dark';
@@ -19,11 +23,13 @@ type AppSidebarProps = {
 };
 
 export function AppSidebar({ pathname, onNavigate, appTheme, onThemeToggle }: AppSidebarProps) {
+  const { openInspector } = useAttestationInspector();
+
   return (
     <aside aria-label="Site navigation" className="app-sidebar">
       <div className="app-sidebar__top">
         <button className="app-sidebar__brand" onClick={() => onNavigate('/')} type="button">
-          <span className="app-sidebar__mark">BR</span>
+          <BossRaidMark compact />
           <span className="app-sidebar__title">Boss Raid</span>
         </button>
 
@@ -33,6 +39,7 @@ export function AppSidebar({ pathname, onNavigate, appTheme, onThemeToggle }: Ap
             {SIDEBAR_EXPLORE_LINKS.map((link) => (
               <SidebarLink
                 active={isSidebarNavActive(link.path, pathname)}
+                icon={link.icon}
                 key={link.path}
                 label={link.label}
                 onNavigate={onNavigate}
@@ -48,6 +55,7 @@ export function AppSidebar({ pathname, onNavigate, appTheme, onThemeToggle }: Ap
             {SIDEBAR_ACCOUNT_LINKS.map((link) => (
               <SidebarLink
                 active={isSidebarNavActive(link.path, pathname)}
+                icon={link.icon}
                 key={link.path}
                 label={link.label}
                 onNavigate={onNavigate}
@@ -59,12 +67,46 @@ export function AppSidebar({ pathname, onNavigate, appTheme, onThemeToggle }: Ap
       </div>
 
       <div className="app-sidebar__bottom">
+        <nav aria-label="Proof" className="app-sidebar__section app-sidebar__section--proof">
+          <p className="app-sidebar__section-label">trust</p>
+          <div className="app-sidebar__links">
+            <AttestationProofSidebarTrigger />
+          </div>
+        </nav>
         <HostTeeTrustStrip variant="sidebar" />
         <AppHeaderWallet onNavigate={onNavigate} />
         <div className="app-sidebar__utility">
+          <button
+            aria-label={appTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="app-sidebar__utility-icon app-sidebar__utility-icon--theme"
+            onClick={onThemeToggle}
+            type="button"
+          >
+            <Icon
+              className="icon icon--pixel"
+              icon={appTheme === 'dark' ? 'pixel:sun-solid' : 'pixel:moon-solid'}
+            />
+          </button>
+          <button
+            aria-label="View TEE attestation"
+            className="app-sidebar__utility-icon app-sidebar__utility-icon--tee"
+            onClick={() => openInspector()}
+            type="button"
+          >
+            <Icon className="icon icon--pixel" icon="pixel:shield-solid" />
+          </button>
           <button className="app-sidebar__utility-button" onClick={onThemeToggle} type="button">
             {appTheme === 'dark' ? 'light mode' : 'dark mode'}
           </button>
+          <a
+            aria-label="Documentation"
+            className="app-sidebar__utility-icon app-sidebar__utility-icon--docs"
+            href={BOSSRAID_DOCS_URL}
+            rel="noreferrer"
+            target="_blank"
+          >
+            <Icon className="icon icon--pixel" icon="pixel:scroll-solid" />
+          </a>
           <a
             className="app-sidebar__utility-button"
             href={BOSSRAID_DOCS_URL}
@@ -106,22 +148,24 @@ export function AppSidebar({ pathname, onNavigate, appTheme, onThemeToggle }: Ap
 function SidebarLink({
   path,
   label,
+  icon,
   active,
   onNavigate,
-}: {
-  path: AppRoute;
-  label: string;
+}: SidebarNavItem & {
   active: boolean;
   onNavigate: (path: AppRoute) => void;
 }) {
   return (
     <button
       aria-current={active ? 'page' : undefined}
+      aria-label={label}
       className={`app-sidebar__link${active ? ' app-sidebar__link--active' : ''}`}
       onClick={() => onNavigate(path)}
+      title={label}
       type="button"
     >
-      {label}
+      <Icon aria-hidden="true" className="app-sidebar__link-icon icon icon--pixel" icon={icon} />
+      <span className="app-sidebar__link-label">{label}</span>
     </button>
   );
 }

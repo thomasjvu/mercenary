@@ -25,6 +25,11 @@ import {
   OpsRaidHeroMetrics,
   OpsRaidSnapshot,
 } from './components/OpsRaidDetail';
+import {
+  OpsMetricsPanel,
+  ProductionReadinessPanel,
+  SettlementStatusPanel,
+} from './components/OpsReliabilityPanels';
 import { SignalMeter, SignalTag, X402PaymentsToggle } from './components/ops-ui';
 import { DEFAULT_SPAWN_PAYLOAD } from './default-payload';
 
@@ -444,6 +449,12 @@ export function App() {
         onSelectRaid={setRaidId}
         onSpawnPayloadChange={setSpawnPayload}
       />
+
+      <section className="ops-reliability">
+        <ProductionReadinessPanel />
+        <SettlementStatusPanel />
+        <OpsMetricsPanel />
+      </section>
 
       <OpsProviderSidebar
         filteredProviders={filteredProviders}

@@ -14,13 +14,13 @@ pnpm dev
 
 `pnpm dev` starts evaluator, API, web, ops, and local providers.
 
-| Service   | Default URL                                               |
-| --------- | --------------------------------------------------------- |
-| web       | `http://127.0.0.1:4173`                                   |
-| ops       | `http://127.0.0.1:4174`                                   |
-| API       | `http://127.0.0.1:8787`                                   |
-| evaluator | `http://127.0.0.1:8790` or `/tmp/bossraid-evaluator.sock` |
-| providers | `9001`, `9002`, `9003`                                    |
+| Service   | Default URL                                                               |
+| --------- | ------------------------------------------------------------------------- |
+| web       | `http://127.0.0.1:4173`                                                   |
+| ops       | `http://127.0.0.1:4174` (production readiness, settlement, metrics, x402) |
+| API       | `http://127.0.0.1:8787`                                                   |
+| evaluator | `http://127.0.0.1:8790` or `/tmp/bossraid-evaluator.sock`                 |
+| providers | `9001`, `9002`, `9003`                                                    |
 
 Manual start: `pnpm dev:providers`, `pnpm dev:api`, `pnpm dev:web`, `pnpm dev:ops`, `pnpm dev:evaluator`, `pnpm dev:mcp`.
 
@@ -116,6 +116,14 @@ curl -H "Authorization: Bearer $BOSSRAID_ADMIN_TOKEN" \
 ```
 
 Production gate: `ok: true` before unrestricted paid traffic. Trust boundary: [trust-and-safety.md](trust-and-safety.md).
+
+Ops UI (`/ops/`) surfaces the same admin routes after login:
+
+- **Production readiness** — blocking launch checks from `GET /v1/ops/production-readiness`
+- **Settlement status** — onchain contract/RPC health from `GET /v1/ops/settlement/status`
+- **Ops metrics** — JSON counters and route latency from `GET /v1/ops/metrics`
+- **x402 toggle** — facilitator, pay-to wallet, network, and enable blockers from `GET /v1/ops/settings`
+- **Launch presets** — default raid payload plus strict-private `privacyMode: "strict"` variant
 
 ## Defaults
 

@@ -31,12 +31,25 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (path === '/refund') {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(
+      JSON.stringify({
+        success: true,
+        transaction: '0xmockrefund',
+        network: 'eip155:84532',
+        payer: '0x000000000000000000000000000000000000dEaD',
+      })
+    );
+    return;
+  }
+
   res.writeHead(404, { 'content-type': 'application/json' });
   res.end(JSON.stringify({ error: 'not_found' }));
 });
 
 server.listen(port, host, () => {
-  console.log(JSON.stringify({ ok: true, host, port, paths: ['/verify', '/settle'] }));
+  console.log(JSON.stringify({ ok: true, host, port, paths: ['/verify', '/settle', '/refund'] }));
 });
 
 function shutdown() {

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import useSWR from 'swr';
 import { formatUsd, raidPollingRefreshInterval } from '@bossraid/proof-ui';
 import { SettlementProofPanel, useRaidPolling } from '@bossraid/ui';
@@ -23,6 +24,7 @@ import { useReceiptQuery } from '../hooks/useReceiptQuery';
 import { buildReceiptUpstreamAttestations } from '../lib/receipt-attestation-view';
 import { buildReceiptProviderRows, readQueryErrorMessage } from '../lib/receipt-helpers';
 import { buildReceiptSettlementView } from '../lib/receipt-settlement-view';
+import { applyDocumentMeta } from '../lib/document-meta.js';
 import { buildAttestationSurfaceLabel, isAttestationSignerUnavailable } from '../lib/receipt-url';
 
 type AppRoute = '/' | '/playground' | '/raiders' | '/receipt';
@@ -41,6 +43,7 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
     tokenInput,
     setTokenInput,
     activeQuery,
+    formError,
     handleLoadReceipt,
     handleCopyLink,
     shareCopied,
@@ -120,6 +123,27 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
     providerMap,
   } = settlementView;
   const currentReceiptStatus = result.data?.status ?? status.data?.status ?? 'loading';
+
+  useEffect(() => {
+    if (!activeQuery) {
+      applyDocumentMeta({
+        title: 'Boss Raid · Shareable receipt',
+        description: 'Load one raid receipt with output, provider proof, and settlement record.',
+      });
+      return;
+    }
+
+    const shortRaidId =
+      activeQuery.raidId.length > 12 ? `${activeQuery.raidId.slice(0, 12)}…` : activeQuery.raidId;
+    const description = `Boss Raid receipt ${shortRaidId}. Status: ${currentReceiptStatus}. ${approvedSubmissionCount} approved · ${successfulProviderCount} successful providers.`;
+
+    applyDocumentMeta({
+      title: `Boss Raid receipt · ${shortRaidId} · ${currentReceiptStatus}`,
+      description,
+      ogTitle: `Boss Raid receipt · ${currentReceiptStatus}`,
+      ogDescription: description,
+    });
+  }, [activeQuery, approvedSubmissionCount, currentReceiptStatus, successfulProviderCount]);
   const providerRows = buildReceiptProviderRows(
     routedProviderIds,
     routingDecisionMap,
@@ -219,6 +243,7 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
       </div>
 
       <ReceiptQueryForm
+        formError={formError}
         onRaidIdChange={setRaidIdInput}
         onSubmit={handleLoadReceipt}
         onTokenChange={setTokenInput}

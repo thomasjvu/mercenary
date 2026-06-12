@@ -422,17 +422,29 @@ export async function submitResult(
       : submission;
   const breakdown = await evaluateSubmission(raid, normalizedSubmission);
   const privacyConstraints = raid.task.constraints;
-  if (
-    privacyConstraints.privacyMode !== 'off' &&
-    privacyConstraints.requirePrivacyFeatures?.length
-  ) {
+  const requiredPrivacyFeatures = privacyConstraints.requirePrivacyFeatures ?? [];
+  const shouldValidatePrivacy =
+    privacyConstraints.privacyMode === 'strict' ||
+    (privacyConstraints.privacyMode !== 'off' && requiredPrivacyFeatures.length > 0);
+
+  if (shouldValidatePrivacy) {
     const privacyResult = validateSubmissionPrivacy(
       normalizedSubmission,
-      privacyConstraints.requirePrivacyFeatures,
+      requiredPrivacyFeatures,
       raid.task.sanitizationReport
     );
     breakdown.privacyComplianceScore = privacyResult.score;
     breakdown.privacyComplianceDetails = privacyResult;
+
+    if (privacyConstraints.privacyMode === 'strict' && !privacyResult.passed) {
+      breakdown.valid = false;
+      if (!breakdown.invalidReasons.includes('privacy_non_compliant')) {
+        breakdown.invalidReasons.push('privacy_non_compliant');
+      }
+      breakdown.summary = [breakdown.summary, 'Strict privacy compliance failed.']
+        .filter(Boolean)
+        .join(' ');
+    }
   }
 
   deps.clearProviderTimers(raidId, submission.providerId);

@@ -20,6 +20,7 @@ import type { ReceiptUpstreamAttestationRow } from '../lib/receipt-attestation-v
 import { AttestationInspectorSidebar } from '../components/trust/AttestationInspectorSidebar.js';
 
 export type AttestationInspectorContextInput = {
+  raidId?: string;
   modelId?: string;
   provider?: UpstreamProviderId;
   upstreamAttestations?: ReceiptUpstreamAttestationRow[];
@@ -28,19 +29,38 @@ export type AttestationInspectorContextInput = {
 type AttestationInspectorValue = {
   isOpen: boolean;
   context: AttestationInspectorContextInput;
+  lastContext: AttestationInspectorContextInput;
   ready: ReturnType<typeof useSWR>['data'];
   readyError: unknown;
   attestedRuntime: AttestedEnvelope<AttestedRuntimePayload> | undefined;
   attestedRuntimeError: unknown;
   openInspector: (context?: AttestationInspectorContextInput) => void;
+  openProofInspector: () => void;
   closeInspector: () => void;
 };
 
 const AttestationInspectorContext = createContext<AttestationInspectorValue | null>(null);
 
+function hasInspectorContext(input: AttestationInspectorContextInput): boolean {
+  return Boolean(
+    input.raidId || input.modelId || input.provider || (input.upstreamAttestations?.length ?? 0) > 0
+  );
+}
+
+export function AttestationProofSidebarTrigger({ className }: { className?: string }) {
+  const { openProofInspector } = useAttestationInspector();
+
+  return (
+    <button className={className ?? 'app-sidebar__link'} onClick={openProofInspector} type="button">
+      proof
+    </button>
+  );
+}
+
 export function AttestationInspectorProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [context, setContext] = useState<AttestationInspectorContextInput>({});
+  const [lastContext, setLastContext] = useState<AttestationInspectorContextInput>({});
   const ready = useSWR('attestation-inspector-ready', fetchReady, {
     refreshInterval: 30_000,
     shouldRetryOnError: false,
@@ -57,8 +77,16 @@ export function AttestationInspectorProvider({ children }: { children: ReactNode
 
   const openInspector = useCallback((nextContext: AttestationInspectorContextInput = {}) => {
     setContext(nextContext);
+    if (hasInspectorContext(nextContext)) {
+      setLastContext(nextContext);
+    }
     setIsOpen(true);
   }, []);
+
+  const openProofInspector = useCallback(() => {
+    setContext(lastContext);
+    setIsOpen(true);
+  }, [lastContext]);
 
   const closeInspector = useCallback(() => {
     setIsOpen(false);
@@ -83,11 +111,13 @@ export function AttestationInspectorProvider({ children }: { children: ReactNode
     () => ({
       isOpen,
       context,
+      lastContext,
       ready: ready.data,
       readyError: ready.error,
       attestedRuntime: attestedRuntime.data,
       attestedRuntimeError: attestedRuntime.error,
       openInspector,
+      openProofInspector,
       closeInspector,
     }),
     [
@@ -96,7 +126,9 @@ export function AttestationInspectorProvider({ children }: { children: ReactNode
       closeInspector,
       context,
       isOpen,
+      lastContext,
       openInspector,
+      openProofInspector,
       ready.data,
       ready.error,
     ]
@@ -110,6 +142,7 @@ export function AttestationInspectorProvider({ children }: { children: ReactNode
         isOpen={isOpen}
         modelTee={modelTee.data}
         modelTeeError={modelTee.error}
+        modelTeeLoading={modelTee.isLoading}
         onClose={closeInspector}
         ready={ready.data}
         readyError={ready.error}
