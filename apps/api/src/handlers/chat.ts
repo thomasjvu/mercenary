@@ -71,6 +71,20 @@ export function createChatHandlers(
           strictAlkahestLane,
         })
       : parsedChatRequest;
+    const created = Math.floor(Date.now() / 1000);
+    const e2eeRoute = options.discountInference ? resolveChatE2eeRoute(chatRequest) : undefined;
+    if (e2eeRoute) {
+      return runServerE2eeChatCompletion({
+        chatRequest,
+        route: e2eeRoute,
+        request,
+        reply,
+        controlState: ctx.controlState,
+        env: ctx.env,
+        created,
+      });
+    }
+
     const raidRequest =
       chatRequest.raidRequest ??
       parseBossRaidRequest(
@@ -95,11 +109,6 @@ export function createChatHandlers(
         error: budgetError.error,
         message: budgetError.message,
       };
-    }
-    const created = Math.floor(Date.now() / 1000);
-    const e2eeRoute = options.discountInference ? resolveChatE2eeRoute(chatRequest) : undefined;
-    if (e2eeRoute) {
-      return runServerE2eeChatCompletion({ chatRequest, route: e2eeRoute });
     }
 
     const directResponse = options.discountInference

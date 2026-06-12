@@ -4,13 +4,13 @@ Native write route: `POST /v1/raid`. Alias: `POST /v1/raids`.
 
 ## Public write
 
-| Route                                 | Purpose                                                                                         |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `POST /v1/raid`                       | Native raid. Returns `raidId`, `raidAccessToken`, `receiptPath`.                                |
-| `POST /v1/raids`                      | Alias spawn shape.                                                                              |
-| `POST /v1/chat/completions`           | OpenAI-compatible Mercenary entry. Optional `stream`, `raid_policy`, `raid_request`.            |
-| `POST /v1/inference/chat/completions` | Discount inference. One seller, `cost_first`, rate-card snapshot.                               |
-| `POST /v1/demo/raid`                  | Free demo when `BOSSRAID_DEMO_ROUTE_ENABLED` + `BOSSRAID_DEMO_TOKEN` + `x-bossraid-demo-token`. |
+| Route                                 | Purpose                                                                                                                                                                                                                                          |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST /v1/raid`                       | Native raid. Returns `raidId`, `raidAccessToken`, `receiptPath`.                                                                                                                                                                                 |
+| `POST /v1/raids`                      | Alias spawn shape.                                                                                                                                                                                                                               |
+| `POST /v1/chat/completions`           | OpenAI-compatible Mercenary entry. Optional `stream`, `raid_policy`, `raid_request`.                                                                                                                                                             |
+| `POST /v1/inference/chat/completions` | Discount inference. One seller, `cost_first`, rate-card snapshot. Strict E2EE catalog models use the server Venice relay when `raid_policy.privacy_mode` is `strict`; pass `X-BossRaid-Upstream-Api-Key` or configure `BOSSRAID_VENICE_API_KEY`. |
+| `POST /v1/demo/raid`                  | Free demo when `BOSSRAID_DEMO_ROUTE_ENABLED` + `BOSSRAID_DEMO_TOKEN` + `x-bossraid-demo-token`.                                                                                                                                                  |
 
 `receiptPath` → `/receipt?raidId=...&token=...`
 

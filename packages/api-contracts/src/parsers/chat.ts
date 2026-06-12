@@ -33,6 +33,14 @@ export function parseChatCompletionRequest(value: unknown): ChatCompletionReques
       input.stream == null
         ? undefined
         : ensureBooleanLike(input.stream, 'chat_completion_request.stream'),
+    max_tokens:
+      input.max_tokens == null
+        ? undefined
+        : ensurePositiveIntegerLike(input.max_tokens, 'chat_completion_request.max_tokens'),
+    temperature:
+      input.temperature == null
+        ? undefined
+        : ensureFiniteNumberLike(input.temperature, 'chat_completion_request.temperature'),
     user: ensureOptionalString(input.user, 'chat_completion_request.user'),
     raidRequest:
       input.raidRequest == null && input.raid_request == null

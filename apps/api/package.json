@@ -23,6 +23,7 @@
     "@bossraid/raid-core": "workspace:*",
     "@bossraid/logger": "workspace:*",
     "@bossraid/orchestrator": "workspace:*",
+    "@bossraid/privacy-engine": "workspace:*",
     "@bossraid/persistence": "workspace:*",
     "@bossraid/provider-registry": "workspace:*",
     "@bossraid/provider-sdk": "workspace:*",

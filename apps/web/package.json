@@ -12,6 +12,7 @@
   "dependencies": {
     "@bossraid/constants": "workspace:*",
     "@bossraid/http-client": "workspace:*",
+    "@bossraid/privacy-engine": "workspace:*",
     "@bossraid/proof-ui": "workspace:*",
     "@bossraid/shared-types": "workspace:*",
     "@bossraid/ui": "workspace:*",

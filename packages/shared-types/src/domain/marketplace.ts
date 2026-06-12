@@ -45,6 +45,8 @@ export interface ChatCompletionRequest {
   model: string;
   messages: ChatCompletionMessage[];
   stream?: boolean;
+  max_tokens?: number;
+  temperature?: number;
   user?: string;
   raidRequest?: BossRaidSpawnInput;
   raidPolicy?: BossRaidRequest['raidPolicy'];

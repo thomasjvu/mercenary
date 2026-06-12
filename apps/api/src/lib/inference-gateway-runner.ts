@@ -5,6 +5,7 @@ import type { PrivacyFeatureKey } from '@bossraid/shared-types';
 import type { ProviderProfile, ProviderTaskPackage } from '@bossraid/shared-types';
 import type { ApiControlState } from '../control-state.js';
 import { extractInferencePromptFromTask, probeUpstreamChatCompletion } from './upstream/index.js';
+import { probeVeniceE2eeChatCompletion } from './venice-e2ee-upstream.js';
 import { resolveHostedProviderUpstream } from './inference-gateway-health.js';
 import { verifySellerUpstreamTeeAttestation } from './upstream-tee-service.js';
 
@@ -44,12 +45,20 @@ export async function runInferenceGatewayJob(input: {
     }
 
     const prompt = extractInferencePromptFromTask(input.body.task.task);
-    const chatResult = await probeUpstreamChatCompletion({
-      provider: upstream,
-      apiKey: resolvedApiKey,
-      modelId: upstreamModelId,
-      prompt,
-    });
+    const chatResult =
+      upstream === 'venice' && input.provider.privacy?.e2ee === true
+        ? await probeVeniceE2eeChatCompletion({
+            apiKey: resolvedApiKey,
+            modelId: upstreamModelId,
+            prompt,
+            providerId: input.body.providerId,
+          })
+        : await probeUpstreamChatCompletion({
+            provider: upstream,
+            apiKey: resolvedApiKey,
+            modelId: upstreamModelId,
+            prompt,
+          });
 
     const providerClaimsE2ee = input.provider.privacy?.e2ee === true;
     const featuresClaimed: PrivacyFeatureKey[] = [];

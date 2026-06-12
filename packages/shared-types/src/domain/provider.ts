@@ -250,6 +250,7 @@ export interface TeeAttestationResult {
   notes?: string[];
   upstreamVendor?: string;
   signingAddress?: string;
+  signingKey?: string;
   e2eeReady?: boolean;
   explorerUrl?: string;
   checks?: Array<{ id: string; passed: boolean; detail?: string }>;
