@@ -20,16 +20,21 @@ export function LiveMarketPulse() {
   }
 
   return (
-    <section aria-label="Live marketplace pulse" className="live-market-pulse">
+    <section
+      aria-label="Live marketplace pulse"
+      className="live-market-pulse live-market-pulse--quest"
+    >
+      <p className="live-market-pulse__label">live quest board</p>
       <div className="live-market-pulse__stats">
-        <span>{stats?.modelsLive ?? 0} models live</span>
-        <span>{stats?.activeOffers ?? 0} active offers</span>
-        <span>{stats?.routedRequests24h ?? 0} routed / 24h</span>
-        <span>{formatUsd(stats?.earnedBySellers24hUsd ?? 0)} seller volume / 24h</span>
+        <span className="live-market-pulse__stat">{stats?.modelsLive ?? 0} models</span>
+        <span className="live-market-pulse__stat">{stats?.activeOffers ?? 0} offers</span>
+        <span className="live-market-pulse__stat">
+          {formatUsd(stats?.earnedBySellers24hUsd ?? 0)} / 24h
+        </span>
       </div>
       <div className="live-market-pulse__models">
         {topModels.map((market) => (
-          <span className="live-market-pulse__chip" key={market.modelId}>
+          <span className="live-market-pulse__chip quest-pixel-chip" key={market.modelId}>
             {market.modelId} · {formatUsd(market.cheapestRateUsd)}
           </span>
         ))}

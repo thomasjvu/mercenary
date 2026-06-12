@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import heroImage from '../assets/hero.webp';
+import { PartyQuestLockup } from '../components/landing/PartyQuestLockup.js';
+import { QuestXpMeter } from '../components/landing/QuestXpMeter.js';
 import { LiveMarketPulse } from '../components/marketplace/LiveMarketPulse.js';
 import {
   TerminalCodePanel,
@@ -43,11 +45,11 @@ bossraid_delegate({
 })`;
 
 const WORKFLOW_ROWS = [
-  { label: 'STEP 01', value: 'Create agent in your framework.' },
-  { label: 'STEP 02', value: 'Register endpoint + rate metadata.' },
-  { label: 'STEP 03', value: 'Pass automated verification.' },
-  { label: 'STEP 04', value: 'Join the verified API pool.' },
-  { label: 'STEP 05', value: 'Get paid on successful work.' },
+  { label: 'Q1', value: 'Spin up agent.' },
+  { label: 'Q2', value: 'Register endpoint.' },
+  { label: 'Q3', value: 'Pass verification.' },
+  { label: 'Q4', value: 'Enter the pool.' },
+  { label: 'Q5', value: 'Collect payout.' },
 ] as const;
 
 type AppRoute =
@@ -117,14 +119,14 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
 
   return (
     <>
-      <section className="hero" id="top">
-        <div className="hero__copy">
+      <section className="hero quest-pixel-stage" id="top">
+        <div className="hero__copy quest-pixel-frame">
           <div className="hero__intro">
-            <div className="hero__brand">
-              <p className="brand">Boss Raid</p>
-              <p className="subbrand">party quest lane</p>
+            <PartyQuestLockup />
+            <div className="hero__status-row">
+              <p className="hero__summary">queue · verify · pay</p>
+              <QuestXpMeter />
             </div>
-            <p className="hero__summary">queue · verify · pay</p>
           </div>
           <h1>
             <span className="hero__headline-line">Queue.</span>
@@ -170,7 +172,8 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           <LiveMarketPulse />
         </div>
 
-        <div className="hero__art" aria-hidden="true">
+        <div className="hero__art quest-pixel-frame" aria-hidden="true">
+          <div className="hero__art-frame" aria-hidden="true" />
           <div className="hero__image-set">
             {[0, 33.333, 66.666, 100].map((position, index) => (
               <span
@@ -187,8 +190,11 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       </section>
 
       <section className="lane-grid" aria-label="Buyer and seller lanes">
-        <article className="lane-panel lane-panel--quest lane-panel--buy">
-          <p className="eyebrow">buy</p>
+        <article className="lane-panel lane-panel--quest lane-panel--buy quest-pixel-frame">
+          <p className="eyebrow">
+            <Icon aria-hidden="true" className="icon icon--pixel" icon="pixel:coin-solid" />
+            buy
+          </p>
           <h2>Verified inference.</h2>
           <p>Cheapest verified seller wins.</p>
           <a
@@ -202,8 +208,11 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             marketplace
           </a>
         </article>
-        <article className="lane-panel lane-panel--quest lane-panel--raid">
-          <p className="eyebrow">raid</p>
+        <article className="lane-panel lane-panel--quest lane-panel--raid quest-pixel-frame">
+          <p className="eyebrow">
+            <Icon aria-hidden="true" className="icon icon--pixel" icon="pixel:sword-solid" />
+            raid
+          </p>
           <h2>Mercenary workstreams.</h2>
           <p>Multi-agent when one model is not enough.</p>
           <a
@@ -217,8 +226,11 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             spawn raid
           </a>
         </article>
-        <article className="lane-panel lane-panel--quest lane-panel--sell">
-          <p className="eyebrow">sell</p>
+        <article className="lane-panel lane-panel--quest lane-panel--sell quest-pixel-frame">
+          <p className="eyebrow">
+            <Icon aria-hidden="true" className="icon icon--pixel" icon="pixel:shop-solid" />
+            sell
+          </p>
           <h2>Agent capacity.</h2>
           <p>Register, verify, settle USDC.</p>
           <a
@@ -298,7 +310,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
 
         <aside className="api-notes">
           <section className="info-panel info-panel--compact">
-            <p className="eyebrow">general service</p>
+            <p className="eyebrow">seller quest line</p>
             <div className="info-spec">
               {WORKFLOW_ROWS.map((row) => (
                 <div className="info-spec__row" key={row.label}>
