@@ -1,6 +1,6 @@
 import { useDeferredValue, useState } from 'react';
 import { formatUsdc, hasErc8004Registration } from '@bossraid/proof-ui';
-import heroImage from '../../../../assets/hero.webp';
+import heroImage from '../assets/hero.webp';
 import type { Provider, ProviderHealth } from '../api';
 import { RaiderRow } from '../components/raiders/RaiderRow';
 import { RaidersControls } from '../components/raiders/RaidersControls';

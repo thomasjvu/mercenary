@@ -4,6 +4,7 @@ import {
   verifyMarketplaceTeeAttestation,
   type TeeAttestationResponse,
 } from '../../api/marketplace-tee.js';
+import { useAttestationInspector } from '../../contexts/AttestationInspectorContext.js';
 
 type UpstreamTeeVerificationPanelProps = {
   provider: UpstreamProviderId;
@@ -24,6 +25,7 @@ export function UpstreamTeeVerificationPanel({
   e2ee = false,
   compact = false,
 }: UpstreamTeeVerificationPanelProps) {
+  const { openInspector } = useAttestationInspector();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TeeAttestationResponse | null>(null);
@@ -59,14 +61,23 @@ export function UpstreamTeeVerificationPanel({
         <span className="upstream-tee-panel__vendor">{provider}</span>
       </div>
 
-      <button
-        className="button button--ghost"
-        disabled={pending}
-        onClick={() => void handleVerify()}
-        type="button"
-      >
-        {pending ? 'verifying...' : 'verify tee'}
-      </button>
+      <div className="upstream-tee-panel__actions">
+        <button
+          className="button button--ghost"
+          disabled={pending}
+          onClick={() => void handleVerify()}
+          type="button"
+        >
+          {pending ? 'verifying...' : 'verify tee'}
+        </button>
+        <button
+          className="button button--ghost"
+          onClick={() => openInspector({ modelId, provider })}
+          type="button"
+        >
+          view details
+        </button>
+      </div>
 
       {error ? <p className="form-status form-status--error">{error}</p> : null}
 

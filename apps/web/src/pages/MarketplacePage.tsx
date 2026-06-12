@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { API_BASE, fetchMarkets } from '../api';
+import { ApiReadinessBanner } from '../components/system/ApiReadinessBanner.js';
+import { buildApiReadinessHint, readApiErrorMessage } from '../lib/api-readiness.js';
 import { MarketDiscountChart } from '../components/marketplace/MarketDiscountChart.js';
 import { MarketSavingsSummary } from '../components/marketplace/MarketSavingsSummary.js';
 import { ModelCatalog } from '../components/marketplace/ModelCatalog.js';
@@ -40,6 +42,7 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
         <QuickstartCard marketModelId={visibleMarkets[0]?.modelId} />
       </header>
 
+      <ApiReadinessBanner error={markets.error} label="Marketplace unavailable" />
       <MarketStatsRibbon markets={markets.data} />
       <MarketSavingsSummary
         activeOffers={markets.data?.stats.activeOffers}
@@ -117,7 +120,10 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
 
         <div className="market-page__main">
           {markets.error ? (
-            <EmptyState body="Check API origin and readiness." title="Marketplace unavailable" />
+            <EmptyState
+              body={`${readApiErrorMessage(markets.error)} ${buildApiReadinessHint(markets.error)}`}
+              title="Marketplace unavailable"
+            />
           ) : markets.isLoading ? (
             <EmptyState body="Reading seller order books." title="Loading markets" />
           ) : visibleMarkets.length === 0 ? (

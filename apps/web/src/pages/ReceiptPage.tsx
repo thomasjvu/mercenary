@@ -1,7 +1,7 @@
 import useSWR from 'swr';
 import { formatUsd, raidPollingRefreshInterval } from '@bossraid/proof-ui';
 import { SettlementProofPanel, useRaidPolling } from '@bossraid/ui';
-import heroImage from '../../../../assets/hero.webp';
+import heroImage from '../assets/hero.webp';
 import {
   fetchAttestedRaidResult,
   fetchAttestedRuntime,

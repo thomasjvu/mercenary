@@ -1,11 +1,23 @@
 import useSWR from 'swr';
 import { fetchMarkets } from '../../api/marketplace.js';
 import { formatUsd } from '@bossraid/proof-ui';
+import { readApiErrorMessage } from '../../lib/api-readiness.js';
 
 export function LiveMarketPulse() {
   const markets = useSWR('landing-markets', () => fetchMarkets(), { refreshInterval: 30_000 });
   const stats = markets.data?.stats;
   const topModels = (markets.data?.data ?? []).slice(0, 4);
+
+  if (markets.error) {
+    return (
+      <section
+        aria-label="Live marketplace pulse"
+        className="live-market-pulse live-market-pulse--error"
+      >
+        <p className="live-market-pulse__error">{readApiErrorMessage(markets.error)}</p>
+      </section>
+    );
+  }
 
   return (
     <section aria-label="Live marketplace pulse" className="live-market-pulse">

@@ -1,4 +1,5 @@
 import type { RaidAgentLog } from '../../api';
+import { useAttestationInspector } from '../../contexts/AttestationInspectorContext.js';
 import {
   buildAgentLogPath,
   buildAttestedResultPath,
@@ -69,6 +70,8 @@ export function DemoRaidSidebar({
   mercenaryDecisionTrace,
   specialistTraces,
 }: DemoRaidSidebarProps) {
+  const { openInspector } = useAttestationInspector();
+
   return (
     <aside className="mercenary-sidebar">
       <section className="mercenary-sidebar__panel">
@@ -159,6 +162,16 @@ export function DemoRaidSidebar({
           {attestationSignals.map((signal) => (
             <SidebarRow key={`attest:${signal.label}`} label={signal.label} value={signal.value} />
           ))}
+        </div>
+
+        <div className="mercenary-sidebar__actionstrip">
+          <button
+            className="mercenary-sidebar__actionchip mercenary-sidebar__actionchip--button"
+            onClick={() => openInspector()}
+            type="button"
+          >
+            open inspector
+          </button>
         </div>
 
         <details className="mercenary-sidebar__disclosure">

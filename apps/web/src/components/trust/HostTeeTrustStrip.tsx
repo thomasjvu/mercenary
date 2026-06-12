@@ -1,7 +1,7 @@
 import useSWR from 'swr';
 import { fetchAttestedRuntime } from '../../api/raid.js';
 import { fetchReady } from '../../api/health.js';
-import { buildAttestedRuntimeUrl } from '../../lib/receipt-url.js';
+import { useAttestationInspector } from '../../contexts/AttestationInspectorContext.js';
 import { buildRuntimeAttestationLabel } from '../../demo-result.js';
 
 type HostTeeTrustStripProps = {
@@ -9,6 +9,7 @@ type HostTeeTrustStripProps = {
 };
 
 export function HostTeeTrustStrip({ variant = 'strip' }: HostTeeTrustStripProps) {
+  const { openInspector } = useAttestationInspector();
   const ready = useSWR('host-ready', fetchReady, { refreshInterval: 30_000 });
   const attestedRuntime = useSWR('host-attested-runtime', fetchAttestedRuntime, {
     refreshInterval: 30_000,
@@ -53,14 +54,9 @@ export function HostTeeTrustStrip({ variant = 'strip' }: HostTeeTrustStripProps)
           </span>
         ) : null}
       </div>
-      <a
-        className="host-tee-trust__link"
-        href={buildAttestedRuntimeUrl()}
-        rel="noreferrer"
-        target="_blank"
-      >
+      <button className="host-tee-trust__link" onClick={() => openInspector()} type="button">
         view attestation
-      </a>
+      </button>
     </section>
   );
 }

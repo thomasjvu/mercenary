@@ -3391,8 +3391,6 @@ h2 {
 }
 
 .proof-card::before,
-.hero__copy::before,
-.hero__art::before,
 .summary-pill::before,
 .raider-row::before,
 .raider-card::before,
@@ -3411,8 +3409,8 @@ h2 {
   content: none;
 }
 
-.hero__copy,
-.hero__art {
+.app-shell--landing .hero__copy,
+.app-shell--landing .hero__art {
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -3420,7 +3418,7 @@ h2 {
   box-shadow: none;
 }
 
-.hero__summary {
+.app-shell--landing .hero__summary {
   min-height: 0;
   padding: 0;
   border: 0;
@@ -3429,13 +3427,13 @@ h2 {
   color: var(--muted);
 }
 
-.hero__image-set {
+.app-shell--landing .hero__image-set {
   position: absolute;
   inset: 0;
   gap: 12px;
 }
 
-.hero__slice {
+.app-shell--landing .hero__slice {
   background-color: transparent;
   background-blend-mode: normal;
   border: 0;
@@ -3445,11 +3443,11 @@ h2 {
   opacity: 1;
 }
 
-.hero__slice:first-child {
+.app-shell--landing .hero__slice:first-child {
   border-left: 0;
 }
 
-.hero__image-set:hover .hero__slice {
+.app-shell--landing .hero__image-set:hover .hero__slice {
   filter: saturate(0.92) contrast(1);
   opacity: 1;
 }
@@ -6462,11 +6460,17 @@ h2 {
 }
 
 .host-tee-trust__link {
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--muted);
+  font: inherit;
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-decoration: none;
   text-transform: uppercase;
+  cursor: pointer;
+  text-align: left;
 }
 
 .host-tee-trust__link:hover {
@@ -6941,4 +6945,154 @@ h2 {
 
 .receipt-upstream-attestation__checks {
   margin-top: 0;
+}
+
+.receipt-surface__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.api-readiness-banner {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid rgba(212, 91, 91, 0.35);
+  border-radius: 12px;
+  background: rgba(212, 91, 91, 0.08);
+}
+
+.api-readiness-banner__hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.live-market-pulse--error {
+  border-color: rgba(212, 91, 91, 0.35);
+  background: rgba(212, 91, 91, 0.06);
+}
+
+.live-market-pulse__error {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.upstream-tee-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.attestation-inspector__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  border: 0;
+  background: rgba(8, 10, 15, 0.42);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.attestation-inspector__backdrop--open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.attestation-inspector {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 70;
+  width: min(100vw, 380px);
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 0;
+  padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  border-left: 1px solid var(--line);
+  background: var(--surface-elevated);
+  box-shadow: -18px 0 40px rgba(17, 17, 17, 0.12);
+  overflow: auto;
+  transform: translateX(100%);
+  transition: transform 220ms ease;
+}
+
+.attestation-inspector--open {
+  transform: translateX(0);
+}
+
+.attestation-inspector__head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.attestation-inspector__head h2 {
+  font-size: 1.1rem;
+}
+
+.attestation-inspector__panel {
+  display: grid;
+  gap: 10px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.attestation-inspector__section-label {
+  margin: 0;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.attestation-inspector__signal-strip {
+  display: grid;
+  gap: 8px;
+}
+
+.attestation-inspector__signal {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.82rem;
+}
+
+.attestation-inspector__signal span {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.attestation-inspector__signal strong {
+  text-align: right;
+  word-break: break-all;
+}
+
+.attestation-inspector__note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.attestation-inspector__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 720px) {
+  .attestation-inspector {
+    width: 100vw;
+  }
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
-import heroImage from '../../../../assets/hero.webp';
+import heroImage from '../assets/hero.webp';
 import { LiveMarketPulse } from '../components/marketplace/LiveMarketPulse.js';
 import {
   TerminalCodePanel,

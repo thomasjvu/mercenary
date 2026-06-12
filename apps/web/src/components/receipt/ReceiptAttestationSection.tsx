@@ -13,6 +13,7 @@ import {
   buildAttestedRuntimeUrl,
   type ReceiptQuery,
 } from '../../lib/receipt-url';
+import { useAttestationInspector } from '../../contexts/AttestationInspectorContext.js';
 import { ReceiptUpstreamAttestationPanel } from './ReceiptUpstreamAttestationPanel';
 
 type ReceiptAttestationSectionProps = {
@@ -50,6 +51,7 @@ export function ReceiptAttestationSection({
   settlementExecution,
   upstreamAttestations,
 }: ReceiptAttestationSectionProps) {
+  const { openInspector } = useAttestationInspector();
   const privacyCompliance = settlementExecution?.privacyCompliance;
   return (
     <article className="receipt-surface">
@@ -102,7 +104,16 @@ export function ReceiptAttestationSection({
         teeProviderCount={teeProviderCount}
       />
       <div className="receipt-surface__section">
-        <p className="eyebrow">upstream tee proof</p>
+        <div className="receipt-surface__section-head">
+          <p className="eyebrow">upstream tee proof</p>
+          <button
+            className="button button--ghost"
+            onClick={() => openInspector({ upstreamAttestations })}
+            type="button"
+          >
+            open inspector
+          </button>
+        </div>
         <ReceiptUpstreamAttestationPanel
           overallPassed={privacyCompliance?.overallPassed}
           overallScore={privacyCompliance?.overallScore}

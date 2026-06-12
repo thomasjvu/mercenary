@@ -1,5 +1,5 @@
 import { buildErc8004ProofLabel, formatUsdc, hasErc8004Registration } from '@bossraid/proof-ui';
-import heroImage from '../../../../../assets/hero.webp';
+import heroImage from '../../assets/hero.webp';
 import { ProviderBrandIcon } from '../ProviderBrandIcon.js';
 import {
   buildErc8004StatusValue,

@@ -5,7 +5,7 @@ import { DemoRaidResult } from '../components/demo/DemoRaidResult';
 import { DemoRaidSidebar } from '../components/demo/DemoRaidSidebar';
 import { StatusPill } from '../components/demo/demo-ui';
 import { humanizeStatus, useRaidDemo } from '../hooks/useRaidDemo';
-import heroImage from '../../../../assets/hero.webp';
+import heroImage from '../assets/hero.webp';
 
 type DemoPageProps = {
   providers: Provider[];

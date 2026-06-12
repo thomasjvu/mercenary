@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { startTransition, useEffect, useRef, useState } from 'react';
 import { addCollection } from '@iconify/react';
 import { icons as pixelIcons } from '@iconify-json/pixel';
 import { icons as simpleIcons } from '@iconify-json/simple-icons';
@@ -6,6 +6,7 @@ import useSWR from 'swr';
 import { bindAsciiRipple } from './ascii-ripple';
 import { fetchJson, type Provider, type ProviderHealth } from './api';
 import { AppSidebar } from './components/AppSidebar';
+import { AttestationInspectorProvider } from './contexts/AttestationInspectorContext.js';
 import type { AppRoute } from './lib/app-routes.js';
 import { AccountPage } from './pages/AccountPage';
 import { BuyerOnboardingPage } from './pages/BuyerOnboardingPage';
@@ -21,6 +22,7 @@ import {
   readPlaygroundModelId,
 } from './lib/routing.js';
 import { buildPlaygroundUrl, readPlaygroundMode } from './lib/playground-routing.js';
+import { useLocationKey, useLocationPathname } from './lib/use-location.js';
 import { ReceiptPage } from './pages/ReceiptPage';
 import { RaidersPage } from './pages/RaidersPage';
 import { SellerOnboardingPage } from './pages/SellerOnboardingPage';
@@ -34,11 +36,12 @@ addCollection(simpleIcons);
 
 export function App() {
   const appShellRef = useRef<HTMLElement | null>(null);
-  const pathname = useSyncExternalStore(
-    subscribeToLocation,
-    () => (typeof window === 'undefined' ? '/' : window.location.pathname),
-    () => '/'
-  );
+  const pathname = useLocationPathname();
+  const locationKey = useLocationKey();
+  const search =
+    typeof window !== 'undefined' && locationKey.includes('?')
+      ? locationKey.slice(locationKey.indexOf('?'))
+      : '';
   const [appTheme, setAppTheme] = useState<AppTheme>(() => getInitialTheme());
   const isLandingRoute = pathname === '/';
   const isMarketplaceListRoute = isMarketplaceListPath(pathname);
@@ -53,17 +56,14 @@ export function App() {
   const isRaidersRoute = pathname === '/raiders';
   const isReceiptRoute = pathname === '/receipt';
   const playgroundMode =
-    (isPlaygroundRoute || isLegacyDemoRoute) && typeof window !== 'undefined'
+    isPlaygroundRoute || isLegacyDemoRoute
       ? isLegacyDemoRoute
         ? 'raid'
-        : readPlaygroundMode(window.location.search)
+        : readPlaygroundMode(search)
       : 'inference';
   const usesDirectoryLayout =
     (isPlaygroundRoute && playgroundMode === 'raid') || isRaidersRoute || isReceiptRoute;
-  const playgroundModelId =
-    isPlaygroundRoute && typeof window !== 'undefined'
-      ? readPlaygroundModelId(window.location.search)
-      : undefined;
+  const playgroundModelId = isPlaygroundRoute ? readPlaygroundModelId(search) : undefined;
 
   const shouldLoadProviderData =
     isPlaygroundRoute ||
@@ -89,12 +89,12 @@ export function App() {
       return;
     }
 
-    const nextUrl = buildPlaygroundUrl({ mode: 'raid' });
+    const nextUrl = buildPlaygroundUrl({ mode: 'raid', search });
     if (window.location.pathname + window.location.search !== nextUrl) {
       window.history.replaceState({}, '', nextUrl);
       window.dispatchEvent(new PopStateEvent('popstate'));
     }
-  }, [pathname]);
+  }, [pathname, search]);
 
   useEffect(() => {
     const root = appShellRef.current;
@@ -124,6 +124,7 @@ export function App() {
       nextUrl = buildPlaygroundUrl({
         mode: options?.mode,
         modelId: options?.modelId,
+        search: window.location.pathname === '/playground' ? window.location.search : search,
       });
     }
 
@@ -139,74 +140,67 @@ export function App() {
   }
 
   return (
-    <div
-      className={`app-frame app-frame--theme-${appTheme} ${usesDirectoryLayout ? 'app-frame--directory' : ''}`}
-    >
-      <div className="bg-grid" aria-hidden="true" />
+    <AttestationInspectorProvider>
+      <div
+        className={`app-frame app-frame--theme-${appTheme} ${usesDirectoryLayout ? 'app-frame--directory' : ''}`}
+      >
+        <div className="bg-grid" aria-hidden="true" />
 
-      <AppSidebar
-        appTheme={appTheme}
-        onNavigate={navigate}
-        onThemeToggle={() => setAppTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
-        pathname={pathname}
-      />
+        <AppSidebar
+          appTheme={appTheme}
+          onNavigate={navigate}
+          onThemeToggle={() => setAppTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
+          pathname={pathname}
+        />
 
-      <div className="app-main">
-        <main
-          className={`app-shell ${isLandingRoute ? 'app-shell--landing' : ''} ${usesDirectoryLayout ? 'app-shell--directory' : ''} ${isPlaygroundRoute && playgroundMode === 'raid' ? 'app-shell--demo-route' : ''} ${isRaidersRoute ? 'app-shell--raiders-route' : ''} ${isReceiptRoute ? 'app-shell--receipt-route' : ''}`}
-          ref={appShellRef}
-        >
-          {isRaidersRoute ? (
-            <RaidersPage
-              providers={providers.data ?? []}
-              providerHealth={providerHealth.data ?? []}
-              onNavigate={navigate}
-            />
-          ) : isMarketplaceDetailRoute && marketplaceModelId ? (
-            <ModelDetailPage
-              modelId={marketplaceModelId}
-              onBack={() => navigate('/marketplace')}
-              onTryModel={(modelId) => navigate('/playground', { modelId })}
-              providerHealth={providerHealth.data ?? []}
-            />
-          ) : isMarketplaceListRoute ? (
-            <MarketplacePage
-              onOpenModel={(modelId) => navigate('/marketplace', { marketplaceModelId: modelId })}
-            />
-          ) : isPlaygroundRoute ? (
-            <PlaygroundPage
-              initialModelId={playgroundModelId}
-              mode={playgroundMode}
-              onModeChange={(mode) => navigate('/playground', { mode })}
-              providerHealth={providerHealth.data ?? []}
-              providers={providers.data ?? []}
-            />
-          ) : isLegacyDemoRoute ? null : isBuyerOnboardingRoute ? (
-            <BuyerOnboardingPage />
-          ) : isSellerOnboardingRoute ? (
-            <SellerOnboardingPage />
-          ) : isManageOffersRoute ? (
-            <ManageOffersPage />
-          ) : isAccountRoute ? (
-            <AccountPage />
-          ) : isReceiptRoute ? (
-            <ReceiptPage onNavigate={navigate} />
-          ) : (
-            <LandingPage onNavigate={navigate} />
-          )}
-        </main>
+        <div className="app-main">
+          <main
+            className={`app-shell ${isLandingRoute ? 'app-shell--landing' : ''} ${usesDirectoryLayout ? 'app-shell--directory' : ''} ${isPlaygroundRoute && playgroundMode === 'raid' ? 'app-shell--demo-route' : ''} ${isRaidersRoute ? 'app-shell--raiders-route' : ''} ${isReceiptRoute ? 'app-shell--receipt-route' : ''}`}
+            ref={appShellRef}
+          >
+            {isRaidersRoute ? (
+              <RaidersPage
+                providers={providers.data ?? []}
+                providerHealth={providerHealth.data ?? []}
+                onNavigate={navigate}
+              />
+            ) : isMarketplaceDetailRoute && marketplaceModelId ? (
+              <ModelDetailPage
+                modelId={marketplaceModelId}
+                onBack={() => navigate('/marketplace')}
+                onTryModel={(modelId) => navigate('/playground', { modelId })}
+                providerHealth={providerHealth.data ?? []}
+              />
+            ) : isMarketplaceListRoute ? (
+              <MarketplacePage
+                onOpenModel={(modelId) => navigate('/marketplace', { marketplaceModelId: modelId })}
+              />
+            ) : isPlaygroundRoute ? (
+              <PlaygroundPage
+                initialModelId={playgroundModelId}
+                mode={playgroundMode}
+                onModeChange={(mode) => navigate('/playground', { mode })}
+                providerHealth={providerHealth.data ?? []}
+                providers={providers.data ?? []}
+              />
+            ) : isLegacyDemoRoute ? null : isBuyerOnboardingRoute ? (
+              <BuyerOnboardingPage />
+            ) : isSellerOnboardingRoute ? (
+              <SellerOnboardingPage />
+            ) : isManageOffersRoute ? (
+              <ManageOffersPage />
+            ) : isAccountRoute ? (
+              <AccountPage />
+            ) : isReceiptRoute ? (
+              <ReceiptPage onNavigate={navigate} />
+            ) : (
+              <LandingPage onNavigate={navigate} />
+            )}
+          </main>
+        </div>
       </div>
-    </div>
+    </AttestationInspectorProvider>
   );
-}
-
-function subscribeToLocation(onStoreChange: () => void) {
-  if (typeof window === 'undefined') {
-    return () => undefined;
-  }
-
-  window.addEventListener('popstate', onStoreChange);
-  return () => window.removeEventListener('popstate', onStoreChange);
 }
 
 function getInitialTheme(): AppTheme {

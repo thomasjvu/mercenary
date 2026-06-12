@@ -1,4 +1,5 @@
 import type { Provider, ProviderHealth } from '../api.js';
+import { ApiReadinessBanner } from '../components/system/ApiReadinessBanner.js';
 import { InferencePlayground } from '../components/marketplace/InferencePlayground.js';
 import { DemoPage } from './DemoPage.js';
 import type { PlaygroundMode } from '../lib/playground-routing.js';
@@ -44,6 +45,8 @@ export function PlaygroundPage({
           </button>
         </div>
       </header>
+
+      <ApiReadinessBanner label="Playground API unavailable" />
 
       {mode === 'raid' ? (
         <DemoPage providerHealth={providerHealth} providers={providers} embedded />
