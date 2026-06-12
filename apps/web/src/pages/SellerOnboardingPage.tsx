@@ -4,7 +4,7 @@ import { useWalletAuth } from '../hooks/useWalletAuth';
 
 export function SellerOnboardingPage() {
   const { session, setSession, status, setStatus, connectWallet, isAuthenticated } = useWalletAuth(
-    'Use connect wallet in the header before registering a seller endpoint.'
+    'Use connect wallet in the sidebar before registering a seller endpoint.'
   );
   const [provider, setProvider] = useState<Provider | null>(null);
   const [form, setForm] = useState({

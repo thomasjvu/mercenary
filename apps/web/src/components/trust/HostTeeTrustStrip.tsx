@@ -5,7 +5,7 @@ import { buildAttestedRuntimeUrl } from '../../lib/receipt-url.js';
 import { buildRuntimeAttestationLabel } from '../../demo-result.js';
 
 type HostTeeTrustStripProps = {
-  variant?: 'strip' | 'inline';
+  variant?: 'strip' | 'inline' | 'sidebar';
 };
 
 export function HostTeeTrustStrip({ variant = 'strip' }: HostTeeTrustStripProps) {
@@ -32,7 +32,9 @@ export function HostTeeTrustStrip({ variant = 'strip' }: HostTeeTrustStripProps)
   const className =
     variant === 'inline'
       ? 'host-tee-trust host-tee-trust--inline'
-      : 'host-tee-trust host-tee-trust--strip';
+      : variant === 'sidebar'
+        ? 'host-tee-trust host-tee-trust--sidebar'
+        : 'host-tee-trust host-tee-trust--strip';
 
   return (
     <section aria-label="Host TEE verification" className={className}>

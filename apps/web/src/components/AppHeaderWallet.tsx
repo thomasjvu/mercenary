@@ -1,4 +1,4 @@
-import type { AppRoute } from './AppHeader.js';
+import type { AppRoute } from '../lib/app-routes.js';
 import { useWalletAuth } from '../hooks/useWalletAuth.js';
 
 type AppHeaderWalletProps = {
@@ -42,11 +42,7 @@ export function AppHeaderWallet({ onNavigate }: AppHeaderWalletProps) {
       >
         {truncateWallet(session.wallet)}
       </button>
-      <button
-        className="app-header__link app-header-wallet__sign-out"
-        onClick={() => void signOut()}
-        type="button"
-      >
+      <button className="app-header-wallet__sign-out" onClick={() => void signOut()} type="button">
         sign out
       </button>
     </div>

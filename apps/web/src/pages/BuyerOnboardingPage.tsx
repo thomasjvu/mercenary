@@ -4,7 +4,7 @@ import { useWalletAuth } from '../hooks/useWalletAuth';
 
 export function BuyerOnboardingPage() {
   const { session, setSession, status, setStatus, connectWallet, isAuthenticated } = useWalletAuth(
-    'Use connect wallet in the header to create a buyer account.'
+    'Use connect wallet in the sidebar to create a buyer account.'
   );
   const [apiKey, setApiKey] = useState<string>('');
   const [keyName, setKeyName] = useState('Beta buyer key');
@@ -34,7 +34,7 @@ export function BuyerOnboardingPage() {
         <article className="beta-panel">
           <p className="eyebrow">1 / wallet sign-in</p>
           <h2>Own the account.</h2>
-          <p>SIWE wallet sign-in via the header control.</p>
+          <p>SIWE wallet sign-in via the sidebar control.</p>
           {isAuthenticated ? (
             <p className="form-status">Signed in as {session?.wallet}.</p>
           ) : (
