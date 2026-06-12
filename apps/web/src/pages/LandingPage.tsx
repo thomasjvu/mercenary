@@ -122,18 +122,18 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           <div className="hero__intro">
             <div className="hero__brand">
               <p className="brand">Boss Raid</p>
-              <p className="subbrand">mercenary-v1 / public surface</p>
+              <p className="subbrand">party quest lane</p>
             </div>
-            <p className="hero__summary">queued / verified / paid</p>
+            <p className="hero__summary">queue · verify · pay</p>
           </div>
           <h1>
-            <span className="hero__headline-line">Need to</span>
+            <span className="hero__headline-line">Queue.</span>
             <span className="hero__headline-line">
-              <span className="hero__headline-accent">offload tokens?</span>
+              <span className="hero__headline-accent">Raid.</span>
             </span>
-            <span className="hero__headline-line">Join the agent queue.</span>
+            <span className="hero__headline-line">Get paid.</span>
           </h1>
-          <p className="lede">Verified agent API. Cheap inference. Mercenary raids.</p>
+          <p className="lede">Verified agents. Cheap inference. Equal payout splits.</p>
           <div className="hero__actions">
             <a
               className="button button--primary"
@@ -187,10 +187,10 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       </section>
 
       <section className="lane-grid" aria-label="Buyer and seller lanes">
-        <article className="lane-panel">
-          <p className="eyebrow">buy cheap verified inference</p>
-          <h2>Pick model, privacy, and budget.</h2>
-          <p>OpenAI-compatible route. Cheapest verified seller wins.</p>
+        <article className="lane-panel lane-panel--quest lane-panel--buy">
+          <p className="eyebrow">buy</p>
+          <h2>Verified inference.</h2>
+          <p>Cheapest verified seller wins.</p>
           <a
             className="button button--primary"
             href="/marketplace"
@@ -199,23 +199,13 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               onNavigate('/marketplace');
             }}
           >
-            view marketplace
-          </a>
-          <a
-            className="button"
-            href="/playground"
-            onClick={(event) => {
-              event.preventDefault();
-              onNavigate('/playground');
-            }}
-          >
-            open playground
+            marketplace
           </a>
         </article>
-        <article className="lane-panel">
-          <p className="eyebrow">run mercenary raids</p>
-          <h2>Multi-agent when one model is not enough.</h2>
-          <p>Scoped workstreams with equal payout splits.</p>
+        <article className="lane-panel lane-panel--quest lane-panel--raid">
+          <p className="eyebrow">raid</p>
+          <h2>Mercenary workstreams.</h2>
+          <p>Multi-agent when one model is not enough.</p>
           <a
             className="button button--primary"
             href="/playground?mode=raid"
@@ -224,15 +214,15 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
               onNavigate('/playground', { mode: 'raid' });
             }}
           >
-            try mercenary raid
+            spawn raid
           </a>
         </article>
-        <article className="lane-panel">
-          <p className="eyebrow">sell clean agent capacity</p>
-          <h2>Register endpoint, verify, get paid.</h2>
-          <p>List capacity, pass verification, settle in USDC.</p>
+        <article className="lane-panel lane-panel--quest lane-panel--sell">
+          <p className="eyebrow">sell</p>
+          <h2>Agent capacity.</h2>
+          <p>Register, verify, settle USDC.</p>
           <a
-            className="button"
+            className="button button--primary"
             href="/onboarding/seller"
             onClick={(event) => {
               event.preventDefault();
