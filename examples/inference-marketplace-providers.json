@@ -1,0 +1,5492 @@
+[
+  {
+    "spawnWorker": false,
+    "providerId": "market-aion-labs-aion-2-0",
+    "displayName": "Aion 2.0",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "aion-labs-aion-2-0",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1,
+      "pricePer1mOutputTokensUsd": 2,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "aion-labs-aion-2-0",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-aion-labs-aion-2-0"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-arcee-trinity-large-thinking",
+    "displayName": "Trinity Large Thinking",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "arcee-trinity-large-thinking",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.3125,
+      "pricePer1mOutputTokensUsd": 1.125,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "arcee-trinity-large-thinking",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-arcee-trinity-large-thinking"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-claude-fable-5",
+    "displayName": "Claude Fable 5",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "claude-fable-5",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 12,
+      "pricePer1mOutputTokensUsd": 60,
+      "minimumChargeUsd": 0.012,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "claude-fable-5",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.0734,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-claude-fable-5"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-claude-opus-4-5",
+    "displayName": "Claude Opus 4.5",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "claude-opus-4-5",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 6,
+      "pricePer1mOutputTokensUsd": 30,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "claude-opus-4-5",
+      "maxContextTokens": 198000
+    },
+    "pricePerTaskUsd": 0.0367,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-claude-opus-4-5"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-claude-opus-4-6",
+    "displayName": "Claude Opus 4.6",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "claude-opus-4-6",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 6,
+      "pricePer1mOutputTokensUsd": 30,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "claude-opus-4-6",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.0367,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-claude-opus-4-6"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-claude-opus-4-6-fast",
+    "displayName": "Claude Opus 4.6 Fast",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "claude-opus-4-6-fast",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 36,
+      "pricePer1mOutputTokensUsd": 180,
+      "minimumChargeUsd": 0.036,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "claude-opus-4-6-fast",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.2203,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-claude-opus-4-6-fast"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-claude-opus-4-7",
+    "displayName": "Claude Opus 4.7",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "claude-opus-4-7",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 6,
+      "pricePer1mOutputTokensUsd": 30,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "claude-opus-4-7",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.0367,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-claude-opus-4-7"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-claude-opus-4-7-fast",
+    "displayName": "Claude Opus 4.7 Fast",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "claude-opus-4-7-fast",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 36,
+      "pricePer1mOutputTokensUsd": 180,
+      "minimumChargeUsd": 0.036,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "claude-opus-4-7-fast",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.2203,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-claude-opus-4-7-fast"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-claude-opus-4-8",
+    "displayName": "Claude Opus 4.8",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "claude-opus-4-8",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 6,
+      "pricePer1mOutputTokensUsd": 30,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "claude-opus-4-8",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.0367,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-claude-opus-4-8"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-claude-opus-4-8-fast",
+    "displayName": "Claude Opus 4.8 Fast",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "claude-opus-4-8-fast",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 12,
+      "pricePer1mOutputTokensUsd": 60,
+      "minimumChargeUsd": 0.012,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "claude-opus-4-8-fast",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.0734,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-claude-opus-4-8-fast"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-claude-sonnet-4-5",
+    "displayName": "Claude Sonnet 4.5",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "claude-sonnet-4-5",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 3.75,
+      "pricePer1mOutputTokensUsd": 18.75,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "claude-sonnet-4-5",
+      "maxContextTokens": 198000
+    },
+    "pricePerTaskUsd": 0.0229,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-claude-sonnet-4-5"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-claude-sonnet-4-6",
+    "displayName": "Claude Sonnet 4.6",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "claude-sonnet-4-6",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 3.6,
+      "pricePer1mOutputTokensUsd": 18,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "claude-sonnet-4-6",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.022,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-claude-sonnet-4-6"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": true,
+    "providerId": "market-deepseek-v3-2",
+    "displayName": "DeepSeek V3.2",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9100",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "deepseek-v3.2",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.33,
+      "pricePer1mOutputTokensUsd": 0.48,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "deepseek-v3.2",
+      "maxContextTokens": 160000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-deepseek-v3-2"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-deepseek-v4-flash",
+    "displayName": "DeepSeek V4 Flash",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "deepseek-v4-flash",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.17,
+      "pricePer1mOutputTokensUsd": 0.35,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "deepseek-v4-flash",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-deepseek-v4-flash"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-deepseek-v4-pro",
+    "displayName": "DeepSeek V4 Pro",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "deepseek-v4-pro",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1.73,
+      "pricePer1mOutputTokensUsd": 3.796,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "deepseek-v4-pro",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-deepseek-v4-pro"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-e2ee-gemma-3-27b-p",
+    "displayName": "Gemma 3 27B",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "e2ee-gemma-3-27b-p",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": true,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.14,
+      "pricePer1mOutputTokensUsd": 0.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "e2ee-gemma-3-27b-p",
+      "maxContextTokens": 40000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-e2ee-gemma-3-27b-p"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": true,
+    "providerId": "market-e2ee-gemma-4-26b-a4b-uncensored-p",
+    "displayName": "Gemma 4 26B A4B Uncensored",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9101",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "e2ee-gemma-4-26b-a4b-uncensored-p",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": true,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.19,
+      "pricePer1mOutputTokensUsd": 0.88,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "e2ee-gemma-4-26b-a4b-uncensored-p",
+      "maxContextTokens": 64000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-e2ee-gemma-4-26b-a4b-uncensored-p"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-e2ee-gemma-4-31b",
+    "displayName": "Gemma 4 31B Instruct",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "e2ee-gemma-4-31b",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": true,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.139,
+      "pricePer1mOutputTokensUsd": 0.43,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "e2ee-gemma-4-31b",
+      "maxContextTokens": 32000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-e2ee-gemma-4-31b"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-e2ee-glm-4-7-flash-p",
+    "displayName": "GLM 4.7 Flash",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "e2ee-glm-4-7-flash-p",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": true,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.13,
+      "pricePer1mOutputTokensUsd": 0.55,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "e2ee-glm-4-7-flash-p",
+      "maxContextTokens": 198000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-e2ee-glm-4-7-flash-p"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-e2ee-glm-4-7-p",
+    "displayName": "GLM 4.7",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "e2ee-glm-4-7-p",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": true,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1.1,
+      "pricePer1mOutputTokensUsd": 4.15,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "e2ee-glm-4-7-p",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-e2ee-glm-4-7-p"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-e2ee-glm-5-1",
+    "displayName": "GLM 5.1",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "e2ee-glm-5-1",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": true,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1.1,
+      "pricePer1mOutputTokensUsd": 4.15,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "e2ee-glm-5-1",
+      "maxContextTokens": 200000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-e2ee-glm-5-1"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-e2ee-gpt-oss-120b-p",
+    "displayName": "GPT OSS 120B",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "e2ee-gpt-oss-120b-p",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": true,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.13,
+      "pricePer1mOutputTokensUsd": 0.65,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "e2ee-gpt-oss-120b-p",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-e2ee-gpt-oss-120b-p"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-e2ee-gpt-oss-20b-p",
+    "displayName": "GPT OSS 20B",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "e2ee-gpt-oss-20b-p",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": true,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.05,
+      "pricePer1mOutputTokensUsd": 0.19,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "e2ee-gpt-oss-20b-p",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-e2ee-gpt-oss-20b-p"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-e2ee-qwen-2-5-7b-p",
+    "displayName": "Qwen 2.5 7B",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "e2ee-qwen-2-5-7b-p",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": true,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.05,
+      "pricePer1mOutputTokensUsd": 0.13,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "e2ee-qwen-2-5-7b-p",
+      "maxContextTokens": 32000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-e2ee-qwen-2-5-7b-p"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-e2ee-qwen3-30b-a3b-p",
+    "displayName": "Qwen3 30B A3B",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "e2ee-qwen3-30b-a3b-p",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": true,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.19,
+      "pricePer1mOutputTokensUsd": 0.69,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "e2ee-qwen3-30b-a3b-p",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-e2ee-qwen3-30b-a3b-p"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-e2ee-qwen3-6-35b-a3b",
+    "displayName": "Qwen 3.6 35B A3B FP8",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "e2ee-qwen3-6-35b-a3b",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": true,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.182,
+      "pricePer1mOutputTokensUsd": 1.18,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "e2ee-qwen3-6-35b-a3b",
+      "maxContextTokens": 32000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-e2ee-qwen3-6-35b-a3b"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-e2ee-qwen3-6-35b-a3b-uncensored-p",
+    "displayName": "Qwen3.6 35B A3B Uncensored",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "e2ee-qwen3-6-35b-a3b-uncensored-p",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": true,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.38,
+      "pricePer1mOutputTokensUsd": 1.88,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "e2ee-qwen3-6-35b-a3b-uncensored-p",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-e2ee-qwen3-6-35b-a3b-uncensored-p"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-e2ee-qwen3-vl-30b-a3b-p",
+    "displayName": "Qwen3 VL 30B A3B",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "e2ee-qwen3-vl-30b-a3b-p",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": true,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.25,
+      "pricePer1mOutputTokensUsd": 0.9,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "e2ee-qwen3-vl-30b-a3b-p",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-e2ee-qwen3-vl-30b-a3b-p"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-e2ee-venice-uncensored-24b-p",
+    "displayName": "Venice Uncensored 1.1",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "e2ee-venice-uncensored-24b-p",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": true,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.25,
+      "pricePer1mOutputTokensUsd": 1.15,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "e2ee-venice-uncensored-24b-p",
+      "maxContextTokens": 32000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-e2ee-venice-uncensored-24b-p"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-gemini-3-1-pro-preview",
+    "displayName": "Gemini 3.1 Pro Preview",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "gemini-3-1-pro-preview",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 2.5,
+      "pricePer1mOutputTokensUsd": 15,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "gemini-3-1-pro-preview",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.0179,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-gemini-3-1-pro-preview"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-gemini-3-5-flash",
+    "displayName": "Gemini 3.5 Flash",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "gemini-3-5-flash",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1.55,
+      "pricePer1mOutputTokensUsd": 9.45,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "gemini-3-5-flash",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.0112,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-gemini-3-5-flash"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-gemini-3-flash-preview",
+    "displayName": "Gemini 3 Flash Preview",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "gemini-3-flash-preview",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.7,
+      "pricePer1mOutputTokensUsd": 3.75,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "gemini-3-flash-preview",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-gemini-3-flash-preview"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-gemma-4-uncensored",
+    "displayName": "Gemma 4 Uncensored",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "gemma-4-uncensored",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.1625,
+      "pricePer1mOutputTokensUsd": 0.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "gemma-4-uncensored",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-gemma-4-uncensored"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-google-gemma-3-27b-it",
+    "displayName": "Google Gemma 3 27B Instruct",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "google-gemma-3-27b-it",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.12,
+      "pricePer1mOutputTokensUsd": 0.2,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "google-gemma-3-27b-it",
+      "maxContextTokens": 198000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-google-gemma-3-27b-it"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-google-gemma-4-26b-a4b-it",
+    "displayName": "Google Gemma 4 26B A4B Instruct",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "google-gemma-4-26b-a4b-it",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.1625,
+      "pricePer1mOutputTokensUsd": 0.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "google-gemma-4-26b-a4b-it",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-google-gemma-4-26b-a4b-it"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": true,
+    "providerId": "market-google-gemma-4-31b-it",
+    "displayName": "Google Gemma 4 31B Instruct",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9102",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "google-gemma-4-31b-it",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.12,
+      "pricePer1mOutputTokensUsd": 0.36,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "google-gemma-4-31b-it",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-google-gemma-4-31b-it"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-grok-4-20",
+    "displayName": "Grok 4.20",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "grok-4-20",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1.42,
+      "pricePer1mOutputTokensUsd": 2.83,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "grok-4-20",
+      "maxContextTokens": 2000000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-grok-4-20"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-grok-4-20-multi-agent",
+    "displayName": "Grok 4.20 Multi-Agent",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "grok-4-20-multi-agent",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1.42,
+      "pricePer1mOutputTokensUsd": 2.83,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "grok-4-20-multi-agent",
+      "maxContextTokens": 2000000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-grok-4-20-multi-agent"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-grok-4-3",
+    "displayName": "Grok 4.3",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "grok-4-3",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1.42,
+      "pricePer1mOutputTokensUsd": 2.83,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "grok-4-3",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-grok-4-3"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-grok-build-0-1",
+    "displayName": "Grok Build 0.1",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "grok-build-0-1",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1,
+      "pricePer1mOutputTokensUsd": 2,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "grok-build-0-1",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-grok-build-0-1"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-hermes-3-llama-3-1-405b",
+    "displayName": "Hermes 3 Llama 3.1 405b",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "hermes-3-llama-3.1-405b",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1.1,
+      "pricePer1mOutputTokensUsd": 3,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "hermes-3-llama-3.1-405b",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-hermes-3-llama-3-1-405b"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-kimi-k2-5",
+    "displayName": "Kimi K2.5",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "kimi-k2-5",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.56,
+      "pricePer1mOutputTokensUsd": 3.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "kimi-k2-5",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-kimi-k2-5"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-kimi-k2-6",
+    "displayName": "Kimi K2.6",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "kimi-k2-6",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.85,
+      "pricePer1mOutputTokensUsd": 4.655,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "kimi-k2-6",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-kimi-k2-6"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-llama-3-2-3b",
+    "displayName": "Llama 3.2 3B",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "llama-3.2-3b",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.15,
+      "pricePer1mOutputTokensUsd": 0.6,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "llama-3.2-3b",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-llama-3-2-3b"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-llama-3-3-70b",
+    "displayName": "Llama 3.3 70B",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "llama-3.3-70b",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.7,
+      "pricePer1mOutputTokensUsd": 2.8,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "llama-3.3-70b",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-llama-3-3-70b"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-mercury-2",
+    "displayName": "Mercury 2",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "mercury-2",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.3125,
+      "pricePer1mOutputTokensUsd": 0.9375,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "mercury-2",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-mercury-2"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-minimax-m25",
+    "displayName": "MiniMax M2.5",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "minimax-m25",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.34,
+      "pricePer1mOutputTokensUsd": 1.19,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "minimax-m25",
+      "maxContextTokens": 198000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-minimax-m25"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": true,
+    "providerId": "market-minimax-m27",
+    "displayName": "MiniMax M2.7",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9103",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "minimax-m27",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.375,
+      "pricePer1mOutputTokensUsd": 1.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "minimax-m27",
+      "maxContextTokens": 198000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-minimax-m27"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-minimax-m3",
+    "displayName": "MiniMax M3",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "minimax-m3",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.3,
+      "pricePer1mOutputTokensUsd": 1.2,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "minimax-m3",
+      "maxContextTokens": 500000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-minimax-m3"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-mistral-small-2603",
+    "displayName": "Mistral Small 4",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "mistral-small-2603",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.1875,
+      "pricePer1mOutputTokensUsd": 0.75,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "mistral-small-2603",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-mistral-small-2603"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": true,
+    "providerId": "market-mistral-small-3-2-24b-instruct",
+    "displayName": "Mistral Small 3.2 24B Instruct",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9104",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "mistral-small-3-2-24b-instruct",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.09375,
+      "pricePer1mOutputTokensUsd": 0.25,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "mistral-small-3-2-24b-instruct",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-mistral-small-3-2-24b-instruct"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-nvidia-nemotron-3-nano-30b-a3b",
+    "displayName": "NVIDIA Nemotron 3 Nano 30B",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "nvidia-nemotron-3-nano-30b-a3b",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.075,
+      "pricePer1mOutputTokensUsd": 0.3,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "nvidia-nemotron-3-nano-30b-a3b",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-nvidia-nemotron-3-nano-30b-a3b"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-nvidia-nemotron-3-ultra-550b-a55b",
+    "displayName": "NVIDIA Nemotron 3 Ultra",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "nvidia-nemotron-3-ultra-550b-a55b",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.625,
+      "pricePer1mOutputTokensUsd": 3.125,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "nvidia-nemotron-3-ultra-550b-a55b",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-nvidia-nemotron-3-ultra-550b-a55b"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-nvidia-nemotron-cascade-2-30b-a3b",
+    "displayName": "Nemotron Cascade 2 30B A3B",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "nvidia-nemotron-cascade-2-30b-a3b",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.14,
+      "pricePer1mOutputTokensUsd": 0.8,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "nvidia-nemotron-cascade-2-30b-a3b",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-nvidia-nemotron-cascade-2-30b-a3b"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": true,
+    "providerId": "market-olafangensan-glm-4-7-flash-heretic",
+    "displayName": "GLM 4.7 Flash Heretic",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9105",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "olafangensan-glm-4.7-flash-heretic",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.14,
+      "pricePer1mOutputTokensUsd": 0.8,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "olafangensan-glm-4.7-flash-heretic",
+      "maxContextTokens": 200000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-olafangensan-glm-4-7-flash-heretic"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-openai-gpt-4o-2024-11-20",
+    "displayName": "GPT-4o",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "openai-gpt-4o-2024-11-20",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 3.125,
+      "pricePer1mOutputTokensUsd": 12.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "openai-gpt-4o-2024-11-20",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.0159,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-openai-gpt-4o-2024-11-20"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-openai-gpt-4o-mini-2024-07-18",
+    "displayName": "GPT-4o Mini",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "openai-gpt-4o-mini-2024-07-18",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.1875,
+      "pricePer1mOutputTokensUsd": 0.75,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "openai-gpt-4o-mini-2024-07-18",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-openai-gpt-4o-mini-2024-07-18"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-openai-gpt-52",
+    "displayName": "GPT-5.2",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "openai-gpt-52",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 2.19,
+      "pricePer1mOutputTokensUsd": 17.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "openai-gpt-52",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.0201,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-openai-gpt-52"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-openai-gpt-52-codex",
+    "displayName": "GPT-5.2 Codex",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "openai-gpt-52-codex",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 2.19,
+      "pricePer1mOutputTokensUsd": 17.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "openai-gpt-52-codex",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.0201,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-openai-gpt-52-codex"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-openai-gpt-53-codex",
+    "displayName": "GPT-5.3 Codex",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "openai-gpt-53-codex",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 2.19,
+      "pricePer1mOutputTokensUsd": 17.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "openai-gpt-53-codex",
+      "maxContextTokens": 400000
+    },
+    "pricePerTaskUsd": 0.0201,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-openai-gpt-53-codex"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-openai-gpt-54",
+    "displayName": "GPT-5.4",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "openai-gpt-54",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 3.13,
+      "pricePer1mOutputTokensUsd": 18.8,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "openai-gpt-54",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.0224,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-openai-gpt-54"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-openai-gpt-54-mini",
+    "displayName": "GPT-5.4 Mini",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "openai-gpt-54-mini",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.9375,
+      "pricePer1mOutputTokensUsd": 5.625,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "openai-gpt-54-mini",
+      "maxContextTokens": 400000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-openai-gpt-54-mini"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-openai-gpt-54-pro",
+    "displayName": "GPT-5.4 Pro",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "openai-gpt-54-pro",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 37.5,
+      "pricePer1mOutputTokensUsd": 225,
+      "minimumChargeUsd": 0.0375,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "openai-gpt-54-pro",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.2679,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-openai-gpt-54-pro"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": true,
+    "providerId": "market-openai-gpt-55",
+    "displayName": "GPT-5.5",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9106",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "openai-gpt-55",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 6.25,
+      "pricePer1mOutputTokensUsd": 37.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "openai-gpt-55",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.0446,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-openai-gpt-55"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-openai-gpt-55-pro",
+    "displayName": "GPT-5.5 Pro",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "openai-gpt-55-pro",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 37.5,
+      "pricePer1mOutputTokensUsd": 225,
+      "minimumChargeUsd": 0.0375,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "openai-gpt-55-pro",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.2679,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-openai-gpt-55-pro"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-openai-gpt-oss-120b",
+    "displayName": "OpenAI GPT OSS 120B",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "openai-gpt-oss-120b",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.07,
+      "pricePer1mOutputTokensUsd": 0.3,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "openai-gpt-oss-120b",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-openai-gpt-oss-120b"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-qwen-3-6-plus",
+    "displayName": "Qwen 3.6 Plus Uncensored",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "qwen-3-6-plus",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.625,
+      "pricePer1mOutputTokensUsd": 3.75,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "qwen-3-6-plus",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-qwen-3-6-plus"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-qwen-3-7-max",
+    "displayName": "Qwen 3.7 Max",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "qwen-3-7-max",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 2.7,
+      "pricePer1mOutputTokensUsd": 8.05,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "qwen-3-7-max",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.0109,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-qwen-3-7-max"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-qwen-3-7-plus",
+    "displayName": "Qwen 3.7 Plus",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "qwen-3-7-plus",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.5,
+      "pricePer1mOutputTokensUsd": 2,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "qwen-3-7-plus",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-qwen-3-7-plus"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-qwen3-235b-a22b-instruct-2507",
+    "displayName": "Qwen 3 235B A22B Instruct 2507",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "qwen3-235b-a22b-instruct-2507",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.15,
+      "pricePer1mOutputTokensUsd": 0.75,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "qwen3-235b-a22b-instruct-2507",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-qwen3-235b-a22b-instruct-2507"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-qwen3-235b-a22b-thinking-2507",
+    "displayName": "Qwen 3 235B A22B Thinking 2507",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "qwen3-235b-a22b-thinking-2507",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.45,
+      "pricePer1mOutputTokensUsd": 3.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "qwen3-235b-a22b-thinking-2507",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-qwen3-235b-a22b-thinking-2507"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-qwen3-5-35b-a3b",
+    "displayName": "Qwen 3.5 35B A3B",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "qwen3-5-35b-a3b",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.3125,
+      "pricePer1mOutputTokensUsd": 1.25,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "qwen3-5-35b-a3b",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-qwen3-5-35b-a3b"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-qwen3-5-397b-a17b",
+    "displayName": "Qwen 3.5 397B",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "qwen3-5-397b-a17b",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.75,
+      "pricePer1mOutputTokensUsd": 4.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "qwen3-5-397b-a17b",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-qwen3-5-397b-a17b"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": true,
+    "providerId": "market-qwen3-5-9b",
+    "displayName": "Qwen 3.5 9B",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9107",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "qwen3-5-9b",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.1,
+      "pricePer1mOutputTokensUsd": 0.15,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "qwen3-5-9b",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-qwen3-5-9b"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-qwen3-6-27b",
+    "displayName": "Qwen 3.6 27B",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "qwen3-6-27b",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.325,
+      "pricePer1mOutputTokensUsd": 3.25,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "qwen3-6-27b",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-qwen3-6-27b"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-qwen3-coder-480b-a35b-instruct-turbo",
+    "displayName": "Qwen 3 Coder 480B Turbo",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "qwen3-coder-480b-a35b-instruct-turbo",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.35,
+      "pricePer1mOutputTokensUsd": 1.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "qwen3-coder-480b-a35b-instruct-turbo",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-qwen3-coder-480b-a35b-instruct-turbo"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-qwen3-next-80b",
+    "displayName": "Qwen 3 Next 80b",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "qwen3-next-80b",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.35,
+      "pricePer1mOutputTokensUsd": 1.9,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "qwen3-next-80b",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-qwen3-next-80b"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-qwen3-vl-235b-a22b",
+    "displayName": "Qwen3 VL 235B",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "qwen3-vl-235b-a22b",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.25,
+      "pricePer1mOutputTokensUsd": 1.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "qwen3-vl-235b-a22b",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-qwen3-vl-235b-a22b"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-tencent-hy3-preview",
+    "displayName": "Hy3 Preview",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "tencent-hy3-preview",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.063,
+      "pricePer1mOutputTokensUsd": 0.21,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "tencent-hy3-preview",
+      "maxContextTokens": 256000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-tencent-hy3-preview"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": true,
+    "providerId": "market-venice-uncensored-1-2",
+    "displayName": "Venice Uncensored 1.2",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9108",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "venice-uncensored-1-2",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.2,
+      "pricePer1mOutputTokensUsd": 0.9,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "venice-uncensored-1-2",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-venice-uncensored-1-2"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-venice-uncensored-role-play",
+    "displayName": "Venice Role Play Uncensored",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "venice-uncensored-role-play",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.5,
+      "pricePer1mOutputTokensUsd": 2,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "venice-uncensored-role-play",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-venice-uncensored-role-play"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-xiaomi-mimo-v2-5",
+    "displayName": "MiMo-V2.5",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "xiaomi-mimo-v2-5",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.175,
+      "pricePer1mOutputTokensUsd": 0.35,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "xiaomi-mimo-v2-5",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-xiaomi-mimo-v2-5"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-z-ai-glm-5-turbo",
+    "displayName": "GLM 5 Turbo",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "z-ai-glm-5-turbo",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1.2,
+      "pricePer1mOutputTokensUsd": 4,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "z-ai-glm-5-turbo",
+      "maxContextTokens": 200000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-z-ai-glm-5-turbo"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-z-ai-glm-5v-turbo",
+    "displayName": "GLM 5V Turbo",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "z-ai-glm-5v-turbo",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1.5,
+      "pricePer1mOutputTokensUsd": 5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "z-ai-glm-5v-turbo",
+      "maxContextTokens": 200000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-z-ai-glm-5v-turbo"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-zai-org-glm-4-6",
+    "displayName": "GLM 4.6",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "zai-org-glm-4.6",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.85,
+      "pricePer1mOutputTokensUsd": 2.75,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "zai-org-glm-4.6",
+      "maxContextTokens": 198000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-zai-org-glm-4-6"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-zai-org-glm-4-7",
+    "displayName": "GLM 4.7",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "zai-org-glm-4.7",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.55,
+      "pricePer1mOutputTokensUsd": 2.65,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "zai-org-glm-4.7",
+      "maxContextTokens": 198000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-zai-org-glm-4-7"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-zai-org-glm-4-7-flash",
+    "displayName": "GLM 4.7 Flash",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "zai-org-glm-4.7-flash",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.125,
+      "pricePer1mOutputTokensUsd": 0.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "zai-org-glm-4.7-flash",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-zai-org-glm-4-7-flash"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-zai-org-glm-5",
+    "displayName": "GLM 5",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "zai-org-glm-5",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1,
+      "pricePer1mOutputTokensUsd": 3.2,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "zai-org-glm-5",
+      "maxContextTokens": 198000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-zai-org-glm-5"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-zai-org-glm-5-1",
+    "displayName": "GLM 5.1",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "zai-org-glm-5-1",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1.75,
+      "pricePer1mOutputTokensUsd": 5.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "zai-org-glm-5-1",
+      "maxContextTokens": 200000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-zai-org-glm-5-1"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": true,
+    "providerId": "market-phala-gemma-4-26b-a4b-uncensored",
+    "displayName": "Phala Gemma 4 26B Uncensored",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9109",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "redpill",
+    "modelId": "phala/gemma-4-26b-a4b-uncensored",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": false,
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.15,
+      "pricePer1mOutputTokensUsd": 0.7,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "phala/gemma-4-26b-a4b-uncensored",
+      "maxContextTokens": 66000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-phala-gemma-4-26b-a4b-uncensored"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  }
+]

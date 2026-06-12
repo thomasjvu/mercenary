@@ -1,3 +1,9 @@
+import {
+  CATALOG_BENCHMARK_INPUT_PER_1M_USD,
+  CATALOG_BENCHMARK_OUTPUT_PER_1M_USD,
+  CATALOG_BENCHMARK_TASK_USD,
+} from './inference-catalog-benchmark.js';
+
 export const MODEL_BENCHMARK_TASK_USD: Record<string, number> = {
   'gpt-5.5': 2.5,
   'gpt-4.1': 2.0,
@@ -19,7 +25,8 @@ export const MODEL_BENCHMARK_OUTPUT_PER_1M_USD: Record<string, number> = {
 };
 
 export function estimateBenchmarkTaskUsd(modelId: string): number | undefined {
-  return MODEL_BENCHMARK_TASK_USD[modelId.trim()];
+  const key = modelId.trim();
+  return MODEL_BENCHMARK_TASK_USD[key] ?? CATALOG_BENCHMARK_TASK_USD[key];
 }
 
 export function estimateBenchmarkPriceUsd(input: {
@@ -35,8 +42,10 @@ export function estimateBenchmarkPriceUsd(input: {
 
   const inputTokens = Math.max(0, input.inputTokens ?? 0);
   const outputTokens = Math.max(0, input.outputTokens ?? 0);
-  const inputRate = MODEL_BENCHMARK_INPUT_PER_1M_USD[modelId];
-  const outputRate = MODEL_BENCHMARK_OUTPUT_PER_1M_USD[modelId];
+  const inputRate =
+    MODEL_BENCHMARK_INPUT_PER_1M_USD[modelId] ?? CATALOG_BENCHMARK_INPUT_PER_1M_USD[modelId];
+  const outputRate =
+    MODEL_BENCHMARK_OUTPUT_PER_1M_USD[modelId] ?? CATALOG_BENCHMARK_OUTPUT_PER_1M_USD[modelId];
   if (inputRate != null || outputRate != null) {
     const tokenBenchmark =
       (inputTokens / 1_000_000) * (inputRate ?? 0) + (outputTokens / 1_000_000) * (outputRate ?? 0);
@@ -49,7 +58,7 @@ export function estimateBenchmarkPriceUsd(input: {
     return input.flatTaskUsd;
   }
 
-  return MODEL_BENCHMARK_TASK_USD[modelId];
+  return MODEL_BENCHMARK_TASK_USD[modelId] ?? CATALOG_BENCHMARK_TASK_USD[modelId];
 }
 
 export function computeSavingsUsd(

@@ -1,6 +1,7 @@
 import { type FastifyInstance } from 'fastify';
 import {
   buildInferenceMarkets,
+  mergeInferenceCatalogMarkets,
   buildOpenAiCompatibleModelEntry,
   buildInferencePriceEntry,
 } from '../lib/inference-marketplace.js';
@@ -81,9 +82,12 @@ export function registerMarketplaceRoutes(
 
   app.get('/v1/marketplace/stats', async () => {
     const providers = orchestrator.listProviders();
-    const markets = buildInferenceMarkets(
-      providers.filter(
-        (provider) => (provider.marketplaceOfferStatus ?? 'active') === 'active' && provider.modelId
+    const markets = mergeInferenceCatalogMarkets(
+      buildInferenceMarkets(
+        providers.filter(
+          (provider) =>
+            (provider.marketplaceOfferStatus ?? 'active') === 'active' && provider.modelId
+        )
       )
     );
     const sellerPayouts = controlState.listSellerPayouts(

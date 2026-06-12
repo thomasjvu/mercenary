@@ -5780,6 +5780,55 @@ h2 {
   font-size: 0.76rem;
 }
 
+.playground-page__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.playground-page__header h1 {
+  margin: 0;
+}
+
+.playground-page__modes {
+  display: inline-flex;
+  gap: 8px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+
+.playground-page__mode {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.playground-page__mode--active {
+  background: var(--rx-blue);
+  color: #fff;
+}
+
+.mercenary-demo--embedded {
+  margin-top: 0;
+}
+
+.inference-playground__meta {
+  margin: -4px 0 12px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .inference-playground__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -19,6 +19,7 @@
     "dev:web": "pnpm --filter @bossraid/web dev",
     "deploy:web:cloudflare": "node scripts/deploy-web-cloudflare.mjs",
     "demo:rehearse": "node scripts/demo-rehearse.mjs",
+    "sync:inference-catalog": "node scripts/sync-inference-catalog.mjs",
     "docker:build": "node scripts/docker-build.mjs",
     "docker:down": "node scripts/docker-compose.mjs down",
     "docker:up": "node scripts/docker-compose.mjs up --build",

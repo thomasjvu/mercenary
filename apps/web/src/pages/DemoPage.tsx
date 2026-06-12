@@ -10,17 +10,21 @@ import heroImage from '../../../../assets/hero.webp';
 type DemoPageProps = {
   providers: Provider[];
   providerHealth: ProviderHealth[];
+  embedded?: boolean;
 };
 
 function buildDemoModeLabel(mode: 'raid' | 'chat_v1'): string {
   return mode === 'chat_v1' ? 'v1 completions' : 'raid chat';
 }
 
-export function DemoPage({ providers, providerHealth }: DemoPageProps) {
+export function DemoPage({ providers, providerHealth, embedded = false }: DemoPageProps) {
   const demo = useRaidDemo({ providers, providerHealth });
 
   return (
-    <section className="mercenary-demo" id="demo">
+    <section
+      className={`mercenary-demo${embedded ? ' mercenary-demo--embedded' : ''}`}
+      id={embedded ? undefined : 'demo'}
+    >
       <article className="mercenary-chat">
         <div className="mercenary-chat__topbar">
           <div className="mercenary-chat__identity">

@@ -26,7 +26,8 @@ if (!sharedModelConfigured && !providerStubMode) {
   );
 }
 
-const children = providerProfiles.map((profile, index) => {
+const spawnProfiles = providerProfiles.filter((profile) => profile.spawnWorker !== false);
+const children = spawnProfiles.map((profile, index) => {
   const child = spawn('pnpm', ['--filter', '@bossraid/provider-agent', 'dev'], {
     cwd: rootDir,
     stdio: 'inherit',
@@ -48,4 +49,6 @@ const children = providerProfiles.map((profile, index) => {
 });
 
 attachProviderShutdown(children);
-console.log(`[providers] started ${providerProfiles.length} dev providers from ${providersFile}`);
+console.log(
+  `[providers] started ${children.length}/${providerProfiles.length} dev providers from ${providersFile}`
+);

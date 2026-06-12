@@ -393,6 +393,14 @@ export async function loadProviderProfilesFromFile(path: string): Promise<Provid
   );
 }
 
+export async function loadProviderProfilesFromFiles(paths: string[]): Promise<ProviderProfile[]> {
+  const profiles: ProviderProfile[] = [];
+  for (const path of paths) {
+    profiles.push(...(await loadProviderProfilesFromFile(path)));
+  }
+  return profiles;
+}
+
 export function createProvidersFromProfiles(profiles: ProviderProfile[]): RaidProvider[] {
   return profiles.map((profile) => createProviderFromProfile(profile));
 }

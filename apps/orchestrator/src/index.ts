@@ -7,7 +7,7 @@ import {
 } from '@bossraid/persistence';
 import {
   createProvidersFromProfiles,
-  loadProviderProfilesFromFile,
+  loadProviderProfilesFromFiles,
   probeProviderHealth,
   type RaidProvider,
 } from '@bossraid/provider-sdk';
@@ -315,7 +315,13 @@ export async function createDefaultOrchestrator(
     process.env.BOSSRAID_SQLITE_FILE ?? './temp/bossraid-state.sqlite',
     workspaceCwd
   );
-  const providersFile = resolveWorkspacePath(process.env.BOSSRAID_PROVIDERS_FILE, workspaceCwd);
+  const providersFileSetting = process.env.BOSSRAID_PROVIDERS_FILE;
+  const providerFiles = (providersFileSetting ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => resolveWorkspacePath(entry, workspaceCwd))
+    .filter((entry): entry is string => Boolean(entry));
   const storageBackend = readStorageBackend(process.env, { strict: true });
 
   const persistence = createPersistenceBackend({
@@ -325,16 +331,16 @@ export async function createDefaultOrchestrator(
   });
   const snapshot = await persistence.loadState();
 
-  if (!providersFile) {
+  if (providerFiles.length === 0) {
     throw new Error(
       'BOSSRAID_PROVIDERS_FILE is required. Mercenary no longer boots with simulated providers.'
     );
   }
 
-  const profiles = await loadProviderProfilesFromFile(providersFile);
+  const profiles = await loadProviderProfilesFromFiles(providerFiles);
   if (profiles.length === 0) {
     throw new Error(
-      `No providers found in ${providersFile}. Configure at least one HTTP provider.`
+      `No providers found in ${providerFiles.join(', ')}. Configure at least one HTTP provider.`
     );
   }
 

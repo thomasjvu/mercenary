@@ -13,7 +13,9 @@ const child = spawn("pnpm", ["--filter", "@bossraid/api", "dev"], {
   env: {
     ...process.env,
     BOSSRAID_STORAGE_BACKEND: process.env.BOSSRAID_STORAGE_BACKEND ?? "sqlite",
-    BOSSRAID_PROVIDERS_FILE: process.env.BOSSRAID_PROVIDERS_FILE ?? "./examples/providers.http.json",
+    BOSSRAID_PROVIDERS_FILE:
+      process.env.BOSSRAID_PROVIDERS_FILE ??
+      './examples/providers.http.json,./examples/inference-marketplace-providers.json',
     BOSSRAID_SQLITE_FILE: process.env.BOSSRAID_SQLITE_FILE ?? "./temp/bossraid-state.sqlite",
     BOSSRAID_EVAL_SANDBOX_MODE: sandboxMode,
     ...(sandboxMode === "socket"

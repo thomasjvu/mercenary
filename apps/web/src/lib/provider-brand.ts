@@ -12,6 +12,8 @@ const PROVIDER_BRANDS: Record<string, ProviderBrand> = {
   mistralai: { icon: 'simple-icons:mistralai', label: 'Mistral' },
   cohere: { icon: 'simple-icons:cohere', label: 'Cohere' },
   venice: { icon: 'simple-icons:ethereum', label: 'Venice' },
+  redpill: { icon: 'simple-icons:ethereum', label: 'RedPill' },
+  phala: { icon: 'simple-icons:ethereum', label: 'Phala' },
   xai: { icon: 'simple-icons:x', label: 'xAI' },
   deepseek: { icon: 'simple-icons:deepseek', label: 'DeepSeek' },
   qwen: { icon: 'simple-icons:alibabacloud', label: 'Qwen' },

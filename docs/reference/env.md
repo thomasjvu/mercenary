@@ -9,7 +9,7 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 | `BOSSRAID_STORAGE_BACKEND`    | `sqlite` (default), `file`, `memory`       |
 | `BOSSRAID_SQLITE_FILE`        | SQLite path                                |
 | `BOSSRAID_STATE_FILE`         | File backend path                          |
-| `BOSSRAID_PROVIDERS_FILE`     | Provider seed file (required at boot)      |
+| `BOSSRAID_PROVIDERS_FILE`     | Provider seed file(s), comma-separated     |
 | `BOSSRAID_PROVIDER_FRESH_MS`  | Routing freshness window                   |
 | `BOSSRAID_INVITE_ACCEPT_MS`   | Invite timeout; chat settle grace (5s–30s) |
 | `BOSSRAID_FIRST_HEARTBEAT_MS` | First heartbeat deadline                   |

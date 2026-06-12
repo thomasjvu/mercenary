@@ -9,6 +9,18 @@ export {
 } from './marketplace-benchmark.js';
 
 export {
+  INFERENCE_MODEL_CATALOG,
+  listInferenceCatalogModelIds,
+  type InferenceCatalogEntry,
+} from './inference-catalog.js';
+
+export {
+  CATALOG_BENCHMARK_TASK_USD,
+  CATALOG_BENCHMARK_INPUT_PER_1M_USD,
+  CATALOG_BENCHMARK_OUTPUT_PER_1M_USD,
+} from './inference-catalog-benchmark.js';
+
+export {
   parseBoolean,
   readBooleanEnv,
   readPositiveInteger,

@@ -57,13 +57,12 @@ type AppRoute =
   | '/onboarding/buyer'
   | '/onboarding/seller'
   | '/account'
-  | '/demo'
   | '/raiders'
   | '/receipt';
 type PanelKey = (typeof PANELS)[number];
 
 type LandingPageProps = {
-  onNavigate: (path: AppRoute) => void;
+  onNavigate: (path: AppRoute, options?: { mode?: 'inference' | 'raid'; modelId?: string }) => void;
 };
 
 function normalizePublicApiBase(value: string): string {
@@ -219,13 +218,13 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           <p>Scoped workstreams with equal payout splits.</p>
           <a
             className="button button--primary"
-            href="/demo"
+            href="/playground?mode=raid"
             onClick={(event) => {
               event.preventDefault();
-              onNavigate('/demo');
+              onNavigate('/playground', { mode: 'raid' });
             }}
           >
-            launch raid demo
+            try mercenary raid
           </a>
         </article>
         <article className="lane-panel">

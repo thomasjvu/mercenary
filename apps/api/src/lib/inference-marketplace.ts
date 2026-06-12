@@ -1,3 +1,4 @@
+import { INFERENCE_MODEL_CATALOG, type InferenceCatalogEntry } from '@bossraid/constants';
 import { estimateTokenMeteredUsd, readProviderPricing } from '@bossraid/raid-core';
 import {
   type ChatCompletionRequest,
@@ -346,6 +347,57 @@ export function buildInferenceMarkets(providers: ProviderProfile[]): InferenceMa
     });
 }
 
+function estimateCatalogReferenceRateUsd(entry: InferenceCatalogEntry): number {
+  const input = (MARKETPLACE_REFERENCE_INPUT_TOKENS / 1_000_000) * entry.inputPer1mUsd;
+  const output = (MARKETPLACE_REFERENCE_OUTPUT_TOKENS / 1_000_000) * entry.outputPer1mUsd;
+  return Math.max(0.01, Number((input + output).toFixed(4)));
+}
+
+function buildCatalogOnlyMarket(entry: InferenceCatalogEntry): InferenceMarket {
+  const referenceRateUsd = estimateCatalogReferenceRateUsd(entry);
+  return {
+    object: 'inference.market',
+    modelId: entry.modelId,
+    modelProvider: entry.modelProvider,
+    providerCount: 0,
+    activeProviderCount: 0,
+    verifiedSellerCount: 0,
+    privateSellerCount: entry.teeAttested || entry.e2ee ? 1 : 0,
+    recentSuccessRate: null,
+    p50LatencyMs: null,
+    p95LatencyMs: null,
+    cheapestRateUsd: referenceRateUsd,
+    pricing: {
+      benchmarkSource: 'models.dev',
+      benchmarkUrl: 'https://models.dev/api.json',
+      benchmarkMode: 'static_reference_only',
+      declaredUnit: 'token_metered',
+      cheapestPricePerTaskUsd: referenceRateUsd,
+      pricePer1mInputTokensUsd: entry.inputPer1mUsd,
+      pricePer1mOutputTokensUsd: entry.outputPer1mUsd,
+      referenceInputTokens: MARKETPLACE_REFERENCE_INPUT_TOKENS,
+      referenceOutputTokens: MARKETPLACE_REFERENCE_OUTPUT_TOKENS,
+    },
+    sellers: [],
+  };
+}
+
+export function mergeInferenceCatalogMarkets(liveMarkets: InferenceMarket[]): InferenceMarket[] {
+  const merged = new Map(liveMarkets.map((market) => [market.modelId, market]));
+
+  for (const entry of INFERENCE_MODEL_CATALOG) {
+    if (!merged.has(entry.modelId)) {
+      merged.set(entry.modelId, buildCatalogOnlyMarket(entry));
+    }
+  }
+
+  return [...merged.values()].sort((left, right) => {
+    const leftRate = left.cheapestRateUsd ?? Number.POSITIVE_INFINITY;
+    const rightRate = right.cheapestRateUsd ?? Number.POSITIVE_INFINITY;
+    return leftRate - rightRate || left.modelId.localeCompare(right.modelId);
+  });
+}
+
 function buildInferenceMarketSeller(provider: ProviderProfile): InferenceMarketSeller {
   const pricing = readProviderPricing(provider);
   return {
@@ -392,18 +444,21 @@ export function providerHasStrictPrivateMarketMetadata(provider: ProviderProfile
 }
 
 export function buildOpenAiCompatibleModelEntry(market: InferenceMarket) {
+  const catalogEntry = INFERENCE_MODEL_CATALOG.find((entry) => entry.modelId === market.modelId);
   return {
     id: market.modelId,
     object: 'model',
     created: 0,
-    owned_by: market.modelProvider ?? 'bossraid-market',
+    owned_by: market.modelProvider ?? catalogEntry?.modelProvider ?? 'bossraid-market',
     pricing: market.pricing,
     bossraid: {
+      display_name: catalogEntry?.displayName ?? market.modelId,
       provider_count: market.providerCount,
       active_provider_count: market.activeProviderCount,
       verified_seller_count: market.verifiedSellerCount,
       private_seller_count: market.privateSellerCount,
       cheapest_rate_usd: market.cheapestRateUsd,
+      catalog_only: market.providerCount === 0,
       settlement_asset: 'USDC',
       route: '/v1/inference/chat/completions',
     },

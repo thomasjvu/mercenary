@@ -9,6 +9,7 @@ import {
 } from '../settlement-proof.js';
 import {
   buildInferenceMarkets,
+  mergeInferenceCatalogMarkets,
   providerHasStrictPrivateMarketMetadata,
   readProviderMarketRateUsd,
   resolveProviderMarketModelId,
@@ -134,7 +135,14 @@ export function createRaidHandlers(
       return Boolean(resolveProviderMarketModelId(provider));
     });
 
-    return buildInferenceMarkets(providers);
+    const markets = mergeInferenceCatalogMarkets(buildInferenceMarkets(providers));
+    if (options.modelId) {
+      return markets.filter((market) => market.modelId === options.modelId);
+    }
+    if (options.modelProvider) {
+      return markets.filter((market) => market.modelProvider === options.modelProvider);
+    }
+    return markets;
   }
 
   function validateProviderCallback(

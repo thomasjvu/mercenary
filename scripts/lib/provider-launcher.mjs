@@ -1,16 +1,30 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+export function resolveProviderProfileFiles(rootDir, env = process.env) {
+  const raw = env.BOSSRAID_PROVIDERS_FILE ?? './examples/providers.http.json';
+  return raw
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => resolve(rootDir, entry));
+}
+
 export function loadProviderProfiles(rootDir, env = process.env) {
-  const providersFile = resolve(
-    rootDir,
-    env.BOSSRAID_PROVIDERS_FILE ?? './examples/providers.http.json'
-  );
-  const providerProfiles = JSON.parse(readFileSync(providersFile, 'utf8'));
-  if (!Array.isArray(providerProfiles) || providerProfiles.length === 0) {
-    throw new Error(`No provider profiles found in ${providersFile}.`);
+  const providerFiles = resolveProviderProfileFiles(rootDir, env);
+  const providerProfiles = providerFiles.flatMap((providersFile) => {
+    const profiles = JSON.parse(readFileSync(providersFile, 'utf8'));
+    if (!Array.isArray(profiles) || profiles.length === 0) {
+      throw new Error(`No provider profiles found in ${providersFile}.`);
+    }
+    return profiles;
+  });
+
+  if (providerProfiles.length === 0) {
+    throw new Error('No provider profiles found in configured provider files.');
   }
-  return { providersFile, providerProfiles };
+
+  return { providersFile: providerFiles.join(','), providerProfiles };
 }
 
 export function inferProviderMode(profile) {

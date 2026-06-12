@@ -84,13 +84,29 @@ test('GET /v1/models and /v1/markets expose discount inference marketplace data'
       url: '/v1/models',
     });
     assert.equal(modelsResponse.statusCode, 200);
-    assert.deepEqual(
-      modelsResponse.json().data.map((model: { id: string }) => model.id),
-      ['gpt-5.5']
+    const models = modelsResponse.json().data as Array<{
+      id: string;
+      bossraid: { cheapest_rate_usd: number | null; catalog_only?: boolean };
+      pricing: { declaredUnit: string; pricePer1mInputTokensUsd: number | null };
+    }>;
+    assert.equal(
+      models.some((model) => model.id === 'gpt-5.5'),
+      true
     );
-    assert.equal(modelsResponse.json().data[0].bossraid.cheapest_rate_usd, 0.03);
-    assert.equal(modelsResponse.json().data[0].pricing.declaredUnit, 'token_metered');
-    assert.equal(modelsResponse.json().data[0].pricing.pricePer1mInputTokensUsd, 0.1);
+    assert.equal(
+      models.some((model) => model.id === 'venice-uncensored-1-2'),
+      true
+    );
+    assert.equal(
+      models.some((model) => model.id === 'phala/gemma-4-26b-a4b-uncensored'),
+      true
+    );
+    const gptMarket = models.find((model) => model.id === 'gpt-5.5');
+    assert.ok(gptMarket);
+    assert.equal(gptMarket.bossraid.cheapest_rate_usd, 0.03);
+    assert.equal(gptMarket.bossraid.catalog_only, false);
+    assert.equal(gptMarket.pricing.declaredUnit, 'token_metered');
+    assert.equal(gptMarket.pricing.pricePer1mInputTokensUsd, 0.1);
 
     const marketsResponse = await app.inject({
       method: 'GET',

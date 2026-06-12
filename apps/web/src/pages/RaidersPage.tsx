@@ -17,7 +17,7 @@ import {
 type RaidersPageProps = {
   providers: Provider[];
   providerHealth: ProviderHealth[];
-  onNavigate: (path: '/' | '/demo' | '/raiders' | '/receipt') => void;
+  onNavigate: (path: '/' | '/playground' | '/raiders' | '/receipt') => void;
 };
 
 export function RaidersPage({

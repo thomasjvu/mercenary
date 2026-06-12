@@ -24,10 +24,10 @@ import { buildReceiptProviderRows, readQueryErrorMessage } from '../lib/receipt-
 import { buildReceiptSettlementView } from '../lib/receipt-settlement-view';
 import { buildAttestationSurfaceLabel, isAttestationSignerUnavailable } from '../lib/receipt-url';
 
-type AppRoute = '/' | '/demo' | '/raiders' | '/receipt';
+type AppRoute = '/' | '/playground' | '/raiders' | '/receipt';
 
 type ReceiptPageProps = {
-  onNavigate: (path: AppRoute) => void;
+  onNavigate: (path: AppRoute, options?: { mode?: 'inference' | 'raid' }) => void;
 };
 
 const PINNED_PROOF_RECEIPT_URL =
@@ -154,13 +154,13 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
             </button>
             <a
               className="button"
-              href="/demo"
+              href="/playground?mode=raid"
               onClick={(event) => {
                 event.preventDefault();
-                onNavigate('/demo');
+                onNavigate('/playground', { mode: 'raid' });
               }}
             >
-              demo
+              playground
             </a>
             <a
               className="button"
@@ -238,18 +238,18 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
               ) : null}
               <a
                 className="button"
-                href="/demo"
+                href="/playground?mode=raid"
                 onClick={(event) => {
                   event.preventDefault();
-                  onNavigate('/demo');
+                  onNavigate('/playground', { mode: 'raid' });
                 }}
               >
-                open live demo
+                open playground
               </a>
             </div>
             <p>
               {PINNED_PROOF_RECEIPT_URL
-                ? 'Use the pinned receipt for a no-wallet proof path, or open /demo to launch a new hosted raid.'
+                ? 'Use the pinned receipt for a no-wallet proof path, or open the playground to launch a new hosted raid.'
                 : 'Set VITE_BOSSRAID_PROOF_RECEIPT_URL to pin one recent proof URL for judges.'}
             </p>
             <p>

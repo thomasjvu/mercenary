@@ -1,7 +1,9 @@
+import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import { useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { API_BASE } from '../../api/client.js';
 import { fetchMarkets, runInferenceChatCompletion } from '../../api/marketplace.js';
+import { resolveProviderBrand } from '../../lib/provider-brand.js';
 import { TerminalCodePanel } from '../terminal/TerminalCodePanel.js';
 
 const API_KEY_STORAGE_KEY = 'bossraid.playground.apiKey';
@@ -10,15 +12,60 @@ type InferencePlaygroundProps = {
   initialModelId?: string;
 };
 
+type ModelOption = {
+  modelId: string;
+  displayName: string;
+  modelProvider: string;
+  liveSellers: number;
+  referenceRateUsd: number | null;
+};
+
+function groupLabelForProvider(modelProvider: string): string {
+  if (modelProvider === 'venice') {
+    return 'Venice';
+  }
+  if (modelProvider === 'redpill' || modelProvider === 'phala') {
+    return 'RedPill / Phala';
+  }
+  return resolveProviderBrand(modelProvider).label;
+}
+
 export function InferencePlayground({ initialModelId }: InferencePlaygroundProps) {
   const markets = useSWR('playground-markets', () => fetchMarkets());
-  const modelOptions = useMemo(
-    () => (markets.data?.data ?? []).map((market) => market.modelId),
-    [markets.data?.data]
+  const catalogById = useMemo(
+    () => new Map(INFERENCE_MODEL_CATALOG.map((entry) => [entry.modelId, entry])),
+    []
   );
 
+  const modelOptions = useMemo<ModelOption[]>(() => {
+    return (markets.data?.data ?? [])
+      .map((market) => ({
+        modelId: market.modelId,
+        displayName: catalogById.get(market.modelId)?.displayName ?? market.modelId,
+        modelProvider:
+          market.modelProvider ?? catalogById.get(market.modelId)?.modelProvider ?? 'unknown',
+        liveSellers: market.activeProviderCount ?? market.providerCount ?? 0,
+        referenceRateUsd: market.cheapestRateUsd,
+      }))
+      .sort(
+        (left, right) =>
+          groupLabelForProvider(left.modelProvider).localeCompare(
+            groupLabelForProvider(right.modelProvider)
+          ) || left.displayName.localeCompare(right.displayName)
+      );
+  }, [catalogById, markets.data?.data]);
+
+  const modelGroups = useMemo(() => {
+    const groups = new Map<string, ModelOption[]>();
+    for (const option of modelOptions) {
+      const label = groupLabelForProvider(option.modelProvider);
+      groups.set(label, [...(groups.get(label) ?? []), option]);
+    }
+    return [...groups.entries()];
+  }, [modelOptions]);
+
   const [model, setModel] = useState(initialModelId ?? '');
-  const [prompt, setPrompt] = useState('Write a one-line status update for a marketplace launch.');
+  const [prompt, setPrompt] = useState('One-line launch status update.');
   const [apiKey, setApiKey] = useState('');
   const [maxBudget, setMaxBudget] = useState('1');
   const [pending, setPending] = useState(false);
@@ -27,6 +74,8 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
   const [rawResponse, setRawResponse] = useState<unknown>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<'curl' | 'response'>('curl');
+
+  const selectedModel = modelOptions.find((option) => option.modelId === model);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -41,9 +90,13 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
 
   useEffect(() => {
     if (!model && modelOptions.length > 0) {
-      setModel(modelOptions[0]);
+      setModel(
+        initialModelId && modelOptions.some((option) => option.modelId === initialModelId)
+          ? initialModelId
+          : modelOptions[0].modelId
+      );
     }
-  }, [model, modelOptions]);
+  }, [initialModelId, model, modelOptions]);
 
   useEffect(() => {
     if (initialModelId) {
@@ -63,7 +116,7 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
   const curlSnippet = `curl -X POST ${API_BASE}/v1/inference/chat/completions \\
   -H "authorization: Bearer br_..." \\
   -H "content-type: application/json" \\
-  -d '{"model":"${model || 'gpt-5.5'}","messages":[{"role":"user","content":"${prompt.replace(/"/g, '\\"')}"}],"raid_policy":{"max_total_cost":${maxBudget || '1'},"privacy_mode":"prefer"}}'`;
+  -d '{"model":"${model || 'venice-uncensored-1-2'}","messages":[{"role":"user","content":"${prompt.replace(/"/g, '\\"')}"}],"raid_policy":{"max_total_cost":${maxBudget || '1'},"privacy_mode":"prefer"}}'`;
 
   const responseSnippet = rawResponse
     ? JSON.stringify(rawResponse, null, 2)
@@ -73,12 +126,17 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
 
   async function handleRun() {
     if (!apiKey.trim()) {
-      setError('Paste a buyer API key (br_...) from account onboarding.');
+      setError('Add a buyer API key from account onboarding.');
       return;
     }
 
     if (!model.trim()) {
-      setError('Select a model from the live catalog.');
+      setError('Pick a model.');
+      return;
+    }
+
+    if (selectedModel && selectedModel.liveSellers === 0) {
+      setError('No live sellers for this model yet. Pick a model with active sellers.');
       return;
     }
 
@@ -118,21 +176,33 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
     <section className="inference-playground">
       <div className="inference-playground__grid">
         <div className="beta-panel inference-playground__panel">
-          <p className="eyebrow">try inference</p>
-          <h2>Send one call.</h2>
-          <p className="inference-playground__lede">Buyer API key required.</p>
-
           <label className="field">
             <span>model</span>
             <select onChange={(event) => setModel(event.target.value)} value={model}>
-              {modelOptions.length === 0 ? <option value="">loading models...</option> : null}
-              {modelOptions.map((modelId) => (
-                <option key={modelId} value={modelId}>
-                  {modelId}
-                </option>
+              {modelOptions.length === 0 ? <option value="">loading...</option> : null}
+              {modelGroups.map(([groupLabel, options]) => (
+                <optgroup key={groupLabel} label={groupLabel}>
+                  {options.map((option) => (
+                    <option key={option.modelId} value={option.modelId}>
+                      {option.displayName}
+                      {option.liveSellers > 0 ? '' : ' · catalog'}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </label>
+
+          {selectedModel ? (
+            <p className="inference-playground__meta">
+              {selectedModel.liveSellers > 0
+                ? `${selectedModel.liveSellers} live seller${selectedModel.liveSellers === 1 ? '' : 's'}`
+                : 'catalog reference only'}
+              {selectedModel.referenceRateUsd != null
+                ? ` · from $${selectedModel.referenceRateUsd.toFixed(3)}`
+                : ''}
+            </p>
+          ) : null}
 
           <label className="field">
             <span>buyer API key</span>
@@ -147,7 +217,7 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
           </label>
 
           <label className="field">
-            <span>max budget (USD)</span>
+            <span>budget usd</span>
             <input
               inputMode="decimal"
               onChange={(event) => setMaxBudget(event.target.value)}
@@ -157,7 +227,7 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
 
           <label className="field">
             <span>prompt</span>
-            <textarea onChange={(event) => setPrompt(event.target.value)} rows={5} value={prompt} />
+            <textarea onChange={(event) => setPrompt(event.target.value)} rows={4} value={prompt} />
           </label>
 
           <button
@@ -166,7 +236,7 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
             onClick={() => void handleRun()}
             type="button"
           >
-            {pending ? 'routing...' : 'run inference'}
+            {pending ? 'routing...' : 'run'}
           </button>
 
           {error ? <p className="error-note">{error}</p> : null}
@@ -180,7 +250,7 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
 
         <div className="terminal-deck inference-playground__deck">
           <div className="terminal-deck__header">
-            <p className="eyebrow">live request</p>
+            <p className="eyebrow">request</p>
             <div className="terminal-deck__tabs" role="tablist" aria-label="Playground output">
               <button
                 className={`deck-tab deck-tab--chat ${activePanel === 'curl' ? 'deck-tab--active' : ''}`}
@@ -200,7 +270,7 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
           </div>
           <div className="terminal-stack">
             <TerminalCodePanel
-              label="production curl"
+              label="curl"
               note="openai-compatible"
               code={curlSnippet}
               theme="chat"
@@ -210,8 +280,8 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
               onAction={() => void copySnippet('curl-panel', curlSnippet)}
             />
             <TerminalCodePanel
-              label="raw response"
-              note="seller + quote metadata"
+              label="response"
+              note="seller metadata"
               code={responseSnippet}
               theme="raid"
               layer={activePanel === 'response' ? 'front' : 'back'}

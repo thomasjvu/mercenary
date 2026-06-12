@@ -9,7 +9,6 @@ import { AppSidebar } from './components/AppSidebar';
 import type { AppRoute } from './lib/app-routes.js';
 import { AccountPage } from './pages/AccountPage';
 import { BuyerOnboardingPage } from './pages/BuyerOnboardingPage';
-import { DemoPage } from './pages/DemoPage';
 import { LandingPage } from './pages/LandingPage';
 import { MarketplacePage } from './pages/MarketplacePage';
 import { ModelDetailPage } from './pages/ModelDetailPage';
@@ -21,6 +20,7 @@ import {
   readMarketplaceModelId,
   readPlaygroundModelId,
 } from './lib/routing.js';
+import { buildPlaygroundUrl, readPlaygroundMode } from './lib/playground-routing.js';
 import { ReceiptPage } from './pages/ReceiptPage';
 import { RaidersPage } from './pages/RaidersPage';
 import { SellerOnboardingPage } from './pages/SellerOnboardingPage';
@@ -44,20 +44,31 @@ export function App() {
   const marketplaceModelId = readMarketplaceModelId(pathname);
   const isMarketplaceDetailRoute = isMarketplaceDetailPath(pathname);
   const isPlaygroundRoute = pathname === '/playground';
+  const isLegacyDemoRoute = pathname === '/demo';
   const isBuyerOnboardingRoute = pathname === '/onboarding/buyer';
   const isSellerOnboardingRoute = pathname === '/onboarding/seller';
   const isAccountRoute = pathname === '/account';
-  const isDemoRoute = pathname === '/demo';
   const isRaidersRoute = pathname === '/raiders';
   const isReceiptRoute = pathname === '/receipt';
-  const usesDirectoryLayout = isDemoRoute || isRaidersRoute || isReceiptRoute;
+  const playgroundMode =
+    (isPlaygroundRoute || isLegacyDemoRoute) && typeof window !== 'undefined'
+      ? isLegacyDemoRoute
+        ? 'raid'
+        : readPlaygroundMode(window.location.search)
+      : 'inference';
+  const usesDirectoryLayout =
+    (isPlaygroundRoute && playgroundMode === 'raid') || isRaidersRoute || isReceiptRoute;
   const playgroundModelId =
     isPlaygroundRoute && typeof window !== 'undefined'
       ? readPlaygroundModelId(window.location.search)
       : undefined;
 
   const shouldLoadProviderData =
-    isDemoRoute || isRaidersRoute || isMarketplaceListRoute || isMarketplaceDetailRoute;
+    isPlaygroundRoute ||
+    isLegacyDemoRoute ||
+    isRaidersRoute ||
+    isMarketplaceListRoute ||
+    isMarketplaceDetailRoute;
   const providers = useSWR<Provider[]>(
     shouldLoadProviderData ? '/v1/providers' : null,
     (path: string) => fetchJson(path),
@@ -70,6 +81,18 @@ export function App() {
     (path: string) => fetchJson(path),
     { refreshInterval: 10_000 }
   );
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || pathname !== '/demo') {
+      return;
+    }
+
+    const nextUrl = buildPlaygroundUrl({ mode: 'raid' });
+    if (window.location.pathname + window.location.search !== nextUrl) {
+      window.history.replaceState({}, '', nextUrl);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
+  }, [pathname]);
 
   useEffect(() => {
     const root = appShellRef.current;
@@ -88,12 +111,18 @@ export function App() {
     window.localStorage.setItem(LANDING_THEME_STORAGE_KEY, appTheme);
   }, [appTheme]);
 
-  function navigate(path: AppRoute, options?: { modelId?: string; marketplaceModelId?: string }) {
+  function navigate(
+    path: AppRoute,
+    options?: { modelId?: string; marketplaceModelId?: string; mode?: 'inference' | 'raid' }
+  ) {
     let nextUrl: string = path;
     if (path === '/marketplace' && options?.marketplaceModelId) {
       nextUrl = marketplaceModelPath(options.marketplaceModelId);
-    } else if (path === '/playground' && options?.modelId) {
-      nextUrl = `${path}?model=${encodeURIComponent(options.modelId)}`;
+    } else if (path === '/playground') {
+      nextUrl = buildPlaygroundUrl({
+        mode: options?.mode,
+        modelId: options?.modelId,
+      });
     }
 
     if (window.location.pathname + window.location.search === nextUrl) {
@@ -122,7 +151,7 @@ export function App() {
 
       <div className="app-main">
         <main
-          className={`app-shell ${isLandingRoute ? 'app-shell--landing' : ''} ${usesDirectoryLayout ? 'app-shell--directory' : ''} ${isDemoRoute ? 'app-shell--demo-route' : ''} ${isRaidersRoute ? 'app-shell--raiders-route' : ''} ${isReceiptRoute ? 'app-shell--receipt-route' : ''}`}
+          className={`app-shell ${isLandingRoute ? 'app-shell--landing' : ''} ${usesDirectoryLayout ? 'app-shell--directory' : ''} ${isPlaygroundRoute && playgroundMode === 'raid' ? 'app-shell--demo-route' : ''} ${isRaidersRoute ? 'app-shell--raiders-route' : ''} ${isReceiptRoute ? 'app-shell--receipt-route' : ''}`}
           ref={appShellRef}
         >
           {isRaidersRoute ? (
@@ -143,15 +172,19 @@ export function App() {
               onOpenModel={(modelId) => navigate('/marketplace', { marketplaceModelId: modelId })}
             />
           ) : isPlaygroundRoute ? (
-            <PlaygroundPage initialModelId={playgroundModelId} />
-          ) : isBuyerOnboardingRoute ? (
+            <PlaygroundPage
+              initialModelId={playgroundModelId}
+              mode={playgroundMode}
+              onModeChange={(mode) => navigate('/playground', { mode })}
+              providerHealth={providerHealth.data ?? []}
+              providers={providers.data ?? []}
+            />
+          ) : isLegacyDemoRoute ? null : isBuyerOnboardingRoute ? (
             <BuyerOnboardingPage />
           ) : isSellerOnboardingRoute ? (
             <SellerOnboardingPage />
           ) : isAccountRoute ? (
             <AccountPage />
-          ) : isDemoRoute ? (
-            <DemoPage providerHealth={providerHealth.data ?? []} providers={providers.data ?? []} />
           ) : isReceiptRoute ? (
             <ReceiptPage onNavigate={navigate} />
           ) : (
