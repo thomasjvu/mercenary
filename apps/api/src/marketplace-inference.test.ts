@@ -6,6 +6,7 @@ import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import { NETWORK } from '@bossraid/constants';
 import {
+  createTestApiServer,
   buildApiServer,
   createProviderProfile,
   createPublicSessionCookie,
@@ -75,7 +76,7 @@ test('GET /v1/models and /v1/markets expose discount inference marketplace data'
     },
     async run(): Promise<void> {},
   };
-  const app = buildApiServer(new BossRaidOrchestrator([expensiveProvider, cheapProvider]));
+  const app = createTestApiServer([expensiveProvider, cheapProvider]);
 
   try {
     const modelsResponse = await app.inject({

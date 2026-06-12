@@ -5,6 +5,7 @@ import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import { buildApiServer } from './index.js';
 import {
+  createTestApiServer,
   createProviderProfile,
   createPublicSessionCookie,
   createRaidRequestBody,
@@ -265,7 +266,7 @@ test('paid x402 requests require the launch reservation header or equivalent pay
 });
 
 test('x402 preflight still returns 409 when no providers are eligible', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator(), {
+  const app = createTestApiServer([], {
     ...createX402PaidTestEnv(),
   });
 

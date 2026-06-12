@@ -4,6 +4,7 @@ import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-t
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import { buildApiServer } from './index.js';
 import {
+  createTestApiServer,
   createProviderProfile,
   createRaidRequestBody,
   createX402PaidTestEnv,
@@ -11,7 +12,7 @@ import {
 } from './test/helpers.js';
 
 test('POST /v1/raid returns 409 when no providers are eligible', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator());
+  const app = createTestApiServer();
 
   try {
     const response = await app.inject({
@@ -31,7 +32,7 @@ test('POST /v1/raid returns 409 when no providers are eligible', async () => {
 });
 
 test('malformed raid requests return 400', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator());
+  const app = createTestApiServer();
 
   try {
     const response = await app.inject({
@@ -51,7 +52,7 @@ test('malformed raid requests return 400', async () => {
 });
 
 test('native raid requests require an explicit payout budget', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator());
+  const app = createTestApiServer();
 
   try {
     const originalBody = createRaidRequestBody();
@@ -78,7 +79,7 @@ test('native raid requests require an explicit payout budget', async () => {
 });
 
 test('unknown raid routes return 404 for authorized readers', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator(), {
+  const app = createTestApiServer([], {
     BOSSRAID_ADMIN_TOKEN: 'admin-secret',
   });
 

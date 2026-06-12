@@ -7,6 +7,7 @@ import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import { buildApiServer } from './index.js';
 import {
+  createTestApiServer,
   createProviderProfile,
   hashText,
   join,
@@ -19,7 +20,7 @@ import {
 } from './test/helpers.js';
 
 test('admin control routes require the configured admin token', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator(), {
+  const app = createTestApiServer([], {
     BOSSRAID_ADMIN_TOKEN: 'admin-secret',
   });
 
@@ -75,7 +76,7 @@ test('admin control routes require the configured admin token', async () => {
 });
 
 test('admin runtime route reports deploy posture without exposing secrets', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator(), {
+  const app = createTestApiServer([], {
     BOSSRAID_ADMIN_TOKEN: 'admin-secret',
     BOSSRAID_DEPLOY_TARGET: 'phala-cvm',
     BOSSRAID_TEE_PLATFORM: 'phala',
@@ -146,7 +147,7 @@ test('admin runtime route reports deploy posture without exposing secrets', asyn
 });
 
 test('admin evaluator smoke route requires admin auth', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator(), {
+  const app = createTestApiServer([], {
     BOSSRAID_ADMIN_TOKEN: 'admin-secret',
     BOSSRAID_EVAL_RUNTIME_EXECUTION: 'true',
   });
@@ -167,7 +168,7 @@ test('admin evaluator smoke route requires admin auth', async () => {
 });
 
 test('admin evaluator smoke route returns 503 when runtime execution is disabled', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator(), {
+  const app = createTestApiServer([], {
     BOSSRAID_ADMIN_TOKEN: 'admin-secret',
     BOSSRAID_EVAL_RUNTIME_EXECUTION: 'false',
   });
@@ -196,7 +197,7 @@ test('admin evaluator smoke route returns 503 when runtime execution is disabled
 });
 
 test('attested runtime route returns 503 when no TEE mnemonic is configured', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator(), {
+  const app = createTestApiServer([], {
     BOSSRAID_DEPLOY_TARGET: 'eigencompute',
     BOSSRAID_TEE_PLATFORM: 'eigencompute',
   });
@@ -218,7 +219,7 @@ test('attested runtime route returns 503 when no TEE mnemonic is configured', as
 });
 
 test('attested runtime route signs runtime state with the TEE wallet', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator(), {
+  const app = createTestApiServer([], {
     BOSSRAID_DEPLOY_TARGET: 'eigencompute',
     BOSSRAID_TEE_PLATFORM: 'eigencompute',
     BOSSRAID_EVAL_RUNTIME_EXECUTION: 'true',

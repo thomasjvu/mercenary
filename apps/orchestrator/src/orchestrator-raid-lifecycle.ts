@@ -1,5 +1,3 @@
-import { evaluateSubmission } from '@bossraid/evaluation';
-import { rankSubmissions } from '@bossraid/raid-core';
 import type {
   BossRaidReplayOutput,
   BossRaidResultOutput,
@@ -20,37 +18,16 @@ import {
   hasRaidVolumeEventForProvider,
   RAID_VOLUME_EVENT_TYPES,
 } from './reputation.js';
-import {
-  buildAdaptivePlanningOutput,
-  buildRaidStatusOutput,
-  TERMINAL_ASSIGNMENT_STATUSES,
-  TERMINAL_RAID_STATUSES,
-} from './raid-state.js';
+import { TERMINAL_RAID_STATUSES } from './raid-state.js';
 import type { SettlementExecuteOptions } from './settlement-executor.js';
-import { buildSettlementSummary } from './settlement.js';
-import { buildSynthesizedOutput } from './synthesis.js';
 import {
   dispatchProvider as dispatchProviderToRuntime,
-  markAssignmentFailed as markProviderAssignmentFailed,
-  markHeartbeat as markProviderHeartbeat,
   markTimedOut as markProviderTimedOut,
   resumeRaid as resumeRaidDispatch,
   runHierarchicalRaid as runHierarchicalRaidDispatch,
   runRaid as runRaidDispatch,
-  submitResult as submitProviderResult,
   type RaidProviderDispatchDeps,
 } from './raid-provider-dispatch.js';
-import {
-  computeRootDeadlineUnix,
-  createLaunchReservationRecord,
-  findReusableLaunchReservation,
-  hydrateLaunchReservation,
-  launchReservationExpired,
-  prepareRaid,
-  pruneLaunchReservations,
-  spawnPreparedRaid,
-  InvalidRaidLaunchReservationError,
-} from './raid-launch.js';
 import { RaidDeadlineTimerRegistry } from './raid-timers.js';
 import {
   expireRaidAtDeadline as expireRaidAtDeadlineState,
@@ -71,38 +48,46 @@ import {
   buildSpawnPreparedRaidDeps,
   type RaidRunnerContext,
 } from './raid-runner-deps.js';
-import {
-  buildRaidRoutingProofOutput,
-  collectLeafRaids,
-  getRaidStatusOutput,
-  refreshParentRaidFromChildren,
-} from './raid-hierarchical.js';
+import { refreshParentRaidFromChildren } from './raid-hierarchical.js';
 import { ProviderTimerRegistry } from './timer-registry.js';
 import type { ProviderRegistryCoordinator } from './orchestrator-provider-registry.js';
 import type { RuntimeOptions } from './runtime.js';
+import {
+  abortRaid as abortRaidIngress,
+  markAssignmentFailed as markAssignmentFailedIngress,
+  markHeartbeat as markHeartbeatIngress,
+  recordProviderFailure as recordProviderFailureIngress,
+  recordProviderHeartbeat as recordProviderHeartbeatIngress,
+  recordProviderSubmission as recordProviderSubmissionIngress,
+  submitResult as submitResultIngress,
+  type RaidLifecycleIngressContext,
+} from './raid-lifecycle-ingress.js';
+import {
+  getRaid as getRaidQuery,
+  getResult as getResultQuery,
+  getStatus as getStatusQuery,
+  listAllRaids as listAllRaidsQuery,
+  listRaids as listRaidsQuery,
+  replayEvaluation as replayEvaluationQuery,
+  updateSettlementExecution as updateSettlementExecutionQuery,
+  type RaidLifecycleQueriesContext,
+} from './raid-lifecycle-queries.js';
+import {
+  getRaidLaunchReservation as getRaidLaunchReservationSpawn,
+  preflightRaid as preflightRaidSpawn,
+  pruneLaunchReservations as pruneLaunchReservationsSpawn,
+  reserveRaidLaunch as reserveRaidLaunchSpawn,
+  spawnRaid as spawnRaidSpawn,
+  spawnReservedRaid as spawnReservedRaidSpawn,
+  type LaunchReservationOptions,
+  type RaidLifecycleSpawnContext,
+} from './raid-lifecycle-spawn.js';
 
 export class UnknownRaidError extends Error {
   constructor(raidId: string) {
     super(`Unknown raid: ${raidId}`);
     this.name = 'UnknownRaidError';
   }
-}
-
-type LaunchReservationOptions = {
-  route: 'raid' | 'chat';
-  requestKey: string;
-  holdUntilUnix?: number;
-};
-
-function settlementExecutionEquals(
-  left: SettlementExecutionRecord | undefined,
-  right: SettlementExecutionRecord | undefined
-): boolean {
-  if (left === right) {
-    return true;
-  }
-
-  return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
 }
 
 export type RaidLifecycleCoordinatorDeps = {
@@ -130,67 +115,29 @@ export class RaidLifecycleCoordinator {
   ) {}
 
   listRaids(): RaidRecord[] {
-    return this.listAllRaids()
-      .filter((raid) => raid.parentRaidId == null)
-      .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
+    return listRaidsQuery(this.queriesContext());
   }
 
   listAllRaids(): RaidRecord[] {
-    return [...this.raids.values()];
+    return listAllRaidsQuery(this.queriesContext());
   }
 
   async preflightRaid(input: BossRaidSpawnInput): Promise<void> {
-    this.deps.assertPersistenceWritable();
-    await prepareRaid(input, this.prepareRaidDeps());
+    return preflightRaidSpawn(this.spawnContext(), input);
   }
 
   async reserveRaidLaunch(
     input: BossRaidSpawnInput,
     options: LaunchReservationOptions
   ): Promise<RaidLaunchReservationRecord> {
-    this.deps.assertPersistenceWritable();
-    this.pruneLaunchReservations();
-    const existing = findReusableLaunchReservation(
-      this.launchReservations,
-      options.route,
-      options.requestKey
-    );
-    if (existing) {
-      return existing;
-    }
-
-    const prepared = await prepareRaid(input, this.prepareRaidDeps());
-    const deadlineUnix = computeRootDeadlineUnix(prepared.sanitized, this.options.raidAbsoluteMs);
-    const holdUntilUnix = Math.min(options.holdUntilUnix ?? deadlineUnix, deadlineUnix);
-    const record = createLaunchReservationRecord(prepared, {
-      route: options.route,
-      requestKey: options.requestKey,
-      deadlineUnix,
-      holdUntilUnix,
-    });
-    this.launchReservations.set(record.id, record);
-    await this.deps.queuePersist();
-    return record;
+    return reserveRaidLaunchSpawn(this.spawnContext(), input, options);
   }
 
   getRaidLaunchReservation(
     reservationId: string,
     requestKey: string
   ): RaidLaunchReservationRecord | undefined {
-    this.pruneLaunchReservations();
-    const reservation = this.launchReservations.get(reservationId);
-    if (!reservation) {
-      return undefined;
-    }
-    if (reservation.requestKey !== requestKey) {
-      return undefined;
-    }
-    if (!reservation.spawnOutput && launchReservationExpired(reservation)) {
-      this.launchReservations.delete(reservation.id);
-      this.deps.queuePersistBestEffort();
-      return undefined;
-    }
-    return reservation;
+    return getRaidLaunchReservationSpawn(this.spawnContext(), reservationId, requestKey);
   }
 
   async spawnReservedRaid(
@@ -199,39 +146,13 @@ export class RaidLifecycleCoordinator {
     escrowFundingUsd?: number,
     platformMarkupUsd?: number
   ): Promise<BossRaidSpawnOutput> {
-    this.deps.assertPersistenceWritable();
-    const reservation = this.getRaidLaunchReservation(reservationId, requestKey);
-    if (!reservation) {
-      throw new InvalidRaidLaunchReservationError(
-        'Raid launch reservation is missing, expired, or does not match this request.'
-      );
-    }
-
-    if (reservation.spawnOutput) {
-      return reservation.spawnOutput;
-    }
-
-    if (reservation.deadlineUnix * 1_000 <= Date.now()) {
-      this.launchReservations.delete(reservation.id);
-      await this.deps.queuePersist();
-      throw new InvalidRaidLaunchReservationError(
-        'Raid launch reservation expired before payment completed.'
-      );
-    }
-
-    const prepared = hydrateLaunchReservation(reservation, (providerId) =>
-      this.deps.providerRegistry.requireProvider(providerId)
-    );
-    const spawn = await spawnPreparedRaid(
-      prepared,
-      reservation.deadlineUnix,
+    return spawnReservedRaidSpawn(
+      this.spawnContext(),
+      reservationId,
+      requestKey,
       escrowFundingUsd,
-      platformMarkupUsd,
-      this.spawnPreparedRaidDeps()
+      platformMarkupUsd
     );
-    reservation.spawnOutput = spawn;
-    await this.deps.queuePersist();
-    return spawn;
   }
 
   async spawnRaid(
@@ -239,72 +160,26 @@ export class RaidLifecycleCoordinator {
     escrowFundingUsd?: number,
     platformMarkupUsd?: number
   ): Promise<BossRaidSpawnOutput> {
-    this.deps.assertPersistenceWritable();
-    const prepared = await prepareRaid(input, this.prepareRaidDeps());
-    return spawnPreparedRaid(
-      prepared,
-      computeRootDeadlineUnix(prepared.sanitized, this.options.raidAbsoluteMs),
-      escrowFundingUsd,
-      platformMarkupUsd,
-      this.spawnPreparedRaidDeps()
-    );
+    return spawnRaidSpawn(this.spawnContext(), input, escrowFundingUsd, platformMarkupUsd);
   }
 
   getRaid(raidId: string): RaidRecord | undefined {
-    return this.raids.get(raidId);
+    return getRaidQuery(this.queriesContext(), raidId);
   }
 
   async updateSettlementExecution(
     raidId: string,
     settlementExecution: SettlementExecutionRecord
   ): Promise<SettlementExecutionRecord | undefined> {
-    const raid = this.raids.get(raidId);
-    if (!raid) {
-      return undefined;
-    }
-
-    if (settlementExecutionEquals(raid.settlementExecution, settlementExecution)) {
-      return raid.settlementExecution;
-    }
-
-    raid.settlementExecution = settlementExecution;
-    raid.updatedAt = new Date().toISOString();
-    await this.deps.queuePersist();
-    return raid.settlementExecution;
+    return updateSettlementExecutionQuery(this.queriesContext(), raidId, settlementExecution);
   }
 
   getStatus(raidId: string): BossRaidStatusOutput {
-    return getRaidStatusOutput(this.requireRaid(raidId), (childRaidId) =>
-      this.requireRaid(childRaidId)
-    );
+    return getStatusQuery(this.queriesContext(), raidId);
   }
 
   getResult(raidId: string): BossRaidResultOutput {
-    const raid = this.requireRaid(raidId);
-    if (raid.childRaidIds?.length) {
-      refreshParentRaidFromChildren(raidId, (childRaidId) => this.requireRaid(childRaidId));
-    }
-    const ranked = raid.rankedSubmissions;
-    const settlement = buildSettlementSummary(raid);
-    const routingProof = buildRaidRoutingProofOutput(
-      raid,
-      (childRaidId) => this.requireRaid(childRaidId),
-      (providerId) => this.deps.providerRegistry.providers.get(providerId)
-    );
-
-    return {
-      raidId,
-      status: raid.status,
-      synthesizedOutput: raid.synthesizedOutput ?? buildSynthesizedOutput(raid),
-      adaptivePlanning: buildAdaptivePlanningOutput(raid),
-      routingProof,
-      primarySubmission: ranked.find((item) => item.breakdown.valid),
-      approvedSubmissions: ranked.filter((item) => item.breakdown.valid),
-      rankedSubmissions: ranked,
-      settlement,
-      settlementExecution: raid.settlementExecution,
-      reputationEvents: raid.reputationEvents,
-    };
+    return getResultQuery(this.queriesContext(), raidId);
   }
 
   recordProviderHeartbeat(
@@ -312,24 +187,14 @@ export class RaidLifecycleCoordinator {
     providerId: string,
     heartbeat: ProviderHeartbeat
   ): BossRaidStatusOutput {
-    const raid = this.requireRaid(raidId);
-    if (TERMINAL_RAID_STATUSES.has(raid.status)) {
-      return buildRaidStatusOutput(raid);
-    }
-    this.markHeartbeat(raidId, providerId, heartbeat);
-    return this.getStatus(raidId);
+    return recordProviderHeartbeatIngress(this.ingressContext(), raidId, providerId, heartbeat);
   }
 
   async recordProviderSubmission(
     raidId: string,
     submission: ProviderSubmission
   ): Promise<BossRaidResultOutput> {
-    const raid = this.requireRaid(raidId);
-    if (TERMINAL_RAID_STATUSES.has(raid.status)) {
-      return this.getResult(raidId);
-    }
-    await this.submitResult(raidId, submission);
-    return this.getResult(raidId);
+    return recordProviderSubmissionIngress(this.ingressContext(), raidId, submission);
   }
 
   recordProviderFailure(
@@ -337,84 +202,21 @@ export class RaidLifecycleCoordinator {
     providerId: string,
     failure: ProviderFailure
   ): BossRaidStatusOutput {
-    const raid = this.requireRaid(raidId);
-    if (TERMINAL_RAID_STATUSES.has(raid.status)) {
-      return buildRaidStatusOutput(raid);
-    }
-    this.markAssignmentFailed(raidId, providerId, failure.message);
-    return this.getStatus(raidId);
+    return recordProviderFailureIngress(this.ingressContext(), raidId, providerId, failure);
   }
 
   async replayEvaluation(raidId: string): Promise<BossRaidReplayOutput> {
-    const raid = this.requireRaid(raidId);
-    if (raid.childRaidIds?.length) {
-      const leafRaids = collectLeafRaids(raid, (childRaidId) => this.requireRaid(childRaidId));
-      let reEvaluated = 0;
-      for (const leafRaid of leafRaids) {
-        const leafResults = await Promise.all(
-          leafRaid.rankedSubmissions.map(async (entry) => ({
-            ...entry,
-            breakdown: await evaluateSubmission(leafRaid, entry.submission),
-          }))
-        );
-        leafRaid.rankedSubmissions = rankSubmissions(leafResults);
-        leafRaid.synthesizedOutput = buildSynthesizedOutput(leafRaid);
-        leafRaid.bestCurrentScore = leafRaid.rankedSubmissions[0]?.breakdown.finalScore;
-        leafRaid.updatedAt = new Date().toISOString();
-        reEvaluated += leafRaid.rankedSubmissions.length;
-      }
-
-      refreshParentRaidFromChildren(raidId, (childRaidId) => this.requireRaid(childRaidId));
-      this.refreshRaidAncestry(raid.parentRaidId);
-      await this.deps.queuePersist();
-      return {
-        raidId,
-        reEvaluated,
-      };
-    }
-
-    const reEvaluated = await Promise.all(
-      raid.rankedSubmissions.map(async (entry) => ({
-        ...entry,
-        breakdown: await evaluateSubmission(raid, entry.submission),
-      }))
+    return replayEvaluationQuery(
+      {
+        ...this.queriesContext(),
+        refreshRaidAncestry: (raidId) => this.refreshRaidAncestry(raidId),
+      },
+      raidId
     );
-    raid.rankedSubmissions = rankSubmissions(reEvaluated);
-    raid.synthesizedOutput = buildSynthesizedOutput(raid);
-    raid.bestCurrentScore = raid.rankedSubmissions[0]?.breakdown.finalScore;
-    raid.updatedAt = new Date().toISOString();
-    await this.deps.queuePersist();
-    return {
-      raidId,
-      reEvaluated: raid.rankedSubmissions.length,
-    };
   }
 
   abortRaid(raidId: string): BossRaidStatusOutput {
-    const raid = this.requireRaid(raidId);
-    if (TERMINAL_RAID_STATUSES.has(raid.status)) {
-      return this.getStatus(raidId);
-    }
-
-    const cancelledAt = new Date().toISOString();
-    this.clearRaidDeadlineTimer(raidId);
-    raid.status = 'cancelled';
-    raid.updatedAt = cancelledAt;
-    if (raid.childRaidIds?.length) {
-      for (const childRaidId of raid.childRaidIds) {
-        this.abortRaid(childRaidId);
-      }
-    }
-    for (const assignment of Object.values(raid.assignments)) {
-      this.clearProviderTimers(raidId, assignment.providerId);
-      if (!TERMINAL_ASSIGNMENT_STATUSES.has(assignment.status)) {
-        assignment.status = 'disqualified';
-        assignment.message = 'raid cancelled';
-        assignment.timeoutAt = cancelledAt;
-      }
-    }
-    this.deps.queuePersistBestEffort();
-    return this.getStatus(raidId);
+    return abortRaidIngress(this.ingressContext(), raidId);
   }
 
   async resumeActiveRaids(): Promise<void> {
@@ -436,16 +238,44 @@ export class RaidLifecycleCoordinator {
   }
 
   pruneLaunchReservations(persist = true): void {
-    pruneLaunchReservations(
-      this.launchReservations,
-      () => this.deps.queuePersistBestEffort(),
-      persist
-    );
+    pruneLaunchReservationsSpawn(this.spawnContext(), persist);
   }
 
   scheduleRaidDeadline(raidId: string): void {
     const raid = this.requireRaid(raidId);
     this.raidDeadlineTimers.schedule(raidId, raid, (id) => this.expireRaidAtDeadline(id));
+  }
+
+  private spawnContext(): RaidLifecycleSpawnContext {
+    return {
+      launchReservations: this.launchReservations,
+      options: this.options,
+      assertPersistenceWritable: () => this.deps.assertPersistenceWritable(),
+      queuePersist: () => this.deps.queuePersist(),
+      queuePersistBestEffort: () => this.deps.queuePersistBestEffort(),
+      providerRegistry: this.deps.providerRegistry,
+      prepareRaidDeps: () => this.prepareRaidDeps(),
+      spawnPreparedRaidDeps: () => this.spawnPreparedRaidDeps(),
+    };
+  }
+
+  private queriesContext(): RaidLifecycleQueriesContext {
+    return {
+      raids: this.raids,
+      requireRaid: (raidId) => this.requireRaid(raidId),
+      providerRegistry: this.deps.providerRegistry,
+      queuePersist: () => this.deps.queuePersist(),
+    };
+  }
+
+  private ingressContext(): RaidLifecycleIngressContext {
+    return {
+      ...this.queriesContext(),
+      providerDispatchDeps: () => this.providerDispatchDeps(),
+      clearRaidDeadlineTimer: (raidId) => this.clearRaidDeadlineTimer(raidId),
+      clearProviderTimers: (raidId, providerId) => this.clearProviderTimers(raidId, providerId),
+      queuePersistBestEffort: () => this.deps.queuePersistBestEffort(),
+    };
   }
 
   private async resumeRaid(raidId: string): Promise<void> {
@@ -465,11 +295,11 @@ export class RaidLifecycleCoordinator {
   }
 
   private markHeartbeat(raidId: string, providerId: string, heartbeat: ProviderHeartbeat): void {
-    markProviderHeartbeat(raidId, providerId, heartbeat, this.providerDispatchDeps());
+    markHeartbeatIngress(this.ingressContext(), raidId, providerId, heartbeat);
   }
 
   private async submitResult(raidId: string, submission: ProviderSubmission): Promise<void> {
-    await submitProviderResult(raidId, submission, this.providerDispatchDeps());
+    await submitResultIngress(this.ingressContext(), raidId, submission);
   }
 
   private markTimedOut(raidId: string, providerId: string, reason: string): void {
@@ -477,7 +307,7 @@ export class RaidLifecycleCoordinator {
   }
 
   private markAssignmentFailed(raidId: string, providerId: string, reason: string): void {
-    markProviderAssignmentFailed(raidId, providerId, reason, this.providerDispatchDeps());
+    markAssignmentFailedIngress(this.ingressContext(), raidId, providerId, reason);
   }
 
   private expireRaidAtDeadline(raidId: string): void {

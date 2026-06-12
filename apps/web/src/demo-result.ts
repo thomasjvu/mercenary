@@ -1,4 +1,3 @@
-import type { SubmissionArtifact } from '@bossraid/shared-types';
 import type {
   ChatCompletionResponse,
   RaidAgentLog,
@@ -7,7 +6,19 @@ import type {
   RaidStatus as RaidStatusSnapshot,
 } from './api';
 import { isLowSignalChatPrompt } from './demo-chat.js';
-import { selectApprovedProviderIds as selectApprovedProviderIdsShared } from '@bossraid/proof-ui';
+
+export {
+  selectApprovedProviderIds,
+  selectArtifacts,
+  selectCanonicalSummaryText,
+  selectChatCompletionText,
+  selectPrimaryOutputType,
+  selectResultExplanation,
+  selectResultPatch,
+  selectResultText,
+  selectSynthesizedArtifacts,
+  selectWorkstreams,
+} from './lib/raid-result-view.js';
 
 export type DemoRequestMode = 'raid' | 'chat_v1';
 
@@ -38,39 +49,6 @@ export const CHAT_V1_DEMO_PROMPTS = [
 ] as const;
 
 const V1_CHAT_MODEL = 'gpt-4.1-mini';
-
-export function selectResultText(result: RaidResult | undefined): string | undefined {
-  return result?.synthesizedOutput?.answerText ?? result?.primarySubmission?.submission.answerText;
-}
-
-export function selectChatCompletionText(
-  chatCompletion: ChatCompletionResponse | undefined
-): string | undefined {
-  return chatCompletion?.choices[0]?.message?.content;
-}
-
-export function selectResultExplanation(result: RaidResult | undefined): string | undefined {
-  return (
-    result?.synthesizedOutput?.explanation ?? result?.primarySubmission?.submission.explanation
-  );
-}
-
-export function selectResultPatch(result: RaidResult | undefined): string | undefined {
-  return (
-    result?.synthesizedOutput?.patchUnifiedDiff ??
-    result?.primarySubmission?.submission.patchUnifiedDiff
-  );
-}
-
-export function selectArtifacts(result: RaidResult | undefined): SubmissionArtifact[] {
-  return (result?.synthesizedOutput?.artifacts ??
-    result?.primarySubmission?.submission.artifacts ??
-    []) as SubmissionArtifact[];
-}
-
-export function selectApprovedProviderIds(result: RaidResult | undefined): string[] {
-  return selectApprovedProviderIdsShared(result);
-}
 
 export function buildDemoChatCompletionPayload(brief: string) {
   const lowSignalChat = isLowSignalChatPrompt(brief);

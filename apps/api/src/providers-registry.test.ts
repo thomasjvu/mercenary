@@ -6,6 +6,7 @@ import type { RaidProvider } from '@bossraid/provider-sdk';
 import { NETWORK } from '@bossraid/constants';
 import { buildApiServer } from './index.js';
 import {
+  createTestApiServer,
   createProviderProfile,
   createRaidRequestBody,
   readyHealth,
@@ -13,7 +14,7 @@ import {
 } from './test/helpers.js';
 
 test('registry write routes require the configured registry token', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator(), {
+  const app = createTestApiServer([], {
     BOSSRAID_REGISTRY_TOKEN: 'registry-secret',
   });
 
@@ -67,7 +68,7 @@ test('registry verification probes provider health and stores separate verificat
         },
       }
     );
-  const app = buildApiServer(new BossRaidOrchestrator(), {
+  const app = createTestApiServer([], {
     BOSSRAID_REGISTRY_TOKEN: 'registry-secret',
   });
 

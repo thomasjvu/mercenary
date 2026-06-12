@@ -6,7 +6,7 @@ import {
   selectExpansionTarget,
   taskCanRouteThroughGameWorkstreams,
 } from './authoring.js';
-import { FAMILIES } from './families.js';
+import { FAMILIES } from './families/index.js';
 import {
   type ContributionFamily,
   type ContributionFamilyId,

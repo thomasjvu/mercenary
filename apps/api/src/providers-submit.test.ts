@@ -6,6 +6,7 @@ import type { RaidProvider } from '@bossraid/provider-sdk';
 import { NETWORK } from '@bossraid/constants';
 import { buildApiServer } from './index.js';
 import {
+  createTestOrchestrator,
   createProviderProfile,
   createRaidRequestBody,
   FAST_TEST_TIMING,
@@ -27,13 +28,7 @@ test('provider submit requires the active providerRunId', async () => {
     },
   };
 
-  const orchestrator = new BossRaidOrchestrator(
-    [provider],
-    FAST_TEST_TIMING,
-    undefined,
-    undefined,
-    async (profile) => readyHealth(profile.providerId)
-  );
+  const orchestrator = createTestOrchestrator([provider]);
   const spawn = await orchestrator.spawnRaid({
     taskTitle: 'Summarize the memo',
     taskDescription: 'Review the memo and summarize the main risks.',
@@ -133,13 +128,7 @@ test('provider callbacks accept custom bearer header names', async () => {
     },
   };
 
-  const orchestrator = new BossRaidOrchestrator(
-    [provider],
-    FAST_TEST_TIMING,
-    undefined,
-    undefined,
-    async (profile) => readyHealth(profile.providerId)
-  );
+  const orchestrator = createTestOrchestrator([provider]);
 
   const spawn = await orchestrator.spawnRaid({
     taskTitle: 'Summarize the memo',
@@ -224,13 +213,7 @@ test('provider submissions accept larger artifact callbacks than the public API 
     },
   };
 
-  const orchestrator = new BossRaidOrchestrator(
-    [provider],
-    FAST_TEST_TIMING,
-    undefined,
-    undefined,
-    async (profile) => readyHealth(profile.providerId)
-  );
+  const orchestrator = createTestOrchestrator([provider]);
 
   const spawn = await orchestrator.spawnRaid({
     taskTitle: 'Summarize the memo',

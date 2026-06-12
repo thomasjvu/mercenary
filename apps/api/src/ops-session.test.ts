@@ -7,6 +7,7 @@ import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import { buildApiServer } from './index.js';
 import {
+  createTestApiServer,
   createProviderProfile,
   hashText,
   join,
@@ -19,7 +20,7 @@ import {
 } from './test/helpers.js';
 
 test('ops session can authenticate internal control routes without a browser-shipped bearer', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator(), {
+  const app = createTestApiServer([], {
     BOSSRAID_ADMIN_TOKEN: 'admin-secret',
   });
 
@@ -88,7 +89,7 @@ test('ops session can authenticate internal control routes without a browser-shi
 });
 
 test('ops session login is rate limited', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator(), {
+  const app = createTestApiServer([], {
     BOSSRAID_ADMIN_TOKEN: 'admin-secret',
     BOSSRAID_OPS_SESSION_RATE_LIMIT_MAX: '1',
     BOSSRAID_OPS_SESSION_RATE_LIMIT_WINDOW_MS: '60000',
@@ -127,7 +128,7 @@ test('ops session survives API restarts when persistence is file-backed', async 
     BOSSRAID_SQLITE_FILE: join(dir, 'state.sqlite'),
   };
 
-  const appA = buildApiServer(new BossRaidOrchestrator(), env);
+  const appA = createTestApiServer([], env);
   try {
     const login = await appA.inject({
       method: 'POST',
@@ -142,7 +143,7 @@ test('ops session survives API restarts when persistence is file-backed', async 
 
     await appA.close();
 
-    const appB = buildApiServer(new BossRaidOrchestrator(), env);
+    const appB = createTestApiServer([], env);
     try {
       const sessionStatus = await appB.inject({
         method: 'GET',
@@ -163,7 +164,7 @@ test('ops session survives API restarts when persistence is file-backed', async 
 });
 
 test('admin control routes return 503 until admin auth is configured', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator());
+  const app = createTestApiServer();
 
   try {
     const response = await app.inject({

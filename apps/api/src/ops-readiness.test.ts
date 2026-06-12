@@ -7,6 +7,7 @@ import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import { buildApiServer } from './index.js';
 import {
+  createTestApiServer,
   createProviderProfile,
   hashText,
   join,
@@ -76,7 +77,7 @@ test('GET /ready reports public beta readiness gates', async () => {
 });
 
 test('ops settings expose and toggle the runtime x402 gate', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator([]), {
+  const app = createTestApiServer([], {
     ...process.env,
     BOSSRAID_ADMIN_TOKEN: 'admin-settings-token-with-production-length',
     BOSSRAID_STORAGE_BACKEND: 'memory',
@@ -128,7 +129,7 @@ test('ops settings expose and toggle the runtime x402 gate', async () => {
 });
 
 test('ops metrics are admin-gated and expose route counters', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator([]), {
+  const app = createTestApiServer([], {
     ...process.env,
     BOSSRAID_ADMIN_TOKEN: 'admin-metrics-token-with-production-length',
     BOSSRAID_STORAGE_BACKEND: 'memory',
@@ -172,7 +173,7 @@ test('ops metrics are admin-gated and expose route counters', async () => {
 });
 
 test('production readiness report surfaces full-production blockers', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator([]), {
+  const app = createTestApiServer([], {
     ...process.env,
     NODE_ENV: 'test',
     BOSSRAID_ADMIN_TOKEN: 'admin-readiness-token-with-production-length',

@@ -4,10 +4,10 @@ import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-t
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import { buildApiServer, resolveChatTerminalSettleGraceMs } from './index.js';
-import { createProviderProfile, readyHealth } from './test/helpers.js';
+import { createTestApiServer, createProviderProfile, readyHealth } from './test/helpers.js';
 
 test('chat completion requests require an explicit payout budget', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator());
+  const app = createTestApiServer();
 
   try {
     const response = await app.inject({

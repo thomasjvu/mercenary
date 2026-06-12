@@ -4,7 +4,12 @@ import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-t
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import { buildApiServer, resolveChatTerminalSettleGraceMs } from './index.js';
-import { createProviderProfile, FAST_TEST_TIMING, readyHealth } from './test/helpers.js';
+import {
+  createTestOrchestrator,
+  createProviderProfile,
+  FAST_TEST_TIMING,
+  readyHealth,
+} from './test/helpers.js';
 
 test('POST /v1/chat/completions synthesizes a text raid and returns a multi-provider answer', async () => {
   const receivedTasks: ProviderTaskPackage[] = [];
@@ -62,13 +67,7 @@ test('POST /v1/chat/completions synthesizes a text raid and returns a multi-prov
     },
   };
 
-  const orchestrator = new BossRaidOrchestrator(
-    [providerA, providerB],
-    FAST_TEST_TIMING,
-    undefined,
-    undefined,
-    async (profile) => readyHealth(profile.providerId)
-  );
+  const orchestrator = createTestOrchestrator([providerA, providerB]);
   const app = buildApiServer(orchestrator);
 
   try {

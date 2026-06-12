@@ -7,6 +7,7 @@ import {
   truncateText,
 } from '@bossraid/proof-ui';
 import type { Provider, RaidResult } from '../api';
+import { selectCanonicalSummaryText, selectResultPatch } from './raid-result-view.js';
 
 export type RoutingDecision = NonNullable<RaidResult['routingProof']>['providers'][number];
 export type SubmissionArtifact = NonNullable<
@@ -36,20 +37,13 @@ export function summarizeCanonicalOutput(result: RaidResult | undefined): string
     return 'Loading receipt proof.';
   }
 
-  const summary =
-    result.synthesizedOutput?.answerText ??
-    result.synthesizedOutput?.explanation ??
-    result.primarySubmission?.submission.answerText ??
-    result.primarySubmission?.submission.explanation;
+  const summary = selectCanonicalSummaryText(result);
 
   if (summary && summary.trim().length > 0) {
     return compactText(summary, 220);
   }
 
-  if (
-    result.synthesizedOutput?.patchUnifiedDiff ||
-    result.primarySubmission?.submission.patchUnifiedDiff
-  ) {
+  if (selectResultPatch(result)) {
     return 'Patch-backed result is ready. Open the agent log for the full run trace and the attested result for the signed proof payload.';
   }
 

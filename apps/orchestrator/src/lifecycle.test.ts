@@ -8,6 +8,7 @@ import type {
 } from '@bossraid/shared-types';
 import { BossRaidOrchestrator, NoEligibleProvidersError } from './index.js';
 import {
+  createTestOrchestrator,
   collectRaidTree,
   createDeferred,
   createGameSpawnInput,
@@ -39,13 +40,7 @@ test('cancelled raids ignore late provider activity', async () => {
     },
   };
 
-  const orchestrator = new BossRaidOrchestrator(
-    [provider],
-    FAST_TEST_TIMING,
-    undefined,
-    undefined,
-    async (profile) => readyHealth(profile.providerId)
-  );
+  const orchestrator = createTestOrchestrator([provider]);
 
   const spawn = await orchestrator.spawnRaid(createSpawnInput());
   await waitFor(() => acceptStarted);

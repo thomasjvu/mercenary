@@ -26,15 +26,17 @@ import {
   CHAT_V1_DEMO_PROMPTS,
   isAttestationSignerUnavailable,
   RAID_DEMO_PROMPTS,
+  type DemoRequestMode,
+  type LiveRaidRun,
+} from './demo-result';
+import {
   selectApprovedProviderIds,
   selectArtifacts,
   selectChatCompletionText,
   selectResultExplanation,
   selectResultPatch,
   selectResultText,
-  type DemoRequestMode,
-  type LiveRaidRun,
-} from './demo-result';
+} from './lib/raid-result-view.js';
 
 export type ConversationSpecialistRecord = {
   providerId: string;

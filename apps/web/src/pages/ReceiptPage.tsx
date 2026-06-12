@@ -1,12 +1,6 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import useSWR from 'swr';
 import { formatUsd, raidPollingRefreshInterval } from '@bossraid/proof-ui';
-import {
-  ArtifactPreview,
-  ReceiptProofPanel,
-  SettlementProofPanel,
-  useRaidPolling,
-} from '@bossraid/ui';
+import { SettlementProofPanel, useRaidPolling } from '@bossraid/ui';
 import heroImage from '../../../../assets/hero.webp';
 import {
   fetchAttestedRaidResult,
@@ -18,31 +12,17 @@ import {
   type AttestedRaidResultPayload,
   type AttestedRuntimePayload,
   type Provider,
-  type RaidResult,
 } from '../api';
+import { ReceiptAttestationSection } from '../components/receipt/ReceiptAttestationSection';
+import { ReceiptOutputSection } from '../components/receipt/ReceiptOutputSection';
 import { ReceiptProviderList } from '../components/receipt/ReceiptProviderList';
 import { ReceiptQueryForm } from '../components/receipt/ReceiptQueryForm';
-import { ReceiptStat, SummaryPill } from '../components/receipt/ReceiptPrimitives';
-import {
-  buildReceiptProviderRows,
-  compactText,
-  pickPreviewArtifacts,
-  readQueryErrorMessage,
-  summarizeCanonicalOutput,
-} from '../lib/receipt-helpers';
+import { SummaryPill } from '../components/receipt/ReceiptPrimitives';
+import { useReceiptAttestation } from '../hooks/useReceiptAttestation';
+import { useReceiptQuery } from '../hooks/useReceiptQuery';
+import { buildReceiptProviderRows, readQueryErrorMessage } from '../lib/receipt-helpers';
 import { buildReceiptSettlementView } from '../lib/receipt-settlement-view';
-import {
-  buildAgentLogUrl,
-  buildAgentManifestUrl,
-  buildAttestedResultUrl,
-  buildAttestedRuntimeUrl,
-  buildAttestationSurfaceLabel,
-  buildReceiptPath,
-  buildReceiptUrl,
-  isAttestationSignerUnavailable,
-  readReceiptQuery,
-  type ReceiptQuery,
-} from '../lib/receipt-url';
+import { buildAttestationSurfaceLabel, isAttestationSignerUnavailable } from '../lib/receipt-url';
 
 type AppRoute = '/' | '/demo' | '/raiders' | '/receipt';
 
@@ -54,11 +34,16 @@ const PINNED_PROOF_RECEIPT_URL =
   (import.meta.env.VITE_BOSSRAID_PROOF_RECEIPT_URL as string | undefined)?.trim() ?? '';
 
 export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
-  const initialQuery = useMemo(readReceiptQuery, []);
-  const [raidIdInput, setRaidIdInput] = useState(initialQuery?.raidId ?? '');
-  const [tokenInput, setTokenInput] = useState(initialQuery?.token ?? '');
-  const [activeQuery, setActiveQuery] = useState<ReceiptQuery | null>(initialQuery);
-  const [shareCopied, setShareCopied] = useState(false);
+  const {
+    raidIdInput,
+    setRaidIdInput,
+    tokenInput,
+    setTokenInput,
+    activeQuery,
+    handleLoadReceipt,
+    handleCopyLink,
+    shareCopied,
+  } = useReceiptQuery();
 
   const { status, result } = useRaidPolling(activeQuery?.raidId, activeQuery?.token, {
     enabled: Boolean(activeQuery),
@@ -95,41 +80,19 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
     }
   );
 
-  useEffect(() => {
-    if (!shareCopied) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => setShareCopied(false), 1200);
-    return () => window.clearTimeout(timer);
-  }, [shareCopied]);
-
-  function handleLoadReceipt(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    const raidId = raidIdInput.trim();
-    const token = tokenInput.trim();
-    if (!raidId || !token) {
-      return;
-    }
-
-    const next = { raidId, token };
-    setActiveQuery(next);
-    window.history.replaceState({}, '', buildReceiptPath(next));
-  }
-
-  async function handleCopyLink() {
-    if (!activeQuery) {
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(buildReceiptUrl(activeQuery));
-      setShareCopied(true);
-    } catch {
-      setShareCopied(false);
-    }
-  }
+  const {
+    runtimeSignerDisabled,
+    resultSignerDisabled,
+    runtimeAttestationStatus,
+    resultAttestationStatus,
+    attestationTarget,
+    attestationTee,
+    attestationSurfaceLabel,
+  } = useReceiptAttestation({
+    attestedRuntime,
+    attestedResult,
+    activeQuery,
+  });
 
   const settlementView = buildReceiptSettlementView({
     result: result.data,
@@ -155,46 +118,7 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
     reputationEvents,
     providerMap,
   } = settlementView;
-  const workstreams = result.data?.synthesizedOutput?.workstreams ?? [];
-  const synthesizedArtifacts = result.data?.synthesizedOutput?.artifacts ?? [];
-  const runtimeSignerDisabled = isAttestationSignerUnavailable(attestedRuntime.error?.message);
-  const resultSignerDisabled = isAttestationSignerUnavailable(attestedResult.error?.message);
-  const runtimeAttestationStatus = attestedRuntime.data
-    ? 'live'
-    : runtimeSignerDisabled
-      ? 'proof unpublished'
-      : attestedRuntime.error
-        ? 'unavailable'
-        : 'loading';
-  const resultAttestationStatus = attestedResult.data
-    ? 'live'
-    : resultSignerDisabled
-      ? 'proof unpublished'
-      : attestedResult.error
-        ? 'unavailable'
-        : activeQuery
-          ? 'loading'
-          : 'pending';
-  const attestationTarget =
-    attestedResult.data?.payload.deploymentTarget ??
-    attestedRuntime.data?.payload.deploymentTarget ??
-    (runtimeSignerDisabled || resultSignerDisabled ? 'not published' : 'pending');
-  const attestationTee =
-    attestedResult.data?.payload.teePlatform ??
-    attestedRuntime.data?.payload.teePlatform ??
-    (runtimeSignerDisabled || resultSignerDisabled ? 'provider TEE live' : 'pending');
-  const attestationSurfaceLabel =
-    attestedResult.data || attestedRuntime.data
-      ? buildAttestationSurfaceLabel(attestationTarget, attestationTee)
-      : runtimeSignerDisabled || resultSignerDisabled
-        ? 'Host proof unpublished'
-        : buildAttestationSurfaceLabel(attestationTarget, attestationTee);
   const currentReceiptStatus = result.data?.status ?? status.data?.status ?? 'loading';
-  const canonicalSummary = summarizeCanonicalOutput(result.data);
-  const previewArtifacts = pickPreviewArtifacts(synthesizedArtifacts);
-  const primaryOutputType =
-    result.data?.synthesizedOutput?.primaryType ??
-    (result.data?.primarySubmission?.submission.patchUnifiedDiff ? 'patch' : 'pending');
   const providerRows = buildReceiptProviderRows(
     routedProviderIds,
     routingDecisionMap,
@@ -203,7 +127,9 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
     supportingProviders,
     droppedProviders
   );
-  const visibleWorkstreams = workstreams.slice(0, 4);
+  const runtimeSignerDisabledForEmpty = isAttestationSignerUnavailable(
+    attestedRuntime.error?.message
+  );
 
   return (
     <section className="receipt-shell receipt-shell--viewport" id="receipt">
@@ -332,7 +258,7 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                     attestedRuntime.data.payload.deploymentTarget ?? 'unknown',
                     attestedRuntime.data.payload.teePlatform ?? 'unknown'
                   )} runtime proof is live.`
-                : runtimeSignerDisabled
+                : runtimeSignerDisabledForEmpty
                   ? 'Provider TEE signals are still live, but this host is not publishing a signed runtime envelope because MNEMONIC is not configured.'
                   : attestedRuntime.error
                     ? readQueryErrorMessage(attestedRuntime.error)
@@ -351,104 +277,28 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
 
         {activeQuery && !status.error && !result.error ? (
           <section className="receipt-dashboard receipt-dashboard--scroll">
-            <article className="receipt-surface receipt-surface--wide">
-              <div className="receipt-surface__head">
-                <div>
-                  <p className="eyebrow">result</p>
-                  <h2>Output</h2>
-                </div>
-                <span className="receipt-state">{currentReceiptStatus}</span>
-              </div>
-              <div className="receipt-outcome">
-                <div className="receipt-outcome__copy">
-                  <strong className="receipt-kicker">{primaryOutputType}</strong>
-                  <p className="receipt-panel__text receipt-panel__text--clamped">
-                    {canonicalSummary}
-                  </p>
-                  <div className="receipt-stat-grid">
-                    <ReceiptStat label="type" value={primaryOutputType} />
-                    <ReceiptStat label="workstreams" value={String(workstreams.length)} />
-                    <ReceiptStat label="artifacts" value={String(synthesizedArtifacts.length)} />
-                    <ReceiptStat label="approved" value={String(approvedSubmissionCount)} />
-                  </div>
-                  {visibleWorkstreams.length > 0 ? (
-                    <div className="receipt-workstream-list">
-                      {visibleWorkstreams.map((workstream) => (
-                        <div className="receipt-workstream-row" key={workstream.id}>
-                          <strong>{workstream.label}</strong>
-                          <span>
-                            {compactText(workstream.shortSummary ?? workstream.summary, 120)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-                {previewArtifacts.length ? (
-                  <div className="receipt-preview-stack">
-                    {previewArtifacts.map((artifact) => (
-                      <ArtifactPreview
-                        artifact={artifact}
-                        key={`${artifact.outputType}-${artifact.uri}`}
-                      />
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </article>
+            <ReceiptOutputSection
+              approvedSubmissionCount={approvedSubmissionCount}
+              currentReceiptStatus={currentReceiptStatus}
+              result={result.data}
+            />
 
-            <article className="receipt-surface">
-              <div className="receipt-surface__head">
-                <div>
-                  <p className="eyebrow">proof</p>
-                  <h2>Attestation</h2>
-                </div>
-              </div>
-              <ReceiptProofPanel
-                attestationTarget={attestationTarget}
-                attestationTee={attestationTee}
-                links={[
-                  {
-                    href: buildAttestedRuntimeUrl(),
-                    label: 'runtime attestation',
-                    note: `${attestationSurfaceLabel} runtime proof`,
-                  },
-                  {
-                    href: buildAttestedResultUrl(activeQuery),
-                    label: 'result attestation',
-                    note: `${attestationSurfaceLabel} result proof`,
-                  },
-                  {
-                    href: buildAgentLogUrl(activeQuery),
-                    label: 'agent log',
-                    note: 'token-gated run log',
-                  },
-                  {
-                    href: buildAgentManifestUrl(),
-                    label: 'Mercenary manifest',
-                    note: 'public orchestrator manifest',
-                  },
-                ]}
-                messageHash={attestedResult.data?.messageHash}
-                proofNote={
-                  <>
-                    <strong>TEE proof:</strong>{' '}
-                    {runtimeSignerDisabled || resultSignerDisabled
-                      ? 'Provider TEE and signed-output counts still reflect routed provider proofs, but this host is not publishing signed runtime/result envelopes because MNEMONIC is not configured.'
-                      : `${attestationSurfaceLabel} runtime proof and signed raid result proof are exposed here when the host signer is configured.`}
-                  </>
-                }
-                resultHash={
-                  attestedResult.data?.payload.resultHash ?? settlementExecution?.evaluationHash
-                }
-                resultStatus={resultAttestationStatus}
-                routedProviderCount={routedProviderIds.length}
-                runtimeSigner={attestedRuntime.data?.signer}
-                runtimeStatus={runtimeAttestationStatus}
-                signedProviderCount={signedProviderCount}
-                teeProviderCount={teeProviderCount}
-              />
-            </article>
+            <ReceiptAttestationSection
+              activeQuery={activeQuery}
+              attestedResult={attestedResult.data}
+              attestedRuntime={attestedRuntime.data}
+              attestationSurfaceLabel={attestationSurfaceLabel}
+              attestationTarget={attestationTarget}
+              attestationTee={attestationTee}
+              resultAttestationStatus={resultAttestationStatus}
+              resultSignerDisabled={resultSignerDisabled}
+              routedProviderCount={routedProviderIds.length}
+              runtimeAttestationStatus={runtimeAttestationStatus}
+              runtimeSignerDisabled={runtimeSignerDisabled}
+              settlementExecution={settlementExecution}
+              signedProviderCount={signedProviderCount}
+              teeProviderCount={teeProviderCount}
+            />
 
             <ReceiptProviderList rows={providerRows} />
 

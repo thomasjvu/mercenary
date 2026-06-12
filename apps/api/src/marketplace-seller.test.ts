@@ -6,6 +6,7 @@ import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import { NETWORK } from '@bossraid/constants';
 import {
+  createTestApiServer,
   buildApiServer,
   createProviderProfile,
   createPublicSessionCookie,
@@ -34,7 +35,7 @@ test('seller self-serve registration verifies providers and adds them to marketp
         },
       }
     );
-  const app = buildApiServer(new BossRaidOrchestrator(), {
+  const app = createTestApiServer([], {
     ...process.env,
     BOSSRAID_STORAGE_BACKEND: 'memory',
   });

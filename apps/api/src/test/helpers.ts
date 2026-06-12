@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mnemonicToAccount } from 'viem/accounts';
 import {
+  buildDelegateRaidRequestFromSpawn,
   createProviderProfile as createFixtureProviderProfile,
   createSpawnInput,
   FAST_TEST_TIMING,
@@ -23,45 +24,7 @@ process.env.BOSSRAID_X402_ENABLED = 'false';
 process.env.BOSSRAID_STORAGE_BACKEND = 'memory';
 
 export function createRaidRequestBody() {
-  return {
-    agent: 'mercenary-v1',
-    taskType: 'code_debugging',
-    task: {
-      title: 'Fix button state bug',
-      description: 'Save button stays disabled after valid form input.',
-      language: 'typescript',
-      framework: 'react',
-      files: [
-        {
-          path: 'src/components/Form.tsx',
-          content: [
-            'export function Form() {',
-            '  const disabled = true;',
-            '  return <button disabled={disabled}>Save</button>;',
-            '}',
-          ].join('\n'),
-          sha256: 'test-file-hash',
-        },
-      ],
-      failingSignals: {
-        errors: ['Save button never enables.'],
-        reproSteps: ['Open form', 'Enter valid values', 'Observe disabled button'],
-      },
-    },
-    output: {
-      primaryType: 'patch',
-      artifactTypes: ['patch', 'text'],
-    },
-    raidPolicy: {
-      maxAgents: 1,
-      allowedOutputTypes: ['patch', 'text'],
-      maxTotalCost: 10,
-      privacyMode: 'prefer',
-    },
-    hostContext: {
-      host: 'codex',
-    },
-  };
+  return buildDelegateRaidRequestFromSpawn(createSpawnInput());
 }
 
 export function createSpawnInputBody() {

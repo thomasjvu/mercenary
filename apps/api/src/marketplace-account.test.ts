@@ -6,6 +6,7 @@ import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import { NETWORK } from '@bossraid/constants';
 import {
+  createTestApiServer,
   buildApiServer,
   createProviderProfile,
   createPublicSessionCookie,
@@ -18,7 +19,7 @@ import {
 } from './test/helpers.js';
 
 test('public wallet auth creates a session and buyer API keys are hashed and revocable', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator(), {
+  const app = createTestApiServer([], {
     ...process.env,
     BOSSRAID_STORAGE_BACKEND: 'memory',
   });
@@ -87,7 +88,7 @@ test('public session tokens and buyer key hashes are encrypted in API control st
     BOSSRAID_STATE_FILE: stateFile,
     BOSSRAID_SECRET_ENCRYPTION_KEY: 'unit-test-api-secret-key',
   };
-  const app = buildApiServer(new BossRaidOrchestrator(), env);
+  const app = createTestApiServer([], env);
   let appClosed = false;
 
   try {
@@ -116,7 +117,7 @@ test('public session tokens and buyer key hashes are encrypted in API control st
 
     await app.close();
     appClosed = true;
-    const restored = buildApiServer(new BossRaidOrchestrator(), env);
+    const restored = createTestApiServer([], env);
     try {
       const response = await restored.inject({
         method: 'POST',
@@ -162,7 +163,7 @@ test('buyer API keys enforce spend caps on discount inference requests', async (
     },
     async run(): Promise<void> {},
   };
-  const app = buildApiServer(new BossRaidOrchestrator([provider]), {
+  const app = createTestApiServer([provider], {
     ...process.env,
     BOSSRAID_STORAGE_BACKEND: 'memory',
   });
@@ -221,7 +222,7 @@ test('buyer API keys enforce per-key rate limits before paid execution', async (
     },
     async run(): Promise<void> {},
   };
-  const app = buildApiServer(new BossRaidOrchestrator([provider]), {
+  const app = createTestApiServer([provider], {
     ...process.env,
     BOSSRAID_STORAGE_BACKEND: 'memory',
     BOSSRAID_BUYER_KEY_RATE_LIMIT_MAX: '1',

@@ -4,6 +4,7 @@ import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-t
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import { buildApiServer } from './index.js';
 import {
+  createTestOrchestrator,
   createProviderProfile,
   createRaidRequestBody,
   createX402PaidTestEnv,
@@ -215,13 +216,7 @@ test('raid result exposes ERC-8183-aligned settlement proof data', async () => {
     },
   };
 
-  const orchestrator = new BossRaidOrchestrator(
-    [provider],
-    FAST_TEST_TIMING,
-    undefined,
-    undefined,
-    async (profile) => readyHealth(profile.providerId)
-  );
+  const orchestrator = createTestOrchestrator([provider]);
   const spawn = await orchestrator.spawnRaid({
     taskTitle: 'Explain the form regression',
     taskDescription: 'Inspect the flow and explain why the form remains disabled.',

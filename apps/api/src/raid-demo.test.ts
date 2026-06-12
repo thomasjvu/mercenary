@@ -4,6 +4,7 @@ import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-t
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import { buildApiServer } from './index.js';
 import {
+  createTestApiServer,
   createProviderProfile,
   createRaidRequestBody,
   createX402PaidTestEnv,
@@ -11,7 +12,7 @@ import {
 } from './test/helpers.js';
 
 test('public raid spawn is rate limited before orchestration work runs', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator(), {
+  const app = createTestApiServer([], {
     BOSSRAID_PUBLIC_RATE_LIMIT_MAX: '1',
     BOSSRAID_PUBLIC_RATE_LIMIT_WINDOW_MS: '60000',
   });
@@ -38,7 +39,7 @@ test('public raid spawn is rate limited before orchestration work runs', async (
 });
 
 test('public rate limiting ignores spoofed forwarded headers unless trustProxy is enabled', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator(), {
+  const app = createTestApiServer([], {
     BOSSRAID_PUBLIC_RATE_LIMIT_MAX: '1',
     BOSSRAID_PUBLIC_RATE_LIMIT_WINDOW_MS: '60000',
   });
@@ -168,7 +169,7 @@ test('demo raid route returns 404 when disabled', async () => {
 test('demo route startup fails closed when enabled without a demo token', () => {
   assert.throws(
     () =>
-      buildApiServer(new BossRaidOrchestrator([]), {
+      createTestApiServer([], {
         ...process.env,
         BOSSRAID_STORAGE_BACKEND: 'memory',
         BOSSRAID_DEMO_ROUTE_ENABLED: 'true',
