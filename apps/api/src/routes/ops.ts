@@ -1,5 +1,6 @@
 import { type FastifyInstance } from 'fastify';
-import { DEFAULTS, readStorageBackend } from '@bossraid/constants';
+import { DEFAULTS, readSettlementMode, readStorageBackend } from '@bossraid/constants';
+import { isSettlementGateConfigured } from '../lib/settlement-mode.js';
 import {
   cleanupWorkspace,
   materializeWorkspace,
@@ -295,7 +296,7 @@ export function registerOpsRoutes(
       return adminError;
     }
 
-    const settlementMode = env.BOSSRAID_SETTLEMENT_MODE ?? 'off';
+    const settlementMode = readSettlementMode(env);
     const rpcUrl = env.BOSSRAID_RPC_URL;
     const chainId = env.BOSSRAID_CHAIN_ID;
     const registryAddress = env.BOSSRAID_REGISTRY_ADDRESS;
@@ -304,7 +305,7 @@ export function registerOpsRoutes(
 
     return {
       mode: settlementMode,
-      configured: settlementMode !== 'off' && Boolean(rpcUrl && registryAddress && escrowAddress),
+      configured: isSettlementGateConfigured(settlementMode, env),
       chain: chainId ? { id: chainId } : null,
       contracts: {
         registry: registryAddress ?? null,

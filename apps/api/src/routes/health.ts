@@ -1,5 +1,6 @@
 import { type FastifyInstance } from 'fastify';
-import { readStorageBackend } from '@bossraid/constants';
+import { readSettlementMode, readStorageBackend } from '@bossraid/constants';
+import { isSettlementGateConfigured } from '../lib/settlement-mode.js';
 import { readTeeSocketState } from '../lib/tee.js';
 import { readX402ConfigForContext } from '../lib/x402-runtime.js';
 import { buildProductionReadinessReport } from '../lib/production-readiness.js';
@@ -43,10 +44,8 @@ export function registerHealthRoutes(
     const providerHealth = await collectProviderHealth();
     const persistence = orchestrator.getPersistenceStatus();
     const x402Config = readX402ConfigForContext(ctx);
-    const settlementMode = env.BOSSRAID_SETTLEMENT_MODE ?? 'off';
-    const settlementConfigured =
-      settlementMode === 'off' ||
-      Boolean(env.BOSSRAID_RPC_URL && env.BOSSRAID_REGISTRY_ADDRESS && env.BOSSRAID_ESCROW_ADDRESS);
+    const settlementMode = readSettlementMode(env);
+    const settlementConfigured = isSettlementGateConfigured(settlementMode, env);
     const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/tappd.sock';
     const tee = await readTeeSocketState(teeSocketPath);
     const secretsEncrypted =
@@ -129,7 +128,7 @@ export function registerHealthRoutes(
     const providerHealth = await collectProviderHealth();
     const persistence = orchestrator.getPersistenceStatus();
     const x402Config = readX402ConfigForContext(ctx);
-    const settlementMode = env.BOSSRAID_SETTLEMENT_MODE ?? 'off';
+    const settlementMode = readSettlementMode(env);
     const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/tappd.sock';
     const tee = await readTeeSocketState(teeSocketPath);
     return buildProductionReadinessReport({
