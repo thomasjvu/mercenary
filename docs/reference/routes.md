@@ -52,19 +52,27 @@ Output types: `text`, `patch`, `json`, `image`, `video`, `bundle`.
 
 ## Public beta accounts
 
-| Route                                  | Purpose            |
-| -------------------------------------- | ------------------ |
-| `POST /v1/auth/nonce`                  | Wallet nonce       |
-| `POST /v1/auth/verify`                 | Wallet session     |
-| `GET/DELETE /v1/session`               | Session read/clear |
-| `GET/POST/DELETE /v1/buyer/api-keys`   | Buyer `br_` keys   |
-| `GET/POST/PATCH /v1/seller/providers`  | Seller CRUD        |
-| `POST /v1/seller/providers/:id/verify` | Re-verify          |
-| `GET /v1/seller/earnings`              | Payout ledger      |
-| `GET /v1/seller/stats`                 | Dashboard metrics  |
-| `GET /v1/buyer/purchases`              | Purchase history   |
-| `GET/POST /v1/buyer/balance`           | Prepaid balance    |
-| `GET /v1/marketplace/stats`            | Public counters    |
+| Route                                                  | Purpose                                                                            |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| `POST /v1/auth/nonce`                                  | Wallet nonce                                                                       |
+| `POST /v1/auth/verify`                                 | Wallet session                                                                     |
+| `GET/DELETE /v1/session`                               | Session read/clear                                                                 |
+| `GET/POST/DELETE /v1/buyer/api-keys`                   | Buyer `br_` keys                                                                   |
+| `GET/POST/PATCH /v1/seller/providers`                  | Seller CRUD                                                                        |
+| `POST /v1/seller/providers/:id/verify`                 | Re-verify                                                                          |
+| `POST /v1/seller/upstream/:provider/connect`           | Validate + store upstream API key (`venice`, `redpill`, `near`, `chutes`, `phala`) |
+| `GET /v1/seller/upstream/:provider/config`             | Upstream connection status                                                         |
+| `GET /v1/seller/upstream/:provider/models`             | Merged catalog for seller                                                          |
+| `POST /v1/seller/upstream/:provider/offers`            | Publish hosted model offers                                                        |
+| `DELETE /v1/seller/upstream/:provider/offers/:modelId` | Pause hosted offer                                                                 |
+| `GET /v1/seller/upstream/status`                       | All connected upstream providers for seller                                        |
+| `POST /v1/marketplace/tee/attestation`                 | Fetch + verify upstream TEE attestation for model                                  |
+| `GET /v1/marketplace/models/:modelId/tee`              | Catalog TEE summary + cached attestation                                           |
+| `GET /v1/seller/earnings`                              | Payout ledger                                                                      |
+| `GET /v1/seller/stats`                                 | Dashboard metrics                                                                  |
+| `GET /v1/buyer/purchases`                              | Purchase history                                                                   |
+| `GET/POST /v1/buyer/balance`                           | Prepaid balance                                                                    |
+| `GET /v1/marketplace/stats`                            | Public counters                                                                    |
 
 Buyer API keys on paid routes skip x402 and debit spend caps.
 

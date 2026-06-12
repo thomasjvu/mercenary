@@ -21,21 +21,30 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 
 ## API auth & limits
 
-| Variable                                     | Purpose                              |
-| -------------------------------------------- | ------------------------------------ |
-| `BOSSRAID_ADMIN_TOKEN`                       | Admin bearer + ops session bootstrap |
-| `BOSSRAID_REGISTRY_TOKEN`                    | `POST /agents/register`              |
-| `BOSSRAID_DEMO_ROUTE_ENABLED`                | Enable `POST /v1/demo/raid`          |
-| `BOSSRAID_DEMO_TOKEN`                        | Required when demo enabled           |
-| `BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST`       | Chat budget fallback                 |
-| `BOSSRAID_PUBLIC_RATE_LIMIT_*`               | Public spawn/chat limits             |
-| `BOSSRAID_BUYER_KEY_RATE_LIMIT_*`            | Per API-key limits                   |
-| `BOSSRAID_BUYER_KEY_DEFAULT_SPEND_LIMIT_USD` | Default key cap                      |
-| `BOSSRAID_BUYER_MAX_REQUEST_BUDGET_USD`      | Server max request budget            |
-| `BOSSRAID_SECRET_ENCRYPTION_KEY`             | Encrypt secrets at rest              |
-| `BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS`   | Key rotation decrypt                 |
-| `BOSSRAID_PROVIDER_HEALTH_TIMEOUT_MS`        | Health probe timeout                 |
-| `BOSSRAID_TRUST_PROXY`                       | Trust forwarded headers              |
+| Variable                                     | Purpose                                                            |
+| -------------------------------------------- | ------------------------------------------------------------------ |
+| `BOSSRAID_ADMIN_TOKEN`                       | Admin bearer + ops session bootstrap                               |
+| `BOSSRAID_REGISTRY_TOKEN`                    | `POST /agents/register`                                            |
+| `BOSSRAID_DEMO_ROUTE_ENABLED`                | Enable `POST /v1/demo/raid`                                        |
+| `BOSSRAID_DEMO_TOKEN`                        | Required when demo enabled                                         |
+| `BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST`       | Chat budget fallback                                               |
+| `BOSSRAID_PUBLIC_RATE_LIMIT_*`               | Public spawn/chat limits                                           |
+| `BOSSRAID_BUYER_KEY_RATE_LIMIT_*`            | Per API-key limits                                                 |
+| `BOSSRAID_BUYER_KEY_DEFAULT_SPEND_LIMIT_USD` | Default key cap                                                    |
+| `BOSSRAID_BUYER_MAX_REQUEST_BUDGET_USD`      | Server max request budget                                          |
+| `BOSSRAID_SECRET_ENCRYPTION_KEY`             | Encrypt secrets at rest (required for Venice seller keys in prod)  |
+| `BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS`   | Key rotation decrypt                                               |
+| `BOSSRAID_INFERENCE_GATEWAY_BASE`            | Public base URL for hosted seller gateway (`/gateway/:providerId`) |
+| `BOSSRAID_VENICE_MOCK`                       | `1` = mock Venice upstream for local/tests                         |
+| `BOSSRAID_UPSTREAM_MOCK`                     | `1` = mock Redpill/NEAR/Chutes/Phala upstream list                 |
+| `BOSSRAID_UPSTREAM_TEE_MOCK`                 | `1` = mock upstream TEE attestation verification                   |
+| `BOSSRAID_VENICE_API_KEY`                    | Optional platform key for catalog TEE attest                       |
+| `BOSSRAID_REDPILL_API_KEY`                   | Optional platform key for catalog TEE attest                       |
+| `BOSSRAID_NEAR_API_KEY`                      | Optional platform key for catalog TEE attest                       |
+| `BOSSRAID_CHUTES_API_KEY`                    | Optional platform key for catalog TEE attest                       |
+| `BOSSRAID_PHALA_API_KEY`                     | Optional platform key for catalog TEE attest                       |
+| `BOSSRAID_PROVIDER_HEALTH_TIMEOUT_MS`        | Health probe timeout                                               |
+| `BOSSRAID_TRUST_PROXY`                       | Trust forwarded headers                                            |
 
 ## x402
 

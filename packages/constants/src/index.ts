@@ -15,6 +15,15 @@ export {
 } from './inference-catalog.js';
 
 export {
+  UPSTREAM_PROVIDER_CONFIG,
+  UPSTREAM_PROVIDER_IDS,
+  isUpstreamProviderId,
+  resolveUpstreamProviderConfig,
+  type UpstreamProviderConfig,
+  type UpstreamProviderId,
+} from './upstream-providers.js';
+
+export {
   CATALOG_BENCHMARK_TASK_USD,
   CATALOG_BENCHMARK_INPUT_PER_1M_USD,
   CATALOG_BENCHMARK_OUTPUT_PER_1M_USD,

@@ -15,23 +15,94 @@ const FEATURED_LIVE_MODEL_IDS = new Set([
   'olafangensan-glm-4.7-flash-heretic',
   'e2ee-gemma-4-26b-a4b-uncensored-p',
   'openai-gpt-55',
+  'zai-org/GLM-5.1-FP8',
+  'tee-qwen3-5-122b-chutes',
 ]);
 
 const REDPILL_MODELS = [
   {
     modelId: 'phala/gemma-4-26b-a4b-uncensored',
-    displayName: 'Phala Gemma 4 26B Uncensored',
-    modelProvider: 'phala',
+    displayName: 'Phala Gemma 4 26B Uncensored (Redpill)',
+    modelProvider: 'redpill',
+    attestationVendor: 'redpill',
     upstream: 'phala/gemma-4-26b-a4b-uncensored',
     inputPer1mUsd: 0.15,
     outputPer1mUsd: 0.7,
     maxContextTokens: 66_000,
     privacy: 'tee',
     teeAttested: true,
+    e2ee: false,
     signedOutputs: true,
     noDataRetention: true,
   },
 ];
+
+const NEAR_MODELS = [
+  {
+    modelId: 'zai-org/GLM-5.1-FP8',
+    displayName: 'GLM 5.1 FP8 (NEAR AI)',
+    modelProvider: 'near',
+    attestationVendor: 'near',
+    upstream: 'zai-org/GLM-5.1-FP8',
+    inputPer1mUsd: 0.35,
+    outputPer1mUsd: 1.2,
+    maxContextTokens: 128_000,
+    privacy: 'tee',
+    teeAttested: true,
+    e2ee: true,
+    signedOutputs: true,
+    noDataRetention: true,
+  },
+];
+
+const CHUTES_MODELS = [
+  {
+    modelId: 'tee-qwen3-5-122b-chutes',
+    displayName: 'TEE Qwen3.5 122B (Chutes)',
+    modelProvider: 'chutes',
+    attestationVendor: 'chutes',
+    upstream: 'tee-qwen3-5-122b',
+    inputPer1mUsd: 0.4,
+    outputPer1mUsd: 1.5,
+    maxContextTokens: 128_000,
+    privacy: 'tee',
+    teeAttested: true,
+    e2ee: false,
+    signedOutputs: true,
+    noDataRetention: true,
+  },
+];
+
+const PHALA_MODELS = [
+  {
+    modelId: 'phala/gemma-4-26b-a4b-uncensored',
+    displayName: 'Phala Gemma 4 26B Uncensored',
+    modelProvider: 'phala',
+    attestationVendor: 'phala',
+    upstream: 'phala/gemma-4-26b-a4b-uncensored',
+    inputPer1mUsd: 0.15,
+    outputPer1mUsd: 0.7,
+    maxContextTokens: 66_000,
+    privacy: 'tee',
+    teeAttested: true,
+    e2ee: true,
+    signedOutputs: true,
+    noDataRetention: true,
+  },
+];
+
+function isTeeModelId(modelId) {
+  const normalized = modelId.toLowerCase();
+  return (
+    normalized.startsWith('tee-') ||
+    normalized.startsWith('e2ee-') ||
+    normalized.includes('phala/')
+  );
+}
+
+function isE2eeModelId(modelId) {
+  return modelId.toLowerCase().startsWith('e2ee-');
+}
 
 function slugProviderId(modelId) {
   return `market-${modelId.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase()}`;
@@ -56,7 +127,7 @@ function buildMarketplaceProvider(model, port, spawnWorker) {
     specializations: ['inference', 'text'],
     supportedLanguages: ['text'],
     supportedFrameworks: ['openai_compatible'],
-    modelFamily: model.modelProvider === 'phala' ? 'phala' : 'venice',
+    modelFamily: model.modelProvider,
     modelProvider: model.modelProvider,
     modelId: model.modelId,
     outputTypes: ['text', 'json'],
@@ -72,6 +143,7 @@ function buildMarketplaceProvider(model, port, spawnWorker) {
     privacy: {
       teeAttested: Boolean(model.teeAttested),
       e2ee: Boolean(model.e2ee),
+      teeVendor: model.attestationVendor ?? model.modelProvider,
       signedOutputs: Boolean(model.signedOutputs ?? true),
       noDataRetention: Boolean(model.noDataRetention ?? model.privacy === 'private'),
     },
@@ -119,20 +191,24 @@ async function fetchVeniceTextModels() {
   const payload = await response.json();
   return (payload.data ?? [])
     .filter((model) => model.type === 'text' && model.model_spec?.offline !== true)
-    .map((model) => ({
-      modelId: model.id,
-      displayName: model.model_spec?.name ?? model.id,
-      modelProvider: 'venice',
-      upstreamModelId: model.id,
-      inputPer1mUsd: model.model_spec?.pricing?.input?.usd ?? 0.2,
-      outputPer1mUsd: model.model_spec?.pricing?.output?.usd ?? 0.8,
-      maxContextTokens: model.model_spec?.availableContextTokens ?? model.context_length ?? 128_000,
-      privacy: model.model_spec?.privacy ?? 'private',
-      teeAttested: model.id.startsWith('e2ee-'),
-      e2ee: model.id.startsWith('e2ee-'),
-      signedOutputs: true,
-      noDataRetention: model.model_spec?.privacy === 'private',
-    }))
+    .map((model) => {
+      const supportsE2ee = model.model_spec?.capabilities?.supportsE2EE === true;
+      return {
+        modelId: model.id,
+        displayName: model.model_spec?.name ?? model.id,
+        modelProvider: 'venice',
+        attestationVendor: 'venice',
+        upstreamModelId: model.id,
+        inputPer1mUsd: model.model_spec?.pricing?.input?.usd ?? 0.2,
+        outputPer1mUsd: model.model_spec?.pricing?.output?.usd ?? 0.8,
+        maxContextTokens: model.model_spec?.availableContextTokens ?? model.context_length ?? 128_000,
+        privacy: model.model_spec?.privacy ?? 'private',
+        teeAttested: isTeeModelId(model.id),
+        e2ee: isE2eeModelId(model.id) || supportsE2ee,
+        signedOutputs: true,
+        noDataRetention: model.model_spec?.privacy === 'private',
+      };
+    })
     .sort((left, right) => left.modelId.localeCompare(right.modelId));
 }
 
@@ -142,7 +218,8 @@ function writeCatalogTs(catalog) {
 export type InferenceCatalogEntry = {
   modelId: string;
   displayName: string;
-  modelProvider: 'venice' | 'phala' | 'redpill';
+  modelProvider: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes';
+  attestationVendor: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes';
   upstreamModelId: string;
   inputPer1mUsd: number;
   outputPer1mUsd: number;
@@ -192,13 +269,13 @@ export const CATALOG_BENCHMARK_OUTPUT_PER_1M_USD: Record<string, number> = ${JSO
   writeFileSync(resolve(rootDir, 'packages/constants/src/inference-catalog-benchmark.ts'), body);
 }
 
-async function main() {
-  const veniceModels = await fetchVeniceTextModels();
-  const redpillModels = REDPILL_MODELS.map((model) => ({
+function normalizeStaticModels(models) {
+  return models.map((model) => ({
     modelId: model.modelId,
     displayName: model.displayName,
-    modelProvider: 'redpill',
-    upstreamModelId: model.upstream,
+    modelProvider: model.modelProvider,
+    attestationVendor: model.attestationVendor ?? model.modelProvider,
+    upstreamModelId: model.upstream ?? model.modelId,
     inputPer1mUsd: model.inputPer1mUsd,
     outputPer1mUsd: model.outputPer1mUsd,
     maxContextTokens: model.maxContextTokens,
@@ -208,7 +285,15 @@ async function main() {
     signedOutputs: model.signedOutputs,
     noDataRetention: model.noDataRetention,
   }));
-  const catalog = [...veniceModels, ...redpillModels];
+}
+
+async function main() {
+  const veniceModels = await fetchVeniceTextModels();
+  const redpillModels = normalizeStaticModels(REDPILL_MODELS);
+  const nearModels = normalizeStaticModels(NEAR_MODELS);
+  const chutesModels = normalizeStaticModels(CHUTES_MODELS);
+  const phalaModels = normalizeStaticModels(PHALA_MODELS);
+  const catalog = [...veniceModels, ...redpillModels, ...nearModels, ...chutesModels, ...phalaModels];
 
   let livePort = 9100;
   const providers = catalog.map((model) => {
@@ -222,6 +307,7 @@ async function main() {
       modelId: entry.modelId,
       displayName: entry.displayName,
       modelProvider: entry.modelProvider,
+      attestationVendor: entry.attestationVendor ?? entry.modelProvider,
       upstreamModelId: entry.upstreamModelId,
       inputPer1mUsd: entry.inputPer1mUsd,
       outputPer1mUsd: entry.outputPer1mUsd,
@@ -235,7 +321,7 @@ async function main() {
   writeProvidersJson(providers);
 
   console.log(
-    `[catalog] synced ${veniceModels.length} Venice text models + ${redpillModels.length} Redpill models`
+    `[catalog] synced ${veniceModels.length} Venice + ${redpillModels.length} Redpill + ${nearModels.length} NEAR + ${chutesModels.length} Chutes + ${phalaModels.length} Phala models`
   );
   console.log(`[catalog] wrote packages/constants/src/inference-catalog.ts`);
   console.log(`[catalog] wrote examples/inference-marketplace-providers.json (${providers.length} sellers)`);

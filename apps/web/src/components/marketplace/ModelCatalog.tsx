@@ -106,7 +106,10 @@ function ModelRow({ market, onOpen }: { market: InferenceMarket; onOpen: () => v
           <ProviderBrandIcon modelProvider={market.modelProvider} />
           <span className="model-catalog__model-copy">
             <strong>{market.modelId}</strong>
-            <span>{market.modelProvider ?? 'mixed'}</span>
+            <span>
+              {market.modelProvider ?? 'mixed'}
+              {market.activeProviderCount === 0 ? ' · catalog only' : ''}
+            </span>
           </span>
         </button>
       </td>

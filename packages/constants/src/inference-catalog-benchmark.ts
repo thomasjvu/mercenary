@@ -91,6 +91,8 @@ export const CATALOG_BENCHMARK_TASK_USD: Record<string, number> = {
   'zai-org-glm-5': 0.01,
   'zai-org-glm-5-1': 0.01,
   'phala/gemma-4-26b-a4b-uncensored': 0.01,
+  'zai-org/GLM-5.1-FP8': 0.01,
+  'tee-qwen3-5-122b-chutes': 0.01,
 };
 
 export const CATALOG_BENCHMARK_INPUT_PER_1M_USD: Record<string, number> = {
@@ -184,6 +186,8 @@ export const CATALOG_BENCHMARK_INPUT_PER_1M_USD: Record<string, number> = {
   'zai-org-glm-5': 1,
   'zai-org-glm-5-1': 1.75,
   'phala/gemma-4-26b-a4b-uncensored': 0.15,
+  'zai-org/GLM-5.1-FP8': 0.35,
+  'tee-qwen3-5-122b-chutes': 0.4,
 };
 
 export const CATALOG_BENCHMARK_OUTPUT_PER_1M_USD: Record<string, number> = {
@@ -277,4 +281,6 @@ export const CATALOG_BENCHMARK_OUTPUT_PER_1M_USD: Record<string, number> = {
   'zai-org-glm-5': 3.2,
   'zai-org-glm-5-1': 5.5,
   'phala/gemma-4-26b-a4b-uncensored': 0.7,
+  'zai-org/GLM-5.1-FP8': 1.2,
+  'tee-qwen3-5-122b-chutes': 1.5,
 };

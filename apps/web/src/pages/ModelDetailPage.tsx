@@ -5,6 +5,9 @@ import {
   SellerPriceSpreadChart,
 } from '../components/marketplace/MarketDiscountChart.js';
 import { InferencePlayground } from '../components/marketplace/InferencePlayground.js';
+import { UpstreamTeeVerificationPanel } from '../components/trust/UpstreamTeeVerificationPanel.js';
+import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
+import { isUpstreamProviderId } from '@bossraid/constants';
 import { MarketStatsRibbon } from '../components/marketplace/MarketStatsRibbon.js';
 import { SellerOrderBook } from '../components/marketplace/SellerOrderBook.js';
 import { ProviderBrandIcon } from '../components/ProviderBrandIcon.js';
@@ -33,6 +36,13 @@ export function ModelDetailPage({
   const market = markets.data?.data[0];
   const healthBySellerId = new Map(providerHealth.map((entry) => [entry.providerId, entry]));
   const benchmark = market ? resolveMarketBenchmarkTaskUsd(market) : undefined;
+  const catalogEntry = INFERENCE_MODEL_CATALOG.find((entry) => entry.modelId === modelId);
+  const attestationProvider =
+    catalogEntry?.attestationVendor && isUpstreamProviderId(catalogEntry.attestationVendor)
+      ? catalogEntry.attestationVendor
+      : catalogEntry?.modelProvider && isUpstreamProviderId(catalogEntry.modelProvider)
+        ? catalogEntry.modelProvider
+        : 'venice';
   const teeSellerCount = market?.sellers.filter((seller) => seller.privacy.teeAttested).length ?? 0;
   const savingsUsd = computeSavingsUsd(benchmark, market?.cheapestRateUsd);
   const savingsPercent = computeSavingsPercent(benchmark, market?.cheapestRateUsd);
@@ -111,6 +121,18 @@ export function ModelDetailPage({
               <SellerPriceSpreadChart market={market} />
             </div>
           </div>
+
+          {catalogEntry?.teeAttested || catalogEntry?.e2ee ? (
+            <article className="beta-panel model-detail-page__tee">
+              <p className="eyebrow">tee verification</p>
+              <UpstreamTeeVerificationPanel
+                e2ee={catalogEntry.e2ee}
+                modelId={modelId}
+                provider={attestationProvider}
+                teeAttested={catalogEntry.teeAttested}
+              />
+            </article>
+          ) : null}
 
           <SellerOrderBook
             healthBySellerId={healthBySellerId}

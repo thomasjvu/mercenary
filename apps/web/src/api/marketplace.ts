@@ -61,6 +61,7 @@ export async function runInferenceChatCompletion(input: {
   model: string;
   prompt: string;
   maxTotalCost?: number;
+  privacyMode?: 'off' | 'prefer' | 'strict';
 }): Promise<{
   content: string;
   raw: unknown;
@@ -76,7 +77,7 @@ export async function runInferenceChatCompletion(input: {
       messages: [{ role: 'user', content: input.prompt }],
       raid_policy: {
         max_total_cost: input.maxTotalCost ?? 1,
-        privacy_mode: 'prefer',
+        privacy_mode: input.privacyMode ?? 'prefer',
       },
     }),
   });

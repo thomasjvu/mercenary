@@ -248,6 +248,11 @@ export interface TeeAttestationResult {
   signature?: string;
   runtimeMode?: string;
   notes?: string[];
+  upstreamVendor?: string;
+  signingAddress?: string;
+  e2eeReady?: boolean;
+  explorerUrl?: string;
+  checks?: Array<{ id: string; passed: boolean; detail?: string }>;
 }
 
 export interface PrivacyAttestation {

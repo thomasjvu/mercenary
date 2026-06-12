@@ -1,12 +1,21 @@
 import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
+import { isUpstreamProviderId } from '@bossraid/constants';
 import { useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { API_BASE } from '../../api/client.js';
+import { verifyMarketplaceTeeAttestation } from '../../api/marketplace-tee.js';
 import { fetchMarkets, runInferenceChatCompletion } from '../../api/marketplace.js';
-import { resolveProviderBrand } from '../../lib/provider-brand.js';
+import {
+  decryptE2eeStream,
+  encryptMessagesForE2ee,
+  generateE2eeSession,
+} from '../../lib/e2ee/venice.js';
 import { TerminalCodePanel } from '../terminal/TerminalCodePanel.js';
+import { UpstreamTeeVerificationPanel } from '../trust/UpstreamTeeVerificationPanel.js';
+import { ModelCombobox } from './ModelCombobox.js';
 
 const API_KEY_STORAGE_KEY = 'bossraid.playground.apiKey';
+const UPSTREAM_KEY_STORAGE_KEY = 'bossraid.playground.upstreamKey';
 
 type InferencePlaygroundProps = {
   initialModelId?: string;
@@ -18,17 +27,10 @@ type ModelOption = {
   modelProvider: string;
   liveSellers: number;
   referenceRateUsd: number | null;
+  teeAttested: boolean;
+  e2ee: boolean;
+  attestationVendor: string;
 };
-
-function groupLabelForProvider(modelProvider: string): string {
-  if (modelProvider === 'venice') {
-    return 'Venice';
-  }
-  if (modelProvider === 'redpill' || modelProvider === 'phala') {
-    return 'RedPill / Phala';
-  }
-  return resolveProviderBrand(modelProvider).label;
-}
 
 export function InferencePlayground({ initialModelId }: InferencePlaygroundProps) {
   const markets = useSWR('playground-markets', () => fetchMarkets());
@@ -39,34 +41,27 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
 
   const modelOptions = useMemo<ModelOption[]>(() => {
     return (markets.data?.data ?? [])
-      .map((market) => ({
-        modelId: market.modelId,
-        displayName: catalogById.get(market.modelId)?.displayName ?? market.modelId,
-        modelProvider:
-          market.modelProvider ?? catalogById.get(market.modelId)?.modelProvider ?? 'unknown',
-        liveSellers: market.activeProviderCount ?? market.providerCount ?? 0,
-        referenceRateUsd: market.cheapestRateUsd,
-      }))
-      .sort(
-        (left, right) =>
-          groupLabelForProvider(left.modelProvider).localeCompare(
-            groupLabelForProvider(right.modelProvider)
-          ) || left.displayName.localeCompare(right.displayName)
-      );
+      .map((market) => {
+        const catalog = catalogById.get(market.modelId);
+        return {
+          modelId: market.modelId,
+          displayName: catalog?.displayName ?? market.modelId,
+          modelProvider: market.modelProvider ?? catalog?.modelProvider ?? 'unknown',
+          liveSellers: market.activeProviderCount ?? market.providerCount ?? 0,
+          referenceRateUsd: market.cheapestRateUsd,
+          teeAttested: catalog?.teeAttested ?? false,
+          e2ee: catalog?.e2ee ?? false,
+          attestationVendor: catalog?.attestationVendor ?? catalog?.modelProvider ?? 'venice',
+        };
+      })
+      .sort((left, right) => left.displayName.localeCompare(right.displayName));
   }, [catalogById, markets.data?.data]);
-
-  const modelGroups = useMemo(() => {
-    const groups = new Map<string, ModelOption[]>();
-    for (const option of modelOptions) {
-      const label = groupLabelForProvider(option.modelProvider);
-      groups.set(label, [...(groups.get(label) ?? []), option]);
-    }
-    return [...groups.entries()];
-  }, [modelOptions]);
 
   const [model, setModel] = useState(initialModelId ?? '');
   const [prompt, setPrompt] = useState('One-line launch status update.');
   const [apiKey, setApiKey] = useState('');
+  const [upstreamApiKey, setUpstreamApiKey] = useState('');
+  const [privacyMode, setPrivacyMode] = useState<'prefer' | 'strict'>('prefer');
   const [maxBudget, setMaxBudget] = useState('1');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,8 +69,13 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
   const [rawResponse, setRawResponse] = useState<unknown>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<'curl' | 'response'>('curl');
+  const [teeStatus, setTeeStatus] = useState<string | null>(null);
 
   const selectedModel = modelOptions.find((option) => option.modelId === model);
+  const attestationProvider =
+    selectedModel?.attestationVendor && isUpstreamProviderId(selectedModel.attestationVendor)
+      ? selectedModel.attestationVendor
+      : 'venice';
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -86,14 +86,20 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
     if (stored) {
       setApiKey(stored);
     }
+    const storedUpstream = window.sessionStorage.getItem(UPSTREAM_KEY_STORAGE_KEY);
+    if (storedUpstream) {
+      setUpstreamApiKey(storedUpstream);
+    }
   }, []);
 
   useEffect(() => {
     if (!model && modelOptions.length > 0) {
+      const preferredLive =
+        modelOptions.find((option) => option.liveSellers > 0)?.modelId ?? modelOptions[0].modelId;
       setModel(
         initialModelId && modelOptions.some((option) => option.modelId === initialModelId)
           ? initialModelId
-          : modelOptions[0].modelId
+          : preferredLive
       );
     }
   }, [initialModelId, model, modelOptions]);
@@ -116,7 +122,7 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
   const curlSnippet = `curl -X POST ${API_BASE}/v1/inference/chat/completions \\
   -H "authorization: Bearer br_..." \\
   -H "content-type: application/json" \\
-  -d '{"model":"${model || 'venice-uncensored-1-2'}","messages":[{"role":"user","content":"${prompt.replace(/"/g, '\\"')}"}],"raid_policy":{"max_total_cost":${maxBudget || '1'},"privacy_mode":"prefer"}}'`;
+  -d '{"model":"${model || 'venice-uncensored-1-2'}","messages":[{"role":"user","content":"${prompt.replace(/"/g, '\\"')}"}],"raid_policy":{"max_total_cost":${maxBudget || '1'},"privacy_mode":"${privacyMode}"}}'`;
 
   const responseSnippet = rawResponse
     ? JSON.stringify(rawResponse, null, 2)
@@ -124,8 +130,96 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
       ? JSON.stringify({ content: responseText }, null, 2)
       : 'Run inference to see response metadata here.';
 
+  async function runE2eeInference(): Promise<void> {
+    if (!upstreamApiKey.trim()) {
+      throw new Error('E2EE models need an upstream API key in strict-private mode.');
+    }
+
+    const catalog = catalogById.get(model.trim());
+    const upstreamModelId = catalog?.upstreamModelId ?? model.trim();
+    const attestation = await verifyMarketplaceTeeAttestation({
+      provider: attestationProvider,
+      modelId: model.trim(),
+    });
+
+    if (!attestation.valid || !attestation.e2eeReady) {
+      throw new Error('TEE attestation must pass with E2EE signing key before sending.');
+    }
+
+    const signingKey =
+      (attestation as { signingKey?: string }).signingKey ??
+      (attestation as { signing_key?: string }).signing_key;
+    const modelPublicKey =
+      typeof signingKey === 'string'
+        ? signingKey
+        : attestation.signingAddress
+          ? undefined
+          : undefined;
+
+    if (!modelPublicKey) {
+      const veniceAttest = await fetch(
+        `https://api.venice.ai/api/v1/tee/attestation?model=${encodeURIComponent(upstreamModelId)}&nonce=${crypto.randomUUID().replace(/-/g, '')}`,
+        { headers: { authorization: `Bearer ${upstreamApiKey.trim()}` } }
+      );
+      const venicePayload = (await veniceAttest.json()) as {
+        signing_key?: string;
+        signing_public_key?: string;
+      };
+      const resolvedKey = venicePayload.signing_key ?? venicePayload.signing_public_key;
+      if (!resolvedKey) {
+        throw new Error('No signing key in attestation response.');
+      }
+      const session = generateE2eeSession(resolvedKey, attestation.signingAddress);
+      await sendE2eeRequest(session, upstreamModelId);
+      return;
+    }
+
+    const session = generateE2eeSession(modelPublicKey, attestation.signingAddress);
+    await sendE2eeRequest(session, upstreamModelId);
+  }
+
+  async function sendE2eeRequest(
+    session: ReturnType<typeof generateE2eeSession>,
+    upstreamModelId: string
+  ) {
+    const encryptedMessages = encryptMessagesForE2ee(
+      [{ role: 'user', content: prompt.trim() }],
+      session.modelPublicKey
+    );
+
+    const response = await fetch('https://api.venice.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${upstreamApiKey.trim()}`,
+        'content-type': 'application/json',
+        'X-Venice-TEE-Client-Pub-Key': session.publicKeyHex,
+        'X-Venice-TEE-Model-Pub-Key': session.modelPublicKey,
+        'X-Venice-TEE-Signing-Algo': 'ecdsa',
+      },
+      body: JSON.stringify({
+        model: upstreamModelId,
+        messages: encryptedMessages,
+        stream: true,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`E2EE upstream request failed (${response.status}).`);
+    }
+
+    let streamed = '';
+    const full = await decryptE2eeStream(response, session, (chunk) => {
+      streamed += chunk;
+      setResponseText(streamed);
+    });
+    setResponseText(full);
+    setRawResponse({ mode: 'e2ee', provider: attestationProvider, model: upstreamModelId });
+    setTeeStatus('E2EE active · TEE verified');
+    setActivePanel('response');
+  }
+
   async function handleRun() {
-    if (!apiKey.trim()) {
+    if (!apiKey.trim() && !(privacyMode === 'strict' && selectedModel?.e2ee)) {
       setError('Add a buyer API key from account onboarding.');
       return;
     }
@@ -135,7 +229,7 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
       return;
     }
 
-    if (selectedModel && selectedModel.liveSellers === 0) {
+    if (selectedModel && selectedModel.liveSellers === 0 && privacyMode !== 'strict') {
       setError('No live sellers for this model yet. Pick a model with active sellers.');
       return;
     }
@@ -144,14 +238,30 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
     setError(null);
     setResponseText(null);
     setRawResponse(null);
+    setTeeStatus(null);
 
     try {
+      if (privacyMode === 'strict' && selectedModel?.e2ee) {
+        window.sessionStorage.setItem(UPSTREAM_KEY_STORAGE_KEY, upstreamApiKey.trim());
+        await runE2eeInference();
+        return;
+      }
+
       window.sessionStorage.setItem(API_KEY_STORAGE_KEY, apiKey.trim());
+      if (selectedModel?.teeAttested) {
+        const attestation = await verifyMarketplaceTeeAttestation({
+          provider: attestationProvider,
+          modelId: model.trim(),
+        });
+        setTeeStatus(attestation.valid ? 'TEE verified' : 'TEE verification failed');
+      }
+
       const result = await runInferenceChatCompletion({
         apiKey: apiKey.trim(),
         model: model.trim(),
         prompt: prompt.trim(),
         maxTotalCost: Number(maxBudget) || 1,
+        privacyMode,
       });
       setResponseText(result.content);
       setRawResponse(result.raw);
@@ -178,19 +288,12 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
         <div className="beta-panel inference-playground__panel">
           <label className="field">
             <span>model</span>
-            <select onChange={(event) => setModel(event.target.value)} value={model}>
-              {modelOptions.length === 0 ? <option value="">loading...</option> : null}
-              {modelGroups.map(([groupLabel, options]) => (
-                <optgroup key={groupLabel} label={groupLabel}>
-                  {options.map((option) => (
-                    <option key={option.modelId} value={option.modelId}>
-                      {option.displayName}
-                      {option.liveSellers > 0 ? '' : ' · catalog'}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+            <ModelCombobox
+              onChange={setModel}
+              options={modelOptions}
+              placeholder="loading models..."
+              value={model}
+            />
           </label>
 
           {selectedModel ? (
@@ -201,8 +304,21 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
               {selectedModel.referenceRateUsd != null
                 ? ` · from $${selectedModel.referenceRateUsd.toFixed(3)}`
                 : ''}
+              {selectedModel.teeAttested ? ' · tee' : ''}
+              {selectedModel.e2ee ? ' · e2ee' : ''}
             </p>
           ) : null}
+
+          <label className="field">
+            <span>privacy mode</span>
+            <select
+              onChange={(event) => setPrivacyMode(event.target.value as 'prefer' | 'strict')}
+              value={privacyMode}
+            >
+              <option value="prefer">prefer private</option>
+              <option value="strict">strict private</option>
+            </select>
+          </label>
 
           <label className="field">
             <span>buyer API key</span>
@@ -215,6 +331,20 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
               value={apiKey}
             />
           </label>
+
+          {selectedModel?.e2ee ? (
+            <label className="field">
+              <span>upstream API key (E2EE)</span>
+              <input
+                autoComplete="off"
+                onChange={(event) => setUpstreamApiKey(event.target.value)}
+                placeholder="required for strict E2EE"
+                spellCheck={false}
+                type="password"
+                value={upstreamApiKey}
+              />
+            </label>
+          ) : null}
 
           <label className="field">
             <span>budget usd</span>
@@ -230,15 +360,30 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
             <textarea onChange={(event) => setPrompt(event.target.value)} rows={4} value={prompt} />
           </label>
 
+          {selectedModel?.teeAttested || selectedModel?.e2ee ? (
+            <UpstreamTeeVerificationPanel
+              compact
+              e2ee={selectedModel.e2ee}
+              modelId={model}
+              provider={attestationProvider}
+              teeAttested={selectedModel.teeAttested}
+            />
+          ) : null}
+
           <button
             className="button button--primary"
             disabled={pending}
             onClick={() => void handleRun()}
             type="button"
           >
-            {pending ? 'routing...' : 'run'}
+            {pending
+              ? 'routing...'
+              : privacyMode === 'strict' && selectedModel?.e2ee
+                ? 'run e2ee'
+                : 'run'}
           </button>
 
+          {teeStatus ? <p className="form-status">{teeStatus}</p> : null}
           {error ? <p className="error-note">{error}</p> : null}
           {responseText ? (
             <article className="inference-playground__response">

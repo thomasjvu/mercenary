@@ -25,3 +25,12 @@ export {
   EXTERNAL_API_PATTERNS,
   type PrivacyScanContext,
 } from './scanner.js';
+
+export {
+  verifyUpstreamTeeAttestation,
+  verifyUpstreamAttestationReport,
+  toTeeAttestationResult,
+  type VerifyUpstreamTeeAttestationInput,
+  type UpstreamAttestationVerifyResult,
+  type UpstreamTeeVendor,
+} from './upstream-tee/index.js';

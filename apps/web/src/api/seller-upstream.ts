@@ -1,0 +1,128 @@
+import { UPSTREAM_PROVIDER_IDS, type UpstreamProviderId } from '@bossraid/constants';
+import { fetchJson } from './client.js';
+
+export type UpstreamCatalogModel = {
+  modelId: string;
+  displayName: string;
+  modelProvider?: UpstreamProviderId;
+  supported: boolean;
+  upstreamFound: boolean;
+  teeAttested: boolean;
+  e2ee: boolean;
+  maxContextTokens: number | null;
+  referenceInputPer1mUsd: number | null;
+  referenceOutputPer1mUsd: number | null;
+};
+
+export type SellerUpstreamConfig = {
+  configId: string;
+  wallet: string;
+  provider: UpstreamProviderId;
+  keyPrefix: string;
+  upstreamBase: string;
+  createdAt: string;
+  updatedAt: string;
+  configured: true;
+};
+
+export const UPSTREAM_PROVIDER_LABELS: Record<UpstreamProviderId, string> = {
+  venice: 'Venice',
+  redpill: 'Redpill',
+  near: 'NEAR AI',
+  chutes: 'Chutes',
+  phala: 'Phala Cloud',
+};
+
+export async function connectSellerUpstream(provider: UpstreamProviderId, apiKey: string) {
+  return fetchJson<{ object: string; config: SellerUpstreamConfig }>(
+    `/v1/seller/upstream/${provider}/connect`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ apiKey }),
+    }
+  );
+}
+
+export async function fetchSellerUpstreamConfig(provider: UpstreamProviderId) {
+  return fetchJson<{ object: string; configured: boolean; config?: SellerUpstreamConfig }>(
+    `/v1/seller/upstream/${provider}/config`
+  );
+}
+
+export async function fetchSellerUpstreamStatus() {
+  return fetchJson<{
+    object: string;
+    providers: SellerUpstreamConfig[];
+  }>('/v1/seller/upstream/status');
+}
+
+export async function fetchSellerUpstreamModels(provider: UpstreamProviderId) {
+  return fetchJson<{
+    object: 'list';
+    provider: UpstreamProviderId;
+    upstreamCount: number;
+    supportedCount: number;
+    upstreamFoundCount: number;
+    data: UpstreamCatalogModel[];
+  }>(`/v1/seller/upstream/${provider}/models`);
+}
+
+export async function publishSellerUpstreamOffers(
+  provider: UpstreamProviderId,
+  payload: {
+    modelIds: string[];
+    discountPercent: number;
+    payoutWallet?: string;
+  }
+) {
+  return fetchJson<{
+    object: string;
+    provider: UpstreamProviderId;
+    discountPercent: number;
+    payoutWallet: string;
+    providers: Array<{
+      modelId: string;
+      providerId: string;
+      verificationStatus: string;
+    }>;
+  }>(`/v1/seller/upstream/${provider}/offers`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function pauseSellerUpstreamOffer(provider: UpstreamProviderId, modelId: string) {
+  return fetchJson(`/v1/seller/upstream/${provider}/offers/${encodeURIComponent(modelId)}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function connectSellerVenice(apiKey: string) {
+  return connectSellerUpstream('venice', apiKey);
+}
+
+export async function fetchSellerVeniceConfig() {
+  return fetchSellerUpstreamConfig('venice');
+}
+
+export async function fetchSellerVeniceModels() {
+  return fetchSellerUpstreamModels('venice');
+}
+
+export async function publishSellerVeniceOffers(payload: {
+  modelIds: string[];
+  discountPercent: number;
+  payoutWallet?: string;
+}) {
+  return publishSellerUpstreamOffers('venice', payload);
+}
+
+export async function pauseSellerVeniceOffer(modelId: string) {
+  return pauseSellerUpstreamOffer('venice', modelId);
+}
+
+export type VeniceCatalogModel = UpstreamCatalogModel;
+
+export { UPSTREAM_PROVIDER_IDS };

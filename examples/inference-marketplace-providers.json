@@ -24,6 +24,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -85,6 +86,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -146,6 +148,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -207,6 +210,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -268,6 +272,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -329,6 +334,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -390,6 +396,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -451,6 +458,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -512,6 +520,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -573,6 +582,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -634,6 +644,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -695,6 +706,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -756,6 +768,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -817,6 +830,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -878,6 +892,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -939,6 +954,7 @@
     "privacy": {
       "teeAttested": true,
       "e2ee": true,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -1000,6 +1016,7 @@
     "privacy": {
       "teeAttested": true,
       "e2ee": true,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -1061,6 +1078,7 @@
     "privacy": {
       "teeAttested": true,
       "e2ee": true,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -1122,6 +1140,7 @@
     "privacy": {
       "teeAttested": true,
       "e2ee": true,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -1183,6 +1202,7 @@
     "privacy": {
       "teeAttested": true,
       "e2ee": true,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -1244,6 +1264,7 @@
     "privacy": {
       "teeAttested": true,
       "e2ee": true,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -1305,6 +1326,7 @@
     "privacy": {
       "teeAttested": true,
       "e2ee": true,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -1366,6 +1388,7 @@
     "privacy": {
       "teeAttested": true,
       "e2ee": true,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -1427,6 +1450,7 @@
     "privacy": {
       "teeAttested": true,
       "e2ee": true,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -1488,6 +1512,7 @@
     "privacy": {
       "teeAttested": true,
       "e2ee": true,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -1549,6 +1574,7 @@
     "privacy": {
       "teeAttested": true,
       "e2ee": true,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -1610,6 +1636,7 @@
     "privacy": {
       "teeAttested": true,
       "e2ee": true,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -1671,6 +1698,7 @@
     "privacy": {
       "teeAttested": true,
       "e2ee": true,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -1732,6 +1760,7 @@
     "privacy": {
       "teeAttested": true,
       "e2ee": true,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -1793,6 +1822,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -1854,6 +1884,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -1915,6 +1946,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -1976,6 +2008,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -2037,6 +2070,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -2098,6 +2132,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -2159,6 +2194,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -2220,6 +2256,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -2281,6 +2318,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -2342,6 +2380,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -2403,6 +2442,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -2464,6 +2504,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -2525,6 +2566,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -2586,6 +2628,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -2647,6 +2690,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -2708,6 +2752,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -2769,6 +2814,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -2830,6 +2876,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -2891,6 +2938,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -2952,6 +3000,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -3013,6 +3062,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -3074,6 +3124,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -3135,6 +3186,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -3196,6 +3248,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -3257,6 +3310,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -3318,6 +3372,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -3379,6 +3434,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -3440,6 +3496,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -3501,6 +3558,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -3562,6 +3620,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -3623,6 +3682,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -3684,6 +3744,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -3745,6 +3806,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -3806,6 +3868,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -3867,6 +3930,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -3928,6 +3992,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -3989,6 +4054,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -4050,6 +4116,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -4111,6 +4178,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -4172,6 +4240,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -4233,6 +4302,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -4294,6 +4364,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -4355,6 +4426,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -4416,6 +4488,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -4477,6 +4550,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -4538,6 +4612,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -4599,6 +4674,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -4660,6 +4736,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -4721,6 +4798,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -4782,6 +4860,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -4843,6 +4922,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -4904,6 +4984,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -4965,6 +5046,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -5026,6 +5108,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -5087,6 +5170,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": false
     },
@@ -5148,6 +5232,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -5209,6 +5294,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -5270,6 +5356,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -5331,6 +5418,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -5392,6 +5480,7 @@
     "privacy": {
       "teeAttested": false,
       "e2ee": false,
+      "teeVendor": "venice",
       "signedOutputs": true,
       "noDataRetention": true
     },
@@ -5431,13 +5520,13 @@
   {
     "spawnWorker": true,
     "providerId": "market-phala-gemma-4-26b-a4b-uncensored",
-    "displayName": "Phala Gemma 4 26B Uncensored",
+    "displayName": "Phala Gemma 4 26B Uncensored (Redpill)",
     "endpointType": "http",
     "endpoint": "http://127.0.0.1:9109",
     "specializations": ["inference", "text"],
     "supportedLanguages": ["text"],
     "supportedFrameworks": ["openai_compatible"],
-    "modelFamily": "venice",
+    "modelFamily": "redpill",
     "modelProvider": "redpill",
     "modelId": "phala/gemma-4-26b-a4b-uncensored",
     "outputTypes": ["text", "json"],
@@ -5453,6 +5542,193 @@
     "privacy": {
       "teeAttested": true,
       "e2ee": false,
+      "teeVendor": "redpill",
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.15,
+      "pricePer1mOutputTokensUsd": 0.7,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "phala/gemma-4-26b-a4b-uncensored",
+      "maxContextTokens": 66000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-phala-gemma-4-26b-a4b-uncensored"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": true,
+    "providerId": "market-zai-org-glm-5-1-fp8",
+    "displayName": "GLM 5.1 FP8 (NEAR AI)",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9110",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "near",
+    "modelProvider": "near",
+    "modelId": "zai-org/GLM-5.1-FP8",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": true,
+      "teeVendor": "near",
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.35,
+      "pricePer1mOutputTokensUsd": 1.2,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "zai-org/GLM-5.1-FP8",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-zai-org-glm-5-1-fp8"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": true,
+    "providerId": "market-tee-qwen3-5-122b-chutes",
+    "displayName": "TEE Qwen3.5 122B (Chutes)",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9111",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "chutes",
+    "modelProvider": "chutes",
+    "modelId": "tee-qwen3-5-122b-chutes",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": false,
+      "teeVendor": "chutes",
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.4,
+      "pricePer1mOutputTokensUsd": 1.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "tee-qwen3-5-122b-chutes",
+      "maxContextTokens": 128000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-tee-qwen3-5-122b-chutes"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": true,
+    "providerId": "market-phala-gemma-4-26b-a4b-uncensored",
+    "displayName": "Phala Gemma 4 26B Uncensored",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9112",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "phala",
+    "modelProvider": "phala",
+    "modelId": "phala/gemma-4-26b-a4b-uncensored",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": true,
+      "teeVendor": "phala",
       "signedOutputs": true,
       "noDataRetention": true
     },

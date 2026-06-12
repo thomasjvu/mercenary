@@ -28,12 +28,17 @@ async function main() {
   steps.push({ step: 'marketplace_stats', ok: stats.status === 200, body: stats.body });
 
   const markets = await fetchJson(`${apiBase}/v1/markets`);
+  const modelCount = markets.body?.data?.length ?? 0;
+  const hasVeniceUncensored = (markets.body?.data ?? []).some(
+    (market) => market.modelId === 'venice-uncensored-1-2'
+  );
   steps.push({
     step: 'markets',
-    ok: markets.status === 200 && Array.isArray(markets.body?.data),
+    ok: markets.status === 200 && Array.isArray(markets.body?.data) && modelCount >= 80 && hasVeniceUncensored,
     body: {
       stats: markets.body?.stats,
-      modelCount: markets.body?.data?.length ?? 0,
+      modelCount,
+      hasVeniceUncensored,
     },
   });
 

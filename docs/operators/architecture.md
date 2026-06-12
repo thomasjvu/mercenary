@@ -22,9 +22,21 @@ Both lanes share provider registry, routing proof, receipts, and settlement. Mar
 7. Receipt, `agent_log.json`, and attestation routes expose proof. Onchain mode can refresh settlement state at read time.
 8. On restart, nonterminal raids resume from persisted state.
 
+## Hosted Venice sellers
+
+Self-serve sellers connect a Venice API key in the web UI. The API stores the key encrypted in control state, materializes one provider profile per selected model, and routes inference through an embedded hosted gateway:
+
+1. Seller `POST /v1/seller/upstream/:provider/connect` validates the key against upstream `GET /models` (`venice`, `redpill`, `near`, `chutes`, `phala`).
+2. Seller `POST /v1/seller/upstream/:provider/offers` registers offers with `source.type = inference_hosted` and `source.targetType = :provider`.
+3. Each offer endpoint is `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`.
+4. Gateway `POST /v1/raid/accept` proxies the raid task to the upstream chat API, verifies TEE attestation when privacy features are claimed, and records the provider submission in-process.
+5. Buyers and sellers verify upstream TEE via `POST /v1/marketplace/tee/attestation` (provider-specific nonce + Intel/NVIDIA evidence; explorer link to proof.t16z.com).
+
+Buyers still use `POST /v1/inference/chat/completions`. The static inference catalog fills discovery gaps when no live seller exists for a model.
+
 ## Apps
 
-- `apps/api` — public API, auth, x402, proof routes
+- `apps/api` — public API, auth, x402, proof routes, hosted inference gateway
 - `apps/orchestrator` — planning, routing, synthesis, settlement
 - `apps/provider-agent` — HTTP provider worker
 - `apps/evaluator` — sandboxed runtime probes

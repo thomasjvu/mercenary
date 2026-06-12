@@ -5,6 +5,7 @@ import type {
   PublicAuthNonceEntry,
   PublicSessionEntry,
   SellerPayoutEntry,
+  SellerUpstreamConfigEntry,
 } from './control-state/types.js';
 
 type ApiOpsSessionEntry = {
@@ -117,3 +118,29 @@ export function isValidBuyerApiKeyEntry(value: unknown): value is BuyerApiKeyEnt
       (value as BuyerApiKeyEntry).status === 'revoked')
   );
 }
+
+export function isValidSellerUpstreamConfigEntry(
+  value: unknown
+): value is SellerUpstreamConfigEntry {
+  const provider = (value as SellerUpstreamConfigEntry).provider;
+  return (
+    Boolean(value) &&
+    typeof value === 'object' &&
+    typeof (value as SellerUpstreamConfigEntry).configId === 'string' &&
+    typeof (value as SellerUpstreamConfigEntry).wallet === 'string' &&
+    typeof (value as SellerUpstreamConfigEntry).apiKeyCiphertext === 'string' &&
+    typeof (value as SellerUpstreamConfigEntry).keyPrefix === 'string' &&
+    typeof (value as SellerUpstreamConfigEntry).upstreamBase === 'string' &&
+    typeof (value as SellerUpstreamConfigEntry).createdAt === 'string' &&
+    typeof (value as SellerUpstreamConfigEntry).updatedAt === 'string' &&
+    (provider === undefined ||
+      provider === 'venice' ||
+      provider === 'redpill' ||
+      provider === 'near' ||
+      provider === 'chutes' ||
+      provider === 'phala')
+  );
+}
+
+/** @deprecated */
+export const isValidSellerVeniceConfigEntry = isValidSellerUpstreamConfigEntry;

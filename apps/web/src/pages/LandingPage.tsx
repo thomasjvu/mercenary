@@ -16,7 +16,7 @@ const PANELS = ['chat', 'raid', 'mcp'] as const;
 
 const CHAT_EXAMPLE = `curl -X POST ${PUBLIC_API_BASE}/v1/inference/chat/completions \\
   -H "content-type: application/json" \\
-  -d '{"model":"gpt-5.5","messages":[{"role":"user","content":"Cheapest verified GPT-5.5."}],"raid_policy":{"allowed_model_providers":["openai"],"privacy_mode":"prefer"}}'`;
+  -d '{"model":"venice-uncensored-1-2","messages":[{"role":"user","content":"Cheapest Venice inference."}],"raid_policy":{"privacy_mode":"prefer"}}'`;
 
 const RAID_EXAMPLE = `curl -X POST ${PUBLIC_API_BASE}/v1/raid \\
   -H "content-type: application/json" \\

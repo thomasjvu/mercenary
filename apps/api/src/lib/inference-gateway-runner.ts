@@ -1,0 +1,127 @@
+import { randomUUID } from 'node:crypto';
+import type { BossRaidOrchestrator } from '@bossraid/orchestrator';
+import type { PrivacyFeatureKey } from '@bossraid/shared-types';
+import type { ProviderProfile, ProviderTaskPackage } from '@bossraid/shared-types';
+import type { ApiControlState } from '../control-state.js';
+import { extractInferencePromptFromTask, probeUpstreamChatCompletion } from './upstream/index.js';
+import { resolveHostedProviderUpstream } from './inference-gateway-health.js';
+import { verifySellerUpstreamTeeAttestation } from './upstream-tee-service.js';
+
+export async function runInferenceGatewayJob(input: {
+  orchestrator: BossRaidOrchestrator;
+  controlState: ApiControlState;
+  provider: ProviderProfile;
+  body: {
+    raidId: string;
+    providerId: string;
+    task: ProviderTaskPackage;
+    deadlineUnix: number;
+  };
+  providerRunId: string;
+  env?: NodeJS.ProcessEnv;
+}): Promise<void> {
+  const wallet = input.provider.source?.externalRef;
+  const upstream = resolveHostedProviderUpstream(input.provider);
+  if (!wallet || !upstream) {
+    await input.orchestrator.recordProviderFailure(input.body.raidId, input.body.providerId, {
+      raidId: input.body.raidId,
+      providerId: input.body.providerId,
+      providerRunId: input.providerRunId,
+      message: 'inference_hosted seller wallet or upstream missing',
+      failedAt: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const upstreamModelId =
+    input.provider.pricing?.upstreamModelId ?? input.provider.modelId ?? input.body.providerId;
+
+  try {
+    const resolvedApiKey = input.controlState.readSellerUpstreamApiKey(wallet, upstream);
+    if (!resolvedApiKey) {
+      throw new Error(`${upstream} API key is not configured for this seller.`);
+    }
+
+    const prompt = extractInferencePromptFromTask(input.body.task.task);
+    const chatResult = await probeUpstreamChatCompletion({
+      provider: upstream,
+      apiKey: resolvedApiKey,
+      modelId: upstreamModelId,
+      prompt,
+    });
+
+    const featuresClaimed: PrivacyFeatureKey[] = [];
+    if (input.provider.privacy?.teeAttested) {
+      featuresClaimed.push('tee_attested');
+    }
+    if (input.provider.privacy?.e2ee) {
+      featuresClaimed.push('e2ee');
+    }
+    if (input.provider.privacy?.signedOutputs) {
+      featuresClaimed.push('signed_outputs');
+    }
+    if (input.provider.privacy?.noDataRetention) {
+      featuresClaimed.push('no_data_retention');
+    }
+
+    let privacyAttestation;
+    if (featuresClaimed.length > 0) {
+      const teeResult = await verifySellerUpstreamTeeAttestation({
+        provider: upstream,
+        modelId: upstreamModelId,
+        apiKey: resolvedApiKey,
+        providerId: input.body.providerId,
+        instanceId: chatResult.instanceId,
+      });
+      const featuresVerified: PrivacyFeatureKey[] = [];
+      if (teeResult.valid && featuresClaimed.includes('tee_attested')) {
+        featuresVerified.push('tee_attested');
+      }
+      if (teeResult.valid && featuresClaimed.includes('e2ee') && teeResult.e2eeReady) {
+        featuresVerified.push('e2ee');
+      }
+      if (teeResult.valid && featuresClaimed.includes('signed_outputs')) {
+        featuresVerified.push('signed_outputs');
+      }
+      if (teeResult.valid && featuresClaimed.includes('no_data_retention')) {
+        featuresVerified.push('no_data_retention');
+      }
+
+      privacyAttestation = {
+        providerId: input.body.providerId,
+        raidId: input.body.raidId,
+        submittedAt: new Date().toISOString(),
+        featuresClaimed,
+        featuresVerified,
+        teeAttestation: teeResult,
+        externalApiCalls: [`${upstream}:chat/completions`],
+        dataRetained: false,
+        signedDeclaration: `PRIVACY_DECLARATION:${input.body.providerId}|${input.body.raidId}|${featuresClaimed.join(',')}|${teeResult.valid ? 'attested' : 'unattested'}|0|false`,
+      };
+    }
+
+    await input.orchestrator.recordProviderSubmission(input.body.raidId, {
+      raidId: input.body.raidId,
+      providerId: input.body.providerId,
+      providerRunId: input.providerRunId,
+      answerText: chatResult.content,
+      explanation: `${upstream} hosted gateway completed ${upstreamModelId}.`,
+      confidence: 0.92,
+      filesTouched: [],
+      submittedAt: new Date().toISOString(),
+      privacyAttestation,
+    });
+  } catch (error) {
+    await input.orchestrator.recordProviderFailure(input.body.raidId, input.body.providerId, {
+      raidId: input.body.raidId,
+      providerId: input.body.providerId,
+      providerRunId: input.providerRunId,
+      message: error instanceof Error ? error.message : String(error),
+      failedAt: new Date().toISOString(),
+    });
+  }
+}
+
+export function createProviderRunId(): string {
+  return `run_${randomUUID()}`;
+}

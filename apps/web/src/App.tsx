@@ -24,6 +24,7 @@ import { buildPlaygroundUrl, readPlaygroundMode } from './lib/playground-routing
 import { ReceiptPage } from './pages/ReceiptPage';
 import { RaidersPage } from './pages/RaidersPage';
 import { SellerOnboardingPage } from './pages/SellerOnboardingPage';
+import { ManageOffersPage } from './pages/ManageOffersPage';
 type AppTheme = 'light' | 'dark';
 
 const LANDING_THEME_STORAGE_KEY = 'bossraid.landing-theme';
@@ -47,6 +48,7 @@ export function App() {
   const isLegacyDemoRoute = pathname === '/demo';
   const isBuyerOnboardingRoute = pathname === '/onboarding/buyer';
   const isSellerOnboardingRoute = pathname === '/onboarding/seller';
+  const isManageOffersRoute = pathname === '/sell/offers';
   const isAccountRoute = pathname === '/account';
   const isRaidersRoute = pathname === '/raiders';
   const isReceiptRoute = pathname === '/receipt';
@@ -183,6 +185,8 @@ export function App() {
             <BuyerOnboardingPage />
           ) : isSellerOnboardingRoute ? (
             <SellerOnboardingPage />
+          ) : isManageOffersRoute ? (
+            <ManageOffersPage />
           ) : isAccountRoute ? (
             <AccountPage />
           ) : isReceiptRoute ? (

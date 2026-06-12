@@ -71,6 +71,22 @@ export type ApiRateLimitEntry = {
   resetAt: number;
 };
 
+export type UpstreamProviderKind = 'venice' | 'redpill' | 'near' | 'chutes' | 'phala';
+
+export type SellerUpstreamConfigEntry = {
+  configId: string;
+  wallet: string;
+  provider: UpstreamProviderKind;
+  apiKeyCiphertext: string;
+  keyPrefix: string;
+  upstreamBase: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** @deprecated use SellerUpstreamConfigEntry */
+export type SellerVeniceConfigEntry = SellerUpstreamConfigEntry;
+
 export type ApiControlStateSnapshot = {
   version: 1;
   savedAt: string;
@@ -81,6 +97,9 @@ export type ApiControlStateSnapshot = {
   buyerApiKeys: BuyerApiKeyEntry[];
   buyerPurchases: BuyerPurchaseEntry[];
   sellerPayouts: SellerPayoutEntry[];
+  sellerUpstreamConfigs: SellerUpstreamConfigEntry[];
+  /** @deprecated migrated to sellerUpstreamConfigs */
+  sellerVeniceConfigs?: SellerUpstreamConfigEntry[];
   rateLimits: ApiRateLimitEntry[];
   settings: ApiRuntimeSettings;
 };

@@ -23,6 +23,9 @@ import { registerChatRoutes } from './routes/chat.js';
 import { registerOpsRoutes } from './routes/ops.js';
 import { registerProviderRoutes } from './routes/providers.js';
 import { registerAgentRoutes } from './routes/agents.js';
+import { registerInferenceGatewayRoutes } from './routes/inference-gateway.js';
+import { registerSellerUpstreamRoutes } from './routes/seller-upstream.js';
+import { registerMarketplaceTeeRoutes } from './routes/marketplace-tee.js';
 
 export { resolveChatTerminalSettleGraceMs } from './lib/env.js';
 
@@ -131,6 +134,9 @@ export function buildApiServer(
   registerOpsRoutes(app, ctx, handlers);
   registerProviderRoutes(app, ctx, handlers);
   registerAgentRoutes(app, ctx, handlers);
+  registerInferenceGatewayRoutes(app, ctx);
+  registerSellerUpstreamRoutes(app, ctx, handlers);
+  registerMarketplaceTeeRoutes(app, ctx, handlers);
 
   return app;
 }
