@@ -2,7 +2,7 @@ import type { InferenceMarket } from '../../api/marketplace.js';
 import {
   computeSavingsPercent,
   computeSavingsUsd,
-  estimateBenchmarkTaskUsd,
+  resolveMarketBenchmarkTaskUsd,
 } from '../../lib/marketplace-benchmark.js';
 import { formatUsd } from '@bossraid/proof-ui';
 import { ProviderBrandIcon } from '../ProviderBrandIcon.js';
@@ -34,7 +34,7 @@ export function MarketDiscountChart({
     return (
       <section aria-label="Marketplace discount chart" className="market-discount-chart">
         <p className="eyebrow">{title}</p>
-        <p className="market-discount-chart__empty">No benchmark savings yet for live models.</p>
+        <p className="market-discount-chart__empty">No benchmark reference for live models yet.</p>
       </section>
     );
   }
@@ -133,7 +133,9 @@ function DiscountRowView({
         <div className="market-discount-chart__copy">
           <strong>{row.market.modelId}</strong>
           <span>
-            {row.savingsPercent}% off · save {formatUsd(row.savingsUsd)}
+            {row.savingsPercent > 0
+              ? `${row.savingsPercent}% off · save ${formatUsd(row.savingsUsd)}`
+              : 'at reference'}
           </span>
         </div>
         <strong className="market-discount-chart__rate">{formatUsd(row.cheapest)}</strong>
@@ -155,18 +157,10 @@ function DiscountRowView({
 function buildDiscountRows(markets: InferenceMarket[]): DiscountRow[] {
   return markets
     .map((market) => {
-      const benchmark = estimateBenchmarkTaskUsd(market.modelId);
+      const benchmark = resolveMarketBenchmarkTaskUsd(market);
       const cheapest = market.cheapestRateUsd;
-      const savingsPercent = computeSavingsPercent(benchmark, cheapest);
-      const savingsUsd = computeSavingsUsd(benchmark, cheapest);
 
-      if (
-        benchmark == null ||
-        cheapest == null ||
-        savingsPercent == null ||
-        savingsUsd == null ||
-        savingsPercent <= 0
-      ) {
+      if (benchmark == null || cheapest == null || cheapest <= 0) {
         return null;
       }
 
@@ -174,10 +168,15 @@ function buildDiscountRows(markets: InferenceMarket[]): DiscountRow[] {
         market,
         benchmark,
         cheapest,
-        savingsPercent,
-        savingsUsd,
+        savingsPercent: computeSavingsPercent(benchmark, cheapest) ?? 0,
+        savingsUsd: computeSavingsUsd(benchmark, cheapest) ?? 0,
       };
     })
     .filter((row): row is DiscountRow => row != null)
-    .sort((left, right) => right.savingsPercent - left.savingsPercent);
+    .sort(
+      (left, right) =>
+        right.savingsPercent - left.savingsPercent ||
+        left.cheapest - right.cheapest ||
+        left.market.modelId.localeCompare(right.market.modelId)
+    );
 }

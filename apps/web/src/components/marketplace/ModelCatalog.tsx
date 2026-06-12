@@ -3,7 +3,7 @@ import type { InferenceMarket } from '../../api/marketplace.js';
 import {
   computeSavingsPercent,
   computeSavingsUsd,
-  estimateBenchmarkTaskUsd,
+  resolveMarketBenchmarkTaskUsd,
 } from '../../lib/marketplace-benchmark.js';
 import { formatUsd } from '@bossraid/proof-ui';
 import { formatLatency, formatPercent, formatSavingsLabel } from '../../lib/marketplace-format.js';
@@ -73,6 +73,7 @@ export function ModelCatalog({ markets, onOpenModel }: ModelCatalogProps) {
               <th>sellers</th>
               <th>success</th>
               <th>p50</th>
+              <th>tee</th>
               <th>unit</th>
             </tr>
           </thead>
@@ -92,7 +93,8 @@ export function ModelCatalog({ markets, onOpenModel }: ModelCatalogProps) {
 }
 
 function ModelRow({ market, onOpen }: { market: InferenceMarket; onOpen: () => void }) {
-  const benchmark = estimateBenchmarkTaskUsd(market.modelId);
+  const benchmark = resolveMarketBenchmarkTaskUsd(market);
+  const teeSellerCount = market.sellers.filter((seller) => seller.privacy.teeAttested).length;
   const savingsUsd = computeSavingsUsd(benchmark, market.cheapestRateUsd);
   const savingsPercent = computeSavingsPercent(benchmark, market.cheapestRateUsd);
   const savingsLabel = formatSavingsLabel(savingsUsd, savingsPercent);
@@ -127,6 +129,13 @@ function ModelRow({ market, onOpen }: { market: InferenceMarket; onOpen: () => v
       </td>
       <td>{formatPercent(market.recentSuccessRate)}</td>
       <td>{formatLatency(market.p50LatencyMs)}</td>
+      <td>
+        {teeSellerCount > 0 ? (
+          <span className="trust-badge trust-badge--tee">{teeSellerCount} tee</span>
+        ) : (
+          '—'
+        )}
+      </td>
       <td>{market.pricing.declaredUnit}</td>
     </tr>
   );

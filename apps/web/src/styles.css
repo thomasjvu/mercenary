@@ -5907,7 +5907,7 @@ h2 {
 
 .market-page__charts {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(260px, 0.75fr);
   gap: var(--panel-gap);
   margin-bottom: var(--panel-gap);
 }
@@ -6094,5 +6094,198 @@ h2 {
   .market-savings-summary,
   .market-page__charts {
     grid-template-columns: 1fr;
+  }
+}
+
+.app-header--with-wallet .app-header__actions {
+  margin-left: auto;
+}
+
+.app-header-wallet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.app-header-wallet--loading {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.82rem;
+}
+
+.app-header-wallet__connect {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.app-header-wallet__address {
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+  padding: 6px 10px;
+}
+
+.app-header-wallet__sign-out {
+  padding-inline: 6px;
+}
+
+.host-tee-trust {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.host-tee-trust--strip {
+  padding: 8px clamp(16px, 2vw, 28px);
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+
+.host-tee-trust--inline {
+  margin-top: 14px;
+}
+
+.host-tee-trust__chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.host-tee-trust__chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  text-transform: uppercase;
+}
+
+.host-tee-trust__chip--ready {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  color: var(--text);
+}
+
+.host-tee-trust__chip--pending {
+  border-style: dashed;
+}
+
+.host-tee-trust__link {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.host-tee-trust__link:hover {
+  color: var(--text);
+}
+
+.trust-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  text-transform: uppercase;
+}
+
+.trust-badge--tee {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  color: var(--text);
+}
+
+.market-price-ladder {
+  display: grid;
+  gap: 12px;
+  padding: clamp(18px, 2vw, 24px);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.market-price-ladder__rows {
+  display: grid;
+  gap: 12px;
+}
+
+.market-price-ladder__row {
+  display: grid;
+  gap: 8px;
+}
+
+.market-price-ladder__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.market-price-ladder__copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.market-price-ladder__copy span,
+.market-price-ladder__empty {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.market-price-ladder__rate {
+  margin-left: auto;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.82rem;
+}
+
+.market-price-ladder__track {
+  height: 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-muted);
+}
+
+.market-price-ladder__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--chart-savings);
+}
+
+.inference-playground__deck {
+  min-width: 0;
+}
+
+.seller-order-book__privacy-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.seller-order-book__privacy-badge {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1100px) {
+  .app-header--with-wallet {
+    flex-wrap: wrap;
   }
 }

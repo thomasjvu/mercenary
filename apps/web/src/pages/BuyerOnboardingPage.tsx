@@ -3,8 +3,8 @@ import { createBuyerApiKey, fetchSession } from '../api';
 import { useWalletAuth } from '../hooks/useWalletAuth';
 
 export function BuyerOnboardingPage() {
-  const { session, setSession, status, setStatus, connectWallet } = useWalletAuth(
-    'Connect a wallet to create a buyer account.'
+  const { session, setSession, status, setStatus, connectWallet, isAuthenticated } = useWalletAuth(
+    'Use connect wallet in the header to create a buyer account.'
   );
   const [apiKey, setApiKey] = useState<string>('');
   const [keyName, setKeyName] = useState('Beta buyer key');
@@ -16,7 +16,7 @@ export function BuyerOnboardingPage() {
       spendLimitUsd: spendLimit.trim() ? Number(spendLimit) : undefined,
     });
     setApiKey(created.apiKey);
-    setSession(await fetchSession());
+    await setSession(await fetchSession());
     setStatus('API key created. It is only shown once.');
   }
 
@@ -34,15 +34,21 @@ export function BuyerOnboardingPage() {
         <article className="beta-panel">
           <p className="eyebrow">1 / wallet sign-in</p>
           <h2>Own the account.</h2>
-          <p>SIWE wallet sign-in. Registry tokens stay internal.</p>
-          <button
-            className="button button--primary"
-            onClick={() => void connectWallet()}
-            type="button"
-          >
-            connect wallet
-          </button>
-          <p className="form-status">{status}</p>
+          <p>SIWE wallet sign-in via the header control.</p>
+          {isAuthenticated ? (
+            <p className="form-status">Signed in as {session?.wallet}.</p>
+          ) : (
+            <>
+              <button
+                className="button button--primary"
+                onClick={() => void connectWallet()}
+                type="button"
+              >
+                connect wallet
+              </button>
+              <p className="form-status">{status}</p>
+            </>
+          )}
         </article>
 
         <article className="beta-panel">

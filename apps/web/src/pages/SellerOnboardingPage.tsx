@@ -3,8 +3,8 @@ import { createSellerProvider, fetchSession, type Provider } from '../api';
 import { useWalletAuth } from '../hooks/useWalletAuth';
 
 export function SellerOnboardingPage() {
-  const { session, setSession, status, setStatus, connectWallet } = useWalletAuth(
-    'Connect a wallet before registering a seller endpoint.'
+  const { session, setSession, status, setStatus, connectWallet, isAuthenticated } = useWalletAuth(
+    'Use connect wallet in the header before registering a seller endpoint.'
   );
   const [provider, setProvider] = useState<Provider | null>(null);
   const [form, setForm] = useState({
@@ -44,7 +44,7 @@ export function SellerOnboardingPage() {
       },
     });
     setProvider(registered.provider);
-    setSession(await fetchSession());
+    await setSession(await fetchSession());
     setStatus(`Verification ${registered.provider.verification?.status ?? 'pending'}.`);
   }
 
@@ -63,14 +63,20 @@ export function SellerOnboardingPage() {
           <p className="eyebrow">1 / ownership</p>
           <h2>Sign in with wallet.</h2>
           <p>Ownership, offers, and payouts are account-bound.</p>
-          <button
-            className="button button--primary"
-            onClick={() => void connectWallet()}
-            type="button"
-          >
-            connect wallet
-          </button>
-          <p className="form-status">{status}</p>
+          {isAuthenticated ? (
+            <p className="form-status">Signed in as {session?.wallet}.</p>
+          ) : (
+            <>
+              <button
+                className="button button--primary"
+                onClick={() => void connectWallet()}
+                type="button"
+              >
+                connect wallet
+              </button>
+              <p className="form-status">{status}</p>
+            </>
+          )}
         </article>
 
         <article className="beta-panel beta-panel--wide">

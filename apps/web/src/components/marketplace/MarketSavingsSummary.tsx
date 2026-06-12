@@ -1,7 +1,7 @@
 import type { InferenceMarket } from '../../api/marketplace.js';
 import {
   computeSavingsPercent,
-  estimateBenchmarkTaskUsd,
+  resolveMarketBenchmarkTaskUsd,
 } from '../../lib/marketplace-benchmark.js';
 
 type MarketSavingsSummaryProps = {
@@ -12,7 +12,7 @@ type MarketSavingsSummaryProps = {
 export function MarketSavingsSummary({ markets, activeOffers }: MarketSavingsSummaryProps) {
   const savingsRows = markets
     .map((market) => {
-      const benchmark = estimateBenchmarkTaskUsd(market.modelId);
+      const benchmark = resolveMarketBenchmarkTaskUsd(market);
       const percent = computeSavingsPercent(benchmark, market.cheapestRateUsd);
       return percent != null && percent > 0 ? percent : null;
     })

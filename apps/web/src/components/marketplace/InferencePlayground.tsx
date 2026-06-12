@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { API_BASE } from '../../api/client.js';
 import { fetchMarkets, runInferenceChatCompletion } from '../../api/marketplace.js';
-import { fetchSession } from '../../api/auth.js';
+import { TerminalCodePanel } from '../terminal/TerminalCodePanel.js';
 
 const API_KEY_STORAGE_KEY = 'bossraid.playground.apiKey';
 
@@ -12,7 +12,6 @@ type InferencePlaygroundProps = {
 
 export function InferencePlayground({ initialModelId }: InferencePlaygroundProps) {
   const markets = useSWR('playground-markets', () => fetchMarkets());
-  const session = useSWR('playground-session', fetchSession);
   const modelOptions = useMemo(
     () => (markets.data?.data ?? []).map((market) => market.modelId),
     [markets.data?.data]
@@ -26,6 +25,8 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
   const [error, setError] = useState<string | null>(null);
   const [responseText, setResponseText] = useState<string | null>(null);
   const [rawResponse, setRawResponse] = useState<unknown>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [activePanel, setActivePanel] = useState<'curl' | 'response'>('curl');
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -50,10 +51,25 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
     }
   }, [initialModelId]);
 
+  useEffect(() => {
+    if (!copiedKey) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => setCopiedKey(null), 1200);
+    return () => window.clearTimeout(timer);
+  }, [copiedKey]);
+
   const curlSnippet = `curl -X POST ${API_BASE}/v1/inference/chat/completions \\
   -H "authorization: Bearer br_..." \\
   -H "content-type: application/json" \\
   -d '{"model":"${model || 'gpt-5.5'}","messages":[{"role":"user","content":"${prompt.replace(/"/g, '\\"')}"}],"raid_policy":{"max_total_cost":${maxBudget || '1'},"privacy_mode":"prefer"}}'`;
+
+  const responseSnippet = rawResponse
+    ? JSON.stringify(rawResponse, null, 2)
+    : responseText
+      ? JSON.stringify({ content: responseText }, null, 2)
+      : 'Run inference to see response metadata here.';
 
   async function handleRun() {
     if (!apiKey.trim()) {
@@ -81,10 +97,20 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
       });
       setResponseText(result.content);
       setRawResponse(result.raw);
+      setActivePanel('response');
     } catch (runError) {
       setError(runError instanceof Error ? runError.message : 'Inference request failed.');
     } finally {
       setPending(false);
+    }
+  }
+
+  async function copySnippet(key: string, value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedKey(key);
+    } catch {
+      setCopiedKey(null);
     }
   }
 
@@ -94,9 +120,7 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
         <div className="beta-panel inference-playground__panel">
           <p className="eyebrow">try inference</p>
           <h2>Send one call.</h2>
-          <p className="inference-playground__lede">
-            `POST /v1/inference/chat/completions` · buyer API key required
-          </p>
+          <p className="inference-playground__lede">Buyer API key required.</p>
 
           <label className="field">
             <span>model</span>
@@ -154,22 +178,51 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
           ) : null}
         </div>
 
-        <aside className="beta-panel inference-playground__panel">
-          <p className="eyebrow">production curl</p>
-          <pre className="code-panel">{curlSnippet}</pre>
-          {rawResponse ? (
-            <>
-              <p className="eyebrow">raw response</p>
-              <pre className="code-panel code-panel--compact">
-                {JSON.stringify(rawResponse, null, 2)}
-              </pre>
-            </>
-          ) : (
-            <p className="quiet-note">
-              Response metadata (seller, quote, savings) appears here after a successful run.
-            </p>
-          )}
-        </aside>
+        <div className="terminal-deck inference-playground__deck">
+          <div className="terminal-deck__header">
+            <p className="eyebrow">live request</p>
+            <div className="terminal-deck__tabs" role="tablist" aria-label="Playground output">
+              <button
+                className={`deck-tab deck-tab--chat ${activePanel === 'curl' ? 'deck-tab--active' : ''}`}
+                onClick={() => setActivePanel('curl')}
+                type="button"
+              >
+                curl
+              </button>
+              <button
+                className={`deck-tab deck-tab--raid ${activePanel === 'response' ? 'deck-tab--active' : ''}`}
+                onClick={() => setActivePanel('response')}
+                type="button"
+              >
+                response
+              </button>
+            </div>
+          </div>
+          <div className="terminal-stack">
+            <TerminalCodePanel
+              label="production curl"
+              note="openai-compatible"
+              code={curlSnippet}
+              theme="chat"
+              layer={activePanel === 'curl' ? 'front' : 'mid'}
+              onFocus={() => setActivePanel('curl')}
+              actionLabel={copiedKey === 'curl-panel' ? 'copied' : 'copy'}
+              onAction={() => void copySnippet('curl-panel', curlSnippet)}
+            />
+            <TerminalCodePanel
+              label="raw response"
+              note="seller + quote metadata"
+              code={responseSnippet}
+              theme="raid"
+              layer={activePanel === 'response' ? 'front' : 'back'}
+              onFocus={() => setActivePanel('response')}
+              actionLabel={rawResponse && copiedKey === 'response-panel' ? 'copied' : 'copy'}
+              onAction={
+                rawResponse ? () => void copySnippet('response-panel', responseSnippet) : undefined
+              }
+            />
+          </div>
+        </div>
       </div>
     </section>
   );

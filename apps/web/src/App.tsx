@@ -52,7 +52,7 @@ export function App() {
   const isRaidersRoute = pathname === '/raiders';
   const isReceiptRoute = pathname === '/receipt';
   const usesDirectoryLayout = isDemoRoute || isRaidersRoute || isReceiptRoute;
-  const usesAppHeader = !isLandingRoute && !isReceiptRoute;
+  const usesAppHeader = !isReceiptRoute;
   const playgroundModelId =
     isPlaygroundRoute && typeof window !== 'undefined'
       ? readPlaygroundModelId(window.location.search)

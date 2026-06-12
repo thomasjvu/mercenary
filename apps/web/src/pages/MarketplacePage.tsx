@@ -5,6 +5,7 @@ import { MarketDiscountChart } from '../components/marketplace/MarketDiscountCha
 import { MarketSavingsSummary } from '../components/marketplace/MarketSavingsSummary.js';
 import { ModelCatalog } from '../components/marketplace/ModelCatalog.js';
 import { MarketStatsRibbon } from '../components/marketplace/MarketStatsRibbon.js';
+import { MarketPriceLadder } from '../components/marketplace/MarketPriceLadder.js';
 import { MarketVolumePanel } from '../components/marketplace/MarketVolumePanel.js';
 
 const FILTER_DEFAULTS = {
@@ -47,6 +48,7 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
 
       <div className="market-page__charts">
         <MarketDiscountChart markets={visibleMarkets} />
+        <MarketPriceLadder markets={visibleMarkets} />
         <MarketVolumePanel stats={markets.data?.stats} />
       </div>
 

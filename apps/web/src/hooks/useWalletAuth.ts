@@ -1,5 +1,12 @@
 import { useCallback, useState } from 'react';
-import { createAuthNonce, verifyAuth, type PublicSession } from '../api';
+import useSWR from 'swr';
+import {
+  createAuthNonce,
+  deleteSession,
+  fetchSession,
+  verifyAuth,
+  type PublicSession,
+} from '../api';
 
 type EthereumProvider = {
   request(args: { method: string; params?: unknown[] }): Promise<unknown>;
@@ -10,7 +17,7 @@ function readEthereum(): EthereumProvider | undefined {
 }
 
 export function useWalletAuth(initialStatus: string) {
-  const [session, setSession] = useState<PublicSession | null>(null);
+  const session = useSWR('wallet-session', fetchSession, { revalidateOnFocus: true });
   const [status, setStatus] = useState(initialStatus);
 
   const connectWallet = useCallback(async () => {
@@ -33,9 +40,31 @@ export function useWalletAuth(initialStatus: string) {
       params: [nonce.message, wallet],
     })) as string;
     const verified = await verifyAuth(wallet, nonce.message, signature);
-    setSession(verified);
+    await session.mutate(verified, false);
     setStatus(`Signed in as ${wallet}.`);
-  }, []);
+  }, [session]);
 
-  return { session, setSession, status, setStatus, connectWallet };
+  const signOut = useCallback(async () => {
+    await deleteSession();
+    await session.mutate();
+    setStatus('Signed out.');
+  }, [session]);
+
+  const setSession = useCallback(
+    async (value: PublicSession) => {
+      await session.mutate(value, false);
+    },
+    [session]
+  );
+
+  return {
+    session: session.data?.authenticated ? session.data : null,
+    setSession,
+    status,
+    setStatus,
+    connectWallet,
+    signOut,
+    sessionLoading: session.isLoading,
+    isAuthenticated: Boolean(session.data?.authenticated),
+  };
 }

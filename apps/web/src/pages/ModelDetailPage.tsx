@@ -11,7 +11,7 @@ import { ProviderBrandIcon } from '../components/ProviderBrandIcon.js';
 import {
   computeSavingsPercent,
   computeSavingsUsd,
-  estimateBenchmarkTaskUsd,
+  resolveMarketBenchmarkTaskUsd,
 } from '../lib/marketplace-benchmark.js';
 import { formatUsd } from '@bossraid/proof-ui';
 import { formatLatency, formatPercent, formatSavingsLabel } from '../lib/marketplace-format.js';
@@ -32,7 +32,8 @@ export function ModelDetailPage({
   const markets = useSWR(['market-detail', modelId], () => fetchMarkets({ model_id: modelId }));
   const market = markets.data?.data[0];
   const healthBySellerId = new Map(providerHealth.map((entry) => [entry.providerId, entry]));
-  const benchmark = estimateBenchmarkTaskUsd(modelId);
+  const benchmark = market ? resolveMarketBenchmarkTaskUsd(market) : undefined;
+  const teeSellerCount = market?.sellers.filter((seller) => seller.privacy.teeAttested).length ?? 0;
   const savingsUsd = computeSavingsUsd(benchmark, market?.cheapestRateUsd);
   const savingsPercent = computeSavingsPercent(benchmark, market?.cheapestRateUsd);
   const savingsLabel = formatSavingsLabel(savingsUsd, savingsPercent);
@@ -92,6 +93,7 @@ export function ModelDetailPage({
                   value={`${market.activeProviderCount}/${market.providerCount}`}
                 />
                 <Metric label="verified" value={String(market.verifiedSellerCount)} />
+                <Metric label="tee verified" value={String(teeSellerCount)} />
                 <Metric label="private" value={String(market.privateSellerCount)} />
                 <Metric label="success" value={formatPercent(market.recentSuccessRate)} />
                 <Metric label="p50" value={formatLatency(market.p50LatencyMs)} />

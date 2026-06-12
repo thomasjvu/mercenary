@@ -103,5 +103,22 @@ function PrivacyBadges({ privacy }: { privacy: InferenceMarket['sellers'][number
     privacy.noDataRetention ? 'no-retain' : null,
   ].filter(Boolean);
 
-  return <span>{badges.length > 0 ? badges.join(' · ') : '—'}</span>;
+  if (badges.length === 0) {
+    return <span>—</span>;
+  }
+
+  return (
+    <span className="seller-order-book__privacy-badges">
+      {privacy.teeAttested ? (
+        <span className="trust-badge trust-badge--tee">tee verified</span>
+      ) : null}
+      {badges
+        .filter((badge) => badge !== 'tee')
+        .map((badge) => (
+          <span className="seller-order-book__privacy-badge" key={badge}>
+            {badge}
+          </span>
+        ))}
+    </span>
+  );
 }
