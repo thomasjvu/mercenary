@@ -7,6 +7,7 @@ import {
 } from '../../lib/marketplace-benchmark.js';
 import { formatUsd } from '@bossraid/proof-ui';
 import { formatLatency, formatPercent, formatSavingsLabel } from '../../lib/marketplace-format.js';
+import { ProviderBrandIcon } from '../ProviderBrandIcon.js';
 
 export type ModelSortKey = 'price' | 'sellers' | 'success' | 'latency' | 'model';
 
@@ -100,12 +101,27 @@ function ModelRow({ market, onOpen }: { market: InferenceMarket; onOpen: () => v
     <tr>
       <td>
         <button className="model-catalog__model-button" onClick={onOpen} type="button">
-          <strong>{market.modelId}</strong>
-          <span>{market.modelProvider ?? 'mixed'}</span>
+          <ProviderBrandIcon modelProvider={market.modelProvider} />
+          <span className="model-catalog__model-copy">
+            <strong>{market.modelId}</strong>
+            <span>{market.modelProvider ?? 'mixed'}</span>
+          </span>
         </button>
       </td>
       <td>{formatUsd(market.cheapestRateUsd)}</td>
-      <td>{savingsLabel ?? '—'}</td>
+      <td>
+        <div className="model-catalog__savings">
+          <span>{savingsLabel ?? '—'}</span>
+          {savingsPercent != null && savingsPercent > 0 ? (
+            <div className="model-catalog__savings-bar" aria-hidden="true">
+              <span
+                className="model-catalog__savings-fill"
+                style={{ width: `${Math.min(100, savingsPercent)}%` }}
+              />
+            </div>
+          ) : null}
+        </div>
+      </td>
       <td>
         {market.activeProviderCount}/{market.providerCount}
       </td>

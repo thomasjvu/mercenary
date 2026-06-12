@@ -10,13 +10,14 @@
     "test": "node --import tsx --test 'src/**/*.test.ts'"
   },
   "dependencies": {
-    "@iconify-json/pixel": "^1.2.1",
-    "@iconify/react": "^6.0.2",
-    "@bossraid/proof-ui": "workspace:*",
-    "@bossraid/ui": "workspace:*",
     "@bossraid/constants": "workspace:*",
     "@bossraid/http-client": "workspace:*",
+    "@bossraid/proof-ui": "workspace:*",
     "@bossraid/shared-types": "workspace:*",
+    "@bossraid/ui": "workspace:*",
+    "@iconify-json/pixel": "^1.2.1",
+    "@iconify-json/simple-icons": "^1.2.86",
+    "@iconify/react": "^6.0.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "swr": "^2.3.6"

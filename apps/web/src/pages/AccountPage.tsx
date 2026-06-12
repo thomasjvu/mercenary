@@ -102,10 +102,7 @@ export function AccountPage() {
         <div>
           <p className="eyebrow">account</p>
           <h1>Keys, usage, sellers, payouts.</h1>
-          <p className="lede">
-            Public beta account state is wallet-bound. Full production still needs durable SQL,
-            encrypted provider ingress secrets, and expanded abuse controls.
-          </p>
+          <p className="lede">Wallet-bound beta account state.</p>
         </div>
         {session.data?.authenticated ? (
           <button className="button" onClick={() => void signOut()} type="button">

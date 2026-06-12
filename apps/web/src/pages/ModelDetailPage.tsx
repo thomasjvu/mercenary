@@ -1,9 +1,13 @@
 import useSWR from 'swr';
-import { API_BASE, fetchMarkets, type ProviderHealth } from '../api';
+import { fetchMarkets, type ProviderHealth } from '../api';
+import {
+  ModelDiscountBar,
+  SellerPriceSpreadChart,
+} from '../components/marketplace/MarketDiscountChart.js';
 import { InferencePlayground } from '../components/marketplace/InferencePlayground.js';
 import { MarketStatsRibbon } from '../components/marketplace/MarketStatsRibbon.js';
-import { MarketVolumePanel } from '../components/marketplace/MarketVolumePanel.js';
 import { SellerOrderBook } from '../components/marketplace/SellerOrderBook.js';
+import { ProviderBrandIcon } from '../components/ProviderBrandIcon.js';
 import {
   computeSavingsPercent,
   computeSavingsUsd,
@@ -33,11 +37,6 @@ export function ModelDetailPage({
   const savingsPercent = computeSavingsPercent(benchmark, market?.cheapestRateUsd);
   const savingsLabel = formatSavingsLabel(savingsUsd, savingsPercent);
 
-  const curlSnippet = `curl -X POST ${API_BASE}/v1/inference/chat/completions \\
-  -H "authorization: Bearer br_..." \\
-  -H "content-type: application/json" \\
-  -d '{"model":"${modelId}","messages":[{"role":"user","content":"Hello from Boss Raid"}],"raid_policy":{"max_total_cost":1,"privacy_mode":"prefer"}}'`;
-
   return (
     <section className="beta-page model-detail-page">
       <header className="beta-hero beta-hero--compact">
@@ -45,12 +44,11 @@ export function ModelDetailPage({
           <button className="button model-detail-page__back" onClick={onBack} type="button">
             ← all models
           </button>
-          <p className="eyebrow">{market?.modelProvider ?? 'model marketplace'}</p>
-          <h1>{modelId}</h1>
-          <p className="lede">
-            Full seller order book for this model with live health, benchmark savings, token/task
-            pricing, and a built-in try panel.
+          <p className="eyebrow">
+            <ProviderBrandIcon modelProvider={market?.modelProvider} size={16} />{' '}
+            {market?.modelProvider ?? 'model marketplace'}
           </p>
+          <h1>{modelId}</h1>
         </div>
         <aside className="quickstart-card">
           <p className="eyebrow">from</p>
@@ -104,14 +102,12 @@ export function ModelDetailPage({
                   value={formatUsd(market.pricing.pricePer1mInputTokensUsd, 3)}
                 />
               </div>
-              {markets.data?.settlement ? (
-                <p className="quiet-note">
-                  Settlement: {markets.data.settlement.asset} on {markets.data.settlement.network}
-                </p>
-              ) : null}
             </article>
 
-            <MarketVolumePanel stats={markets.data?.stats} />
+            <div className="market-page__charts market-page__charts--single">
+              <ModelDiscountBar market={market} />
+              <SellerPriceSpreadChart market={market} />
+            </div>
           </div>
 
           <SellerOrderBook
@@ -121,13 +117,7 @@ export function ModelDetailPage({
             showClose={false}
           />
 
-          <div className="model-detail-page__split">
-            <aside className="beta-panel">
-              <p className="eyebrow">production curl</p>
-              <pre className="code-panel">{curlSnippet}</pre>
-            </aside>
-            <InferencePlayground initialModelId={modelId} />
-          </div>
+          <InferencePlayground initialModelId={modelId} />
         </>
       )}
     </section>

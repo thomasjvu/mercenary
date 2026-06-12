@@ -26,10 +26,7 @@ export function BuyerOnboardingPage() {
         <div>
           <p className="eyebrow">buyer onboarding</p>
           <h1>Wallet, API key, paid request.</h1>
-          <p className="lede">
-            Buyers authenticate with a wallet, create prefixed API keys, set spend limits, and use
-            x402/USDC payment rails for paid inference and raids.
-          </p>
+          <p className="lede">Wallet sign-in → capped API key → discount inference.</p>
         </div>
       </header>
 
@@ -37,10 +34,7 @@ export function BuyerOnboardingPage() {
         <article className="beta-panel">
           <p className="eyebrow">1 / wallet sign-in</p>
           <h2>Own the account.</h2>
-          <p>
-            The public app uses a SIWE-style nonce and signature flow. Admin registry tokens stay
-            internal and never appear in buyer onboarding.
-          </p>
+          <p>SIWE wallet sign-in. Registry tokens stay internal.</p>
           <button
             className="button button--primary"
             onClick={() => void connectWallet()}

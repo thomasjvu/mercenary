@@ -93,10 +93,9 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
       <div className="inference-playground__grid">
         <div className="beta-panel inference-playground__panel">
           <p className="eyebrow">try inference</p>
-          <h2>Send one discounted model call.</h2>
+          <h2>Send one call.</h2>
           <p className="inference-playground__lede">
-            Uses the same `POST /v1/inference/chat/completions` lane as production. Requires a buyer
-            API key; wallet session {session.data?.authenticated ? 'is active' : 'not required'}.
+            `POST /v1/inference/chat/completions` · buyer API key required
           </p>
 
           <label className="field">

@@ -1,6 +1,7 @@
 import type { ProviderHealth } from '../../api/client.js';
 import type { InferenceMarket } from '../../api/marketplace.js';
 import { formatUsd } from '@bossraid/proof-ui';
+import { ProviderBrandIcon } from '../ProviderBrandIcon.js';
 import { SellerHealthBadge } from './SellerHealthBadge.js';
 
 export function SellerOrderBook({
@@ -21,11 +22,9 @@ export function SellerOrderBook({
       <div className="seller-order-book__header">
         <div>
           <p className="eyebrow">order book</p>
-          <h2>{market.modelId}</h2>
-          <p className="seller-order-book__lede">
-            Sellers sorted by declared rate. Boss Raid routes to the cheapest eligible offer for
-            discount inference.
-          </p>
+          <h2>
+            <ProviderBrandIcon modelProvider={market.modelProvider} /> {market.modelId}
+          </h2>
         </div>
         <div className="seller-order-book__actions">
           {onTry ? (
@@ -59,7 +58,12 @@ export function SellerOrderBook({
             {market.sellers.map((seller) => (
               <tr key={seller.sellerId}>
                 <td>
-                  <strong>{seller.displayName}</strong>
+                  <strong>
+                    <ProviderBrandIcon
+                      modelProvider={seller.modelProvider ?? market.modelProvider}
+                    />{' '}
+                    {seller.displayName}
+                  </strong>
                   <span>{seller.sellerId}</span>
                 </td>
                 <td>{formatUsd(seller.rateUsd)}</td>

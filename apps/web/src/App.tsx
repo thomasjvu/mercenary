@@ -1,6 +1,7 @@
 import { startTransition, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Icon, addCollection } from '@iconify/react';
 import { icons as pixelIcons } from '@iconify-json/pixel';
+import { icons as simpleIcons } from '@iconify-json/simple-icons';
 import { BOSSRAID_DOCS_URL } from '@bossraid/ui';
 import useSWR from 'swr';
 import { bindAsciiRipple } from './ascii-ripple';
@@ -28,6 +29,7 @@ type AppTheme = 'light' | 'dark';
 const LANDING_THEME_STORAGE_KEY = 'bossraid.landing-theme';
 
 addCollection(pixelIcons);
+addCollection(simpleIcons);
 
 export function App() {
   const appShellRef = useRef<HTMLElement | null>(null);

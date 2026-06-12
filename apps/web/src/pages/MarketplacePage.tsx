@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { API_BASE, fetchMarkets } from '../api';
+import { MarketDiscountChart } from '../components/marketplace/MarketDiscountChart.js';
+import { MarketSavingsSummary } from '../components/marketplace/MarketSavingsSummary.js';
 import { ModelCatalog } from '../components/marketplace/ModelCatalog.js';
 import { MarketStatsRibbon } from '../components/marketplace/MarketStatsRibbon.js';
 import { MarketVolumePanel } from '../components/marketplace/MarketVolumePanel.js';
@@ -31,19 +33,20 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
       <header className="beta-hero beta-hero--compact market-page__hero">
         <div>
           <p className="eyebrow">open market for models</p>
-          <h1>Buy discounted verified inference.</h1>
-          <p className="lede">
-            Browse live seller order books by model, compare rates against static benchmark
-            references, and route OpenAI-compatible calls through the cheapest eligible seller.
-            Settlement stays in USDC; seller credentials stay hidden.
-          </p>
+          <h1>Discount verified inference.</h1>
+          <p className="lede">Live order books, benchmark savings, USDC settlement.</p>
         </div>
         <QuickstartCard marketModelId={visibleMarkets[0]?.modelId} />
       </header>
 
       <MarketStatsRibbon markets={markets.data} />
+      <MarketSavingsSummary
+        activeOffers={markets.data?.stats.activeOffers}
+        markets={visibleMarkets}
+      />
 
-      <div className="market-page__volume-row">
+      <div className="market-page__charts">
+        <MarketDiscountChart markets={visibleMarkets} />
         <MarketVolumePanel stats={markets.data?.stats} />
       </div>
 
@@ -51,19 +54,19 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
         <aside className="beta-panel beta-panel--filters">
           <p className="eyebrow">filters</p>
           <FilterField
-            label="model id"
+            label="model"
             onChange={(value) => setFilters({ ...filters, model: value })}
             placeholder="gpt-5.5"
             value={filters.model}
           />
           <FilterField
-            label="model provider"
+            label="provider"
             onChange={(value) => setFilters({ ...filters, provider: value })}
             placeholder="openai"
             value={filters.provider}
           />
           <FilterSelect
-            label="agent framework"
+            label="framework"
             onChange={(value) => setFilters({ ...filters, framework: value })}
             options={[
               ['', 'any'],
@@ -74,26 +77,29 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
             ]}
             value={filters.framework}
           />
-          <FilterSelect
-            label="privacy"
-            onChange={(value) => setFilters({ ...filters, privacy: value })}
-            options={[
-              ['any', 'any'],
-              ['strict', 'strict private'],
-            ]}
-            value={filters.privacy}
-          />
-          <FilterSelect
-            label="verification"
-            onChange={(value) => setFilters({ ...filters, verification: value })}
-            options={[
-              ['any', 'any'],
-              ['verified', 'verified'],
-              ['pending', 'pending'],
-              ['failed', 'failed'],
-            ]}
-            value={filters.verification}
-          />
+          <details className="market-page__filters-advanced">
+            <summary>advanced</summary>
+            <FilterSelect
+              label="privacy"
+              onChange={(value) => setFilters({ ...filters, privacy: value })}
+              options={[
+                ['any', 'any'],
+                ['strict', 'strict private'],
+              ]}
+              value={filters.privacy}
+            />
+            <FilterSelect
+              label="verify"
+              onChange={(value) => setFilters({ ...filters, verification: value })}
+              options={[
+                ['any', 'any'],
+                ['verified', 'verified'],
+                ['pending', 'pending'],
+                ['failed', 'failed'],
+              ]}
+              value={filters.verification}
+            />
+          </details>
           <FilterField
             inputMode="decimal"
             label="max budget"
@@ -103,26 +109,17 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
           />
 
           {markets.data?.custody ? (
-            <div className="market-page__policy">
-              <p className="eyebrow">custody</p>
-              <p>{markets.data.custody.sellerCredentialPolicy}</p>
-            </div>
+            <p className="quiet-note">{markets.data.custody.sellerCredentialPolicy}</p>
           ) : null}
         </aside>
 
         <div className="market-page__main">
           {markets.error ? (
-            <EmptyState
-              body="The API did not return market data. Check API origin and readiness."
-              title="Marketplace unavailable"
-            />
+            <EmptyState body="Check API origin and readiness." title="Marketplace unavailable" />
           ) : markets.isLoading ? (
-            <EmptyState body="Reading verified seller order books." title="Loading markets" />
+            <EmptyState body="Reading seller order books." title="Loading markets" />
           ) : visibleMarkets.length === 0 ? (
-            <EmptyState
-              body="No seller currently matches this model, budget, verification, and privacy filter."
-              title="No eligible sellers"
-            />
+            <EmptyState body="No seller matches this filter." title="No eligible sellers" />
           ) : (
             <ModelCatalog markets={visibleMarkets} onOpenModel={onOpenModel} />
           )}
@@ -134,15 +131,35 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
 
 function QuickstartCard({ marketModelId }: { marketModelId?: string }) {
   const model = marketModelId ?? 'gpt-5.5';
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
   const code = `curl -X POST ${API_BASE}/v1/inference/chat/completions \\
   -H "authorization: Bearer br_..." \\
   -H "content-type: application/json" \\
   -d '{"model":"${model}","messages":[{"role":"user","content":"Run on the cheapest verified seller."}],"raid_policy":{"max_total_cost":1,"privacy_mode":"prefer"}}'`;
 
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1200);
+    } catch {
+      setCopied(false);
+    }
+  }
+
   return (
     <aside className="quickstart-card">
       <p className="eyebrow">buyer quickstart</p>
-      <pre className="code-panel">{code}</pre>
+      <div className="quickstart-card__actions">
+        <button className="button button--primary" onClick={() => void handleCopy()} type="button">
+          {copied ? 'copied' : 'copy curl'}
+        </button>
+        <button className="button" onClick={() => setExpanded((current) => !current)} type="button">
+          {expanded ? 'hide' : 'show curl'}
+        </button>
+      </div>
+      {expanded ? <pre className="code-panel">{code}</pre> : null}
     </aside>
   );
 }

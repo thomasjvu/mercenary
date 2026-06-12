@@ -1,0 +1,23 @@
+:root {
+  --surface: rgba(255, 255, 255, 0.58);
+  --surface-elevated: rgba(255, 255, 255, 0.9);
+  --surface-inset: rgba(255, 255, 255, 0.96);
+  --surface-muted: rgba(255, 255, 255, 0.34);
+  --code-bg: rgba(17, 17, 17, 0.04);
+  --accent-surface: rgba(251, 47, 56, 0.1);
+  --chart-ref: rgba(90, 91, 109, 0.35);
+  --chart-market: rgba(44, 82, 179, 0.72);
+  --chart-savings: rgba(251, 47, 56, 0.65);
+}
+
+.app-shell--theme-dark {
+  --surface: rgba(18, 20, 27, 0.72);
+  --surface-elevated: rgba(24, 27, 36, 0.88);
+  --surface-inset: rgba(12, 14, 18, 0.92);
+  --surface-muted: rgba(18, 20, 27, 0.42);
+  --code-bg: rgba(241, 244, 251, 0.06);
+  --accent-surface: rgba(251, 47, 56, 0.18);
+  --chart-ref: rgba(212, 216, 228, 0.28);
+  --chart-market: rgba(90, 130, 220, 0.72);
+  --chart-savings: rgba(251, 47, 56, 0.55);
+}

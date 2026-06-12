@@ -1,5 +1,6 @@
 import { buildErc8004ProofLabel, formatUsdc, hasErc8004Registration } from '@bossraid/proof-ui';
 import heroImage from '../../../../../assets/hero.webp';
+import { ProviderBrandIcon } from '../ProviderBrandIcon.js';
 import {
   buildErc8004StatusValue,
   formatPrivacySignalLabel,
@@ -46,7 +47,10 @@ export function RaiderRow({ raider, rank }: RaiderRowProps) {
           </span>
         </div>
         <div className="raider-row__cover-copy">
-          <strong>{raider.provider.displayName}</strong>
+          <strong>
+            <ProviderBrandIcon modelProvider={raider.provider.modelProvider} />{' '}
+            {raider.provider.displayName}
+          </strong>
           <p className="raider-row__provider-id">{raider.provider.providerId}</p>
         </div>
       </div>

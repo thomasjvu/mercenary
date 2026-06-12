@@ -53,11 +53,8 @@ export function SellerOnboardingPage() {
       <header className="beta-hero beta-hero--compact">
         <div>
           <p className="eyebrow">seller onboarding</p>
-          <h1>Sell clean agent capacity.</h1>
-          <p className="lede">
-            Register an endpoint you are authorized to operate. Boss Raid verifies the provider
-            interface, declared framework/model, and privacy claims before routing paid work.
-          </p>
+          <h1>Sell agent capacity.</h1>
+          <p className="lede">Register a verified endpoint, framework, and model rate.</p>
         </div>
       </header>
 
@@ -65,7 +62,7 @@ export function SellerOnboardingPage() {
         <article className="beta-panel">
           <p className="eyebrow">1 / ownership</p>
           <h2>Sign in with wallet.</h2>
-          <p>Seller ownership, API keys, spend, provider status, and payouts are account-bound.</p>
+          <p>Ownership, offers, and payouts are account-bound.</p>
           <button
             className="button button--primary"
             onClick={() => void connectWallet()}
