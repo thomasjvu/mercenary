@@ -53,4 +53,10 @@ export type {
   SettlementExecutionResponse,
   SettlementSummaryResponse,
   SubmissionArtifactView,
+  TeeAttestationCheckView,
+  TeeAttestationView,
+  PrivacyAttestationView,
+  PrivacyComplianceIssueView,
+  PrivacyComplianceResultView,
+  PrivacyComplianceRecordView,
 } from './api-views.js';

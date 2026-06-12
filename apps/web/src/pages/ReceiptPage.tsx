@@ -20,6 +20,7 @@ import { ReceiptQueryForm } from '../components/receipt/ReceiptQueryForm';
 import { SummaryPill } from '../components/receipt/ReceiptPrimitives';
 import { useReceiptAttestation } from '../hooks/useReceiptAttestation';
 import { useReceiptQuery } from '../hooks/useReceiptQuery';
+import { buildReceiptUpstreamAttestations } from '../lib/receipt-attestation-view';
 import { buildReceiptProviderRows, readQueryErrorMessage } from '../lib/receipt-helpers';
 import { buildReceiptSettlementView } from '../lib/receipt-settlement-view';
 import { buildAttestationSurfaceLabel, isAttestationSignerUnavailable } from '../lib/receipt-url';
@@ -127,6 +128,10 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
     supportingProviders,
     droppedProviders
   );
+  const upstreamAttestations = buildReceiptUpstreamAttestations({
+    result: result.data,
+    providers: providers.data,
+  });
   const runtimeSignerDisabledForEmpty = isAttestationSignerUnavailable(
     attestedRuntime.error?.message
   );
@@ -298,6 +303,7 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
               settlementExecution={settlementExecution}
               signedProviderCount={signedProviderCount}
               teeProviderCount={teeProviderCount}
+              upstreamAttestations={upstreamAttestations}
             />
 
             <ReceiptProviderList rows={providerRows} />

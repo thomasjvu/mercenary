@@ -5,6 +5,7 @@ import type {
   AttestedRuntimePayload,
   RaidResult,
 } from '../../api';
+import type { ReceiptUpstreamAttestationRow } from '../../lib/receipt-attestation-view';
 import {
   buildAgentLogUrl,
   buildAgentManifestUrl,
@@ -12,6 +13,7 @@ import {
   buildAttestedRuntimeUrl,
   type ReceiptQuery,
 } from '../../lib/receipt-url';
+import { ReceiptUpstreamAttestationPanel } from './ReceiptUpstreamAttestationPanel';
 
 type ReceiptAttestationSectionProps = {
   activeQuery: ReceiptQuery;
@@ -28,6 +30,7 @@ type ReceiptAttestationSectionProps = {
   signedProviderCount: number;
   teeProviderCount: number;
   settlementExecution: RaidResult['settlementExecution'];
+  upstreamAttestations: ReceiptUpstreamAttestationRow[];
 };
 
 export function ReceiptAttestationSection({
@@ -45,7 +48,9 @@ export function ReceiptAttestationSection({
   signedProviderCount,
   teeProviderCount,
   settlementExecution,
+  upstreamAttestations,
 }: ReceiptAttestationSectionProps) {
+  const privacyCompliance = settlementExecution?.privacyCompliance;
   return (
     <article className="receipt-surface">
       <div className="receipt-surface__head">
@@ -96,6 +101,15 @@ export function ReceiptAttestationSection({
         signedProviderCount={signedProviderCount}
         teeProviderCount={teeProviderCount}
       />
+      <div className="receipt-surface__section">
+        <p className="eyebrow">upstream tee proof</p>
+        <ReceiptUpstreamAttestationPanel
+          overallPassed={privacyCompliance?.overallPassed}
+          overallScore={privacyCompliance?.overallScore}
+          privacyMode={privacyCompliance?.privacyMode}
+          rows={upstreamAttestations}
+        />
+      </div>
     </article>
   );
 }

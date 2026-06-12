@@ -1,3 +1,5 @@
+import type { PrivacyComplianceRecordView } from './privacy.js';
+
 export type SettlementSummaryResponse = {
   successfulProviderCount: number;
   successfulProvidersPaid: number;
@@ -18,6 +20,7 @@ export type SettlementExecutionResponse = {
   taskHash: string;
   evaluationHash: string;
   successfulProviderIds: string[];
+  privacyCompliance?: PrivacyComplianceRecordView;
   contracts: {
     registryAddress: string | null;
     escrowAddress: string | null;

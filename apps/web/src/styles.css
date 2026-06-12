@@ -1934,6 +1934,14 @@ h2 {
   line-height: 1.1;
 }
 
+.receipt-surface__section {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
 .receipt-state,
 .receipt-kicker,
 .receipt-stat span,
@@ -6842,4 +6850,95 @@ h2 {
 
 .form-status--error {
   color: #d45b5b;
+}
+
+.receipt-upstream-attestation {
+  display: grid;
+  gap: 12px;
+}
+
+.receipt-upstream-attestation__summary {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.receipt-upstream-attestation__list {
+  display: grid;
+  gap: 10px;
+}
+
+.receipt-upstream-attestation__card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.receipt-upstream-attestation__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.receipt-upstream-attestation__provider-id {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  word-break: break-all;
+}
+
+.receipt-upstream-attestation__status {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.receipt-upstream-attestation__status--ok {
+  color: #2ea060;
+}
+
+.receipt-upstream-attestation__meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  word-break: break-all;
+}
+
+.receipt-upstream-attestation__features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.receipt-upstream-attestation__feature {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.receipt-upstream-attestation__feature--verified {
+  border-color: rgba(46, 160, 96, 0.45);
+  color: #2ea060;
+}
+
+.receipt-upstream-attestation__feature--claimed {
+  border-color: rgba(212, 91, 91, 0.35);
+  color: #d4a05b;
+}
+
+.receipt-upstream-attestation__checks {
+  margin-top: 0;
 }

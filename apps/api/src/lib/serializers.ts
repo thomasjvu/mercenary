@@ -1,6 +1,10 @@
 import type {
   BossRaidResultOutput,
   BossRaidStatusOutput,
+  PrivacyAttestation,
+  PrivacyAttestationView,
+  PrivacyComplianceRecord,
+  PrivacyComplianceRecordView,
   ProviderHealthStatus,
   ProviderProfile,
   ProviderViewResponse,
@@ -12,8 +16,12 @@ import type {
   RankedSubmission,
   RankedSubmissionResponse,
   SanitizationReport,
+  SettlementExecutionRecord,
+  SettlementExecutionResponse,
   SubmissionArtifact,
   SubmissionArtifactView,
+  TeeAttestationResult,
+  TeeAttestationView,
 } from '@bossraid/shared-types';
 
 export function serializeProviderProfile(
@@ -89,6 +97,83 @@ function serializeSubmissionArtifact(artifact: SubmissionArtifact): SubmissionAr
   };
 }
 
+function serializeTeeAttestation(tee: TeeAttestationResult): TeeAttestationView {
+  return {
+    valid: tee.valid,
+    providerId: tee.providerId,
+    verifiedAt: tee.verifiedAt,
+    expiresAt: tee.expiresAt,
+    vendor: tee.vendor,
+    enclaveHash: tee.enclaveHash,
+    signature: tee.signature,
+    runtimeMode: tee.runtimeMode,
+    notes: tee.notes,
+    upstreamVendor: tee.upstreamVendor,
+    signingAddress: tee.signingAddress,
+    e2eeReady: tee.e2eeReady,
+    explorerUrl: tee.explorerUrl,
+    checks: tee.checks,
+  };
+}
+
+function serializePrivacyAttestation(attestation: PrivacyAttestation): PrivacyAttestationView {
+  return {
+    providerId: attestation.providerId,
+    raidId: attestation.raidId,
+    submittedAt: attestation.submittedAt,
+    featuresClaimed: attestation.featuresClaimed,
+    featuresVerified: attestation.featuresVerified,
+    teeAttestation: attestation.teeAttestation
+      ? serializeTeeAttestation(attestation.teeAttestation)
+      : undefined,
+    externalApiCalls: attestation.externalApiCalls,
+    dataRetained: attestation.dataRetained,
+    signedDeclaration: attestation.signedDeclaration,
+  };
+}
+
+function serializePrivacyComplianceRecord(
+  record: PrivacyComplianceRecord
+): PrivacyComplianceRecordView {
+  return {
+    raidId: record.raidId,
+    privacyMode: record.privacyMode,
+    requiredFeatures: record.requiredFeatures,
+    providerAttestations: record.providerAttestations.map(serializePrivacyAttestation),
+    perProviderCompliance: record.perProviderCompliance,
+    overallPassed: record.overallPassed,
+    overallScore: record.overallScore,
+    evaluatedAt: record.evaluatedAt,
+  };
+}
+
+function serializeSettlementExecution(
+  execution: SettlementExecutionRecord
+): SettlementExecutionResponse {
+  return {
+    mode: execution.mode,
+    proofStandard: execution.proofStandard,
+    lifecycleStatus: execution.lifecycleStatus,
+    executedAt: execution.executedAt,
+    artifactPath: execution.artifactPath,
+    registryRaidRef: execution.registryRaidRef,
+    taskHash: execution.taskHash,
+    evaluationHash: execution.evaluationHash,
+    successfulProviderIds: execution.successfulProviderIds,
+    privacyCompliance: execution.privacyCompliance
+      ? serializePrivacyComplianceRecord(execution.privacyCompliance)
+      : undefined,
+    contracts: execution.contracts,
+    registryCall: execution.registryCall,
+    childJobs: execution.childJobs,
+    finalizeTxHash: execution.finalizeTxHash,
+    transactionHashes: execution.transactionHashes,
+    jobIds: execution.jobIds,
+    warnings: execution.warnings,
+    allocations: execution.allocations,
+  };
+}
+
 function serializeRankedSubmission(entry: RankedSubmission): RankedSubmissionResponse {
   return {
     submission: {
@@ -99,6 +184,9 @@ function serializeRankedSubmission(entry: RankedSubmission): RankedSubmissionRes
       artifacts: entry.submission.artifacts?.map(serializeSubmissionArtifact),
       confidence: entry.submission.confidence,
       contributionRole: entry.submission.contributionRole,
+      privacyAttestation: entry.submission.privacyAttestation
+        ? serializePrivacyAttestation(entry.submission.privacyAttestation)
+        : undefined,
     },
     breakdown: {
       finalScore: entry.breakdown.finalScore,
@@ -156,7 +244,9 @@ export function serializeRaidResult(result: BossRaidResultOutput): RaidResultRes
     approvedSubmissions: result.approvedSubmissions?.map(serializeRankedSubmission),
     rankedSubmissions: result.rankedSubmissions?.map(serializeRankedSubmission),
     settlement: result.settlement,
-    settlementExecution: result.settlementExecution,
+    settlementExecution: result.settlementExecution
+      ? serializeSettlementExecution(result.settlementExecution)
+      : undefined,
     reputationEvents: result.reputationEvents?.map((event) => ({
       providerId: event.providerId,
       type: event.type,

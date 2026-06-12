@@ -37,6 +37,15 @@ export type {
 } from './api-views/settlement.js';
 
 export type {
+  TeeAttestationCheckView,
+  TeeAttestationView,
+  PrivacyAttestationView,
+  PrivacyComplianceIssueView,
+  PrivacyComplianceResultView,
+  PrivacyComplianceRecordView,
+} from './api-views/privacy.js';
+
+export type {
   OpsSessionStatusResponse,
   OpsX402SettingsResponse,
   OpsSettingsResponse,

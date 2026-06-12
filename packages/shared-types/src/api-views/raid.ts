@@ -1,3 +1,4 @@
+import type { PrivacyAttestationView } from './privacy.js';
 import type { SettlementExecutionResponse, SettlementSummaryResponse } from './settlement.js';
 
 export type RaidListItemResponse = {
@@ -57,6 +58,7 @@ export type RankedSubmissionResponse = {
       workstreamLabel?: string;
       workstreamObjective?: string;
     };
+    privacyAttestation?: PrivacyAttestationView;
   };
   breakdown: {
     finalScore: number;
