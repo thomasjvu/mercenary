@@ -18,6 +18,13 @@ export {
   type StorageBackend,
 } from './env.js';
 
+export {
+  DEFAULT_SETTLEMENT_MIN_PAYOUT_USD,
+  INFERENCE_SETTLEMENT_MIN_PAYOUT_USD,
+  readSettlementMinPayoutUsd,
+  readSettlementMode,
+} from './settlement.js';
+
 // Network Constants
 export const NETWORK = {
   LOCALHOST: '127.0.0.1',

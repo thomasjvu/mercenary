@@ -38,7 +38,10 @@ export function shouldFinalizeHierarchicalRaid(
   );
 }
 
-export function finalizeRaid(raid: RaidRecord, deps: OrchestratorFinalizationDeps): void {
+export async function finalizeRaid(
+  raid: RaidRecord,
+  deps: OrchestratorFinalizationDeps
+): Promise<void> {
   deps.clearRaidDeadlineTimer(raid.id);
   if (raid.childRaidIds?.length) {
     refreshParentRaidFromChildren(raid.id, (childRaidId) => deps.requireRaid(childRaidId));
@@ -59,7 +62,7 @@ export function finalizeRaid(raid: RaidRecord, deps: OrchestratorFinalizationDep
   }
   deps.queuePersistBestEffort();
   if (raid.parentRaidId == null) {
-    void deps.executeSettlement(raid.id);
+    await deps.executeSettlement(raid.id);
   }
 }
 
@@ -102,7 +105,7 @@ export function expireRaidAtDeadline(raidId: string, deps: OrchestratorFinalizat
       maybeFinalizeAfterUpdate(raid.parentRaidId, deps);
     }
     deps.queuePersistBestEffort();
-    finalizeRaid(raid, deps);
+    void finalizeRaid(raid, deps);
   } finally {
     deps.raidDeadlineTimers.unmarkExpiring(raidId);
   }
@@ -120,7 +123,7 @@ export function maybeFinalizeAfterUpdate(raidId: string, deps: OrchestratorFinal
       return;
     }
     if (shouldFinalizeHierarchicalRaid(raid, deps)) {
-      finalizeRaid(raid, deps);
+      void finalizeRaid(raid, deps);
       return;
     }
     if (raid.parentRaidId) {
@@ -130,7 +133,7 @@ export function maybeFinalizeAfterUpdate(raidId: string, deps: OrchestratorFinal
   }
 
   if (shouldFinalizeRaid(raid)) {
-    finalizeRaid(raid, deps);
+    void finalizeRaid(raid, deps);
     return;
   }
 

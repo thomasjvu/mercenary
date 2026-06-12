@@ -1,6 +1,7 @@
 import { type BossRaidOrchestrator } from '@bossraid/orchestrator';
 import { type BossRaidResultOutput, type BossRaidStatusOutput } from '@bossraid/shared-types';
 import { TIMEOUTS } from '@bossraid/constants';
+import type { SettlementMode } from './settlement-mode.js';
 
 export type ChatRaidOutcome = {
   status: BossRaidStatusOutput;
@@ -15,11 +16,13 @@ export async function waitForTerminalRaidOutput(
   orchestrator: BossRaidOrchestrator,
   raidId: string,
   timeoutMs: number,
-  settleGraceMs: number
+  settleGraceMs: number,
+  settlementMode: SettlementMode = 'file'
 ): Promise<ChatRaidOutcome> {
   return pollForTerminalChatOutcome(orchestrator, raidId, {
     timeoutMs,
     settleGraceMs: Math.max(settleGraceMs, TIMEOUTS.CHAT_TERMINAL_SETTLE_GRACE_FLOOR_MS),
+    settlementMode,
   });
 }
 
@@ -29,6 +32,7 @@ export async function pollForTerminalChatOutcome(
   options: {
     timeoutMs: number;
     settleGraceMs: number;
+    settlementMode?: SettlementMode;
     keepAliveIntervalMs?: number;
     onKeepAlive?: () => void;
   }
@@ -40,7 +44,10 @@ export async function pollForTerminalChatOutcome(
 
   while (Date.now() < settleDeadline) {
     latest = readChatRaidOutcome(orchestrator, raidId);
-    if (isTerminalChatOutcome(latest)) {
+    if (
+      isTerminalChatOutcome(latest) &&
+      isSettlementReady(orchestrator, raidId, options.settlementMode)
+    ) {
       return latest;
     }
 
@@ -57,6 +64,18 @@ export async function pollForTerminalChatOutcome(
   }
 
   return latest;
+}
+
+function isSettlementReady(
+  orchestrator: BossRaidOrchestrator,
+  raidId: string,
+  settlementMode: SettlementMode = 'file'
+): boolean {
+  if (settlementMode === 'off') {
+    return true;
+  }
+
+  return orchestrator.getRaid(raidId)?.settlementExecution != null;
 }
 
 function readChatRaidOutcome(orchestrator: BossRaidOrchestrator, raidId: string): ChatRaidOutcome {

@@ -12,6 +12,7 @@ import {
   type BuildDirectChatCompletionResponse,
 } from './chat-completion.js';
 import { pollForTerminalChatOutcome } from './chat-terminal-wait.js';
+import type { SettlementMode } from './settlement-mode.js';
 
 function writeSseData(stream: PassThrough, payload: unknown): void {
   stream.write(`data: ${JSON.stringify(payload)}\n\n`);
@@ -100,6 +101,7 @@ export async function streamChatCompletionResponse(
     };
     created: number;
     settleGraceMs: number;
+    settlementMode?: SettlementMode;
     bossraidBilling?: {
       capture: (
         usage: ReturnType<typeof estimateChatUsage>,
@@ -137,6 +139,7 @@ export async function streamChatCompletionResponse(
       const finalOutcome = await pollForTerminalChatOutcome(orchestrator, input.spawn.raidId, {
         timeoutMs: input.raidRequest.constraints.maxLatencySec * 1000,
         settleGraceMs: input.settleGraceMs,
+        settlementMode: input.settlementMode,
         keepAliveIntervalMs: DEFAULTS.PROVIDER_HEALTH_TIMEOUT_MS,
         onKeepAlive: () => {
           stream.write(': keep-alive\n\n');

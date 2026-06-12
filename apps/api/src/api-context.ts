@@ -13,6 +13,7 @@ import {
   readBooleanEnv,
   resolveChatTerminalSettleGraceMs,
 } from './lib/env.js';
+import { resolveApiSettlementMode, type SettlementMode } from './lib/settlement-mode.js';
 import { readTeeSigner, readMercenaryErc8004Identity } from './lib/tee.js';
 
 export type ApiContext = {
@@ -38,6 +39,7 @@ export type ApiContext = {
   providerHealthTimeoutMs: number;
   chatDefaultMaxTotalCost: number | undefined;
   chatTerminalSettleGraceMs: number;
+  settlementMode: SettlementMode;
   evaluatorMaxConcurrentJobs: number;
   registryToken: string | undefined;
   mercenaryIdentity: Erc8004Identity | undefined;
@@ -118,6 +120,7 @@ export function createApiContext(
   );
   const chatDefaultMaxTotalCost = readPositiveNumber(env.BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST);
   const chatTerminalSettleGraceMs = resolveChatTerminalSettleGraceMs(env);
+  const settlementMode = resolveApiSettlementMode(env);
   const evaluatorMaxConcurrentJobs = readPositiveInteger(env.BOSSRAID_EVAL_MAX_CONCURRENT_JOBS, 2);
   const registryToken = env.BOSSRAID_REGISTRY_TOKEN;
   const mercenaryIdentity = readMercenaryErc8004Identity(env);
@@ -163,6 +166,7 @@ export function createApiContext(
     providerHealthTimeoutMs,
     chatDefaultMaxTotalCost,
     chatTerminalSettleGraceMs,
+    settlementMode,
     evaluatorMaxConcurrentJobs,
     registryToken,
     mercenaryIdentity,

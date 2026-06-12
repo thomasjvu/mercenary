@@ -332,7 +332,7 @@ export class RaidLifecycleCoordinator {
   }
 
   private finalizeRaid(raid: RaidRecord): void {
-    finalizeRaidState(raid, this.finalizationDeps());
+    void finalizeRaidState(raid, this.finalizationDeps());
   }
 
   private async waitForFinalization(raidId: string): Promise<void> {

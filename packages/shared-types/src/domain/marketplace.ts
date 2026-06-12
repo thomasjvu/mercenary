@@ -83,7 +83,7 @@ export interface ReservedRaidNode {
 
 export interface RaidLaunchReservationRecord {
   id: string;
-  route: 'raid' | 'chat';
+  route: 'raid' | 'chat' | 'inference';
   requestKey: string;
   createdAt: string;
   expiresAt: string;

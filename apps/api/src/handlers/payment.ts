@@ -137,7 +137,7 @@ export function createPaymentHandlers(
   }
 
   async function requireReservedLaunchPayment(
-    route: 'raid' | 'chat',
+    route: 'raid' | 'chat' | 'inference',
     request: FastifyRequest,
     input: BossRaidSpawnInput
   ): Promise<{

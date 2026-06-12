@@ -110,7 +110,8 @@ export function createChatHandlers(
     }
 
     await ensureErc8004ProofState({ includeMercenary: false });
-    const launchPayment = await requireReservedLaunchPayment('chat', request, raidRequest);
+    const paymentRoute = options.discountInference ? 'inference' : 'chat';
+    const launchPayment = await requireReservedLaunchPayment(paymentRoute, request, raidRequest);
     let spawn;
     try {
       spawn =
@@ -147,6 +148,7 @@ export function createChatHandlers(
         spawn,
         created,
         settleGraceMs: ctx.chatTerminalSettleGraceMs,
+        settlementMode: ctx.settlementMode,
         bossraidBilling: launchPayment.manaBilling
           ? {
               capture: async (usage, selectedSeller) => {
@@ -175,7 +177,8 @@ export function createChatHandlers(
         ctx.orchestrator,
         spawn.raidId,
         Math.max(raidRequest.constraints.maxLatencySec * 1000, TIMEOUTS.MIN_TIMEOUT_MS),
-        ctx.chatTerminalSettleGraceMs
+        ctx.chatTerminalSettleGraceMs,
+        ctx.settlementMode
       );
     } catch (error) {
       await refundManaBilling({

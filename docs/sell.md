@@ -76,7 +76,7 @@ Rate-card changes affect future quotes only. Settlement uses the immutable quote
 
 ## Payout
 
-Successful providers split escrow equally. Minimum payout threshold applies (default $0.25). No winner/runner-up logic.
+Successful providers split escrow equally. Multi-agent raids use the default payout threshold (`$0.25`). Single-provider discount inference settles down to `$0.01`. No winner/runner-up logic.
 
 Track earnings: `GET /v1/seller/earnings`, dashboard at `/account`.
 

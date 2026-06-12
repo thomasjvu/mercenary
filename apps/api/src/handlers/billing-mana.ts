@@ -78,7 +78,7 @@ export function createManaBillingHandlers(ctx: ApiContext) {
   }
 
   async function reserveManaBilling(input: {
-    route: 'raid' | 'chat';
+    route: 'raid' | 'chat' | 'inference';
     manaAccountId: string;
     amount: number;
     requestKey: string;

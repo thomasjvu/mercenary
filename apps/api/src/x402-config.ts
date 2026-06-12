@@ -51,6 +51,7 @@ export interface X402Config {
   routeSurchargeUsd: {
     raid: number;
     chat: number;
+    inference: number;
   };
   cdpApiKeyId?: string;
   cdpApiKeySecret?: string;
@@ -61,7 +62,7 @@ export interface X402Config {
   assetVersion?: string;
 }
 
-export type X402RouteName = 'raid' | 'chat';
+export type X402RouteName = 'raid' | 'chat' | 'inference';
 
 const DEFAULT_PAYAI_FACILITATOR_URL = 'https://facilitator.payai.network';
 const DEFAULT_RAID_SURCHARGE_USD = 0.01;
@@ -133,6 +134,7 @@ export function readX402Config(env: NodeJS.ProcessEnv = process.env): X402Config
     routeSurchargeUsd: {
       raid: raidSurchargeUsd,
       chat: chatSurchargeUsd,
+      inference: chatSurchargeUsd,
     },
     cdpApiKeyId: env.CDP_API_KEY_ID,
     cdpApiKeySecret: env.CDP_API_KEY_SECRET,

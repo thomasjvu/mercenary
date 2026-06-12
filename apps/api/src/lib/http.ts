@@ -86,7 +86,7 @@ export function readClientRateLimitKey(request: FastifyRequest): string {
 
 export function buildLaunchRequestKey(
   request: FastifyRequest,
-  route: 'raid' | 'chat',
+  route: 'raid' | 'chat' | 'inference',
   input: BossRaidSpawnInput
 ): string {
   return createHash('sha256')

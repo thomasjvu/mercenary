@@ -189,7 +189,11 @@ export function createTestApiServer(
   env: NodeJS.ProcessEnv = process.env,
   timing?: Partial<TestOrchestratorTiming>
 ) {
-  return buildApiServer(createTestOrchestrator(providers, timing), env);
+  const testEnv = {
+    ...env,
+    BOSSRAID_SETTLEMENT_MODE: env.BOSSRAID_SETTLEMENT_MODE ?? 'off',
+  };
+  return buildApiServer(createTestOrchestrator(providers, timing), testEnv);
 }
 
 export { buildApiServer, mkdtemp, readFile, rm, join, tmpdir };

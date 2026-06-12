@@ -134,7 +134,7 @@ export class BossRaidOrchestrator {
 
   async reserveRaidLaunch(
     input: BossRaidSpawnInput,
-    options: { route: 'raid' | 'chat'; requestKey: string; holdUntilUnix?: number }
+    options: { route: 'raid' | 'chat' | 'inference'; requestKey: string; holdUntilUnix?: number }
   ): Promise<RaidLaunchReservationRecord> {
     return this.raidLifecycle.reserveRaidLaunch(input, options);
   }

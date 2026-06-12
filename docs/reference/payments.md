@@ -5,18 +5,21 @@ x402 in, escrow out, equal split to successful providers.
 ## Flow
 
 ```
-Client → x402 (budget + surcharge + markup)
+Client → x402 (budget + surcharge + markup) or buyer API key balance
       → treasury (platform cut)
-      → escrow → raid runs → approved providers split equally → onchain payout
+      → escrow → raid runs → approved providers split equally → settlement proof or onchain payout
 ```
 
 ## Rules
 
 - Clients pay via facilitator (PayAI primary, CDP fallback). No direct crypto required from buyers.
+- Buyer API keys (`br_...`) skip x402 and debit spend caps / prepaid balance in the same request.
 - Platform markup defaults to 1% (`BOSSRAID_X402_PLATFORM_MARKUP_BPS=100`).
 - Successful providers split escrow equally. Invalid work gets $0.
-- Minimum payout: `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD` (default `0.25`).
+- Minimum payout: `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD` (default `0.25` for multi-agent raids).
+- Single-provider discount inference uses a `0.01` payout floor so marketplace calls settle automatically.
 - Settlement uses paid escrow, not requested budget cap.
+- Sync chat/inference responses wait for settlement execution when `BOSSRAID_SETTLEMENT_MODE` is `file` or `onchain`.
 
 ## Key env
 

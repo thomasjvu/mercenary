@@ -18,7 +18,7 @@ import type { ProviderRegistryCoordinator } from './orchestrator-provider-regist
 import type { RuntimeOptions } from './runtime.js';
 
 export type LaunchReservationOptions = {
-  route: 'raid' | 'chat';
+  route: 'raid' | 'chat' | 'inference';
   requestKey: string;
   holdUntilUnix?: number;
 };

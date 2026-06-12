@@ -1,5 +1,9 @@
 import { computeRewards, hashSubmission } from '@bossraid/raid-core';
 import type { RaidRecord, SettlementAllocation, SettlementSummary } from '@bossraid/shared-types';
+import {
+  isSingleProviderGeneralServiceRaid,
+  resolveMinimumPayoutThresholdUsd,
+} from './settlement-threshold.js';
 
 function computeSettlementRewards(raid: RaidRecord) {
   return computeRewards(
@@ -7,7 +11,7 @@ function computeSettlementRewards(raid: RaidRecord) {
     raid.rankedSubmissions,
     raid.task.rewardPolicy,
     {
-      minimumPayoutThresholdUsd: raid.task.constraints.minimumPayoutThresholdUsd ?? 0.25,
+      minimumPayoutThresholdUsd: resolveMinimumPayoutThresholdUsd(raid),
     }
   );
 }
@@ -51,7 +55,7 @@ export function buildSettlementSummary(raid: RaidRecord): SettlementSummary | un
     payoutPerSuccessfulProvider: rewards.payoutPerSuccessfulProvider,
     escrowFundingUsd: raid.escrowFundingUsd ?? 0,
     platformMarkupUsd: raid.platformMarkupUsd ?? 0,
-    minimumPayoutThresholdUsd: raid.task.constraints.minimumPayoutThresholdUsd ?? 0.25,
+    minimumPayoutThresholdUsd: resolveMinimumPayoutThresholdUsd(raid),
     approvedProviderCount: raid.selectedProviders.length,
   };
 }
@@ -77,16 +81,4 @@ function readSettlementBudgetUsd(raid: RaidRecord): number {
   }
 
   return Math.min(paidBudget, providerRate);
-}
-
-function isSingleProviderGeneralServiceRaid(raid: RaidRecord): boolean {
-  const constraints = raid.task.constraints;
-  return (
-    constraints.numExperts === 1 &&
-    raid.selectedProviders.length === 1 &&
-    ((constraints.allowedAgentFrameworks?.length ?? 0) > 0 ||
-      (constraints.allowedModelProviders?.length ?? 0) > 0 ||
-      (constraints.allowedModelIds?.length ?? 0) > 0 ||
-      constraints.selectionMode === 'round_robin')
-  );
 }
