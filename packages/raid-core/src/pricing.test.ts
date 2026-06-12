@@ -4,6 +4,7 @@ import { createProviderProfile, createSpawnInput } from '@bossraid/test-fixtures
 import {
   buildRateCardHash,
   estimateProviderChargeUsd,
+  estimateTokenMeteredUsd,
   estimateTaskInputTokens,
   normalizePrice,
   readProviderPricing,
@@ -48,6 +49,33 @@ test('estimateProviderChargeUsd meters token pricing with minimum charge', () =>
 
   const charge = estimateProviderChargeUsd(provider, task);
   assert.ok(charge >= 0.5);
+});
+
+test('estimateTokenMeteredUsd honors reference tokens and minimum charge', () => {
+  assert.equal(
+    estimateTokenMeteredUsd(
+      {
+        pricePer1mInputTokensUsd: 1,
+        pricePer1mOutputTokensUsd: 2,
+        minimumChargeUsd: 0.03,
+      },
+      1_000,
+      1_024
+    ),
+    0.03
+  );
+  assert.equal(
+    estimateTokenMeteredUsd(
+      {
+        pricePer1mInputTokensUsd: 1,
+        pricePer1mOutputTokensUsd: 2,
+        minimumChargeUsd: 0.001,
+      },
+      1_000,
+      1_024
+    ),
+    0.003048
+  );
 });
 
 test('buildRateCardHash is stable for equivalent pricing payloads', () => {

@@ -17,6 +17,7 @@ import {
   createGameSpawnInput,
   createProviderProfile,
   createSpawnInput,
+  FAST_TEST_TIMING,
   readyHealth,
   waitFor,
 } from './index.test-helpers.js';
@@ -101,12 +102,7 @@ test('Mercenary synthesizes approved provider contributions into one canonical r
 
   const orchestrator = new BossRaidOrchestrator(
     [providerA, providerB],
-    {
-      inviteAcceptMs: 1_000,
-      firstHeartbeatMs: 1_000,
-      hardExecutionMs: 1_000,
-      raidAbsoluteMs: 1_000,
-    },
+    FAST_TEST_TIMING,
     undefined,
     undefined,
     async (profile) => readyHealth(profile.providerId)
@@ -217,12 +213,7 @@ test('Mercenary can recurse into nested child raids when expert count exceeds th
 
   const orchestrator = new BossRaidOrchestrator(
     providers,
-    {
-      inviteAcceptMs: 1_000,
-      firstHeartbeatMs: 1_000,
-      hardExecutionMs: 1_000,
-      raidAbsoluteMs: 1_000,
-    },
+    FAST_TEST_TIMING,
     undefined,
     undefined,
     async (profile) => readyHealth(profile.providerId)
@@ -359,12 +350,7 @@ test('Mercenary routes game raids into gameplay, pixel art, and video marketing 
 
   const orchestrator = new BossRaidOrchestrator(
     providers,
-    {
-      inviteAcceptMs: 1_000,
-      firstHeartbeatMs: 1_000,
-      hardExecutionMs: 1_000,
-      raidAbsoluteMs: 1_000,
-    },
+    FAST_TEST_TIMING,
     undefined,
     undefined,
     async (profile) => readyHealth(profile.providerId)
@@ -642,12 +628,7 @@ test('Mercenary can revise the raid graph with an adaptive repair child raid', a
 
   const orchestrator = new BossRaidOrchestrator(
     providers,
-    {
-      inviteAcceptMs: 1_000,
-      firstHeartbeatMs: 1_000,
-      hardExecutionMs: 1_000,
-      raidAbsoluteMs: 1_000,
-    },
+    FAST_TEST_TIMING,
     undefined,
     undefined,
     async (profile) => readyHealth(profile.providerId)
@@ -737,12 +718,7 @@ test('Mercenary can deepen a weak workstream into an adaptive expansion subgraph
 
   const orchestrator = new BossRaidOrchestrator(
     providers,
-    {
-      inviteAcceptMs: 1_000,
-      firstHeartbeatMs: 1_000,
-      hardExecutionMs: 1_000,
-      raidAbsoluteMs: 1_000,
-    },
+    FAST_TEST_TIMING,
     undefined,
     undefined,
     async (profile) => readyHealth(profile.providerId)
@@ -845,12 +821,7 @@ test('Mercenary can recurse across multiple child-raid levels for large expert s
 
   const orchestrator = new BossRaidOrchestrator(
     providers,
-    {
-      inviteAcceptMs: 1_000,
-      firstHeartbeatMs: 1_000,
-      hardExecutionMs: 1_000,
-      raidAbsoluteMs: 1_000,
-    },
+    FAST_TEST_TIMING,
     undefined,
     undefined,
     async (profile) => readyHealth(profile.providerId)

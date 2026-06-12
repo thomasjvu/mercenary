@@ -113,11 +113,7 @@ export function toBytes32(value: string): Hex {
   return `0x${normalized}` as Hex;
 }
 
-export function isTerminalChildJobStatus(
-  status: SettlementArtifact['childJobs'][number]['lifecycleStatus']
-): boolean {
-  return status === 'completed' || status === 'rejected' || status === 'expired';
-}
+export { isTerminalChildJobStatus } from '@bossraid/raid-core';
 
 export function toAtomicAmount(amount: number, multiplier: bigint): bigint {
   const micros = BigInt(Math.round(amount * 1_000_000));

@@ -63,6 +63,21 @@ export function estimateTaskOutputTokens(task: RaidTaskSpec): number {
   return Math.max(1, task.constraints.maxOutputTokens ?? 1024);
 }
 
+export function estimateTokenMeteredUsd(
+  pricing: Pick<
+    ProviderPricing,
+    'pricePer1mInputTokensUsd' | 'pricePer1mOutputTokensUsd' | 'minimumChargeUsd'
+  >,
+  inputTokens: number,
+  outputTokens: number
+): number {
+  const inputCost =
+    (Math.max(0, inputTokens) / 1_000_000) * Math.max(pricing.pricePer1mInputTokensUsd ?? 0, 0);
+  const outputCost =
+    (Math.max(0, outputTokens) / 1_000_000) * Math.max(pricing.pricePer1mOutputTokensUsd ?? 0, 0);
+  return Math.max(inputCost + outputCost, pricing.minimumChargeUsd ?? 0);
+}
+
 export function estimateProviderChargeUsd(provider: ProviderProfile, task: RaidTaskSpec): number {
   const pricing = readProviderPricing(provider);
   if (pricing.mode === 'task') {
@@ -71,8 +86,5 @@ export function estimateProviderChargeUsd(provider: ProviderProfile, task: RaidT
 
   const inputTokens = task.constraints.maxInputTokens ?? estimateTaskInputTokens(task);
   const outputTokens = estimateTaskOutputTokens(task);
-  const inputCost = (inputTokens / 1_000_000) * Math.max(pricing.pricePer1mInputTokensUsd ?? 0, 0);
-  const outputCost =
-    (outputTokens / 1_000_000) * Math.max(pricing.pricePer1mOutputTokensUsd ?? 0, 0);
-  return Math.max(inputCost + outputCost, pricing.minimumChargeUsd ?? 0);
+  return estimateTokenMeteredUsd(pricing, inputTokens, outputTokens);
 }

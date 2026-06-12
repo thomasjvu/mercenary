@@ -16,23 +16,35 @@ import type {
   SupportedLanguage,
 } from '@bossraid/shared-types';
 
-const SUPPORTED_LANGUAGES = new Set<SupportedLanguage>([
+export const SUPPORTED_LANGUAGES = new Set<SupportedLanguage>([
   'csharp',
   'typescript',
   'python',
   'solidity',
   'text',
 ]);
-const OUTPUT_TYPES = new Set<OutputType>(['text', 'json', 'image', 'video', 'patch', 'bundle']);
-const PRIVACY_ROUTING_MODES = new Set<PrivacyRoutingMode>(['off', 'prefer', 'strict']);
-const SELECTION_MODES = new Set<SelectionMode>([
+export const OUTPUT_TYPES = new Set<OutputType>([
+  'text',
+  'json',
+  'image',
+  'video',
+  'patch',
+  'bundle',
+]);
+export const PRIVACY_ROUTING_MODES = new Set<PrivacyRoutingMode>(['off', 'prefer', 'strict']);
+export const SELECTION_MODES = new Set<SelectionMode>([
   'best_match',
   'privacy_first',
   'cost_first',
   'diverse_mix',
   'round_robin',
 ]);
-const AGENT_FRAMEWORKS = new Set<AgentFramework>(['codex', 'claude_code', 'openclaw', 'custom']);
+export const AGENT_FRAMEWORKS = new Set<AgentFramework>([
+  'codex',
+  'claude_code',
+  'openclaw',
+  'custom',
+]);
 const PROVIDER_VERIFICATION_STATUSES = new Set<ProviderVerificationStatus>([
   'pending',
   'verified',
@@ -46,7 +58,7 @@ const ERC8004_VERIFICATION_STATUSES = new Set<Erc8004Verification['status']>([
   'failed',
   'error',
 ]);
-const PRIVACY_FEATURES = new Set<PrivacyFeatureKey>([
+export const PRIVACY_FEATURES = new Set<PrivacyFeatureKey>([
   'tee_attested',
   'e2ee',
   'no_data_retention',

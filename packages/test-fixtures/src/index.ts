@@ -160,6 +160,8 @@ export function createDeferred<T>() {
   return { promise, resolve, reject };
 }
 
+export { FAST_TEST_TIMING, type TestOrchestratorTiming } from './orchestrator-timing.js';
+
 export async function waitFor(predicate: () => boolean, timeoutMs = 2_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
 

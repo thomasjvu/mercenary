@@ -17,6 +17,7 @@ import {
   createGameSpawnInput,
   createProviderProfile,
   createSpawnInput,
+  FAST_TEST_TIMING,
   readyHealth,
   waitFor,
 } from './index.test-helpers.js';
@@ -206,12 +207,7 @@ test('settlement execution receives registered provider operator wallets', async
   };
   const orchestrator = new BossRaidOrchestrator(
     [provider],
-    {
-      inviteAcceptMs: 1_000,
-      firstHeartbeatMs: 1_000,
-      hardExecutionMs: 1_000,
-      raidAbsoluteMs: 1_000,
-    },
+    FAST_TEST_TIMING,
     undefined,
     {
       execute: async (raid, options) => {

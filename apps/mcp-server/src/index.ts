@@ -1,4 +1,12 @@
-import { buildBossRaidRequestFromDelegateInput } from '@bossraid/api-contracts';
+import {
+  AGENT_FRAMEWORKS,
+  buildBossRaidRequestFromDelegateInput,
+  OUTPUT_TYPES,
+  PRIVACY_FEATURES,
+  PRIVACY_ROUTING_MODES,
+  SELECTION_MODES,
+  SUPPORTED_LANGUAGES,
+} from '@bossraid/api-contracts';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -6,48 +14,18 @@ import type {
   BossRaidResultOutput,
   BossRaidSpawnOutput,
   BossRaidStatusOutput,
-  OutputType,
-  PrivacyFeatureKey,
-  PrivacyRoutingMode,
-  SelectionMode,
-  SupportedLanguage,
 } from '@bossraid/shared-types';
 import { summarizeRaidReceipt } from './receipt.js';
 
-import { NETWORK } from '@bossraid/constants';
-import { TIMEOUTS } from '@bossraid/constants';
+import { HTTP, isTerminalRaidStatus, NETWORK, TIMEOUTS } from '@bossraid/constants';
+import { pollRaidSnapshot } from '@bossraid/proof-ui';
 import logger from '@bossraid/logger';
 
 const apiBase =
   process.env.BOSSRAID_API_BASE ?? `http://${NETWORK.LOCALHOST}:${NETWORK.LOCAL_API_PORT}`;
 const DEFAULT_DELEGATE_TIMEOUT_MS = TIMEOUTS.DELEGATE_TIMEOUT;
 const POLL_INTERVAL_MS = 500;
-const SUPPORTED_LANGUAGES = new Set<SupportedLanguage>([
-  'csharp',
-  'typescript',
-  'python',
-  'solidity',
-  'text',
-]);
-const OUTPUT_TYPES = new Set<OutputType>(['text', 'json', 'image', 'video', 'patch', 'bundle']);
-const PRIVACY_ROUTING_MODES = new Set<PrivacyRoutingMode>(['off', 'prefer', 'strict']);
-const SELECTION_MODES = new Set<SelectionMode>([
-  'best_match',
-  'privacy_first',
-  'cost_first',
-  'diverse_mix',
-  'round_robin',
-]);
-const PRIVACY_FEATURES = new Set<PrivacyFeatureKey>([
-  'tee_attested',
-  'e2ee',
-  'no_data_retention',
-  'signed_outputs',
-  'provenance_attested',
-  'operator_verified',
-]);
-const TERMINAL_RAID_STATUSES = new Set(['final', 'cancelled', 'expired']);
-const RAID_ACCESS_TOKEN_HEADER = 'x-bossraid-raid-token';
+const RAID_ACCESS_TOKEN_HEADER = HTTP.BOSSRAID_RAID_TOKEN_HEADER;
 
 const server = new Server(
   {
@@ -115,7 +93,7 @@ const tools = [
         },
         allowedAgentFrameworks: {
           type: 'array',
-          items: { type: 'string', enum: ['codex', 'claude_code', 'openclaw', 'custom'] },
+          items: { type: 'string', enum: [...AGENT_FRAMEWORKS] },
         },
         allowedModelProviders: {
           type: 'array',
@@ -397,11 +375,16 @@ async function waitForRaidReceipt(raidId: string, raidAccessToken: string, timeo
   const deadline = Date.now() + Math.max(timeoutMs, 1_000);
 
   while (Date.now() < deadline) {
-    const [status, result] = await Promise.all([
-      getRaidStatus(raidId, raidAccessToken),
-      getRaidResult(raidId, raidAccessToken),
-    ]);
-    if (result.synthesizedOutput || TERMINAL_RAID_STATUSES.has(status.status)) {
+    const snapshot = await pollRaidSnapshot({
+      fetchStatus: () => getRaidStatus(raidId, raidAccessToken),
+      fetchResult: () => getRaidResult(raidId, raidAccessToken),
+    });
+    if (snapshot.status.status !== 'fulfilled' || snapshot.result.status !== 'fulfilled') {
+      throw new Error('Failed to poll raid status or result.');
+    }
+    const status = snapshot.status.value;
+    const result = snapshot.result.value;
+    if (result.synthesizedOutput || isTerminalRaidStatus(status.status)) {
       return {
         timedOut: false,
         receipt: summarizeRaidReceipt(status, result),
@@ -410,13 +393,16 @@ async function waitForRaidReceipt(raidId: string, raidAccessToken: string, timeo
     await sleep(POLL_INTERVAL_MS);
   }
 
-  const [status, result] = await Promise.all([
-    getRaidStatus(raidId, raidAccessToken),
-    getRaidResult(raidId, raidAccessToken),
-  ]);
+  const snapshot = await pollRaidSnapshot({
+    fetchStatus: () => getRaidStatus(raidId, raidAccessToken),
+    fetchResult: () => getRaidResult(raidId, raidAccessToken),
+  });
+  if (snapshot.status.status !== 'fulfilled' || snapshot.result.status !== 'fulfilled') {
+    throw new Error('Failed to poll raid status or result.');
+  }
   return {
     timedOut: true,
-    receipt: summarizeRaidReceipt(status, result),
+    receipt: summarizeRaidReceipt(snapshot.status.value, snapshot.result.value),
   };
 }
 

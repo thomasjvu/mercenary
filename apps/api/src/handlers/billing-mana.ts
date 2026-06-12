@@ -1,4 +1,5 @@
 import { ApiContractError } from '@bossraid/api-contracts';
+import { estimateTokenMeteredUsd } from '@bossraid/raid-core';
 import { asSingleHeader, type RaidQuoteSnapshot } from '@bossraid/shared-types';
 import { readTrustedAlkahestClient } from '../lib/inference-marketplace.js';
 import { safeEqualString } from '../lib/http.js';
@@ -124,11 +125,7 @@ export function createManaBillingHandlers(ctx: ApiContext) {
     const completionTokens = Math.max(0, usage.completion_tokens ?? 0);
     const chargeUsd =
       pricing.mode === 'token_metered'
-        ? Math.max(
-            (promptTokens / 1_000_000) * (pricing.pricePer1mInputTokensUsd ?? 0) +
-              (completionTokens / 1_000_000) * (pricing.pricePer1mOutputTokensUsd ?? 0),
-            pricing.minimumChargeUsd ?? 0
-          )
+        ? estimateTokenMeteredUsd(pricing, promptTokens, completionTokens)
         : (pricing.pricePerTaskUsd ?? quote.maxChargeUsd);
     return Math.max(
       1,

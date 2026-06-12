@@ -24,6 +24,7 @@ import {
   createGameSpawnInput,
   createProviderProfile,
   createSpawnInput,
+  FAST_TEST_TIMING,
   readyHealth,
   waitFor,
 } from './index.test-helpers.js';
@@ -347,12 +348,7 @@ test('updateSettlementExecution persists refreshed settlement proof state', asyn
   };
   const orchestrator = new BossRaidOrchestrator(
     [provider],
-    {
-      inviteAcceptMs: 1_000,
-      firstHeartbeatMs: 1_000,
-      hardExecutionMs: 1_000,
-      raidAbsoluteMs: 1_000,
-    },
+    FAST_TEST_TIMING,
     persistence,
     undefined,
     async (profile) => readyHealth(profile.providerId)

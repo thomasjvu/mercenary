@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/apps/orchestrator/src/index.d.ts",
       "default": "./dist/apps/orchestrator/src/index.js"
+    },
+    "./test-orchestrator": {
+      "types": "./dist/apps/orchestrator/src/test-orchestrator.d.ts",
+      "default": "./dist/apps/orchestrator/src/test-orchestrator.js"
     }
   },
   "scripts": {

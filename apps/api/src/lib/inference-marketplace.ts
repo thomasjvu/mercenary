@@ -1,4 +1,4 @@
-import { readProviderPricing } from '@bossraid/raid-core';
+import { estimateTokenMeteredUsd, readProviderPricing } from '@bossraid/raid-core';
 import {
   type ChatCompletionRequest,
   type ProviderPricing,
@@ -244,11 +244,7 @@ export function estimateTokenMeteredMarketRateUsd(
   referenceInputTokens = MARKETPLACE_REFERENCE_INPUT_TOKENS,
   referenceOutputTokens = MARKETPLACE_REFERENCE_OUTPUT_TOKENS
 ): number {
-  const inputCost =
-    (referenceInputTokens / 1_000_000) * Math.max(pricing.pricePer1mInputTokensUsd ?? 0, 0);
-  const outputCost =
-    (referenceOutputTokens / 1_000_000) * Math.max(pricing.pricePer1mOutputTokensUsd ?? 0, 0);
-  return Math.max(inputCost + outputCost, pricing.minimumChargeUsd ?? 0);
+  return estimateTokenMeteredUsd(pricing, referenceInputTokens, referenceOutputTokens);
 }
 
 export function readProviderMarketRateUsd(provider: ProviderProfile): number {

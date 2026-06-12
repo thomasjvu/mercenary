@@ -7,6 +7,7 @@ import {
   createProviderProfile,
   createRaidRequestBody,
   createX402PaidTestEnv,
+  FAST_TEST_TIMING,
   readyHealth,
 } from './test/helpers.js';
 
@@ -216,12 +217,7 @@ test('raid result exposes ERC-8183-aligned settlement proof data', async () => {
 
   const orchestrator = new BossRaidOrchestrator(
     [provider],
-    {
-      inviteAcceptMs: 1_000,
-      firstHeartbeatMs: 1_000,
-      hardExecutionMs: 1_000,
-      raidAbsoluteMs: 1_000,
-    },
+    FAST_TEST_TIMING,
     undefined,
     undefined,
     async (profile) => readyHealth(profile.providerId)

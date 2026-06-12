@@ -1,6 +1,5 @@
+import { isTerminalRaidStatus } from '@bossraid/constants';
 import type { BossRaidResultOutput, BossRaidStatusOutput } from '@bossraid/shared-types';
-
-const TERMINAL_RAID_STATUSES = new Set(['final', 'cancelled', 'expired']);
 
 export function summarizeRaidReceipt(status: BossRaidStatusOutput, result: BossRaidResultOutput) {
   return {
@@ -69,7 +68,7 @@ export function summarizeRaidReceipt(status: BossRaidStatusOutput, result: BossR
               : undefined,
           },
     reputationEvents: result.reputationEvents ?? [],
-    pollTools: TERMINAL_RAID_STATUSES.has(status.status)
+    pollTools: isTerminalRaidStatus(status.status)
       ? undefined
       : ['bossraid_status', 'bossraid_result', 'bossraid_receipt'],
   };

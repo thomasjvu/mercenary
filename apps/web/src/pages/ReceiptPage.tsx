@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import useSWR from 'swr';
+import { formatUsd, raidPollingRefreshInterval } from '@bossraid/proof-ui';
 import {
-  countProvidersWithSignal,
-  formatUsd,
-  raidPollingRefreshInterval,
-  uniqueStrings,
-} from '@bossraid/proof-ui';
-import { ArtifactPreview, ReceiptProofPanel, useRaidPolling } from '@bossraid/ui';
+  ArtifactPreview,
+  ReceiptProofPanel,
+  SettlementProofPanel,
+  useRaidPolling,
+} from '@bossraid/ui';
 import heroImage from '../../../../assets/hero.webp';
 import {
   fetchAttestedRaidResult,
@@ -22,7 +22,6 @@ import {
 } from '../api';
 import { ReceiptProviderList } from '../components/receipt/ReceiptProviderList';
 import { ReceiptQueryForm } from '../components/receipt/ReceiptQueryForm';
-import { ReceiptSettlementBlock } from '../components/receipt/ReceiptSettlementBlock';
 import { ReceiptStat, SummaryPill } from '../components/receipt/ReceiptPrimitives';
 import {
   buildReceiptProviderRows,
@@ -31,6 +30,7 @@ import {
   readQueryErrorMessage,
   summarizeCanonicalOutput,
 } from '../lib/receipt-helpers';
+import { buildReceiptSettlementView } from '../lib/receipt-settlement-view';
 import {
   buildAgentLogUrl,
   buildAgentManifestUrl,
@@ -131,65 +131,32 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
     }
   }
 
-  const approvedProviders = uniqueStrings(
-    result.data?.settlementExecution?.successfulProviderIds.length
-      ? result.data.settlementExecution.successfulProviderIds
-      : result.data?.synthesizedOutput?.contributingProviderIds.length
-        ? result.data.synthesizedOutput.contributingProviderIds
-        : (result.data?.approvedSubmissions ?? []).map(
-            (submission) => submission.submission.providerId
-          )
-  );
-  const supportingProviders = uniqueStrings(
-    (result.data?.synthesizedOutput?.supportingProviderIds ?? []).filter(
-      (providerId) => !approvedProviders.includes(providerId)
-    )
-  );
-  const droppedProviders = uniqueStrings(result.data?.synthesizedOutput?.droppedProviderIds ?? []);
+  const settlementView = buildReceiptSettlementView({
+    result: result.data,
+    providers: providers.data,
+  });
+  const {
+    approvedProviders,
+    supportingProviders,
+    droppedProviders,
+    settlementExecution,
+    routingProof,
+    routingDecisionMap,
+    routedProviderIds,
+    erc8004ProviderCount,
+    verifiedErc8004ProviderCount,
+    veniceProviderCount,
+    teeProviderCount,
+    signedProviderCount,
+    approvedSubmissionCount,
+    successfulProviderCount,
+    payoutPerSuccessfulProvider,
+    settlementWarnings,
+    reputationEvents,
+    providerMap,
+  } = settlementView;
   const workstreams = result.data?.synthesizedOutput?.workstreams ?? [];
   const synthesizedArtifacts = result.data?.synthesizedOutput?.artifacts ?? [];
-  const settlementExecution = result.data?.settlementExecution;
-  const routingProof = result.data?.routingProof;
-  const routingDecisions = routingProof?.providers ?? [];
-  const providerMap = new Map(
-    (providers.data ?? []).map((provider) => [provider.providerId, provider])
-  );
-  const routingDecisionMap = new Map<
-    string,
-    NonNullable<RaidResult['routingProof']>['providers']
-  >();
-
-  for (const decision of routingDecisions) {
-    const existing = routingDecisionMap.get(decision.providerId) ?? [];
-    existing.push(decision);
-    routingDecisionMap.set(decision.providerId, existing);
-  }
-
-  const routedProviderIds = uniqueStrings([
-    ...routingDecisions.map((decision) => decision.providerId),
-    ...approvedProviders,
-    ...supportingProviders,
-    ...droppedProviders,
-    ...(settlementExecution?.childJobs.map((job) => job.providerId) ?? []),
-  ]);
-  const erc8004ProviderCount = countProvidersWithSignal(
-    routingDecisionMap,
-    (decision) => decision.erc8004Registered
-  );
-  const verifiedErc8004ProviderCount = countProvidersWithSignal(
-    routingDecisionMap,
-    (decision) => decision.erc8004VerificationStatus === 'verified'
-  );
-  const veniceProviderCount = countProvidersWithSignal(
-    routingDecisionMap,
-    (decision) => decision.veniceBacked
-  );
-  const teeProviderCount = countProvidersWithSignal(routingDecisionMap, (decision) =>
-    decision.privacyFeatures.includes('tee_attested')
-  );
-  const signedProviderCount = countProvidersWithSignal(routingDecisionMap, (decision) =>
-    decision.privacyFeatures.includes('signed_outputs')
-  );
   const runtimeSignerDisabled = isAttestationSignerUnavailable(attestedRuntime.error?.message);
   const resultSignerDisabled = isAttestationSignerUnavailable(attestedResult.error?.message);
   const runtimeAttestationStatus = attestedRuntime.data
@@ -225,13 +192,6 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
   const currentReceiptStatus = result.data?.status ?? status.data?.status ?? 'loading';
   const canonicalSummary = summarizeCanonicalOutput(result.data);
   const previewArtifacts = pickPreviewArtifacts(synthesizedArtifacts);
-  const approvedSubmissionCount =
-    result.data?.approvedSubmissions?.length ?? approvedProviders.length;
-  const successfulProviderCount =
-    result.data?.settlement?.successfulProviderCount ??
-    settlementExecution?.successfulProviderIds.length ??
-    approvedProviders.length;
-  const payoutPerSuccessfulProvider = result.data?.settlement?.payoutPerSuccessfulProvider;
   const primaryOutputType =
     result.data?.synthesizedOutput?.primaryType ??
     (result.data?.primarySubmission?.submission.patchUnifiedDiff ? 'patch' : 'pending');
@@ -243,7 +203,6 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
     supportingProviders,
     droppedProviders
   );
-  const settlementWarnings = settlementExecution?.warnings ?? [];
   const visibleWorkstreams = workstreams.slice(0, 4);
 
   return (
@@ -493,16 +452,30 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
 
             <ReceiptProviderList rows={providerRows} />
 
-            <ReceiptSettlementBlock
-              erc8004ProviderCount={erc8004ProviderCount}
-              payoutPerSuccessfulProvider={payoutPerSuccessfulProvider}
-              routedProviderCount={routedProviderIds.length}
-              settlementExecution={settlementExecution}
-              settlementWarnings={settlementWarnings}
-              successfulProviderCount={successfulProviderCount}
-              veniceProviderCount={veniceProviderCount}
-              verifiedErc8004ProviderCount={verifiedErc8004ProviderCount}
-            />
+            <article className="receipt-surface">
+              <div className="receipt-surface__head">
+                <div>
+                  <p className="eyebrow">settlement</p>
+                  <h2>Settlement</h2>
+                </div>
+              </div>
+              <SettlementProofPanel
+                activeRaidId={activeQuery.raidId}
+                approvedProviderCount={approvedSubmissionCount}
+                erc8004ProviderCount={erc8004ProviderCount}
+                payoutPerSuccessfulProvider={payoutPerSuccessfulProvider}
+                reputationEvents={reputationEvents}
+                resultStatus={currentReceiptStatus}
+                routingProof={routingProof}
+                routedProviderCount={routedProviderIds.length}
+                settlementExecution={settlementExecution}
+                settlementWarnings={settlementWarnings}
+                successfulProviderCount={successfulProviderCount}
+                variant="receipt"
+                veniceProviderCount={veniceProviderCount}
+                verifiedErc8004ProviderCount={verifiedErc8004ProviderCount}
+              />
+            </article>
           </section>
         ) : null}
       </div>

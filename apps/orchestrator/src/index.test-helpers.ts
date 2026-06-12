@@ -8,12 +8,15 @@ import {
   waitFor,
 } from '@bossraid/test-fixtures';
 import { BossRaidOrchestrator } from './index.js';
+import { createTestOrchestrator, FAST_TEST_TIMING } from './test-orchestrator.js';
 
 export {
   createDeferred,
   createGameSpawnInput,
   createProviderProfile,
   createSpawnInput,
+  createTestOrchestrator,
+  FAST_TEST_TIMING,
   readyHealth,
   waitFor,
 };

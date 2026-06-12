@@ -1,4 +1,12 @@
-export { ApiContractError } from './validation.js';
+export {
+  ApiContractError,
+  AGENT_FRAMEWORKS,
+  OUTPUT_TYPES,
+  PRIVACY_FEATURES,
+  PRIVACY_ROUTING_MODES,
+  SELECTION_MODES,
+  SUPPORTED_LANGUAGES,
+} from './validation.js';
 
 export {
   buildBossRaidRequestFromChatCompletion,

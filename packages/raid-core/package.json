@@ -17,6 +17,7 @@
     "test": "node --import tsx --test src/**/*.test.ts"
   },
   "dependencies": {
+    "@bossraid/constants": "workspace:*",
     "@bossraid/provider-registry": "workspace:*",
     "@bossraid/shared-types": "workspace:*"
   },

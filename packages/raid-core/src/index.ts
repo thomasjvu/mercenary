@@ -33,8 +33,29 @@ export {
   readProviderPricing,
   estimateTaskInputTokens,
   estimateTaskOutputTokens,
+  estimateTokenMeteredUsd,
   estimateProviderChargeUsd,
 } from './pricing.js';
+
+export {
+  SETTLEMENT_ESCROW_READ_ABI,
+  SETTLEMENT_REGISTRY_READ_ABI,
+  SETTLEMENT_ZERO_BYTES32,
+  buildChildJobNextAction,
+  isTerminalChildJobStatus,
+  mapJobLifecycleStatus,
+  type SettlementChildJobLifecycleStatus,
+} from './settlement-lifecycle.js';
+
+export {
+  MODEL_BENCHMARK_TASK_USD,
+  MODEL_BENCHMARK_INPUT_PER_1M_USD,
+  MODEL_BENCHMARK_OUTPUT_PER_1M_USD,
+  estimateBenchmarkTaskUsd,
+  estimateBenchmarkPriceUsd,
+  computeSavingsUsd,
+  computeSavingsPercent,
+} from './marketplace-benchmark.js';
 
 export {
   selectProviders,

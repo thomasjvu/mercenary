@@ -7,8 +7,11 @@ import { mnemonicToAccount } from 'viem/accounts';
 import {
   createProviderProfile as createFixtureProviderProfile,
   createSpawnInput,
+  FAST_TEST_TIMING,
   readyHealth as fixtureReadyHealth,
+  type TestOrchestratorTiming,
 } from '@bossraid/test-fixtures';
+
 import type { ProviderHealthStatus, ProviderProfile } from '@bossraid/shared-types';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
@@ -207,19 +210,7 @@ export async function createPublicSessionCookie(
   };
 }
 
-export type TestOrchestratorTiming = {
-  inviteAcceptMs: number;
-  firstHeartbeatMs: number;
-  hardExecutionMs: number;
-  raidAbsoluteMs: number;
-};
-
-export const FAST_TEST_TIMING: TestOrchestratorTiming = {
-  inviteAcceptMs: 1_000,
-  firstHeartbeatMs: 1_000,
-  hardExecutionMs: 1_000,
-  raidAbsoluteMs: 1_000,
-};
+export { FAST_TEST_TIMING, type TestOrchestratorTiming };
 
 export function createTestOrchestrator(
   providers: RaidProvider[] = [],

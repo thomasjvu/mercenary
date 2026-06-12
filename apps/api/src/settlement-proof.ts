@@ -1,4 +1,12 @@
 import { readFile, writeFile } from 'node:fs/promises';
+import {
+  SETTLEMENT_ESCROW_READ_ABI,
+  SETTLEMENT_REGISTRY_READ_ABI,
+  SETTLEMENT_ZERO_BYTES32,
+  buildChildJobNextAction,
+  isTerminalChildJobStatus,
+  mapJobLifecycleStatus,
+} from '@bossraid/raid-core';
 import type { SettlementExecutionRecord } from '@bossraid/shared-types';
 import {
   createPublicClient,
@@ -8,43 +16,6 @@ import {
   type Hex,
   type PublicClient,
 } from 'viem';
-
-const ZERO_BYTES32 = `0x${'0'.repeat(64)}` as Hex;
-
-const registryReadAbi = [
-  {
-    type: 'function',
-    name: 'raids',
-    stateMutability: 'view',
-    inputs: [{ name: 'raidId', type: 'uint256' }],
-    outputs: [
-      { name: 'client', type: 'address' },
-      { name: 'createdAt', type: 'uint256' },
-      { name: 'taskHash', type: 'bytes32' },
-      { name: 'evaluationHash', type: 'bytes32' },
-      { name: 'finalized', type: 'bool' },
-    ],
-  },
-] as const;
-
-const escrowReadAbi = [
-  {
-    type: 'function',
-    name: 'jobs',
-    stateMutability: 'view',
-    inputs: [{ name: 'jobId', type: 'uint256' }],
-    outputs: [
-      { name: 'client', type: 'address' },
-      { name: 'provider', type: 'address' },
-      { name: 'evaluator', type: 'address' },
-      { name: 'budget', type: 'uint256' },
-      { name: 'expiresAt', type: 'uint256' },
-      { name: 'deliverableHash', type: 'bytes32' },
-      { name: 'status', type: 'uint8' },
-      { name: 'description', type: 'string' },
-    ],
-  },
-] as const;
 
 type SettlementChildJob = SettlementExecutionRecord['childJobs'][number];
 type SettlementProofReadClient = {
@@ -196,13 +167,13 @@ export async function refreshSettlementExecutionWithClient(
       try {
         const rawJob = await options.client.readContract({
           address: escrowAddress,
-          abi: escrowReadAbi,
+          abi: SETTLEMENT_ESCROW_READ_ABI,
           functionName: 'jobs',
           args: [jobId],
         });
         const jobState = normalizeJobState(rawJob);
         const lifecycleStatus = mapJobLifecycleStatus(jobState.status);
-        const nextAction = buildNextAction(
+        const nextAction = buildChildJobNextAction(
           childJob.requestedAction,
           lifecycleStatus,
           jobState.budget
@@ -217,7 +188,7 @@ export async function refreshSettlementExecutionWithClient(
           providerAddress: jobState.provider,
           budgetAtomic: jobState.budget.toString(),
           submitResultHash:
-            jobState.deliverableHash === ZERO_BYTES32 ? null : jobState.deliverableHash,
+            jobState.deliverableHash === SETTLEMENT_ZERO_BYTES32 ? null : jobState.deliverableHash,
           lifecycleStatus,
           nextAction,
         };
@@ -236,7 +207,7 @@ export async function refreshSettlementExecutionWithClient(
   try {
     const rawRaid = await options.client.readContract({
       address: registryAddress,
-      abi: registryReadAbi,
+      abi: SETTLEMENT_REGISTRY_READ_ABI,
       functionName: 'raids',
       args: [raidId],
     });
@@ -260,7 +231,7 @@ export async function refreshSettlementExecutionWithClient(
     }
     if (
       raidState?.evaluationHash &&
-      raidState.evaluationHash !== ZERO_BYTES32 &&
+      raidState.evaluationHash !== SETTLEMENT_ZERO_BYTES32 &&
       raidState.evaluationHash !== record.evaluationHash
     ) {
       warnings.add('Onchain raid evaluation hash does not match the recorded settlement proof.');
@@ -303,62 +274,6 @@ function parseUint256(value: string | undefined): bigint | undefined {
   }
 }
 
-function isTerminalChildJobStatus(status: SettlementChildJob['lifecycleStatus']): boolean {
-  return status === 'completed' || status === 'rejected' || status === 'expired';
-}
-
-function mapJobLifecycleStatus(status: number): SettlementChildJob['lifecycleStatus'] {
-  switch (status) {
-    case 0:
-      return 'open';
-    case 1:
-      return 'funded';
-    case 2:
-      return 'submitted';
-    case 3:
-      return 'completed';
-    case 4:
-      return 'rejected';
-    case 5:
-      return 'expired';
-    default:
-      return 'open';
-  }
-}
-
-function buildNextAction(
-  requestedAction: SettlementChildJob['requestedAction'],
-  lifecycleStatus: SettlementChildJob['lifecycleStatus'],
-  budgetAtomic: bigint
-): string | null {
-  if (
-    lifecycleStatus === 'completed' ||
-    lifecycleStatus === 'rejected' ||
-    lifecycleStatus === 'expired'
-  ) {
-    return null;
-  }
-
-  if (requestedAction === 'reject') {
-    return 'Reject child job is still required from the client or evaluator wallet.';
-  }
-
-  if (budgetAtomic <= 0n) {
-    return 'Successful child job has zero onchain budget and cannot progress.';
-  }
-
-  switch (lifecycleStatus) {
-    case 'open':
-      return 'Client funding is still required before provider submit.';
-    case 'funded':
-      return 'Provider submit is still required from the provider wallet.';
-    case 'submitted':
-      return 'Evaluator completion is still required from the configured evaluator wallet.';
-    default:
-      return null;
-  }
-}
-
 function normalizeRaidState(value: unknown): RegistryState {
   if (Array.isArray(value)) {
     return {
@@ -372,7 +287,7 @@ function normalizeRaidState(value: unknown): RegistryState {
     finalized?: boolean;
   };
   return {
-    evaluationHash: input.evaluationHash ?? ZERO_BYTES32,
+    evaluationHash: input.evaluationHash ?? (SETTLEMENT_ZERO_BYTES32 as Hex),
     finalized: input.finalized === true,
   };
 }
@@ -396,7 +311,7 @@ function normalizeJobState(value: unknown): JobState {
   return {
     provider: input.provider as Address,
     budget: (input.budget ?? 0n) as bigint,
-    deliverableHash: (input.deliverableHash ?? ZERO_BYTES32) as Hex,
+    deliverableHash: (input.deliverableHash ?? SETTLEMENT_ZERO_BYTES32) as Hex,
     status: Number(input.status ?? 0),
   };
 }

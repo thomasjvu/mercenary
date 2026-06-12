@@ -1,3 +1,4 @@
+import { DEFAULTS } from '@bossraid/constants';
 import type { RaidRecord, SettlementExecutionRecord } from '@bossraid/shared-types';
 import {
   defineChain,
@@ -24,7 +25,7 @@ import {
   type SettlementArtifact,
 } from './settlement-artifacts.js';
 
-export const DEFAULT_JOB_EXPIRY_SEC = 86_400;
+export const DEFAULT_JOB_EXPIRY_SEC = DEFAULTS.SETTLEMENT_JOB_EXPIRY_SEC;
 
 export type SettlementExecuteOptions = {
   providerAddressMap?: Record<string, string | null | undefined>;
