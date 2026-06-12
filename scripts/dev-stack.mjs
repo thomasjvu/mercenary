@@ -36,6 +36,10 @@ const processes = [
   },
 ];
 
+console.log("[dev] public web app:  http://127.0.0.1:4173");
+console.log("[dev] internal ops app: http://127.0.0.1:4174");
+console.log("[dev] API:             http://127.0.0.1:8787");
+
 const children = processes.map((processSpec) => {
   const child = spawn(processSpec.command, processSpec.args, {
     cwd: rootDir,

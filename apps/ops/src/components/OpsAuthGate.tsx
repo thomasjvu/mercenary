@@ -1,4 +1,7 @@
+import { NETWORK } from '@bossraid/constants';
 import { DocsButton } from '@bossraid/ui';
+
+const PUBLIC_WEB_URL = `http://${NETWORK.LOCALHOST}:${NETWORK.LOCAL_WEB_PORT}`;
 
 export function OpsAuthGate({
   adminTokenInput,
@@ -21,8 +24,15 @@ export function OpsAuthGate({
           <p className="ops-label">Boss Raid Ops</p>
           <h1>Unlock the internal control plane.</h1>
           <p className="ops-lede">
-            Use the server-side ops session. The browser no longer ships a reusable admin bearer in
-            the bundle.
+            Internal operator surface for live raids, provider health, replay, and settlement
+            review. Paste your server-side admin token to unlock the session.
+          </p>
+          <p className="quiet-note">
+            Looking for the public marketplace and playground? Open{' '}
+            <a className="ops-public-link" href={PUBLIC_WEB_URL}>
+              {PUBLIC_WEB_URL}
+            </a>
+            . Port 4174 is ops only.
           </p>
         </div>
 

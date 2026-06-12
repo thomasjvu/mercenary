@@ -1,3 +1,4 @@
+import { NETWORK } from '@bossraid/constants';
 import { startTransition, useDeferredValue, useEffect, useState } from 'react';
 import { DocsButton, ProviderMesh, useRaidPolling } from '@bossraid/ui';
 import useSWR from 'swr';
@@ -295,6 +296,12 @@ export function App() {
             <div className="ops-brand">
               <p className="ops-label">Boss Raid Ops</p>
               <p className="ops-subbrand">mercenary-v1 / internal surface</p>
+              <a
+                className="ops-public-link"
+                href={`http://${NETWORK.LOCALHOST}:${NETWORK.LOCAL_WEB_PORT}`}
+              >
+                open public web app
+              </a>
             </div>
             <OpsHeroStatRow
               activeProviders={activeProviders.length}
@@ -323,8 +330,8 @@ export function App() {
           </h1>
 
           <p className="ops-lede">
-            Use the raid-native surface to launch work, inspect live provider movement, and settle
-            only approved outputs.
+            Launch raids, inspect live provider movement, replay evaluation, toggle x402 payments,
+            and review settlement proof. Public buyers use the web app at port 4173.
           </p>
 
           <div className="ops-hero__action-row">

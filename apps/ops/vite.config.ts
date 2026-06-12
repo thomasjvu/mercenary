@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const apiTarget =
     env.VITE_BOSSRAID_API_BASE || `http://${NETWORK.LOCALHOST}:${NETWORK.LOCAL_API_PORT}`;
-  const base = env.VITE_BOSSRAID_OPS_BASE_PATH || '/ops/';
+  const base = mode === 'development' ? '/' : env.VITE_BOSSRAID_OPS_BASE_PATH || '/ops/';
 
   return {
     base,
