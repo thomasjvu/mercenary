@@ -315,7 +315,6 @@ export async function createDefaultOrchestrator(
   options: Partial<RuntimeOptions> = {}
 ): Promise<BossRaidOrchestrator> {
   const workspaceCwd = findWorkspaceRoot(process.env.INIT_CWD ?? process.cwd());
-  const stateFile = resolveWorkspacePath(process.env.BOSSRAID_STATE_FILE, workspaceCwd);
   const sqliteFile = resolveWorkspacePath(
     process.env.BOSSRAID_SQLITE_FILE ?? './temp/bossraid-state.sqlite',
     workspaceCwd
@@ -331,7 +330,6 @@ export async function createDefaultOrchestrator(
 
   const persistence = createPersistenceBackend({
     storageBackend,
-    stateFile,
     sqliteFile,
   });
   const snapshot = await persistence.loadState();

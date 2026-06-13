@@ -60,7 +60,7 @@ export async function fetchRaidStatus(
   raidId: string,
   raidAccessToken: string
 ): Promise<RaidStatus> {
-  return fetchJson<RaidStatus>(`/v1/raids/${encodeURIComponent(raidId)}`, {
+  return fetchJson<RaidStatus>(`/v1/raid/${encodeURIComponent(raidId)}`, {
     headers: raidTokenHeaders(raidAccessToken),
   });
 }
@@ -69,7 +69,7 @@ export async function fetchRaidResult(
   raidId: string,
   raidAccessToken: string
 ): Promise<RaidResult> {
-  return fetchJson<RaidResult>(`/v1/raids/${encodeURIComponent(raidId)}/result`, {
+  return fetchJson<RaidResult>(`/v1/raid/${encodeURIComponent(raidId)}/result`, {
     headers: raidTokenHeaders(raidAccessToken),
   });
 }
@@ -79,7 +79,7 @@ export async function fetchRaidAgentLog(
   raidAccessToken: string
 ): Promise<RaidAgentLog> {
   return fetchJson<RaidAgentLog>(
-    `/v1/raids/${encodeURIComponent(raidId)}/agent_log.json?token=${encodeURIComponent(raidAccessToken)}`
+    `/v1/raid/${encodeURIComponent(raidId)}/agent_log.json?token=${encodeURIComponent(raidAccessToken)}`
   );
 }
 

@@ -15,6 +15,8 @@ import {
 } from './lib/env.js';
 import { resolveApiSettlementMode, type SettlementMode } from './lib/settlement-mode.js';
 import { readTeeSigner, readMercenaryErc8004Identity } from './lib/tee.js';
+import { InferenceReceiptStore } from './lib/inference-receipt-store.js';
+import { findWorkspaceRoot, resolveWorkspacePath } from '@bossraid/constants/workspace';
 
 export type ApiContext = {
   orchestrator: BossRaidOrchestrator;
@@ -48,6 +50,7 @@ export type ApiContext = {
   erc8004Verifier: ReturnType<typeof createErc8004Verifier>;
   settlementProofRefresher: ReturnType<typeof createSettlementProofRefresher>;
   controlState: ApiControlState;
+  inferenceReceiptStore: InferenceReceiptStore;
   workerIsolation: 'per_job_container' | 'per_job_process';
   apiMetrics: ApiMetrics;
   metricsPublic: boolean;
@@ -137,6 +140,14 @@ export function createApiContext(
   const erc8004Verifier = createErc8004Verifier(env);
   const settlementProofRefresher = createSettlementProofRefresher(env);
   const controlState = createApiControlState(env);
+  const workspaceCwd = findWorkspaceRoot(process.env.INIT_CWD ?? process.cwd());
+  const receiptDbPath = resolveWorkspacePath(
+    env.BOSSRAID_INFERENCE_RECEIPTS_FILE ??
+      env.BOSSRAID_SQLITE_FILE ??
+      './temp/bossraid-inference-receipts.sqlite',
+    workspaceCwd
+  ) as string;
+  const inferenceReceiptStore = new InferenceReceiptStore(receiptDbPath);
   const workerIsolation =
     env.BOSSRAID_EVAL_JOB_ISOLATION === 'container' ? 'per_job_container' : 'per_job_process';
   const apiMetrics = createApiMetrics();
@@ -175,6 +186,7 @@ export function createApiContext(
     erc8004Verifier,
     settlementProofRefresher,
     controlState,
+    inferenceReceiptStore,
     workerIsolation,
     apiMetrics,
     metricsPublic,

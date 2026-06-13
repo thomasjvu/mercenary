@@ -128,7 +128,7 @@ Ops UI (`/ops/`) surfaces the same admin routes after login:
 ## Defaults
 
 - Persistence: SQLite locally; raids fail closed when storage is unavailable.
-- Native write route: `POST /v1/raid` (`POST /v1/raids` alias).
+- Native write route: `POST /v1/raid` (`raid_request` body).
 - x402 off until ops toggle or `BOSSRAID_X402_ENABLED=true` on boot.
 - Settlement: `file` by default; `onchain` only with funded signers and contract env.
 - Successful providers split payout equally.

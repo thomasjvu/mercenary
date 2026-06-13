@@ -10,7 +10,7 @@ export async function getRaidStatus(
   raidId: string,
   raidAccessToken?: string
 ): Promise<BossRaidStatusOutput> {
-  return (await apiRequest(`/v1/raids/${encodeURIComponent(raidId)}`, {
+  return (await apiRequest(`/v1/raid/${encodeURIComponent(raidId)}`, {
     headers: raidHeaders(raidAccessToken),
   })) as BossRaidStatusOutput;
 }
@@ -19,7 +19,7 @@ export async function getRaidResult(
   raidId: string,
   raidAccessToken?: string
 ): Promise<BossRaidResultOutput> {
-  return (await apiRequest(`/v1/raids/${encodeURIComponent(raidId)}/result`, {
+  return (await apiRequest(`/v1/raid/${encodeURIComponent(raidId)}/result`, {
     headers: raidHeaders(raidAccessToken),
   })) as BossRaidResultOutput;
 }

@@ -10,9 +10,11 @@ import {
 import type { ChatCompletionRequest } from '@bossraid/shared-types';
 import { asSingleHeader } from '@bossraid/shared-types';
 import type { ApiControlState } from '../control-state.js';
-import { verifySellerUpstreamTeeAttestation } from './upstream-tee-service.js';
+import { buildInferenceReceipt, verifyUpstreamTee } from './attestation-service.js';
 import { generateAttestationNonce } from './upstream/index.js';
 import type { ChatE2eeRoute } from './e2ee-chat-hook.js';
+import type { InferenceReceiptStore } from './inference-receipt-store.js';
+import { isUpstreamInferenceMock } from './upstream-mock.js';
 
 const VENICE_CHAT_URL = 'https://api.venice.ai/api/v1/chat/completions';
 
@@ -66,7 +68,8 @@ function buildE2eeCompletionResponse(
   chatRequest: ChatCompletionRequest,
   content: string,
   created: number,
-  attestation: { signingAddress?: string; explorerUrl?: string }
+  attestation: { signingAddress?: string; explorerUrl?: string },
+  receiptId?: string
 ) {
   return {
     id: `chatcmpl_e2ee_${randomUUID()}`,
@@ -90,6 +93,7 @@ function buildE2eeCompletionResponse(
       transport: 'venice-e2ee',
       teeSigningAddress: attestation.signingAddress,
       explorerUrl: attestation.explorerUrl,
+      receiptId,
     },
   };
 }
@@ -138,12 +142,17 @@ async function streamE2eeCompletion(
   reply.raw.end();
 }
 
+function readPromptText(messages: ChatCompletionRequest['messages']): string {
+  return messages.map((message) => `${message.role}:${message.content}`).join('\n');
+}
+
 export async function executeE2eeChatRelay(input: {
   chatRequest: ChatCompletionRequest;
   route: ChatE2eeRoute;
   request: FastifyRequest;
   reply: FastifyReply;
   controlState: ApiControlState;
+  inferenceReceiptStore: InferenceReceiptStore;
   env: NodeJS.ProcessEnv;
   created: number;
 }) {
@@ -159,12 +168,14 @@ export async function executeE2eeChatRelay(input: {
     );
   }
 
-  const attestation = await verifySellerUpstreamTeeAttestation({
+  const nonce = generateAttestationNonce();
+  const { attestation } = await verifyUpstreamTee({
     provider,
     modelId: input.route.upstreamModelId,
     providerId: `catalog:${provider}:${input.route.modelId}`,
     apiKey,
-    nonce: generateAttestationNonce(),
+    nonce,
+    env: input.env,
   });
 
   if (!attestation.valid || !attestation.e2eeReady) {
@@ -176,8 +187,19 @@ export async function executeE2eeChatRelay(input: {
     throw new Error('Attestation response did not include an E2EE signing key.');
   }
 
-  if (input.env.BOSSRAID_VENICE_MOCK === '1') {
+  if (isUpstreamInferenceMock(input.env)) {
     const mockContent = `mock-venice-e2ee:${input.route.upstreamModelId}`;
+    const receipt = buildInferenceReceipt({
+      store: input.inferenceReceiptStore,
+      modelId: input.chatRequest.model,
+      providerId: `catalog:${provider}:${input.route.modelId}`,
+      route: 'inference',
+      tee: attestation,
+      transport: 'venice-e2ee',
+      inputText: readPromptText(input.chatRequest.messages),
+      outputText: mockContent,
+      nonce,
+    });
     if (input.chatRequest.stream === true) {
       input.reply.raw.writeHead(200, {
         'content-type': 'text/event-stream',
@@ -197,7 +219,13 @@ export async function executeE2eeChatRelay(input: {
       input.reply.raw.end();
       return;
     }
-    return buildE2eeCompletionResponse(input.chatRequest, mockContent, input.created, attestation);
+    return buildE2eeCompletionResponse(
+      input.chatRequest,
+      mockContent,
+      input.created,
+      attestation,
+      receipt.receiptId
+    );
   }
 
   const session = generateE2eeSession(signingKey, attestation.signingAddress);
@@ -256,5 +284,22 @@ export async function executeE2eeChatRelay(input: {
     throw new Error('E2EE upstream returned empty content.');
   }
   const content = decryptChunk(encryptedContent, session.privateKey);
-  return buildE2eeCompletionResponse(input.chatRequest, content, input.created, attestation);
+  const receipt = buildInferenceReceipt({
+    store: input.inferenceReceiptStore,
+    modelId: input.chatRequest.model,
+    providerId: `catalog:${provider}:${input.route.modelId}`,
+    route: 'inference',
+    tee: attestation,
+    transport: 'venice-e2ee',
+    inputText: readPromptText(input.chatRequest.messages),
+    outputText: content,
+    nonce,
+  });
+  return buildE2eeCompletionResponse(
+    input.chatRequest,
+    content,
+    input.created,
+    attestation,
+    receipt.receiptId
+  );
 }

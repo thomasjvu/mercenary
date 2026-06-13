@@ -84,9 +84,6 @@ export type SellerUpstreamConfigEntry = {
   updatedAt: string;
 };
 
-/** @deprecated use SellerUpstreamConfigEntry */
-export type SellerVeniceConfigEntry = SellerUpstreamConfigEntry;
-
 export type ApiControlStateSnapshot = {
   version: 1;
   savedAt: string;
@@ -98,8 +95,6 @@ export type ApiControlStateSnapshot = {
   buyerPurchases: BuyerPurchaseEntry[];
   sellerPayouts: SellerPayoutEntry[];
   sellerUpstreamConfigs: SellerUpstreamConfigEntry[];
-  /** @deprecated migrated to sellerUpstreamConfigs */
-  sellerVeniceConfigs?: SellerUpstreamConfigEntry[];
   rateLimits: ApiRateLimitEntry[];
   settings: ApiRuntimeSettings;
 };

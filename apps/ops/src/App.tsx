@@ -88,8 +88,8 @@ export function App() {
     opsReady ? 'ops' : null,
     {
       intervalMs: 2_000,
-      fetchStatus: () => fetchJson<RaidStatus>(`/v1/raids/${raidId}`),
-      fetchResult: () => fetchJson<RaidResult>(`/v1/raids/${raidId}/result`),
+      fetchStatus: () => fetchJson<RaidStatus>(`/v1/raid/${raidId}`),
+      fetchResult: () => fetchJson<RaidResult>(`/v1/raid/${raidId}/result`),
     }
   );
 
@@ -199,7 +199,7 @@ export function App() {
     }
     setActionPending('abort');
     try {
-      await fetchJson(`/v1/raids/${raidId}/abort`, { method: 'POST' });
+      await fetchJson(`/v1/raid/${raidId}/abort`, { method: 'POST' });
       await Promise.all([raidStatus.mutate(), raidResult.mutate(), raids.mutate()]);
     } finally {
       setActionPending(null);

@@ -260,7 +260,7 @@ export function registerTools(server: Server): void {
                 'bossraid_delegate waits for synthesized output by default and falls back to polling guidance when still running.',
                 'Public raid status and result reads require the per-raid access token returned at spawn time.',
                 'Spawn responses now include receiptPath so callers can open the public proof page directly.',
-                'bossraid_receipt combines /v1/raids/:id and /v1/raids/:id/result into one compact proof object.',
+                'bossraid_receipt combines /v1/raid/:id and /v1/raid/:id/result into one compact proof object.',
                 'bossraid_receipt preserves ERC-8004 verification state and ERC-8183 settlement lifecycle proof fields.',
               ],
               tools: tools.map((tool) => tool.name),
@@ -297,7 +297,7 @@ export function registerTools(server: Server): void {
       case 'bossraid_abort':
         return jsonResult(
           await apiRequest(
-            `/v1/raids/${encodeURIComponent(asString(args.raid_id, 'raid_id'))}/abort`,
+            `/v1/raid/${encodeURIComponent(asString(args.raid_id, 'raid_id'))}/abort`,
             {
               method: 'POST',
             }

@@ -7,11 +7,14 @@ import type { ApiControlState } from '../control-state.js';
 import { extractInferencePromptFromTask, probeUpstreamChatCompletion } from './upstream/index.js';
 import { probeVeniceE2eeChatCompletion } from './venice-e2ee-upstream.js';
 import { resolveHostedProviderUpstream } from './inference-gateway-health.js';
-import { verifySellerUpstreamTeeAttestation } from './upstream-tee-service.js';
+import { buildInferenceReceipt, verifyUpstreamTee } from './attestation-service.js';
+import { generateAttestationNonce } from './upstream/index.js';
+import type { InferenceReceiptStore } from './inference-receipt-store.js';
 
 export async function runInferenceGatewayJob(input: {
   orchestrator: BossRaidOrchestrator;
   controlState: ApiControlState;
+  inferenceReceiptStore: InferenceReceiptStore;
   provider: ProviderProfile;
   body: {
     raidId: string;
@@ -74,13 +77,23 @@ export async function runInferenceGatewayJob(input: {
 
     let privacyAttestation;
     if (featuresClaimed.length > 0 || providerClaimsE2ee || input.provider.privacy?.teeAttested) {
-      const teeResult = await verifySellerUpstreamTeeAttestation({
+      const nonce = generateAttestationNonce();
+      const { attestation: teeResult } = await verifyUpstreamTee({
         provider: upstream,
         modelId: upstreamModelId,
         apiKey: resolvedApiKey,
         providerId: input.body.providerId,
-        instanceId: chatResult.instanceId,
+        nonce,
+        env: input.env,
       });
+
+      if (
+        (input.provider.privacy?.teeAttested || providerClaimsE2ee) &&
+        (!teeResult.valid || (providerClaimsE2ee && !teeResult.e2eeReady))
+      ) {
+        throw new Error('Hosted provider TEE/E2EE attestation failed.');
+      }
+
       const featuresVerified: PrivacyFeatureKey[] = [];
       if (teeResult.valid && featuresClaimed.includes('tee_attested')) {
         featuresVerified.push('tee_attested');
@@ -96,6 +109,18 @@ export async function runInferenceGatewayJob(input: {
         featuresVerified.push('no_data_retention');
       }
 
+      const receipt = buildInferenceReceipt({
+        store: input.inferenceReceiptStore,
+        modelId: upstreamModelId,
+        providerId: input.body.providerId,
+        route: 'gateway',
+        tee: teeResult,
+        transport: providerClaimsE2ee && teeResult.e2eeReady ? 'venice-e2ee' : 'plaintext',
+        inputText: prompt,
+        outputText: chatResult.content,
+        nonce,
+      });
+
       privacyAttestation = buildPrivacyAttestation({
         providerId: input.body.providerId,
         raidId: input.body.raidId,
@@ -105,6 +130,7 @@ export async function runInferenceGatewayJob(input: {
         externalApiCalls: [`${upstream}:chat/completions`],
         dataRetained: false,
       });
+      privacyAttestation.inferenceReceiptId = receipt.receiptId;
     }
 
     await input.orchestrator.recordProviderSubmission(input.body.raidId, {

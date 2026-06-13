@@ -2,6 +2,7 @@ export * from './domain/provider.js';
 export * from './domain/marketplace.js';
 export * from './domain/raid.js';
 export * from './domain/settlement.js';
+export * from './domain/inference-receipt.js';
 
 export function asSingleHeader(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) {

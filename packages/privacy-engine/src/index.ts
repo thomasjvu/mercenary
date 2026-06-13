@@ -6,11 +6,7 @@ export {
   type PrivacyEngineConfig,
 } from './compliance.js';
 
-export {
-  verifyPhalaTeeAttestation,
-  buildTeeAttestation,
-  type TeeAttestationOptions,
-} from './attestation.js';
+export { verifyPhalaTeeAttestation, type TeeAttestationOptions } from './attestation.js';
 
 export {
   buildPrivacyAttestation,
@@ -34,6 +30,13 @@ export {
   type UpstreamAttestationVerifyResult,
   type UpstreamTeeVendor,
 } from './upstream-tee/index.js';
+
+export {
+  buildQuoteExplorerUrl,
+  hashQuote,
+  verifyIntelQuote,
+  type QuoteVerifyResult,
+} from './upstream-tee/quote-verify.js';
 
 export {
   decryptChunk,

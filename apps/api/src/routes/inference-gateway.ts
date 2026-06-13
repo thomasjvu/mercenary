@@ -95,9 +95,11 @@ export function registerInferenceGatewayRoutes(app: FastifyInstance, ctx: ApiCon
     void runInferenceGatewayJob({
       orchestrator,
       controlState,
+      inferenceReceiptStore: ctx.inferenceReceiptStore,
       provider,
       body,
       providerRunId,
+      env: ctx.env,
     });
 
     return {

@@ -32,27 +32,6 @@ export function createEmptyApiControlState(): ApiControlStateSnapshot {
   };
 }
 
-function migrateLegacyVeniceConfigs(
-  snapshot: Partial<ApiControlStateSnapshot> | undefined
-): SellerUpstreamConfigEntry[] {
-  const upstream = Array.isArray(snapshot?.sellerUpstreamConfigs)
-    ? snapshot.sellerUpstreamConfigs.filter(isValidSellerUpstreamConfigEntry)
-    : [];
-
-  const legacy = Array.isArray(snapshot?.sellerVeniceConfigs)
-    ? snapshot.sellerVeniceConfigs.filter(isValidSellerUpstreamConfigEntry)
-    : [];
-
-  const merged = [...upstream];
-  for (const entry of legacy) {
-    const provider = entry.provider ?? 'venice';
-    if (!merged.some((item) => item.wallet === entry.wallet && item.provider === provider)) {
-      merged.push({ ...entry, provider });
-    }
-  }
-  return merged;
-}
-
 export function normalizeApiControlState(
   snapshot: Partial<ApiControlStateSnapshot> | undefined
 ): ApiControlStateSnapshot {
@@ -83,7 +62,9 @@ export function normalizeApiControlState(
     sellerPayouts: Array.isArray(snapshot?.sellerPayouts)
       ? snapshot.sellerPayouts.filter(isValidSellerPayoutEntry)
       : [],
-    sellerUpstreamConfigs: migrateLegacyVeniceConfigs(snapshot),
+    sellerUpstreamConfigs: Array.isArray(snapshot?.sellerUpstreamConfigs)
+      ? snapshot.sellerUpstreamConfigs.filter(isValidSellerUpstreamConfigEntry)
+      : [],
     rateLimits: Array.isArray(snapshot?.rateLimits)
       ? snapshot.rateLimits.filter(isValidRateLimitEntry)
       : [],
@@ -145,16 +126,6 @@ export function decryptApiControlStateSnapshot(
       }))
     : snapshot.sellerUpstreamConfigs;
 
-  const legacyVenice = Array.isArray(snapshot.sellerVeniceConfigs)
-    ? snapshot.sellerVeniceConfigs.map((config) => ({
-        ...config,
-        apiKeyCiphertext:
-          typeof config.apiKeyCiphertext === 'string'
-            ? cipher.decrypt(config.apiKeyCiphertext)
-            : config.apiKeyCiphertext,
-      }))
-    : snapshot.sellerVeniceConfigs;
-
   return {
     ...snapshot,
     opsSessions: Array.isArray(snapshot.opsSessions)
@@ -182,6 +153,5 @@ export function decryptApiControlStateSnapshot(
         }))
       : snapshot.buyerApiKeys,
     sellerUpstreamConfigs,
-    sellerVeniceConfigs: legacyVenice,
   };
 }

@@ -19,7 +19,7 @@ export async function probeVeniceE2eeChatCompletion(input: {
   providerId?: string;
   timeoutMs?: number;
 }): Promise<UpstreamChatResult> {
-  if (process.env.BOSSRAID_VENICE_MOCK === '1') {
+  if (process.env.BOSSRAID_UPSTREAM_MOCK === '1' || process.env.BOSSRAID_VENICE_MOCK === '1') {
     return { content: `mock-venice-e2ee:${input.modelId}` };
   }
 

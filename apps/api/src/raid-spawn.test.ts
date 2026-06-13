@@ -196,7 +196,7 @@ test('raid status and result require the issued raid access token', async () => 
 
     const adminBypass = await app.inject({
       method: 'GET',
-      url: `/v1/raids/${spawn.raidId}`,
+      url: `/v1/raid/${spawn.raidId}`,
       headers: {
         authorization: 'Bearer admin-secret',
       },

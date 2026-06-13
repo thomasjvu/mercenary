@@ -80,6 +80,7 @@ export function createChatHandlers(
         request,
         reply,
         controlState: ctx.controlState,
+        inferenceReceiptStore: ctx.inferenceReceiptStore,
         env: ctx.env,
         created,
       });

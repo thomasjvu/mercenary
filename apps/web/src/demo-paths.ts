@@ -8,7 +8,7 @@ type RaidPathRun = {
 };
 
 export function buildAgentLogPath(run: RaidPathRun): string {
-  return `${API_BASE}/v1/raids/${encodeURIComponent(run.spawn.raidId)}/agent_log.json?token=${encodeURIComponent(run.spawn.raidAccessToken)}`;
+  return `${API_BASE}/v1/raid/${encodeURIComponent(run.spawn.raidId)}/agent_log.json?token=${encodeURIComponent(run.spawn.raidAccessToken)}`;
 }
 
 export function buildAttestedRuntimePath(): string {

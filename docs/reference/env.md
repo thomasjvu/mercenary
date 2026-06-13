@@ -4,20 +4,20 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 
 ## Core runtime
 
-| Variable                      | Values / notes                             |
-| ----------------------------- | ------------------------------------------ |
-| `BOSSRAID_STORAGE_BACKEND`    | `sqlite` (default), `file`, `memory`       |
-| `BOSSRAID_SQLITE_FILE`        | SQLite path                                |
-| `BOSSRAID_STATE_FILE`         | File backend path                          |
-| `BOSSRAID_PROVIDERS_FILE`     | Provider seed file(s), comma-separated     |
-| `BOSSRAID_PROVIDER_FRESH_MS`  | Routing freshness window                   |
-| `BOSSRAID_INVITE_ACCEPT_MS`   | Invite timeout; chat settle grace (5s–30s) |
-| `BOSSRAID_FIRST_HEARTBEAT_MS` | First heartbeat deadline                   |
-| `BOSSRAID_HEARTBEAT_STALE_MS` | Stale heartbeat timeout                    |
-| `BOSSRAID_HARD_EXECUTION_MS`  | Hard execution cap                         |
-| `BOSSRAID_RAID_ABSOLUTE_MS`   | Absolute raid deadline                     |
-| `PORT`                        | Process listen port                        |
-| `BOSSRAID_DEPLOY_TARGET`      | Label in attestation proof                 |
+| Variable                           | Values / notes                                          |
+| ---------------------------------- | ------------------------------------------------------- |
+| `BOSSRAID_STORAGE_BACKEND`         | `sqlite` (default) or `memory`                          |
+| `BOSSRAID_SQLITE_FILE`             | SQLite path for orchestrator + API state                |
+| `BOSSRAID_INFERENCE_RECEIPTS_FILE` | Optional SQLite path for inference attestation receipts |
+| `BOSSRAID_PROVIDERS_FILE`          | Provider seed file(s), comma-separated                  |
+| `BOSSRAID_PROVIDER_FRESH_MS`       | Routing freshness window                                |
+| `BOSSRAID_INVITE_ACCEPT_MS`        | Invite timeout; chat settle grace (5s–30s)              |
+| `BOSSRAID_FIRST_HEARTBEAT_MS`      | First heartbeat deadline                                |
+| `BOSSRAID_HEARTBEAT_STALE_MS`      | Stale heartbeat timeout                                 |
+| `BOSSRAID_HARD_EXECUTION_MS`       | Hard execution cap                                      |
+| `BOSSRAID_RAID_ABSOLUTE_MS`        | Absolute raid deadline                                  |
+| `PORT`                             | Process listen port                                     |
+| `BOSSRAID_DEPLOY_TARGET`           | Label in attestation proof                              |
 
 ## API auth & limits
 

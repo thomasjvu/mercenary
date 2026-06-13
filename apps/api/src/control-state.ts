@@ -243,34 +243,6 @@ export class ApiControlState {
   ): boolean {
     return sellerUpstream.deleteSellerUpstreamConfig(this.ctx, wallet, provider, nowMs);
   }
-
-  upsertSellerVeniceConfig(
-    wallet: string,
-    apiKey: string,
-    env: NodeJS.ProcessEnv = process.env,
-    nowMs = Date.now()
-  ): SellerUpstreamConfigEntry {
-    return this.upsertSellerUpstreamConfig(wallet, 'venice', apiKey, env, nowMs);
-  }
-
-  readSellerVeniceConfig(
-    wallet: string,
-    nowMs = Date.now()
-  ): SellerUpstreamConfigEntry | undefined {
-    return this.readSellerUpstreamConfig(wallet, 'venice', nowMs);
-  }
-
-  readSellerVeniceApiKey(
-    wallet: string,
-    env: NodeJS.ProcessEnv = process.env,
-    nowMs = Date.now()
-  ): string | undefined {
-    return this.readSellerUpstreamApiKey(wallet, 'venice', env, nowMs);
-  }
-
-  deleteSellerVeniceConfig(wallet: string, nowMs = Date.now()): boolean {
-    return this.deleteSellerUpstreamConfig(wallet, 'venice', nowMs);
-  }
 }
 
 export function createApiControlState(env: NodeJS.ProcessEnv = process.env): ApiControlState {

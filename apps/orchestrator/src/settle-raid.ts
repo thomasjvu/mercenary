@@ -81,8 +81,7 @@ function selectRaidId(
 async function main(): Promise<void> {
   const workspaceRoot = findWorkspaceRoot(process.cwd());
   const args = parseArgs(process.argv.slice(2));
-  const storageBackend = readStorageBackend(process.env, { strict: true });
-  const persistence = createCliPersistence(args, workspaceRoot, storageBackend);
+  const persistence = createCliPersistence(args, workspaceRoot);
   const snapshot = await persistence.loadState();
   const raidId = selectRaidId(snapshot.raids, args);
   const raid = snapshot.raids.find((item) => item.id === raidId);
@@ -137,27 +136,14 @@ void main().catch((error: unknown) => {
   process.exitCode = 1;
 });
 
-function createCliPersistence(
-  args: CliArgs,
-  workspaceRoot: string,
-  storageBackend: 'sqlite' | 'file' | 'memory'
-) {
-  if (storageBackend === 'memory') {
-    throw new Error('Settlement CLI does not support BOSSRAID_STORAGE_BACKEND=memory.');
-  }
-
+function createCliPersistence(args: CliArgs, workspaceRoot: string) {
   const sqliteFile = resolveWorkspacePath(
     args.sqliteFile ?? process.env.BOSSRAID_SQLITE_FILE ?? './temp/bossraid-state.sqlite',
     workspaceRoot
   );
-  const stateFile = resolveWorkspacePath(
-    args.stateFile ?? process.env.BOSSRAID_STATE_FILE,
-    workspaceRoot
-  );
 
   return createPersistenceBackend({
-    storageBackend,
-    sqliteFile: storageBackend === 'sqlite' ? sqliteFile : undefined,
-    stateFile: storageBackend === 'file' ? stateFile : undefined,
+    storageBackend: 'sqlite',
+    sqliteFile,
   });
 }

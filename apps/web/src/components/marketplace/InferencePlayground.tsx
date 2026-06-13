@@ -5,11 +5,7 @@ import useSWR from 'swr';
 import { API_BASE } from '../../api/client.js';
 import { verifyMarketplaceTeeAttestation } from '../../api/marketplace-tee.js';
 import { fetchMarkets, runInferenceChatCompletion } from '../../api/marketplace.js';
-import {
-  decryptE2eeStream,
-  encryptMessagesForE2ee,
-  generateE2eeSession,
-} from '../../lib/e2ee/venice.js';
+
 import { TerminalCodePanel } from '../terminal/TerminalCodePanel.js';
 import { UpstreamTeeVerificationPanel } from '../trust/UpstreamTeeVerificationPanel.js';
 import { ModelCombobox } from './ModelCombobox.js';
@@ -119,10 +115,16 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
     return () => window.clearTimeout(timer);
   }, [copiedKey]);
 
-  const curlSnippet = `curl -X POST ${API_BASE}/v1/inference/chat/completions \\
+  const strictE2ee = privacyMode === 'strict' && selectedModel?.e2ee;
+  const curlSnippet = strictE2ee
+    ? `curl -X POST ${API_BASE}/v1/inference/chat/completions \\
+  -H "x-bossraid-upstream-api-key: vn_..." \\
+  -H "content-type: application/json" \\
+  -d '{"model":"${model || 'e2ee-gemma-4-26b-a4b-uncensored-p'}","stream":true,"messages":[{"role":"user","content":"${prompt.replace(/"/g, '\\"')}"}],"raid_policy":{"privacy_mode":"strict"}}'`
+    : `curl -X POST ${API_BASE}/v1/inference/chat/completions \\
   -H "authorization: Bearer br_..." \\
   -H "content-type: application/json" \\
-  -d '{"model":"${model || 'venice-uncensored-1-2'}","messages":[{"role":"user","content":"${prompt.replace(/"/g, '\\"')}"}],"raid_policy":{"max_total_cost":${maxBudget || '1'},"privacy_mode":"${privacyMode}"}}'`;
+  -d '{"model":"${model || 'venice-uncensored-1-2'}","stream":true,"messages":[{"role":"user","content":"${prompt.replace(/"/g, '\\"')}"}],"raid_policy":{"max_total_cost":${maxBudget || '1'},"privacy_mode":"${privacyMode}"}}'`;
 
   const responseSnippet = rawResponse
     ? JSON.stringify(rawResponse, null, 2)
@@ -130,97 +132,15 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
       ? JSON.stringify({ content: responseText }, null, 2)
       : 'Run inference to see response metadata here.';
 
-  async function runE2eeInference(): Promise<void> {
-    if (!upstreamApiKey.trim()) {
-      throw new Error('E2EE models need an upstream API key in strict-private mode.');
-    }
-
-    const catalog = catalogById.get(model.trim());
-    const upstreamModelId = catalog?.upstreamModelId ?? model.trim();
-    const attestation = await verifyMarketplaceTeeAttestation({
-      provider: attestationProvider,
-      modelId: model.trim(),
-    });
-
-    if (!attestation.valid || !attestation.e2eeReady) {
-      throw new Error('TEE attestation must pass with E2EE signing key before sending.');
-    }
-
-    const signingKey =
-      (attestation as { signingKey?: string }).signingKey ??
-      (attestation as { signing_key?: string }).signing_key;
-    const modelPublicKey =
-      typeof signingKey === 'string'
-        ? signingKey
-        : attestation.signingAddress
-          ? undefined
-          : undefined;
-
-    if (!modelPublicKey) {
-      const veniceAttest = await fetch(
-        `https://api.venice.ai/api/v1/tee/attestation?model=${encodeURIComponent(upstreamModelId)}&nonce=${crypto.randomUUID().replace(/-/g, '')}`,
-        { headers: { authorization: `Bearer ${upstreamApiKey.trim()}` } }
-      );
-      const venicePayload = (await veniceAttest.json()) as {
-        signing_key?: string;
-        signing_public_key?: string;
-      };
-      const resolvedKey = venicePayload.signing_key ?? venicePayload.signing_public_key;
-      if (!resolvedKey) {
-        throw new Error('No signing key in attestation response.');
-      }
-      const session = generateE2eeSession(resolvedKey, attestation.signingAddress);
-      await sendE2eeRequest(session, upstreamModelId);
+  async function handleRun() {
+    if (!apiKey.trim() && !strictE2ee) {
+      setError('Add a buyer API key from account onboarding.');
       return;
     }
-
-    const session = generateE2eeSession(modelPublicKey, attestation.signingAddress);
-    await sendE2eeRequest(session, upstreamModelId);
-  }
-
-  async function sendE2eeRequest(
-    session: ReturnType<typeof generateE2eeSession>,
-    upstreamModelId: string
-  ) {
-    const encryptedMessages = encryptMessagesForE2ee(
-      [{ role: 'user', content: prompt.trim() }],
-      session.modelPublicKey
-    );
-
-    const response = await fetch('https://api.venice.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${upstreamApiKey.trim()}`,
-        'content-type': 'application/json',
-        'X-Venice-TEE-Client-Pub-Key': session.publicKeyHex,
-        'X-Venice-TEE-Model-Pub-Key': session.modelPublicKey,
-        'X-Venice-TEE-Signing-Algo': 'ecdsa',
-      },
-      body: JSON.stringify({
-        model: upstreamModelId,
-        messages: encryptedMessages,
-        stream: true,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`E2EE upstream request failed (${response.status}).`);
-    }
-
-    let streamed = '';
-    const full = await decryptE2eeStream(response, session, (chunk) => {
-      streamed += chunk;
-      setResponseText(streamed);
-    });
-    setResponseText(full);
-    setRawResponse({ mode: 'e2ee', provider: attestationProvider, model: upstreamModelId });
-    setTeeStatus('E2EE active · TEE verified');
-    setActivePanel('response');
-  }
-
-  async function handleRun() {
-    if (!apiKey.trim() && !(privacyMode === 'strict' && selectedModel?.e2ee)) {
-      setError('Add a buyer API key from account onboarding.');
+    if (strictE2ee && !upstreamApiKey.trim()) {
+      setError(
+        'Strict E2EE models need an upstream API key (or configure BOSSRAID_VENICE_API_KEY server-side).'
+      );
       return;
     }
 
@@ -241,30 +161,41 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
     setTeeStatus(null);
 
     try {
-      if (privacyMode === 'strict' && selectedModel?.e2ee) {
+      if (apiKey.trim()) {
+        window.sessionStorage.setItem(API_KEY_STORAGE_KEY, apiKey.trim());
+      }
+      if (upstreamApiKey.trim()) {
         window.sessionStorage.setItem(UPSTREAM_KEY_STORAGE_KEY, upstreamApiKey.trim());
-        await runE2eeInference();
-        return;
       }
 
-      window.sessionStorage.setItem(API_KEY_STORAGE_KEY, apiKey.trim());
-      if (selectedModel?.teeAttested) {
+      if (selectedModel?.teeAttested || strictE2ee) {
         const attestation = await verifyMarketplaceTeeAttestation({
           provider: attestationProvider,
           modelId: model.trim(),
         });
-        setTeeStatus(attestation.valid ? 'TEE verified' : 'TEE verification failed');
+        setTeeStatus(
+          attestation.valid
+            ? strictE2ee
+              ? 'TEE verified · server E2EE relay'
+              : 'TEE verified'
+            : 'TEE verification failed'
+        );
       }
 
       const result = await runInferenceChatCompletion({
-        apiKey: apiKey.trim(),
+        apiKey: apiKey.trim() || undefined,
         model: model.trim(),
         prompt: prompt.trim(),
         maxTotalCost: Number(maxBudget) || 1,
         privacyMode,
+        upstreamApiKey: strictE2ee ? upstreamApiKey.trim() : undefined,
       });
       setResponseText(result.content);
       setRawResponse(result.raw);
+      const receiptId = (result.raw as { privacy?: { receiptId?: string } })?.privacy?.receiptId;
+      if (receiptId) {
+        setTeeStatus(`TEE verified · receipt ${receiptId}`);
+      }
       setActivePanel('response');
     } catch (runError) {
       setError(runError instanceof Error ? runError.message : 'Inference request failed.');

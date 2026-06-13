@@ -65,25 +65,6 @@ type PhalaVerifyResponse = {
   error?: string;
 };
 
-function buildTeeAttestation(
-  providerId: string,
-  vendor = 'phala',
-  opts?: Partial<TeeAttestationResult>
-): TeeAttestationResult {
-  const now = new Date().toISOString();
-  return {
-    valid: true,
-    providerId,
-    verifiedAt: now,
-    vendor,
-    runtimeMode: opts?.runtimeMode ?? DEFAULT_RUNTIME_MODE,
-    enclaveHash: opts?.enclaveHash,
-    signature: opts?.signature,
-    expiresAt: opts?.expiresAt,
-    notes: opts?.notes ?? [],
-  };
-}
-
 async function verifyPhalaTeeAttestation(
   providerId: string,
   socketPath = '',
@@ -381,4 +362,4 @@ export function buildPrivacyAttestation(opts: PrivacyAttestationOptions): Privac
   };
 }
 
-export { verifyPhalaTeeAttestation, buildTeeAttestation };
+export { verifyPhalaTeeAttestation };

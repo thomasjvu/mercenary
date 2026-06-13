@@ -143,4 +143,3 @@ export function isValidSellerUpstreamConfigEntry(
 }
 
 /** @deprecated */
-export const isValidSellerVeniceConfigEntry = isValidSellerUpstreamConfigEntry;

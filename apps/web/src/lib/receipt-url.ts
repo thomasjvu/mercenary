@@ -47,7 +47,7 @@ export function buildAttestedResultUrl(query: ReceiptQuery): string {
 }
 
 export function buildAgentLogUrl(query: ReceiptQuery): string {
-  return `${API_BASE}/v1/raids/${encodeURIComponent(query.raidId)}/agent_log.json?token=${encodeURIComponent(query.token)}`;
+  return `${API_BASE}/v1/raid/${encodeURIComponent(query.raidId)}/agent_log.json?token=${encodeURIComponent(query.token)}`;
 }
 
 export function buildAttestationSurfaceLabel(

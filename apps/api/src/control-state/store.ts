@@ -1,5 +1,5 @@
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
-import { dirname, extname } from 'node:path';
+import { mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { readStorageBackend } from '@bossraid/constants';
 import { findWorkspaceRoot, resolveWorkspacePath } from '@bossraid/constants/workspace';
@@ -23,41 +23,6 @@ class InMemoryApiControlStateStore implements ApiControlStateStore {
 
   saveState(snapshot: ApiControlStateSnapshot): void {
     this.snapshot = structuredClone(snapshot);
-  }
-}
-
-class FileApiControlStateStore implements ApiControlStateStore {
-  constructor(
-    private readonly path: string,
-    private readonly cipher: SecretCipher
-  ) {}
-
-  loadState(): ApiControlStateSnapshot {
-    try {
-      const raw = readFileSync(this.path, 'utf8');
-      return normalizeApiControlState(
-        decryptApiControlStateSnapshot(
-          JSON.parse(raw) as Partial<ApiControlStateSnapshot>,
-          this.cipher
-        )
-      );
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        return createEmptyApiControlState();
-      }
-      throw error;
-    }
-  }
-
-  saveState(snapshot: ApiControlStateSnapshot): void {
-    mkdirSync(dirname(this.path), { recursive: true });
-    const tempPath = `${this.path}.tmp`;
-    writeFileSync(
-      tempPath,
-      JSON.stringify(encryptApiControlStateSnapshot(snapshot, this.cipher), null, 2),
-      'utf8'
-    );
-    renameSync(tempPath, this.path);
   }
 }
 
@@ -128,15 +93,6 @@ class SqliteApiControlStateStore implements ApiControlStateStore {
   }
 }
 
-function deriveApiStateFile(path: string): string {
-  const extension = extname(path);
-  if (extension.length > 0) {
-    return `${path.slice(0, -extension.length)}.api${extension}`;
-  }
-
-  return `${path}.api.json`;
-}
-
 export function createApiControlStateStore(env: NodeJS.ProcessEnv): ApiControlStateStore {
   const workspaceCwd = findWorkspaceRoot(process.env.INIT_CWD ?? process.cwd());
   const storageBackend = readStorageBackend(env, {
@@ -149,11 +105,9 @@ export function createApiControlStateStore(env: NodeJS.ProcessEnv): ApiControlSt
     storageBackend,
     {
       memory: () => new InMemoryApiControlStateStore(),
-      file: (stateFile) => new FileApiControlStateStore(deriveApiStateFile(stateFile), cipher),
       sqlite: (sqliteFile) => new SqliteApiControlStateStore(sqliteFile, cipher),
     },
     {
-      stateFile: resolveWorkspacePath(env.BOSSRAID_STATE_FILE, workspaceCwd),
       sqliteFile: resolveWorkspacePath(
         env.BOSSRAID_SQLITE_FILE ?? './temp/bossraid-state.sqlite',
         workspaceCwd

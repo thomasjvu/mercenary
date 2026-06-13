@@ -74,7 +74,7 @@ test('public manifest route describes Mercenary and the native raid flow', async
     assert.equal(body.endpoints.nativeRaid, 'POST /v1/raid');
     assert.equal(
       body.endpoints.agentLogTemplate,
-      'GET /v1/raids/:raidId/agent_log.json?token=<raidAccessToken>'
+      'GET /v1/raid/:raidId/agent_log.json?token=<raidAccessToken>'
     );
     assert.equal(body.computeConstraints.providerTransport, 'http');
     assert.equal(body.computeConstraints.maxEvaluatorJobs, 2);
@@ -173,7 +173,7 @@ test('per-raid agent log route accepts the raid access token as a query paramete
   try {
     const response = await app.inject({
       method: 'GET',
-      url: `/v1/raids/${spawn.raidId}/agent_log.json?token=${encodeURIComponent(spawn.raidAccessToken)}`,
+      url: `/v1/raid/${spawn.raidId}/agent_log.json?token=${encodeURIComponent(spawn.raidAccessToken)}`,
     });
 
     assert.equal(response.statusCode, 200);
@@ -310,7 +310,7 @@ test('raid result exposes ERC-8183-aligned settlement proof data', async () => {
   try {
     const response = await app.inject({
       method: 'GET',
-      url: `/v1/raids/${spawn.raidId}/result`,
+      url: `/v1/raid/${spawn.raidId}/result`,
       headers: {
         'x-bossraid-raid-token': spawn.raidAccessToken,
       },

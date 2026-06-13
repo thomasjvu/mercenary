@@ -3,11 +3,7 @@ import test from 'node:test';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import {
-  FileBossRaidPersistence,
-  InMemoryBossRaidPersistence,
-  type BossRaidPersistence,
-} from '@bossraid/persistence';
+import { InMemoryBossRaidPersistence, type BossRaidPersistence } from '@bossraid/persistence';
 import { SqliteBossRaidPersistence } from '@bossraid/persistence-sqlite';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import type {
@@ -37,6 +33,7 @@ test('sqlite persistence saves and reloads snapshot state', async () => {
     savedAt: new Date().toISOString(),
     raids: [],
     providers: [createProviderProfile('provider-alpha')],
+    launchReservations: [],
   };
 
   try {
@@ -50,12 +47,12 @@ test('sqlite persistence saves and reloads snapshot state', async () => {
 
 test('provider auth secrets are encrypted in persisted orchestrator snapshots', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'bossraid-encrypted-provider-test-'));
-  const stateFile = join(dir, 'state.json');
+  const sqliteFile = join(dir, 'state.sqlite');
   const originalKey = process.env.BOSSRAID_SECRET_ENCRYPTION_KEY;
   const originalPreviousKeys = process.env.BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS;
   process.env.BOSSRAID_SECRET_ENCRYPTION_KEY = 'unit-test-secret-key-old';
   delete process.env.BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS;
-  const persistence = new FileBossRaidPersistence(stateFile);
+  const persistence = new SqliteBossRaidPersistence(sqliteFile);
   const provider = createProviderProfile('provider-encrypted-auth', {
     auth: {
       type: 'bearer',
@@ -78,7 +75,7 @@ test('provider auth secrets are encrypted in persisted orchestrator snapshots', 
 
   try {
     await orchestrator.persistState();
-    const raw = await readFile(stateFile, 'utf8');
+    const raw = await readFile(sqliteFile, 'utf8');
     assert.equal(raw.includes('super-secret-provider-token'), false);
     assert.equal(raw.includes('brenc:v1:'), true);
 
@@ -89,7 +86,7 @@ test('provider auth secrets are encrypted in persisted orchestrator snapshots', 
     assert.equal(restored.listProviders()[0]?.auth?.token, 'super-secret-provider-token');
 
     await restored.persistState();
-    const rotatedRaw = await readFile(stateFile, 'utf8');
+    const rotatedRaw = await readFile(sqliteFile, 'utf8');
     assert.equal(rotatedRaw.includes('super-secret-provider-token'), false);
     assert.equal(rotatedRaw.includes('brenc:v1:'), true);
 

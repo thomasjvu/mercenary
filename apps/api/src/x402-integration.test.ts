@@ -9,7 +9,6 @@ import {
   createProviderProfile,
   createPublicSessionCookie,
   createRaidRequestBody,
-  createSpawnInputBody,
   createX402PaidTestEnv,
   encodeBase64Json,
   installMockX402Facilitator,
@@ -382,7 +381,7 @@ test('x402 inference routes to the cheapest seller after payment', async () => {
   }
 });
 
-test('x402 legacy spawn route charges against the requested budget', async () => {
+test('x402 native spawn route charges against the requested budget', async () => {
   const provider = {
     profile: createProviderProfile('provider-legacy-paid'),
     async accept(_task: ProviderTaskPackage): Promise<ProviderAcceptance> {
@@ -406,8 +405,8 @@ test('x402 legacy spawn route charges against the requested budget', async () =>
   try {
     const unpaid = await app.inject({
       method: 'POST',
-      url: '/v1/raids',
-      payload: createSpawnInputBody(),
+      url: '/v1/raid',
+      payload: createRaidRequestBody(),
     });
 
     assert.equal(unpaid.statusCode, 402);

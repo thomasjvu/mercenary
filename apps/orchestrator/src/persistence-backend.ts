@@ -1,5 +1,4 @@
 import {
-  FileBossRaidPersistence,
   InMemoryBossRaidPersistence,
   createStorageBackend,
   type BossRaidPersistence,
@@ -7,19 +6,16 @@ import {
 import { SqliteBossRaidPersistence } from '@bossraid/persistence-sqlite';
 
 export function createPersistenceBackend(input: {
-  storageBackend: 'sqlite' | 'file' | 'memory';
-  stateFile?: string;
+  storageBackend: 'sqlite' | 'memory';
   sqliteFile?: string;
 }): BossRaidPersistence {
   return createStorageBackend<BossRaidPersistence>(
     input.storageBackend,
     {
       memory: () => new InMemoryBossRaidPersistence(),
-      file: (stateFile) => new FileBossRaidPersistence(stateFile),
       sqlite: (sqliteFile) => new SqliteBossRaidPersistence(sqliteFile),
     },
     {
-      stateFile: input.stateFile,
       sqliteFile: input.sqliteFile,
     }
   );

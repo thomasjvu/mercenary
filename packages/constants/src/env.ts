@@ -33,7 +33,7 @@ export function readPositiveNumber(
   return fallback;
 }
 
-export type StorageBackend = 'sqlite' | 'file' | 'memory';
+export type StorageBackend = 'sqlite' | 'memory';
 
 export type ReadStorageBackendOptions = {
   strict?: boolean;
@@ -46,17 +46,21 @@ export function readStorageBackend(
 ): StorageBackend {
   const { strict = false, isolateNonProcessEnv = false } = options;
   const configured = env.BOSSRAID_STORAGE_BACKEND;
-  if (configured === 'sqlite' || configured === 'file' || configured === 'memory') {
+  if (configured === 'sqlite' || configured === 'memory') {
     return configured;
   }
 
+  if (configured === 'file') {
+    throw new Error('BOSSRAID_STORAGE_BACKEND=file was removed. Use sqlite or memory.');
+  }
+
   if (configured != null && strict) {
-    throw new Error('BOSSRAID_STORAGE_BACKEND must be sqlite, file, or memory.');
+    throw new Error('BOSSRAID_STORAGE_BACKEND must be sqlite or memory.');
   }
 
   if (isolateNonProcessEnv && env !== process.env) {
     return 'memory';
   }
 
-  return env.BOSSRAID_STATE_FILE ? 'file' : 'sqlite';
+  return 'sqlite';
 }

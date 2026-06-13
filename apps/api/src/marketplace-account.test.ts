@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
 import type { ProviderAcceptance } from '@bossraid/shared-types';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
@@ -81,11 +82,11 @@ test('public wallet auth creates a session and buyer API keys are hashed and rev
 
 test('public session tokens and buyer key hashes are encrypted in API control state', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'bossraid-api-encrypted-state-test-'));
-  const stateFile = join(dir, 'state.json');
+  const sqliteFile = join(dir, 'state.sqlite');
   const env = {
     ...process.env,
-    BOSSRAID_STORAGE_BACKEND: 'file',
-    BOSSRAID_STATE_FILE: stateFile,
+    BOSSRAID_STORAGE_BACKEND: 'sqlite',
+    BOSSRAID_SQLITE_FILE: sqliteFile,
     BOSSRAID_SECRET_ENCRYPTION_KEY: 'unit-test-api-secret-key',
   };
   const app = createTestApiServer([], env);
@@ -110,7 +111,11 @@ test('public session tokens and buyer key hashes are encrypted in API control st
     assert.ok(sessionToken);
     const apiKey = created.json().apiKey as string;
     const keyHash = createHash('sha256').update(apiKey).digest('hex');
-    const raw = await readFile(join(dir, 'state.api.json'), 'utf8');
+    const db = new DatabaseSync(sqliteFile);
+    const row = db
+      .prepare('select snapshot_json from bossraid_api_control_state where key = 1')
+      .get() as { snapshot_json?: string } | undefined;
+    const raw = row?.snapshot_json ?? '';
     assert.equal(raw.includes(sessionToken), false);
     assert.equal(raw.includes(keyHash), false);
     assert.equal(raw.includes('brenc:v1:'), true);

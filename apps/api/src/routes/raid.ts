@@ -1,5 +1,5 @@
 import { type FastifyInstance } from 'fastify';
-import { parseBossRaidRequest, parseBossRaidSpawnInput } from '@bossraid/api-contracts';
+import { parseBossRaidRequest } from '@bossraid/api-contracts';
 import { asSingleHeader } from '@bossraid/shared-types';
 import { buildAgentLog } from '../agent-artifacts.js';
 import {
@@ -19,9 +19,9 @@ import { type ApiHandlerGroups } from '../api-handlers.js';
 function registerRaidDetailRoutes(
   app: FastifyInstance,
   ctx: ApiContext,
-  handlers: ApiHandlerGroups,
-  basePath: '/v1/raid' | '/v1/raids'
+  handlers: ApiHandlerGroups
 ): void {
+  const basePath = '/v1/raid';
   const { requireRaidReadAccess, readRaidAccessTokenQuery, requireAdmin } = handlers.auth;
   const { ensureSettlementProofState, getRaidId } = handlers.raid;
   const { recordMarketplaceLedgersFromRaid } = handlers.payment;
@@ -163,12 +163,7 @@ export function registerRaidRoutes(
     });
   });
 
-  app.post('/v1/raids', async (request, reply) => {
-    return spawnParsedRaid(request, reply, parseBossRaidSpawnInput);
-  });
-
-  registerRaidDetailRoutes(app, ctx, handlers, '/v1/raid');
-  registerRaidDetailRoutes(app, ctx, handlers, '/v1/raids');
+  registerRaidDetailRoutes(app, ctx, handlers);
 
   app.post('/v1/evaluations/:raidId/replay', async (request, reply) => {
     const adminError = requireAdmin(reply, request.headers);

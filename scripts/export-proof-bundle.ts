@@ -1,6 +1,6 @@
 import { access, copyFile, mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
-import { FileBossRaidPersistence, type BossRaidPersistence } from '@bossraid/persistence';
+import type { BossRaidPersistence } from '@bossraid/persistence';
 import { SqliteBossRaidPersistence } from '@bossraid/persistence-sqlite';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import { runtimeExecutionEnabled, runtimeExecutionTransport } from '@bossraid/sandbox-runner';
@@ -19,7 +19,7 @@ type CliArgs = {
   raidAccessToken?: string;
   outDir?: string;
   sqliteFile?: string;
-  stateFile?: string;
+
   apiBaseUrl?: string;
 };
 
@@ -153,11 +153,7 @@ function parseArgs(argv: string[]): CliArgs {
       index += 1;
       continue;
     }
-    if (value === '--state-file') {
-      parsed.stateFile = argv[index + 1];
-      index += 1;
-      continue;
-    }
+
     if (value === '--api-base-url') {
       parsed.apiBaseUrl = argv[index + 1];
       index += 1;
@@ -182,17 +178,13 @@ function printHelp(): void {
       '  --raid-access-token <tok>  Include receiptPath and public read URLs that need the token.',
       '  --out-dir <path>           Output directory. Defaults to temp/proof-bundles/<raidId>.',
       '  --sqlite-file <path>       SQLite snapshot path. Defaults to BOSSRAID_SQLITE_FILE or temp/bossraid-state.sqlite.',
-      '  --state-file <path>        JSON state snapshot path when using file persistence.',
+
       '  --api-base-url <url>       Base URL used to emit public proof links in proof-index.json.',
     ].join('\n')
   );
 }
 
 function createPersistence(args: CliArgs): BossRaidPersistence {
-  if (args.stateFile) {
-    return new FileBossRaidPersistence(resolve(args.stateFile));
-  }
-
   const sqliteFile = resolve(
     args.sqliteFile ?? process.env.BOSSRAID_SQLITE_FILE ?? './temp/bossraid-state.sqlite'
   );
@@ -314,7 +306,7 @@ function buildPublicUrls(input: {
     const raidId = encodeURIComponent(input.raidId);
     const token = encodeURIComponent(input.raidAccessToken);
     urls.receipt = `${base}/receipt?raidId=${raidId}&token=${token}`;
-    urls.agentLog = `${base}/v1/raids/${raidId}/agent_log.json?token=${token}`;
+    urls.agentLog = `${base}/v1/raid/${raidId}/agent_log.json?token=${token}`;
   }
 
   return urls;

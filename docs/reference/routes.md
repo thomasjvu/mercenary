@@ -1,13 +1,12 @@
 # Routes
 
-Native write route: `POST /v1/raid`. Alias: `POST /v1/raids`.
+Native write route: `POST /v1/raid`.
 
 ## Public write
 
 | Route                                 | Purpose                                                                                                                                                                                                                                          |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `POST /v1/raid`                       | Native raid. Returns `raidId`, `raidAccessToken`, `receiptPath`.                                                                                                                                                                                 |
-| `POST /v1/raids`                      | Alias spawn shape.                                                                                                                                                                                                                               |
+| `POST /v1/raid`                       | Native raid (`raid_request` shape). Returns `raidId`, `raidAccessToken`, `receiptPath`.                                                                                                                                                          |
 | `POST /v1/chat/completions`           | OpenAI-compatible Mercenary entry. Optional `stream`, `raid_policy`, `raid_request`.                                                                                                                                                             |
 | `POST /v1/inference/chat/completions` | Discount inference. One seller, `cost_first`, rate-card snapshot. Strict E2EE catalog models use the server Venice relay when `raid_policy.privacy_mode` is `strict`; pass `X-BossRaid-Upstream-Api-Key` or configure `BOSSRAID_VENICE_API_KEY`. |
 | `POST /v1/demo/raid`                  | Free demo when `BOSSRAID_DEMO_ROUTE_ENABLED` + `BOSSRAID_DEMO_TOKEN` + `x-bossraid-demo-token`.                                                                                                                                                  |
@@ -16,24 +15,24 @@ Native write route: `POST /v1/raid`. Alias: `POST /v1/raids`.
 
 ## Status, proof, discovery
 
-| Route                                  | Auth               | Purpose                       |
-| -------------------------------------- | ------------------ | ----------------------------- |
-| `GET /health`                          | —                  | Health + ready providers      |
-| `GET /ready`                           | —                  | Beta readiness gates          |
-| `GET /metrics`                         | admin\*            | Prometheus metrics            |
-| `GET /v1/raid/:raidId`                 | raid token / admin | Status                        |
-| `GET /v1/raid/:raidId/result`          | raid token / admin | Result + routing + settlement |
-| `GET /v1/raid/:raidId/agent_log.json`  | query `token`      | Run log                       |
-| `GET /v1/raids/:raidId/*`              | same               | Aliases                       |
-| `GET /v1/agent.json`                   | —                  | Mercenary manifest            |
-| `GET /v1/attested-runtime`             | —                  | Signed runtime (`MNEMONIC`)   |
-| `GET /v1/raid/:raidId/attested-result` | raid token         | Signed result                 |
-| `GET /v1/providers`                    | —                  | Provider list                 |
-| `GET /v1/providers/health`             | —                  | Readiness snapshot            |
-| `GET /v1/models`                       | —                  | Model catalog + filters       |
-| `GET /v1/prices`                       | —                  | Compact pricing               |
-| `GET /v1/markets`                      | —                  | Order book by model           |
-| `GET /agents/discover`                 | —                  | Provider discovery            |
+| Route                                 | Auth               | Purpose                       |
+| ------------------------------------- | ------------------ | ----------------------------- |
+| `GET /health`                         | —                  | Health + ready providers      |
+| `GET /ready`                          | —                  | Beta readiness gates          |
+| `GET /metrics`                        | admin\*            | Prometheus metrics            |
+| `GET /v1/raid/:raidId`                | raid token / admin | Status                        |
+| `GET /v1/raid/:raidId/result`         | raid token / admin | Result + routing + settlement |
+| `GET /v1/raid/:raidId/agent_log.json` | query `token`      | Run log                       |
+
+| `GET /v1/agent.json` | — | Mercenary manifest |
+| `GET /v1/attested-runtime` | — | Signed runtime (`MNEMONIC`) |
+| `GET /v1/raid/:raidId/attested-result` | raid token | Signed result |
+| `GET /v1/providers` | — | Provider list |
+| `GET /v1/providers/health` | — | Readiness snapshot |
+| `GET /v1/models` | — | Model catalog + filters |
+| `GET /v1/prices` | — | Compact pricing |
+| `GET /v1/markets` | — | Order book by model |
+| `GET /agents/discover` | — | Provider discovery |
 
 \* `BOSSRAID_METRICS_PUBLIC=true` exposes `/metrics` without admin auth.
 
@@ -75,6 +74,15 @@ Output types: `text`, `patch`, `json`, `image`, `video`, `bundle`.
 | `GET /v1/marketplace/stats`                            | Public counters                                                                    |
 
 Buyer API keys on paid routes skip x402 and debit spend caps.
+
+## Inference attestation receipts
+
+| Route                                          | Auth | Purpose                                   |
+| ---------------------------------------------- | ---- | ----------------------------------------- |
+| `GET /v1/inference/receipts/:receiptId`        | —    | Stored inference attestation receipt      |
+| `GET /v1/inference/receipts/:receiptId/verify` | —    | Receipt verification summary + TEE checks |
+
+Strict E2EE inference responses include `privacy.receiptId` pointing at these routes.
 
 ## Admin & ops
 

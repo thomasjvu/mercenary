@@ -4,13 +4,7 @@ import type {
   UpstreamTeeCheck,
   UpstreamTeeVendor,
 } from './types.js';
-
-function buildExplorerUrl(intelQuote: string | undefined): string | undefined {
-  if (!intelQuote || intelQuote === 'mock-intel-quote') {
-    return 'https://proof.t16z.com/';
-  }
-  return 'https://proof.t16z.com/';
-}
+import { buildQuoteExplorerUrl, verifyIntelQuote } from './quote-verify.js';
 
 function verifyNonceBinding(
   expectedNonce: string,
@@ -154,6 +148,14 @@ function finalizeResult(
   const signingAddress =
     typeof input.report.signing_address === 'string' ? input.report.signing_address : undefined;
 
+  const mockMode = input.mockMode === true || process.env.BOSSRAID_UPSTREAM_TEE_MOCK === '1';
+  const quoteCheck = verifyIntelQuote(intelQuote, { mockMode });
+  checks.push({
+    id: 'intel_quote_cryptographic',
+    passed: quoteCheck.passed,
+    detail: quoteCheck.detail,
+  });
+
   const valid =
     checks.filter((check) => check.id !== 'server_verified').every((check) => check.passed) &&
     (input.vendor === 'venice' ? serverVerified : true);
@@ -172,7 +174,7 @@ function finalizeResult(
     serverVerified,
     e2eeReady,
     checks,
-    explorerUrl: buildExplorerUrl(intelQuote),
+    explorerUrl: buildQuoteExplorerUrl(intelQuote),
   };
 }
 
@@ -195,7 +197,7 @@ export function verifyUpstreamAttestationReport(
 export function toTeeAttestationResult(
   providerId: string,
   result: UpstreamAttestationVerifyResult,
-  extras?: { signingKey?: string }
+  extras?: { signingKey?: string; mockMode?: boolean }
 ): {
   valid: boolean;
   providerId: string;
@@ -217,7 +219,7 @@ export function toTeeAttestationResult(
     providerId,
     verifiedAt: result.verifiedAt,
     vendor: result.vendor,
-    runtimeMode: `${result.vendor}-upstream-tee`,
+    runtimeMode: extras?.mockMode ? 'mock' : `${result.vendor}-upstream-tee`,
     notes: result.checks.filter((check) => !check.passed).map((check) => check.detail ?? check.id),
     upstreamVendor: result.vendor,
     checks: result.checks,

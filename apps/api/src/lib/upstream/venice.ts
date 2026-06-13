@@ -13,7 +13,7 @@ export async function fetchVeniceUpstreamModels(
   apiKey: string,
   options: { timeoutMs?: number } = {}
 ): Promise<UpstreamModelRecord[]> {
-  if (process.env.BOSSRAID_VENICE_MOCK === '1') {
+  if (process.env.BOSSRAID_UPSTREAM_MOCK === '1' || process.env.BOSSRAID_VENICE_MOCK === '1') {
     return INFERENCE_MODEL_CATALOG.filter((entry) => entry.modelProvider === 'venice').map(
       (entry) => ({
         id: entry.upstreamModelId,
@@ -71,7 +71,7 @@ export async function probeVeniceChatCompletion(input: {
   prompt?: string;
   timeoutMs?: number;
 }): Promise<UpstreamChatResult> {
-  if (process.env.BOSSRAID_VENICE_MOCK === '1') {
+  if (process.env.BOSSRAID_UPSTREAM_MOCK === '1' || process.env.BOSSRAID_VENICE_MOCK === '1') {
     return { content: `mock-venice-response:${input.modelId}` };
   }
 

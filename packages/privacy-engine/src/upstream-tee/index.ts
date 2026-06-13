@@ -19,6 +19,7 @@ export type VerifyUpstreamTeeAttestationInput = {
   nonce?: string;
   instanceId?: string;
   signingAddress?: string;
+  mockMode?: boolean;
   fetchReport?: (input: {
     vendor: UpstreamTeeVendor;
     modelId: string;
@@ -35,8 +36,9 @@ export async function verifyUpstreamTeeAttestation(
   TeeAttestationResult & { e2eeReady?: boolean; checks?: unknown[]; explorerUrl?: string }
 > {
   const nonce = input.nonce ?? randomBytes(32).toString('hex');
+  const mockMode = input.mockMode === true || process.env.BOSSRAID_UPSTREAM_TEE_MOCK === '1';
 
-  if (process.env.BOSSRAID_UPSTREAM_TEE_MOCK === '1' || !input.fetchReport || !input.apiKey) {
+  if (mockMode || !input.fetchReport || !input.apiKey) {
     const mockReport =
       input.vendor === 'near'
         ? {
@@ -76,10 +78,11 @@ export async function verifyUpstreamTeeAttestation(
       modelId: input.modelId,
       nonce,
       report: mockReport,
+      mockMode,
     });
     const signingKey =
       typeof mockReport.signing_key === 'string' ? mockReport.signing_key : undefined;
-    return toTeeAttestationResult(input.providerId, verified, { signingKey });
+    return toTeeAttestationResult(input.providerId, verified, { signingKey, mockMode });
   }
 
   const report = await input.fetchReport({
@@ -96,6 +99,7 @@ export async function verifyUpstreamTeeAttestation(
     modelId: input.modelId,
     nonce,
     report,
+    mockMode,
   });
 
   const signingKey =
@@ -105,5 +109,5 @@ export async function verifyUpstreamTeeAttestation(
         ? report.signing_public_key
         : undefined;
 
-  return toTeeAttestationResult(input.providerId, verified, { signingKey });
+  return toTeeAttestationResult(input.providerId, verified, { signingKey, mockMode });
 }

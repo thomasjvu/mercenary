@@ -57,29 +57,42 @@ export async function fundBuyerBalance(amountUsd: number): Promise<{
 }
 
 export async function runInferenceChatCompletion(input: {
-  apiKey: string;
+  apiKey?: string;
   model: string;
   prompt: string;
   maxTotalCost?: number;
   privacyMode?: 'off' | 'prefer' | 'strict';
+  upstreamApiKey?: string;
+  stream?: boolean;
 }): Promise<{
   content: string;
   raw: unknown;
 }> {
+  const headers: Record<string, string> = {
+    'content-type': 'application/json',
+  };
+  if (input.apiKey?.trim()) {
+    headers.authorization = `Bearer ${input.apiKey.trim()}`;
+  }
+  if (input.upstreamApiKey?.trim()) {
+    headers['x-bossraid-upstream-api-key'] = input.upstreamApiKey.trim();
+  }
+
+  const strictE2ee = input.privacyMode === 'strict';
+  const body: Record<string, unknown> = {
+    model: input.model,
+    messages: [{ role: 'user', content: input.prompt }],
+    stream: input.stream ?? false,
+    raid_policy: {
+      privacy_mode: input.privacyMode ?? 'prefer',
+      ...(strictE2ee ? {} : { max_total_cost: input.maxTotalCost ?? 1 }),
+    },
+  };
+
   const response = await fetch(`${API_BASE}/v1/inference/chat/completions`, {
     method: 'POST',
-    headers: {
-      authorization: `Bearer ${input.apiKey}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: input.model,
-      messages: [{ role: 'user', content: input.prompt }],
-      raid_policy: {
-        max_total_cost: input.maxTotalCost ?? 1,
-        privacy_mode: input.privacyMode ?? 'prefer',
-      },
-    }),
+    headers,
+    body: JSON.stringify(body),
   });
 
   const payload = (await response.json()) as {

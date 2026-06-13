@@ -11,6 +11,7 @@ export type UpstreamAttestationVerifyInput = {
   modelId: string;
   nonce: string;
   report: Record<string, unknown>;
+  mockMode?: boolean;
 };
 
 export type UpstreamAttestationVerifyResult = {

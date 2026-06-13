@@ -14,7 +14,6 @@ export class SqliteBossRaidPersistence implements BossRaidPersistence {
 
   async loadState(): Promise<BossRaidPersistenceSnapshot> {
     const db = await this.open();
-    await this.migrateLegacySnapshot(db);
 
     const meta = db
       .prepare('select version, saved_at from bossraid_meta where key = ?')
@@ -186,35 +185,9 @@ export class SqliteBossRaidPersistence implements BossRaidPersistence {
         '  updated_at text not null,',
         '  payload_json text not null',
         ');',
-        'create table if not exists bossraid_state (',
-        '  key integer primary key check(key = 1),',
-        '  version integer not null,',
-        '  saved_at text not null,',
-        '  snapshot_json text not null',
-        ');',
       ].join('\n')
     );
 
     return db;
-  }
-
-  private async migrateLegacySnapshot(db: DatabaseSync): Promise<void> {
-    const existingRaids = db.prepare('select count(*) as count from raid_records').get() as {
-      count: number;
-    };
-    if (existingRaids.count > 0) {
-      return;
-    }
-
-    const legacy = db
-      .prepare('select snapshot_json from bossraid_state where key = ?')
-      .get(META_KEY) as { snapshot_json?: string } | undefined;
-
-    if (!legacy?.snapshot_json) {
-      return;
-    }
-
-    const snapshot = JSON.parse(legacy.snapshot_json) as BossRaidPersistenceSnapshot;
-    await this.saveState(snapshot);
   }
 }

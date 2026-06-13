@@ -99,30 +99,6 @@ export async function pauseSellerUpstreamOffer(provider: UpstreamProviderId, mod
   });
 }
 
-export async function connectSellerVenice(apiKey: string) {
-  return connectSellerUpstream('venice', apiKey);
-}
-
-export async function fetchSellerVeniceConfig() {
-  return fetchSellerUpstreamConfig('venice');
-}
-
-export async function fetchSellerVeniceModels() {
-  return fetchSellerUpstreamModels('venice');
-}
-
-export async function publishSellerVeniceOffers(payload: {
-  modelIds: string[];
-  discountPercent: number;
-  payoutWallet?: string;
-}) {
-  return publishSellerUpstreamOffers('venice', payload);
-}
-
-export async function pauseSellerVeniceOffer(modelId: string) {
-  return pauseSellerUpstreamOffer('venice', modelId);
-}
-
 export type VeniceCatalogModel = UpstreamCatalogModel;
 
 export { UPSTREAM_PROVIDER_IDS };

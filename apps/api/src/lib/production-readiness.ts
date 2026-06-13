@@ -14,7 +14,7 @@ interface ProductionReadinessCheck {
 
 export function buildProductionReadinessReport(input: {
   env: NodeJS.ProcessEnv;
-  storageBackend: 'sqlite' | 'file' | 'memory';
+  storageBackend: 'sqlite' | 'memory';
   persistenceHealthy: boolean;
   providers: ProviderProfile[];
   providerHealth: ProviderHealthStatus[];

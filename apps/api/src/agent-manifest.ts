@@ -40,7 +40,7 @@ export interface BossRaidAgentManifest {
     nativeRaid: 'POST /v1/raid';
     compatibleChat: 'POST /v1/chat/completions';
     manifest: 'GET /v1/agent.json';
-    agentLogTemplate: 'GET /v1/raids/:raidId/agent_log.json?token=<raidAccessToken>';
+    agentLogTemplate: 'GET /v1/raid/:raidId/agent_log.json?token=<raidAccessToken>';
     publicReceiptTemplate: '/receipt?raidId=<raidId>&token=<raidAccessToken>';
     mcpTools: string[];
   };
@@ -125,7 +125,7 @@ export function buildAgentManifest(
       nativeRaid: 'POST /v1/raid',
       compatibleChat: 'POST /v1/chat/completions',
       manifest: 'GET /v1/agent.json',
-      agentLogTemplate: 'GET /v1/raids/:raidId/agent_log.json?token=<raidAccessToken>',
+      agentLogTemplate: 'GET /v1/raid/:raidId/agent_log.json?token=<raidAccessToken>',
       publicReceiptTemplate: '/receipt?raidId=<raidId>&token=<raidAccessToken>',
       mcpTools: ['bossraid_delegate', 'bossraid_receipt', 'bossraid_status', 'bossraid_result'],
     },

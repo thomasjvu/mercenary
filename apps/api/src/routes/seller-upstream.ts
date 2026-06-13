@@ -21,6 +21,8 @@ import {
   mergeUpstreamCatalogModels,
   parseUpstreamProviderParam,
 } from '../lib/upstream/index.js';
+import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
+import { verifyUpstreamTee } from '../lib/attestation-service.js';
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../api-handlers.js';
 
@@ -100,6 +102,30 @@ export function registerSellerUpstreamRoutes(
         error: `invalid_${provider}_api_key`,
         message: error instanceof Error ? error.message : `${provider} API key validation failed.`,
       };
+    }
+
+    const teeSampleModel =
+      INFERENCE_MODEL_CATALOG.find(
+        (entry) => entry.attestationVendor === provider && entry.teeAttested
+      )?.upstreamModelId ??
+      INFERENCE_MODEL_CATALOG.find((entry) => entry.modelProvider === provider)?.upstreamModelId;
+
+    if (teeSampleModel) {
+      const { attestation } = await verifyUpstreamTee({
+        provider,
+        modelId: teeSampleModel,
+        providerId: `seller:${session.wallet}:${provider}`,
+        apiKey,
+        env,
+      });
+      if (!attestation.valid) {
+        reply.code(400);
+        return {
+          error: 'tee_preflight_failed',
+          message: 'Upstream TEE attestation preflight failed for this API key.',
+          checks: attestation.checks,
+        };
+      }
     }
 
     const config = controlState.upsertSellerUpstreamConfig(session.wallet, provider, apiKey, env);
