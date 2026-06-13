@@ -59,6 +59,8 @@ export type {
   SettlementExecutionResponse,
   SettlementSummaryResponse,
   SubmissionArtifactView,
+  MarketplaceModelTeeSummaryView,
+  MarketplaceTeeAttestationView,
   TeeAttestationCheckView,
   TeeAttestationView,
   PrivacyAttestationView,

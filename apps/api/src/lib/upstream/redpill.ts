@@ -1,8 +1,16 @@
-import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
-import { fetchUpstreamJson, isE2eeModelId, isTeeModelId } from './shared.js';
+import type { UpstreamProviderId } from '@bossraid/constants';
+import { isE2eeModelId, isTeeModelId } from './shared.js';
+import {
+  buildMockRedpillTeeReport,
+  fetchUpstreamModelsWithFallback,
+  probeOpenAiStyleChatCompletion,
+  shouldUseTeeMock,
+} from './adapter-helpers.js';
+import { fetchUpstreamJson } from './shared.js';
 import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
 
 const REDPILL_BASE = 'https://api.redpill.ai/v1';
+const PROVIDER = 'redpill' satisfies UpstreamProviderId;
 
 const MOCK_REDPILL_MODELS: UpstreamModelRecord[] = [
   {
@@ -13,54 +21,48 @@ const MOCK_REDPILL_MODELS: UpstreamModelRecord[] = [
   },
 ];
 
-export async function fetchRedpillUpstreamModels(apiKey: string): Promise<UpstreamModelRecord[]> {
-  if (process.env.BOSSRAID_UPSTREAM_MOCK === '1' || process.env.BOSSRAID_REDPILL_MOCK === '1') {
-    return MOCK_REDPILL_MODELS;
-  }
-
-  try {
-    const payload = await fetchUpstreamJson<{ data?: Array<{ id: string; name?: string }> }>(
-      `${REDPILL_BASE}/models`,
-      { apiKey }
-    );
-    return (payload.data ?? []).map((model) => ({
-      id: model.id,
-      displayName: model.name ?? model.id,
-      teeAttested: isTeeModelId(model.id),
-      e2ee: isE2eeModelId(model.id),
-    }));
-  } catch {
-    return MOCK_REDPILL_MODELS;
-  }
+export async function fetchRedpillUpstreamModels(
+  apiKey: string,
+  options: { env?: NodeJS.ProcessEnv } = {}
+): Promise<UpstreamModelRecord[]> {
+  return fetchUpstreamModelsWithFallback({
+    provider: PROVIDER,
+    apiKey,
+    mockModels: MOCK_REDPILL_MODELS,
+    env: options.env,
+    fetchModels: async () => {
+      const payload = await fetchUpstreamJson<{ data?: Array<{ id: string; name?: string }> }>(
+        `${REDPILL_BASE}/models`,
+        { apiKey }
+      );
+      return (payload.data ?? []).map((model) => ({
+        id: model.id,
+        displayName: model.name ?? model.id,
+        teeAttested: isTeeModelId(model.id),
+        e2ee: isE2eeModelId(model.id),
+      }));
+    },
+  });
 }
 
 export async function probeRedpillChatCompletion(input: {
   apiKey: string;
   modelId: string;
   prompt?: string;
+  env?: NodeJS.ProcessEnv;
 }): Promise<UpstreamChatResult> {
-  if (process.env.BOSSRAID_UPSTREAM_MOCK === '1' || process.env.BOSSRAID_REDPILL_MOCK === '1') {
-    return { content: `mock-redpill-response:${input.modelId}` };
-  }
-
-  const payload = await fetchUpstreamJson<{
-    id?: string;
-    choices?: Array<{ message?: { content?: string | null } }>;
-  }>(`${REDPILL_BASE}/chat/completions`, {
+  return probeOpenAiStyleChatCompletion({
+    provider: PROVIDER,
     apiKey: input.apiKey,
-    method: 'POST',
+    url: `${REDPILL_BASE}/chat/completions`,
+    env: input.env,
+    mockContent: `mock-redpill-response:${input.modelId}`,
     body: {
       model: input.modelId,
       messages: [{ role: 'user', content: input.prompt ?? 'Reply with the single word: ok' }],
       max_tokens: 16,
     },
   });
-
-  const content = payload.choices?.[0]?.message?.content?.trim();
-  if (!content) {
-    throw new Error('Redpill chat response was empty.');
-  }
-  return { content, requestId: payload.id };
 }
 
 export async function fetchRedpillAttestationReport(input: {
@@ -68,15 +70,11 @@ export async function fetchRedpillAttestationReport(input: {
   modelId: string;
   nonce: string;
   signingAddress?: string;
+  env?: NodeJS.ProcessEnv;
 }): Promise<Record<string, unknown>> {
-  if (process.env.BOSSRAID_UPSTREAM_TEE_MOCK === '1') {
-    return {
-      signing_address: '0x3573d4c8b9c3ce0360594095af0c0629de45c02a',
-      signing_algo: 'ecdsa',
-      request_nonce: input.nonce,
-      intel_quote: 'mock-intel-quote',
-      nvidia_payload: JSON.stringify({ nonce: input.nonce }),
-    };
+  const env = input.env ?? process.env;
+  if (shouldUseTeeMock(PROVIDER, env)) {
+    return buildMockRedpillTeeReport({ nonce: input.nonce });
   }
 
   const url = new URL(`${REDPILL_BASE}/attestation/report`);

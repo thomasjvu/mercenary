@@ -7,7 +7,7 @@ import {
   fetchSellerUpstreamConfig,
   fetchSellerUpstreamModels,
   publishSellerUpstreamOffers,
-  UPSTREAM_PROVIDER_LABELS,
+  upstreamProviderLabel,
   type UpstreamCatalogModel,
 } from '../api/seller-upstream.js';
 import { useWalletAuth } from '../hooks/useWalletAuth.js';
@@ -48,12 +48,12 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
 
   async function handleConnect() {
     if (!apiKey.trim()) {
-      setStatus(`Enter your ${UPSTREAM_PROVIDER_LABELS[provider]} API key.`);
+      setStatus(`Enter your ${upstreamProviderLabel(provider)} API key.`);
       return;
     }
 
     setPending(true);
-    setStatus(`Validating ${UPSTREAM_PROVIDER_LABELS[provider]} key...`);
+    setStatus(`Validating ${upstreamProviderLabel(provider)} key...`);
     try {
       const connected = await connectSellerUpstream(provider, apiKey.trim());
       await upstreamConfig.mutate();
@@ -66,7 +66,7 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
           .map((model) => model.modelId)
       );
       setStatus(
-        `Connected ${connected.config.keyPrefix}. ${modelList.upstreamFoundCount} models found on your ${UPSTREAM_PROVIDER_LABELS[provider]} account.`
+        `Connected ${connected.config.keyPrefix}. ${modelList.upstreamFoundCount} models found on your ${upstreamProviderLabel(provider)} account.`
       );
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Upstream connect failed.');
@@ -150,7 +150,7 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
                 }}
                 type="button"
               >
-                {UPSTREAM_PROVIDER_LABELS[entry]}
+                {upstreamProviderLabel(entry)}
               </button>
             ))}
           </div>

@@ -9,7 +9,7 @@ import type { TeeAttestationResult } from '@bossraid/shared-types';
 import { verifyUpstreamTee } from './attestation-service.js';
 import { generateAttestationNonce } from './upstream/index.js';
 import type { UpstreamChatResult } from './upstream/types.js';
-import { isUpstreamInferenceMock } from './upstream-mock.js';
+import { isProviderInferenceMock, mockVeniceE2eeContent } from './upstream-mock.js';
 
 export const VENICE_E2EE_CHAT_URL = 'https://api.venice.ai/api/v1/chat/completions';
 
@@ -111,8 +111,8 @@ export async function probeVeniceE2eeChatCompletion(input: {
   env?: NodeJS.ProcessEnv;
 }): Promise<UpstreamChatResult> {
   const env = input.env ?? process.env;
-  if (isUpstreamInferenceMock(env)) {
-    return { content: `mock-venice-e2ee:${input.modelId}` };
+  if (isProviderInferenceMock('venice', env)) {
+    return { content: mockVeniceE2eeContent(input.modelId) };
   }
 
   const { session } = await requireVeniceE2eeAttestation({

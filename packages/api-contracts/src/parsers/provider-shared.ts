@@ -1,6 +1,7 @@
 import type {
   Erc8004Verification,
   ProviderAuthConfig,
+  ProviderPrivacy,
   ProviderVerification,
 } from '@bossraid/shared-types';
 import {
@@ -105,6 +106,24 @@ export function parseProviderVerification(value: unknown, field: string): Provid
         ? undefined
         : ensureBooleanLike(input.modelVerified ?? input.model_verified, `${field}.model_verified`),
     notes: input.notes == null ? undefined : ensureStringArray(input.notes, `${field}.notes`),
+  };
+}
+
+export function parseProviderPrivacy(value: unknown, field: string): ProviderPrivacy | undefined {
+  if (value == null) {
+    return undefined;
+  }
+
+  const input = ensureRecord(value, field);
+  return {
+    score: typeof input.score === 'number' ? input.score : undefined,
+    teeAttested: input.teeAttested === true || input.tee_attested === true,
+    teeVendor: ensureOptionalString(input.teeVendor ?? input.tee_vendor, `${field}.tee_vendor`),
+    e2ee: input.e2ee === true,
+    noDataRetention: input.noDataRetention === true || input.no_data_retention === true,
+    signedOutputs: input.signedOutputs === true || input.signed_outputs === true,
+    provenanceAttested: input.provenanceAttested === true || input.provenance_attested === true,
+    operatorVerified: input.operatorVerified === true || input.operator_verified === true,
   };
 }
 

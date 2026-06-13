@@ -1,9 +1,12 @@
 import type {
   Erc8004Identity,
+  OutputType,
   PrivacyFeatureKey,
   ProviderDiscoveryQuery,
   ProviderPrivacy,
   ProviderProfile,
+  ProviderVerificationStatus,
+  PrivacyRoutingMode,
   RaidTaskSpec,
 } from '@bossraid/shared-types';
 import { DEFAULTS } from '@bossraid/constants';
@@ -139,6 +142,23 @@ export function providerHasPrivacyFeature(
   }
 }
 
+export function listProviderPrivacyFeatures(provider: ProviderProfile): PrivacyFeatureKey[] {
+  const features: PrivacyFeatureKey[] = [];
+  if (providerHasPrivacyFeature(provider, 'tee_attested')) features.push('tee_attested');
+  if (providerHasPrivacyFeature(provider, 'e2ee')) features.push('e2ee');
+  if (providerHasPrivacyFeature(provider, 'no_data_retention')) {
+    features.push('no_data_retention');
+  }
+  if (providerHasPrivacyFeature(provider, 'signed_outputs')) features.push('signed_outputs');
+  if (providerHasPrivacyFeature(provider, 'provenance_attested')) {
+    features.push('provenance_attested');
+  }
+  if (providerHasPrivacyFeature(provider, 'operator_verified')) {
+    features.push('operator_verified');
+  }
+  return features;
+}
+
 export function providerHeartbeatAgeMs(
   provider: ProviderProfile,
   nowMs: number = Date.now()
@@ -172,15 +192,36 @@ export function providerIsFresh(
   return ageMs <= maxHeartbeatAgeMs;
 }
 
-export function providerMatchesDiscoveryQuery(
-  provider: ProviderProfile,
-  query: ProviderDiscoveryQuery = {},
-  defaultMaxHeartbeatAgeMs: number = DEFAULTS.PROVIDER_FRESH_MS
-): boolean {
-  const onlineOnly = query.onlineOnly ?? true;
-  const maxHeartbeatAgeMs = query.maxHeartbeatAgeMs ?? defaultMaxHeartbeatAgeMs;
+export type ProviderMarketplaceConstraints = {
+  capabilities?: string[];
+  allowedModelFamilies?: string[];
+  allowedAgentFrameworks?: string[];
+  allowedModelProviders?: string[];
+  allowedModelIds?: string[];
+  allowedOutputTypes?: OutputType[];
+  requireErc8004?: boolean;
+  requiredVerificationStatus?: ProviderVerificationStatus;
+  minTrustScore?: number;
+  minReputationScore?: number;
+  privacyMode?: PrivacyRoutingMode;
+  requirePrivacyFeatures?: PrivacyFeatureKey[];
+  onlineOnly?: boolean;
+  maxHeartbeatAgeMs?: number;
+};
 
-  if (onlineOnly && !providerIsFresh(provider, maxHeartbeatAgeMs)) {
+export function providerMatchesMarketplaceConstraints(
+  provider: ProviderProfile,
+  constraints: ProviderMarketplaceConstraints = {},
+  options: {
+    defaultMaxHeartbeatAgeMs?: number;
+    skipFreshnessCheck?: boolean;
+  } = {}
+): boolean {
+  const defaultMaxHeartbeatAgeMs = options.defaultMaxHeartbeatAgeMs ?? DEFAULTS.PROVIDER_FRESH_MS;
+  const onlineOnly = constraints.onlineOnly ?? true;
+  const maxHeartbeatAgeMs = constraints.maxHeartbeatAgeMs ?? defaultMaxHeartbeatAgeMs;
+
+  if (onlineOnly && !options.skipFreshnessCheck && !providerIsFresh(provider, maxHeartbeatAgeMs)) {
     return false;
   }
 
@@ -197,16 +238,16 @@ export function providerMatchesDiscoveryQuery(
   }
 
   if (
-    query.capabilities?.length &&
-    !query.capabilities.every((capability) => provider.specializations.includes(capability))
+    constraints.capabilities?.length &&
+    !constraints.capabilities.every((capability) => provider.specializations.includes(capability))
   ) {
     return false;
   }
 
   if (
-    query.allowedModelFamilies?.length &&
+    constraints.allowedModelFamilies?.length &&
     (!provider.modelFamily ||
-      !query.allowedModelFamilies.some(
+      !constraints.allowedModelFamilies.some(
         (family) => normalizeModelFamily(family) === normalizeModelFamily(provider.modelFamily)
       ))
   ) {
@@ -214,17 +255,19 @@ export function providerMatchesDiscoveryQuery(
   }
 
   if (
-    query.allowedAgentFrameworks?.length &&
+    constraints.allowedAgentFrameworks?.length &&
     (!provider.agentFramework ||
-      !query.allowedAgentFrameworks.some((framework) => framework === provider.agentFramework))
+      !constraints.allowedAgentFrameworks.some(
+        (framework) => framework === provider.agentFramework
+      ))
   ) {
     return false;
   }
 
   if (
-    query.allowedModelProviders?.length &&
+    constraints.allowedModelProviders?.length &&
     (!provider.modelProvider ||
-      !query.allowedModelProviders.some(
+      !constraints.allowedModelProviders.some(
         (modelProvider) =>
           normalizeFilterValue(modelProvider) === normalizeFilterValue(provider.modelProvider)
       ))
@@ -233,9 +276,9 @@ export function providerMatchesDiscoveryQuery(
   }
 
   if (
-    query.allowedModelIds?.length &&
+    constraints.allowedModelIds?.length &&
     (!provider.modelId ||
-      !query.allowedModelIds.some(
+      !constraints.allowedModelIds.some(
         (modelId) => normalizeFilterValue(modelId) === normalizeFilterValue(provider.modelId)
       ))
   ) {
@@ -243,40 +286,70 @@ export function providerMatchesDiscoveryQuery(
   }
 
   if (
-    query.allowedOutputTypes?.length &&
-    !query.allowedOutputTypes.some((type) => provider.outputTypes?.includes(type))
+    constraints.allowedOutputTypes?.length &&
+    !constraints.allowedOutputTypes.some((type) => provider.outputTypes?.includes(type))
   ) {
     return false;
   }
 
-  if (query.requireErc8004 === true && !providerHasErc8004Identity(provider)) {
+  if (constraints.requireErc8004 === true && !providerHasErc8004Identity(provider)) {
     return false;
   }
 
   if (
-    query.requiredVerificationStatus &&
-    provider.verification?.status !== query.requiredVerificationStatus
+    constraints.requiredVerificationStatus &&
+    provider.verification?.status !== constraints.requiredVerificationStatus
   ) {
     return false;
   }
 
   const trustScore = computeTrustScore(provider);
-  if (typeof query.minTrustScore === 'number' && trustScore < query.minTrustScore) {
+  if (typeof constraints.minTrustScore === 'number' && trustScore < constraints.minTrustScore) {
     return false;
   }
 
   const reputationScore = provider.scores?.reputationScore ?? computeReputationScore(provider);
-  if (typeof query.minReputationScore === 'number' && reputationScore < query.minReputationScore) {
+  if (
+    typeof constraints.minReputationScore === 'number' &&
+    reputationScore < constraints.minReputationScore
+  ) {
     return false;
   }
 
-  if (query.privacyMode === 'strict' && query.requirePrivacyFeatures?.length) {
-    return query.requirePrivacyFeatures.every((feature) =>
+  if (constraints.privacyMode === 'strict' && constraints.requirePrivacyFeatures?.length) {
+    return constraints.requirePrivacyFeatures.every((feature) =>
       providerHasPrivacyFeature(provider, feature)
     );
   }
 
   return true;
+}
+
+export function providerMatchesDiscoveryQuery(
+  provider: ProviderProfile,
+  query: ProviderDiscoveryQuery = {},
+  defaultMaxHeartbeatAgeMs: number = DEFAULTS.PROVIDER_FRESH_MS
+): boolean {
+  return providerMatchesMarketplaceConstraints(
+    provider,
+    {
+      capabilities: query.capabilities,
+      allowedModelFamilies: query.allowedModelFamilies,
+      allowedAgentFrameworks: query.allowedAgentFrameworks,
+      allowedModelProviders: query.allowedModelProviders,
+      allowedModelIds: query.allowedModelIds,
+      allowedOutputTypes: query.allowedOutputTypes,
+      requireErc8004: query.requireErc8004,
+      requiredVerificationStatus: query.requiredVerificationStatus,
+      minTrustScore: query.minTrustScore,
+      minReputationScore: query.minReputationScore,
+      privacyMode: query.privacyMode,
+      requirePrivacyFeatures: query.requirePrivacyFeatures,
+      onlineOnly: query.onlineOnly,
+      maxHeartbeatAgeMs: query.maxHeartbeatAgeMs ?? defaultMaxHeartbeatAgeMs,
+    },
+    { defaultMaxHeartbeatAgeMs }
+  );
 }
 
 export function buildDiscoveryQueryFromTask(task: RaidTaskSpec): ProviderDiscoveryQuery {

@@ -22,12 +22,6 @@ export function isHostedInferenceProvider(provider: ProviderProfile): boolean {
   return provider.source?.type === 'inference_hosted' || provider.source?.type === 'venice_hosted';
 }
 
-export function isVeniceHostedProvider(provider: ProviderProfile): boolean {
-  return (
-    isHostedInferenceProvider(provider) && resolveHostedProviderUpstream(provider) === 'venice'
-  );
-}
-
 export function probeHostedInferenceProviderHealth(
   controlState: ApiControlState,
   provider: ProviderProfile

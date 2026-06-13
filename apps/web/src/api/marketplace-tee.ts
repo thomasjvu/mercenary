@@ -1,40 +1,12 @@
 import type { UpstreamProviderId } from '@bossraid/constants';
+import type {
+  MarketplaceModelTeeSummaryView,
+  MarketplaceTeeAttestationView,
+} from '@bossraid/shared-types';
 import { fetchJson } from './client.js';
 
-export type TeeAttestationCheck = {
-  id: string;
-  passed: boolean;
-  detail?: string;
-};
-
-export type TeeAttestationResponse = {
-  object: string;
-  provider: UpstreamProviderId;
-  modelId: string;
-  valid: boolean;
-  verifiedAt: string;
-  signingAddress?: string;
-  e2eeReady?: boolean;
-  checks?: TeeAttestationCheck[];
-  explorerUrl?: string;
-  teeAttested: boolean;
-  e2ee: boolean;
-};
-
-type ModelTeeSummary = {
-  object: string;
-  modelId: string;
-  provider: UpstreamProviderId;
-  teeAttested: boolean;
-  e2ee: boolean;
-  lastAttestation: {
-    valid: boolean;
-    verifiedAt: string;
-    signingAddress?: string;
-    checks?: TeeAttestationCheck[];
-    explorerUrl?: string;
-  } | null;
-};
+export type TeeAttestationResponse = MarketplaceTeeAttestationView;
+export type ModelTeeSummary = MarketplaceModelTeeSummaryView;
 
 const MODEL_TEE_CACHE_TTL_MS = 5 * 60 * 1000;
 const modelTeeCache = new Map<string, { expiresAt: number; data: ModelTeeSummary }>();

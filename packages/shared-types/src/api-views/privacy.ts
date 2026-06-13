@@ -4,6 +4,37 @@ export type TeeAttestationCheckView = {
   detail?: string;
 };
 
+import type { UpstreamProviderId } from '@bossraid/constants';
+
+export type MarketplaceTeeAttestationView = {
+  object: string;
+  provider: UpstreamProviderId;
+  modelId: string;
+  valid: boolean;
+  verifiedAt: string;
+  signingAddress?: string;
+  e2eeReady?: boolean;
+  checks?: TeeAttestationCheckView[];
+  explorerUrl?: string;
+  teeAttested: boolean;
+  e2ee: boolean;
+};
+
+export type MarketplaceModelTeeSummaryView = {
+  object: string;
+  modelId: string;
+  provider: UpstreamProviderId;
+  teeAttested: boolean;
+  e2ee: boolean;
+  lastAttestation: {
+    valid: boolean;
+    verifiedAt: string;
+    signingAddress?: string;
+    checks?: TeeAttestationCheckView[];
+    explorerUrl?: string;
+  } | null;
+};
+
 export type TeeAttestationView = {
   valid: boolean;
   providerId: string;

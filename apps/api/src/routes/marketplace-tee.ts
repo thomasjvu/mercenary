@@ -1,18 +1,21 @@
 import { type FastifyInstance } from 'fastify';
 import { INFERENCE_MODEL_CATALOG, isUpstreamProviderId } from '@bossraid/constants';
-import { verifyUpstreamAttestationReport } from '@bossraid/privacy-engine';
 import { ensureRecordInput, ensureStringInput } from '../lib/account.js';
-import { fetchUpstreamAttestationReport, generateAttestationNonce } from '../lib/upstream/index.js';
+import { generateAttestationNonce } from '../lib/upstream/index.js';
 import { verifyUpstreamTee } from '../lib/attestation-service.js';
-import { isUpstreamTeeMock } from '../lib/upstream-mock.js';
 import { readPlatformUpstreamApiKey } from '../lib/upstream/credentials.js';
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../api-handlers.js';
 
-const attestationCache = new Map<
-  string,
-  { expiresAt: number; result: ReturnType<typeof verifyUpstreamAttestationReport> }
->();
+type CachedTeeAttestation = {
+  valid: boolean;
+  verifiedAt: string;
+  signingAddress?: string;
+  checks?: Array<{ id: string; passed: boolean; detail?: string }>;
+  explorerUrl?: string;
+};
+
+const attestationCache = new Map<string, { expiresAt: number; result: CachedTeeAttestation }>();
 const ATTESTATION_CACHE_TTL_MS = 10 * 60 * 1000;
 
 export function registerMarketplaceTeeRoutes(
@@ -105,13 +108,8 @@ export function registerMarketplaceTeeRoutes(
       expiresAt: Date.now() + ATTESTATION_CACHE_TTL_MS,
       result: {
         valid: result.valid,
-        vendor: provider,
-        modelId,
-        nonce,
         verifiedAt: result.verifiedAt,
         signingAddress: result.signingAddress,
-        serverVerified: result.valid,
-        e2eeReady: result.e2eeReady,
         checks: result.checks ?? [],
         explorerUrl: result.explorerUrl,
       },
@@ -184,26 +182,29 @@ export function registerMarketplaceTeeRoutes(
     }
 
     const nonce = generateAttestationNonce();
-    const report = await fetchUpstreamAttestationReport({
+    const { attestation: verified } = await verifyUpstreamTee({
       provider,
-      apiKey,
       modelId,
+      providerId: `catalog:${provider}:${modelId}`,
+      apiKey,
       nonce,
       instanceId: typeof body.instanceId === 'string' ? body.instanceId : undefined,
-    });
-    const verified = verifyUpstreamAttestationReport({
-      vendor: provider,
-      modelId,
-      nonce,
-      report,
-      mockMode: isUpstreamTeeMock(env),
+      signingAddress: typeof body.signingAddress === 'string' ? body.signingAddress : undefined,
+      env,
     });
 
     return {
       object: 'marketplace.tee.preflight',
-      ...verified,
-      provider,
+      valid: verified.valid,
+      vendor: provider,
       modelId,
+      nonce,
+      verifiedAt: verified.verifiedAt,
+      signingAddress: verified.signingAddress,
+      e2eeReady: verified.e2eeReady,
+      checks: verified.checks,
+      explorerUrl: verified.explorerUrl,
+      provider,
     };
   });
 }

@@ -35,19 +35,11 @@ export function parseProviderDiscoveryQuery(value: unknown): ProviderDiscoveryQu
   const input = ensureRecord(value, 'provider_discovery_query');
   return {
     capabilities:
-      input.capabilities == null
-        ? undefined
-        : String(input.capabilities)
-            .split(',')
-            .map((item) => item.trim())
-            .filter(Boolean),
+      input.capabilities == null ? undefined : splitCommaSeparatedStrings(input.capabilities),
     allowedModelFamilies:
       input.allowedModelFamilies == null && input.allowed_model_families == null
         ? undefined
-        : String(input.allowedModelFamilies ?? input.allowed_model_families)
-            .split(',')
-            .map((item) => item.trim())
-            .filter(Boolean),
+        : splitCommaSeparatedStrings(input.allowedModelFamilies ?? input.allowed_model_families),
     allowedAgentFrameworks:
       input.allowedAgentFrameworks == null && input.allowed_agent_frameworks == null
         ? undefined

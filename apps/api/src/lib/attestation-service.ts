@@ -4,7 +4,7 @@ import type { InferenceAttestationReceipt, InferenceTransport } from '@bossraid/
 import type { UpstreamProviderId } from '@bossraid/constants';
 import { fetchUpstreamAttestationReport, generateAttestationNonce } from './upstream/index.js';
 import type { InferenceReceiptStore } from './inference-receipt-store.js';
-import { isUpstreamTeeMock } from './upstream-mock.js';
+import { isProviderTeeMock } from './upstream-mock.js';
 
 export function hashInferenceText(value: string): string {
   return createHash('sha256').update(value, 'utf8').digest('hex');
@@ -22,7 +22,7 @@ export async function verifyUpstreamTee(input: {
 }) {
   const nonce = input.nonce ?? generateAttestationNonce();
   const env = input.env ?? process.env;
-  const mockMode = isUpstreamTeeMock(env);
+  const mockMode = isProviderTeeMock(input.provider, env);
 
   const attestation = await verifyUpstreamTeeAttestation({
     vendor: input.provider,

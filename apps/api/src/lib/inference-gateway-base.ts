@@ -30,7 +30,3 @@ export function buildUpstreamSellerProviderId(
     .toLowerCase();
   return `${provider}-seller-${walletSlice}-${modelSlug}`.slice(0, 96);
 }
-
-export function buildVeniceSellerProviderId(wallet: string, modelId: string): string {
-  return buildUpstreamSellerProviderId('venice', wallet, modelId);
-}

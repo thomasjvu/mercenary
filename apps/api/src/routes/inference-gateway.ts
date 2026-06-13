@@ -4,6 +4,7 @@ import type { ProviderTaskPackage } from '@bossraid/shared-types';
 import { createProviderRunId, runInferenceGatewayJob } from '../lib/inference-gateway-runner.js';
 import {
   isHostedInferenceProvider,
+  probeHostedInferenceProviderHealth,
   resolveHostedProviderUpstream,
 } from '../lib/inference-gateway-health.js';
 import { type ApiContext } from '../api-context.js';
@@ -33,20 +34,18 @@ export function registerInferenceGatewayRoutes(app: FastifyInstance, ctx: ApiCon
       return { error: 'not_found' };
     }
 
-    const wallet = provider.source?.externalRef;
+    const health = probeHostedInferenceProviderHealth(controlState, provider);
     const upstream = resolveHostedProviderUpstream(provider);
-    const configured =
-      wallet && upstream ? Boolean(controlState.readSellerUpstreamConfig(wallet, upstream)) : false;
 
     return {
-      ok: configured,
-      ready: configured,
-      missing: configured ? [] : [`BOSSRAID_${(upstream ?? 'UPSTREAM').toUpperCase()}_API_KEY`],
-      providerId: provider.providerId,
-      providerName: provider.displayName,
-      agentFramework: provider.agentFramework ?? 'custom',
-      modelProvider: provider.modelProvider ?? upstream ?? 'unknown',
-      model: provider.modelId ?? null,
+      ok: health.ready === true,
+      ready: health.ready === true,
+      missing: health.missing ?? [],
+      providerId: health.providerId,
+      providerName: health.providerName,
+      agentFramework: health.agentFramework,
+      modelProvider: health.modelProvider,
+      model: health.model,
       upstream,
     };
   });

@@ -1,11 +1,10 @@
 import {
-  computeTrustScore,
   computePrivacyScore,
   computeReputationScore,
-  providerHasErc8004Identity,
-  providerHasPrivacyFeature,
+  computeTrustScore,
+  listProviderPrivacyFeatures,
   providerIsVeniceBacked,
-  providerIsFresh,
+  providerMatchesMarketplaceConstraints,
 } from '@bossraid/provider-registry';
 import type {
   AssignmentRecord,
@@ -152,28 +151,7 @@ export function taskUsesVenicePrivateLane(task: RaidTaskSpec): boolean {
 }
 
 export function readProviderPrivacyFeatures(provider: ProviderProfile): PrivacyFeatureKey[] {
-  const features: PrivacyFeatureKey[] = [];
-
-  if (provider.privacy?.teeAttested) {
-    features.push('tee_attested');
-  }
-  if (provider.privacy?.e2ee) {
-    features.push('e2ee');
-  }
-  if (provider.privacy?.noDataRetention) {
-    features.push('no_data_retention');
-  }
-  if (provider.privacy?.signedOutputs) {
-    features.push('signed_outputs');
-  }
-  if (provider.privacy?.provenanceAttested) {
-    features.push('provenance_attested');
-  }
-  if (provider.privacy?.operatorVerified) {
-    features.push('operator_verified');
-  }
-
-  return features;
+  return listProviderPrivacyFeatures(provider);
 }
 
 export function collectMatchedSpecializations(
@@ -224,79 +202,43 @@ export function providerMatchesTask(
 
   const languageMatch =
     !isPatchTask || task.language === 'text' || provider.supportedLanguages.includes(task.language);
-  if (provider.marketplaceOfferStatus === 'paused') {
-    return false;
-  }
-  if (
-    provider.routingCooldownUntil &&
-    Number.isFinite(Date.parse(provider.routingCooldownUntil)) &&
-    Date.parse(provider.routingCooldownUntil) > Date.now()
-  ) {
-    return false;
-  }
 
-  const reputationMatch =
-    (provider.scores?.reputationScore ?? computeReputationScore(provider)) / 100 >=
-    task.constraints.minReputation;
   const timeoutMatch = provider.reputation.timeoutRate <= 0.25;
   const priceMatch =
     estimateProviderChargeUsd(provider, task) * Math.max(task.constraints.numExperts, 1) <=
     task.constraints.maxBudgetUsd;
-  const verificationMatch =
-    task.constraints.requiredVerificationStatus == null ||
-    provider.verification?.status === task.constraints.requiredVerificationStatus;
-  const modelFamilyMatch = providerMatchesAllowedModelFamilies(
-    provider,
-    task.constraints.allowedModelFamilies
-  );
-  const agentFrameworkMatch = providerMatchesAllowedAgentFrameworks(
-    provider,
-    task.constraints.allowedAgentFrameworks
-  );
-  const modelProviderMatch = providerMatchesAllowedModelProviders(
-    provider,
-    task.constraints.allowedModelProviders
-  );
-  const modelIdMatch = providerMatchesAllowedModelIds(provider, task.constraints.allowedModelIds);
   const primaryOutputMatch =
     requestedPrimaryOutputType == null ||
     provider.outputTypes?.includes(requestedPrimaryOutputType) === true;
-  const outputTypeMatch =
-    !task.constraints.allowedOutputTypes?.length ||
-    task.constraints.allowedOutputTypes.some((outputType) =>
-      provider.outputTypes?.includes(outputType)
-    );
-  const erc8004Match =
-    task.constraints.requireErc8004 !== true || providerHasErc8004Identity(provider);
-  const trustScore = computeTrustScore(provider);
-  const trustMatch =
-    typeof task.constraints.minTrustScore !== 'number' ||
-    trustScore >= task.constraints.minTrustScore;
-  const strictPrivacyMatch =
-    task.constraints.privacyMode !== 'strict' ||
-    (task.constraints.requirePrivacyFeatures ?? []).every((feature) =>
-      providerHasPrivacyFeature(provider, feature)
-    );
-  const freshMatch = options.skipFreshnessCheck || providerIsFresh(provider, maxHeartbeatAgeMs);
+
+  const marketplaceMatch = providerMatchesMarketplaceConstraints(
+    provider,
+    {
+      allowedModelFamilies: task.constraints.allowedModelFamilies,
+      allowedAgentFrameworks: task.constraints.allowedAgentFrameworks,
+      allowedModelProviders: task.constraints.allowedModelProviders,
+      allowedModelIds: task.constraints.allowedModelIds,
+      allowedOutputTypes: task.constraints.allowedOutputTypes,
+      requireErc8004: task.constraints.requireErc8004,
+      requiredVerificationStatus: task.constraints.requiredVerificationStatus,
+      minTrustScore: task.constraints.minTrustScore,
+      minReputationScore: task.constraints.minReputation * 100,
+      privacyMode: task.constraints.privacyMode,
+      requirePrivacyFeatures: task.constraints.requirePrivacyFeatures,
+      onlineOnly: true,
+      maxHeartbeatAgeMs,
+    },
+    { skipFreshnessCheck: options.skipFreshnessCheck }
+  );
 
   return (
     languageMatch &&
     frameworkMatch &&
-    reputationMatch &&
     timeoutMatch &&
     priceMatch &&
-    modelFamilyMatch &&
-    agentFrameworkMatch &&
-    modelProviderMatch &&
-    modelIdMatch &&
     primaryOutputMatch &&
-    outputTypeMatch &&
-    erc8004Match &&
-    trustMatch &&
-    verificationMatch &&
-    strictPrivacyMatch &&
-    providerContextWindowMatches(provider, task) &&
-    freshMatch
+    marketplaceMatch &&
+    providerContextWindowMatches(provider, task)
   );
 }
 

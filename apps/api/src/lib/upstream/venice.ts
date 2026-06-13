@@ -1,6 +1,7 @@
 import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import { TIMEOUTS } from '@bossraid/constants';
-import { isUpstreamTeeMock, isVeniceUpstreamMock } from '../upstream-mock.js';
+import { isProviderInferenceMock, isProviderTeeMock } from '../upstream-mock.js';
+import { buildMockVeniceTeeReport } from './adapter-helpers.js';
 import { fetchUpstreamJson, isE2eeModelId, isTeeModelId } from './shared.js';
 import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
 
@@ -11,7 +12,7 @@ export async function fetchVeniceUpstreamModels(
   options: { timeoutMs?: number; env?: NodeJS.ProcessEnv } = {}
 ): Promise<UpstreamModelRecord[]> {
   const env = options.env ?? process.env;
-  if (isVeniceUpstreamMock(env)) {
+  if (isProviderInferenceMock('venice', env)) {
     return INFERENCE_MODEL_CATALOG.filter((entry) => entry.modelProvider === 'venice').map(
       (entry) => ({
         id: entry.upstreamModelId,
@@ -46,7 +47,7 @@ export async function probeVeniceChatCompletion(input: {
   env?: NodeJS.ProcessEnv;
 }): Promise<UpstreamChatResult> {
   const env = input.env ?? process.env;
-  if (isVeniceUpstreamMock(env)) {
+  if (isProviderInferenceMock('venice', env)) {
     return { content: `mock-venice-response:${input.modelId}` };
   }
 
@@ -98,15 +99,8 @@ export async function fetchVeniceAttestationReport(input: {
   env?: NodeJS.ProcessEnv;
 }): Promise<Record<string, unknown>> {
   const env = input.env ?? process.env;
-  if (isUpstreamTeeMock(env)) {
-    return {
-      verified: true,
-      nonce: input.nonce,
-      model: input.modelId,
-      tee_provider: 'venice',
-      signing_address: '0x3573d4c8b9c3ce0360594095af0c0629de45c02a',
-      intel_quote: 'mock-intel-quote',
-    };
+  if (isProviderTeeMock('venice', env)) {
+    return buildMockVeniceTeeReport({ modelId: input.modelId, nonce: input.nonce });
   }
 
   const url = new URL(`${VENICE_BASE}/tee/attestation`);

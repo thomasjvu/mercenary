@@ -7,7 +7,7 @@ import type {
   ModelsResponseView,
   SellerStatsView,
 } from '@bossraid/shared-types';
-import { API_BASE, fetchJson } from './client.js';
+import { fetchJson } from './client.js';
 
 export type InferenceMarketSeller = InferenceMarketView['sellers'][number];
 export type InferenceMarket = InferenceMarketView;
@@ -89,21 +89,13 @@ export async function runInferenceChatCompletion(input: {
     },
   };
 
-  const response = await fetch(`${API_BASE}/v1/inference/chat/completions`, {
+  const payload = await fetchJson<{
+    choices?: Array<{ message?: { content?: string } }>;
+  }>('/v1/inference/chat/completions', {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
   });
-
-  const payload = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-    error?: string;
-    message?: string;
-  };
-
-  if (!response.ok) {
-    throw new Error(payload.message ?? payload.error ?? `Inference failed (${response.status})`);
-  }
 
   const content = payload.choices?.[0]?.message?.content ?? '';
   return { content, raw: payload };

@@ -1,4 +1,5 @@
 import { type FastifyInstance } from 'fastify';
+import { isUpstreamProviderId } from '@bossraid/constants';
 import { type ApiContext } from '../api-context.js';
 
 export function registerInferenceReceiptRoutes(app: FastifyInstance, ctx: ApiContext): void {
@@ -21,13 +22,7 @@ export function registerInferenceReceiptRoutes(app: FastifyInstance, ctx: ApiCon
     }
 
     const vendor = receipt.tee.upstreamVendor ?? receipt.tee.vendor;
-    if (
-      vendor !== 'venice' &&
-      vendor !== 'redpill' &&
-      vendor !== 'near' &&
-      vendor !== 'chutes' &&
-      vendor !== 'phala'
-    ) {
+    if (!vendor || !isUpstreamProviderId(vendor)) {
       reply.code(400);
       return { error: 'unsupported_vendor', message: `Unsupported TEE vendor: ${vendor}` };
     }

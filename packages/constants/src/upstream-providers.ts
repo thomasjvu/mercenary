@@ -57,3 +57,7 @@ export function resolveUpstreamProviderConfig(
 ): UpstreamProviderConfig | undefined {
   return isUpstreamProviderId(provider) ? UPSTREAM_PROVIDER_CONFIG[provider] : undefined;
 }
+
+export function getUpstreamDisplayName(provider: UpstreamProviderId): string {
+  return UPSTREAM_PROVIDER_CONFIG[provider].displayName;
+}

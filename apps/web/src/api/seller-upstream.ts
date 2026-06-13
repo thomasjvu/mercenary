@@ -1,4 +1,8 @@
-import { UPSTREAM_PROVIDER_IDS, type UpstreamProviderId } from '@bossraid/constants';
+import {
+  getUpstreamDisplayName,
+  UPSTREAM_PROVIDER_IDS,
+  type UpstreamProviderId,
+} from '@bossraid/constants';
 import { fetchJson } from './client.js';
 
 export type UpstreamCatalogModel = {
@@ -25,13 +29,9 @@ export type SellerUpstreamConfig = {
   configured: true;
 };
 
-export const UPSTREAM_PROVIDER_LABELS: Record<UpstreamProviderId, string> = {
-  venice: 'Venice',
-  redpill: 'Redpill',
-  near: 'NEAR AI',
-  chutes: 'Chutes',
-  phala: 'Phala Cloud',
-};
+export function upstreamProviderLabel(provider: UpstreamProviderId): string {
+  return getUpstreamDisplayName(provider);
+}
 
 export async function connectSellerUpstream(provider: UpstreamProviderId, apiKey: string) {
   return fetchJson<{ object: string; config: SellerUpstreamConfig }>(

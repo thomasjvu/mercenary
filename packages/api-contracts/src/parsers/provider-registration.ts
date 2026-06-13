@@ -17,6 +17,7 @@ import {
 import {
   parseErc8004Verification,
   parseProviderAuthConfig,
+  parseProviderPrivacy,
   parseProviderVerification,
 } from './provider-shared.js';
 
@@ -127,42 +128,7 @@ export function parseProviderRegistrationInput(value: unknown): ProviderRegistra
                     ),
             };
           })(),
-    privacy:
-      input.privacy == null
-        ? undefined
-        : {
-            score:
-              typeof ensureRecord(input.privacy, 'provider_registration.privacy').score === 'number'
-                ? (ensureRecord(input.privacy, 'provider_registration.privacy').score as number)
-                : undefined,
-            teeAttested:
-              ensureRecord(input.privacy, 'provider_registration.privacy').teeAttested === true ||
-              ensureRecord(input.privacy, 'provider_registration.privacy').tee_attested === true,
-            teeVendor: ensureOptionalString(
-              ensureRecord(input.privacy, 'provider_registration.privacy').teeVendor ??
-                ensureRecord(input.privacy, 'provider_registration.privacy').tee_vendor,
-              'provider_registration.privacy.tee_vendor'
-            ),
-            e2ee: ensureRecord(input.privacy, 'provider_registration.privacy').e2ee === true,
-            noDataRetention:
-              ensureRecord(input.privacy, 'provider_registration.privacy').noDataRetention ===
-                true ||
-              ensureRecord(input.privacy, 'provider_registration.privacy').no_data_retention ===
-                true,
-            signedOutputs:
-              ensureRecord(input.privacy, 'provider_registration.privacy').signedOutputs === true ||
-              ensureRecord(input.privacy, 'provider_registration.privacy').signed_outputs === true,
-            provenanceAttested:
-              ensureRecord(input.privacy, 'provider_registration.privacy').provenanceAttested ===
-                true ||
-              ensureRecord(input.privacy, 'provider_registration.privacy').provenance_attested ===
-                true,
-            operatorVerified:
-              ensureRecord(input.privacy, 'provider_registration.privacy').operatorVerified ===
-                true ||
-              ensureRecord(input.privacy, 'provider_registration.privacy').operator_verified ===
-                true,
-          },
+    privacy: parseProviderPrivacy(input.privacy, 'provider_registration.privacy'),
     erc8004:
       erc8004 == null
         ? undefined

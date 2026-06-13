@@ -1,4 +1,4 @@
-import type { UpstreamProviderId } from '@bossraid/constants';
+import type { MarketplaceModelTeeSummaryView } from '@bossraid/shared-types';
 import type { AttestedEnvelope, AttestedRuntimePayload } from '../../api/raid.js';
 import type { ReadyResponse } from '../../api/health.js';
 import { buildRuntimeAttestationLabel } from '../../demo-result.js';
@@ -8,20 +8,6 @@ import type { ReceiptUpstreamAttestationRow } from '../../lib/receipt-attestatio
 import { ReceiptUpstreamAttestationPanel } from '../receipt/ReceiptUpstreamAttestationPanel.js';
 import { CopyableAddress } from './CopyableAddress.js';
 
-type ModelTeeSummary = {
-  modelId: string;
-  provider: UpstreamProviderId;
-  teeAttested: boolean;
-  e2ee: boolean;
-  lastAttestation: {
-    valid: boolean;
-    verifiedAt: string;
-    signingAddress?: string;
-    checks?: Array<{ id: string; passed: boolean; detail?: string }>;
-    explorerUrl?: string;
-  } | null;
-};
-
 type AttestationInspectorSidebarProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -30,7 +16,7 @@ type AttestationInspectorSidebarProps = {
   readyError: unknown;
   runtime: AttestedEnvelope<AttestedRuntimePayload> | undefined;
   runtimeError: unknown;
-  modelTee: ModelTeeSummary | undefined;
+  modelTee: MarketplaceModelTeeSummaryView | undefined;
   modelTeeError: unknown;
   modelTeeLoading: boolean;
 };

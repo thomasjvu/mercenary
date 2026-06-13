@@ -106,28 +106,6 @@ export function buildHostedProviderRegistration(input: {
   };
 }
 
-export function buildVeniceHostedProviderRegistration(input: {
-  wallet: string;
-  modelId: string;
-  displayName?: string;
-  discountPercent: number;
-  payoutWallet: string;
-  env?: NodeJS.ProcessEnv;
-}): ProviderRegistrationInput | undefined {
-  const registration = buildHostedProviderRegistration({ ...input, provider: 'venice' });
-  if (!registration?.source) {
-    return registration;
-  }
-  return {
-    ...registration,
-    source: {
-      ...registration.source,
-      type: 'venice_hosted',
-      targetType: 'venice',
-    },
-  };
-}
-
 export function createGatewayAuthToken(): string {
   return `gw_${randomUUID().replace(/-/g, '')}`;
 }

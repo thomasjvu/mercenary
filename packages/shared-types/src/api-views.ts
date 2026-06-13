@@ -37,6 +37,8 @@ export type {
 } from './api-views/settlement.js';
 
 export type {
+  MarketplaceModelTeeSummaryView,
+  MarketplaceTeeAttestationView,
   TeeAttestationCheckView,
   TeeAttestationView,
   PrivacyAttestationView,

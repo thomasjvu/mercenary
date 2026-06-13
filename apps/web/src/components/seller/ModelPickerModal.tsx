@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { UpstreamProviderId } from '@bossraid/constants';
-import { UPSTREAM_PROVIDER_LABELS, type UpstreamCatalogModel } from '../../api/seller-upstream.js';
+import { upstreamProviderLabel, type UpstreamCatalogModel } from '../../api/seller-upstream.js';
 
 type ModelPickerModalProps = {
   models: UpstreamCatalogModel[];
@@ -74,7 +74,7 @@ export function ModelPickerModal({
       <div className="seller-modal__panel">
         <header className="seller-modal__header">
           <div>
-            <p className="eyebrow">{UPSTREAM_PROVIDER_LABELS[provider]} models</p>
+            <p className="eyebrow">{upstreamProviderLabel(provider)} models</p>
             <h2>Select models to offer</h2>
             <p className="lede">
               {selection.size} selected · {filtered.length} visible · {models.length} supported

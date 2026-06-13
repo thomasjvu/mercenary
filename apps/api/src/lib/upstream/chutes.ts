@@ -1,8 +1,15 @@
-import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
+import type { UpstreamProviderId } from '@bossraid/constants';
+import {
+  buildMockChutesTeeEvidence,
+  fetchUpstreamModelsWithFallback,
+  probeOpenAiStyleChatCompletion,
+  shouldUseTeeMock,
+} from './adapter-helpers.js';
 import { fetchUpstreamJson } from './shared.js';
 import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
 
 const CHUTES_BASE = 'https://api.chutes.ai';
+const PROVIDER = 'chutes' satisfies UpstreamProviderId;
 
 const MOCK_CHUTES_MODELS: UpstreamModelRecord[] = [
   {
@@ -13,66 +20,60 @@ const MOCK_CHUTES_MODELS: UpstreamModelRecord[] = [
   },
 ];
 
-export async function fetchChutesUpstreamModels(apiKey: string): Promise<UpstreamModelRecord[]> {
-  if (process.env.BOSSRAID_UPSTREAM_MOCK === '1' || process.env.BOSSRAID_CHUTES_MOCK === '1') {
-    return MOCK_CHUTES_MODELS;
-  }
-
-  try {
-    const payload = await fetchUpstreamJson<{
-      data?: Array<{ id: string; name?: string; tee?: boolean }>;
-    }>(`${CHUTES_BASE}/chutes`, { apiKey });
-    return (payload.data ?? []).map((model) => ({
-      id: model.id,
-      displayName: model.name ?? model.id,
-      teeAttested: model.tee === true || model.id.toLowerCase().includes('tee'),
-      e2ee: false,
-    }));
-  } catch {
-    return MOCK_CHUTES_MODELS;
-  }
+export async function fetchChutesUpstreamModels(
+  apiKey: string,
+  options: { env?: NodeJS.ProcessEnv } = {}
+): Promise<UpstreamModelRecord[]> {
+  return fetchUpstreamModelsWithFallback({
+    provider: PROVIDER,
+    apiKey,
+    mockModels: MOCK_CHUTES_MODELS,
+    env: options.env,
+    fetchModels: async () => {
+      const payload = await fetchUpstreamJson<{
+        data?: Array<{ id: string; name?: string; tee?: boolean }>;
+      }>(`${CHUTES_BASE}/chutes`, { apiKey });
+      return (payload.data ?? []).map((model) => ({
+        id: model.id,
+        displayName: model.name ?? model.id,
+        teeAttested: model.tee === true || model.id.toLowerCase().includes('tee'),
+        e2ee: false,
+      }));
+    },
+  });
 }
 
 export async function probeChutesChatCompletion(input: {
   apiKey: string;
   modelId: string;
   prompt?: string;
+  env?: NodeJS.ProcessEnv;
 }): Promise<UpstreamChatResult> {
-  if (process.env.BOSSRAID_UPSTREAM_MOCK === '1' || process.env.BOSSRAID_CHUTES_MOCK === '1') {
-    return { content: `mock-chutes-response:${input.modelId}`, instanceId: 'mock-instance' };
-  }
-
-  const payload = await fetchUpstreamJson<{
-    id?: string;
-    choices?: Array<{ message?: { content?: string | null } }>;
-  }>(`${CHUTES_BASE}/chutes/${encodeURIComponent(input.modelId)}/chat/completions`, {
+  const result = await probeOpenAiStyleChatCompletion({
+    provider: PROVIDER,
     apiKey: input.apiKey,
-    method: 'POST',
+    url: `${CHUTES_BASE}/chutes/${encodeURIComponent(input.modelId)}/chat/completions`,
+    env: input.env,
+    mockContent: `mock-chutes-response:${input.modelId}`,
+    mockExtras: { instanceId: 'mock-instance' },
     body: {
       messages: [{ role: 'user', content: input.prompt ?? 'Reply with the single word: ok' }],
       max_tokens: 16,
       stream: false,
     },
   });
-
-  const content = payload.choices?.[0]?.message?.content?.trim();
-  if (!content) {
-    throw new Error('Chutes chat response was empty.');
-  }
-  return { content, requestId: payload.id, instanceId: payload.id };
+  return { ...result, instanceId: result.instanceId ?? result.requestId };
 }
 
 export async function fetchChutesAttestationEvidence(input: {
   apiKey: string;
   instanceId: string;
   nonce: string;
+  env?: NodeJS.ProcessEnv;
 }): Promise<Record<string, unknown>> {
-  if (process.env.BOSSRAID_UPSTREAM_TEE_MOCK === '1') {
-    return {
-      quote: 'mock-tdx-quote',
-      gpu_evidence: [{ nonce: input.nonce }],
-      certificate: 'mock-cert',
-    };
+  const env = input.env ?? process.env;
+  if (shouldUseTeeMock(PROVIDER, env)) {
+    return buildMockChutesTeeEvidence({ nonce: input.nonce });
   }
 
   const url = new URL(`${CHUTES_BASE}/instances/${encodeURIComponent(input.instanceId)}/evidence`);

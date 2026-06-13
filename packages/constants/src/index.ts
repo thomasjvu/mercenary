@@ -17,6 +17,7 @@ export {
 export {
   UPSTREAM_PROVIDER_CONFIG,
   UPSTREAM_PROVIDER_IDS,
+  getUpstreamDisplayName,
   isUpstreamProviderId,
   resolveUpstreamProviderConfig,
   type UpstreamProviderConfig,
