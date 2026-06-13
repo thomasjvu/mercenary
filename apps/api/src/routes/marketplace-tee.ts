@@ -3,9 +3,12 @@ import { INFERENCE_MODEL_CATALOG, isUpstreamProviderId } from '@bossraid/constan
 import { ensureRecordInput, ensureStringInput } from '../lib/account.js';
 import { generateAttestationNonce } from '../lib/upstream/index.js';
 import { verifyUpstreamTee } from '../lib/attestation-service.js';
-import { readPlatformUpstreamApiKey } from '../lib/upstream/credentials.js';
+import {
+  buildCatalogProviderId,
+  resolveMarketplaceTeeApiKey,
+} from '../lib/upstream/credentials.js';
 import { type ApiContext } from '../api-context.js';
-import { type ApiHandlerGroups } from '../api-handlers.js';
+import { type ApiHandlerGroups } from '../handlers/index.js';
 
 type CachedTeeAttestation = {
   valid: boolean;
@@ -59,30 +62,44 @@ export function registerMarketplaceTeeRoutes(
           ? body.instance_id
           : undefined;
 
-    let apiKey = readPlatformUpstreamApiKey(provider, env);
-    let providerId = `catalog:${provider}:${modelId}`;
+    let providerId = buildCatalogProviderId(provider, modelId);
+    let sellerWallet: string | undefined;
+    let sessionWallet: string | undefined;
 
     if (sellerId) {
       const seller = orchestrator.listProviders().find((item) => item.providerId === sellerId);
-      const wallet = seller?.source?.externalRef;
-      if (!wallet) {
+      sellerWallet = seller?.source?.externalRef;
+      if (!sellerWallet) {
         reply.code(404);
         return { error: 'seller_not_found', message: 'Seller provider not found.' };
       }
-      apiKey = controlState.readSellerUpstreamApiKey(wallet, provider, env) ?? apiKey;
       providerId = sellerId;
-    } else if (!apiKey) {
-      const session = requirePublicSession(reply, request.headers);
-      if ('error' in session) {
-        return session;
-      }
-      apiKey = controlState.readSellerUpstreamApiKey(session.wallet, provider, env);
     } else {
-      const session = readPublicSession(request.headers);
-      if (session) {
-        apiKey = controlState.readSellerUpstreamApiKey(session.wallet, provider, env) ?? apiKey;
+      const platformKey = resolveMarketplaceTeeApiKey({
+        provider,
+        env,
+        controlState,
+      });
+      if (!platformKey) {
+        const session = requirePublicSession(reply, request.headers);
+        if ('error' in session) {
+          return session;
+        }
+        sessionWallet = session.wallet;
+      } else {
+        const session = readPublicSession(request.headers);
+        sessionWallet = session?.wallet;
       }
     }
+
+    const apiKey = resolveMarketplaceTeeApiKey({
+      provider,
+      env,
+      controlState,
+      sellerId,
+      sellerWallet,
+      sessionWallet,
+    });
 
     if (!apiKey) {
       reply.code(400);

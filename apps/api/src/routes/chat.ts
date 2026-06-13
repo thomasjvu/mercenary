@@ -1,6 +1,6 @@
 import { type FastifyInstance } from 'fastify';
 import { type ApiContext } from '../api-context.js';
-import { type ApiHandlerGroups } from '../api-handlers.js';
+import { type ApiHandlerGroups } from '../handlers/index.js';
 
 export function registerChatRoutes(
   app: FastifyInstance,

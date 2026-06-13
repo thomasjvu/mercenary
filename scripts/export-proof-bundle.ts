@@ -7,7 +7,8 @@ import { runtimeExecutionEnabled, runtimeExecutionTransport } from '@bossraid/sa
 import { readBooleanEnv, readPositiveInteger } from '@bossraid/constants';
 import type { BossRaidPersistenceSnapshot, RaidRecord } from '@bossraid/shared-types';
 import { mnemonicToAccount } from 'viem/accounts';
-import { buildAgentLog, buildAgentManifest } from '../apps/api/src/agent-artifacts.ts';
+import { buildAgentLog } from '../apps/api/src/agent-log.ts';
+import { buildAgentManifest } from '../apps/api/src/agent-manifest.ts';
 import {
   createSettlementProofRefresher,
   persistSettlementExecutionArtifact,

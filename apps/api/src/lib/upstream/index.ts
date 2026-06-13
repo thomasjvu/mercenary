@@ -25,7 +25,7 @@ import {
   fetchVeniceUpstreamModels,
   probeVeniceChatCompletion,
 } from './venice.js';
-import type { MergedUpstreamCatalogModel, UpstreamChatResult } from './types.js';
+import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
 
 export type {
   MergedUpstreamCatalogModel,
@@ -33,11 +33,6 @@ export type {
   UpstreamModelRecord,
 } from './types.js';
 export { generateAttestationNonce } from './shared.js';
-export {
-  fetchVeniceUpstreamModels,
-  probeVeniceChatCompletion,
-  fetchVeniceAttestationReport,
-} from './venice.js';
 export { mergeUpstreamCatalogModelsForProvider } from './catalog-merge.js';
 
 export function parseUpstreamProviderParam(provider: string): UpstreamProviderId | undefined {
@@ -47,7 +42,7 @@ export function parseUpstreamProviderParam(provider: string): UpstreamProviderId
 export async function fetchUpstreamModels(
   provider: UpstreamProviderId,
   apiKey: string
-): Promise<ReturnType<typeof fetchVeniceUpstreamModels>> {
+): Promise<UpstreamModelRecord[]> {
   switch (provider) {
     case 'venice':
       return fetchVeniceUpstreamModels(apiKey);
@@ -60,13 +55,6 @@ export async function fetchUpstreamModels(
     case 'phala':
       return fetchPhalaUpstreamModels(apiKey);
   }
-}
-
-export function mergeUpstreamCatalogModels(
-  provider: UpstreamProviderId,
-  upstreamModels: Awaited<ReturnType<typeof fetchVeniceUpstreamModels>>
-): MergedUpstreamCatalogModel[] {
-  return mergeUpstreamCatalogModelsForProvider(provider, upstreamModels);
 }
 
 export async function probeUpstreamChatCompletion(input: {
@@ -116,30 +104,4 @@ export async function fetchUpstreamAttestationReport(input: {
     case 'phala':
       return fetchPhalaAttestationReport(input);
   }
-}
-
-export function extractInferencePromptFromTask(task: {
-  description?: string;
-  failingSignals?: { expectedBehavior?: string };
-}): string {
-  const expected = task.failingSignals?.expectedBehavior?.trim();
-  if (expected) {
-    return expected;
-  }
-
-  const description = task.description?.trim();
-  if (!description) {
-    return 'Reply with one short sentence.';
-  }
-
-  const userBlocks = description
-    .split('\n\n')
-    .filter((block) => block.toLowerCase().startsWith('user:'))
-    .map((block) => block.replace(/^user:\s*/i, '').trim());
-
-  if (userBlocks.length > 0) {
-    return userBlocks[userBlocks.length - 1] ?? description;
-  }
-
-  return description;
 }

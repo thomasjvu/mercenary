@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createProviderProfile, createSpawnInput } from '@bossraid/test-fixtures';
+import { providerMatchesAllowedModelFamilies } from '@bossraid/provider-registry';
 import {
   collectMatchedSpecializations,
-  providerMatchesAllowedModelFamilies,
   providerMatchesTask,
   selectProviders,
   taskUsesVenicePrivateLane,

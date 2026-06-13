@@ -1,4 +1,5 @@
 import type { ProviderProfile, RaidTaskSpec } from '@bossraid/shared-types';
+import { clamp01 } from './utils.js';
 
 export type TextDomainCategory = 'implementation' | 'art' | 'promo';
 
@@ -70,10 +71,6 @@ export const TEXT_DOMAIN_PROVIDER_HINTS: Record<TextDomainCategory, string[]> = 
     'motion-design',
   ],
 };
-
-function clamp01(value: number): number {
-  return Math.max(0, Math.min(1, value));
-}
 
 function normalizeCapabilityToken(value: string): string {
   return value

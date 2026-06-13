@@ -3,11 +3,10 @@ import { type FastifyReply, type FastifyRequest } from 'fastify';
 import { isUpstreamProviderId } from '@bossraid/constants';
 import { decryptChunk, decryptE2eeStream } from '@bossraid/privacy-engine';
 import type { ChatCompletionRequest, TeeAttestationResult } from '@bossraid/shared-types';
-import { asSingleHeader } from '@bossraid/shared-types';
-import type { ApiControlState } from '../control-state.js';
 import { buildInferenceReceipt } from './attestation-service.js';
-import { buildCatalogProviderId, readPlatformUpstreamApiKey } from './upstream/credentials.js';
-import type { ChatE2eeRoute } from './e2ee-chat-hook.js';
+import { estimateChatUsage } from './chat-completion.js';
+import type { ChatE2eeRoute } from './e2ee-chat-route.js';
+import { buildCatalogProviderId, resolveUpstreamApiKey } from './upstream/credentials.js';
 import type { InferenceReceiptStore } from './inference-receipt-store.js';
 import { isProviderInferenceMock, mockVeniceE2eeContent } from './upstream-mock.js';
 import {
@@ -15,44 +14,6 @@ import {
   requireVeniceE2eeAttestation,
   type VeniceE2eeSession,
 } from './venice-e2ee.js';
-
-function readUpstreamApiKey(
-  request: FastifyRequest,
-  controlState: ApiControlState,
-  provider: string,
-  env: NodeJS.ProcessEnv
-): string | undefined {
-  const headerKey =
-    asSingleHeader(request.headers['x-bossraid-upstream-api-key']) ??
-    asSingleHeader(request.headers['x-venice-api-key']) ??
-    asSingleHeader(request.headers['x-upstream-api-key']);
-
-  if (headerKey?.trim()) {
-    return headerKey.trim();
-  }
-
-  const platformKey = readPlatformUpstreamApiKey(provider, env);
-  if (platformKey) {
-    return platformKey;
-  }
-
-  const authHeader = asSingleHeader(request.headers.authorization);
-  if (authHeader?.startsWith('Bearer br_')) {
-    // Buyer API keys do not carry upstream credentials; fall through.
-  }
-
-  return undefined;
-}
-
-function estimateUsage(messages: ChatCompletionRequest['messages'], content: string) {
-  const promptChars = messages.reduce((sum, message) => sum + message.content.length, 0);
-  const completionChars = content.length;
-  return {
-    prompt_tokens: Math.max(1, Math.ceil(promptChars / 4)),
-    completion_tokens: Math.max(1, Math.ceil(completionChars / 4)),
-    total_tokens: Math.max(2, Math.ceil((promptChars + completionChars) / 4)),
-  };
-}
 
 function buildE2eeCompletionResponse(
   chatRequest: ChatCompletionRequest,
@@ -77,7 +38,7 @@ function buildE2eeCompletionResponse(
         finish_reason: 'stop' as const,
       },
     ],
-    usage: estimateUsage(chatRequest.messages, content),
+    usage: estimateChatUsage(chatRequest.messages, content),
     privacy: {
       mode: 'strict',
       transport: 'venice-e2ee',
@@ -183,7 +144,6 @@ export async function executeE2eeChatRelay(input: {
   route: ChatE2eeRoute;
   request: FastifyRequest;
   reply: FastifyReply;
-  controlState: ApiControlState;
   inferenceReceiptStore: InferenceReceiptStore;
   env: NodeJS.ProcessEnv;
   created: number;
@@ -193,7 +153,11 @@ export async function executeE2eeChatRelay(input: {
     throw new Error(`Unsupported E2EE provider: ${provider}`);
   }
 
-  const apiKey = readUpstreamApiKey(input.request, input.controlState, provider, input.env);
+  const apiKey = resolveUpstreamApiKey({
+    provider,
+    env: input.env,
+    request: input.request,
+  });
   if (!apiKey) {
     throw new Error(
       'Upstream API key required for strict E2EE. Pass X-BossRaid-Upstream-Api-Key or configure BOSSRAID_VENICE_API_KEY.'

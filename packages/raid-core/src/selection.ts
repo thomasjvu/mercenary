@@ -69,69 +69,6 @@ function normalizeModelFamily(value: string | undefined): string {
   return value?.trim().toLowerCase() ?? '';
 }
 
-function normalizeFilterValue(value: string | undefined): string {
-  return value?.trim().toLowerCase() ?? '';
-}
-
-export function providerMatchesAllowedModelFamilies(
-  provider: ProviderProfile,
-  allowedFamilies: string[] | undefined
-): boolean {
-  if (!allowedFamilies?.length) {
-    return true;
-  }
-
-  const providerFamily = normalizeModelFamily(provider.modelFamily);
-  return (
-    providerFamily.length > 0 &&
-    allowedFamilies.some((family) => normalizeModelFamily(family) === providerFamily)
-  );
-}
-
-export function providerMatchesAllowedAgentFrameworks(
-  provider: ProviderProfile,
-  allowedFrameworks: RaidTaskSpec['constraints']['allowedAgentFrameworks']
-): boolean {
-  if (!allowedFrameworks?.length) {
-    return true;
-  }
-
-  return Boolean(
-    provider.agentFramework &&
-    allowedFrameworks.some((framework) => framework === provider.agentFramework)
-  );
-}
-
-export function providerMatchesAllowedModelProviders(
-  provider: ProviderProfile,
-  allowedProviders: string[] | undefined
-): boolean {
-  if (!allowedProviders?.length) {
-    return true;
-  }
-
-  const providerName = normalizeFilterValue(provider.modelProvider);
-  return (
-    providerName.length > 0 &&
-    allowedProviders.some((modelProvider) => normalizeFilterValue(modelProvider) === providerName)
-  );
-}
-
-export function providerMatchesAllowedModelIds(
-  provider: ProviderProfile,
-  allowedModelIds: string[] | undefined
-): boolean {
-  if (!allowedModelIds?.length) {
-    return true;
-  }
-
-  const providerModelId = normalizeFilterValue(provider.modelId);
-  return (
-    providerModelId.length > 0 &&
-    allowedModelIds.some((modelId) => normalizeFilterValue(modelId) === providerModelId)
-  );
-}
-
 function providerHasVerifiedGeneralServiceMetadata(provider: ProviderProfile): boolean {
   return (
     provider.verification?.status === 'verified' &&

@@ -1,7 +1,7 @@
 import { type FastifyInstance } from 'fastify';
 import { parseBossRaidRequest } from '@bossraid/api-contracts';
 import { asSingleHeader } from '@bossraid/shared-types';
-import { buildAgentLog } from '../agent-artifacts.js';
+import { buildAgentLog } from '../agent-log.js';
 import {
   buildAttestedRaidResultPayload,
   buildAttestedRaidResultMessage,
@@ -14,7 +14,7 @@ import {
   toRaidListItemResponse,
 } from '../lib/serializers.js';
 import { type ApiContext } from '../api-context.js';
-import { type ApiHandlerGroups } from '../api-handlers.js';
+import { type ApiHandlerGroups } from '../handlers/index.js';
 
 function registerRaidDetailRoutes(
   app: FastifyInstance,

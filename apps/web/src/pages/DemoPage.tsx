@@ -6,16 +6,13 @@ import { DemoRaidSidebar } from '../components/demo/DemoRaidSidebar';
 import { StatusPill } from '../components/demo/demo-ui';
 import { humanizeStatus, useRaidDemo } from '../hooks/useRaidDemo';
 import heroImage from '../assets/hero.webp';
+import { buildDemoModeLabel } from '../demo-result';
 
 type DemoPageProps = {
   providers: Provider[];
   providerHealth: ProviderHealth[];
   embedded?: boolean;
 };
-
-function buildDemoModeLabel(mode: 'raid' | 'chat_v1'): string {
-  return mode === 'chat_v1' ? 'v1 completions' : 'raid chat';
-}
 
 export function DemoPage({ providers, providerHealth, embedded = false }: DemoPageProps) {
   const demo = useRaidDemo({ providers, providerHealth });

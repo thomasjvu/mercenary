@@ -4,6 +4,10 @@ import {
   providerHasErc8004Identity,
   providerHasPrivacyFeature,
   providerIsVeniceBacked,
+  providerMatchesAllowedAgentFrameworks,
+  providerMatchesAllowedModelFamilies,
+  providerMatchesAllowedModelIds,
+  providerMatchesAllowedModelProviders,
 } from '@bossraid/provider-registry';
 import type {
   BossRaidRoutingDecision,
@@ -24,10 +28,6 @@ import {
 } from './pricing.js';
 import {
   collectMatchedSpecializations,
-  providerMatchesAllowedAgentFrameworks,
-  providerMatchesAllowedModelFamilies,
-  providerMatchesAllowedModelIds,
-  providerMatchesAllowedModelProviders,
   readProviderPrivacyFeatures,
   taskUsesVenicePrivateLane,
 } from './selection.js';

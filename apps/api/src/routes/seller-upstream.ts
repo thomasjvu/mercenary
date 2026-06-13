@@ -18,13 +18,13 @@ import { buildUpstreamSellerProviderId } from '../lib/inference-gateway-base.js'
 import { buildHostedProviderRegistration } from '../lib/upstream-offers.js';
 import {
   fetchUpstreamModels,
-  mergeUpstreamCatalogModels,
+  mergeUpstreamCatalogModelsForProvider,
   parseUpstreamProviderParam,
 } from '../lib/upstream/index.js';
 import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import { verifyUpstreamTee } from '../lib/attestation-service.js';
 import { type ApiContext } from '../api-context.js';
-import { type ApiHandlerGroups } from '../api-handlers.js';
+import { type ApiHandlerGroups } from '../handlers/index.js';
 
 const SELLER_UPSTREAM_RATE_MAX = 20;
 const SELLER_UPSTREAM_RATE_WINDOW_MS = 60_000;
@@ -158,7 +158,7 @@ export function registerSellerUpstreamRoutes(
 
     try {
       const upstreamModels = await fetchUpstreamModels(provider, apiKey);
-      const models = mergeUpstreamCatalogModels(provider, upstreamModels);
+      const models = mergeUpstreamCatalogModelsForProvider(provider, upstreamModels);
       const supportedCount = models.filter((model) => model.supported).length;
       const upstreamFoundCount = models.filter((model) => model.upstreamFound).length;
 

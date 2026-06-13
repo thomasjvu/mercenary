@@ -3,9 +3,9 @@ import { readSettlementMode, readStorageBackend } from '@bossraid/constants';
 import { isSettlementGateConfigured } from '../lib/settlement-mode.js';
 import { readTeeSocketState } from '../lib/tee.js';
 import { readX402ConfigForContext } from '../lib/x402-runtime.js';
-import { buildProductionReadinessReport } from '../lib/production-readiness.js';
+
 import { type ApiContext } from '../api-context.js';
-import { type ApiHandlerGroups } from '../api-handlers.js';
+import { type ApiHandlerGroups } from '../handlers/index.js';
 
 export function registerHealthRoutes(
   app: FastifyInstance,
@@ -15,15 +15,6 @@ export function registerHealthRoutes(
   const { orchestrator, env, apiMetrics, metricsPublic } = ctx;
   const { requireAdmin } = handlers.auth;
   const { collectProviderHealth } = handlers.raid;
-  const {
-    publicRateLimitMax,
-    publicRateLimitWindowMs,
-    buyerKeyRateLimitMax,
-    buyerKeyRateLimitWindowMs,
-    buyerKeyDefaultSpendLimitUsd,
-    buyerMaxRequestBudgetUsd,
-    workerIsolation,
-  } = ctx;
 
   app.get('/health', async () => {
     const providerHealth = await collectProviderHealth();
@@ -108,70 +99,5 @@ export function registerHealthRoutes(
 
     reply.header('content-type', 'text/plain; version=0.0.4; charset=utf-8');
     return apiMetrics.toPrometheus();
-  });
-
-  app.get('/v1/ops/metrics', async (request, reply) => {
-    const adminError = requireAdmin(reply, request.headers);
-    if (adminError) {
-      return adminError;
-    }
-
-    return apiMetrics.snapshot();
-  });
-
-  app.get('/v1/ops/production-readiness', async (request, reply) => {
-    const adminError = requireAdmin(reply, request.headers);
-    if (adminError) {
-      return adminError;
-    }
-
-    const providerHealth = await collectProviderHealth();
-    const persistence = orchestrator.getPersistenceStatus();
-    const x402Config = readX402ConfigForContext(ctx);
-    const settlementMode = readSettlementMode(env);
-    const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/tappd.sock';
-    const tee = await readTeeSocketState(teeSocketPath);
-    return buildProductionReadinessReport({
-      env,
-      storageBackend: readStorageBackend(env),
-      persistenceHealthy: persistence.healthy,
-      providers: orchestrator.listProviders(),
-      providerHealth,
-      x402: {
-        enabled: x402Config.enabled,
-        facilitatorConfigured: Boolean(x402Config.facilitatorUrl),
-        payToConfigured: x402Config.payTo !== '0x0000000000000000000000000000000000000000',
-        network: x402Config.network,
-        asset: x402Config.asset,
-      },
-      settlement: {
-        mode: settlementMode,
-        configured:
-          settlementMode === 'onchain' &&
-          Boolean(
-            env.BOSSRAID_RPC_URL &&
-            env.BOSSRAID_CHAIN_ID &&
-            env.BOSSRAID_REGISTRY_ADDRESS &&
-            env.BOSSRAID_ESCROW_ADDRESS &&
-            env.BOSSRAID_TOKEN_ADDRESS &&
-            env.BOSSRAID_CLIENT_PRIVATE_KEY &&
-            env.BOSSRAID_EVALUATOR_ADDRESS
-          ),
-      },
-      tee: {
-        configured: Boolean(env.MNEMONIC),
-        platform: env.BOSSRAID_TEE_PLATFORM ?? null,
-        ...tee,
-      },
-      limits: {
-        publicRateLimitMax,
-        publicRateLimitWindowMs,
-        buyerKeyRateLimitMax,
-        buyerKeyRateLimitWindowMs,
-        buyerKeyDefaultSpendLimitUsd,
-        buyerMaxRequestBudgetUsd,
-      },
-      workerIsolation,
-    });
   });
 }

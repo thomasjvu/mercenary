@@ -13,7 +13,7 @@ import logger from '@bossraid/logger';
 import { mapContractErrorCode } from './lib/contract-errors.js';
 import { applyX402Headers, isX402ProtocolError } from './x402.js';
 import { createApiContext } from './api-context.js';
-import { createApiHandlers } from './api-handlers.js';
+import { createApiHandlers } from './handlers/index.js';
 import { registerHealthRoutes } from './routes/health.js';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerAccountRoutes } from './routes/account.js';

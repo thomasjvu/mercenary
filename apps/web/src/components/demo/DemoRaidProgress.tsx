@@ -1,5 +1,6 @@
 import type { DemoRequestMode, LiveRaidRun } from '../../hooks/useRaidDemo';
 import { formatTimestamp, humanizeStatus } from '../../hooks/useRaidDemo';
+import { buildDemoModeLabel } from '../../demo-result';
 import { ChatMessage, StatusPill, TypingDots } from './demo-ui';
 
 type DemoRaidProgressProps = {
@@ -89,10 +90,6 @@ export function DemoRaidProgress({
       ) : null}
     </>
   );
-}
-
-function buildDemoModeLabel(mode: DemoRequestMode): string {
-  return mode === 'chat_v1' ? 'v1 completions' : 'raid chat';
 }
 
 function buildRaidStatusCopy(run: LiveRaidRun): string {

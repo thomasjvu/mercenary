@@ -1,9 +1,5 @@
-import { type FastifyReply, type FastifyRequest } from 'fastify';
 import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import type { ChatCompletionRequest } from '@bossraid/shared-types';
-import type { ApiControlState } from '../control-state.js';
-import { executeE2eeChatRelay } from './e2ee-chat-relay.js';
-import type { InferenceReceiptStore } from './inference-receipt-store.js';
 
 export type ChatE2eeRoute = {
   enabled: true;
@@ -31,25 +27,4 @@ export function resolveChatE2eeRoute(
     upstreamModelId: catalogEntry.upstreamModelId ?? catalogEntry.modelId,
     attestationVendor: catalogEntry.attestationVendor ?? catalogEntry.modelProvider ?? 'venice',
   };
-}
-
-export async function runServerE2eeChatCompletion(input: {
-  chatRequest: ChatCompletionRequest;
-  route: ChatE2eeRoute;
-  request: FastifyRequest;
-  reply: FastifyReply;
-  controlState: ApiControlState;
-  inferenceReceiptStore: InferenceReceiptStore;
-  env: NodeJS.ProcessEnv;
-  created: number;
-}) {
-  try {
-    return await executeE2eeChatRelay(input);
-  } catch (error) {
-    input.reply.code(400);
-    return {
-      error: 'e2ee_relay_failed',
-      message: error instanceof Error ? error.message : String(error),
-    };
-  }
 }

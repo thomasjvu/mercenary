@@ -10,7 +10,7 @@ import { readPositiveInteger, readPositiveNumber } from '../lib/env.js';
 import { asSingleQueryValue } from '../lib/http.js';
 import { ensureRecordInput } from '../lib/account.js';
 import { type ApiContext } from '../api-context.js';
-import { type ApiHandlerGroups } from '../api-handlers.js';
+import { type ApiHandlerGroups } from '../handlers/index.js';
 
 export function registerAccountRoutes(
   app: FastifyInstance,

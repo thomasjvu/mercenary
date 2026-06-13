@@ -6,7 +6,7 @@ import {
 } from '@bossraid/api-contracts';
 import { probeAllProviderHealth } from '../lib/provider-health.js';
 import { type ApiContext } from '../api-context.js';
-import { type ApiHandlerGroups } from '../api-handlers.js';
+import { type ApiHandlerGroups } from '../handlers/index.js';
 
 export function registerProviderRoutes(
   app: FastifyInstance,

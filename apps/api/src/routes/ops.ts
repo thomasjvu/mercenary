@@ -1,6 +1,10 @@
 import { type FastifyInstance } from 'fastify';
 import { DEFAULTS, readSettlementMode, readStorageBackend } from '@bossraid/constants';
-import { isSettlementGateConfigured } from '../lib/settlement-mode.js';
+import { buildProductionReadinessReport } from '../lib/production-readiness.js';
+import {
+  isFullOnchainSettlementConfigured,
+  isSettlementGateConfigured,
+} from '../lib/settlement-mode.js';
 import {
   cleanupWorkspace,
   materializeWorkspace,
@@ -17,12 +21,12 @@ import {
   buildAttestedRuntimeMessage,
   hashAttestationText,
 } from '../lib/attestation.js';
-import { buildAgentManifest } from '../agent-artifacts.js';
+import { buildAgentManifest } from '../agent-manifest.js';
 import { buildEvaluatorSmokeTask } from '../lib/evaluator-smoke.js';
 import { readTeeSocketState } from '../lib/tee.js';
-import { buildX402SettingsView } from '../lib/x402-runtime.js';
+import { buildX402SettingsView, readX402ConfigForContext } from '../lib/x402-runtime.js';
 import { type ApiContext } from '../api-context.js';
-import { type ApiHandlerGroups } from '../api-handlers.js';
+import { type ApiHandlerGroups } from '../handlers/index.js';
 
 export function registerOpsRoutes(
   app: FastifyInstance,
@@ -46,6 +50,11 @@ export function registerOpsRoutes(
     workerIsolation,
     teeSigner,
     mercenaryIdentity,
+    apiMetrics,
+    buyerKeyRateLimitMax,
+    buyerKeyRateLimitWindowMs,
+    buyerKeyDefaultSpendLimitUsd,
+    buyerMaxRequestBudgetUsd,
   } = ctx;
   const { requireAdmin, requireRateLimit, readOpsSession, issueOpsSession, clearOpsSession } =
     handlers.auth;
@@ -314,5 +323,60 @@ export function registerOpsRoutes(
       },
       rpcUrl: rpcUrl ? new URL(rpcUrl).host : null,
     };
+  });
+
+  app.get('/v1/ops/metrics', async (request, reply) => {
+    const adminError = requireAdmin(reply, request.headers);
+    if (adminError) {
+      return adminError;
+    }
+
+    return apiMetrics.snapshot();
+  });
+
+  app.get('/v1/ops/production-readiness', async (request, reply) => {
+    const adminError = requireAdmin(reply, request.headers);
+    if (adminError) {
+      return adminError;
+    }
+
+    const providerHealth = await collectProviderHealth();
+    const persistence = orchestrator.getPersistenceStatus();
+    const x402Config = readX402ConfigForContext(ctx);
+    const settlementMode = readSettlementMode(env);
+    const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/tappd.sock';
+    const tee = await readTeeSocketState(teeSocketPath);
+    return buildProductionReadinessReport({
+      env,
+      storageBackend: readStorageBackend(env),
+      persistenceHealthy: persistence.healthy,
+      providers: orchestrator.listProviders(),
+      providerHealth,
+      x402: {
+        enabled: x402Config.enabled,
+        facilitatorConfigured: Boolean(x402Config.facilitatorUrl),
+        payToConfigured: x402Config.payTo !== '0x0000000000000000000000000000000000000000',
+        network: x402Config.network,
+        asset: x402Config.asset,
+      },
+      settlement: {
+        mode: settlementMode,
+        configured: isFullOnchainSettlementConfigured(env),
+      },
+      tee: {
+        configured: Boolean(env.MNEMONIC),
+        platform: env.BOSSRAID_TEE_PLATFORM ?? null,
+        ...tee,
+      },
+      limits: {
+        publicRateLimitMax,
+        publicRateLimitWindowMs,
+        buyerKeyRateLimitMax,
+        buyerKeyRateLimitWindowMs,
+        buyerKeyDefaultSpendLimitUsd,
+        buyerMaxRequestBudgetUsd,
+      },
+      workerIsolation,
+    });
   });
 }

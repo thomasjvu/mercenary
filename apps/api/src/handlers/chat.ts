@@ -19,7 +19,8 @@ import {
   waitForTerminalRaidOutput,
 } from '../lib/chat-completion.js';
 import { enforceBuyerBudget } from '../lib/account.js';
-import { resolveChatE2eeRoute, runServerE2eeChatCompletion } from '../lib/e2ee-chat-hook.js';
+import { executeE2eeChatRelay } from '../lib/e2ee-chat-relay.js';
+import { resolveChatE2eeRoute } from '../lib/e2ee-chat-route.js';
 import { type ApiContext } from '../api-context.js';
 import { createAuthHandlers } from './auth.js';
 import { createManaBillingHandlers } from './billing-mana.js';
@@ -74,16 +75,23 @@ export function createChatHandlers(
     const created = Math.floor(Date.now() / 1000);
     const e2eeRoute = options.discountInference ? resolveChatE2eeRoute(chatRequest) : undefined;
     if (e2eeRoute) {
-      return runServerE2eeChatCompletion({
-        chatRequest,
-        route: e2eeRoute,
-        request,
-        reply,
-        controlState: ctx.controlState,
-        inferenceReceiptStore: ctx.inferenceReceiptStore,
-        env: ctx.env,
-        created,
-      });
+      try {
+        return await executeE2eeChatRelay({
+          chatRequest,
+          route: e2eeRoute,
+          request,
+          reply,
+          inferenceReceiptStore: ctx.inferenceReceiptStore,
+          env: ctx.env,
+          created,
+        });
+      } catch (error) {
+        reply.code(400);
+        return {
+          error: 'e2ee_relay_failed',
+          message: error instanceof Error ? error.message : String(error),
+        };
+      }
     }
 
     const raidRequest =

@@ -1,5 +1,7 @@
+import { UPSTREAM_PROVIDER_CONFIG, type UpstreamProviderId } from '@bossraid/constants';
 import { type ProviderHealthStatus, type ProviderProfile } from '@bossraid/shared-types';
 import { readBooleanEnv } from './env.js';
+import { readPlatformUpstreamApiKey } from './upstream/credentials.js';
 
 type ProductionReadinessStatus = 'pass' | 'warn' | 'fail';
 type ProductionReadinessSeverity = 'blocking' | 'warning' | 'info';
@@ -67,12 +69,7 @@ export function buildProductionReadinessReport(input: {
 
   addCheck({
     id: 'storage_backend',
-    status:
-      input.storageBackend === 'memory' || !input.persistenceHealthy
-        ? 'fail'
-        : input.storageBackend === 'sqlite'
-          ? 'warn'
-          : 'warn',
+    status: input.storageBackend === 'memory' || !input.persistenceHealthy ? 'fail' : 'warn',
     severity:
       input.storageBackend === 'memory' || !input.persistenceHealthy ? 'blocking' : 'warning',
     message:
@@ -221,6 +218,22 @@ export function buildProductionReadinessReport(input: {
     severity: 'blocking',
     message:
       'Operators must acknowledge clean-endpoint seller terms and incident-response ownership before full production.',
+  });
+
+  const configuredUpstreamProviders = (
+    Object.keys(UPSTREAM_PROVIDER_CONFIG) as UpstreamProviderId[]
+  ).filter((provider) => readPlatformUpstreamApiKey(provider, input.env));
+  addCheck({
+    id: 'platform_upstream_keys',
+    status: configuredUpstreamProviders.length > 0 ? 'pass' : 'warn',
+    severity: 'warning',
+    message:
+      configuredUpstreamProviders.length > 0
+        ? 'At least one platform BOSSRAID_*_API_KEY is configured for catalog inference.'
+        : 'Configure platform BOSSRAID_*_API_KEY values for catalog inference and TEE preflight.',
+    details: {
+      configuredProviders: configuredUpstreamProviders,
+    },
   });
 
   addCheck({

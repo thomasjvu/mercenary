@@ -209,6 +209,72 @@ export type ProviderMarketplaceConstraints = {
   maxHeartbeatAgeMs?: number;
 };
 
+export function providerMatchesAllowedModelFamilies(
+  provider: ProviderProfile,
+  allowedFamilies: string[] | undefined
+): boolean {
+  if (!allowedFamilies?.length) {
+    return true;
+  }
+
+  if (!provider.modelFamily) {
+    return false;
+  }
+
+  return allowedFamilies.some(
+    (family) => normalizeModelFamily(family) === normalizeModelFamily(provider.modelFamily)
+  );
+}
+
+export function providerMatchesAllowedAgentFrameworks(
+  provider: ProviderProfile,
+  allowedFrameworks: ProviderMarketplaceConstraints['allowedAgentFrameworks']
+): boolean {
+  if (!allowedFrameworks?.length) {
+    return true;
+  }
+
+  return Boolean(
+    provider.agentFramework &&
+    allowedFrameworks.some((framework) => framework === provider.agentFramework)
+  );
+}
+
+export function providerMatchesAllowedModelProviders(
+  provider: ProviderProfile,
+  allowedProviders: string[] | undefined
+): boolean {
+  if (!allowedProviders?.length) {
+    return true;
+  }
+
+  if (!provider.modelProvider) {
+    return false;
+  }
+
+  return allowedProviders.some(
+    (modelProvider) =>
+      normalizeFilterValue(modelProvider) === normalizeFilterValue(provider.modelProvider)
+  );
+}
+
+export function providerMatchesAllowedModelIds(
+  provider: ProviderProfile,
+  allowedModelIds: string[] | undefined
+): boolean {
+  if (!allowedModelIds?.length) {
+    return true;
+  }
+
+  if (!provider.modelId) {
+    return false;
+  }
+
+  return allowedModelIds.some(
+    (modelId) => normalizeFilterValue(modelId) === normalizeFilterValue(provider.modelId)
+  );
+}
+
 export function providerMatchesMarketplaceConstraints(
   provider: ProviderProfile,
   constraints: ProviderMarketplaceConstraints = {},
@@ -246,41 +312,28 @@ export function providerMatchesMarketplaceConstraints(
 
   if (
     constraints.allowedModelFamilies?.length &&
-    (!provider.modelFamily ||
-      !constraints.allowedModelFamilies.some(
-        (family) => normalizeModelFamily(family) === normalizeModelFamily(provider.modelFamily)
-      ))
+    !providerMatchesAllowedModelFamilies(provider, constraints.allowedModelFamilies)
   ) {
     return false;
   }
 
   if (
     constraints.allowedAgentFrameworks?.length &&
-    (!provider.agentFramework ||
-      !constraints.allowedAgentFrameworks.some(
-        (framework) => framework === provider.agentFramework
-      ))
+    !providerMatchesAllowedAgentFrameworks(provider, constraints.allowedAgentFrameworks)
   ) {
     return false;
   }
 
   if (
     constraints.allowedModelProviders?.length &&
-    (!provider.modelProvider ||
-      !constraints.allowedModelProviders.some(
-        (modelProvider) =>
-          normalizeFilterValue(modelProvider) === normalizeFilterValue(provider.modelProvider)
-      ))
+    !providerMatchesAllowedModelProviders(provider, constraints.allowedModelProviders)
   ) {
     return false;
   }
 
   if (
     constraints.allowedModelIds?.length &&
-    (!provider.modelId ||
-      !constraints.allowedModelIds.some(
-        (modelId) => normalizeFilterValue(modelId) === normalizeFilterValue(provider.modelId)
-      ))
+    !providerMatchesAllowedModelIds(provider, constraints.allowedModelIds)
   ) {
     return false;
   }

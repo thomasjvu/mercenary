@@ -13,7 +13,7 @@ import {
   buildPublicAccountResponse,
 } from '../lib/account.js';
 import { type ApiContext } from '../api-context.js';
-import { type ApiHandlerGroups } from '../api-handlers.js';
+import { type ApiHandlerGroups } from '../handlers/index.js';
 
 export function registerAuthRoutes(
   app: FastifyInstance,
