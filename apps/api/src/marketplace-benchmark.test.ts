@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { computeSavingsUsd, estimateBenchmarkPriceUsd } from './marketplace-benchmark.js';
+import { computeSavingsUsd, estimateBenchmarkPriceUsd } from '@bossraid/constants';
 
 test('estimateBenchmarkPriceUsd returns static reference pricing', () => {
   assert.equal(estimateBenchmarkPriceUsd({ modelId: 'gemma-4-31b-it' }), 0.75);

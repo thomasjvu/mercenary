@@ -8,7 +8,7 @@ import { estimateChatUsage } from './chat-completion.js';
 import type { ChatE2eeRoute } from './e2ee-chat-route.js';
 import { buildCatalogProviderId, resolveUpstreamApiKey } from './upstream/credentials.js';
 import type { InferenceReceiptStore } from './inference-receipt-store.js';
-import { isProviderInferenceMock, mockVeniceE2eeContent } from './upstream-mock.js';
+import { isProviderInferenceMock, mockE2eeContent } from './upstream-mock.js';
 import {
   fetchVeniceE2eeChatCompletion,
   requireVeniceE2eeAttestation,
@@ -173,8 +173,8 @@ export async function executeE2eeChatRelay(input: {
     env: input.env,
   });
 
-  if (isProviderInferenceMock('venice', input.env)) {
-    const mockContent = mockVeniceE2eeContent(input.route.upstreamModelId);
+  if (isProviderInferenceMock(provider, input.env)) {
+    const mockContent = mockE2eeContent(input.route.upstreamModelId);
     const receipt = buildInferenceReceipt({
       store: input.inferenceReceiptStore,
       modelId: input.chatRequest.model,

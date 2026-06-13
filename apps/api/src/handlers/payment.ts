@@ -11,7 +11,7 @@ import {
 } from '../x402.js';
 import { readX402ConfigForContext } from '../lib/x402-runtime.js';
 import { buildLaunchRequestKey } from '../lib/http.js';
-import { computeSavingsUsd, estimateBenchmarkPriceUsd } from '../marketplace-benchmark.js';
+import { computeSavingsUsd, estimateBenchmarkPriceUsd } from '@bossraid/constants';
 import { refundPayment } from '../x402-verify.js';
 import { type ApiContext } from '../api-context.js';
 import { createManaBillingHandlers, type ManaBillingContext } from './billing-mana.js';

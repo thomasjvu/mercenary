@@ -3,7 +3,7 @@ import { estimateTokenMeteredUsd } from '@bossraid/raid-core';
 import { asSingleHeader, type RaidQuoteSnapshot } from '@bossraid/shared-types';
 import { readTrustedAlkahestClient } from '../lib/inference-marketplace.js';
 import { safeEqualString } from '../lib/http.js';
-import { computeSavingsUsd, estimateBenchmarkPriceUsd } from '../marketplace-benchmark.js';
+import { computeSavingsUsd, estimateBenchmarkPriceUsd } from '@bossraid/constants';
 import { type ApiContext } from '../api-context.js';
 
 export interface ManaBillingContext {
