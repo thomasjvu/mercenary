@@ -1,10 +1,6 @@
 import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import { fetchUpstreamJson } from './shared.js';
-import type {
-  MergedUpstreamCatalogModel,
-  UpstreamChatResult,
-  UpstreamModelRecord,
-} from './types.js';
+import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
 
 const CHUTES_BASE = 'https://api.chutes.ai';
 
@@ -35,31 +31,6 @@ export async function fetchChutesUpstreamModels(apiKey: string): Promise<Upstrea
   } catch {
     return MOCK_CHUTES_MODELS;
   }
-}
-
-export function mergeChutesCatalogModels(
-  upstreamModels: UpstreamModelRecord[]
-): MergedUpstreamCatalogModel[] {
-  const upstreamIds = new Set(upstreamModels.map((model) => model.id));
-
-  return INFERENCE_MODEL_CATALOG.filter((entry) => entry.modelProvider === 'chutes')
-    .map((entry) => {
-      const upstreamFound =
-        upstreamIds.has(entry.upstreamModelId) || upstreamIds.has(entry.modelId);
-      return {
-        modelId: entry.modelId,
-        displayName: entry.displayName,
-        modelProvider: 'chutes' as const,
-        supported: true,
-        upstreamFound,
-        teeAttested: entry.teeAttested,
-        e2ee: entry.e2ee,
-        maxContextTokens: entry.maxContextTokens ?? null,
-        referenceInputPer1mUsd: entry.inputPer1mUsd ?? null,
-        referenceOutputPer1mUsd: entry.outputPer1mUsd ?? null,
-      };
-    })
-    .sort((left, right) => left.displayName.localeCompare(right.displayName));
 }
 
 export async function probeChutesChatCompletion(input: {

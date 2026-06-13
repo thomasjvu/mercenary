@@ -1,10 +1,5 @@
-import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import { fetchUpstreamJson, isTeeModelId } from './shared.js';
-import type {
-  MergedUpstreamCatalogModel,
-  UpstreamChatResult,
-  UpstreamModelRecord,
-} from './types.js';
+import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
 
 const PHALA_BASE = 'https://cloud-api.phala.network/api/v1';
 
@@ -36,31 +31,6 @@ export async function fetchPhalaUpstreamModels(apiKey: string): Promise<Upstream
   } catch {
     return MOCK_PHALA_MODELS;
   }
-}
-
-export function mergePhalaCatalogModels(
-  upstreamModels: UpstreamModelRecord[]
-): MergedUpstreamCatalogModel[] {
-  const upstreamIds = new Set(upstreamModels.map((model) => model.id));
-
-  return INFERENCE_MODEL_CATALOG.filter((entry) => entry.modelProvider === 'phala')
-    .map((entry) => {
-      const upstreamFound =
-        upstreamIds.has(entry.upstreamModelId) || upstreamIds.has(entry.modelId);
-      return {
-        modelId: entry.modelId,
-        displayName: entry.displayName,
-        modelProvider: 'phala' as const,
-        supported: true,
-        upstreamFound,
-        teeAttested: entry.teeAttested,
-        e2ee: entry.e2ee,
-        maxContextTokens: entry.maxContextTokens ?? null,
-        referenceInputPer1mUsd: entry.inputPer1mUsd ?? null,
-        referenceOutputPer1mUsd: entry.outputPer1mUsd ?? null,
-      };
-    })
-    .sort((left, right) => left.displayName.localeCompare(right.displayName));
 }
 
 export async function probePhalaChatCompletion(input: {

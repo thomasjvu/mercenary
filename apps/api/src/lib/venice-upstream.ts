@@ -1,7 +1,7 @@
 export {
   extractInferencePromptFromTask,
   fetchVeniceUpstreamModels,
-  mergeVeniceCatalogModels,
+  mergeUpstreamCatalogModels,
   probeVeniceChatCompletion,
 } from './upstream/index.js';
 

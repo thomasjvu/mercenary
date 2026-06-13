@@ -1173,7 +1173,7 @@ export const INFERENCE_MODEL_CATALOG: InferenceCatalogEntry[] = [
     e2ee: false,
   },
   {
-    modelId: 'phala/gemma-4-26b-a4b-uncensored',
+    modelId: 'redpill/phala-gemma-4-26b-a4b-uncensored',
     displayName: 'Phala Gemma 4 26B Uncensored (Redpill)',
     modelProvider: 'redpill',
     attestationVendor: 'redpill',

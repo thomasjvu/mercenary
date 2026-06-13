@@ -1,10 +1,6 @@
 import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import { fetchUpstreamJson, isE2eeModelId, isTeeModelId } from './shared.js';
-import type {
-  MergedUpstreamCatalogModel,
-  UpstreamChatResult,
-  UpstreamModelRecord,
-} from './types.js';
+import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
 
 const REDPILL_BASE = 'https://api.redpill.ai/v1';
 
@@ -36,33 +32,6 @@ export async function fetchRedpillUpstreamModels(apiKey: string): Promise<Upstre
   } catch {
     return MOCK_REDPILL_MODELS;
   }
-}
-
-export function mergeRedpillCatalogModels(
-  upstreamModels: UpstreamModelRecord[]
-): MergedUpstreamCatalogModel[] {
-  const upstreamIds = new Set(upstreamModels.map((model) => model.id));
-
-  return INFERENCE_MODEL_CATALOG.filter(
-    (entry) => entry.modelProvider === 'redpill' || entry.modelProvider === 'phala'
-  )
-    .map((entry) => {
-      const upstreamFound =
-        upstreamIds.has(entry.upstreamModelId) || upstreamIds.has(entry.modelId);
-      return {
-        modelId: entry.modelId,
-        displayName: entry.displayName,
-        modelProvider: 'redpill' as const,
-        supported: true,
-        upstreamFound,
-        teeAttested: entry.teeAttested,
-        e2ee: entry.e2ee,
-        maxContextTokens: entry.maxContextTokens ?? null,
-        referenceInputPer1mUsd: entry.inputPer1mUsd ?? null,
-        referenceOutputPer1mUsd: entry.outputPer1mUsd ?? null,
-      };
-    })
-    .sort((left, right) => left.displayName.localeCompare(right.displayName));
 }
 
 export async function probeRedpillChatCompletion(input: {

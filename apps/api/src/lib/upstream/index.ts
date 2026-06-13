@@ -1,32 +1,28 @@
 import { isUpstreamProviderId, type UpstreamProviderId } from '@bossraid/constants';
+import { mergeUpstreamCatalogModelsForProvider } from './catalog-merge.js';
 import {
   fetchChutesAttestationEvidence,
   fetchChutesUpstreamModels,
-  mergeChutesCatalogModels,
   probeChutesChatCompletion,
 } from './chutes.js';
 import {
   fetchNearAttestationReport,
   fetchNearUpstreamModels,
-  mergeNearCatalogModels,
   probeNearChatCompletion,
 } from './near.js';
 import {
   fetchPhalaAttestationReport,
   fetchPhalaUpstreamModels,
-  mergePhalaCatalogModels,
   probePhalaChatCompletion,
 } from './phala.js';
 import {
   fetchRedpillAttestationReport,
   fetchRedpillUpstreamModels,
-  mergeRedpillCatalogModels,
   probeRedpillChatCompletion,
 } from './redpill.js';
 import {
   fetchVeniceAttestationReport,
   fetchVeniceUpstreamModels,
-  mergeVeniceCatalogModels,
   probeVeniceChatCompletion,
 } from './venice.js';
 import type { MergedUpstreamCatalogModel, UpstreamChatResult } from './types.js';
@@ -39,10 +35,10 @@ export type {
 export { generateAttestationNonce } from './shared.js';
 export {
   fetchVeniceUpstreamModels,
-  mergeVeniceCatalogModels,
   probeVeniceChatCompletion,
   fetchVeniceAttestationReport,
 } from './venice.js';
+export { mergeUpstreamCatalogModelsForProvider } from './catalog-merge.js';
 
 export function parseUpstreamProviderParam(provider: string): UpstreamProviderId | undefined {
   return isUpstreamProviderId(provider) ? provider : undefined;
@@ -70,18 +66,7 @@ export function mergeUpstreamCatalogModels(
   provider: UpstreamProviderId,
   upstreamModels: Awaited<ReturnType<typeof fetchVeniceUpstreamModels>>
 ): MergedUpstreamCatalogModel[] {
-  switch (provider) {
-    case 'venice':
-      return mergeVeniceCatalogModels(upstreamModels);
-    case 'redpill':
-      return mergeRedpillCatalogModels(upstreamModels);
-    case 'near':
-      return mergeNearCatalogModels(upstreamModels);
-    case 'chutes':
-      return mergeChutesCatalogModels(upstreamModels);
-    case 'phala':
-      return mergePhalaCatalogModels(upstreamModels);
-  }
+  return mergeUpstreamCatalogModelsForProvider(provider, upstreamModels);
 }
 
 export async function probeUpstreamChatCompletion(input: {

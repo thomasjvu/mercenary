@@ -1,30 +1,20 @@
 import { randomUUID } from 'node:crypto';
 import { type FastifyReply, type FastifyRequest } from 'fastify';
 import { isUpstreamProviderId } from '@bossraid/constants';
-import {
-  decryptChunk,
-  decryptE2eeStream,
-  encryptMessagesForE2ee,
-  generateE2eeSession,
-} from '@bossraid/privacy-engine';
+import { decryptChunk, decryptE2eeStream } from '@bossraid/privacy-engine';
 import type { ChatCompletionRequest, TeeAttestationResult } from '@bossraid/shared-types';
 import { asSingleHeader } from '@bossraid/shared-types';
 import type { ApiControlState } from '../control-state.js';
-import { buildInferenceReceipt, verifyUpstreamTee } from './attestation-service.js';
-import { generateAttestationNonce } from './upstream/index.js';
+import { buildInferenceReceipt } from './attestation-service.js';
+import { buildCatalogProviderId, readPlatformUpstreamApiKey } from './upstream/credentials.js';
 import type { ChatE2eeRoute } from './e2ee-chat-hook.js';
 import type { InferenceReceiptStore } from './inference-receipt-store.js';
 import { isUpstreamInferenceMock } from './upstream-mock.js';
-
-const VENICE_CHAT_URL = 'https://api.venice.ai/api/v1/chat/completions';
-
-function readPlatformApiKey(provider: string, env: NodeJS.ProcessEnv): string | undefined {
-  if (!isUpstreamProviderId(provider)) {
-    return undefined;
-  }
-  const envKey = `BOSSRAID_${provider.toUpperCase()}_API_KEY`;
-  return env[envKey]?.trim() || undefined;
-}
+import {
+  fetchVeniceE2eeChatCompletion,
+  requireVeniceE2eeAttestation,
+  type VeniceE2eeSession,
+} from './venice-e2ee.js';
 
 function readUpstreamApiKey(
   request: FastifyRequest,
@@ -41,7 +31,7 @@ function readUpstreamApiKey(
     return headerKey.trim();
   }
 
-  const platformKey = readPlatformApiKey(provider, env);
+  const platformKey = readPlatformUpstreamApiKey(provider, env);
   if (platformKey) {
     return platformKey;
   }
@@ -125,7 +115,7 @@ async function streamE2eeCompletion(input: {
   reply: FastifyReply;
   chatRequest: ChatCompletionRequest;
   response: Response;
-  session: ReturnType<typeof generateE2eeSession>;
+  session: VeniceE2eeSession;
   created: number;
   attestation: TeeAttestationResult;
   inferenceReceiptStore: InferenceReceiptStore;
@@ -160,7 +150,7 @@ async function streamE2eeCompletion(input: {
   const receipt = buildInferenceReceipt({
     store: input.inferenceReceiptStore,
     modelId: input.chatRequest.model,
-    providerId: `catalog:${input.provider}:${input.route.modelId}`,
+    providerId: buildCatalogProviderId(input.provider, input.route.modelId),
     route: 'inference',
     tee: input.attestation,
     transport: 'venice-e2ee',
@@ -210,31 +200,21 @@ export async function executeE2eeChatRelay(input: {
     );
   }
 
-  const nonce = generateAttestationNonce();
-  const { attestation } = await verifyUpstreamTee({
+  const providerId = buildCatalogProviderId(provider, input.route.modelId);
+  const { attestation, nonce, session } = await requireVeniceE2eeAttestation({
     provider,
     modelId: input.route.upstreamModelId,
-    providerId: `catalog:${provider}:${input.route.modelId}`,
+    providerId,
     apiKey,
-    nonce,
     env: input.env,
   });
-
-  if (!attestation.valid || !attestation.e2eeReady) {
-    throw new Error('TEE attestation must pass with E2EE signing key before inference.');
-  }
-
-  const signingKey = attestation.signingKey;
-  if (!signingKey) {
-    throw new Error('Attestation response did not include an E2EE signing key.');
-  }
 
   if (isUpstreamInferenceMock(input.env)) {
     const mockContent = `mock-venice-e2ee:${input.route.upstreamModelId}`;
     const receipt = buildInferenceReceipt({
       store: input.inferenceReceiptStore,
       modelId: input.chatRequest.model,
-      providerId: `catalog:${provider}:${input.route.modelId}`,
+      providerId,
       route: 'inference',
       tee: attestation,
       transport: 'venice-e2ee',
@@ -282,41 +262,19 @@ export async function executeE2eeChatRelay(input: {
     );
   }
 
-  const session = generateE2eeSession(signingKey, attestation.signingAddress);
-  const encryptedMessages = encryptMessagesForE2ee(
-    input.chatRequest.messages.map((message) => ({
+  const wantsStream = input.chatRequest.stream === true;
+  const upstreamResponse = await fetchVeniceE2eeChatCompletion({
+    apiKey,
+    modelId: input.route.upstreamModelId,
+    messages: input.chatRequest.messages.map((message) => ({
       role: message.role,
       content: message.content,
     })),
-    session.modelPublicKey
-  );
-
-  const wantsStream = input.chatRequest.stream === true;
-  const upstreamResponse = await fetch(VENICE_CHAT_URL, {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${apiKey}`,
-      'content-type': 'application/json',
-      'X-Venice-TEE-Client-Pub-Key': session.publicKeyHex,
-      'X-Venice-TEE-Model-Pub-Key': session.modelPublicKey,
-      'X-Venice-TEE-Signing-Algo': 'ecdsa',
-    },
-    body: JSON.stringify({
-      model: input.route.upstreamModelId,
-      messages: encryptedMessages,
-      stream: wantsStream,
-      ...(input.chatRequest.max_tokens == null
-        ? {}
-        : { max_completion_tokens: input.chatRequest.max_tokens }),
-      ...(input.chatRequest.temperature == null
-        ? {}
-        : { temperature: input.chatRequest.temperature }),
-    }),
+    session,
+    stream: wantsStream,
+    maxCompletionTokens: input.chatRequest.max_tokens ?? undefined,
+    temperature: input.chatRequest.temperature ?? undefined,
   });
-
-  if (!upstreamResponse.ok) {
-    throw new Error(`E2EE upstream request failed (${upstreamResponse.status}).`);
-  }
 
   if (wantsStream) {
     await streamE2eeCompletion({
@@ -346,7 +304,7 @@ export async function executeE2eeChatRelay(input: {
   const receipt = buildInferenceReceipt({
     store: input.inferenceReceiptStore,
     modelId: input.chatRequest.model,
-    providerId: `catalog:${provider}:${input.route.modelId}`,
+    providerId,
     route: 'inference',
     tee: attestation,
     transport: 'venice-e2ee',

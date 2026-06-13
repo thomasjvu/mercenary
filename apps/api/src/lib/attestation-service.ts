@@ -16,6 +16,7 @@ export async function verifyUpstreamTee(input: {
   providerId: string;
   apiKey: string;
   instanceId?: string;
+  signingAddress?: string;
   nonce?: string;
   env?: NodeJS.ProcessEnv;
 }) {
@@ -30,6 +31,7 @@ export async function verifyUpstreamTee(input: {
     apiKey: input.apiKey,
     nonce,
     instanceId: input.instanceId,
+    signingAddress: input.signingAddress,
     mockMode,
     fetchReport: mockMode
       ? undefined
@@ -40,6 +42,7 @@ export async function verifyUpstreamTee(input: {
             apiKey: fetchInput.apiKey,
             nonce: fetchInput.nonce,
             instanceId: fetchInput.instanceId,
+            signingAddress: fetchInput.signingAddress,
           }),
   });
 

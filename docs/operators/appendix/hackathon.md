@@ -13,17 +13,17 @@ Boss Raid lets a developer or another agent submit one task through `POST /v1/ra
 - free demo route: `POST /v1/demo/raid` when enabled
 - public receipt: `/receipt`
 - manifest: `GET /v1/agent.json`
-- run log: `GET /v1/raids/:raidId/agent_log.json?token=<raidAccessToken>`
+- run log: `GET /v1/raid/:raidId/agent_log.json?token=<raidAccessToken>`
 - optional attestation: `GET /v1/attested-runtime` and `GET /v1/raid/:raidId/attested-result`
 
 ## Track Fit
 
 | Track                               | What Boss Raid shows                                                                                                                 | Main proof in repo                                                                                                              | Current truth                                                                                                                          |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Synthesis Open Track                | One request becomes one managed multi-agent raid with one result and one proof surface.                                              | `POST /v1/raid`, `/receipt`, `GET /v1/agent.json`, `GET /v1/raids/:raidId/agent_log.json?token=...`                             | Strong now.                                                                                                                            |
+| Synthesis Open Track                | One request becomes one managed multi-agent raid with one result and one proof surface.                                              | `POST /v1/raid`, `/receipt`, `GET /v1/agent.json`, `GET /v1/raid/:raidId/agent_log.json?token=...`                              | Strong now.                                                                                                                            |
 | Venice                              | Strict-private routing prefers Venice-backed providers and keeps the privacy decision visible in routing proof.                      | `examples/strict-private-raid.json`, `pnpm test:strict-private:e2e`                                                             | Strong now when Venice-backed providers are configured.                                                                                |
 | Base Agent Services                 | Boss Raid is an agent service with public HTTP ingress, discovery, and x402 payment gating.                                          | `POST /v1/raid`, `POST /v1/chat/completions`, x402 routes, Base-oriented settlement env in repo                                 | Strong now for service shape; stronger with live paid traffic.                                                                         |
-| Protocol Labs: Let the Agent Cook   | Mercenary runs the discover, plan, route, verify, synthesize, and settle loop with public manifest and run log proof.                | `GET /v1/agent.json`, `GET /v1/raids/:raidId/agent_log.json?token=...`, MCP tool flow                                           | Strong now.                                                                                                                            |
+| Protocol Labs: Let the Agent Cook   | Mercenary runs the discover, plan, route, verify, synthesize, and settle loop with public manifest and run log proof.                | `GET /v1/agent.json`, `GET /v1/raid/:raidId/agent_log.json?token=...`, MCP tool flow                                            | Strong now.                                                                                                                            |
 | Protocol Labs: Agents With Receipts | Boss Raid can surface ERC-8004 identity refs, trust-gated routing, receipt proof, and DevSpot-style manifest plus run log.           | provider `erc8004` metadata, `requireErc8004`, `minTrustScore`, receipt, `agent.json`, `agent_log.json`                         | Good architecture now. Final sponsor-grade proof still needs real live ERC-8004 tx refs.                                               |
 | Virtuals ERC-8183 Open Build        | Boss Raid exposes ERC-8183-aligned settlement data and a concrete ACP-to-Boss-Raid mapping for provider identity and address wiring. | settlement proof surfaces, `examples/provider-registration.base-mainnet.example.json`, `examples/virtuals-acp-capture-sheet.md` | Good architecture now. Final sponsor-grade proof still needs live onchain settlement txs.                                              |
 | EigenCloud                          | Boss Raid can run in one EigenCompute TEE container and expose attested runtime and attested result proof.                           | `Dockerfile.eigencompute`, `scripts/serve-eigencompute.mjs`, attestation routes                                                 | Strong architecture now. The lane stays in-repo for sponsor and judging proof even while the active hosted runtime budget is on Phala. |
@@ -34,7 +34,7 @@ Boss Raid lets a developer or another agent submit one task through `POST /v1/ra
 2. Show that Mercenary turns one task into scoped workstreams and routes real HTTP providers.
 3. Open `/receipt` to show one canonical result, routing proof, and settlement proof.
 4. Open `GET /v1/agent.json` to show Mercenary's manifest.
-5. Open `GET /v1/raids/:raidId/agent_log.json?token=...` to show the autonomous run log.
+5. Open `GET /v1/raid/:raidId/agent_log.json?token=...` to show the autonomous run log.
 6. If the lane is Venice, show `venicePrivateLane=true` and the Venice-backed routed providers.
 7. If the lane is Phala, show the live hosted TEE runtime. If the lane is EigenCloud, show the optional EigenCompute attested runtime and attested result path.
 8. If the lane is Protocol Labs or Virtuals, show ERC-8004 fields and ERC-8183-aligned settlement fields, then be explicit about whether the run is file-mode rehearsal or live onchain proof.
@@ -63,7 +63,7 @@ Boss Raid lets a developer or another agent submit one task through `POST /v1/ra
 
 - `/receipt`
 - `GET /v1/agent.json`
-- `GET /v1/raids/:raidId/agent_log.json?token=<raidAccessToken>`
+- `GET /v1/raid/:raidId/agent_log.json?token=<raidAccessToken>`
 - `GET /v1/attested-runtime` when `MNEMONIC` is set
 - `GET /v1/raid/:raidId/attested-result` when `MNEMONIC` is set
 

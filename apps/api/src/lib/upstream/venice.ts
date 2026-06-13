@@ -1,19 +1,17 @@
 import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import { TIMEOUTS } from '@bossraid/constants';
+import { isUpstreamTeeMock, isVeniceUpstreamMock } from '../upstream-mock.js';
 import { fetchUpstreamJson, isE2eeModelId, isTeeModelId } from './shared.js';
-import type {
-  MergedUpstreamCatalogModel,
-  UpstreamChatResult,
-  UpstreamModelRecord,
-} from './types.js';
+import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
 
 const VENICE_BASE = 'https://api.venice.ai/api/v1';
 
 export async function fetchVeniceUpstreamModels(
   apiKey: string,
-  options: { timeoutMs?: number } = {}
+  options: { timeoutMs?: number; env?: NodeJS.ProcessEnv } = {}
 ): Promise<UpstreamModelRecord[]> {
-  if (process.env.BOSSRAID_UPSTREAM_MOCK === '1' || process.env.BOSSRAID_VENICE_MOCK === '1') {
+  const env = options.env ?? process.env;
+  if (isVeniceUpstreamMock(env)) {
     return INFERENCE_MODEL_CATALOG.filter((entry) => entry.modelProvider === 'venice').map(
       (entry) => ({
         id: entry.upstreamModelId,
@@ -40,38 +38,15 @@ export async function fetchVeniceUpstreamModels(
   });
 }
 
-export function mergeVeniceCatalogModels(
-  upstreamModels: UpstreamModelRecord[]
-): MergedUpstreamCatalogModel[] {
-  const upstreamIds = new Set(upstreamModels.map((model) => model.id));
-
-  return INFERENCE_MODEL_CATALOG.filter((entry) => entry.modelProvider === 'venice')
-    .map((entry) => {
-      const upstreamFound =
-        upstreamIds.has(entry.upstreamModelId) || upstreamIds.has(entry.modelId);
-      return {
-        modelId: entry.modelId,
-        displayName: entry.displayName,
-        modelProvider: 'venice' as const,
-        supported: true,
-        upstreamFound,
-        teeAttested: entry.teeAttested,
-        e2ee: entry.e2ee,
-        maxContextTokens: entry.maxContextTokens ?? null,
-        referenceInputPer1mUsd: entry.inputPer1mUsd ?? null,
-        referenceOutputPer1mUsd: entry.outputPer1mUsd ?? null,
-      };
-    })
-    .sort((left, right) => left.displayName.localeCompare(right.displayName));
-}
-
 export async function probeVeniceChatCompletion(input: {
   apiKey: string;
   modelId: string;
   prompt?: string;
   timeoutMs?: number;
+  env?: NodeJS.ProcessEnv;
 }): Promise<UpstreamChatResult> {
-  if (process.env.BOSSRAID_UPSTREAM_MOCK === '1' || process.env.BOSSRAID_VENICE_MOCK === '1') {
+  const env = input.env ?? process.env;
+  if (isVeniceUpstreamMock(env)) {
     return { content: `mock-venice-response:${input.modelId}` };
   }
 
@@ -120,8 +95,10 @@ export async function fetchVeniceAttestationReport(input: {
   apiKey: string;
   modelId: string;
   nonce: string;
+  env?: NodeJS.ProcessEnv;
 }): Promise<Record<string, unknown>> {
-  if (process.env.BOSSRAID_UPSTREAM_TEE_MOCK === '1') {
+  const env = input.env ?? process.env;
+  if (isUpstreamTeeMock(env)) {
     return {
       verified: true,
       nonce: input.nonce,

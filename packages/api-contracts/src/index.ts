@@ -13,11 +13,7 @@ export {
   parseChatCompletionRequest,
 } from './parsers/chat.js';
 
-export {
-  buildBossRaidRequestFromDelegateInput,
-  parseBossRaidRequest,
-  parseBossRaidSpawnInput,
-} from './parsers/raid.js';
+export { buildBossRaidRequestFromDelegateInput, parseBossRaidRequest } from './parsers/raid.js';
 
 export {
   parseAgentHeartbeatInput,

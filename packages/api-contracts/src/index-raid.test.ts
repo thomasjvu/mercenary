@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ApiContractError, parseBossRaidRequest, parseBossRaidSpawnInput } from './index.js';
+import { ApiContractError, parseBossRaidRequest } from './index.js';
+import { parseBossRaidSpawnInput } from './parsers/raid-spawn.js';
 import { createBossRaidRequestPayload, createSpawnInputPayload } from './index.test-helpers.js';
 
 test('parseBossRaidRequest honors raid_policy.max_latency_sec', () => {

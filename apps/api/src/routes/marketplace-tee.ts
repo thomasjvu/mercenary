@@ -3,8 +3,9 @@ import { INFERENCE_MODEL_CATALOG, isUpstreamProviderId } from '@bossraid/constan
 import { verifyUpstreamAttestationReport } from '@bossraid/privacy-engine';
 import { ensureRecordInput, ensureStringInput } from '../lib/account.js';
 import { fetchUpstreamAttestationReport, generateAttestationNonce } from '../lib/upstream/index.js';
-import { verifySellerUpstreamTeeAttestation } from '../lib/upstream-tee-service.js';
+import { verifyUpstreamTee } from '../lib/attestation-service.js';
 import { isUpstreamTeeMock } from '../lib/upstream-mock.js';
+import { readPlatformUpstreamApiKey } from '../lib/upstream/credentials.js';
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../api-handlers.js';
 
@@ -13,14 +14,6 @@ const attestationCache = new Map<
   { expiresAt: number; result: ReturnType<typeof verifyUpstreamAttestationReport> }
 >();
 const ATTESTATION_CACHE_TTL_MS = 10 * 60 * 1000;
-
-function readPlatformApiKey(provider: string, env: NodeJS.ProcessEnv): string | undefined {
-  if (!isUpstreamProviderId(provider)) {
-    return undefined;
-  }
-  const envKey = `BOSSRAID_${provider.toUpperCase()}_API_KEY`;
-  return env[envKey]?.trim() || undefined;
-}
 
 export function registerMarketplaceTeeRoutes(
   app: FastifyInstance,
@@ -63,7 +56,7 @@ export function registerMarketplaceTeeRoutes(
           ? body.instance_id
           : undefined;
 
-    let apiKey = readPlatformApiKey(provider, env);
+    let apiKey = readPlatformUpstreamApiKey(provider, env);
     let providerId = `catalog:${provider}:${modelId}`;
 
     if (sellerId) {
@@ -97,7 +90,7 @@ export function registerMarketplaceTeeRoutes(
     }
 
     const nonce = generateAttestationNonce();
-    const result = await verifySellerUpstreamTeeAttestation({
+    const { attestation: result } = await verifyUpstreamTee({
       provider,
       modelId: catalogEntry?.upstreamModelId ?? modelId,
       providerId,
@@ -142,9 +135,16 @@ export function registerMarketplaceTeeRoutes(
 
   app.get('/v1/marketplace/models/:modelId/tee', async (request) => {
     const { modelId } = request.params as { modelId: string };
+    const query = request.query as { sellerId?: string; seller_id?: string };
+    const sellerId =
+      typeof query.sellerId === 'string'
+        ? query.sellerId
+        : typeof query.seller_id === 'string'
+          ? query.seller_id
+          : undefined;
     const catalogEntry = INFERENCE_MODEL_CATALOG.find((entry) => entry.modelId === modelId);
     const provider = catalogEntry?.attestationVendor ?? catalogEntry?.modelProvider ?? 'venice';
-    const cacheKey = `${provider}:${modelId}:platform`;
+    const cacheKey = `${provider}:${modelId}:${sellerId ?? 'platform'}`;
     const cached = attestationCache.get(cacheKey);
     const fresh = cached && cached.expiresAt > Date.now() ? cached.result : undefined;
 

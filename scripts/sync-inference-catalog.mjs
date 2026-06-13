@@ -21,7 +21,7 @@ const FEATURED_LIVE_MODEL_IDS = new Set([
 
 const REDPILL_MODELS = [
   {
-    modelId: 'phala/gemma-4-26b-a4b-uncensored',
+    modelId: 'redpill/phala-gemma-4-26b-a4b-uncensored',
     displayName: 'Phala Gemma 4 26B Uncensored (Redpill)',
     modelProvider: 'redpill',
     attestationVendor: 'redpill',
@@ -269,6 +269,19 @@ export const CATALOG_BENCHMARK_OUTPUT_PER_1M_USD: Record<string, number> = ${JSO
   writeFileSync(resolve(rootDir, 'packages/constants/src/inference-catalog-benchmark.ts'), body);
 }
 
+function assertUniqueModelIds(catalog) {
+  const seen = new Map();
+  for (const entry of catalog) {
+    const prior = seen.get(entry.modelId);
+    if (prior) {
+      throw new Error(
+        `Duplicate inference catalog modelId '${entry.modelId}' (${prior.modelProvider} vs ${entry.modelProvider}).`
+      );
+    }
+    seen.set(entry.modelId, entry);
+  }
+}
+
 function normalizeStaticModels(models) {
   return models.map((model) => ({
     modelId: model.modelId,
@@ -294,6 +307,7 @@ async function main() {
   const chutesModels = normalizeStaticModels(CHUTES_MODELS);
   const phalaModels = normalizeStaticModels(PHALA_MODELS);
   const catalog = [...veniceModels, ...redpillModels, ...nearModels, ...chutesModels, ...phalaModels];
+  assertUniqueModelIds(catalog);
 
   let livePort = 9100;
   const providers = catalog.map((model) => {

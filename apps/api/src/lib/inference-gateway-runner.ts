@@ -5,7 +5,7 @@ import type { PrivacyFeatureKey } from '@bossraid/shared-types';
 import type { ProviderProfile, ProviderTaskPackage } from '@bossraid/shared-types';
 import type { ApiControlState } from '../control-state.js';
 import { extractInferencePromptFromTask, probeUpstreamChatCompletion } from './upstream/index.js';
-import { probeVeniceE2eeChatCompletion } from './venice-e2ee-upstream.js';
+import { probeVeniceE2eeChatCompletion } from './venice-e2ee.js';
 import { resolveHostedProviderUpstream } from './inference-gateway-health.js';
 import { buildInferenceReceipt, verifyUpstreamTee } from './attestation-service.js';
 import { generateAttestationNonce } from './upstream/index.js';
