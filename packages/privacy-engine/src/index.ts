@@ -35,6 +35,7 @@ export {
   buildQuoteExplorerUrl,
   hashQuote,
   verifyIntelQuote,
+  verifyQuoteWithPhalaCloud,
   type QuoteVerifyResult,
 } from './upstream-tee/quote-verify.js';
 

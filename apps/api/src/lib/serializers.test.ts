@@ -49,6 +49,7 @@ function buildRankedSubmission(providerId: string): RankedSubmission {
         externalApiCalls: ['venice:chat/completions'],
         dataRetained: false,
         signedDeclaration: 'PRIVACY_DECLARATION:test',
+        inferenceReceiptId: 'inf_rcpt_test_1',
       },
     },
   };
@@ -112,6 +113,7 @@ test('serializeRaidResult exposes privacy attestation on submissions and settlem
   assert.ok(attestation);
   assert.equal(attestation.teeAttestation?.signingAddress, '0xabc');
   assert.equal(attestation.teeAttestation?.explorerUrl, 'https://proof.t16z.com/example');
+  assert.equal(attestation.inferenceReceiptId, 'inf_rcpt_test_1');
   assert.deepEqual(attestation.featuresClaimed, ['tee_attested', 'e2ee']);
   assert.equal(serialized.settlementExecution?.privacyCompliance?.overallPassed, true);
   assert.equal(

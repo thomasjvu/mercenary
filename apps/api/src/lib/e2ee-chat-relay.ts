@@ -7,7 +7,7 @@ import {
   encryptMessagesForE2ee,
   generateE2eeSession,
 } from '@bossraid/privacy-engine';
-import type { ChatCompletionRequest } from '@bossraid/shared-types';
+import type { ChatCompletionRequest, TeeAttestationResult } from '@bossraid/shared-types';
 import { asSingleHeader } from '@bossraid/shared-types';
 import type { ApiControlState } from '../control-state.js';
 import { buildInferenceReceipt, verifyUpstreamTee } from './attestation-service.js';
@@ -98,26 +98,54 @@ function buildE2eeCompletionResponse(
   };
 }
 
-async function streamE2eeCompletion(
-  reply: FastifyReply,
+function buildStreamPrivacyChunk(
+  completionId: string,
   chatRequest: ChatCompletionRequest,
-  response: Response,
-  session: ReturnType<typeof generateE2eeSession>,
-  created: number
-): Promise<void> {
+  created: number,
+  attestation: { signingAddress?: string; explorerUrl?: string },
+  receiptId: string
+) {
+  return {
+    id: completionId,
+    object: 'chat.completion.chunk',
+    created,
+    model: chatRequest.model,
+    choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+    privacy: {
+      mode: 'strict',
+      transport: 'venice-e2ee',
+      teeSigningAddress: attestation.signingAddress,
+      explorerUrl: attestation.explorerUrl,
+      receiptId,
+    },
+  };
+}
+
+async function streamE2eeCompletion(input: {
+  reply: FastifyReply;
+  chatRequest: ChatCompletionRequest;
+  response: Response;
+  session: ReturnType<typeof generateE2eeSession>;
+  created: number;
+  attestation: TeeAttestationResult;
+  inferenceReceiptStore: InferenceReceiptStore;
+  provider: string;
+  route: ChatE2eeRoute;
+  nonce: string;
+}): Promise<void> {
   const completionId = `chatcmpl_e2ee_${randomUUID()}`;
-  reply.raw.writeHead(200, {
+  input.reply.raw.writeHead(200, {
     'content-type': 'text/event-stream',
     'cache-control': 'no-cache',
     connection: 'keep-alive',
   });
 
-  await decryptE2eeStream(response, session, (chunk) => {
+  const fullText = await decryptE2eeStream(input.response, input.session, (chunk) => {
     const payload = {
       id: completionId,
       object: 'chat.completion.chunk',
-      created,
-      model: chatRequest.model,
+      created: input.created,
+      model: input.chatRequest.model,
       choices: [
         {
           index: 0,
@@ -126,20 +154,34 @@ async function streamE2eeCompletion(
         },
       ],
     };
-    reply.raw.write(`data: ${JSON.stringify(payload)}\n\n`);
+    input.reply.raw.write(`data: ${JSON.stringify(payload)}\n\n`);
   });
 
-  reply.raw.write(
-    `data: ${JSON.stringify({
-      id: completionId,
-      object: 'chat.completion.chunk',
-      created,
-      model: chatRequest.model,
-      choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
-    })}\n\n`
+  const receipt = buildInferenceReceipt({
+    store: input.inferenceReceiptStore,
+    modelId: input.chatRequest.model,
+    providerId: `catalog:${input.provider}:${input.route.modelId}`,
+    route: 'inference',
+    tee: input.attestation,
+    transport: 'venice-e2ee',
+    inputText: readPromptText(input.chatRequest.messages),
+    outputText: fullText,
+    nonce: input.nonce,
+  });
+
+  input.reply.raw.write(
+    `data: ${JSON.stringify(
+      buildStreamPrivacyChunk(
+        completionId,
+        input.chatRequest,
+        input.created,
+        input.attestation,
+        receipt.receiptId
+      )
+    )}\n\n`
   );
-  reply.raw.write('data: [DONE]\n\n');
-  reply.raw.end();
+  input.reply.raw.write('data: [DONE]\n\n');
+  input.reply.raw.end();
 }
 
 function readPromptText(messages: ChatCompletionRequest['messages']): string {
@@ -201,6 +243,7 @@ export async function executeE2eeChatRelay(input: {
       nonce,
     });
     if (input.chatRequest.stream === true) {
+      const completionId = 'chatcmpl_e2ee_mock';
       input.reply.raw.writeHead(200, {
         'content-type': 'text/event-stream',
         'cache-control': 'no-cache',
@@ -208,12 +251,23 @@ export async function executeE2eeChatRelay(input: {
       });
       input.reply.raw.write(
         `data: ${JSON.stringify({
-          id: `chatcmpl_e2ee_mock`,
+          id: completionId,
           object: 'chat.completion.chunk',
           created: input.created,
           model: input.chatRequest.model,
           choices: [{ index: 0, delta: { content: mockContent }, finish_reason: null }],
         })}\n\n`
+      );
+      input.reply.raw.write(
+        `data: ${JSON.stringify(
+          buildStreamPrivacyChunk(
+            completionId,
+            input.chatRequest,
+            input.created,
+            attestation,
+            receipt.receiptId
+          )
+        )}\n\n`
       );
       input.reply.raw.write('data: [DONE]\n\n');
       input.reply.raw.end();
@@ -265,13 +319,18 @@ export async function executeE2eeChatRelay(input: {
   }
 
   if (wantsStream) {
-    await streamE2eeCompletion(
-      input.reply,
-      input.chatRequest,
-      upstreamResponse,
+    await streamE2eeCompletion({
+      reply: input.reply,
+      chatRequest: input.chatRequest,
+      response: upstreamResponse,
       session,
-      input.created
-    );
+      created: input.created,
+      attestation,
+      inferenceReceiptStore: input.inferenceReceiptStore,
+      provider,
+      route: input.route,
+      nonce,
+    });
     return;
   }
 

@@ -68,6 +68,28 @@ test('providerMatchesAllowedModelFamilies is case-insensitive', () => {
   assert.equal(providerMatchesAllowedModelFamilies(provider, ['openai']), false);
 });
 
+test('selectProviders fails closed when strict private lane has no Venice-backed providers', () => {
+  const task = {
+    ...createSpawnInput(),
+    constraints: {
+      ...createSpawnInput().constraints,
+      privacyMode: 'strict' as const,
+      allowedModelFamilies: ['venice-private'],
+    },
+  };
+  const standardProvider = createProviderProfile('provider-standard', {
+    privacy: {
+      noDataRetention: true,
+      teeAttested: true,
+      e2ee: true,
+    },
+  });
+
+  const selection = selectProviders(task, [standardProvider], 60_000);
+  assert.equal(selection.primaries.length, 0);
+  assert.equal(selection.reserves.length, 0);
+});
+
 test('taskUsesVenicePrivateLane detects strict privacy and venice families', () => {
   const strictTask = {
     ...createSpawnInput(),

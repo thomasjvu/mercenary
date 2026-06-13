@@ -28,6 +28,7 @@ export type PrivacyAttestationView = {
   featuresClaimed: string[];
   featuresVerified: string[];
   teeAttestation?: TeeAttestationView;
+  inferenceReceiptId?: string;
   externalApiCalls: string[];
   dataRetained: boolean;
   signedDeclaration: string;

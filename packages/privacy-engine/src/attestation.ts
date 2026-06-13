@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import http from 'node:http';
 import https from 'node:https';
 import net from 'node:net';
+import { verifyQuoteWithPhalaCloud } from './upstream-tee/quote-verify.js';
 import type {
   PrivacyAttestation,
   PrivacyFeatureKey,
@@ -13,7 +14,6 @@ const DSTACK_SOCKET_PATH = '/var/run/dstack.sock';
 const DEFAULT_TEE_SOCKET_PATH = '/var/run/tappd.sock';
 const DEFAULT_TEE_VENDOR = 'phala';
 const DEFAULT_RUNTIME_MODE = 'phala-cvm';
-const DEFAULT_PHALA_VERIFY_URL = 'https://cloud-api.phala.network/api/v1/attestations/verify';
 const DEFAULT_CACHE_TTL_MS = 10 * 60 * 1000;
 
 export interface TeeAttestationOptions {
@@ -53,15 +53,6 @@ type PhalaQuoteResponse = {
   event_log?: string;
   report_data?: string;
   vm_config?: string;
-  error?: string;
-};
-
-type PhalaVerifyResponse = {
-  verified?: boolean;
-  success?: boolean;
-  status?: string;
-  data?: unknown;
-  result?: unknown;
   error?: string;
 };
 
@@ -109,14 +100,14 @@ async function callPhalaAttestationApi(
     if (!quote.quote) {
       throw new Error('Phala dstack did not return a TDX quote.');
     }
-    const verification = await verifyWithPhalaCloud(quote.quote);
+    const verification = await verifyQuoteWithPhalaCloud(quote.quote);
     const verifiedAt = new Date().toISOString();
     const runtimeMode =
       opts.runtimeMode || process.env.BOSSRAID_TEE_RUNTIME_MODE || DEFAULT_RUNTIME_MODE;
     const tcbInfo = parseTcbInfo(info.tcb_info);
     const quoteHash = createHash('sha256').update(quote.quote).digest('hex');
     return {
-      valid: verification.verified,
+      valid: verification.passed,
       providerId,
       verifiedAt,
       expiresAt: new Date(Date.now() + DEFAULT_CACHE_TTL_MS).toISOString(),
@@ -126,14 +117,14 @@ async function callPhalaAttestationApi(
       signature: quote.quote,
       notes: [
         'phala-dstack-tdx-quote',
-        verification.verified ? 'phala-cloud-verified' : 'phala-cloud-unverified',
+        verification.passed ? 'phala-cloud-verified' : 'phala-cloud-unverified',
         `endpoint:${redactEndpoint(endpoint)}`,
         ...(info.app_id ? [`app_id:${info.app_id}`] : []),
         ...(info.instance_id ? [`instance_id:${info.instance_id}`] : []),
         ...(info.device_id ? [`device_id:${info.device_id}`] : []),
         ...(info.os_image_hash ? [`os_image_hash:${info.os_image_hash}`] : []),
         ...(quote.report_data ? [`report_data:${quote.report_data}`] : []),
-        ...(verification.error ? [`verification_error:${verification.error}`] : []),
+        ...(!verification.passed ? [`verification_error:${verification.detail}`] : []),
       ],
     };
   } catch (error) {
@@ -278,42 +269,6 @@ function phalaUnixRpc<T>(socketPath: string, path: string, payload: string): Pro
     });
     socket.on('error', fail);
   });
-}
-
-async function verifyWithPhalaCloud(quote: string): Promise<{
-  verified: boolean;
-  error?: string;
-}> {
-  const verifyUrl = process.env.PHALA_CLOUD_ATTESTATION_VERIFY_URL || DEFAULT_PHALA_VERIFY_URL;
-  const response = await fetch(verifyUrl, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({ quote }),
-  });
-  const payload = response.headers.get('content-type')?.includes('application/json')
-    ? ((await response.json()) as PhalaVerifyResponse)
-    : ({ error: await response.text() } as PhalaVerifyResponse);
-  if (!response.ok) {
-    return {
-      verified: false,
-      error:
-        typeof payload.error === 'string'
-          ? payload.error
-          : `Phala Cloud verification failed with status ${response.status}`,
-    };
-  }
-  const root = (payload.data || payload.result || payload) as PhalaVerifyResponse;
-  const verified =
-    root.verified === true ||
-    root.success === true ||
-    root.status === 'verified' ||
-    root.status === 'ok';
-  return {
-    verified,
-    error: verified ? undefined : 'Phala Cloud verification did not return verified status.',
-  };
 }
 
 function parseTcbInfo(value: unknown): Record<string, unknown> | null {

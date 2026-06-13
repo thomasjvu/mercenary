@@ -38,6 +38,8 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 | `BOSSRAID_VENICE_MOCK`                       | `1` = mock Venice upstream for local/tests                         |
 | `BOSSRAID_UPSTREAM_MOCK`                     | `1` = mock Redpill/NEAR/Chutes/Phala upstream list                 |
 | `BOSSRAID_UPSTREAM_TEE_MOCK`                 | `1` = mock upstream TEE attestation verification                   |
+| `BOSSRAID_UPSTREAM_TEE_CLOUD_VERIFY`         | `0` disables Phala Cloud quote verification (default: verify)      |
+| `PHALA_CLOUD_ATTESTATION_VERIFY_URL`         | Override Phala Cloud quote verify endpoint                         |
 | `BOSSRAID_VENICE_API_KEY`                    | Optional platform key for catalog TEE attest                       |
 | `BOSSRAID_REDPILL_API_KEY`                   | Optional platform key for catalog TEE attest                       |
 | `BOSSRAID_NEAR_API_KEY`                      | Optional platform key for catalog TEE attest                       |

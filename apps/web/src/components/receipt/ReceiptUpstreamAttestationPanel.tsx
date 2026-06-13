@@ -95,6 +95,20 @@ function ReceiptUpstreamAttestationCard({ row }: { row: ReceiptUpstreamAttestati
         </p>
       ) : null}
 
+      {row.attestation.inferenceReceiptId ? (
+        <p className="receipt-upstream-attestation__meta">
+          inference receipt:{' '}
+          <a
+            className="upstream-tee-panel__link"
+            href={`/api/v1/inference/receipts/${encodeURIComponent(row.attestation.inferenceReceiptId)}`}
+            rel="noreferrer"
+            target="_blank"
+          >
+            {row.attestation.inferenceReceiptId}
+          </a>
+        </p>
+      ) : null}
+
       {tee?.explorerUrl ? (
         <a
           className="upstream-tee-panel__link"

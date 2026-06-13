@@ -1,7 +1,47 @@
 import { randomBytes } from 'node:crypto';
 import type { TeeAttestationResult } from '@bossraid/shared-types';
+import { verifyQuoteWithPhalaCloud } from './quote-verify.js';
 import { toTeeAttestationResult, verifyUpstreamAttestationReport } from './verify.js';
 import type { UpstreamAttestationVerifyResult, UpstreamTeeVendor } from './types.js';
+
+function readIntelQuoteFromReport(report: Record<string, unknown>): string | undefined {
+  if (typeof report.intel_quote === 'string') {
+    return report.intel_quote;
+  }
+  if (typeof report.quote === 'string') {
+    return report.quote;
+  }
+  return undefined;
+}
+
+function cloudVerifyEnabled(): boolean {
+  return process.env.BOSSRAID_UPSTREAM_TEE_CLOUD_VERIFY !== '0';
+}
+
+async function applyCloudQuoteVerification(
+  verified: UpstreamAttestationVerifyResult,
+  quote: string | undefined
+): Promise<UpstreamAttestationVerifyResult> {
+  if (!quote || !cloudVerifyEnabled()) {
+    return verified;
+  }
+
+  const cloud = await verifyQuoteWithPhalaCloud(quote);
+  const checks = [
+    ...verified.checks,
+    {
+      id: 'intel_quote_cloud_verified',
+      passed: cloud.passed,
+      detail: cloud.detail,
+    },
+  ];
+
+  return {
+    ...verified,
+    checks,
+    valid: verified.valid && cloud.passed,
+  };
+}
 
 export type {
   UpstreamAttestationVerifyResult,
@@ -94,13 +134,14 @@ export async function verifyUpstreamTeeAttestation(
     signingAddress: input.signingAddress,
   });
 
-  const verified: UpstreamAttestationVerifyResult = verifyUpstreamAttestationReport({
+  let verified: UpstreamAttestationVerifyResult = verifyUpstreamAttestationReport({
     vendor: input.vendor,
     modelId: input.modelId,
     nonce,
     report,
     mockMode,
   });
+  verified = await applyCloudQuoteVerification(verified, readIntelQuoteFromReport(report));
 
   const signingKey =
     typeof report.signing_key === 'string'

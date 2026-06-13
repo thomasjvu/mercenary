@@ -4,6 +4,7 @@ import { verifyUpstreamAttestationReport } from '@bossraid/privacy-engine';
 import { ensureRecordInput, ensureStringInput } from '../lib/account.js';
 import { fetchUpstreamAttestationReport, generateAttestationNonce } from '../lib/upstream/index.js';
 import { verifySellerUpstreamTeeAttestation } from '../lib/upstream-tee-service.js';
+import { isUpstreamTeeMock } from '../lib/upstream-mock.js';
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../api-handlers.js';
 
@@ -103,6 +104,7 @@ export function registerMarketplaceTeeRoutes(
       apiKey,
       instanceId,
       nonce,
+      env,
     });
 
     const cacheKey = `${provider}:${modelId}:${sellerId ?? 'platform'}`;
@@ -194,6 +196,7 @@ export function registerMarketplaceTeeRoutes(
       modelId,
       nonce,
       report,
+      mockMode: isUpstreamTeeMock(env),
     });
 
     return {

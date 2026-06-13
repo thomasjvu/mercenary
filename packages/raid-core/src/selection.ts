@@ -320,10 +320,16 @@ export function selectProviders(
       selectionScore: computeSelectionScore(provider, task),
       privacyScore: computePrivacyScore(provider.privacy),
     }));
-  const veniceEligible = taskUsesVenicePrivateLane(task)
+  const venicePrivateLane = taskUsesVenicePrivateLane(task);
+  const veniceEligible = venicePrivateLane
     ? eligible.filter((item) => providerIsVeniceBacked(item.provider))
     : [];
-  const routingPool = veniceEligible.length > 0 ? veniceEligible : eligible;
+
+  if (venicePrivateLane && veniceEligible.length === 0) {
+    return { primaries: [], reserves: [] };
+  }
+
+  const routingPool = venicePrivateLane ? veniceEligible : eligible;
   const ranked = routingPool.sort((left, right) => compareProviders(left, right, task));
 
   let nextRoundRobinCursor = options.roundRobinCursor;
