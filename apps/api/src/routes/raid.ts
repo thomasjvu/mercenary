@@ -24,7 +24,6 @@ function registerRaidDetailRoutes(
   const basePath = '/v1/raid';
   const { requireRaidReadAccess, readRaidAccessTokenQuery, requireAdmin } = handlers.auth;
   const { ensureSettlementProofState, getRaidId } = handlers.raid;
-  const { recordMarketplaceLedgersFromRaid } = handlers.payment;
 
   app.get(`${basePath}/:raidId`, async (request, reply) => {
     const raidId = getRaidId(request);
@@ -44,15 +43,7 @@ function registerRaidDetailRoutes(
     }
 
     await ensureSettlementProofState(raidId);
-    const result = ctx.orchestrator.getResult(raidId);
-    if (result.status === 'final') {
-      recordMarketplaceLedgersFromRaid({
-        raidId,
-        route: 'raid',
-        skipBuyerPurchase: true,
-      });
-    }
-    return serializeRaidResult(result);
+    return serializeRaidResult(ctx.orchestrator.getResult(raidId));
   });
 
   app.get(`${basePath}/:raidId/agent_log.json`, async (request, reply) => {

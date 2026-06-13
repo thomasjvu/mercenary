@@ -1,4 +1,4 @@
-import { annotateRoutingProof, buildRoutingProof, rankSubmissions } from '@bossraid/raid-core';
+import { annotateRoutingProof, buildRoutingProof } from '@bossraid/raid-core';
 import type {
   BossRaidRoutingProof,
   BossRaidStatusOutput,
@@ -10,8 +10,8 @@ import {
   TERMINAL_RAID_STATUSES,
   buildAdaptivePlanningOutput,
   buildRaidStatusOutput,
+  refreshRaidRankings,
 } from './raid-state.js';
-import { buildSynthesizedOutput } from './synthesis.js';
 
 export type RaidLookup = (raidId: string) => RaidRecord;
 export type ProviderLookup = (providerId: string) => ProviderProfile | undefined;
@@ -39,16 +39,12 @@ export function refreshParentRaidFromChildren(raidId: string, getRaid: RaidLooku
     }
     return childRaid;
   });
-  const rankedSubmissions = rankSubmissions(
-    childRaids.flatMap((childRaid) => childRaid.rankedSubmissions)
-  );
+  const rankedSubmissions = childRaids.flatMap((childRaid) => childRaid.rankedSubmissions);
   const firstValidSubmission = rankedSubmissions.find((entry) => entry.breakdown.valid);
 
-  raid.rankedSubmissions = rankedSubmissions;
-  raid.bestCurrentScore = rankedSubmissions[0]?.breakdown.finalScore;
+  refreshRaidRankings(raid, rankedSubmissions);
   raid.primarySubmissionId = firstValidSubmission?.submission.providerId;
   raid.firstValidSubmissionId = firstValidSubmission?.submission.providerId;
-  raid.synthesizedOutput = buildSynthesizedOutput(raid);
   raid.updatedAt = new Date().toISOString();
 
   if (TERMINAL_RAID_STATUSES.has(raid.status)) {

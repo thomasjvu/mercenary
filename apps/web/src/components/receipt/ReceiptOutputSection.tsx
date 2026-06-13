@@ -10,7 +10,7 @@ import {
   selectSynthesizedArtifacts,
   selectWorkstreams,
 } from '../../lib/raid-result-view';
-import { ReceiptStat } from './ReceiptPrimitives';
+import { ReceiptStat } from '@bossraid/ui';
 
 type ReceiptOutputSectionProps = {
   result: RaidResult | undefined;

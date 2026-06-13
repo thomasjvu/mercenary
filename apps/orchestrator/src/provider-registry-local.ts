@@ -64,12 +64,9 @@ export type DropProviderAliasesOptions = {
   preserveSeededProvider: boolean;
 };
 
-export type ProviderRegistryMaps = {
-  providers: Map<string, ProviderProfile>;
-  providerRuntimes: Map<string, RaidProvider>;
-  providerHealthCache: { delete: (providerId: string) => void };
-  seededProviderIds: Set<string>;
-};
+import type { ProviderRegistryMaps } from './orchestrator-persistence.js';
+
+export type { ProviderRegistryMaps };
 
 export function dropProviderAliases(
   provider: ProviderProfile,

@@ -3,6 +3,7 @@ import { isUpstreamProviderId } from '@bossraid/constants';
 import { useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { API_BASE } from '../../api/client.js';
+import { buildInferenceCurlSnippet } from '../../lib/inference-curl.js';
 import { verifyMarketplaceTeeAttestation } from '../../api/marketplace-tee.js';
 import { fetchMarkets, runInferenceChatCompletion } from '../../api/marketplace.js';
 
@@ -116,15 +117,16 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
   }, [copiedKey]);
 
   const strictE2ee = privacyMode === 'strict' && selectedModel?.e2ee;
-  const curlSnippet = strictE2ee
-    ? `curl -X POST ${API_BASE}/v1/inference/chat/completions \\
-  -H "x-bossraid-upstream-api-key: vn_..." \\
-  -H "content-type: application/json" \\
-  -d '{"model":"${model || 'e2ee-gemma-4-26b-a4b-uncensored-p'}","stream":true,"messages":[{"role":"user","content":"${prompt.replace(/"/g, '\\"')}"}],"raid_policy":{"privacy_mode":"strict"}}'`
-    : `curl -X POST ${API_BASE}/v1/inference/chat/completions \\
-  -H "authorization: Bearer br_..." \\
-  -H "content-type: application/json" \\
-  -d '{"model":"${model || 'venice-uncensored-1-2'}","stream":true,"messages":[{"role":"user","content":"${prompt.replace(/"/g, '\\"')}"}],"raid_policy":{"max_total_cost":${maxBudget || '1'},"privacy_mode":"${privacyMode}"}}'`;
+  const curlSnippet = buildInferenceCurlSnippet({
+    apiBase: API_BASE,
+    model: model || (strictE2ee ? 'e2ee-gemma-4-26b-a4b-uncensored-p' : 'venice-uncensored-1-2'),
+    prompt,
+    stream: true,
+    maxBudgetUsd: maxBudget || '1',
+    privacyMode,
+    strictE2ee,
+    relativePath: true,
+  });
 
   const responseSnippet = rawResponse
     ? JSON.stringify(rawResponse, null, 2)

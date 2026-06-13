@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import useSWR from 'swr';
 import { API_BASE, fetchMarkets } from '../api';
+import { buildInferenceCurlSnippet } from '../lib/inference-curl.js';
 import { ApiReadinessBanner } from '../components/system/ApiReadinessBanner.js';
 import { buildApiReadinessHint, readApiErrorMessage } from '../lib/api-readiness.js';
 import { MarketDiscountChart } from '../components/marketplace/MarketDiscountChart.js';
@@ -166,10 +167,14 @@ function QuickstartCard({ marketModelId }: { marketModelId?: string }) {
   const model = marketModelId ?? 'gpt-5.5';
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
-  const code = `curl -X POST ${API_BASE}/v1/inference/chat/completions \\
-  -H "authorization: Bearer br_..." \\
-  -H "content-type: application/json" \\
-  -d '{"model":"${model}","messages":[{"role":"user","content":"Run on the cheapest verified seller."}],"raid_policy":{"max_total_cost":1,"privacy_mode":"prefer"}}'`;
+  const code = buildInferenceCurlSnippet({
+    apiBase: API_BASE,
+    model,
+    prompt: 'Run on the cheapest verified seller.',
+    maxBudgetUsd: 1,
+    privacyMode: 'prefer',
+    relativePath: true,
+  });
 
   async function handleCopy() {
     try {

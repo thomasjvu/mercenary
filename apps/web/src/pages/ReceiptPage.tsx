@@ -18,7 +18,7 @@ import { ReceiptAttestationSection } from '../components/receipt/ReceiptAttestat
 import { ReceiptOutputSection } from '../components/receipt/ReceiptOutputSection';
 import { ReceiptProviderList } from '../components/receipt/ReceiptProviderList';
 import { ReceiptQueryForm } from '../components/receipt/ReceiptQueryForm';
-import { SummaryPill } from '../components/receipt/ReceiptPrimitives';
+import { SummaryPill } from '@bossraid/ui';
 import { useReceiptAttestation } from '../hooks/useReceiptAttestation';
 import { useReceiptQuery } from '../hooks/useReceiptQuery';
 import { buildReceiptUpstreamAttestations } from '../lib/receipt-attestation-view';

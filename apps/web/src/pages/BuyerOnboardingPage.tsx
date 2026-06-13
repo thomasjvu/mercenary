@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { createBuyerApiKey, fetchSession } from '../api';
 import { useWalletAuth } from '../hooks/useWalletAuth';
+import { buildInferenceCurlSnippet } from '../lib/inference-curl.js';
 
 export function BuyerOnboardingPage() {
   const { session, setSession, status, setStatus, isAuthenticated } = useWalletAuth(
@@ -109,10 +110,14 @@ export function BuyerOnboardingPage() {
         <article className="beta-panel beta-panel--wide">
           <p className="eyebrow">3 / test request</p>
           <h2>Call the discount lane.</h2>
-          <pre className="code-panel">{`curl -X POST /api/v1/inference/chat/completions \\
-  -H "authorization: Bearer ${apiKey || 'br_...'}" \\
-  -H "content-type: application/json" \\
-  -d '{"model":"gpt-5.5","messages":[{"role":"user","content":"Use the cheapest verified seller."}],"raid_policy":{"max_total_cost":1,"privacy_mode":"prefer"}}'`}</pre>
+          <pre className="code-panel">
+            {buildInferenceCurlSnippet({
+              apiBase: '/api',
+              model: 'gpt-5.5',
+              apiKey: apiKey || 'br_...',
+              relativePath: true,
+            })}
+          </pre>
         </article>
       </div>
     </section>

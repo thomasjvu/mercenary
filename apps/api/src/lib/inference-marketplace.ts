@@ -6,6 +6,8 @@ import {
   type ProviderProfile,
   asSingleHeader,
 } from '@bossraid/shared-types';
+import { safeEqualString } from './http.js';
+import type { MarketplaceQueryParams } from './marketplace-query.js';
 
 /** Reference profile for comparing token-metered sellers on the public marketplace. */
 export const MARKETPLACE_REFERENCE_INPUT_TOKENS = 1_000;
@@ -129,14 +131,77 @@ export function forceDiscountInferenceChatPolicy(
 }
 
 export function readTrustedAlkahestClient(
-  headers: Record<string, string | string[] | undefined>
+  headers: Record<string, string | string[] | undefined>,
+  options: {
+    trustedKey?: string;
+  } = {}
 ): { sourceAppId: 'alkahest' } | undefined {
   const clientId = asSingleHeader(headers['x-bossraid-client-id']);
   const sourceAppId = asSingleHeader(headers['x-bossraid-source-app-id']);
   if (clientId !== 'alkahest' && sourceAppId !== 'alkahest') {
     return undefined;
   }
+
+  const trustedKey = options.trustedKey?.trim();
+  if (!trustedKey) {
+    return undefined;
+  }
+  if (!safeEqualString(asSingleHeader(headers.authorization), `Bearer ${trustedKey}`)) {
+    return undefined;
+  }
+
   return { sourceAppId: 'alkahest' };
+}
+
+export function filterEligibleMarketplaceProviders(
+  providers: ProviderProfile[],
+  options: MarketplaceQueryParams = {}
+): ProviderProfile[] {
+  return providers.filter((provider) => {
+    if (options.modelId && provider.modelId !== options.modelId) {
+      return false;
+    }
+    if (options.modelProvider && provider.modelProvider !== options.modelProvider) {
+      return false;
+    }
+    if (options.agentFramework && provider.agentFramework !== options.agentFramework) {
+      return false;
+    }
+    if (
+      typeof options.maxBudgetUsd === 'number' &&
+      readProviderMarketRateUsd(provider) > options.maxBudgetUsd
+    ) {
+      return false;
+    }
+    if (
+      options.verificationStatus &&
+      (provider.verification?.status ?? 'pending') !== options.verificationStatus
+    ) {
+      return false;
+    }
+    if (options.privacyMode === 'strict' && !providerHasStrictPrivateMarketMetadata(provider)) {
+      return false;
+    }
+    if ((provider.marketplaceOfferStatus ?? 'active') === 'paused') {
+      return false;
+    }
+    return Boolean(resolveProviderMarketModelId(provider));
+  });
+}
+
+export function buildInferenceMarketSnapshot(
+  providers: ProviderProfile[],
+  options: MarketplaceQueryParams = {}
+): InferenceMarket[] {
+  const filteredProviders = filterEligibleMarketplaceProviders(providers, options);
+  const markets = mergeInferenceCatalogMarkets(buildInferenceMarkets(filteredProviders));
+  if (options.modelId) {
+    return markets.filter((market) => market.modelId === options.modelId);
+  }
+  if (options.modelProvider) {
+    return markets.filter((market) => market.modelProvider === options.modelProvider);
+  }
+  return markets;
 }
 
 function readPrivacyMode(

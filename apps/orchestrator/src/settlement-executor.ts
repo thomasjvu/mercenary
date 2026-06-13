@@ -5,8 +5,8 @@ import { getAddress } from 'viem';
 import {
   buildArtifactPath,
   buildFileArtifact,
+  buildSettlementExecutionRecord,
   createExecutionPayload,
-  getSuccessfulProviderIds,
   normalizeProviderAddressMap,
   writeArtifactFile,
 } from './settlement-artifacts.js';
@@ -14,7 +14,7 @@ import {
   normalizePrivateKey,
   OnchainSettlementExecutor,
   type SettlementExecuteOptions,
-} from './settlement-onchain.js';
+} from './settlement-onchain-executor.js';
 
 export type { SettlementExecuteOptions };
 
@@ -63,22 +63,17 @@ class FileSettlementExecutor implements SettlementExecutor {
     );
     await writeArtifactFile(artifactPath, artifact);
 
-    return {
+    return buildSettlementExecutionRecord({
       mode: 'file',
-      proofStandard: 'erc8183_aligned',
       lifecycleStatus: artifact.lifecycleStatus,
       executedAt: payload.executedAt,
       artifactPath,
       registryRaidRef: artifact.registryRaidRef,
       taskHash: payload.taskHash,
       evaluationHash: payload.evaluationHash,
-      successfulProviderIds: getSuccessfulProviderIds(payload.allocations),
       allocations: payload.allocations,
-      contracts: artifact.contracts,
-      registryCall: artifact.registryCall,
-      childJobs: artifact.childJobs,
-      warnings: artifact.warnings,
-    };
+      artifact,
+    });
   }
 }
 

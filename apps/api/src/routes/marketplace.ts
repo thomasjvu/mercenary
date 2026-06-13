@@ -1,6 +1,7 @@
 import { type FastifyInstance } from 'fastify';
 import {
   buildInferenceMarkets,
+  buildInferenceMarketSnapshot,
   mergeInferenceCatalogMarkets,
   buildOpenAiCompatibleModelEntry,
   buildInferencePriceEntry,
@@ -13,16 +14,49 @@ import {
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../handlers/index.js';
 
+function buildPublicMarketplaceStats(
+  providers: ReturnType<ApiContext['orchestrator']['listProviders']>,
+  controlState: ApiContext['controlState']
+) {
+  const activeOffers = providers.filter(
+    (provider) =>
+      (provider.marketplaceOfferStatus ?? 'active') === 'active' && provider.status !== 'offline'
+  ).length;
+  const sellerPayouts = controlState.listSellerPayouts(
+    providers.map((provider) => provider.providerId),
+    MARKETPLACE_PUBLIC_PAYOUT_SCAN_LIMIT
+  );
+  const metrics24h = computeSellerPayout24hMetrics(sellerPayouts);
+  const modelsLive = mergeInferenceCatalogMarkets(
+    buildInferenceMarkets(
+      providers.filter(
+        (provider) => (provider.marketplaceOfferStatus ?? 'active') === 'active' && provider.modelId
+      )
+    )
+  ).length;
+
+  return {
+    activeOffers,
+    sellerOffersActive: providers.filter(
+      (provider) => (provider.marketplaceOfferStatus ?? 'active') === 'active'
+    ).length,
+    modelsLive,
+    routedRequests24h: metrics24h.routedRequests24h,
+    earnedBySellers24hUsd: metrics24h.earnedBySellers24hUsd,
+  };
+}
+
 export function registerMarketplaceRoutes(
   app: FastifyInstance,
   ctx: ApiContext,
-  handlers: ApiHandlerGroups
+  _handlers: ApiHandlerGroups
 ): void {
   const { orchestrator, env, controlState } = ctx;
-  const { buildInferenceMarketSnapshot } = handlers.raid;
+  const listSnapshotMarkets = (query: ReturnType<typeof parseMarketplaceQuery>) =>
+    buildInferenceMarketSnapshot(orchestrator.listProviders(), query);
 
   app.get('/v1/models', async (request) => {
-    const markets = buildInferenceMarketSnapshot(parseMarketplaceQuery(request.query));
+    const markets = listSnapshotMarkets(parseMarketplaceQuery(request.query));
 
     return {
       object: 'list',
@@ -38,32 +72,24 @@ export function registerMarketplaceRoutes(
         url: 'https://models.dev/api.json',
         mode: 'static_reference_only',
       },
-      data: buildInferenceMarketSnapshot(parseMarketplaceQuery(request.query)).map((market) =>
+      data: listSnapshotMarkets(parseMarketplaceQuery(request.query)).map((market) =>
         buildInferencePriceEntry(market)
       ),
     };
   });
 
   app.get('/v1/markets', async (request) => {
-    const marketData = buildInferenceMarketSnapshot(parseMarketplaceQuery(request.query));
+    const marketData = listSnapshotMarkets(parseMarketplaceQuery(request.query));
     const providers = orchestrator.listProviders();
-    const activeOffers = providers.filter(
-      (provider) =>
-        (provider.marketplaceOfferStatus ?? 'active') === 'active' && provider.status !== 'offline'
-    ).length;
-    const sellerPayouts = controlState.listSellerPayouts(
-      providers.map((provider) => provider.providerId),
-      MARKETPLACE_PUBLIC_PAYOUT_SCAN_LIMIT
-    );
-    const metrics24h = computeSellerPayout24hMetrics(sellerPayouts);
+    const stats = buildPublicMarketplaceStats(providers, controlState);
 
     return {
       object: 'list',
       stats: {
-        activeOffers,
+        activeOffers: stats.activeOffers,
         modelsLive: marketData.length,
-        routedRequests24h: metrics24h.routedRequests24h,
-        earnedBySellers24hUsd: metrics24h.earnedBySellers24hUsd,
+        routedRequests24h: stats.routedRequests24h,
+        earnedBySellers24hUsd: stats.earnedBySellers24hUsd,
       },
       settlement: {
         asset: 'USDC',
@@ -82,31 +108,6 @@ export function registerMarketplaceRoutes(
 
   app.get('/v1/marketplace/stats', async () => {
     const providers = orchestrator.listProviders();
-    const markets = mergeInferenceCatalogMarkets(
-      buildInferenceMarkets(
-        providers.filter(
-          (provider) =>
-            (provider.marketplaceOfferStatus ?? 'active') === 'active' && provider.modelId
-        )
-      )
-    );
-    const sellerPayouts = controlState.listSellerPayouts(
-      providers.map((provider) => provider.providerId),
-      MARKETPLACE_PUBLIC_PAYOUT_SCAN_LIMIT
-    );
-    const metrics24h = computeSellerPayout24hMetrics(sellerPayouts);
-    return {
-      activeOffers: providers.filter(
-        (provider) =>
-          (provider.marketplaceOfferStatus ?? 'active') === 'active' &&
-          provider.status !== 'offline'
-      ).length,
-      sellerOffersActive: providers.filter(
-        (provider) => (provider.marketplaceOfferStatus ?? 'active') === 'active'
-      ).length,
-      modelsLive: markets.length,
-      routedRequests24h: metrics24h.routedRequests24h,
-      earnedBySellers24hUsd: metrics24h.earnedBySellers24hUsd,
-    };
+    return buildPublicMarketplaceStats(providers, controlState);
   });
 }

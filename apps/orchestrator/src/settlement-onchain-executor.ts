@@ -1,4 +1,5 @@
 import { DEFAULTS } from '@bossraid/constants';
+import { buildChildJobNextAction } from '@bossraid/raid-core';
 import type { RaidRecord, SettlementExecutionRecord } from '@bossraid/shared-types';
 import {
   defineChain,
@@ -15,6 +16,7 @@ import {
 import { privateKeyToAccount } from 'viem/accounts';
 import {
   buildArtifactPath,
+  buildSettlementExecutionRecord,
   createExecutionPayload,
   getSuccessfulProviderIds,
   isTerminalChildJobStatus,
@@ -306,7 +308,7 @@ export class OnchainSettlementExecutor {
       }
 
       if (!providerActor) {
-        childJob.nextAction = 'Provider submit is still required from the provider wallet.';
+        childJob.nextAction = buildChildJobNextAction('complete', 'funded', budgetAtomic);
         warnings.push(
           `${allocation.providerId}: successful child job is funded but still awaiting provider submit.`
         );
@@ -333,8 +335,7 @@ export class OnchainSettlementExecutor {
       childJob.lifecycleStatus = 'submitted';
 
       if (!this.evaluatorActor) {
-        childJob.nextAction =
-          'Evaluator completion is still required from the configured evaluator wallet.';
+        childJob.nextAction = buildChildJobNextAction('complete', 'submitted', budgetAtomic);
         warnings.push(
           `${allocation.providerId}: successful child job is submitted but still awaiting evaluator completion.`
         );
@@ -413,25 +414,22 @@ export class OnchainSettlementExecutor {
     };
     await writeArtifactFile(artifactPath, artifact);
 
-    return {
+    return buildSettlementExecutionRecord({
       mode: 'onchain',
-      proofStandard: 'erc8183_aligned',
       lifecycleStatus: artifact.lifecycleStatus,
       executedAt: payload.executedAt,
       artifactPath,
       registryRaidRef: raidId.toString(),
       taskHash: payload.taskHash,
       evaluationHash: payload.evaluationHash,
-      successfulProviderIds: getSuccessfulProviderIds(payload.allocations),
       allocations: payload.allocations,
-      contracts: artifact.contracts,
-      registryCall: artifact.registryCall,
-      childJobs: artifact.childJobs,
-      finalizeTxHash,
-      transactionHashes,
-      jobIds,
-      warnings: artifact.warnings,
-    };
+      artifact,
+      extras: {
+        finalizeTxHash,
+        transactionHashes,
+        jobIds,
+      },
+    });
   }
 
   private async waitForReceipt(hash: Hash) {

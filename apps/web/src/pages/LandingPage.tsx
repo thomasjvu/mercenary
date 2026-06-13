@@ -8,17 +8,22 @@ import {
   TerminalCodePanel,
   type TerminalPanelLayer,
 } from '../components/terminal/TerminalCodePanel.js';
+import { buildInferenceCurlSnippet, resolvePublicApiBase } from '../lib/inference-curl.js';
 
-const PUBLIC_API_BASE = normalizePublicApiBase(
+const PUBLIC_API_BASE = resolvePublicApiBase(
   (import.meta.env.VITE_BOSSRAID_API_BASE as string | undefined) ??
-    (import.meta.env.VITE_BOSSRAID_WEB_API_BASE as string | undefined) ??
-    '$BOSSRAID_API_BASE'
+    (import.meta.env.VITE_BOSSRAID_WEB_API_BASE as string | undefined)
 );
 const PANELS = ['chat', 'raid', 'mcp'] as const;
 
-const CHAT_EXAMPLE = `curl -X POST ${PUBLIC_API_BASE}/v1/inference/chat/completions \\
-  -H "content-type: application/json" \\
-  -d '{"model":"venice-uncensored-1-2","messages":[{"role":"user","content":"Cheapest Venice inference."}],"raid_policy":{"privacy_mode":"prefer"}}'`;
+const CHAT_EXAMPLE = buildInferenceCurlSnippet({
+  apiBase: PUBLIC_API_BASE,
+  model: 'venice-uncensored-1-2',
+  prompt: 'Cheapest Venice inference.',
+  privacyMode: 'prefer',
+  includeAuth: false,
+  relativePath: !PUBLIC_API_BASE.startsWith('http'),
+});
 
 const RAID_EXAMPLE = `curl -X POST ${PUBLIC_API_BASE}/v1/raid \\
   -H "content-type: application/json" \\
@@ -66,10 +71,6 @@ type PanelKey = (typeof PANELS)[number];
 type LandingPageProps = {
   onNavigate: (path: AppRoute, options?: { mode?: 'inference' | 'raid'; modelId?: string }) => void;
 };
-
-function normalizePublicApiBase(value: string): string {
-  return value.endsWith('/') ? value.slice(0, -1) : value;
-}
 
 function getPanelLayer(activePanel: PanelKey, panel: PanelKey): TerminalPanelLayer {
   const activeIndex = PANELS.indexOf(activePanel);

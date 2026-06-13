@@ -7,13 +7,7 @@ import {
   persistSettlementExecutionArtifact,
   settlementExecutionChanged,
 } from '../settlement-proof.js';
-import {
-  buildInferenceMarkets,
-  mergeInferenceCatalogMarkets,
-  providerHasStrictPrivateMarketMetadata,
-  readProviderMarketRateUsd,
-  resolveProviderMarketModelId,
-} from '../lib/inference-marketplace.js';
+
 import { type ApiContext } from '../api-context.js';
 import { createAuthHandlers } from './auth.js';
 import { createPaymentHandlers } from './payment.js';
@@ -93,57 +87,6 @@ export function createRaidHandlers(
       assignment: raid.assignments[providerId],
       valid: ranked?.breakdown.valid ?? false,
     };
-  }
-
-  function buildInferenceMarketSnapshot(
-    options: {
-      modelId?: string;
-      modelProvider?: string;
-      agentFramework?: string;
-      maxBudgetUsd?: number;
-      privacyMode?: string;
-      verificationStatus?: string;
-    } = {}
-  ) {
-    const providers = ctx.orchestrator.listProviders().filter((provider) => {
-      if (options.modelId && provider.modelId !== options.modelId) {
-        return false;
-      }
-      if (options.modelProvider && provider.modelProvider !== options.modelProvider) {
-        return false;
-      }
-      if (options.agentFramework && provider.agentFramework !== options.agentFramework) {
-        return false;
-      }
-      if (
-        typeof options.maxBudgetUsd === 'number' &&
-        readProviderMarketRateUsd(provider) > options.maxBudgetUsd
-      ) {
-        return false;
-      }
-      if (
-        options.verificationStatus &&
-        (provider.verification?.status ?? 'pending') !== options.verificationStatus
-      ) {
-        return false;
-      }
-      if (options.privacyMode === 'strict' && !providerHasStrictPrivateMarketMetadata(provider)) {
-        return false;
-      }
-      if ((provider.marketplaceOfferStatus ?? 'active') === 'paused') {
-        return false;
-      }
-      return Boolean(resolveProviderMarketModelId(provider));
-    });
-
-    const markets = mergeInferenceCatalogMarkets(buildInferenceMarkets(providers));
-    if (options.modelId) {
-      return markets.filter((market) => market.modelId === options.modelId);
-    }
-    if (options.modelProvider) {
-      return markets.filter((market) => market.modelProvider === options.modelProvider);
-    }
-    return markets;
   }
 
   function validateProviderCallback(
@@ -279,7 +222,6 @@ export function createRaidHandlers(
     buildProviderSettlementPayload,
     ensureErc8004ProofState,
     ensureSettlementProofState,
-    buildInferenceMarketSnapshot,
     validateProviderCallback,
     getRaidId,
     spawnParsedRaid,

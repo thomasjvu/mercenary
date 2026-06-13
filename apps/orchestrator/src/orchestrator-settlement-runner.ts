@@ -4,6 +4,7 @@ import type {
   RaidRecord,
   SettlementExecutionRecord,
 } from '@bossraid/shared-types';
+import { buildPrivacyFailureSettlementRecord } from './settlement-artifacts.js';
 import type { SettlementExecuteOptions } from './settlement-executor.js';
 
 export type OrchestratorSettlementRunnerDeps = {
@@ -44,47 +45,22 @@ export async function executeSettlement(
 
   const privacyConstraints = raid.task.constraints;
   const privacyMode = privacyConstraints.privacyMode ?? 'off';
-  if (privacyMode !== 'off' && privacyConstraints.requirePrivacyFeatures?.length) {
-    const complianceRecord = buildPrivacyComplianceRecord(
-      raid.id,
-      privacyMode,
-      privacyConstraints.requirePrivacyFeatures,
-      raid.rankedSubmissions,
-      raid.task.sanitizationReport
-    );
-    if (!complianceRecord.overallPassed) {
-      raid.settlementExecution = {
-        mode: 'file',
-        proofStandard: 'erc8183_aligned',
-        lifecycleStatus: 'synthetic',
-        executedAt: new Date().toISOString(),
-        artifactPath: '',
-        registryRaidRef: raid.id,
-        taskHash: '',
-        evaluationHash: '',
-        successfulProviderIds: [],
-        privacyCompliance: complianceRecord,
-        allocations: [],
-        contracts: {
-          registryAddress: null,
-          escrowAddress: null,
-          tokenAddress: null,
-          clientAddress: null,
-          evaluatorAddress: null,
-          chainId: null,
-          rpcUrl: null,
-        },
-        registryCall: {
-          method: 'finalizeRaid',
-          args: [raid.id, '0x0000000000000000000000000000000000000000'],
-        },
-        childJobs: [],
-        warnings: ['privacy-compliance-failed'],
-      };
-      raid.updatedAt = new Date().toISOString();
-      await deps.queuePersist();
-      return;
-    }
+  const privacyCompliance =
+    privacyMode !== 'off' && privacyConstraints.requirePrivacyFeatures?.length
+      ? buildPrivacyComplianceRecord(
+          raid.id,
+          privacyMode,
+          privacyConstraints.requirePrivacyFeatures,
+          raid.rankedSubmissions,
+          raid.task.sanitizationReport
+        )
+      : undefined;
+
+  if (privacyCompliance && !privacyCompliance.overallPassed) {
+    raid.settlementExecution = buildPrivacyFailureSettlementRecord(raid, privacyCompliance);
+    raid.updatedAt = new Date().toISOString();
+    await deps.queuePersist();
+    return;
   }
 
   const record = await deps.settlementExecutor.execute(
@@ -96,15 +72,8 @@ export async function executeSettlement(
   }
 
   raid.settlementExecution = record;
-  if (privacyMode !== 'off' && privacyConstraints.requirePrivacyFeatures?.length) {
-    const complianceRecord = buildPrivacyComplianceRecord(
-      raid.id,
-      privacyMode,
-      privacyConstraints.requirePrivacyFeatures,
-      raid.rankedSubmissions,
-      raid.task.sanitizationReport
-    );
-    raid.settlementExecution.privacyCompliance = complianceRecord;
+  if (privacyCompliance) {
+    raid.settlementExecution.privacyCompliance = privacyCompliance;
   }
   raid.updatedAt = new Date().toISOString();
   await deps.queuePersist();

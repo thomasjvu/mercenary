@@ -1,11 +1,16 @@
+import type { RaidProvider } from '@bossraid/provider-sdk';
 import type {
+  AgentHeartbeatInput,
   BossRaidReplayOutput,
   BossRaidResultOutput,
   BossRaidSpawnInput,
   BossRaidSpawnOutput,
   BossRaidStatusOutput,
+  ProviderDiscoveryQuery,
   ProviderFailure,
   ProviderHeartbeat,
+  ProviderProfile,
+  ProviderRegistrationInput,
   ProviderSubmission,
   RaidLaunchReservationRecord,
   RaidRecord,
@@ -21,12 +26,8 @@ import {
 import { TERMINAL_RAID_STATUSES } from './raid-state.js';
 import type { SettlementExecuteOptions } from './settlement-executor.js';
 import {
-  dispatchProvider as dispatchProviderToRuntime,
-  markTimedOut as markProviderTimedOut,
   resumeRaid as resumeRaidDispatch,
-  runHierarchicalRaid as runHierarchicalRaidDispatch,
   runRaid as runRaidDispatch,
-  type RaidProviderDispatchDeps,
 } from './raid-provider-dispatch.js';
 import { RaidDeadlineTimerRegistry } from './raid-timers.js';
 import {
@@ -42,10 +43,10 @@ import {
   type OrchestratorSettlementRunnerDeps,
 } from './orchestrator-settlement-runner.js';
 import {
-  buildAdaptiveReplanDeps,
-  buildPrepareRaidDeps,
-  buildRaidProviderDispatchDeps,
-  buildSpawnPreparedRaidDeps,
+  createAdaptiveReplanDeps,
+  createPrepareRaidDeps,
+  createRaidRunnerContext,
+  createSpawnPreparedRaidDeps,
   type RaidRunnerContext,
 } from './raid-runner-deps.js';
 import { refreshParentRaidFromChildren } from './raid-hierarchical.js';
@@ -54,12 +55,9 @@ import type { ProviderRegistryCoordinator } from './orchestrator-provider-regist
 import type { RuntimeOptions } from './runtime.js';
 import {
   abortRaid as abortRaidIngress,
-  markAssignmentFailed as markAssignmentFailedIngress,
-  markHeartbeat as markHeartbeatIngress,
   recordProviderFailure as recordProviderFailureIngress,
   recordProviderHeartbeat as recordProviderHeartbeatIngress,
   recordProviderSubmission as recordProviderSubmissionIngress,
-  submitResult as submitResultIngress,
   type RaidLifecycleIngressContext,
 } from './raid-lifecycle-ingress.js';
 import {
@@ -108,11 +106,36 @@ export class RaidLifecycleCoordinator {
   readonly launchReservations = new Map<string, RaidLaunchReservationRecord>();
   readonly timers = new ProviderTimerRegistry();
   readonly raidDeadlineTimers = new RaidDeadlineTimerRegistry();
+  private runnerContext?: RaidRunnerContext;
 
   constructor(
     private readonly options: RuntimeOptions,
     private readonly deps: RaidLifecycleCoordinatorDeps
   ) {}
+
+  registerProvider(provider: RaidProvider): void {
+    this.deps.providerRegistry.registerProvider(provider);
+  }
+
+  async upsertRegisteredProvider(input: ProviderRegistrationInput): Promise<ProviderProfile> {
+    return this.deps.providerRegistry.upsertRegisteredProvider(input);
+  }
+
+  async recordAgentHeartbeat(input: AgentHeartbeatInput): Promise<ProviderProfile | undefined> {
+    return this.deps.providerRegistry.recordAgentHeartbeat(input);
+  }
+
+  async discoverProviders(query: ProviderDiscoveryQuery = {}): Promise<ProviderProfile[]> {
+    return this.deps.providerRegistry.discoverProviders(query);
+  }
+
+  listProviders(): ProviderProfile[] {
+    return this.deps.providerRegistry.listProviders();
+  }
+
+  getProviderProfile(providerId: string): ProviderProfile | undefined {
+    return this.deps.providerRegistry.getProviderProfile(providerId);
+  }
 
   listRaids(): RaidRecord[] {
     return listRaidsQuery(this.queriesContext());
@@ -254,8 +277,8 @@ export class RaidLifecycleCoordinator {
       queuePersist: () => this.deps.queuePersist(),
       queuePersistBestEffort: () => this.deps.queuePersistBestEffort(),
       providerRegistry: this.deps.providerRegistry,
-      prepareRaidDeps: () => this.prepareRaidDeps(),
-      spawnPreparedRaidDeps: () => this.spawnPreparedRaidDeps(),
+      prepareRaidDeps: () => createPrepareRaidDeps(this.runner()),
+      spawnPreparedRaidDeps: () => createSpawnPreparedRaidDeps(this.runner()),
     };
   }
 
@@ -271,7 +294,7 @@ export class RaidLifecycleCoordinator {
   private ingressContext(): RaidLifecycleIngressContext {
     return {
       ...this.queriesContext(),
-      providerDispatchDeps: () => this.providerDispatchDeps(),
+      providerDispatchDeps: () => this.runner(),
       clearRaidDeadlineTimer: (raidId) => this.clearRaidDeadlineTimer(raidId),
       clearProviderTimers: (raidId, providerId) => this.clearProviderTimers(raidId, providerId),
       queuePersistBestEffort: () => this.deps.queuePersistBestEffort(),
@@ -279,35 +302,11 @@ export class RaidLifecycleCoordinator {
   }
 
   private async resumeRaid(raidId: string): Promise<void> {
-    await resumeRaidDispatch(raidId, this.providerDispatchDeps());
+    await resumeRaidDispatch(raidId, this.runner());
   }
 
   private async runRaid(raidId: string): Promise<void> {
-    await runRaidDispatch(raidId, this.providerDispatchDeps());
-  }
-
-  private async runHierarchicalRaid(raidId: string): Promise<void> {
-    await runHierarchicalRaidDispatch(raidId, this.providerDispatchDeps());
-  }
-
-  private async dispatchProvider(raidId: string, providerId: string): Promise<void> {
-    await dispatchProviderToRuntime(raidId, providerId, this.providerDispatchDeps());
-  }
-
-  private markHeartbeat(raidId: string, providerId: string, heartbeat: ProviderHeartbeat): void {
-    markHeartbeatIngress(this.ingressContext(), raidId, providerId, heartbeat);
-  }
-
-  private async submitResult(raidId: string, submission: ProviderSubmission): Promise<void> {
-    await submitResultIngress(this.ingressContext(), raidId, submission);
-  }
-
-  private markTimedOut(raidId: string, providerId: string, reason: string): void {
-    markProviderTimedOut(raidId, providerId, reason, this.providerDispatchDeps());
-  }
-
-  private markAssignmentFailed(raidId: string, providerId: string, reason: string): void {
-    markAssignmentFailedIngress(this.ingressContext(), raidId, providerId, reason);
+    await runRaidDispatch(raidId, this.runner());
   }
 
   private expireRaidAtDeadline(raidId: string): void {
@@ -385,9 +384,13 @@ export class RaidLifecycleCoordinator {
     await executeRaidSettlement(raidId, this.settlementRunnerDeps());
   }
 
-  private raidRunnerContext(): RaidRunnerContext {
+  private runner(): RaidRunnerContext {
+    if (this.runnerContext) {
+      return this.runnerContext;
+    }
+
     const registry = this.deps.providerRegistry;
-    return {
+    this.runnerContext = createRaidRunnerContext({
       requireRaid: (raidId) => this.requireRaid(raidId),
       getProvider: (providerId) => registry.providers.get(providerId),
       getProviderRuntime: (providerId) => registry.providerRuntimes.get(providerId),
@@ -422,23 +425,9 @@ export class RaidLifecycleCoordinator {
         requireRaid: (raidId: string) => this.requireRaid(raidId),
         scheduleRaidDeadline: (raidId: string) => this.scheduleRaidDeadline(raidId),
       }),
-    };
-  }
+    });
 
-  private providerDispatchDeps(): RaidProviderDispatchDeps {
-    return buildRaidProviderDispatchDeps(this.raidRunnerContext());
-  }
-
-  private prepareRaidDeps() {
-    return buildPrepareRaidDeps(this.raidRunnerContext());
-  }
-
-  private spawnPreparedRaidDeps() {
-    return buildSpawnPreparedRaidDeps(this.raidRunnerContext());
-  }
-
-  private adaptiveReplanDeps() {
-    return buildAdaptiveReplanDeps(this.raidRunnerContext());
+    return this.runnerContext;
   }
 
   private settlementRunnerDeps(): OrchestratorSettlementRunnerDeps {
@@ -462,7 +451,7 @@ export class RaidLifecycleCoordinator {
       queuePersistBestEffort: () => this.deps.queuePersistBestEffort(),
       executeSettlement: (raidId) => this.executeSettlement(raidId),
       raidDeadlineReached: (raid) => this.raidDeadlineReached(raid),
-      adaptiveReplanDeps: () => this.adaptiveReplanDeps(),
+      adaptiveReplanDeps: () => createAdaptiveReplanDeps(this.runner()),
     };
   }
 }

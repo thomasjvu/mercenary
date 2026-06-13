@@ -39,12 +39,10 @@ export function buildSynthesizedOutput(raid: RaidRecord): BossRaidSynthesizedOut
   const primaryType = raid.task.output?.primaryType ?? 'patch';
   const workstreams = buildWorkstreams(primaryType, approved);
 
-  return primaryType === 'patch'
-    ? buildPatchSynthesis(primaryType, approved, droppedProviderIds, workstreams)
-    : buildTextSynthesis(primaryType, approved, droppedProviderIds, workstreams);
+  return buildTypeSynthesis(primaryType, approved, droppedProviderIds, workstreams);
 }
 
-function buildTextSynthesis(
+function buildTypeSynthesis(
   primaryType: OutputType,
   approved: RankedSubmission[],
   droppedProviderIds: string[],
@@ -56,21 +54,10 @@ function buildTextSynthesis(
   const supportingProviderIds = approved
     .map((item) => item.submission.providerId)
     .filter((providerId) => providerId !== baseProviderId);
-  const answerText = buildCanonicalTextAnswer(baseWorkstream, supportingWorkstreams);
-
-  return {
-    mode: 'multi_agent_synthesis',
+  const shared = {
+    mode: 'multi_agent_synthesis' as const,
     primaryType,
-    answerText,
-    artifacts: collectArtifactsFromWorkstreams(workstreams),
-    explanation: buildSynthesisProofSummary(
-      'response',
-      approved.length,
-      workstreams.length,
-      baseWorkstream.label,
-      baseProviderId,
-      droppedProviderIds
-    ),
+    artifacts: dedupeArtifacts(workstreams.flatMap((workstream) => workstream.artifacts ?? [])),
     baseSubmissionProviderId: baseProviderId,
     contributingProviderIds: approved.map((item) => item.submission.providerId),
     supportingProviderIds,
@@ -86,60 +73,45 @@ function buildTextSynthesis(
     })),
     workstreams,
   };
-}
 
-function buildPatchSynthesis(
-  primaryType: OutputType,
-  approved: RankedSubmission[],
-  droppedProviderIds: string[],
-  workstreams: BossRaidSynthesizedWorkstream[]
-): BossRaidSynthesizedOutput {
-  const baseWorkstream = selectBaseWorkstream(primaryType, workstreams);
-  const baseProviderId = baseWorkstream.baseSubmissionProviderId;
-  const supportingWorkstreams = workstreams.filter((item) => item.id !== baseWorkstream.id);
-  const supportingProviderIds = approved
-    .map((item) => item.submission.providerId)
-    .filter((providerId) => providerId !== baseProviderId);
+  if (primaryType === 'patch') {
+    return {
+      ...shared,
+      patchUnifiedDiff:
+        baseWorkstream.patchUnifiedDiff ??
+        approved.find((item) => hasPatch(item.submission.patchUnifiedDiff))?.submission
+          .patchUnifiedDiff,
+      explanation: [
+        buildSynthesisProofSummary(
+          'patch',
+          approved.length,
+          workstreams.length,
+          baseWorkstream.label,
+          baseProviderId,
+          droppedProviderIds
+        ),
+        supportingWorkstreams.length > 0
+          ? supportingWorkstreams
+              .map((item) => `${item.label}: ${item.shortSummary ?? item.summary}`)
+              .join(' ')
+          : undefined,
+      ]
+        .filter(Boolean)
+        .join(' '),
+    };
+  }
 
   return {
-    mode: 'multi_agent_synthesis',
-    primaryType,
-    patchUnifiedDiff:
-      baseWorkstream.patchUnifiedDiff ??
-      approved.find((item) => hasPatch(item.submission.patchUnifiedDiff))?.submission
-        .patchUnifiedDiff,
-    artifacts: collectArtifactsFromWorkstreams(workstreams),
-    explanation: [
-      buildSynthesisProofSummary(
-        'patch',
-        approved.length,
-        workstreams.length,
-        baseWorkstream.label,
-        baseProviderId,
-        droppedProviderIds
-      ),
-      supportingWorkstreams.length > 0
-        ? supportingWorkstreams
-            .map((item) => `${item.label}: ${item.shortSummary ?? item.summary}`)
-            .join(' ')
-        : undefined,
-    ]
-      .filter(Boolean)
-      .join(' '),
-    baseSubmissionProviderId: baseProviderId,
-    contributingProviderIds: approved.map((item) => item.submission.providerId),
-    supportingProviderIds,
-    droppedProviderIds,
-    contributions: approved.map((item) => ({
-      providerId: item.submission.providerId,
-      rank: item.rank,
-      finalScore: item.breakdown.finalScore,
-      roleId: item.submission.contributionRole?.id,
-      roleLabel: item.submission.contributionRole?.label,
-      workstreamId: item.submission.contributionRole?.workstreamId,
-      workstreamLabel: item.submission.contributionRole?.workstreamLabel,
-    })),
-    workstreams,
+    ...shared,
+    answerText: buildCanonicalTextAnswer(baseWorkstream, supportingWorkstreams),
+    explanation: buildSynthesisProofSummary(
+      'response',
+      approved.length,
+      workstreams.length,
+      baseWorkstream.label,
+      baseProviderId,
+      droppedProviderIds
+    ),
   };
 }
 
@@ -183,7 +155,9 @@ function buildWorkstream(
     workstreamPrimaryType === 'patch'
       ? cleanText(base.submission.explanation)
       : cleanText(base.submission.answerText ?? base.submission.explanation);
-  const artifacts = mergeArtifacts(group.entries);
+  const artifacts = dedupeArtifacts(
+    group.entries.flatMap((entry) => entry.submission.artifacts ?? [])
+  );
   const artifactSummary = summarizeArtifactLabels(artifacts);
   const supportingSignals = collectSupportingSignals(base, supportingEntries);
   const shortSummary = buildWorkstreamShortSummary(baseText);
@@ -475,44 +449,21 @@ function extractSignalCandidates(value: string | undefined): string[] {
     .filter((line) => line.length >= 18);
 }
 
-function mergeArtifacts(entries: RankedSubmission[]): SubmissionArtifact[] | undefined {
-  const artifacts: SubmissionArtifact[] = [];
+function dedupeArtifacts(artifacts: SubmissionArtifact[]): SubmissionArtifact[] | undefined {
+  const deduped: SubmissionArtifact[] = [];
   const seen = new Set<string>();
 
-  for (const entry of entries) {
-    for (const artifact of entry.submission.artifacts ?? []) {
-      const key = `${artifact.outputType}:${artifact.uri}`;
-      if (seen.has(key)) {
-        continue;
-      }
-
-      seen.add(key);
-      artifacts.push(artifact);
+  for (const artifact of artifacts) {
+    const key = `${artifact.outputType}:${artifact.uri}`;
+    if (seen.has(key)) {
+      continue;
     }
+
+    seen.add(key);
+    deduped.push(artifact);
   }
 
-  return artifacts.length > 0 ? artifacts : undefined;
-}
-
-function collectArtifactsFromWorkstreams(
-  workstreams: BossRaidSynthesizedWorkstream[]
-): SubmissionArtifact[] | undefined {
-  const artifacts: SubmissionArtifact[] = [];
-  const seen = new Set<string>();
-
-  for (const workstream of workstreams) {
-    for (const artifact of workstream.artifacts ?? []) {
-      const key = `${artifact.outputType}:${artifact.uri}`;
-      if (seen.has(key)) {
-        continue;
-      }
-
-      seen.add(key);
-      artifacts.push(artifact);
-    }
-  }
-
-  return artifacts.length > 0 ? artifacts : undefined;
+  return deduped.length > 0 ? deduped : undefined;
 }
 
 function summarizeArtifactLabels(artifacts: SubmissionArtifact[] | undefined): string | undefined {

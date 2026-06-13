@@ -1,5 +1,3 @@
-import { evaluateSubmission } from '@bossraid/evaluation';
-import { rankSubmissions } from '@bossraid/raid-core';
 import type {
   BossRaidReplayOutput,
   BossRaidResultOutput,
@@ -15,6 +13,7 @@ import {
 } from './raid-hierarchical.js';
 import { buildAdaptivePlanningOutput } from './raid-state.js';
 import { buildSettlementSummary } from './settlement.js';
+import { reEvaluateRaidSubmissions } from './raid-state.js';
 import { buildSynthesizedOutput } from './synthesis.js';
 import type { ProviderRegistryCoordinator } from './orchestrator-provider-registry.js';
 
@@ -115,17 +114,7 @@ export async function replayEvaluation(
     const leafRaids = collectLeafRaids(raid, (childRaidId) => ctx.requireRaid(childRaidId));
     let reEvaluated = 0;
     for (const leafRaid of leafRaids) {
-      const leafResults = await Promise.all(
-        leafRaid.rankedSubmissions.map(async (entry) => ({
-          ...entry,
-          breakdown: await evaluateSubmission(leafRaid, entry.submission),
-        }))
-      );
-      leafRaid.rankedSubmissions = rankSubmissions(leafResults);
-      leafRaid.synthesizedOutput = buildSynthesizedOutput(leafRaid);
-      leafRaid.bestCurrentScore = leafRaid.rankedSubmissions[0]?.breakdown.finalScore;
-      leafRaid.updatedAt = new Date().toISOString();
-      reEvaluated += leafRaid.rankedSubmissions.length;
+      reEvaluated += await reEvaluateRaidSubmissions(leafRaid);
     }
 
     refreshParentRaidFromChildren(raidId, (childRaidId) => ctx.requireRaid(childRaidId));
@@ -137,19 +126,10 @@ export async function replayEvaluation(
     };
   }
 
-  const reEvaluated = await Promise.all(
-    raid.rankedSubmissions.map(async (entry) => ({
-      ...entry,
-      breakdown: await evaluateSubmission(raid, entry.submission),
-    }))
-  );
-  raid.rankedSubmissions = rankSubmissions(reEvaluated);
-  raid.synthesizedOutput = buildSynthesizedOutput(raid);
-  raid.bestCurrentScore = raid.rankedSubmissions[0]?.breakdown.finalScore;
-  raid.updatedAt = new Date().toISOString();
+  const reEvaluated = await reEvaluateRaidSubmissions(raid);
   await ctx.queuePersist();
   return {
     raidId,
-    reEvaluated: raid.rankedSubmissions.length,
+    reEvaluated,
   };
 }

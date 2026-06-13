@@ -66,6 +66,21 @@ test('x402 resource URLs preserve a configured path prefix', () => {
   assert.equal(paymentRequired.accepts[0]?.resource, 'http://35.198.249.153:8080/api/v1/raid');
 });
 
+test('x402 inference routes bind payment to the discount inference endpoint', () => {
+  const paymentRequired = buildX402PaymentRequired({
+    route: 'inference',
+    env: {
+      BOSSRAID_X402_RESOURCE_BASE_URL: 'http://127.0.0.1:8787',
+    },
+  });
+
+  assert.equal(
+    paymentRequired.accepts[0]?.resource,
+    'http://127.0.0.1:8787/v1/inference/chat/completions'
+  );
+  assert.equal(paymentRequired.accepts[0]?.description, 'Boss Raid discount inference request');
+});
+
 test('x402 payment requirements use v1 network aliases for evm chains', () => {
   const paymentRequired = buildX402PaymentRequired({
     route: 'raid',

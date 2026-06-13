@@ -9,6 +9,7 @@ import type {
   RaidRecord,
   RankedSubmission,
 } from '@bossraid/shared-types';
+import { evaluateSubmission } from '@bossraid/evaluation';
 import { buildSynthesizedOutput } from './synthesis.js';
 
 export const TERMINAL_ASSIGNMENT_STATUSES = new Set([
@@ -20,6 +21,24 @@ export const TERMINAL_ASSIGNMENT_STATUSES = new Set([
 ]);
 
 export { TERMINAL_RAID_STATUSES };
+
+export function refreshRaidRankings(raid: RaidRecord, submissions?: RankedSubmission[]): void {
+  raid.rankedSubmissions = rankSubmissions(submissions ?? raid.rankedSubmissions);
+  raid.bestCurrentScore = raid.rankedSubmissions[0]?.breakdown.finalScore;
+  raid.synthesizedOutput = buildSynthesizedOutput(raid);
+}
+
+export async function reEvaluateRaidSubmissions(raid: RaidRecord): Promise<number> {
+  const reEvaluated = await Promise.all(
+    raid.rankedSubmissions.map(async (entry) => ({
+      ...entry,
+      breakdown: await evaluateSubmission(raid, entry.submission),
+    }))
+  );
+  refreshRaidRankings(raid, reEvaluated);
+  raid.updatedAt = new Date().toISOString();
+  return raid.rankedSubmissions.length;
+}
 
 export function restorePersistedRaid(raid: RaidRecord): RaidRecord {
   const restored = structuredClone(raid) as RaidRecord;
@@ -113,9 +132,7 @@ export function applySubmissionToRaid(
     rank: raid.rankedSubmissions.length + 1,
   };
 
-  raid.rankedSubmissions = rankSubmissions([...raid.rankedSubmissions, next]);
-  raid.bestCurrentScore = raid.rankedSubmissions[0]?.breakdown.finalScore;
-  raid.synthesizedOutput = buildSynthesizedOutput(raid);
+  refreshRaidRankings(raid, [...raid.rankedSubmissions, next]);
   raid.updatedAt = new Date().toISOString();
 
   if (!raid.firstValidSubmissionId && breakdown.valid) {
@@ -203,12 +220,10 @@ export function shouldFinalizeRaid(raid: RaidRecord): boolean {
 }
 
 export function finalizeRaidRecord(raid: RaidRecord): void {
-  raid.rankedSubmissions = rankSubmissions(raid.rankedSubmissions);
+  refreshRaidRankings(raid);
   raid.primarySubmissionId = raid.rankedSubmissions.find(
     (item) => item.breakdown.valid
   )?.submission.providerId;
-  raid.synthesizedOutput = buildSynthesizedOutput(raid);
-  raid.bestCurrentScore = raid.rankedSubmissions[0]?.breakdown.finalScore;
   raid.status = 'final';
   raid.updatedAt = new Date().toISOString();
 }

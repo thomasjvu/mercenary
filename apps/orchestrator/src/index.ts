@@ -52,7 +52,7 @@ import {
 } from './orchestrator-raid-lifecycle.js';
 import type { OrchestratorProviderCapacityDeps } from './orchestrator-provider-capacity.js';
 import { readRaidRetentionTtlMs } from './raid-retention.js';
-import { findWorkspaceRoot, resolveWorkspacePath } from './workspace.js';
+import { findWorkspaceRoot, resolveWorkspacePath } from '@bossraid/constants/workspace';
 
 export { InvalidRaidLaunchReservationError, NoEligibleProvidersError } from './raid-launch.js';
 export { PersistenceUnavailableError } from './persistence-queue.js';
@@ -103,27 +103,27 @@ export class BossRaidOrchestrator {
   }
 
   registerProvider(provider: RaidProvider): void {
-    this.providerRegistry.registerProvider(provider);
+    this.raidLifecycle.registerProvider(provider);
   }
 
   async upsertRegisteredProvider(input: ProviderRegistrationInput): Promise<ProviderProfile> {
-    return this.providerRegistry.upsertRegisteredProvider(input);
+    return this.raidLifecycle.upsertRegisteredProvider(input);
   }
 
   async recordAgentHeartbeat(input: AgentHeartbeatInput): Promise<ProviderProfile | undefined> {
-    return this.providerRegistry.recordAgentHeartbeat(input);
+    return this.raidLifecycle.recordAgentHeartbeat(input);
   }
 
   async discoverProviders(query: ProviderDiscoveryQuery = {}): Promise<ProviderProfile[]> {
-    return this.providerRegistry.discoverProviders(query);
+    return this.raidLifecycle.discoverProviders(query);
   }
 
   listProviders(): ProviderProfile[] {
-    return this.providerRegistry.listProviders();
+    return this.raidLifecycle.listProviders();
   }
 
   getProviderProfile(providerId: string): ProviderProfile | undefined {
-    return this.providerRegistry.getProviderProfile(providerId);
+    return this.raidLifecycle.getProviderProfile(providerId);
   }
 
   listRaids(): RaidRecord[] {

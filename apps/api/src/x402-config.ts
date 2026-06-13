@@ -259,7 +259,12 @@ function buildPaymentRequired(
     maxTimeoutSeconds?: number;
   } = {}
 ): X402PaymentRequired {
-  const resourcePath = route === 'chat' ? '/v1/chat/completions' : '/v1/raid';
+  const resourcePath =
+    route === 'chat'
+      ? '/v1/chat/completions'
+      : route === 'inference'
+        ? '/v1/inference/chat/completions'
+        : '/v1/raid';
   const price = computeChargeUsd(config, route, budgetUsd);
   const assetConfig = resolveAssetConfig(config);
 
@@ -275,7 +280,11 @@ function buildPaymentRequired(
             : usdToAtomicUsdc(price.totalUsd),
         resource: buildResourceUrl(config.resourceBaseUrl, resourcePath),
         description:
-          route === 'chat' ? 'Boss Raid chat completion request' : 'Boss Raid native raid request',
+          route === 'chat'
+            ? 'Boss Raid chat completion request'
+            : route === 'inference'
+              ? 'Boss Raid discount inference request'
+              : 'Boss Raid native raid request',
         mimeType: 'application/json',
         payTo: config.payTo,
         maxTimeoutSeconds: options.maxTimeoutSeconds ?? config.maxTimeoutSeconds,

@@ -4,7 +4,7 @@ import heroImage from '../assets/hero.webp';
 import type { Provider, ProviderHealth } from '../api';
 import { RaiderRow } from '../components/raiders/RaiderRow';
 import { RaidersControls } from '../components/raiders/RaidersControls';
-import { SummaryPill } from '../components/receipt/ReceiptPrimitives';
+import { SummaryPill } from '@bossraid/ui';
 import {
   buildRaiderRecord,
   compareRaiders,

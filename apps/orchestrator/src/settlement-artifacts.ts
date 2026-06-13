@@ -1,7 +1,11 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { sha256 } from '@bossraid/raid-core';
-import type { RaidRecord } from '@bossraid/shared-types';
+import type {
+  PrivacyComplianceRecord,
+  RaidRecord,
+  SettlementExecutionRecord,
+} from '@bossraid/shared-types';
 import { getAddress, type Address, type Hex } from 'viem';
 import { buildSettlementAllocations, buildSettlementSummary } from './settlement.js';
 
@@ -192,6 +196,71 @@ export function buildFileArtifact(
       syntheticJobId: `${raid.id}-job-${index + 1}`,
     })),
     warnings: ['Settlement proof is synthetic in file mode.'],
+  };
+}
+
+export function buildSettlementExecutionRecord(input: {
+  mode: 'file' | 'onchain';
+  lifecycleStatus: SettlementExecutionRecord['lifecycleStatus'];
+  executedAt: string;
+  artifactPath: string;
+  registryRaidRef: string;
+  taskHash: string;
+  evaluationHash: string;
+  allocations: SettlementPayload['allocations'];
+  artifact: Pick<SettlementArtifact, 'contracts' | 'registryCall' | 'childJobs' | 'warnings'>;
+  extras?: Partial<SettlementExecutionRecord>;
+}): SettlementExecutionRecord {
+  return {
+    mode: input.mode,
+    proofStandard: 'erc8183_aligned',
+    lifecycleStatus: input.lifecycleStatus,
+    executedAt: input.executedAt,
+    artifactPath: input.artifactPath,
+    registryRaidRef: input.registryRaidRef,
+    taskHash: input.taskHash,
+    evaluationHash: input.evaluationHash,
+    successfulProviderIds: getSuccessfulProviderIds(input.allocations),
+    allocations: input.allocations,
+    contracts: input.artifact.contracts,
+    registryCall: input.artifact.registryCall,
+    childJobs: input.artifact.childJobs,
+    warnings: input.artifact.warnings,
+    ...input.extras,
+  };
+}
+
+export function buildPrivacyFailureSettlementRecord(
+  raid: RaidRecord,
+  complianceRecord: PrivacyComplianceRecord
+): SettlementExecutionRecord {
+  return {
+    mode: 'file',
+    proofStandard: 'erc8183_aligned',
+    lifecycleStatus: 'synthetic',
+    executedAt: new Date().toISOString(),
+    artifactPath: '',
+    registryRaidRef: raid.id,
+    taskHash: '',
+    evaluationHash: '',
+    successfulProviderIds: [],
+    privacyCompliance: complianceRecord,
+    allocations: [],
+    contracts: {
+      registryAddress: null,
+      escrowAddress: null,
+      tokenAddress: null,
+      clientAddress: null,
+      evaluatorAddress: null,
+      chainId: null,
+      rpcUrl: null,
+    },
+    registryCall: {
+      method: 'finalizeRaid',
+      args: [raid.id, '0x0000000000000000000000000000000000000000'],
+    },
+    childJobs: [],
+    warnings: ['privacy-compliance-failed'],
   };
 }
 

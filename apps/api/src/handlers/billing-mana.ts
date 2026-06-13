@@ -18,7 +18,9 @@ export function createManaBillingHandlers(ctx: ApiContext) {
   function readManaBillingHeaders(
     headers: Record<string, string | string[] | undefined>
   ): { manaAccountId: string; sourceAppId: 'alkahest' } | undefined {
-    const trustedClient = readTrustedAlkahestClient(headers);
+    const trustedClient = readTrustedAlkahestClient(headers, {
+      trustedKey: ctx.env.BOSSRAID_API_KEY || ctx.env.BOSSRAID_TRUSTED_CLIENT_KEY,
+    });
     const manaAccountId = asSingleHeader(headers['x-bossraid-mana-account-id']);
     if (!trustedClient && !manaAccountId) {
       return undefined;
