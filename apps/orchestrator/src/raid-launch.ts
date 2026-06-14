@@ -21,7 +21,7 @@ import {
   buildHierarchicalRaidGraph,
   type PlannedRaidNode,
   shouldUseHierarchicalPlanning,
-} from './hierarchy.js';
+} from './raid-hierarchy.js';
 import { collectPreparedProviderIds, countPreparedExperts } from './raid-launch-reservations.js';
 
 export {

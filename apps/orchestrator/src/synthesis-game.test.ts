@@ -4,7 +4,7 @@ import type { RaidProvider } from '@bossraid/provider-sdk';
 import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-types';
 import { sanitizeTask } from '@bossraid/raid-core';
 import { BossRaidOrchestrator } from './index.js';
-import { buildHierarchicalRaidGraph } from './hierarchy.js';
+import { buildHierarchicalRaidGraph } from './raid-hierarchy.js';
 import {
   createGameSpawnInput,
   createProviderProfile,

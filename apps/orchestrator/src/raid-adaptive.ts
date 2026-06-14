@@ -6,7 +6,7 @@ import type {
   RaidRecord,
   SanitizedTaskSpec,
 } from '@bossraid/shared-types';
-import { buildContributionFamilyRaidGraph, type PlannedRaidNode } from './hierarchy.js';
+import { buildContributionFamilyRaidGraph, type PlannedRaidNode } from './raid-hierarchy.js';
 import { getContributionWorkstreamTemplate } from './partition/index.js';
 import type { ContributionFamilyId } from './partition/types.js';
 import {

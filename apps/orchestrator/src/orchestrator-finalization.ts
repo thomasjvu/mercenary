@@ -1,7 +1,7 @@
 import { TIMEOUTS } from '@bossraid/constants';
 import type { RaidRecord, ReputationEventType } from '@bossraid/shared-types';
 import { maybeReplanHierarchicalRaid } from './raid-adaptive.js';
-import { refreshParentRaidFromChildren } from './raid-hierarchical.js';
+import { refreshParentRaidFromChildren } from './raid-hierarchy.js';
 import {
   applyDisqualificationToRaid,
   finalizeRaidRecord,

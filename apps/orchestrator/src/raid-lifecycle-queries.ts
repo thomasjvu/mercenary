@@ -10,7 +10,7 @@ import {
   collectLeafRaids,
   getRaidStatusOutput,
   refreshParentRaidFromChildren,
-} from './raid-hierarchical.js';
+} from './raid-hierarchy.js';
 import { buildAdaptivePlanningOutput } from './raid-state.js';
 import { buildSettlementSummary } from './settlement.js';
 import { reEvaluateRaidSubmissions } from './raid-state.js';

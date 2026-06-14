@@ -9,7 +9,7 @@ import type {
   RaidRecord,
   ReputationEventType,
 } from '@bossraid/shared-types';
-import { refreshParentRaidFromChildren } from './raid-hierarchical.js';
+import { refreshParentRaidFromChildren } from './raid-hierarchy.js';
 import {
   applyFailureToRaid,
   applyHeartbeatToRaid,

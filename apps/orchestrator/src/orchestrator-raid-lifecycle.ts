@@ -49,7 +49,7 @@ import {
   createSpawnPreparedRaidDeps,
   type RaidRunnerContext,
 } from './raid-runner-deps.js';
-import { refreshParentRaidFromChildren } from './raid-hierarchical.js';
+import { refreshParentRaidFromChildren } from './raid-hierarchy.js';
 import { ProviderTimerRegistry } from './timer-registry.js';
 import type { ProviderRegistryCoordinator } from './orchestrator-provider-registry.js';
 import type { RuntimeOptions } from './runtime.js';

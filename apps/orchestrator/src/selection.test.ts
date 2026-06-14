@@ -107,6 +107,7 @@ test('selection can require verified provider status', () => {
 test('reserved launch quotes fail closed after provider rate-card changes', async () => {
   const provider: RaidProvider = {
     profile: createProviderProfile('provider-quoted-gemma', {
+      modelFamily: 'venice',
       modelProvider: 'google',
       modelId: 'gemma-4-31b-it',
       supportedLanguages: ['text'],

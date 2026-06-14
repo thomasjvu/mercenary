@@ -15,7 +15,7 @@ import {
   normalizeProviderEndpoint,
 } from './provider-registry-local.js';
 import { launchReservationExpired } from './raid-launch.js';
-import { refreshParentRaidFromChildren } from './raid-hierarchical.js';
+import { refreshParentRaidFromChildren } from './raid-hierarchy.js';
 import type { PersistenceQueue } from './persistence-queue.js';
 import { pruneTerminalRaidsForRetention } from './raid-retention.js';
 
