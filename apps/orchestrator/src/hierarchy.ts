@@ -2,9 +2,8 @@ import type { OutputType, RaidContributionPlan, SanitizedTaskSpec } from '@bossr
 import {
   buildContributionWorkstreamAllocations,
   getRootContributionFamilyId,
-  type ContributionFamilyId,
-  type ContributionWorkstreamTemplate,
-} from './partition.js';
+} from './partition/index.js';
+import type { ContributionFamilyId, ContributionWorkstreamTemplate } from './partition/types.js';
 
 export type PlannedRaidNode = {
   task: SanitizedTaskSpec;

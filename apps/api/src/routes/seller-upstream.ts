@@ -15,6 +15,7 @@ import {
   probeHostedInferenceProviderHealth,
 } from '../lib/inference-gateway.js';
 import { probeRegisteredProviderHealth } from '../lib/provider-health.js';
+import { serializeProviderProfile } from '../lib/serializers.js';
 import { buildHostedProviderRegistration } from '../lib/upstream-offers.js';
 import {
   fetchUpstreamModels,
@@ -45,8 +46,6 @@ export function registerSellerUpstreamRoutes(
   const { orchestrator, controlState, env } = ctx;
   const { requirePublicSession } = handlers.auth;
   const { ensureErc8004ProofState } = handlers.raid;
-  const { serializeProviderProfile } = handlers;
-
   function requireSellerRateLimit(
     wallet: string
   ): { statusCode: number; error: string; message: string } | undefined {

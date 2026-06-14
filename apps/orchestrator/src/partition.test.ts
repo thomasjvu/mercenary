@@ -6,7 +6,7 @@ import {
   buildContributionWorkstreamAllocations,
   getContributionFamily,
   getRootContributionFamilyId,
-} from './partition.js';
+} from './partition/index.js';
 
 function textTask(description: string): SanitizedTaskSpec {
   return {

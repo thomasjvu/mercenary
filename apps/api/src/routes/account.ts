@@ -9,6 +9,7 @@ import {
 import { readPositiveInteger, readPositiveNumber } from '../lib/env.js';
 import { asSingleQueryValue } from '../lib/http.js';
 import { ensureRecordInput } from '../lib/account.js';
+import { serializeProviderHealth, serializeProviderProfile } from '../lib/serializers.js';
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../handlers/index.js';
 
@@ -20,8 +21,6 @@ export function registerAccountRoutes(
   const { orchestrator, controlState } = ctx;
   const { requirePublicSession } = handlers.auth;
   const { ensureErc8004ProofState } = handlers.raid;
-  const { serializeProviderProfile, serializeProviderHealth } = handlers;
-
   app.get('/v1/seller/providers', async (request, reply) => {
     const session = requirePublicSession(reply, request.headers);
     if ('error' in session) {

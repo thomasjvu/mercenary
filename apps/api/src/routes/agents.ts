@@ -5,6 +5,7 @@ import {
   parseProviderRegistrationInput,
 } from '@bossraid/api-contracts';
 import { probeRegisteredProviderHealth } from '../lib/provider-health.js';
+import { serializeProviderHealth, serializeProviderProfile } from '../lib/serializers.js';
 import {
   buildProviderVerificationFromHealth,
   buildProviderVerificationRegistrationInput,
@@ -20,8 +21,6 @@ export function registerAgentRoutes(
   const { orchestrator, registryToken } = ctx;
   const { registryIsAuthorized } = handlers.auth;
   const { ensureErc8004ProofState } = handlers.raid;
-  const { serializeProviderProfile, serializeProviderHealth } = handlers;
-
   app.post('/agents/register', async (request, reply) => {
     if (!registryToken) {
       reply.code(503);

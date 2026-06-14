@@ -5,6 +5,7 @@ import {
   parseProviderSubmission,
 } from '@bossraid/api-contracts';
 import { probeAllProviderHealth } from '../lib/provider-health.js';
+import { serializeProviderHealth, serializeProviderProfile } from '../lib/serializers.js';
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../handlers/index.js';
 
@@ -16,8 +17,6 @@ export function registerProviderRoutes(
   const { orchestrator, providerSubmissionBodyLimitBytes } = ctx;
   const { providerIsAuthorized, requireAdmin } = handlers.auth;
   const { validateProviderCallback, ensureErc8004ProofState } = handlers.raid;
-  const { serializeProviderProfile, serializeProviderHealth } = handlers;
-
   app.post('/v1/providers/:providerId/heartbeat', async (request, reply) => {
     const params = request.params as { providerId: string };
     if (

@@ -4,7 +4,7 @@ import type {
   RaidContributionPlan,
   SanitizedTaskSpec,
 } from '@bossraid/shared-types';
-import { buildContributionRolePlan } from './partition.js';
+import { buildContributionRolePlan } from './partition/index.js';
 
 export function buildProviderTaskPackage(
   raidId: string,

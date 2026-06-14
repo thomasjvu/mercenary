@@ -1,5 +1,4 @@
 import { type ApiContext } from '../api-context.js';
-import { serializeProviderHealth, serializeProviderProfile } from '../lib/serializers.js';
 import { createAuthHandlers } from './auth.js';
 import { createManaBillingHandlers } from './billing-mana.js';
 import { createPaymentHandlers } from './payment.js';
@@ -19,8 +18,6 @@ export function createApiHandlers(ctx: ApiContext) {
     payment,
     raid,
     chat,
-    serializeProviderProfile,
-    serializeProviderHealth,
   };
 }
 
