@@ -1,4 +1,6 @@
 import type {
+  ApiOpsSessionEntry,
+  ApiRateLimitEntry,
   BuyerApiKeyEntry,
   BuyerPurchaseEntry,
   PublicAccountEntry,
@@ -6,18 +8,7 @@ import type {
   PublicSessionEntry,
   SellerPayoutEntry,
   SellerUpstreamConfigEntry,
-} from './control-state/types.js';
-
-type ApiOpsSessionEntry = {
-  token: string;
-  expiresAt: number;
-};
-
-type ApiRateLimitEntry = {
-  key: string;
-  count: number;
-  resetAt: number;
-};
+} from './types.js';
 
 export function isValidOpsSessionEntry(value: unknown): value is ApiOpsSessionEntry {
   return (
@@ -141,5 +132,3 @@ export function isValidSellerUpstreamConfigEntry(
       provider === 'phala')
   );
 }
-
-/** @deprecated */

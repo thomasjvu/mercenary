@@ -9,7 +9,7 @@ import {
   isValidRateLimitEntry,
   isValidSellerPayoutEntry,
   isValidSellerUpstreamConfigEntry,
-} from '../control-state-validators.js';
+} from './validators.js';
 import type { ApiControlStateSnapshot, SellerUpstreamConfigEntry } from './types.js';
 
 export function createEmptyApiControlState(): ApiControlStateSnapshot {
