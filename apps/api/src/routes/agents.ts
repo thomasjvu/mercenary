@@ -4,12 +4,8 @@ import {
   parseProviderDiscoveryQuery,
   parseProviderRegistrationInput,
 } from '@bossraid/api-contracts';
-import { probeRegisteredProviderHealth } from '../lib/provider-health.js';
 import { serializeProviderHealth, serializeProviderProfile } from '../lib/serializers.js';
-import {
-  buildProviderVerificationFromHealth,
-  buildProviderVerificationRegistrationInput,
-} from '../lib/account.js';
+import { verifyProviderByHealthProbe } from '../lib/provider-verification.js';
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../handlers/index.js';
 
@@ -56,10 +52,9 @@ export function registerAgentRoutes(
       return { error: 'not_found' };
     }
 
-    const health = await probeRegisteredProviderHealth(provider);
-    const verification = buildProviderVerificationFromHealth(provider, health);
-    const updatedProvider = await orchestrator.upsertRegisteredProvider(
-      buildProviderVerificationRegistrationInput(provider, verification)
+    const { provider: updatedProvider, health } = await verifyProviderByHealthProbe(
+      orchestrator,
+      provider
     );
     await ensureErc8004ProofState({ includeMercenary: false, providers: [updatedProvider] });
     return {

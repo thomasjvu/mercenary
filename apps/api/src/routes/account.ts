@@ -1,11 +1,7 @@
 import { type FastifyInstance } from 'fastify';
 import { parseProviderRegistrationInput } from '@bossraid/api-contracts';
-import { probeRegisteredProviderHealth } from '../lib/provider-health.js';
-import {
-  buildSelfServeProviderRegistrationInput,
-  buildProviderVerificationFromHealth,
-  buildProviderVerificationRegistrationInput,
-} from '../lib/account.js';
+import { buildSelfServeProviderRegistrationInput } from '../lib/account.js';
+import { verifyProviderByHealthProbe } from '../lib/provider-verification.js';
 import { readPositiveInteger, readPositiveNumber } from '../lib/env.js';
 import { asSingleQueryValue } from '../lib/http.js';
 import { ensureRecordInput } from '../lib/account.js';
@@ -46,10 +42,10 @@ export function registerAccountRoutes(
     );
     const provider = await orchestrator.upsertRegisteredProvider(input);
     controlState.linkSellerProvider(session.wallet, provider.providerId);
-    const health = await probeRegisteredProviderHealth(provider);
-    const verification = buildProviderVerificationFromHealth(provider, health);
-    const verifiedProvider = await orchestrator.upsertRegisteredProvider(
-      buildProviderVerificationRegistrationInput(provider, verification)
+    const { provider: verifiedProvider, health } = await verifyProviderByHealthProbe(
+      orchestrator,
+      provider,
+      { controlState }
     );
     await ensureErc8004ProofState({ includeMercenary: false, providers: [verifiedProvider] });
     reply.code(201);
@@ -97,10 +93,10 @@ export function registerAccountRoutes(
       reply.code(404);
       return { error: 'not_found' };
     }
-    const health = await probeRegisteredProviderHealth(provider);
-    const verification = buildProviderVerificationFromHealth(provider, health);
-    const updatedProvider = await orchestrator.upsertRegisteredProvider(
-      buildProviderVerificationRegistrationInput(provider, verification)
+    const { provider: updatedProvider, health } = await verifyProviderByHealthProbe(
+      orchestrator,
+      provider,
+      { controlState }
     );
     await ensureErc8004ProofState({ includeMercenary: false, providers: [updatedProvider] });
     return {

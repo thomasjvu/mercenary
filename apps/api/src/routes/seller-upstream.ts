@@ -3,18 +3,12 @@ import { parseProviderRegistrationInput } from '@bossraid/api-contracts';
 import { UPSTREAM_PROVIDER_CONFIG, type UpstreamProviderId } from '@bossraid/constants';
 import { sanitizeSellerUpstreamConfig } from '../control-state/seller-upstream.js';
 import {
-  buildProviderVerificationFromHealth,
-  buildProviderVerificationRegistrationInput,
   buildSelfServeProviderRegistrationInput,
   ensureRecordInput,
   ensureStringInput,
 } from '../lib/account.js';
-import {
-  buildUpstreamSellerProviderId,
-  isHostedInferenceProvider,
-  probeHostedInferenceProviderHealth,
-} from '../lib/inference-gateway.js';
-import { probeRegisteredProviderHealth } from '../lib/provider-health.js';
+import { buildUpstreamSellerProviderId } from '../lib/inference-gateway.js';
+import { verifyProviderByHealthProbe } from '../lib/provider-verification.js';
 import { serializeProviderProfile } from '../lib/serializers.js';
 import { buildHostedProviderRegistration } from '../lib/upstream-offers.js';
 import {
@@ -264,12 +258,10 @@ export function registerSellerUpstreamRoutes(
       );
       controlState.linkSellerProvider(session.wallet, providerProfile.providerId);
 
-      const health = isHostedInferenceProvider(providerProfile)
-        ? probeHostedInferenceProviderHealth(controlState, providerProfile)
-        : await probeRegisteredProviderHealth(providerProfile);
-      const verification = buildProviderVerificationFromHealth(providerProfile, health);
-      const verifiedProvider = await orchestrator.upsertRegisteredProvider(
-        buildProviderVerificationRegistrationInput(providerProfile, verification)
+      const { provider: verifiedProvider } = await verifyProviderByHealthProbe(
+        orchestrator,
+        providerProfile,
+        { controlState }
       );
       await ensureErc8004ProofState({ includeMercenary: false, providers: [verifiedProvider] });
 
