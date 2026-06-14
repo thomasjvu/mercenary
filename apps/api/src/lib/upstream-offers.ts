@@ -5,7 +5,7 @@ import type { ProviderRegistrationInput } from '@bossraid/shared-types';
 import {
   buildUpstreamSellerProviderId,
   resolveInferenceGatewayProviderEndpoint,
-} from './inference-gateway-base.js';
+} from './inference-gateway.js';
 
 export function deriveDiscountedTokenRates(input: { modelId: string; discountPercent: number }):
   | {

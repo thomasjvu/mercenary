@@ -1,20 +1,14 @@
 import { type FastifyInstance } from 'fastify';
 import { verifyProviderAuth } from '@bossraid/provider-sdk';
-import type { ProviderTaskPackage } from '@bossraid/shared-types';
-import { createProviderRunId, runInferenceGatewayJob } from '../lib/inference-gateway-runner.js';
+import { asSingleHeader, type ProviderTaskPackage } from '@bossraid/shared-types';
 import {
+  createProviderRunId,
   isHostedInferenceProvider,
   probeHostedInferenceProviderHealth,
   resolveHostedProviderUpstream,
-} from '../lib/inference-gateway-health.js';
+  runInferenceGatewayJob,
+} from '../lib/inference-gateway.js';
 import { type ApiContext } from '../api-context.js';
-
-function asSingleHeader(value: string | string[] | undefined): string | undefined {
-  if (Array.isArray(value)) {
-    return value[0];
-  }
-  return value;
-}
 
 type GatewayAcceptBody = {
   raidId: string;

@@ -10,11 +10,11 @@ import {
   ensureStringInput,
 } from '../lib/account.js';
 import {
+  buildUpstreamSellerProviderId,
   isHostedInferenceProvider,
   probeHostedInferenceProviderHealth,
-} from '../lib/inference-gateway-health.js';
+} from '../lib/inference-gateway.js';
 import { probeRegisteredProviderHealth } from '../lib/provider-health.js';
-import { buildUpstreamSellerProviderId } from '../lib/inference-gateway-base.js';
 import { buildHostedProviderRegistration } from '../lib/upstream-offers.js';
 import {
   fetchUpstreamModels,

@@ -1,16 +1,99 @@
 import { randomUUID } from 'node:crypto';
+import { NETWORK } from '@bossraid/constants';
+import type { UpstreamProviderId } from '@bossraid/constants';
+import { isUpstreamProviderId } from '@bossraid/constants';
 import type { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import { buildPrivacyAttestation } from '@bossraid/privacy-engine';
-import type { PrivacyFeatureKey } from '@bossraid/shared-types';
-import type { ProviderProfile, ProviderTaskPackage } from '@bossraid/shared-types';
+import type {
+  PrivacyFeatureKey,
+  ProviderHealthStatus,
+  ProviderProfile,
+  ProviderTaskPackage,
+} from '@bossraid/shared-types';
 import type { ApiControlState } from '../control-state.js';
-import { extractInferencePromptFromTask } from './task-prompt.js';
-import { probeUpstreamChatCompletion } from './upstream/index.js';
-import { probeVeniceE2eeChatCompletion } from './venice-e2ee.js';
-import { resolveHostedProviderUpstream } from './inference-gateway-health.js';
 import { buildInferenceReceipt, verifyUpstreamTee } from './attestation-service.js';
-import { generateAttestationNonce } from './upstream/index.js';
 import type { InferenceReceiptStore } from './inference-receipt-store.js';
+import { extractInferencePromptFromTask } from './task-prompt.js';
+import { generateAttestationNonce, probeUpstreamChatCompletion } from './upstream/index.js';
+import { probeVeniceE2eeChatCompletion } from './venice-e2ee.js';
+
+export function resolveInferenceGatewayBase(env: NodeJS.ProcessEnv = process.env): string {
+  const configured = env.BOSSRAID_INFERENCE_GATEWAY_BASE?.trim();
+  if (configured) {
+    return configured.replace(/\/+$/u, '');
+  }
+
+  const host = env.BOSSRAID_API_HOST ?? env.HOST ?? NETWORK.LOCALHOST;
+  const port = env.PORT ?? String(NETWORK.LOCAL_API_PORT);
+  return `http://${host}:${port}`;
+}
+
+export function resolveInferenceGatewayProviderEndpoint(
+  providerId: string,
+  env: NodeJS.ProcessEnv = process.env
+): string {
+  return `${resolveInferenceGatewayBase(env)}/gateway/${encodeURIComponent(providerId)}`;
+}
+
+export function buildUpstreamSellerProviderId(
+  provider: string,
+  wallet: string,
+  modelId: string
+): string {
+  const walletSlice = wallet.slice(2, 8).toLowerCase();
+  const modelSlug = modelId
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase();
+  return `${provider}-seller-${walletSlice}-${modelSlug}`.slice(0, 96);
+}
+
+export function resolveHostedProviderUpstream(
+  provider: ProviderProfile
+): UpstreamProviderId | undefined {
+  if (provider.source?.targetType && isUpstreamProviderId(provider.source.targetType)) {
+    return provider.source.targetType;
+  }
+  if (provider.source?.type === 'venice_hosted') {
+    return 'venice';
+  }
+  if (provider.modelProvider && isUpstreamProviderId(provider.modelProvider)) {
+    return provider.modelProvider;
+  }
+  return undefined;
+}
+
+export function isHostedInferenceProvider(provider: ProviderProfile): boolean {
+  return provider.source?.type === 'inference_hosted' || provider.source?.type === 'venice_hosted';
+}
+
+export function probeHostedInferenceProviderHealth(
+  controlState: ApiControlState,
+  provider: ProviderProfile
+): ProviderHealthStatus {
+  const wallet = provider.source?.externalRef;
+  const upstream = resolveHostedProviderUpstream(provider);
+  const configured =
+    wallet && upstream ? Boolean(controlState.readSellerUpstreamConfig(wallet, upstream)) : false;
+
+  return {
+    providerId: provider.providerId,
+    providerName: provider.displayName,
+    endpoint: provider.endpoint,
+    reachable: configured,
+    ready: configured,
+    statusCode: configured ? 200 : 503,
+    missing: configured
+      ? undefined
+      : [`BOSSRAID_${(upstream ?? 'UPSTREAM').toUpperCase()}_API_KEY`],
+    agentFramework: provider.agentFramework ?? 'custom',
+    modelProvider: provider.modelProvider ?? upstream ?? 'unknown',
+    model: provider.modelId ?? null,
+    error: configured
+      ? undefined
+      : `${upstream ?? 'Upstream'} API key is not configured for this seller.`,
+  };
+}
 
 export async function runInferenceGatewayJob(input: {
   orchestrator: BossRaidOrchestrator;
