@@ -145,7 +145,7 @@ export function DemoPage({ providers, providerHealth, embedded = false }: DemoPa
 
         {paidMode ? (
           <div className="mercenary-paid-panel">
-            <p className="eyebrow">MetaMask Smart Accounts</p>
+            <p className="eyebrow">account subscription</p>
             <p>{smartPay.status}</p>
             <div className="mercenary-action-row">
               <button
@@ -154,7 +154,7 @@ export function DemoPage({ providers, providerHealth, embedded = false }: DemoPa
                 onClick={() => void smartPay.connectWallet()}
                 type="button"
               >
-                connect wallet
+                connect MetaMask
               </button>
               <button
                 className="button button--primary"
@@ -162,13 +162,13 @@ export function DemoPage({ providers, providerHealth, embedded = false }: DemoPa
                 onClick={() => void smartPay.grantSubscription()}
                 type="button"
               >
-                grant weekly budget
+                subscribe & top up
               </button>
             </div>
             {smartPay.subscription ? (
               <p>
-                Subscription active: ${smartPay.subscription.weeklyBudgetUsd.toFixed(2)} USDC /
-                week.
+                ${smartPay.subscription.weeklyBudgetUsd.toFixed(2)} USDC / week tops up prepaid
+                credit.
               </p>
             ) : null}
           </div>

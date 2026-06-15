@@ -51,7 +51,7 @@ export async function requestRaidSubscription(
           periodAmount: parseUnits(String(weeklyBudgetUsd), 6),
           periodDuration: options.periodSeconds ?? DEFAULT_SUBSCRIPTION_PERIOD_SECONDS,
           startTime: currentTime,
-          justification: `Mercenary raid budget: up to ${weeklyBudgetUsd} USDC per week for x402 raid payments.`,
+          justification: `Boss Raid account credit: up to ${weeklyBudgetUsd} USDC per week for inference and raid spend.`,
         },
       },
     },
@@ -74,7 +74,7 @@ export async function requestRaidSubscription(
       at: grantedAt,
       from: wallet,
       to: options.sessionAccount,
-      summary: `Granted ${weeklyBudgetUsd} USDC weekly raid budget to session account.`,
+      summary: `Granted ${weeklyBudgetUsd} USDC weekly account credit to session account.`,
       data: {
         weeklyBudgetUsd,
         periodSeconds: options.periodSeconds ?? DEFAULT_SUBSCRIPTION_PERIOD_SECONDS,

@@ -8,6 +8,7 @@ import {
   type SmartAccountWalletClient,
 } from '@bossraid/smart-pay';
 import type { DelegationChainEntry } from '@bossraid/shared-types';
+import { fundBuyerBalance } from '../api/auth.js';
 import { deleteAgentSession, saveAgentSession } from '../api/smart-pay.js';
 import { connectSmartAccountWallet, formatWalletError } from '../lib/ethereum-provider.js';
 
@@ -15,7 +16,9 @@ export function useSmartAccountPay(chainId = BASE_CHAIN_ID) {
   const [walletClient, setWalletClient] = useState<SmartAccountWalletClient | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<RaidSubscriptionGrant | null>(null);
-  const [status, setStatus] = useState('Connect MetaMask to pay for raids with ERC-7710 x402.');
+  const [status, setStatus] = useState(
+    'Connect MetaMask to subscribe and top up prepaid account credit.'
+  );
   const [busy, setBusy] = useState(false);
 
   const connectWallet = useCallback(async () => {
@@ -25,7 +28,7 @@ export function useSmartAccountPay(chainId = BASE_CHAIN_ID) {
       setWalletClient(client);
       setWalletAddress(address);
       setStatus(
-        `Connected ${address}. Grant a weekly raid subscription or launch a one-shot paid raid.`
+        `Connected ${address}. Start a weekly subscription to top up credit for inference and raids.`
       );
       return client;
     } catch (error) {
@@ -56,7 +59,10 @@ export function useSmartAccountPay(chainId = BASE_CHAIN_ID) {
         expiresAt: grant.expiresAt,
         weeklyBudgetUsd: grant.weeklyBudgetUsd,
       });
-      setStatus(`Granted ${grant.weeklyBudgetUsd} USDC weekly raid budget via ERC-7715.`);
+      const funded = await fundBuyerBalance(grant.weeklyBudgetUsd);
+      setStatus(
+        `Subscribed at $${grant.weeklyBudgetUsd.toFixed(2)} USDC/week. Credited $${funded.creditedUsd.toFixed(2)} — balance now $${funded.balanceUsd.toFixed(2)}.`
+      );
       return grant;
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Subscription grant failed.');

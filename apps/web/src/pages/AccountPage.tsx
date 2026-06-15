@@ -179,7 +179,11 @@ export function AccountPage() {
               </article>
 
               <article className="flow-card">
-                <p className="eyebrow">raid subscription</p>
+                <p className="eyebrow">account subscription</p>
+                <p className="quiet-note">
+                  Weekly MetaMask permission tops up prepaid credit for marketplace inference and
+                  raids.
+                </p>
                 <p className="quiet-note">{smartPay.status}</p>
                 <div className="mercenary-action-row">
                   <button
@@ -193,27 +197,28 @@ export function AccountPage() {
                   <button
                     className="button button--primary"
                     disabled={smartPay.busy}
-                    onClick={() => void smartPay.grantSubscription()}
+                    onClick={() => void smartPay.grantSubscription().then(() => session.mutate())}
                     type="button"
                   >
-                    grant weekly budget
+                    subscribe & top up
                   </button>
                 </div>
                 {smartPay.subscription ? (
-                  <p className="form-status">
-                    ${smartPay.subscription.weeklyBudgetUsd.toFixed(2)} USDC / week until{' '}
-                    {new Date(smartPay.subscription.expiresAt).toLocaleString()}.
-                  </p>
-                ) : (
-                  <button
-                    className="button"
-                    disabled={smartPay.busy}
-                    onClick={() => void smartPay.clearSubscription()}
-                    type="button"
-                  >
-                    clear session
-                  </button>
-                )}
+                  <>
+                    <p className="form-status">
+                      ${smartPay.subscription.weeklyBudgetUsd.toFixed(2)} USDC / week until{' '}
+                      {new Date(smartPay.subscription.expiresAt).toLocaleString()}.
+                    </p>
+                    <button
+                      className="button"
+                      disabled={smartPay.busy}
+                      onClick={() => void smartPay.clearSubscription()}
+                      type="button"
+                    >
+                      clear subscription
+                    </button>
+                  </>
+                ) : null}
               </article>
             </div>
           </FlowPanel>

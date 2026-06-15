@@ -172,7 +172,7 @@ const HERO_BY_WORKFLOW: Record<
     ],
   },
   buyer: {
-    before: 'Connect wallet.',
+    before: 'Load up wallet.',
     accent: 'Inference or raids.',
     after: 'Discounted. Capped budget.',
     primary: {

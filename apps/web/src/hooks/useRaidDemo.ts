@@ -147,7 +147,9 @@ export function useRaidDemo({
     try {
       if (paidMode && demoMode === 'raid') {
         if (!createFetchWithPayment) {
-          throw new Error('Connect MetaMask and grant a raid subscription before paid launch.');
+          throw new Error(
+            'Connect MetaMask and subscribe to top up account credit before paid launch.'
+          );
         }
 
         const fetchWithPayment = await createFetchWithPayment();

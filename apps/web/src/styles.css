@@ -143,8 +143,8 @@ pre,
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -155,8 +155,8 @@ pre,
 }
 
 .app-sidebar__toggle-icon {
-  width: 14px;
-  height: 14px;
+  width: 11px;
+  height: 11px;
 }
 
 .app-sidebar__toggle:hover,
@@ -6912,6 +6912,11 @@ h2 {
 .app-sidebar--collapsed .app-sidebar__brand {
   justify-content: center;
   width: 100%;
+}
+
+.app-frame--sidebar-collapsed .app-sidebar__brand .boss-raid-mark,
+.app-sidebar--collapsed .app-sidebar__brand .boss-raid-mark {
+  display: none;
 }
 
 .app-frame--sidebar-collapsed .app-sidebar__link,
