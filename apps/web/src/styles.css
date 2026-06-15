@@ -345,6 +345,12 @@ button.app-sidebar__utility-icon {
   row-gap: var(--stage-gap);
 }
 
+.app-shell:has(.flow-page),
+.app-shell:has(.buyer-page),
+.app-shell:has(.sell-page) {
+  align-content: start;
+}
+
 .app-shell--directory {
   height: 100%;
   align-content: stretch;

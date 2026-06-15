@@ -7,6 +7,10 @@
   align-items: end;
 }
 
+.page-hero:not(:has(.page-hero__aside)) {
+  grid-template-columns: 1fr;
+}
+
 .page-hero--compact {
   align-items: start;
 }
@@ -618,6 +622,11 @@ button.action-steps__value {
   display: grid;
   gap: 12px;
   max-width: 720px;
+}
+
+.buyer-page .flow-stack {
+  max-width: none;
+  width: 100%;
 }
 
 .flow-section {

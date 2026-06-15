@@ -57,11 +57,11 @@ export function BuyerOnboardingPage() {
   });
 
   return (
-    <section className="beta-page flow-page">
+    <section className="beta-page flow-page buyer-page">
       <PageHero
         compact
         eyebrow="buy"
-        lede="Wallet → capped key → inference."
+        lede="Wallet, capped key, inference or raid spend."
         title="Buy inference."
       />
 

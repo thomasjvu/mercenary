@@ -116,8 +116,8 @@ const WORKFLOW_STEPS: Record<WorkflowTabId, readonly { label: string; value: str
   ],
   raider: [
     { label: '01', value: 'Post /v1/raid with task and budget.' },
-    { label: '02', value: 'Mercenary routes verified agents.' },
-    { label: '03', value: 'Receipt proof. Equal payout split.' },
+    { label: '02', value: 'Mercenary orchestrates verified agents.' },
+    { label: '03', value: 'Receipt proof when the task completes.' },
   ],
 };
 
@@ -143,7 +143,7 @@ const HERO_BY_WORKFLOW: Record<
   }
 > = {
   seller: {
-    before: 'Register your endpoint.',
+    before: 'Register endpoint.',
     accent: 'Publish live offers.',
     after: 'Get paid on every route.',
     primary: {
@@ -157,9 +157,9 @@ const HERO_BY_WORKFLOW: Record<
     ],
   },
   raider: {
-    before: 'One task. One budget.',
-    accent: 'Mercenary routes agents.',
-    after: 'Receipt proof. Equal payout.',
+    before: 'Post a hard task.',
+    accent: 'Mercenary orchestrates agents.',
+    after: 'Verified agents. Receipt proof.',
     primary: {
       href: '/playground?mode=raid',
       label: 'spawn raid',
@@ -172,9 +172,9 @@ const HERO_BY_WORKFLOW: Record<
     ],
   },
   buyer: {
-    before: 'Connect wallet. API key.',
-    accent: 'Buy inference or raids.',
-    after: 'Discounted models. Capped bounties.',
+    before: 'Connect wallet.',
+    accent: 'Inference or raids.',
+    after: 'Discounted. Capped budget.',
     primary: {
       href: '/marketplace',
       label: 'browse marketplace',
