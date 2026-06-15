@@ -143,29 +143,26 @@ pre,
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--line-strong);
-  border-radius: 8px;
-  background: var(--surface-muted);
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--text);
   cursor: pointer;
-  transition:
-    color 160ms ease,
-    border-color 160ms ease,
-    background-color 160ms ease;
+  padding: 0;
+  transition: color 160ms ease, opacity 160ms ease;
 }
 
 .app-sidebar__toggle-icon {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
 }
 
 .app-sidebar__toggle:hover,
 .app-sidebar__toggle[aria-pressed='true'] {
   color: var(--text);
-  border-color: var(--line-strong);
-  background: color-mix(in srgb, var(--text) 8%, var(--surface-muted));
+  opacity: 0.72;
 }
 
 .app-sidebar__mark,
