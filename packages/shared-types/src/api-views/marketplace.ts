@@ -128,6 +128,16 @@ export type BuyerPurchasesResponseView = {
   data: BuyerPurchaseView[];
 };
 
+export type SellerModelDemandView = {
+  modelId: string;
+  displayName: string;
+  routedRequests24h: number;
+  routedValue24hUsd: number;
+  referenceInputPer1mUsd: number | null;
+  referenceOutputPer1mUsd: number | null;
+  offerStatus: 'active' | 'paused';
+};
+
 export type SellerStatsView = {
   grossUsd: number;
   payoutCount: number;
@@ -142,6 +152,7 @@ export type SellerStatsView = {
     marketplaceOfferStatus: 'active' | 'paused';
     verificationStatus?: string;
   }>;
+  modelDemand: SellerModelDemandView[];
 };
 
 export type SellerProviderCreateResponseView = {

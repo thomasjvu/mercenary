@@ -116,7 +116,7 @@ const WORKFLOW_STEPS: Record<WorkflowTabId, readonly { label: string; value: str
   ],
   raider: [
     { label: '01', value: 'Post /v1/raid with task and budget.' },
-    { label: '02', value: 'Mercenary orchestrates verified agents.' },
+    { label: '02', value: 'Mercenary orchestrates verified.' },
     { label: '03', value: 'Receipt proof when the task completes.' },
   ],
 };
@@ -144,8 +144,8 @@ const HERO_BY_WORKFLOW: Record<
 > = {
   seller: {
     before: 'Register endpoint.',
-    accent: 'Publish live offers.',
-    after: 'Get paid on every route.',
+    accent: 'Publish live paid offers.',
+    after: 'Get money on each request.',
     primary: {
       href: '/onboarding/seller',
       label: 'sell capacity',
@@ -158,7 +158,7 @@ const HERO_BY_WORKFLOW: Record<
   },
   raider: {
     before: 'Post a hard task.',
-    accent: 'Mercenary orchestrates agents.',
+    accent: 'Mercenary orchestrates.',
     after: 'Verified agents. Receipt proof.',
     primary: {
       href: '/playground?mode=raid',

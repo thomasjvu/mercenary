@@ -2,6 +2,7 @@ import { Icon } from '@iconify/react';
 import { BOSSRAID_DOCS_URL } from '@bossraid/ui';
 import { AppHeaderWallet } from './AppHeaderWallet.js';
 import { BossRaidMark } from './BossRaidMark.js';
+
 import { useAttestationInspector } from '../contexts/AttestationInspectorContext.js';
 import {
   isSidebarNavActive,
@@ -94,19 +95,34 @@ export function AppSidebar({
           onClick={() => openInspector()}
           type="button"
         >
-          TEE Attestation
+          <Icon
+            className="icon icon--pixel app-sidebar__tee-pill-icon"
+            icon="pixel:cybersecurity"
+          />
+          <span>TEE Attestation</span>
         </button>
-        <AppHeaderWallet onNavigate={onNavigate} />
-        <div className="app-sidebar__utility">
+
+        <div className="app-sidebar__wallet-expanded">
+          <AppHeaderWallet onNavigate={onNavigate} />
+        </div>
+
+        <div aria-label="Account shortcuts" className="app-sidebar__wallet-collapsed">
           <button
             aria-label="TEE attestation"
             aria-pressed={isOpen}
-            className="app-sidebar__utility-icon app-sidebar__utility-icon--tee"
+            className={`app-sidebar__compact-icon app-sidebar__compact-icon--tee${isOpen ? ' app-sidebar__compact-icon--active' : ''}`}
             onClick={() => openInspector()}
             type="button"
           >
-            <Icon className="icon icon--pixel" icon="pixel:shield-solid" />
+            <Icon
+              className="icon icon--pixel app-sidebar__compact-icon-glyph"
+              icon="pixel:cybersecurity"
+            />
           </button>
+          <AppHeaderWallet compact onNavigate={onNavigate} />
+        </div>
+
+        <div className="app-sidebar__utility">
           <button
             aria-label={appTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             className="app-sidebar__utility-icon app-sidebar__utility-icon--theme"
@@ -140,7 +156,7 @@ export function AppSidebar({
           </a>
           <a
             aria-label="GitHub"
-            className="app-sidebar__utility-icon"
+            className="app-sidebar__utility-icon app-sidebar__utility-icon--social"
             href="https://github.com/thomasjvu/mercenary"
             rel="noreferrer"
             target="_blank"
@@ -149,7 +165,7 @@ export function AppSidebar({
           </a>
           <a
             aria-label="X"
-            className="app-sidebar__utility-icon"
+            className="app-sidebar__utility-icon app-sidebar__utility-icon--social"
             href="https://x.com/ultima_gg"
             rel="noreferrer"
             target="_blank"

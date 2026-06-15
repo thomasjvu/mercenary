@@ -57,6 +57,17 @@ export async function fetchSellerUpstreamStatus() {
   }>('/v1/seller/upstream/status');
 }
 
+export async function fetchSellerUpstreamCatalogModels(provider: UpstreamProviderId) {
+  return fetchJson<{
+    object: 'list';
+    provider: UpstreamProviderId;
+    catalogOnly: true;
+    supportedCount: number;
+    upstreamFoundCount: number;
+    data: UpstreamCatalogModel[];
+  }>(`/v1/seller/upstream/${provider}/models/catalog`);
+}
+
 export async function fetchSellerUpstreamModels(provider: UpstreamProviderId) {
   return fetchJson<{
     object: 'list';

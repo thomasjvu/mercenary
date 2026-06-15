@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import useSWR from 'swr';
 import {
   createAuthNonce,
@@ -12,6 +12,12 @@ import { connectWalletForAuth, formatWalletError } from '../lib/ethereum-provide
 export function useWalletAuth(initialStatus: string) {
   const session = useSWR('wallet-session', fetchSession, { revalidateOnFocus: true });
   const [status, setStatus] = useState(initialStatus);
+
+  useEffect(() => {
+    if (session.data?.authenticated && status === initialStatus) {
+      setStatus('');
+    }
+  }, [initialStatus, session.data?.authenticated, status]);
 
   const connectWallet = useCallback(async () => {
     setStatus('Connecting MetaMask...');

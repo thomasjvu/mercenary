@@ -1,0 +1,1992 @@
+{
+  "generatedAt": "2026-06-15T23:39:37.445Z",
+  "source": {
+    "venice": "https://api.venice.ai/api/v1/models (public, no API key)",
+    "redpill": "scripts/sync-inference-catalog.mjs static rates",
+    "near": "scripts/sync-inference-catalog.mjs static rates",
+    "chutes": "scripts/sync-inference-catalog.mjs static rates",
+    "phala": "scripts/sync-inference-catalog.mjs static rates"
+  },
+  "providers": {
+    "venice": {
+      "modelCount": 89,
+      "models": [
+        {
+          "modelId": "aion-labs-aion-2-0",
+          "displayName": "Aion 2.0",
+          "upstreamModelId": "aion-labs-aion-2-0",
+          "inputPer1mUsd": 1,
+          "outputPer1mUsd": 2,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "arcee-trinity-large-thinking",
+          "displayName": "Trinity Large Thinking",
+          "upstreamModelId": "arcee-trinity-large-thinking",
+          "inputPer1mUsd": 0.3125,
+          "outputPer1mUsd": 1.125,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "claude-fable-5",
+          "displayName": "Claude Fable 5",
+          "upstreamModelId": "claude-fable-5",
+          "inputPer1mUsd": 12,
+          "outputPer1mUsd": 60,
+          "referenceTaskUsd": 0.0734,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "claude-opus-4-5",
+          "displayName": "Claude Opus 4.5",
+          "upstreamModelId": "claude-opus-4-5",
+          "inputPer1mUsd": 6,
+          "outputPer1mUsd": 30,
+          "referenceTaskUsd": 0.0367,
+          "maxContextTokens": 198000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "claude-opus-4-6",
+          "displayName": "Claude Opus 4.6",
+          "upstreamModelId": "claude-opus-4-6",
+          "inputPer1mUsd": 6,
+          "outputPer1mUsd": 30,
+          "referenceTaskUsd": 0.0367,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "claude-opus-4-6-fast",
+          "displayName": "Claude Opus 4.6 Fast",
+          "upstreamModelId": "claude-opus-4-6-fast",
+          "inputPer1mUsd": 36,
+          "outputPer1mUsd": 180,
+          "referenceTaskUsd": 0.2203,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "claude-opus-4-7",
+          "displayName": "Claude Opus 4.7",
+          "upstreamModelId": "claude-opus-4-7",
+          "inputPer1mUsd": 6,
+          "outputPer1mUsd": 30,
+          "referenceTaskUsd": 0.0367,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "claude-opus-4-7-fast",
+          "displayName": "Claude Opus 4.7 Fast",
+          "upstreamModelId": "claude-opus-4-7-fast",
+          "inputPer1mUsd": 36,
+          "outputPer1mUsd": 180,
+          "referenceTaskUsd": 0.2203,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "claude-opus-4-8",
+          "displayName": "Claude Opus 4.8",
+          "upstreamModelId": "claude-opus-4-8",
+          "inputPer1mUsd": 6,
+          "outputPer1mUsd": 30,
+          "referenceTaskUsd": 0.0367,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "claude-opus-4-8-fast",
+          "displayName": "Claude Opus 4.8 Fast",
+          "upstreamModelId": "claude-opus-4-8-fast",
+          "inputPer1mUsd": 12,
+          "outputPer1mUsd": 60,
+          "referenceTaskUsd": 0.0734,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "claude-sonnet-4-5",
+          "displayName": "Claude Sonnet 4.5",
+          "upstreamModelId": "claude-sonnet-4-5",
+          "inputPer1mUsd": 3.75,
+          "outputPer1mUsd": 18.75,
+          "referenceTaskUsd": 0.0229,
+          "maxContextTokens": 198000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "claude-sonnet-4-6",
+          "displayName": "Claude Sonnet 4.6",
+          "upstreamModelId": "claude-sonnet-4-6",
+          "inputPer1mUsd": 3.6,
+          "outputPer1mUsd": 18,
+          "referenceTaskUsd": 0.022,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "deepseek-v3.2",
+          "displayName": "DeepSeek V3.2",
+          "upstreamModelId": "deepseek-v3.2",
+          "inputPer1mUsd": 0.33,
+          "outputPer1mUsd": 0.48,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 160000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "deepseek-v4-flash",
+          "displayName": "DeepSeek V4 Flash",
+          "upstreamModelId": "deepseek-v4-flash",
+          "inputPer1mUsd": 0.17,
+          "outputPer1mUsd": 0.35,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "deepseek-v4-pro",
+          "displayName": "DeepSeek V4 Pro",
+          "upstreamModelId": "deepseek-v4-pro",
+          "inputPer1mUsd": 1.73,
+          "outputPer1mUsd": 3.796,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "e2ee-gemma-3-27b-p",
+          "displayName": "Gemma 3 27B",
+          "upstreamModelId": "e2ee-gemma-3-27b-p",
+          "inputPer1mUsd": 0.14,
+          "outputPer1mUsd": 0.5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 40000,
+          "teeAttested": true,
+          "e2ee": true
+        },
+        {
+          "modelId": "e2ee-gemma-4-26b-a4b-uncensored-p",
+          "displayName": "Gemma 4 26B A4B Uncensored",
+          "upstreamModelId": "e2ee-gemma-4-26b-a4b-uncensored-p",
+          "inputPer1mUsd": 0.19,
+          "outputPer1mUsd": 0.88,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 64000,
+          "teeAttested": true,
+          "e2ee": true
+        },
+        {
+          "modelId": "e2ee-gemma-4-31b",
+          "displayName": "Gemma 4 31B Instruct",
+          "upstreamModelId": "e2ee-gemma-4-31b",
+          "inputPer1mUsd": 0.139,
+          "outputPer1mUsd": 0.43,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 32000,
+          "teeAttested": true,
+          "e2ee": true
+        },
+        {
+          "modelId": "e2ee-glm-4-7-flash-p",
+          "displayName": "GLM 4.7 Flash",
+          "upstreamModelId": "e2ee-glm-4-7-flash-p",
+          "inputPer1mUsd": 0.13,
+          "outputPer1mUsd": 0.55,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 198000,
+          "teeAttested": true,
+          "e2ee": true
+        },
+        {
+          "modelId": "e2ee-glm-4-7-p",
+          "displayName": "GLM 4.7",
+          "upstreamModelId": "e2ee-glm-4-7-p",
+          "inputPer1mUsd": 1.1,
+          "outputPer1mUsd": 4.15,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": true,
+          "e2ee": true
+        },
+        {
+          "modelId": "e2ee-glm-5-1",
+          "displayName": "GLM 5.1",
+          "upstreamModelId": "e2ee-glm-5-1",
+          "inputPer1mUsd": 1.1,
+          "outputPer1mUsd": 4.15,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 200000,
+          "teeAttested": true,
+          "e2ee": true
+        },
+        {
+          "modelId": "e2ee-gpt-oss-120b-p",
+          "displayName": "GPT OSS 120B",
+          "upstreamModelId": "e2ee-gpt-oss-120b-p",
+          "inputPer1mUsd": 0.13,
+          "outputPer1mUsd": 0.65,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": true,
+          "e2ee": true
+        },
+        {
+          "modelId": "e2ee-gpt-oss-20b-p",
+          "displayName": "GPT OSS 20B",
+          "upstreamModelId": "e2ee-gpt-oss-20b-p",
+          "inputPer1mUsd": 0.05,
+          "outputPer1mUsd": 0.19,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": true,
+          "e2ee": true
+        },
+        {
+          "modelId": "e2ee-qwen-2-5-7b-p",
+          "displayName": "Qwen 2.5 7B",
+          "upstreamModelId": "e2ee-qwen-2-5-7b-p",
+          "inputPer1mUsd": 0.05,
+          "outputPer1mUsd": 0.13,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 32000,
+          "teeAttested": true,
+          "e2ee": true
+        },
+        {
+          "modelId": "e2ee-qwen3-30b-a3b-p",
+          "displayName": "Qwen3 30B A3B",
+          "upstreamModelId": "e2ee-qwen3-30b-a3b-p",
+          "inputPer1mUsd": 0.19,
+          "outputPer1mUsd": 0.69,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": true,
+          "e2ee": true
+        },
+        {
+          "modelId": "e2ee-qwen3-6-35b-a3b",
+          "displayName": "Qwen 3.6 35B A3B FP8",
+          "upstreamModelId": "e2ee-qwen3-6-35b-a3b",
+          "inputPer1mUsd": 0.182,
+          "outputPer1mUsd": 1.18,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 32000,
+          "teeAttested": true,
+          "e2ee": true
+        },
+        {
+          "modelId": "e2ee-qwen3-6-35b-a3b-uncensored-p",
+          "displayName": "Qwen3.6 35B A3B Uncensored",
+          "upstreamModelId": "e2ee-qwen3-6-35b-a3b-uncensored-p",
+          "inputPer1mUsd": 0.38,
+          "outputPer1mUsd": 1.88,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": true,
+          "e2ee": true
+        },
+        {
+          "modelId": "e2ee-qwen3-vl-30b-a3b-p",
+          "displayName": "Qwen3 VL 30B A3B",
+          "upstreamModelId": "e2ee-qwen3-vl-30b-a3b-p",
+          "inputPer1mUsd": 0.25,
+          "outputPer1mUsd": 0.9,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": true,
+          "e2ee": true
+        },
+        {
+          "modelId": "e2ee-venice-uncensored-24b-p",
+          "displayName": "Venice Uncensored 1.1",
+          "upstreamModelId": "e2ee-venice-uncensored-24b-p",
+          "inputPer1mUsd": 0.25,
+          "outputPer1mUsd": 1.15,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 32000,
+          "teeAttested": true,
+          "e2ee": true
+        },
+        {
+          "modelId": "gemini-3-1-pro-preview",
+          "displayName": "Gemini 3.1 Pro Preview",
+          "upstreamModelId": "gemini-3-1-pro-preview",
+          "inputPer1mUsd": 2.5,
+          "outputPer1mUsd": 15,
+          "referenceTaskUsd": 0.0179,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "gemini-3-5-flash",
+          "displayName": "Gemini 3.5 Flash",
+          "upstreamModelId": "gemini-3-5-flash",
+          "inputPer1mUsd": 1.55,
+          "outputPer1mUsd": 9.45,
+          "referenceTaskUsd": 0.0112,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "gemini-3-flash-preview",
+          "displayName": "Gemini 3 Flash Preview",
+          "upstreamModelId": "gemini-3-flash-preview",
+          "inputPer1mUsd": 0.7,
+          "outputPer1mUsd": 3.75,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "gemma-4-uncensored",
+          "displayName": "Gemma 4 Uncensored",
+          "upstreamModelId": "gemma-4-uncensored",
+          "inputPer1mUsd": 0.1625,
+          "outputPer1mUsd": 0.5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "google-gemma-3-27b-it",
+          "displayName": "Google Gemma 3 27B Instruct",
+          "upstreamModelId": "google-gemma-3-27b-it",
+          "inputPer1mUsd": 0.12,
+          "outputPer1mUsd": 0.2,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 198000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "google-gemma-4-26b-a4b-it",
+          "displayName": "Google Gemma 4 26B A4B Instruct",
+          "upstreamModelId": "google-gemma-4-26b-a4b-it",
+          "inputPer1mUsd": 0.1625,
+          "outputPer1mUsd": 0.5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "google-gemma-4-31b-it",
+          "displayName": "Google Gemma 4 31B Instruct",
+          "upstreamModelId": "google-gemma-4-31b-it",
+          "inputPer1mUsd": 0.12,
+          "outputPer1mUsd": 0.36,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "grok-4-20",
+          "displayName": "Grok 4.20",
+          "upstreamModelId": "grok-4-20",
+          "inputPer1mUsd": 1.42,
+          "outputPer1mUsd": 2.83,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 2000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "grok-4-20-multi-agent",
+          "displayName": "Grok 4.20 Multi-Agent",
+          "upstreamModelId": "grok-4-20-multi-agent",
+          "inputPer1mUsd": 1.42,
+          "outputPer1mUsd": 2.83,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 2000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "grok-4-3",
+          "displayName": "Grok 4.3",
+          "upstreamModelId": "grok-4-3",
+          "inputPer1mUsd": 1.42,
+          "outputPer1mUsd": 2.83,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "grok-build-0-1",
+          "displayName": "Grok Build 0.1",
+          "upstreamModelId": "grok-build-0-1",
+          "inputPer1mUsd": 1,
+          "outputPer1mUsd": 2,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "hermes-3-llama-3.1-405b",
+          "displayName": "Hermes 3 Llama 3.1 405b",
+          "upstreamModelId": "hermes-3-llama-3.1-405b",
+          "inputPer1mUsd": 1.1,
+          "outputPer1mUsd": 3,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "kimi-k2-5",
+          "displayName": "Kimi K2.5",
+          "upstreamModelId": "kimi-k2-5",
+          "inputPer1mUsd": 0.56,
+          "outputPer1mUsd": 3.5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "kimi-k2-6",
+          "displayName": "Kimi K2.6",
+          "upstreamModelId": "kimi-k2-6",
+          "inputPer1mUsd": 0.85,
+          "outputPer1mUsd": 4.655,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "llama-3.2-3b",
+          "displayName": "Llama 3.2 3B",
+          "upstreamModelId": "llama-3.2-3b",
+          "inputPer1mUsd": 0.15,
+          "outputPer1mUsd": 0.6,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "llama-3.3-70b",
+          "displayName": "Llama 3.3 70B",
+          "upstreamModelId": "llama-3.3-70b",
+          "inputPer1mUsd": 0.7,
+          "outputPer1mUsd": 2.8,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "mercury-2",
+          "displayName": "Mercury 2",
+          "upstreamModelId": "mercury-2",
+          "inputPer1mUsd": 0.3125,
+          "outputPer1mUsd": 0.9375,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "minimax-m25",
+          "displayName": "MiniMax M2.5",
+          "upstreamModelId": "minimax-m25",
+          "inputPer1mUsd": 0.34,
+          "outputPer1mUsd": 1.19,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 198000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "minimax-m27",
+          "displayName": "MiniMax M2.7",
+          "upstreamModelId": "minimax-m27",
+          "inputPer1mUsd": 0.375,
+          "outputPer1mUsd": 1.5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 198000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "minimax-m3",
+          "displayName": "MiniMax M3",
+          "upstreamModelId": "minimax-m3",
+          "inputPer1mUsd": 0.3,
+          "outputPer1mUsd": 1.2,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 500000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "mistral-small-2603",
+          "displayName": "Mistral Small 4",
+          "upstreamModelId": "mistral-small-2603",
+          "inputPer1mUsd": 0.1875,
+          "outputPer1mUsd": 0.75,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "mistral-small-3-2-24b-instruct",
+          "displayName": "Mistral Small 3.2 24B Instruct",
+          "upstreamModelId": "mistral-small-3-2-24b-instruct",
+          "inputPer1mUsd": 0.09375,
+          "outputPer1mUsd": 0.25,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "nvidia-nemotron-3-nano-30b-a3b",
+          "displayName": "NVIDIA Nemotron 3 Nano 30B",
+          "upstreamModelId": "nvidia-nemotron-3-nano-30b-a3b",
+          "inputPer1mUsd": 0.075,
+          "outputPer1mUsd": 0.3,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "nvidia-nemotron-3-ultra-550b-a55b",
+          "displayName": "NVIDIA Nemotron 3 Ultra",
+          "upstreamModelId": "nvidia-nemotron-3-ultra-550b-a55b",
+          "inputPer1mUsd": 0.625,
+          "outputPer1mUsd": 3.125,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "nvidia-nemotron-cascade-2-30b-a3b",
+          "displayName": "Nemotron Cascade 2 30B A3B",
+          "upstreamModelId": "nvidia-nemotron-cascade-2-30b-a3b",
+          "inputPer1mUsd": 0.14,
+          "outputPer1mUsd": 0.8,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "olafangensan-glm-4.7-flash-heretic",
+          "displayName": "GLM 4.7 Flash Heretic",
+          "upstreamModelId": "olafangensan-glm-4.7-flash-heretic",
+          "inputPer1mUsd": 0.14,
+          "outputPer1mUsd": 0.8,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 200000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "openai-gpt-4o-2024-11-20",
+          "displayName": "GPT-4o",
+          "upstreamModelId": "openai-gpt-4o-2024-11-20",
+          "inputPer1mUsd": 3.125,
+          "outputPer1mUsd": 12.5,
+          "referenceTaskUsd": 0.0159,
+          "maxContextTokens": 128000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "openai-gpt-4o-mini-2024-07-18",
+          "displayName": "GPT-4o Mini",
+          "upstreamModelId": "openai-gpt-4o-mini-2024-07-18",
+          "inputPer1mUsd": 0.1875,
+          "outputPer1mUsd": 0.75,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "openai-gpt-52",
+          "displayName": "GPT-5.2",
+          "upstreamModelId": "openai-gpt-52",
+          "inputPer1mUsd": 2.19,
+          "outputPer1mUsd": 17.5,
+          "referenceTaskUsd": 0.0201,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "openai-gpt-52-codex",
+          "displayName": "GPT-5.2 Codex",
+          "upstreamModelId": "openai-gpt-52-codex",
+          "inputPer1mUsd": 2.19,
+          "outputPer1mUsd": 17.5,
+          "referenceTaskUsd": 0.0201,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "openai-gpt-53-codex",
+          "displayName": "GPT-5.3 Codex",
+          "upstreamModelId": "openai-gpt-53-codex",
+          "inputPer1mUsd": 2.19,
+          "outputPer1mUsd": 17.5,
+          "referenceTaskUsd": 0.0201,
+          "maxContextTokens": 400000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "openai-gpt-54",
+          "displayName": "GPT-5.4",
+          "upstreamModelId": "openai-gpt-54",
+          "inputPer1mUsd": 3.13,
+          "outputPer1mUsd": 18.8,
+          "referenceTaskUsd": 0.0224,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "openai-gpt-54-mini",
+          "displayName": "GPT-5.4 Mini",
+          "upstreamModelId": "openai-gpt-54-mini",
+          "inputPer1mUsd": 0.9375,
+          "outputPer1mUsd": 5.625,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 400000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "openai-gpt-54-pro",
+          "displayName": "GPT-5.4 Pro",
+          "upstreamModelId": "openai-gpt-54-pro",
+          "inputPer1mUsd": 37.5,
+          "outputPer1mUsd": 225,
+          "referenceTaskUsd": 0.2679,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "openai-gpt-55",
+          "displayName": "GPT-5.5",
+          "upstreamModelId": "openai-gpt-55",
+          "inputPer1mUsd": 6.25,
+          "outputPer1mUsd": 37.5,
+          "referenceTaskUsd": 0.0446,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "openai-gpt-55-pro",
+          "displayName": "GPT-5.5 Pro",
+          "upstreamModelId": "openai-gpt-55-pro",
+          "inputPer1mUsd": 37.5,
+          "outputPer1mUsd": 225,
+          "referenceTaskUsd": 0.2679,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "openai-gpt-oss-120b",
+          "displayName": "OpenAI GPT OSS 120B",
+          "upstreamModelId": "openai-gpt-oss-120b",
+          "inputPer1mUsd": 0.07,
+          "outputPer1mUsd": 0.3,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "qwen-3-6-plus",
+          "displayName": "Qwen 3.6 Plus Uncensored",
+          "upstreamModelId": "qwen-3-6-plus",
+          "inputPer1mUsd": 0.625,
+          "outputPer1mUsd": 3.75,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "qwen-3-7-max",
+          "displayName": "Qwen 3.7 Max",
+          "upstreamModelId": "qwen-3-7-max",
+          "inputPer1mUsd": 2.7,
+          "outputPer1mUsd": 8.05,
+          "referenceTaskUsd": 0.0109,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "qwen-3-7-plus",
+          "displayName": "Qwen 3.7 Plus",
+          "upstreamModelId": "qwen-3-7-plus",
+          "inputPer1mUsd": 0.5,
+          "outputPer1mUsd": 2,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "qwen3-235b-a22b-instruct-2507",
+          "displayName": "Qwen 3 235B A22B Instruct 2507",
+          "upstreamModelId": "qwen3-235b-a22b-instruct-2507",
+          "inputPer1mUsd": 0.15,
+          "outputPer1mUsd": 0.75,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "qwen3-235b-a22b-thinking-2507",
+          "displayName": "Qwen 3 235B A22B Thinking 2507",
+          "upstreamModelId": "qwen3-235b-a22b-thinking-2507",
+          "inputPer1mUsd": 0.45,
+          "outputPer1mUsd": 3.5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "qwen3-5-35b-a3b",
+          "displayName": "Qwen 3.5 35B A3B",
+          "upstreamModelId": "qwen3-5-35b-a3b",
+          "inputPer1mUsd": 0.3125,
+          "outputPer1mUsd": 1.25,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "qwen3-5-397b-a17b",
+          "displayName": "Qwen 3.5 397B",
+          "upstreamModelId": "qwen3-5-397b-a17b",
+          "inputPer1mUsd": 0.75,
+          "outputPer1mUsd": 4.5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "qwen3-5-9b",
+          "displayName": "Qwen 3.5 9B",
+          "upstreamModelId": "qwen3-5-9b",
+          "inputPer1mUsd": 0.1,
+          "outputPer1mUsd": 0.15,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "qwen3-6-27b",
+          "displayName": "Qwen 3.6 27B",
+          "upstreamModelId": "qwen3-6-27b",
+          "inputPer1mUsd": 0.325,
+          "outputPer1mUsd": 3.25,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "qwen3-coder-480b-a35b-instruct-turbo",
+          "displayName": "Qwen 3 Coder 480B Turbo",
+          "upstreamModelId": "qwen3-coder-480b-a35b-instruct-turbo",
+          "inputPer1mUsd": 0.35,
+          "outputPer1mUsd": 1.5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "qwen3-next-80b",
+          "displayName": "Qwen 3 Next 80b",
+          "upstreamModelId": "qwen3-next-80b",
+          "inputPer1mUsd": 0.35,
+          "outputPer1mUsd": 1.9,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "qwen3-vl-235b-a22b",
+          "displayName": "Qwen3 VL 235B",
+          "upstreamModelId": "qwen3-vl-235b-a22b",
+          "inputPer1mUsd": 0.25,
+          "outputPer1mUsd": 1.5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "tencent-hy3-preview",
+          "displayName": "Hy3 Preview",
+          "upstreamModelId": "tencent-hy3-preview",
+          "inputPer1mUsd": 0.063,
+          "outputPer1mUsd": 0.21,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "venice-uncensored-1-2",
+          "displayName": "Venice Uncensored 1.2",
+          "upstreamModelId": "venice-uncensored-1-2",
+          "inputPer1mUsd": 0.2,
+          "outputPer1mUsd": 0.9,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "venice-uncensored-role-play",
+          "displayName": "Venice Role Play Uncensored",
+          "upstreamModelId": "venice-uncensored-role-play",
+          "inputPer1mUsd": 0.5,
+          "outputPer1mUsd": 2,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "xiaomi-mimo-v2-5",
+          "displayName": "MiMo-V2.5",
+          "upstreamModelId": "xiaomi-mimo-v2-5",
+          "inputPer1mUsd": 0.175,
+          "outputPer1mUsd": 0.35,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "z-ai-glm-5-turbo",
+          "displayName": "GLM 5 Turbo",
+          "upstreamModelId": "z-ai-glm-5-turbo",
+          "inputPer1mUsd": 1.2,
+          "outputPer1mUsd": 4,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 200000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "z-ai-glm-5v-turbo",
+          "displayName": "GLM 5V Turbo",
+          "upstreamModelId": "z-ai-glm-5v-turbo",
+          "inputPer1mUsd": 1.5,
+          "outputPer1mUsd": 5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 200000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "zai-org-glm-4.6",
+          "displayName": "GLM 4.6",
+          "upstreamModelId": "zai-org-glm-4.6",
+          "inputPer1mUsd": 0.85,
+          "outputPer1mUsd": 2.75,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 198000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "zai-org-glm-4.7",
+          "displayName": "GLM 4.7",
+          "upstreamModelId": "zai-org-glm-4.7",
+          "inputPer1mUsd": 0.55,
+          "outputPer1mUsd": 2.65,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 198000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "zai-org-glm-4.7-flash",
+          "displayName": "GLM 4.7 Flash",
+          "upstreamModelId": "zai-org-glm-4.7-flash",
+          "inputPer1mUsd": 0.125,
+          "outputPer1mUsd": 0.5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "zai-org-glm-5",
+          "displayName": "GLM 5",
+          "upstreamModelId": "zai-org-glm-5",
+          "inputPer1mUsd": 1,
+          "outputPer1mUsd": 3.2,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 198000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "zai-org-glm-5-1",
+          "displayName": "GLM 5.1",
+          "upstreamModelId": "zai-org-glm-5-1",
+          "inputPer1mUsd": 1.75,
+          "outputPer1mUsd": 5.5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 200000,
+          "teeAttested": false,
+          "e2ee": false
+        }
+      ]
+    },
+    "redpill": {
+      "modelCount": 1,
+      "models": [
+        {
+          "modelId": "redpill/phala-gemma-4-26b-a4b-uncensored",
+          "displayName": "Phala Gemma 4 26B Uncensored (Redpill)",
+          "upstreamModelId": "phala/gemma-4-26b-a4b-uncensored",
+          "inputPer1mUsd": 0.15,
+          "outputPer1mUsd": 0.7,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 66000,
+          "teeAttested": true,
+          "e2ee": false
+        }
+      ]
+    },
+    "near": {
+      "modelCount": 1,
+      "models": [
+        {
+          "modelId": "zai-org/GLM-5.1-FP8",
+          "displayName": "GLM 5.1 FP8 (NEAR AI)",
+          "upstreamModelId": "zai-org/GLM-5.1-FP8",
+          "inputPer1mUsd": 0.35,
+          "outputPer1mUsd": 1.2,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": true,
+          "e2ee": true
+        }
+      ]
+    },
+    "chutes": {
+      "modelCount": 1,
+      "models": [
+        {
+          "modelId": "tee-qwen3-5-122b-chutes",
+          "displayName": "TEE Qwen3.5 122B (Chutes)",
+          "upstreamModelId": "tee-qwen3-5-122b",
+          "inputPer1mUsd": 0.4,
+          "outputPer1mUsd": 1.5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": true,
+          "e2ee": false
+        }
+      ]
+    },
+    "phala": {
+      "modelCount": 1,
+      "models": [
+        {
+          "modelId": "phala/gemma-4-26b-a4b-uncensored",
+          "displayName": "Phala Gemma 4 26B Uncensored",
+          "upstreamModelId": "phala/gemma-4-26b-a4b-uncensored",
+          "inputPer1mUsd": 0.15,
+          "outputPer1mUsd": 0.7,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 66000,
+          "teeAttested": true,
+          "e2ee": true
+        }
+      ]
+    }
+  },
+  "models": [
+    {
+      "modelId": "aion-labs-aion-2-0",
+      "modelProvider": "venice",
+      "displayName": "Aion 2.0",
+      "upstreamModelId": "aion-labs-aion-2-0",
+      "inputPer1mUsd": 1,
+      "outputPer1mUsd": 2,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "arcee-trinity-large-thinking",
+      "modelProvider": "venice",
+      "displayName": "Trinity Large Thinking",
+      "upstreamModelId": "arcee-trinity-large-thinking",
+      "inputPer1mUsd": 0.3125,
+      "outputPer1mUsd": 1.125,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "claude-fable-5",
+      "modelProvider": "venice",
+      "displayName": "Claude Fable 5",
+      "upstreamModelId": "claude-fable-5",
+      "inputPer1mUsd": 12,
+      "outputPer1mUsd": 60,
+      "referenceTaskUsd": 0.0734,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "claude-opus-4-5",
+      "modelProvider": "venice",
+      "displayName": "Claude Opus 4.5",
+      "upstreamModelId": "claude-opus-4-5",
+      "inputPer1mUsd": 6,
+      "outputPer1mUsd": 30,
+      "referenceTaskUsd": 0.0367,
+      "maxContextTokens": 198000
+    },
+    {
+      "modelId": "claude-opus-4-6",
+      "modelProvider": "venice",
+      "displayName": "Claude Opus 4.6",
+      "upstreamModelId": "claude-opus-4-6",
+      "inputPer1mUsd": 6,
+      "outputPer1mUsd": 30,
+      "referenceTaskUsd": 0.0367,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "claude-opus-4-6-fast",
+      "modelProvider": "venice",
+      "displayName": "Claude Opus 4.6 Fast",
+      "upstreamModelId": "claude-opus-4-6-fast",
+      "inputPer1mUsd": 36,
+      "outputPer1mUsd": 180,
+      "referenceTaskUsd": 0.2203,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "claude-opus-4-7",
+      "modelProvider": "venice",
+      "displayName": "Claude Opus 4.7",
+      "upstreamModelId": "claude-opus-4-7",
+      "inputPer1mUsd": 6,
+      "outputPer1mUsd": 30,
+      "referenceTaskUsd": 0.0367,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "claude-opus-4-7-fast",
+      "modelProvider": "venice",
+      "displayName": "Claude Opus 4.7 Fast",
+      "upstreamModelId": "claude-opus-4-7-fast",
+      "inputPer1mUsd": 36,
+      "outputPer1mUsd": 180,
+      "referenceTaskUsd": 0.2203,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "claude-opus-4-8",
+      "modelProvider": "venice",
+      "displayName": "Claude Opus 4.8",
+      "upstreamModelId": "claude-opus-4-8",
+      "inputPer1mUsd": 6,
+      "outputPer1mUsd": 30,
+      "referenceTaskUsd": 0.0367,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "claude-opus-4-8-fast",
+      "modelProvider": "venice",
+      "displayName": "Claude Opus 4.8 Fast",
+      "upstreamModelId": "claude-opus-4-8-fast",
+      "inputPer1mUsd": 12,
+      "outputPer1mUsd": 60,
+      "referenceTaskUsd": 0.0734,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "claude-sonnet-4-5",
+      "modelProvider": "venice",
+      "displayName": "Claude Sonnet 4.5",
+      "upstreamModelId": "claude-sonnet-4-5",
+      "inputPer1mUsd": 3.75,
+      "outputPer1mUsd": 18.75,
+      "referenceTaskUsd": 0.0229,
+      "maxContextTokens": 198000
+    },
+    {
+      "modelId": "claude-sonnet-4-6",
+      "modelProvider": "venice",
+      "displayName": "Claude Sonnet 4.6",
+      "upstreamModelId": "claude-sonnet-4-6",
+      "inputPer1mUsd": 3.6,
+      "outputPer1mUsd": 18,
+      "referenceTaskUsd": 0.022,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "deepseek-v3.2",
+      "modelProvider": "venice",
+      "displayName": "DeepSeek V3.2",
+      "upstreamModelId": "deepseek-v3.2",
+      "inputPer1mUsd": 0.33,
+      "outputPer1mUsd": 0.48,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 160000
+    },
+    {
+      "modelId": "deepseek-v4-flash",
+      "modelProvider": "venice",
+      "displayName": "DeepSeek V4 Flash",
+      "upstreamModelId": "deepseek-v4-flash",
+      "inputPer1mUsd": 0.17,
+      "outputPer1mUsd": 0.35,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "deepseek-v4-pro",
+      "modelProvider": "venice",
+      "displayName": "DeepSeek V4 Pro",
+      "upstreamModelId": "deepseek-v4-pro",
+      "inputPer1mUsd": 1.73,
+      "outputPer1mUsd": 3.796,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "e2ee-gemma-3-27b-p",
+      "modelProvider": "venice",
+      "displayName": "Gemma 3 27B",
+      "upstreamModelId": "e2ee-gemma-3-27b-p",
+      "inputPer1mUsd": 0.14,
+      "outputPer1mUsd": 0.5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 40000
+    },
+    {
+      "modelId": "e2ee-gemma-4-26b-a4b-uncensored-p",
+      "modelProvider": "venice",
+      "displayName": "Gemma 4 26B A4B Uncensored",
+      "upstreamModelId": "e2ee-gemma-4-26b-a4b-uncensored-p",
+      "inputPer1mUsd": 0.19,
+      "outputPer1mUsd": 0.88,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 64000
+    },
+    {
+      "modelId": "e2ee-gemma-4-31b",
+      "modelProvider": "venice",
+      "displayName": "Gemma 4 31B Instruct",
+      "upstreamModelId": "e2ee-gemma-4-31b",
+      "inputPer1mUsd": 0.139,
+      "outputPer1mUsd": 0.43,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 32000
+    },
+    {
+      "modelId": "e2ee-glm-4-7-flash-p",
+      "modelProvider": "venice",
+      "displayName": "GLM 4.7 Flash",
+      "upstreamModelId": "e2ee-glm-4-7-flash-p",
+      "inputPer1mUsd": 0.13,
+      "outputPer1mUsd": 0.55,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 198000
+    },
+    {
+      "modelId": "e2ee-glm-4-7-p",
+      "modelProvider": "venice",
+      "displayName": "GLM 4.7",
+      "upstreamModelId": "e2ee-glm-4-7-p",
+      "inputPer1mUsd": 1.1,
+      "outputPer1mUsd": 4.15,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "e2ee-glm-5-1",
+      "modelProvider": "venice",
+      "displayName": "GLM 5.1",
+      "upstreamModelId": "e2ee-glm-5-1",
+      "inputPer1mUsd": 1.1,
+      "outputPer1mUsd": 4.15,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 200000
+    },
+    {
+      "modelId": "e2ee-gpt-oss-120b-p",
+      "modelProvider": "venice",
+      "displayName": "GPT OSS 120B",
+      "upstreamModelId": "e2ee-gpt-oss-120b-p",
+      "inputPer1mUsd": 0.13,
+      "outputPer1mUsd": 0.65,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "e2ee-gpt-oss-20b-p",
+      "modelProvider": "venice",
+      "displayName": "GPT OSS 20B",
+      "upstreamModelId": "e2ee-gpt-oss-20b-p",
+      "inputPer1mUsd": 0.05,
+      "outputPer1mUsd": 0.19,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "e2ee-qwen-2-5-7b-p",
+      "modelProvider": "venice",
+      "displayName": "Qwen 2.5 7B",
+      "upstreamModelId": "e2ee-qwen-2-5-7b-p",
+      "inputPer1mUsd": 0.05,
+      "outputPer1mUsd": 0.13,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 32000
+    },
+    {
+      "modelId": "e2ee-qwen3-30b-a3b-p",
+      "modelProvider": "venice",
+      "displayName": "Qwen3 30B A3B",
+      "upstreamModelId": "e2ee-qwen3-30b-a3b-p",
+      "inputPer1mUsd": 0.19,
+      "outputPer1mUsd": 0.69,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "e2ee-qwen3-6-35b-a3b",
+      "modelProvider": "venice",
+      "displayName": "Qwen 3.6 35B A3B FP8",
+      "upstreamModelId": "e2ee-qwen3-6-35b-a3b",
+      "inputPer1mUsd": 0.182,
+      "outputPer1mUsd": 1.18,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 32000
+    },
+    {
+      "modelId": "e2ee-qwen3-6-35b-a3b-uncensored-p",
+      "modelProvider": "venice",
+      "displayName": "Qwen3.6 35B A3B Uncensored",
+      "upstreamModelId": "e2ee-qwen3-6-35b-a3b-uncensored-p",
+      "inputPer1mUsd": 0.38,
+      "outputPer1mUsd": 1.88,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "e2ee-qwen3-vl-30b-a3b-p",
+      "modelProvider": "venice",
+      "displayName": "Qwen3 VL 30B A3B",
+      "upstreamModelId": "e2ee-qwen3-vl-30b-a3b-p",
+      "inputPer1mUsd": 0.25,
+      "outputPer1mUsd": 0.9,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "e2ee-venice-uncensored-24b-p",
+      "modelProvider": "venice",
+      "displayName": "Venice Uncensored 1.1",
+      "upstreamModelId": "e2ee-venice-uncensored-24b-p",
+      "inputPer1mUsd": 0.25,
+      "outputPer1mUsd": 1.15,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 32000
+    },
+    {
+      "modelId": "gemini-3-1-pro-preview",
+      "modelProvider": "venice",
+      "displayName": "Gemini 3.1 Pro Preview",
+      "upstreamModelId": "gemini-3-1-pro-preview",
+      "inputPer1mUsd": 2.5,
+      "outputPer1mUsd": 15,
+      "referenceTaskUsd": 0.0179,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "gemini-3-5-flash",
+      "modelProvider": "venice",
+      "displayName": "Gemini 3.5 Flash",
+      "upstreamModelId": "gemini-3-5-flash",
+      "inputPer1mUsd": 1.55,
+      "outputPer1mUsd": 9.45,
+      "referenceTaskUsd": 0.0112,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "gemini-3-flash-preview",
+      "modelProvider": "venice",
+      "displayName": "Gemini 3 Flash Preview",
+      "upstreamModelId": "gemini-3-flash-preview",
+      "inputPer1mUsd": 0.7,
+      "outputPer1mUsd": 3.75,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "gemma-4-uncensored",
+      "modelProvider": "venice",
+      "displayName": "Gemma 4 Uncensored",
+      "upstreamModelId": "gemma-4-uncensored",
+      "inputPer1mUsd": 0.1625,
+      "outputPer1mUsd": 0.5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "google-gemma-3-27b-it",
+      "modelProvider": "venice",
+      "displayName": "Google Gemma 3 27B Instruct",
+      "upstreamModelId": "google-gemma-3-27b-it",
+      "inputPer1mUsd": 0.12,
+      "outputPer1mUsd": 0.2,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 198000
+    },
+    {
+      "modelId": "google-gemma-4-26b-a4b-it",
+      "modelProvider": "venice",
+      "displayName": "Google Gemma 4 26B A4B Instruct",
+      "upstreamModelId": "google-gemma-4-26b-a4b-it",
+      "inputPer1mUsd": 0.1625,
+      "outputPer1mUsd": 0.5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "google-gemma-4-31b-it",
+      "modelProvider": "venice",
+      "displayName": "Google Gemma 4 31B Instruct",
+      "upstreamModelId": "google-gemma-4-31b-it",
+      "inputPer1mUsd": 0.12,
+      "outputPer1mUsd": 0.36,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "grok-4-20",
+      "modelProvider": "venice",
+      "displayName": "Grok 4.20",
+      "upstreamModelId": "grok-4-20",
+      "inputPer1mUsd": 1.42,
+      "outputPer1mUsd": 2.83,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 2000000
+    },
+    {
+      "modelId": "grok-4-20-multi-agent",
+      "modelProvider": "venice",
+      "displayName": "Grok 4.20 Multi-Agent",
+      "upstreamModelId": "grok-4-20-multi-agent",
+      "inputPer1mUsd": 1.42,
+      "outputPer1mUsd": 2.83,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 2000000
+    },
+    {
+      "modelId": "grok-4-3",
+      "modelProvider": "venice",
+      "displayName": "Grok 4.3",
+      "upstreamModelId": "grok-4-3",
+      "inputPer1mUsd": 1.42,
+      "outputPer1mUsd": 2.83,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "grok-build-0-1",
+      "modelProvider": "venice",
+      "displayName": "Grok Build 0.1",
+      "upstreamModelId": "grok-build-0-1",
+      "inputPer1mUsd": 1,
+      "outputPer1mUsd": 2,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "hermes-3-llama-3.1-405b",
+      "modelProvider": "venice",
+      "displayName": "Hermes 3 Llama 3.1 405b",
+      "upstreamModelId": "hermes-3-llama-3.1-405b",
+      "inputPer1mUsd": 1.1,
+      "outputPer1mUsd": 3,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "kimi-k2-5",
+      "modelProvider": "venice",
+      "displayName": "Kimi K2.5",
+      "upstreamModelId": "kimi-k2-5",
+      "inputPer1mUsd": 0.56,
+      "outputPer1mUsd": 3.5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "kimi-k2-6",
+      "modelProvider": "venice",
+      "displayName": "Kimi K2.6",
+      "upstreamModelId": "kimi-k2-6",
+      "inputPer1mUsd": 0.85,
+      "outputPer1mUsd": 4.655,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "llama-3.2-3b",
+      "modelProvider": "venice",
+      "displayName": "Llama 3.2 3B",
+      "upstreamModelId": "llama-3.2-3b",
+      "inputPer1mUsd": 0.15,
+      "outputPer1mUsd": 0.6,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "llama-3.3-70b",
+      "modelProvider": "venice",
+      "displayName": "Llama 3.3 70B",
+      "upstreamModelId": "llama-3.3-70b",
+      "inputPer1mUsd": 0.7,
+      "outputPer1mUsd": 2.8,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "mercury-2",
+      "modelProvider": "venice",
+      "displayName": "Mercury 2",
+      "upstreamModelId": "mercury-2",
+      "inputPer1mUsd": 0.3125,
+      "outputPer1mUsd": 0.9375,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "minimax-m25",
+      "modelProvider": "venice",
+      "displayName": "MiniMax M2.5",
+      "upstreamModelId": "minimax-m25",
+      "inputPer1mUsd": 0.34,
+      "outputPer1mUsd": 1.19,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 198000
+    },
+    {
+      "modelId": "minimax-m27",
+      "modelProvider": "venice",
+      "displayName": "MiniMax M2.7",
+      "upstreamModelId": "minimax-m27",
+      "inputPer1mUsd": 0.375,
+      "outputPer1mUsd": 1.5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 198000
+    },
+    {
+      "modelId": "minimax-m3",
+      "modelProvider": "venice",
+      "displayName": "MiniMax M3",
+      "upstreamModelId": "minimax-m3",
+      "inputPer1mUsd": 0.3,
+      "outputPer1mUsd": 1.2,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 500000
+    },
+    {
+      "modelId": "mistral-small-2603",
+      "modelProvider": "venice",
+      "displayName": "Mistral Small 4",
+      "upstreamModelId": "mistral-small-2603",
+      "inputPer1mUsd": 0.1875,
+      "outputPer1mUsd": 0.75,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "mistral-small-3-2-24b-instruct",
+      "modelProvider": "venice",
+      "displayName": "Mistral Small 3.2 24B Instruct",
+      "upstreamModelId": "mistral-small-3-2-24b-instruct",
+      "inputPer1mUsd": 0.09375,
+      "outputPer1mUsd": 0.25,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "nvidia-nemotron-3-nano-30b-a3b",
+      "modelProvider": "venice",
+      "displayName": "NVIDIA Nemotron 3 Nano 30B",
+      "upstreamModelId": "nvidia-nemotron-3-nano-30b-a3b",
+      "inputPer1mUsd": 0.075,
+      "outputPer1mUsd": 0.3,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "nvidia-nemotron-3-ultra-550b-a55b",
+      "modelProvider": "venice",
+      "displayName": "NVIDIA Nemotron 3 Ultra",
+      "upstreamModelId": "nvidia-nemotron-3-ultra-550b-a55b",
+      "inputPer1mUsd": 0.625,
+      "outputPer1mUsd": 3.125,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "nvidia-nemotron-cascade-2-30b-a3b",
+      "modelProvider": "venice",
+      "displayName": "Nemotron Cascade 2 30B A3B",
+      "upstreamModelId": "nvidia-nemotron-cascade-2-30b-a3b",
+      "inputPer1mUsd": 0.14,
+      "outputPer1mUsd": 0.8,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "olafangensan-glm-4.7-flash-heretic",
+      "modelProvider": "venice",
+      "displayName": "GLM 4.7 Flash Heretic",
+      "upstreamModelId": "olafangensan-glm-4.7-flash-heretic",
+      "inputPer1mUsd": 0.14,
+      "outputPer1mUsd": 0.8,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 200000
+    },
+    {
+      "modelId": "openai-gpt-4o-2024-11-20",
+      "modelProvider": "venice",
+      "displayName": "GPT-4o",
+      "upstreamModelId": "openai-gpt-4o-2024-11-20",
+      "inputPer1mUsd": 3.125,
+      "outputPer1mUsd": 12.5,
+      "referenceTaskUsd": 0.0159,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "openai-gpt-4o-mini-2024-07-18",
+      "modelProvider": "venice",
+      "displayName": "GPT-4o Mini",
+      "upstreamModelId": "openai-gpt-4o-mini-2024-07-18",
+      "inputPer1mUsd": 0.1875,
+      "outputPer1mUsd": 0.75,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "openai-gpt-52",
+      "modelProvider": "venice",
+      "displayName": "GPT-5.2",
+      "upstreamModelId": "openai-gpt-52",
+      "inputPer1mUsd": 2.19,
+      "outputPer1mUsd": 17.5,
+      "referenceTaskUsd": 0.0201,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "openai-gpt-52-codex",
+      "modelProvider": "venice",
+      "displayName": "GPT-5.2 Codex",
+      "upstreamModelId": "openai-gpt-52-codex",
+      "inputPer1mUsd": 2.19,
+      "outputPer1mUsd": 17.5,
+      "referenceTaskUsd": 0.0201,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "openai-gpt-53-codex",
+      "modelProvider": "venice",
+      "displayName": "GPT-5.3 Codex",
+      "upstreamModelId": "openai-gpt-53-codex",
+      "inputPer1mUsd": 2.19,
+      "outputPer1mUsd": 17.5,
+      "referenceTaskUsd": 0.0201,
+      "maxContextTokens": 400000
+    },
+    {
+      "modelId": "openai-gpt-54",
+      "modelProvider": "venice",
+      "displayName": "GPT-5.4",
+      "upstreamModelId": "openai-gpt-54",
+      "inputPer1mUsd": 3.13,
+      "outputPer1mUsd": 18.8,
+      "referenceTaskUsd": 0.0224,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "openai-gpt-54-mini",
+      "modelProvider": "venice",
+      "displayName": "GPT-5.4 Mini",
+      "upstreamModelId": "openai-gpt-54-mini",
+      "inputPer1mUsd": 0.9375,
+      "outputPer1mUsd": 5.625,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 400000
+    },
+    {
+      "modelId": "openai-gpt-54-pro",
+      "modelProvider": "venice",
+      "displayName": "GPT-5.4 Pro",
+      "upstreamModelId": "openai-gpt-54-pro",
+      "inputPer1mUsd": 37.5,
+      "outputPer1mUsd": 225,
+      "referenceTaskUsd": 0.2679,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "openai-gpt-55",
+      "modelProvider": "venice",
+      "displayName": "GPT-5.5",
+      "upstreamModelId": "openai-gpt-55",
+      "inputPer1mUsd": 6.25,
+      "outputPer1mUsd": 37.5,
+      "referenceTaskUsd": 0.0446,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "openai-gpt-55-pro",
+      "modelProvider": "venice",
+      "displayName": "GPT-5.5 Pro",
+      "upstreamModelId": "openai-gpt-55-pro",
+      "inputPer1mUsd": 37.5,
+      "outputPer1mUsd": 225,
+      "referenceTaskUsd": 0.2679,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "openai-gpt-oss-120b",
+      "modelProvider": "venice",
+      "displayName": "OpenAI GPT OSS 120B",
+      "upstreamModelId": "openai-gpt-oss-120b",
+      "inputPer1mUsd": 0.07,
+      "outputPer1mUsd": 0.3,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "phala/gemma-4-26b-a4b-uncensored",
+      "modelProvider": "phala",
+      "displayName": "Phala Gemma 4 26B Uncensored",
+      "upstreamModelId": "phala/gemma-4-26b-a4b-uncensored",
+      "inputPer1mUsd": 0.15,
+      "outputPer1mUsd": 0.7,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 66000
+    },
+    {
+      "modelId": "qwen-3-6-plus",
+      "modelProvider": "venice",
+      "displayName": "Qwen 3.6 Plus Uncensored",
+      "upstreamModelId": "qwen-3-6-plus",
+      "inputPer1mUsd": 0.625,
+      "outputPer1mUsd": 3.75,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "qwen-3-7-max",
+      "modelProvider": "venice",
+      "displayName": "Qwen 3.7 Max",
+      "upstreamModelId": "qwen-3-7-max",
+      "inputPer1mUsd": 2.7,
+      "outputPer1mUsd": 8.05,
+      "referenceTaskUsd": 0.0109,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "qwen-3-7-plus",
+      "modelProvider": "venice",
+      "displayName": "Qwen 3.7 Plus",
+      "upstreamModelId": "qwen-3-7-plus",
+      "inputPer1mUsd": 0.5,
+      "outputPer1mUsd": 2,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "qwen3-235b-a22b-instruct-2507",
+      "modelProvider": "venice",
+      "displayName": "Qwen 3 235B A22B Instruct 2507",
+      "upstreamModelId": "qwen3-235b-a22b-instruct-2507",
+      "inputPer1mUsd": 0.15,
+      "outputPer1mUsd": 0.75,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "qwen3-235b-a22b-thinking-2507",
+      "modelProvider": "venice",
+      "displayName": "Qwen 3 235B A22B Thinking 2507",
+      "upstreamModelId": "qwen3-235b-a22b-thinking-2507",
+      "inputPer1mUsd": 0.45,
+      "outputPer1mUsd": 3.5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "qwen3-5-35b-a3b",
+      "modelProvider": "venice",
+      "displayName": "Qwen 3.5 35B A3B",
+      "upstreamModelId": "qwen3-5-35b-a3b",
+      "inputPer1mUsd": 0.3125,
+      "outputPer1mUsd": 1.25,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "qwen3-5-397b-a17b",
+      "modelProvider": "venice",
+      "displayName": "Qwen 3.5 397B",
+      "upstreamModelId": "qwen3-5-397b-a17b",
+      "inputPer1mUsd": 0.75,
+      "outputPer1mUsd": 4.5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "qwen3-5-9b",
+      "modelProvider": "venice",
+      "displayName": "Qwen 3.5 9B",
+      "upstreamModelId": "qwen3-5-9b",
+      "inputPer1mUsd": 0.1,
+      "outputPer1mUsd": 0.15,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "qwen3-6-27b",
+      "modelProvider": "venice",
+      "displayName": "Qwen 3.6 27B",
+      "upstreamModelId": "qwen3-6-27b",
+      "inputPer1mUsd": 0.325,
+      "outputPer1mUsd": 3.25,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "qwen3-coder-480b-a35b-instruct-turbo",
+      "modelProvider": "venice",
+      "displayName": "Qwen 3 Coder 480B Turbo",
+      "upstreamModelId": "qwen3-coder-480b-a35b-instruct-turbo",
+      "inputPer1mUsd": 0.35,
+      "outputPer1mUsd": 1.5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "qwen3-next-80b",
+      "modelProvider": "venice",
+      "displayName": "Qwen 3 Next 80b",
+      "upstreamModelId": "qwen3-next-80b",
+      "inputPer1mUsd": 0.35,
+      "outputPer1mUsd": 1.9,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "qwen3-vl-235b-a22b",
+      "modelProvider": "venice",
+      "displayName": "Qwen3 VL 235B",
+      "upstreamModelId": "qwen3-vl-235b-a22b",
+      "inputPer1mUsd": 0.25,
+      "outputPer1mUsd": 1.5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "redpill/phala-gemma-4-26b-a4b-uncensored",
+      "modelProvider": "redpill",
+      "displayName": "Phala Gemma 4 26B Uncensored (Redpill)",
+      "upstreamModelId": "phala/gemma-4-26b-a4b-uncensored",
+      "inputPer1mUsd": 0.15,
+      "outputPer1mUsd": 0.7,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 66000
+    },
+    {
+      "modelId": "tee-qwen3-5-122b-chutes",
+      "modelProvider": "chutes",
+      "displayName": "TEE Qwen3.5 122B (Chutes)",
+      "upstreamModelId": "tee-qwen3-5-122b",
+      "inputPer1mUsd": 0.4,
+      "outputPer1mUsd": 1.5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "tencent-hy3-preview",
+      "modelProvider": "venice",
+      "displayName": "Hy3 Preview",
+      "upstreamModelId": "tencent-hy3-preview",
+      "inputPer1mUsd": 0.063,
+      "outputPer1mUsd": 0.21,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "venice-uncensored-1-2",
+      "modelProvider": "venice",
+      "displayName": "Venice Uncensored 1.2",
+      "upstreamModelId": "venice-uncensored-1-2",
+      "inputPer1mUsd": 0.2,
+      "outputPer1mUsd": 0.9,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "venice-uncensored-role-play",
+      "modelProvider": "venice",
+      "displayName": "Venice Role Play Uncensored",
+      "upstreamModelId": "venice-uncensored-role-play",
+      "inputPer1mUsd": 0.5,
+      "outputPer1mUsd": 2,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "xiaomi-mimo-v2-5",
+      "modelProvider": "venice",
+      "displayName": "MiMo-V2.5",
+      "upstreamModelId": "xiaomi-mimo-v2-5",
+      "inputPer1mUsd": 0.175,
+      "outputPer1mUsd": 0.35,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "z-ai-glm-5-turbo",
+      "modelProvider": "venice",
+      "displayName": "GLM 5 Turbo",
+      "upstreamModelId": "z-ai-glm-5-turbo",
+      "inputPer1mUsd": 1.2,
+      "outputPer1mUsd": 4,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 200000
+    },
+    {
+      "modelId": "z-ai-glm-5v-turbo",
+      "modelProvider": "venice",
+      "displayName": "GLM 5V Turbo",
+      "upstreamModelId": "z-ai-glm-5v-turbo",
+      "inputPer1mUsd": 1.5,
+      "outputPer1mUsd": 5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 200000
+    },
+    {
+      "modelId": "zai-org-glm-4.6",
+      "modelProvider": "venice",
+      "displayName": "GLM 4.6",
+      "upstreamModelId": "zai-org-glm-4.6",
+      "inputPer1mUsd": 0.85,
+      "outputPer1mUsd": 2.75,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 198000
+    },
+    {
+      "modelId": "zai-org-glm-4.7",
+      "modelProvider": "venice",
+      "displayName": "GLM 4.7",
+      "upstreamModelId": "zai-org-glm-4.7",
+      "inputPer1mUsd": 0.55,
+      "outputPer1mUsd": 2.65,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 198000
+    },
+    {
+      "modelId": "zai-org-glm-4.7-flash",
+      "modelProvider": "venice",
+      "displayName": "GLM 4.7 Flash",
+      "upstreamModelId": "zai-org-glm-4.7-flash",
+      "inputPer1mUsd": 0.125,
+      "outputPer1mUsd": 0.5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "zai-org-glm-5",
+      "modelProvider": "venice",
+      "displayName": "GLM 5",
+      "upstreamModelId": "zai-org-glm-5",
+      "inputPer1mUsd": 1,
+      "outputPer1mUsd": 3.2,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 198000
+    },
+    {
+      "modelId": "zai-org-glm-5-1",
+      "modelProvider": "venice",
+      "displayName": "GLM 5.1",
+      "upstreamModelId": "zai-org-glm-5-1",
+      "inputPer1mUsd": 1.75,
+      "outputPer1mUsd": 5.5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 200000
+    },
+    {
+      "modelId": "zai-org/GLM-5.1-FP8",
+      "modelProvider": "near",
+      "displayName": "GLM 5.1 FP8 (NEAR AI)",
+      "upstreamModelId": "zai-org/GLM-5.1-FP8",
+      "inputPer1mUsd": 0.35,
+      "outputPer1mUsd": 1.2,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    }
+  ]
+}

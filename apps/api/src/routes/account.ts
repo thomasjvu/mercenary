@@ -6,6 +6,7 @@ import { readPositiveInteger, readPositiveNumber } from '../lib/env.js';
 import { asSingleQueryValue } from '../lib/http.js';
 import { ensureRecordInput } from '../lib/account.js';
 import { serializeProviderHealth, serializeProviderProfile } from '../lib/serializers.js';
+import { computeSellerModelDemand } from '../marketplace-stats.js';
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../handlers/index.js';
 
@@ -139,6 +140,13 @@ export function registerAccountRoutes(
     const providers = orchestrator
       .listProviders()
       .filter((provider) => sellerProviderIds.includes(provider.providerId));
+    const providerViews = providers.map((provider) => ({
+      providerId: provider.providerId,
+      displayName: provider.displayName,
+      modelId: provider.modelId,
+      marketplaceOfferStatus: provider.marketplaceOfferStatus ?? 'active',
+      verificationStatus: provider.verification?.status,
+    }));
     return {
       grossUsd: stats.grossUsd,
       payoutCount: stats.payoutCount,
@@ -149,13 +157,11 @@ export function registerAccountRoutes(
       ).length,
       pausedOffers: providers.filter((provider) => provider.marketplaceOfferStatus === 'paused')
         .length,
-      providers: providers.map((provider) => ({
-        providerId: provider.providerId,
-        displayName: provider.displayName,
-        modelId: provider.modelId,
-        marketplaceOfferStatus: provider.marketplaceOfferStatus ?? 'active',
-        verificationStatus: provider.verification?.status,
-      })),
+      providers: providerViews,
+      modelDemand: computeSellerModelDemand({
+        payouts: stats.payouts,
+        providers: providerViews,
+      }),
     };
   });
 

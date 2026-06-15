@@ -128,6 +128,24 @@ export function registerSellerUpstreamRoutes(
     };
   }
 
+  async function handleCatalogModels(providerParam: string, reply: FastifyReply) {
+    const provider = parseUpstreamProviderParam(providerParam);
+    if (!provider) {
+      reply.code(400);
+      return invalidProviderReply(providerParam);
+    }
+
+    const models = mergeUpstreamCatalogModelsForProvider(provider, []);
+    return {
+      object: 'list',
+      provider,
+      catalogOnly: true,
+      supportedCount: models.length,
+      upstreamFoundCount: 0,
+      data: models,
+    };
+  }
+
   async function handleModels(providerParam: string, request: FastifyRequest, reply: FastifyReply) {
     const provider = parseUpstreamProviderParam(providerParam);
     if (!provider) {
@@ -303,6 +321,9 @@ export function registerSellerUpstreamRoutes(
   for (const provider of Object.keys(UPSTREAM_PROVIDER_CONFIG) as UpstreamProviderId[]) {
     app.post(`/v1/seller/upstream/${provider}/connect`, async (request, reply) =>
       handleConnect(provider, request, reply)
+    );
+    app.get(`/v1/seller/upstream/${provider}/models/catalog`, async (_request, reply) =>
+      handleCatalogModels(provider, reply)
     );
     app.get(`/v1/seller/upstream/${provider}/models`, async (request, reply) =>
       handleModels(provider, request, reply)

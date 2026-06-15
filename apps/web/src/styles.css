@@ -151,6 +151,7 @@ pre,
   color: var(--text);
   cursor: pointer;
   padding: 0;
+  opacity: 0.38;
   transition: color 160ms ease, opacity 160ms ease;
 }
 
@@ -162,7 +163,7 @@ pre,
 .app-sidebar__toggle:hover,
 .app-sidebar__toggle[aria-pressed='true'] {
   color: var(--text);
-  opacity: 0.72;
+  opacity: 1;
 }
 
 .app-sidebar__mark,
@@ -245,7 +246,7 @@ pre,
 }
 
 .app-sidebar__link-icon {
-  display: none;
+  display: inline-flex;
   flex: 0 0 auto;
   font-size: 1.1rem;
 }
@@ -294,7 +295,6 @@ button.app-sidebar__utility-icon {
 }
 
 .app-sidebar__utility-icon--theme,
-.app-sidebar__utility-icon--tee,
 .app-sidebar__utility-icon--docs {
   display: none;
 }
@@ -323,13 +323,45 @@ button.app-sidebar__utility-icon {
   color: inherit;
 }
 
-.app-sidebar .app-header-wallet {
+.app-sidebar .app-header-wallet__session-bar {
   width: 100%;
-  justify-content: flex-start;
 }
 
-.app-sidebar .app-header-wallet__connect {
+.app-sidebar__wallet-collapsed {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   width: 100%;
+}
+
+.app-sidebar__compact-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-muted);
+  color: var(--text);
+  cursor: pointer;
+  padding: 0;
+}
+
+.app-sidebar__compact-icon:hover,
+.app-sidebar__compact-icon--active {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.app-sidebar__compact-icon--active {
+  background: color-mix(in srgb, var(--rx-blue) 14%, var(--surface-muted));
+}
+
+.app-sidebar__compact-icon-glyph,
+.app-sidebar__tee-pill-icon {
+  flex: 0 0 auto;
 }
 
 .app-shell {
@@ -6887,18 +6919,19 @@ h2 {
   display: none;
 }
 
-.app-frame--sidebar-collapsed .app-sidebar__utility-icon--theme,
-.app-frame--sidebar-collapsed .app-sidebar__utility-icon--tee,
-.app-frame--sidebar-collapsed .app-sidebar__utility-icon--docs,
-.app-sidebar--collapsed .app-sidebar__utility-icon--theme,
-.app-sidebar--collapsed .app-sidebar__utility-icon--tee,
-.app-sidebar--collapsed .app-sidebar__utility-icon--docs {
-  display: inline-flex;
+.app-frame--sidebar-collapsed .app-sidebar__wallet-expanded,
+.app-sidebar--collapsed .app-sidebar__wallet-expanded {
+  display: none;
+}
+
+.app-frame--sidebar-collapsed .app-sidebar__wallet-collapsed,
+.app-sidebar--collapsed .app-sidebar__wallet-collapsed {
+  display: flex;
 }
 
 .app-frame--sidebar-collapsed .app-sidebar__utility,
 .app-sidebar--collapsed .app-sidebar__utility {
-  justify-content: center;
+  display: none;
 }
 
 .app-frame--sidebar-collapsed .app-sidebar__brand-row,
@@ -6931,25 +6964,17 @@ h2 {
   display: none;
 }
 
+.app-frame--sidebar-collapsed .app-sidebar__link,
+.app-sidebar--collapsed .app-sidebar__link {
+  gap: 0;
+}
+
 .app-frame--sidebar-collapsed .app-sidebar__link-icon,
 .app-sidebar--collapsed .app-sidebar__link-icon {
   display: inline-flex;
 }
 
-.app-frame--sidebar-collapsed .app-sidebar .app-header-wallet__sign-out,
-.app-sidebar--collapsed .app-sidebar .app-header-wallet__sign-out {
-  display: none;
-}
 
-.app-frame--sidebar-collapsed .app-sidebar .app-header-wallet__address,
-.app-frame--sidebar-collapsed .app-sidebar .app-header-wallet__connect,
-.app-sidebar--collapsed .app-sidebar .app-header-wallet__address,
-.app-sidebar--collapsed .app-sidebar .app-header-wallet__connect {
-  width: 100%;
-  justify-content: center;
-  font-size: 0.62rem;
-  padding-inline: 6px;
-}
 
 @media (max-width: 900px) {
   :root {
@@ -6964,14 +6989,16 @@ h2 {
     display: none;
   }
 
-  .app-sidebar__utility-icon--theme,
-  .app-sidebar__utility-icon--tee,
-  .app-sidebar__utility-icon--docs {
-    display: inline-flex;
+  .app-sidebar__wallet-expanded {
+    display: none;
+  }
+
+  .app-sidebar__wallet-collapsed {
+    display: flex;
   }
 
   .app-sidebar__utility {
-    justify-content: center;
+    display: none;
   }
 
   .app-sidebar__brand-row {
@@ -6999,17 +7026,6 @@ h2 {
     display: inline-flex;
   }
 
-  .app-sidebar .app-header-wallet__sign-out {
-    display: none;
-  }
-
-  .app-sidebar .app-header-wallet__address,
-  .app-sidebar .app-header-wallet__connect {
-    width: 100%;
-    justify-content: center;
-    font-size: 0.62rem;
-    padding-inline: 6px;
-  }
 }
 
 @media (max-width: 760px) {
@@ -7238,49 +7254,119 @@ h2 {
   margin-left: auto;
 }
 
-.app-header-wallet {
+.app-header-wallet__session-bar {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  width: 100%;
+  min-height: 34px;
+  padding: 4px 4px 4px 12px;
+  border: 1px solid rgba(251, 47, 56, 0.42);
+  border-radius: 999px;
+  background: var(--rx-red);
+  color: var(--rx-white);
 }
 
-.app-header-wallet--loading {
-  color: var(--muted);
+.app-header-wallet__session-bar--connect {
+  justify-content: center;
+  padding-inline: 12px;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.app-header-wallet__session-bar--connect:hover {
+  border-color: rgba(44, 82, 179, 0.42);
+  background: var(--rx-blue);
+}
+
+.app-header-wallet__session-bar--loading {
+  justify-content: center;
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   font-size: 0.82rem;
 }
 
-.app-header-wallet__connect {
+.app-header-wallet__address {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  padding: 0;
+  text-align: left;
 }
 
-.app-header-wallet__address {
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
+.app-header-wallet__address:hover {
+  opacity: 0.92;
+}
+
+.app-header-wallet__sign-out-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.app-header-wallet__sign-out-icon .icon {
+  width: 12px;
+  height: 12px;
+}
+
+.app-header-wallet__sign-out-icon:hover {
+  opacity: 0.78;
+}
+
+.app-header-wallet__compact {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
   background: var(--surface-muted);
   color: var(--text);
   cursor: pointer;
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  font-size: 0.72rem;
-  padding: 6px 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0;
 }
 
-.app-header-wallet__sign-out {
-  border: 0;
-  background: transparent;
+.app-header-wallet__compact--connect,
+.app-header-wallet__compact--signed-in {
+  border-color: rgba(251, 47, 56, 0.42);
+  background: var(--rx-red);
+  color: var(--rx-white);
+}
+
+.app-header-wallet__compact:hover {
+  border-color: var(--line-strong);
+}
+
+.app-header-wallet__compact--connect:hover,
+.app-header-wallet__compact--signed-in:hover {
+  border-color: rgba(44, 82, 179, 0.42);
+  background: var(--rx-blue);
+}
+
+.app-header-wallet__compact--loading {
   color: var(--muted);
-  cursor: pointer;
-  padding-inline: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  font-size: 0.68rem;
-}
-
-.app-header-wallet__sign-out:hover {
-  color: var(--text);
+  background: var(--surface-muted);
 }
 
 .host-tee-trust {
@@ -7809,6 +7895,41 @@ h2 {
   margin-bottom: 18px;
 }
 
+.seller-path-switcher--compact {
+  margin: 0;
+  align-items: center;
+  gap: 6px;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.seller-path-switcher__link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+}
+
+.seller-path-switcher__link:hover {
+  color: var(--text);
+}
+
+.seller-path-switcher__link--active {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.seller-path-switcher__sep {
+  color: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+
 .seller-wizard__summary h2 {
   margin: 0 0 8px;
 }
@@ -8097,6 +8218,10 @@ h2 {
 }
 
 .app-sidebar__tee-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
   min-height: 36px;
   padding: 0 12px;
@@ -8107,7 +8232,6 @@ h2 {
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   font-size: 0.72rem;
   letter-spacing: 0.08em;
-  text-transform: lowercase;
   cursor: pointer;
   transition:
     background-color 140ms ease,
@@ -8220,23 +8344,21 @@ h2 {
 }
 
 .sell-page__intro {
-  display: grid;
-  gap: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .sell-page__intro h1 {
   margin: 0;
   font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
-  font-size: clamp(2rem, 3.2vw, 2.8rem);
+  font-size: clamp(2.6rem, 4.8vw, 3.8rem);
   letter-spacing: -0.04em;
   text-transform: none;
   max-width: none;
-}
-
-.sell-page__lede {
-  margin: 0;
-  color: var(--muted);
-  font-size: 1rem;
+  line-height: 1.02;
 }
 
 .sell-dashboard {
@@ -8576,6 +8698,11 @@ h2 {
 .sell-demand-list__copy span {
   color: var(--muted);
   font-size: 0.78rem;
+}
+
+.sell-demand-list__rates {
+  color: var(--muted);
+  font-size: 0.72rem;
 }
 
 .sell-demand-list__stat {

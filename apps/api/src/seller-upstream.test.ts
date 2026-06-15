@@ -1,6 +1,33 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { UPSTREAM_PROVIDER_IDS } from '@bossraid/constants';
 import { createTestApiServer, createPublicSessionCookie } from './test/helpers.js';
+
+for (const provider of UPSTREAM_PROVIDER_IDS) {
+  test(`seller ${provider} catalog lists supported models without api key`, async () => {
+    const app = createTestApiServer([], {
+      ...process.env,
+      BOSSRAID_STORAGE_BACKEND: 'memory',
+    });
+
+    try {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/v1/seller/upstream/${provider}/models/catalog`,
+      });
+      assert.equal(response.statusCode, 200);
+      const payload = response.json();
+      assert.equal(payload.provider, provider);
+      assert.equal(payload.catalogOnly, true);
+      assert.ok(payload.data.length >= 1);
+      assert.equal(payload.upstreamFoundCount, 0);
+      assert.ok(payload.data.every((entry: { supported: boolean }) => entry.supported));
+      assert.ok(payload.data.every((entry: { upstreamFound: boolean }) => !entry.upstreamFound));
+    } finally {
+      await app.close();
+    }
+  });
+}
 
 test('seller venice connect stores encrypted config and lists merged models', async () => {
   const app = createTestApiServer([], {

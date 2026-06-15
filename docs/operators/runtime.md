@@ -24,6 +24,14 @@ pnpm dev
 
 Manual start: `pnpm dev:providers`, `pnpm dev:api`, `pnpm dev:web`, `pnpm dev:ops`, `pnpm dev:evaluator`, `pnpm dev:mcp`.
 
+Refresh inference catalog + reference pricing JSON:
+
+```bash
+pnpm sync:inference-catalog
+```
+
+Writes `packages/constants/src/inference-catalog.ts` and `packages/constants/data/inference-model-pricing.json` (Venice rates from public `/models`; Redpill, NEAR, Chutes, Phala from static script rates).
+
 Gateway (built web + ops on one origin):
 
 ```bash

@@ -387,8 +387,8 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
             {pending
               ? 'routing...'
               : privacyMode === 'strict' && selectedModel?.e2ee
-                ? 'run e2ee'
-                : 'run'}
+                ? 'run e2ee request'
+                : 'run request'}
           </button>
 
           {teeStatus ? <p className="form-status">{teeStatus}</p> : null}

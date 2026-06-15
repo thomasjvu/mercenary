@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import type { UpstreamProviderId } from '@bossraid/constants';
 import { UPSTREAM_PROVIDER_CONFIG } from '@bossraid/constants';
 import {
   connectSellerUpstream,
+  fetchSellerUpstreamCatalogModels,
   fetchSellerUpstreamConfig,
   fetchSellerUpstreamModels,
   fetchSellerUpstreamStatus,
@@ -35,6 +36,9 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
     'Connect wallet in the sidebar before selling inference.'
   );
   const [provider, setProvider] = useState<UpstreamProviderId>('venice');
+  const catalogModels = useSWR(`/v1/seller/upstream/${provider}/models/catalog`, () =>
+    fetchSellerUpstreamCatalogModels(provider)
+  );
   const upstreamConfig = useSWR(
     isAuthenticated ? `/v1/seller/upstream/${provider}/config` : null,
     () => fetchSellerUpstreamConfig(provider)
@@ -54,6 +58,12 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
   const [pending, setPending] = useState(false);
   const [publishResult, setPublishResult] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (catalogModels.data?.data) {
+      setModels(catalogModels.data.data);
+    }
+  }, [catalogModels.data, provider]);
+
   const buyerPercent = Math.max(0, 100 - (Number(discountPercent) || 0));
   const providerConfig = UPSTREAM_PROVIDER_CONFIG[provider];
   const previewModelId = selectedModelIds[0];
@@ -62,17 +72,11 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
     (entry) => entry.marketplaceOfferStatus === 'active'
   );
 
-  const demandByModel = useMemo(() => {
-    const providers = sellerStats.data?.providers ?? [];
-    return providers
-      .filter((entry) => entry.modelId)
-      .map((entry) => ({
-        modelId: entry.modelId as string,
-        displayName: entry.displayName,
-        offerStatus: entry.marketplaceOfferStatus,
-      }))
-      .slice(0, 6);
-  }, [sellerStats.data?.providers]);
+  const demandByModel = sellerStats.data?.modelDemand ?? [];
+  const maxDemandValue = useMemo(
+    () => Math.max(...demandByModel.map((entry) => entry.routedValue24hUsd), 0.0001),
+    [demandByModel]
+  );
 
   async function handleConnect() {
     if (!apiKey.trim()) {
@@ -135,16 +139,15 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
     <section className="beta-page sell-page">
       <header className="sell-page__intro">
         <h1>Sell inference</h1>
-        <p className="sell-page__lede">Create offers & earn money</p>
+        <SellerPathSwitcher
+          active="upstream"
+          compact
+          onSelectHttp={() => onNavigate('/onboarding/seller/http')}
+          onSelectUpstream={() => onNavigate('/onboarding/seller')}
+        />
       </header>
 
       <WalletGate message="Connect wallet before selling inference." />
-
-      <SellerPathSwitcher
-        active="upstream"
-        onSelectHttp={() => onNavigate('/onboarding/seller/http')}
-        onSelectUpstream={() => onNavigate('/onboarding/seller')}
-      />
 
       <div className="sell-dashboard">
         <div className="sell-dashboard__summary">
@@ -175,22 +178,22 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
               <strong>Choose provider</strong>
             </div>
             <div className="sell-form-row__fields">
-              <div className="seller-provider-picker">
-                {PROVIDER_ORDER.map((entry) => (
-                  <button
-                    className={`seller-provider-picker__chip${provider === entry ? ' seller-provider-picker__chip--active' : ''}`}
-                    key={entry}
-                    onClick={() => {
-                      setProvider(entry);
-                      setModels([]);
-                      setSelectedModelIds([]);
-                    }}
-                    type="button"
-                  >
-                    {upstreamProviderLabel(entry)}
-                  </button>
-                ))}
-              </div>
+              <label className="field">
+                <span>Provider</span>
+                <select
+                  onChange={(event) => {
+                    setProvider(event.target.value as UpstreamProviderId);
+                    setSelectedModelIds([]);
+                  }}
+                  value={provider}
+                >
+                  {PROVIDER_ORDER.map((entry) => (
+                    <option key={entry} value={entry}>
+                      {upstreamProviderLabel(entry)}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <p className="quiet-note">{providerConfig.upstreamBase}</p>
               <label className="field">
                 <span>Provider API key</span>
@@ -214,7 +217,7 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
                 onClick={() => void handleConnect()}
                 type="button"
               >
-                get models
+                connect & sync account
               </button>
             </div>
           </div>
@@ -230,11 +233,13 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
             </div>
             <div className="sell-form-row__fields">
               <p className="quiet-note">
-                {selectedModelIds.length} of {models.length || '…'} models selected.
+                {selectedModelIds.length} of{' '}
+                {models.length || catalogModels.data?.data.length || '…'} models selected.
+                {catalogModels.isLoading ? ' Loading catalog...' : null}
               </p>
               <button
                 className="button"
-                disabled={models.length === 0}
+                disabled={models.length === 0 && !catalogModels.data}
                 onClick={() => setPickerOpen(true)}
                 type="button"
               >
@@ -300,7 +305,7 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
               </button>
             ) : (
               <button
-                className="button button--primary"
+                className="button button--primary rx-spacebar-clip"
                 disabled={pending || selectedModelIds.length === 0}
                 onClick={() => void handlePublish()}
                 type="button"
@@ -309,7 +314,7 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
               </button>
             )}
             {publishResult ? <p className="form-status">{publishResult}</p> : null}
-            <p className="form-status">{status}</p>
+            {status ? <p className="form-status">{status}</p> : null}
           </div>
         </article>
 
@@ -381,7 +386,7 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
         <article className="sell-panel sell-panel--demand">
           <p className="sell-panel__eyebrow">your demand by model</p>
           <p className="quiet-note">
-            Routed volume by model for your live offers, sorted by active listings.
+            Boss Raid routed volume in the last 24h by model, with catalog reference token rates.
           </p>
           {demandByModel.length === 0 ? (
             <div className="sell-empty sell-empty--compact">
@@ -389,14 +394,29 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
             </div>
           ) : (
             <div className="sell-demand-list">
-              {demandByModel.map((entry, index) => (
+              {demandByModel.map((entry) => (
                 <div className="sell-demand-list__row" key={entry.modelId}>
                   <div className="sell-demand-list__copy">
                     <strong>{entry.modelId}</strong>
                     <span>{entry.displayName}</span>
+                    {entry.referenceInputPer1mUsd != null ? (
+                      <span className="sell-demand-list__rates">
+                        ${entry.referenceInputPer1mUsd.toFixed(2)} in / $
+                        {entry.referenceOutputPer1mUsd?.toFixed(2) ?? '0.00'} out per M
+                      </span>
+                    ) : null}
                   </div>
-                  <SegmentBar segments={20} tone="volume" value={Math.max(18, 100 - index * 14)} />
-                  <span className="sell-demand-list__stat">{entry.offerStatus}</span>
+                  <SegmentBar
+                    segments={20}
+                    tone="volume"
+                    value={Math.max(
+                      8,
+                      Math.round((entry.routedValue24hUsd / maxDemandValue) * 100)
+                    )}
+                  />
+                  <span className="sell-demand-list__stat">
+                    {entry.routedRequests24h} req · ${entry.routedValue24hUsd.toFixed(2)}
+                  </span>
                 </div>
               ))}
             </div>

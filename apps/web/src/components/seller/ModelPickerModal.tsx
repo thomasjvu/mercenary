@@ -19,7 +19,7 @@ export function ModelPickerModal({
 }: ModelPickerModalProps) {
   const [query, setQuery] = useState('');
   const [selection, setSelection] = useState<Set<string>>(() => new Set(selectedIds));
-  const [onlyUpstream, setOnlyUpstream] = useState(true);
+  const [onlyUpstream, setOnlyUpstream] = useState(false);
   const [onlyTee, setOnlyTee] = useState(false);
 
   const filtered = useMemo(() => {

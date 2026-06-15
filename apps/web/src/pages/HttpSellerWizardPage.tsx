@@ -76,6 +76,14 @@ export function HttpSellerWizardPage({ onNavigate }: HttpSellerWizardPageProps) 
   return (
     <section className="beta-page flow-page seller-wizard seller-wizard--flow">
       <PageHero
+        actions={
+          <SellerPathSwitcher
+            active="http"
+            compact
+            onSelectHttp={() => onNavigate('/onboarding/seller/http')}
+            onSelectUpstream={() => onNavigate('/onboarding/seller')}
+          />
+        }
         compact
         eyebrow="sell"
         lede="Register a custom HTTP inference endpoint."
@@ -83,12 +91,6 @@ export function HttpSellerWizardPage({ onNavigate }: HttpSellerWizardPageProps) 
       />
 
       <WalletGate message="Connect wallet before registering a worker." />
-
-      <SellerPathSwitcher
-        active="http"
-        onSelectHttp={() => onNavigate('/onboarding/seller/http')}
-        onSelectUpstream={() => onNavigate('/onboarding/seller')}
-      />
 
       <div className="flow-stack seller-wizard__steps">
         <FlowSection done={isAuthenticated} step="01" title="Connect wallet">
@@ -181,7 +183,7 @@ export function HttpSellerWizardPage({ onNavigate }: HttpSellerWizardPageProps) 
             {pending ? 'registering...' : 'register worker'}
           </button>
           {error ? <p className="form-status form-status--error">{error}</p> : null}
-          <p className="form-status">{status}</p>
+          {status ? <p className="form-status">{status}</p> : null}
         </FlowSection>
 
         {publishResult ? (

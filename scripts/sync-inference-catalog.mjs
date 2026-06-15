@@ -246,6 +246,59 @@ function writeProvidersJson(providers) {
   );
 }
 
+function writeCatalogPricingJson(catalog) {
+  const providers = {};
+  for (const entry of catalog) {
+    const bucket = providers[entry.modelProvider] ?? { modelCount: 0, models: [] };
+    bucket.modelCount += 1;
+    bucket.models.push({
+      modelId: entry.modelId,
+      displayName: entry.displayName,
+      upstreamModelId: entry.upstreamModelId,
+      inputPer1mUsd: entry.inputPer1mUsd,
+      outputPer1mUsd: entry.outputPer1mUsd,
+      referenceTaskUsd: estimateReferenceRateUsd(entry),
+      maxContextTokens: entry.maxContextTokens,
+      teeAttested: Boolean(entry.teeAttested),
+      e2ee: Boolean(entry.e2ee),
+    });
+    providers[entry.modelProvider] = bucket;
+  }
+
+  for (const bucket of Object.values(providers)) {
+    bucket.models.sort((left, right) => left.modelId.localeCompare(right.modelId));
+  }
+
+  const payload = {
+    generatedAt: new Date().toISOString(),
+    source: {
+      venice: 'https://api.venice.ai/api/v1/models (public, no API key)',
+      redpill: 'scripts/sync-inference-catalog.mjs static rates',
+      near: 'scripts/sync-inference-catalog.mjs static rates',
+      chutes: 'scripts/sync-inference-catalog.mjs static rates',
+      phala: 'scripts/sync-inference-catalog.mjs static rates',
+    },
+    providers,
+    models: catalog
+      .map((entry) => ({
+        modelId: entry.modelId,
+        modelProvider: entry.modelProvider,
+        displayName: entry.displayName,
+        upstreamModelId: entry.upstreamModelId,
+        inputPer1mUsd: entry.inputPer1mUsd,
+        outputPer1mUsd: entry.outputPer1mUsd,
+        referenceTaskUsd: estimateReferenceRateUsd(entry),
+        maxContextTokens: entry.maxContextTokens,
+      }))
+      .sort((left, right) => left.modelId.localeCompare(right.modelId)),
+  };
+
+  writeFileSync(
+    resolve(rootDir, 'packages/constants/data/inference-model-pricing.json'),
+    `${JSON.stringify(payload, null, 2)}\n`
+  );
+}
+
 function writeBenchmarkPatch(catalog) {
   const taskUsd = {};
   const inputUsd = {};
@@ -332,6 +385,7 @@ async function main() {
     }))
   );
   writeBenchmarkPatch(catalog);
+  writeCatalogPricingJson(catalog);
   writeProvidersJson(providers);
 
   console.log(
@@ -339,6 +393,7 @@ async function main() {
   );
   console.log(`[catalog] wrote packages/constants/src/inference-catalog.ts`);
   console.log(`[catalog] wrote examples/inference-marketplace-providers.json (${providers.length} sellers)`);
+  console.log('[catalog] wrote packages/constants/data/inference-model-pricing.json');
 }
 
 main().catch((error) => {
