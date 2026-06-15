@@ -31,6 +31,7 @@ import { ManageOffersPage } from './pages/ManageOffersPage';
 type AppTheme = 'light' | 'dark';
 
 const LANDING_THEME_STORAGE_KEY = 'bossraid.landing-theme';
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'bossraid.sidebar-collapsed';
 
 addCollection(pixelIcons);
 addCollection(simpleIcons);
@@ -44,6 +45,7 @@ export function App() {
       ? locationKey.slice(locationKey.indexOf('?'))
       : '';
   const [appTheme, setAppTheme] = useState<AppTheme>(() => getInitialTheme());
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => getInitialSidebarCollapsed());
   const isLandingRoute = pathname === '/';
   const isMarketplaceListRoute = isMarketplaceListPath(pathname);
   const marketplaceModelId = readMarketplaceModelId(pathname);
@@ -115,6 +117,14 @@ export function App() {
     window.localStorage.setItem(LANDING_THEME_STORAGE_KEY, appTheme);
   }, [appTheme]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, sidebarCollapsed ? '1' : '0');
+  }, [sidebarCollapsed]);
+
   function navigate(
     path: AppRoute,
     options?: { modelId?: string; marketplaceModelId?: string; mode?: 'inference' | 'raid' }
@@ -144,13 +154,15 @@ export function App() {
   return (
     <AttestationInspectorProvider>
       <div
-        className={`app-frame app-frame--theme-${appTheme} ${usesDirectoryLayout ? 'app-frame--directory' : ''}`}
+        className={`app-frame app-frame--theme-${appTheme}${sidebarCollapsed ? ' app-frame--sidebar-collapsed' : ''}${usesDirectoryLayout ? ' app-frame--directory' : ''}`}
       >
         <div className="bg-grid" aria-hidden="true" />
 
         <AppSidebar
           appTheme={appTheme}
+          collapsed={sidebarCollapsed}
           onNavigate={navigate}
+          onSidebarToggle={() => setSidebarCollapsed((current) => !current)}
           onThemeToggle={() => setAppTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
           pathname={pathname}
         />
@@ -206,6 +218,14 @@ export function App() {
       </div>
     </AttestationInspectorProvider>
   );
+}
+
+function getInitialSidebarCollapsed(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  return window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === '1';
 }
 
 function getInitialTheme(): AppTheme {

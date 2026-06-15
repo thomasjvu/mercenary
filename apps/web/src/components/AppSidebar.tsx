@@ -17,19 +17,42 @@ type AppSidebarProps = {
   pathname: string;
   onNavigate: (path: AppRoute) => void;
   appTheme: AppTheme;
+  collapsed: boolean;
+  onSidebarToggle: () => void;
   onThemeToggle: () => void;
 };
 
-export function AppSidebar({ pathname, onNavigate, appTheme, onThemeToggle }: AppSidebarProps) {
+export function AppSidebar({
+  pathname,
+  onNavigate,
+  appTheme,
+  collapsed,
+  onSidebarToggle,
+  onThemeToggle,
+}: AppSidebarProps) {
   const { isOpen, openInspector } = useAttestationInspector();
 
   return (
-    <aside aria-label="Site navigation" className="app-sidebar">
+    <aside
+      aria-label="Site navigation"
+      className={`app-sidebar${collapsed ? ' app-sidebar--collapsed' : ''}`}
+    >
       <div className="app-sidebar__top">
-        <button className="app-sidebar__brand" onClick={() => onNavigate('/')} type="button">
-          <BossRaidMark compact />
-          <span className="app-sidebar__title">Boss Raid</span>
-        </button>
+        <div className="app-sidebar__brand-row">
+          <button className="app-sidebar__brand" onClick={() => onNavigate('/')} type="button">
+            <BossRaidMark compact />
+            <span className="app-sidebar__title">Boss Raid</span>
+          </button>
+          <button
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-pressed={collapsed}
+            className="app-sidebar__toggle"
+            onClick={onSidebarToggle}
+            type="button"
+          >
+            <Icon className="icon icon--pixel" icon="pixel:list-solid" />
+          </button>
+        </div>
 
         <nav aria-label="Explore" className="app-sidebar__section">
           <p className="app-sidebar__section-label">explore</p>

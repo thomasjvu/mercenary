@@ -10,13 +10,16 @@ import { ModelCatalog } from '../components/marketplace/ModelCatalog.js';
 import { MarketStatsRibbon } from '../components/marketplace/MarketStatsRibbon.js';
 import { MarketPriceLadder } from '../components/marketplace/MarketPriceLadder.js';
 import { MarketVolumePanel } from '../components/marketplace/MarketVolumePanel.js';
+import { FeaturedModels } from '../components/marketplace/FeaturedModels.js';
 import { PageHero } from '../components/system/PageHero.js';
 import { CurlQuickstart } from '../components/terminal/CurlQuickstart.js';
+import { marketMatchesTrustFilter, type MarketplaceTrustFilter } from '../lib/marketplace-trust.js';
 
 const FILTER_DEFAULTS = {
   model: '',
   provider: '',
   framework: '',
+  trust: 'any' as MarketplaceTrustFilter,
   privacy: 'any',
   verification: 'any',
   budget: '',
@@ -33,13 +36,13 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
     () => fetchMarkets(Object.fromEntries(params.entries())),
     { refreshInterval: 15_000 }
   );
-  const unfilteredMarkets = useSWR(
-    filtersActive ? ['markets', 'unfiltered'] : null,
-    () => fetchMarkets(),
-    { refreshInterval: 15_000 }
-  );
+  const allMarkets = useSWR(['markets', 'all'], () => fetchMarkets(), { refreshInterval: 15_000 });
   const visibleMarkets = markets.data?.data ?? [];
-  const totalMarketCount = unfilteredMarkets.data?.data.length ?? 0;
+  const trustFilteredMarkets = useMemo(
+    () => visibleMarkets.filter((market) => marketMatchesTrustFilter(market, filters.trust)),
+    [filters.trust, visibleMarkets]
+  );
+  const totalMarketCount = allMarkets.data?.data.length ?? 0;
 
   return (
     <section className="beta-page market-page">
@@ -66,14 +69,25 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
 
       <ApiReadinessBanner error={markets.error} label="Marketplace unavailable" />
       <MarketStatsRibbon isLoading={markets.isLoading} markets={markets.data} />
+      <FeaturedModels
+        activeModelId={filters.model.trim() || undefined}
+        markets={allMarkets.data?.data ?? visibleMarkets}
+        onOpenModel={onOpenModel}
+        onSelectModel={(modelId) =>
+          setFilters({
+            ...filters,
+            model: filters.model.trim() === modelId ? '' : modelId,
+          })
+        }
+      />
       <MarketSavingsSummary
         activeOffers={markets.data?.stats.activeOffers}
-        markets={visibleMarkets}
+        markets={trustFilteredMarkets}
       />
 
       <div className="market-page__charts">
-        <MarketDiscountChart markets={visibleMarkets} />
-        <MarketPriceLadder markets={visibleMarkets} />
+        <MarketDiscountChart markets={trustFilteredMarkets} />
+        <MarketPriceLadder markets={trustFilteredMarkets} />
         <MarketVolumePanel stats={markets.data?.stats} />
       </div>
 
@@ -103,6 +117,17 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
               ['custom', 'custom'],
             ]}
             value={filters.framework}
+          />
+          <FilterSelect
+            label="trust"
+            onChange={(value) => setFilters({ ...filters, trust: value as MarketplaceTrustFilter })}
+            options={[
+              ['any', 'any'],
+              ['tee', 'tee attested'],
+              ['e2ee', 'e2ee'],
+              ['private', 'private signals'],
+            ]}
+            value={filters.trust}
           />
           <details className="market-page__filters-advanced">
             <summary>advanced</summary>
@@ -148,7 +173,7 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
             />
           ) : markets.isLoading ? (
             <EmptyState body="Reading seller order books." title="Loading markets" />
-          ) : visibleMarkets.length === 0 ? (
+          ) : trustFilteredMarkets.length === 0 ? (
             <EmptyState
               action={
                 filtersActive && totalMarketCount > 0 ? (
@@ -169,7 +194,7 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
               title="No eligible sellers"
             />
           ) : (
-            <ModelCatalog markets={visibleMarkets} onOpenModel={onOpenModel} />
+            <ModelCatalog markets={trustFilteredMarkets} onOpenModel={onOpenModel} />
           )}
         </div>
       </div>
@@ -243,6 +268,7 @@ function hasActiveFilters(filters: MarketplaceFilters) {
     filters.model.trim() !== '' ||
     filters.provider.trim() !== '' ||
     filters.framework !== '' ||
+    filters.trust !== 'any' ||
     filters.privacy !== 'any' ||
     filters.verification !== 'any' ||
     filters.budget.trim() !== ''
