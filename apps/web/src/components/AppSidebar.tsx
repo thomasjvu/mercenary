@@ -50,7 +50,7 @@ export function AppSidebar({
             onClick={onSidebarToggle}
             type="button"
           >
-            <Icon className="icon icon--pixel" icon="pixel:list-solid" />
+            <Icon className="icon icon--pixel app-sidebar__toggle-icon" icon="pixel:bars-solid" />
           </button>
         </div>
 

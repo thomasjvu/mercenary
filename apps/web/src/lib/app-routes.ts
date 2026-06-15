@@ -28,7 +28,7 @@ export const SIDEBAR_ACCOUNT_LINKS: SidebarNavItem[] = [
   { path: '/account', label: 'account', icon: 'pixel:user-solid' },
   { path: '/onboarding/buyer', label: 'buy', icon: 'pixel:cart-solid' },
   { path: '/onboarding/seller', label: 'new offer', icon: 'pixel:plus-solid' },
-  { path: '/sell/offers', label: 'my offers', icon: 'pixel:list-solid' },
+  { path: '/sell/offers', label: 'my offers', icon: 'pixel:clipboard-solid' },
 ];
 
 export function isSidebarNavActive(path: AppRoute, pathname: string): boolean {

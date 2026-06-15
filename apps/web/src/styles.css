@@ -145,10 +145,10 @@ pre,
   flex: 0 0 auto;
   width: 34px;
   height: 34px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: 8px;
-  background: transparent;
-  color: var(--muted);
+  background: var(--surface-muted);
+  color: var(--text);
   cursor: pointer;
   transition:
     color 160ms ease,
@@ -156,11 +156,16 @@ pre,
     background-color 160ms ease;
 }
 
+.app-sidebar__toggle-icon {
+  width: 18px;
+  height: 18px;
+}
+
 .app-sidebar__toggle:hover,
 .app-sidebar__toggle[aria-pressed='true'] {
   color: var(--text);
   border-color: var(--line-strong);
-  background: var(--surface-muted);
+  background: color-mix(in srgb, var(--text) 8%, var(--surface-muted));
 }
 
 .app-sidebar__mark,
@@ -198,10 +203,12 @@ pre,
 .app-sidebar__title {
   color: var(--text);
   font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
-  font-size: 1.38rem;
+  font-size: 1.12rem;
   font-weight: 800;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
+  line-height: 1;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .app-sidebar__section {

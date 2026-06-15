@@ -441,13 +441,20 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             </div>
             <a
               className="button button--primary info-panel__cta rx-spacebar-clip"
-              href="/playground?mode=raid"
+              href={HERO_BY_WORKFLOW[workflowTab].primary.href}
               onClick={(event) => {
                 event.preventDefault();
-                onNavigate('/playground', { mode: 'raid' });
+                const primary = HERO_BY_WORKFLOW[workflowTab].primary;
+                onNavigate(primary.path, { mode: primary.mode });
               }}
             >
-              spawn raid
+              {HERO_BY_WORKFLOW[workflowTab].primary.icon ? (
+                <Icon
+                  className="icon icon--pixel"
+                  icon={HERO_BY_WORKFLOW[workflowTab].primary.icon}
+                />
+              ) : null}
+              {HERO_BY_WORKFLOW[workflowTab].primary.label}
             </a>
           </section>
         </aside>
