@@ -239,21 +239,19 @@ button.action-steps__value {
   grid-area: 1 / 1;
   opacity: 0;
   visibility: hidden;
-  transform: translate3d(0, 8px, 0);
+  transform: none;
   transition:
-    opacity 560ms cubic-bezier(0.4, 0, 0.2, 1),
-    transform 560ms cubic-bezier(0.4, 0, 0.2, 1),
-    visibility 0ms linear 560ms;
+    opacity 780ms ease-in-out,
+    visibility 0ms linear 780ms;
   pointer-events: none;
 }
 
 .workflow-crossfade__layer--active {
   opacity: 1;
   visibility: visible;
-  transform: translate3d(0, 0, 0);
+  transform: none;
   transition:
-    opacity 560ms cubic-bezier(0.4, 0, 0.2, 1),
-    transform 560ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 780ms ease-in-out,
     visibility 0ms linear 0ms;
   pointer-events: auto;
 }
@@ -266,24 +264,16 @@ button.action-steps__value {
 
 .app-shell--landing .hero__slice-layer.workflow-crossfade__layer,
 .app-shell--landing .hero__eye-glow-set.workflow-crossfade__layer {
-  transform: none;
   transition:
-    opacity 640ms cubic-bezier(0.4, 0, 0.2, 1),
-    filter 640ms cubic-bezier(0.4, 0, 0.2, 1),
-    visibility 0ms linear 640ms;
+    opacity 820ms ease-in-out,
+    visibility 0ms linear 820ms;
 }
 
 .app-shell--landing .hero__slice-layer.workflow-crossfade__layer--active,
 .app-shell--landing .hero__eye-glow-set.workflow-crossfade__layer--active {
-  transform: none;
   transition:
-    opacity 640ms cubic-bezier(0.4, 0, 0.2, 1),
-    filter 640ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 820ms ease-in-out,
     visibility 0ms linear 0ms;
-}
-
-.app-shell--landing .hero__slice-layer.workflow-crossfade__layer:not(.workflow-crossfade__layer--active) {
-  filter: contrast(1.04) saturate(0) brightness(1.02);
 }
 
 .app-shell--landing .hero__eye-glow-set {
@@ -297,16 +287,16 @@ button.action-steps__value {
 .app-shell--landing .info-panel--landing-flow .info-spec__label,
 .app-shell--landing .info-panel--landing-flow .info-panel__cta {
   transition:
-    color 560ms cubic-bezier(0.4, 0, 0.2, 1),
-    background-color 560ms cubic-bezier(0.4, 0, 0.2, 1),
-    border-color 560ms cubic-bezier(0.4, 0, 0.2, 1);
+    color 780ms ease-in-out,
+    background-color 780ms ease-in-out,
+    border-color 780ms ease-in-out;
 }
 
 .app-shell--landing .hero__eye-glow {
   transition:
-    opacity 560ms cubic-bezier(0.4, 0, 0.2, 1),
-    background 560ms cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 560ms cubic-bezier(0.4, 0, 0.2, 1);
+    opacity 780ms ease-in-out,
+    background 780ms ease-in-out,
+    box-shadow 780ms ease-in-out;
 }
 
 @media (prefers-reduced-motion: reduce) {

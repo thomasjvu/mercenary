@@ -14,7 +14,7 @@ export function LoadingPulse({
   return (
     <div aria-busy="true" aria-label={label} className={className} role="status">
       <span className="loading-pulse__label">{label}</span>
-      <div className="loading-pulse__bars">
+      <div className="loading-pulse__bars" style={cssCustomProperty('--pulse-count', lines)}>
         {Array.from({ length: lines }, (_, index) => (
           <span
             className="loading-pulse__bar"

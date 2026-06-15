@@ -6,6 +6,7 @@ import {
 } from '../../lib/marketplace-benchmark.js';
 import { formatUsd } from '@bossraid/proof-ui';
 import { ProviderBrandIcon } from '../ProviderBrandIcon.js';
+import { SegmentBar } from '../system/SegmentBar.js';
 
 const MAX_ROWS = 8;
 
@@ -103,9 +104,7 @@ export function SellerPriceSpreadChart({ market }: { market: InferenceMarket }) 
                 <span>{seller.displayName}</span>
                 <strong>{formatUsd(seller.rateUsd)}</strong>
               </div>
-              <div className="seller-spread-chart__track" aria-hidden="true">
-                <span className="seller-spread-chart__fill" style={{ width: `${width}%` }} />
-              </div>
+              <SegmentBar tone="savings" value={width} />
             </div>
           );
         })}
@@ -140,15 +139,9 @@ function DiscountRowView({
         </div>
         <strong className="market-discount-chart__rate">{formatUsd(row.cheapest)}</strong>
       </div>
-      <div className="market-discount-chart__bars" aria-hidden="true">
-        <span
-          className="market-discount-chart__bar market-discount-chart__bar--ref"
-          style={{ width: `${refWidth}%` }}
-        />
-        <span
-          className="market-discount-chart__bar market-discount-chart__bar--market"
-          style={{ width: `${marketWidth}%` }}
-        />
+      <div className="market-discount-chart__bars">
+        <SegmentBar tone="ref" value={refWidth} />
+        <SegmentBar tone="market" value={marketWidth} />
       </div>
     </div>
   );

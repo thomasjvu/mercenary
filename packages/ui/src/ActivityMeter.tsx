@@ -25,7 +25,11 @@ export function ActivityMeter({
   return (
     <div aria-label={ariaLabel} className={className}>
       {children}
-      <div aria-hidden="true" className={trackClassName}>
+      <div
+        aria-hidden="true"
+        className={trackClassName}
+        style={cssCustomProperty('--meter-count', barCount)}
+      >
         {Array.from({ length: barCount }, (_, index) => (
           <span
             className={`${barClassName}${index < litBars ? ` ${litBarClassName}` : ''}`}

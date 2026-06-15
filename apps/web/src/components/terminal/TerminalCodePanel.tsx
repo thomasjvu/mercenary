@@ -30,15 +30,15 @@ export function TerminalCodePanel({
       onClick={onFocus}
     >
       <div className="terminal-window__head">
-        <div>
-          {note ? <p className="eyebrow">{note}</p> : null}
-          <h2>{label}</h2>
+        {note ? <p className="eyebrow terminal-window__note">{note}</p> : null}
+        <div className="terminal-window__title-row">
+          <h2 className="terminal-window__title">{label}</h2>
+          {onAction && actionLabel ? (
+            <button className="button" onClick={onAction} type="button">
+              <Icon aria-label={actionLabel} className="icon icon--pixel" icon="pixel:copy-solid" />
+            </button>
+          ) : null}
         </div>
-        {onAction && actionLabel ? (
-          <button className="button" onClick={onAction} type="button">
-            <Icon aria-label={actionLabel} className="icon icon--pixel" icon="pixel:copy-solid" />
-          </button>
-        ) : null}
       </div>
       <pre className="code-panel">{code}</pre>
     </article>

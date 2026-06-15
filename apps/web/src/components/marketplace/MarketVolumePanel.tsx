@@ -1,5 +1,6 @@
 import type { MarketplaceStats } from '../../api/marketplace.js';
 import { formatUsd } from '@bossraid/proof-ui';
+import { SegmentBar } from '../system/SegmentBar.js';
 
 export function MarketVolumePanel({ stats }: { stats?: MarketplaceStats }) {
   const rows = [
@@ -43,9 +44,7 @@ export function MarketVolumePanel({ stats }: { stats?: MarketplaceStats }) {
                 <span>{row.label}</span>
                 <strong>{label}</strong>
               </div>
-              <div className="market-volume-panel__track" aria-hidden="true">
-                <span className="market-volume-panel__fill" style={{ width: `${width}%` }} />
-              </div>
+              <SegmentBar tone="volume" value={width} />
             </div>
           );
         })}

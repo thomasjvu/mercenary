@@ -8,6 +8,7 @@ import {
 import { formatUsd } from '@bossraid/proof-ui';
 import { formatLatency, formatPercent, formatSavingsLabel } from '../../lib/marketplace-format.js';
 import { ProviderBrandIcon } from '../ProviderBrandIcon.js';
+import { SegmentBar } from '../system/SegmentBar.js';
 
 export type ModelSortKey = 'price' | 'sellers' | 'success' | 'latency' | 'model';
 
@@ -139,12 +140,7 @@ function ModelRow({ market, onOpen }: { market: InferenceMarket; onOpen: () => v
         <div className="model-catalog__savings">
           <span>{savingsLabel ?? '—'}</span>
           {savingsPercent != null && savingsPercent > 0 ? (
-            <div className="model-catalog__savings-bar" aria-hidden="true">
-              <span
-                className="model-catalog__savings-fill"
-                style={{ width: `${Math.min(100, savingsPercent)}%` }}
-              />
-            </div>
+            <SegmentBar segments={20} tone="savings" value={Math.min(100, savingsPercent)} />
           ) : null}
         </div>
       </td>
@@ -217,12 +213,7 @@ function ModelCard({ market, onOpen }: { market: InferenceMarket; onOpen: () => 
       </dl>
 
       {savingsPercent != null && savingsPercent > 0 ? (
-        <div className="model-catalog__savings-bar" aria-hidden="true">
-          <span
-            className="model-catalog__savings-fill"
-            style={{ width: `${Math.min(100, savingsPercent)}%` }}
-          />
-        </div>
+        <SegmentBar segments={24} tone="savings" value={Math.min(100, savingsPercent)} />
       ) : null}
     </article>
   );
