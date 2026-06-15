@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import useSWR from 'swr';
 import { formatUsd, raidPollingRefreshInterval } from '@bossraid/proof-ui';
 import { SettlementProofPanel, useRaidPolling } from '@bossraid/ui';
-import heroImage from '../assets/hero.webp';
+import heroMangaReceiptImage from '../assets/hero-manga-receipt.jpg';
+import { MangaSliceArt } from '../components/system/MangaSliceArt.js';
 import {
   fetchAttestedRaidResult,
   fetchAttestedRuntime,
@@ -25,6 +26,7 @@ import { buildReceiptUpstreamAttestations } from '../lib/receipt-attestation-vie
 import { buildReceiptProviderRows, readQueryErrorMessage } from '../lib/receipt-helpers';
 import { buildReceiptSettlementView } from '../lib/receipt-settlement-view';
 import { applyDocumentMeta } from '../lib/document-meta.js';
+import { TerminalCodePanel } from '../components/terminal/TerminalCodePanel.js';
 import { buildAttestationSurfaceLabel, isAttestationSignerUnavailable } from '../lib/receipt-url';
 
 type AppRoute = '/' | '/playground' | '/raiders' | '/receipt';
@@ -204,15 +206,8 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
           </div>
         </div>
 
-        <aside className="page-stage-card page-stage-card--receipt">
-          <img
-            alt=""
-            aria-hidden="true"
-            className="page-stage-card__image"
-            loading="lazy"
-            src={heroImage}
-            style={{ objectPosition: '50% 62%' }}
-          />
+        <aside className="page-stage-card page-stage-card--receipt page-stage-card--manga">
+          <MangaSliceArt className="page-stage-card__art" src={heroMangaReceiptImage} />
           <div className="page-stage-card__scrim" />
           <div className="page-stage-card__copy">
             <p className="eyebrow">{activeQuery ? 'loaded proof lane' : 'proof lane'}</p>
@@ -256,10 +251,15 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
           <article className="receipt-empty receipt-empty--viewport">
             <p className="eyebrow">capability link</p>
             <h2>Load one raid receipt.</h2>
-            <p>Use the `raidId` and `raidAccessToken` returned by one raid run.</p>
-            <pre className="code-panel receipt-empty__code">
-              /receipt?raidId=&lt;raidId&gt;&amp;token=&lt;raidAccessToken&gt;
-            </pre>
+            <div className="curl-quickstart curl-quickstart--compact">
+              <TerminalCodePanel
+                code="/receipt?raidId=<raidId>&token=<raidAccessToken>"
+                label="receipt url"
+                layer="front"
+                note="capability link"
+                theme="raid"
+              />
+            </div>
             <div className="receipt-empty__actions">
               {PINNED_PROOF_RECEIPT_URL ? (
                 <a className="button button--primary" href={PINNED_PROOF_RECEIPT_URL}>
@@ -267,33 +267,34 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
                 </a>
               ) : null}
               <a
-                className="button"
+                className="button button--primary"
                 href="/playground?mode=raid"
                 onClick={(event) => {
                   event.preventDefault();
                   onNavigate('/playground', { mode: 'raid' });
                 }}
               >
-                open playground
+                spawn raid
               </a>
             </div>
-            <p>
-              {PINNED_PROOF_RECEIPT_URL
-                ? 'Use the pinned receipt for a no-wallet proof path, or open the playground to launch a new hosted raid.'
-                : 'Set VITE_BOSSRAID_PROOF_RECEIPT_URL to pin one recent proof URL for judges.'}
-            </p>
-            <p>
-              {attestedRuntime.data
-                ? `${buildAttestationSurfaceLabel(
-                    attestedRuntime.data.payload.deploymentTarget ?? 'unknown',
-                    attestedRuntime.data.payload.teePlatform ?? 'unknown'
-                  )} runtime proof is live.`
-                : runtimeSignerDisabledForEmpty
-                  ? 'Provider TEE signals are still live, but this host is not publishing a signed runtime envelope because MNEMONIC is not configured.'
-                  : attestedRuntime.error
-                    ? readQueryErrorMessage(attestedRuntime.error)
-                    : 'Loading runtime attestation.'}
-            </p>
+            <details className="receipt-empty__details">
+              <summary>runtime attestation notes</summary>
+              <p>
+                {attestedRuntime.data
+                  ? `${buildAttestationSurfaceLabel(
+                      attestedRuntime.data.payload.deploymentTarget ?? 'unknown',
+                      attestedRuntime.data.payload.teePlatform ?? 'unknown'
+                    )} runtime proof is live.`
+                  : runtimeSignerDisabledForEmpty
+                    ? 'Runtime envelope signing is disabled on this host.'
+                    : attestedRuntime.error
+                      ? readQueryErrorMessage(attestedRuntime.error)
+                      : 'Loading runtime attestation.'}
+              </p>
+              {PINNED_PROOF_RECEIPT_URL ? null : (
+                <p>Set VITE_BOSSRAID_PROOF_RECEIPT_URL to pin a proof URL.</p>
+              )}
+            </details>
           </article>
         ) : null}
 

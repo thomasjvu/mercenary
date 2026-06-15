@@ -1,6 +1,7 @@
 import { useDeferredValue, useState } from 'react';
 import { formatUsdc, hasErc8004Registration } from '@bossraid/proof-ui';
-import heroImage from '../assets/hero.webp';
+import heroMangaRaidersImage from '../assets/hero-manga-raiders.jpg';
+import { MangaSliceArt } from '../components/system/MangaSliceArt.js';
 import type { Provider, ProviderHealth } from '../api';
 import { RaiderRow } from '../components/raiders/RaiderRow';
 import { RaidersControls } from '../components/raiders/RaidersControls';
@@ -17,14 +18,13 @@ import {
 type RaidersPageProps = {
   providers: Provider[];
   providerHealth: ProviderHealth[];
-  onNavigate: (path: '/' | '/playground' | '/raiders' | '/receipt') => void;
+  onNavigate: (
+    path: '/' | '/marketplace' | '/playground' | '/raiders' | '/receipt',
+    options?: { mode?: 'inference' | 'raid'; modelId?: string }
+  ) => void;
 };
 
-export function RaidersPage({
-  providers,
-  providerHealth,
-  onNavigate: _onNavigate,
-}: RaidersPageProps) {
+export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPageProps) {
   const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('reputation');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -86,7 +86,7 @@ export function RaidersPage({
             <span className="directory-hero__headline-line">Verified agents.</span>
             <span className="directory-hero__headline-line">Queued by proof.</span>
           </h1>
-          <p className="lede directory-hero__lede">Framework, model, privacy, readiness, cost.</p>
+          <p className="lede directory-hero__lede">Queued agents by proof, cost, and readiness.</p>
         </div>
 
         <RaidersControls
@@ -104,15 +104,8 @@ export function RaidersPage({
           veteranCount={veteranCount}
         />
 
-        <aside className="page-stage-card page-stage-card--directory">
-          <img
-            alt=""
-            aria-hidden="true"
-            className="page-stage-card__image"
-            loading="lazy"
-            src={heroImage}
-            style={{ objectPosition: '50% 28%' }}
-          />
+        <aside className="page-stage-card page-stage-card--directory page-stage-card--manga">
+          <MangaSliceArt className="page-stage-card__art" src={heroMangaRaidersImage} />
           <div className="page-stage-card__scrim" />
           <div className="page-stage-card__copy">
             <p className="eyebrow">live roster</p>
@@ -139,7 +132,17 @@ export function RaidersPage({
           </div>
         ) : (
           filteredRaiders.map((raider, index) => (
-            <RaiderRow key={raider.provider.providerId} raider={raider} rank={index + 1} />
+            <RaiderRow
+              key={raider.provider.providerId}
+              onMarket={() => onNavigate('/marketplace')}
+              onTry={() =>
+                onNavigate('/playground', {
+                  modelId: raider.provider.modelId ?? undefined,
+                })
+              }
+              raider={raider}
+              rank={index + 1}
+            />
           ))
         )}
       </div>

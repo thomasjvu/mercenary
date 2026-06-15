@@ -107,36 +107,105 @@ textarea,
   pointer-events: none;
 }
 
+.rx-spacebar-clip {
+  clip-path: polygon(0 0, 100% 0, 100% 77%, 66% 77%, 63.4% 100%, 5.2% 100%, 0 79%);
+}
+
+.rx-control-pane {
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 20px 100%, 0 calc(100% - 10px));
+}
+
+.rx-control-pane__band {
+  margin: 0;
+  padding: 10px 14px;
+  background: var(--rx-blue);
+  color: var(--rx-white);
+}
+
+.rx-control-pane__body {
+  padding: 16px 14px;
+  background: var(--rx-yellow);
+  color: #111111;
+}
+
+.rx-control-pane__unlock {
+  padding: 0;
+  background: var(--rx-red);
+}
+
+.rx-control-pane__footer {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--bg-2);
+}
+
 .ops-auth-card {
   position: relative;
   z-index: 1;
   width: min(720px, 100%);
   display: grid;
-  gap: 18px;
-  padding: 28px;
-  border: 1px solid var(--line-strong);
+  gap: 0;
+  padding: 0;
+  border: 0;
   border-radius: 0;
-  background:
-    linear-gradient(180deg, rgba(251, 47, 56, 0.08), rgba(12, 14, 18, 0.96)),
-    var(--panel);
+  background: transparent;
   box-shadow: none;
 }
 
+.ops-auth-form {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  min-height: 0;
+}
+
+.ops-auth-unlock {
+  width: 100%;
+  min-height: 48px;
+  padding: 14px 18px 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--rx-red);
+  color: var(--rx-white);
+  box-shadow: none;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.ops-auth-unlock:hover {
+  background: color-mix(in srgb, var(--rx-red) 88%, #111111);
+  color: var(--rx-white);
+}
+
 .ops-auth-card__copy,
-.ops-auth-form,
 .ops-auth-field {
   display: grid;
   gap: 10px;
 }
 
-.ops-auth-input {
-  width: 100%;
+.ops-auth-card__copy h1 {
+  color: #111111;
 }
 
-.ops-auth-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+.ops-auth-card__copy .ops-lede,
+.ops-auth-card__copy .quiet-note {
+  color: rgba(17, 17, 17, 0.72);
+}
+
+.ops-auth-card__copy .ops-label {
+  color: var(--rx-blue);
+}
+
+.ops-auth-input {
+  width: 100%;
 }
 
 .ops-public-link {

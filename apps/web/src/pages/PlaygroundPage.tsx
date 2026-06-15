@@ -1,5 +1,6 @@
 import type { Provider, ProviderHealth } from '../api.js';
 import { ApiReadinessBanner } from '../components/system/ApiReadinessBanner.js';
+import { PageHero } from '../components/system/PageHero.js';
 import { InferencePlayground } from '../components/marketplace/InferencePlayground.js';
 import { DemoPage } from './DemoPage.js';
 import type { PlaygroundMode } from '../lib/playground-routing.js';
@@ -26,13 +27,13 @@ export function PlaygroundPage({
       className={`beta-page playground-page${mode === 'raid' ? ' playground-page--raid' : ''}`}
     >
       {mode !== 'raid' ? (
-        <header className="playground-page__header">
-          <div>
-            <p className="eyebrow">playground</p>
-            <h1>Try models and raids.</h1>
-          </div>
-          <PlaygroundModeTabs mode={mode} onModeChange={onModeChange} />
-        </header>
+        <PageHero
+          aside={<PlaygroundModeTabs mode={mode} onModeChange={onModeChange} />}
+          compact
+          eyebrow="playground"
+          lede="Run inference or spawn a mercenary raid."
+          title="Try models and raids."
+        />
       ) : (
         <div className="playground-page__mode-bar">
           <PlaygroundModeTabs mode={mode} onModeChange={onModeChange} />

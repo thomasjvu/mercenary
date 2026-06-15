@@ -10,6 +10,8 @@ import { ModelCatalog } from '../components/marketplace/ModelCatalog.js';
 import { MarketStatsRibbon } from '../components/marketplace/MarketStatsRibbon.js';
 import { MarketPriceLadder } from '../components/marketplace/MarketPriceLadder.js';
 import { MarketVolumePanel } from '../components/marketplace/MarketVolumePanel.js';
+import { PageHero } from '../components/system/PageHero.js';
+import { CurlQuickstart } from '../components/terminal/CurlQuickstart.js';
 
 const FILTER_DEFAULTS = {
   model: '',
@@ -41,17 +43,29 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
 
   return (
     <section className="beta-page market-page">
-      <header className="beta-hero beta-hero--compact market-page__hero">
-        <div>
-          <p className="eyebrow">open market for models</p>
-          <h1>Discount verified inference.</h1>
-          <p className="lede">Live order books, benchmark savings, USDC settlement.</p>
-        </div>
-        <QuickstartCard marketModelId={visibleMarkets[0]?.modelId} />
-      </header>
+      <PageHero
+        aside={
+          <CurlQuickstart
+            code={buildInferenceCurlSnippet({
+              apiBase: API_BASE,
+              model: visibleMarkets[0]?.modelId ?? 'gpt-5.5',
+              prompt: 'Run on the cheapest verified seller.',
+              maxBudgetUsd: 1,
+              privacyMode: 'prefer',
+              relativePath: true,
+            })}
+            compact
+            runHref={`/playground?model=${encodeURIComponent(visibleMarkets[0]?.modelId ?? 'gpt-5.5')}`}
+          />
+        }
+        compact
+        eyebrow="open market"
+        lede="Live order books and USDC settlement."
+        title="Discount verified inference."
+      />
 
       <ApiReadinessBanner error={markets.error} label="Marketplace unavailable" />
-      <MarketStatsRibbon isLoading={markets.isLoading} markets={markets.data} variant="quest" />
+      <MarketStatsRibbon isLoading={markets.isLoading} markets={markets.data} />
       <MarketSavingsSummary
         activeOffers={markets.data?.stats.activeOffers}
         markets={visibleMarkets}
@@ -160,45 +174,6 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
         </div>
       </div>
     </section>
-  );
-}
-
-function QuickstartCard({ marketModelId }: { marketModelId?: string }) {
-  const model = marketModelId ?? 'gpt-5.5';
-  const [expanded, setExpanded] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const code = buildInferenceCurlSnippet({
-    apiBase: API_BASE,
-    model,
-    prompt: 'Run on the cheapest verified seller.',
-    maxBudgetUsd: 1,
-    privacyMode: 'prefer',
-    relativePath: true,
-  });
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1200);
-    } catch {
-      setCopied(false);
-    }
-  }
-
-  return (
-    <aside className="quickstart-card">
-      <p className="eyebrow">buyer quickstart</p>
-      <div className="quickstart-card__actions">
-        <button className="button button--primary" onClick={() => void handleCopy()} type="button">
-          {copied ? 'copied' : 'copy curl'}
-        </button>
-        <button className="button" onClick={() => setExpanded((current) => !current)} type="button">
-          {expanded ? 'hide' : 'show curl'}
-        </button>
-      </div>
-      {expanded ? <pre className="code-panel">{code}</pre> : null}
-    </aside>
   );
 }
 

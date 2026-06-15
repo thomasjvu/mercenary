@@ -2,11 +2,15 @@ import { useState } from 'react';
 import { Icon } from '@iconify/react';
 import { createBuyerApiKey, fetchSession } from '../api';
 import { useWalletAuth } from '../hooks/useWalletAuth';
+import { FlowSection } from '../components/system/FlowSection.js';
+import { PageHero } from '../components/system/PageHero.js';
+import { WalletGate } from '../components/system/WalletGate.js';
+import { CurlQuickstart } from '../components/terminal/CurlQuickstart.js';
 import { buildInferenceCurlSnippet } from '../lib/inference-curl.js';
 
 export function BuyerOnboardingPage() {
   const { session, setSession, status, setStatus, isAuthenticated } = useWalletAuth(
-    'Use connect wallet in the sidebar to create a buyer account.'
+    'Connect wallet to create a buyer account.'
   );
   const [apiKey, setApiKey] = useState<string>('');
   const [keyName, setKeyName] = useState('Beta buyer key');
@@ -23,7 +27,7 @@ export function BuyerOnboardingPage() {
       });
       setApiKey(created.apiKey);
       await setSession(await fetchSession());
-      setStatus('API key created. It is only shown once.');
+      setStatus('API key created.');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create API key.';
       setKeyError(message);
@@ -45,31 +49,34 @@ export function BuyerOnboardingPage() {
     }
   }
 
-  return (
-    <section className="beta-page">
-      <header className="beta-hero beta-hero--compact">
-        <div>
-          <p className="eyebrow">buyer onboarding</p>
-          <h1>Wallet, API key, paid request.</h1>
-          <p className="lede">Wallet sign-in → capped API key → discount inference.</p>
-        </div>
-      </header>
+  const curl = buildInferenceCurlSnippet({
+    apiBase: '/api',
+    model: 'gpt-5.5',
+    apiKey: apiKey || 'br_...',
+    relativePath: true,
+  });
 
-      <div className="onboarding-grid">
-        <article className="beta-panel">
-          <p className="eyebrow">1 / wallet sign-in</p>
-          <h2>Own the account.</h2>
-          <p>SIWE wallet sign-in via the sidebar control.</p>
+  return (
+    <section className="beta-page flow-page">
+      <PageHero
+        compact
+        eyebrow="buy"
+        lede="Wallet → capped key → inference."
+        title="Buy inference."
+      />
+
+      <WalletGate />
+
+      <div className="flow-stack">
+        <FlowSection done={isAuthenticated} step="01" title="Connect wallet">
           {isAuthenticated ? (
-            <p className="form-status">Signed in as {session?.wallet}.</p>
+            <p className="form-status">{session?.wallet}</p>
           ) : (
             <p className="form-status">{status}</p>
           )}
-        </article>
+        </FlowSection>
 
-        <article className="beta-panel">
-          <p className="eyebrow">2 / API key</p>
-          <h2>Create a capped key.</h2>
+        <FlowSection done={Boolean(apiKey)} step="02" title="Create API key">
           <label className="field">
             <span>key name</span>
             <input onChange={(event) => setKeyName(event.target.value)} value={keyName} />
@@ -92,33 +99,19 @@ export function BuyerOnboardingPage() {
           </button>
           {keyError ? <p className="form-status form-status--error">{keyError}</p> : null}
           {apiKey ? (
-            <>
-              <p className="form-status form-status--warning">
-                Copy this key now. Boss Raid will not show it again.
-              </p>
-              <div className="code-panel-row">
-                <pre className="code-panel">{apiKey}</pre>
-                <button className="button" onClick={() => void copyKey()} type="button">
-                  <Icon aria-hidden="true" className="icon icon--pixel" icon="pixel:copy-solid" />
-                  {copied ? 'copied' : 'copy key'}
-                </button>
-              </div>
-            </>
+            <div className="code-panel-row">
+              <pre className="code-panel">{apiKey}</pre>
+              <button className="button" onClick={() => void copyKey()} type="button">
+                <Icon aria-hidden="true" className="icon icon--pixel" icon="pixel:copy-solid" />
+                {copied ? 'copied' : 'copy key'}
+              </button>
+            </div>
           ) : null}
-        </article>
+        </FlowSection>
 
-        <article className="beta-panel beta-panel--wide">
-          <p className="eyebrow">3 / test request</p>
-          <h2>Call the discount lane.</h2>
-          <pre className="code-panel">
-            {buildInferenceCurlSnippet({
-              apiBase: '/api',
-              model: 'gpt-5.5',
-              apiKey: apiKey || 'br_...',
-              relativePath: true,
-            })}
-          </pre>
-        </article>
+        <FlowSection step="03" title="Send a test request">
+          <CurlQuickstart code={curl} compact runHref="/playground" />
+        </FlowSection>
       </div>
     </section>
   );

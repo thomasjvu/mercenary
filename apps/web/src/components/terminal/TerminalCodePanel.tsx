@@ -5,7 +5,7 @@ export type TerminalPanelTheme = 'chat' | 'raid' | 'mcp';
 
 type TerminalCodePanelProps = {
   label: string;
-  note: string;
+  note?: string;
   code: string;
   theme: TerminalPanelTheme;
   layer: TerminalPanelLayer;
@@ -31,7 +31,7 @@ export function TerminalCodePanel({
     >
       <div className="terminal-window__head">
         <div>
-          <p className="eyebrow">{note}</p>
+          {note ? <p className="eyebrow">{note}</p> : null}
           <h2>{label}</h2>
         </div>
         {onAction && actionLabel ? (

@@ -14,9 +14,11 @@ import {
 type RaiderRowProps = {
   raider: RaiderRecord;
   rank: number;
+  onTry?: () => void;
+  onMarket?: () => void;
 };
 
-export function RaiderRow({ raider, rank }: RaiderRowProps) {
+export function RaiderRow({ raider, rank, onTry, onMarket }: RaiderRowProps) {
   const registered = hasErc8004Registration(raider.provider);
   const verificationStatus = readErc8004VerificationStatus(raider.provider);
   const venice = isVeniceProvider(raider.provider);
@@ -104,6 +106,19 @@ export function RaiderRow({ raider, rank }: RaiderRowProps) {
           <FactBadge label="agent" value={raider.provider.agentId ?? 'pending'} />
           <FactBadge label="8004" value={buildErc8004StatusValue(verificationStatus, registered)} />
           <FactBadge label="seen" value={raider.lastSeenLabel} />
+        </div>
+
+        <div className="raider-row__actions">
+          {onTry ? (
+            <button className="button button--primary" onClick={onTry} type="button">
+              try
+            </button>
+          ) : null}
+          {onMarket ? (
+            <button className="button" onClick={onMarket} type="button">
+              market
+            </button>
+          ) : null}
         </div>
       </div>
     </article>

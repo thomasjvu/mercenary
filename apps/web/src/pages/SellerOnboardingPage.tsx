@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import useSWR from 'swr';
 import type { UpstreamProviderId } from '@bossraid/constants';
 import { UPSTREAM_PROVIDER_CONFIG } from '@bossraid/constants';
@@ -15,6 +15,9 @@ import { ModelPickerModal } from '../components/seller/ModelPickerModal.js';
 import { SellerPathSwitcher } from '../components/seller/SellerPathSwitcher.js';
 import { UpstreamTeeVerificationPanel } from '../components/trust/UpstreamTeeVerificationPanel.js';
 import type { AppRoute } from '../lib/app-routes.js';
+import { FlowSection } from '../components/system/FlowSection.js';
+import { PageHero } from '../components/system/PageHero.js';
+import { WalletGate } from '../components/system/WalletGate.js';
 
 const PROVIDER_ORDER: UpstreamProviderId[] = ['venice', 'redpill', 'near', 'chutes', 'phala'];
 
@@ -102,16 +105,10 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
   }
 
   return (
-    <section className="beta-page seller-wizard">
-      <header className="beta-hero beta-hero--compact">
-        <div>
-          <p className="eyebrow">sell inference</p>
-          <h1>Create new offer</h1>
-          <p className="lede">
-            Connect an upstream TEE provider, pick models, set discount, publish.
-          </p>
-        </div>
-      </header>
+    <section className="beta-page flow-page seller-wizard seller-wizard--flow">
+      <PageHero compact eyebrow="sell" lede="Upstream key → models → publish." title="New offer." />
+
+      <WalletGate message="Connect wallet before selling inference." />
 
       <SellerPathSwitcher
         active="upstream"
@@ -119,10 +116,10 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
         onSelectUpstream={() => onNavigate('/onboarding/seller')}
       />
 
-      <div className="seller-wizard__steps">
-        <WizardStep done={isAuthenticated} title="1 / wallet">
+      <div className="flow-stack seller-wizard__steps">
+        <FlowSection done={isAuthenticated} step="01" title="Connect wallet">
           {isAuthenticated ? (
-            <p className="form-status">Signed in as {session?.wallet}.</p>
+            <p className="form-status">{session?.wallet}</p>
           ) : (
             <>
               <button
@@ -135,9 +132,13 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
               <p className="form-status">{status}</p>
             </>
           )}
-        </WizardStep>
+        </FlowSection>
 
-        <WizardStep done={Boolean(upstreamConfig.data?.configured)} title="2 / upstream provider">
+        <FlowSection
+          done={Boolean(upstreamConfig.data?.configured)}
+          step="02"
+          title="Connect upstream"
+        >
           <div className="seller-provider-picker">
             {PROVIDER_ORDER.map((entry) => (
               <button
@@ -154,7 +155,7 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
               </button>
             ))}
           </div>
-          <p className="lede">{providerConfig.upstreamBase}</p>
+          <p className="quiet-note">{providerConfig.upstreamBase}</p>
           <label className="field">
             <span>{provider} API key</span>
             <input
@@ -179,11 +180,11 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
           >
             get models
           </button>
-        </WizardStep>
+        </FlowSection>
 
-        <WizardStep done={selectedModelIds.length > 0} title="3 / model selection">
-          <p className="lede">
-            {selectedModelIds.length} of {models.length || '…'} models selected for this offer.
+        <FlowSection done={selectedModelIds.length > 0} step="03" title="Select models">
+          <p className="quiet-note">
+            {selectedModelIds.length} of {models.length || '…'} models selected.
           </p>
           <button
             className="button button--primary"
@@ -205,9 +206,9 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
               teeAttested={previewModel.teeAttested}
             />
           ) : null}
-        </WizardStep>
+        </FlowSection>
 
-        <WizardStep done={false} title="4 / pricing & payout">
+        <FlowSection step="04" title="Set pricing">
           <div className="form-grid">
             <label className="field">
               <span>discount %</span>
@@ -230,12 +231,12 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
               />
             </label>
           </div>
-          <p className="form-status">
-            A {discountPercent}% discount means buyers pay {buyerPercent}% of the reference rate.
+          <p className="quiet-note">
+            Buyers pay {buyerPercent}% of reference at {discountPercent}% discount.
           </p>
-        </WizardStep>
+        </FlowSection>
 
-        <WizardStep done={Boolean(publishResult)} title="5 / publish">
+        <FlowSection done={Boolean(publishResult)} step="05" title="Publish">
           <button
             className="button button--primary"
             disabled={!isAuthenticated || pending || selectedModelIds.length === 0}
@@ -246,13 +247,11 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
           </button>
           {publishResult ? <p className="form-status">{publishResult}</p> : null}
           <p className="form-status">{status}</p>
-        </WizardStep>
+        </FlowSection>
 
         {publishResult ? (
-          <article className="beta-panel seller-wizard__summary seller-wizard__step--done">
-            <p className="eyebrow">published</p>
-            <h2>Offers are live.</h2>
-            <p className="lede">{publishResult}</p>
+          <FlowSection className="seller-wizard__summary" done step="done" title="Offers live">
+            <p className="form-status">{publishResult}</p>
             <div className="seller-wizard__summary-actions">
               <button
                 className="button button--primary"
@@ -265,7 +264,7 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
                 view marketplace
               </button>
             </div>
-          </article>
+          </FlowSection>
         ) : null}
       </div>
 
@@ -282,24 +281,5 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
         />
       ) : null}
     </section>
-  );
-}
-
-function WizardStep({
-  title,
-  done,
-  children,
-}: {
-  title: string;
-  done: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <article
-      className={`beta-panel seller-wizard__step${done ? ' seller-wizard__step--done' : ''}`}
-    >
-      <p className="eyebrow">{title}</p>
-      {children}
-    </article>
   );
 }

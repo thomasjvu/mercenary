@@ -4,7 +4,7 @@ import {
   ModelDiscountBar,
   SellerPriceSpreadChart,
 } from '../components/marketplace/MarketDiscountChart.js';
-import { InferencePlayground } from '../components/marketplace/InferencePlayground.js';
+import { PageHero } from '../components/system/PageHero.js';
 import { UpstreamTeeVerificationPanel } from '../components/trust/UpstreamTeeVerificationPanel.js';
 import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import { isUpstreamProviderId } from '@bossraid/constants';
@@ -50,30 +50,34 @@ export function ModelDetailPage({
 
   return (
     <section className="beta-page model-detail-page">
-      <header className="beta-hero beta-hero--compact">
-        <div>
+      <PageHero
+        actions={
           <button className="button model-detail-page__back" onClick={onBack} type="button">
             ← all models
           </button>
-          <p className="eyebrow">
+        }
+        aside={
+          <div className="quickstart-card">
+            <p className="eyebrow">from {formatUsd(market?.cheapestRateUsd)}</p>
+            {savingsLabel ? <p className="model-detail-page__savings">{savingsLabel}</p> : null}
+            <button
+              className="button button--primary"
+              onClick={() => onTryModel(modelId)}
+              type="button"
+            >
+              try in playground
+            </button>
+          </div>
+        }
+        compact
+        eyebrow={
+          <>
             <ProviderBrandIcon modelProvider={market?.modelProvider} size={16} />{' '}
             {market?.modelProvider ?? 'model marketplace'}
-          </p>
-          <h1>{modelId}</h1>
-        </div>
-        <aside className="quickstart-card">
-          <p className="eyebrow">from</p>
-          <strong className="model-detail-page__price">{formatUsd(market?.cheapestRateUsd)}</strong>
-          {savingsLabel ? <p className="model-detail-page__savings">{savingsLabel}</p> : null}
-          <button
-            className="button button--primary"
-            onClick={() => onTryModel(modelId)}
-            type="button"
-          >
-            try in playground
-          </button>
-        </aside>
-      </header>
+          </>
+        }
+        title={modelId}
+      />
 
       {markets.error ? (
         <div className="empty-state">
@@ -140,8 +144,6 @@ export function ModelDetailPage({
             onTry={() => onTryModel(modelId)}
             showClose={false}
           />
-
-          <InferencePlayground initialModelId={modelId} />
         </>
       )}
     </section>

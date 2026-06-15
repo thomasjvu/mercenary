@@ -7,9 +7,11 @@ import { buildInferenceCurlSnippet } from '../../lib/inference-curl.js';
 import { verifyMarketplaceTeeAttestation } from '../../api/marketplace-tee.js';
 import { fetchMarkets, runInferenceChatCompletion } from '../../api/marketplace.js';
 
+import { resolveProviderBrand } from '../../lib/provider-brand.js';
 import { TerminalCodePanel } from '../terminal/TerminalCodePanel.js';
 import { UpstreamTeeVerificationPanel } from '../trust/UpstreamTeeVerificationPanel.js';
 import { ModelCombobox } from './ModelCombobox.js';
+import { ProviderCombobox } from './ProviderCombobox.js';
 
 const API_KEY_STORAGE_KEY = 'bossraid.playground.apiKey';
 const UPSTREAM_KEY_STORAGE_KEY = 'bossraid.playground.upstreamKey';
@@ -55,6 +57,7 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
   }, [catalogById, markets.data?.data]);
 
   const [model, setModel] = useState(initialModelId ?? '');
+  const [providerFilter, setProviderFilter] = useState('');
   const [prompt, setPrompt] = useState('One-line launch status update.');
   const [apiKey, setApiKey] = useState('');
   const [upstreamApiKey, setUpstreamApiKey] = useState('');
@@ -67,6 +70,30 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<'curl' | 'response'>('curl');
   const [teeStatus, setTeeStatus] = useState<string | null>(null);
+
+  const providerChoices = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const option of modelOptions) {
+      counts.set(option.modelProvider, (counts.get(option.modelProvider) ?? 0) + 1);
+    }
+
+    return [...counts.entries()]
+      .sort((left, right) =>
+        resolveProviderBrand(left[0]).label.localeCompare(resolveProviderBrand(right[0]).label)
+      )
+      .map(([id, count]) => ({
+        id,
+        label: resolveProviderBrand(id).label,
+        count,
+      }));
+  }, [modelOptions]);
+
+  const filteredModelOptions = useMemo(() => {
+    if (!providerFilter) {
+      return modelOptions;
+    }
+    return modelOptions.filter((option) => option.modelProvider === providerFilter);
+  }, [modelOptions, providerFilter]);
 
   const selectedModel = modelOptions.find((option) => option.modelId === model);
   const attestationProvider =
@@ -90,16 +117,30 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
   }, []);
 
   useEffect(() => {
-    if (!model && modelOptions.length > 0) {
+    if (!model && filteredModelOptions.length > 0) {
       const preferredLive =
-        modelOptions.find((option) => option.liveSellers > 0)?.modelId ?? modelOptions[0].modelId;
+        filteredModelOptions.find((option) => option.liveSellers > 0)?.modelId ??
+        filteredModelOptions[0].modelId;
       setModel(
-        initialModelId && modelOptions.some((option) => option.modelId === initialModelId)
+        initialModelId && filteredModelOptions.some((option) => option.modelId === initialModelId)
           ? initialModelId
           : preferredLive
       );
     }
-  }, [initialModelId, model, modelOptions]);
+  }, [initialModelId, model, filteredModelOptions]);
+
+  useEffect(() => {
+    if (!model || filteredModelOptions.some((option) => option.modelId === model)) {
+      return;
+    }
+
+    const preferredLive =
+      filteredModelOptions.find((option) => option.liveSellers > 0)?.modelId ??
+      filteredModelOptions[0]?.modelId;
+    if (preferredLive) {
+      setModel(preferredLive);
+    }
+  }, [filteredModelOptions, model]);
 
   useEffect(() => {
     if (initialModelId) {
@@ -219,15 +260,33 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
     <section className="inference-playground">
       <div className="inference-playground__grid">
         <div className="beta-panel inference-playground__panel">
-          <label className="field">
-            <span>model</span>
-            <ModelCombobox
-              onChange={setModel}
-              options={modelOptions}
-              placeholder="loading models..."
-              value={model}
-            />
-          </label>
+          <div className="inference-playground__model-picker">
+            <label className="field">
+              <span>provider</span>
+              <ProviderCombobox
+                onChange={setProviderFilter}
+                options={providerChoices}
+                placeholder={markets.isLoading ? 'loading providers...' : 'search providers...'}
+                value={providerFilter}
+              />
+            </label>
+
+            <label className="field">
+              <span>model</span>
+              <ModelCombobox
+                onChange={setModel}
+                options={filteredModelOptions}
+                placeholder={
+                  markets.isLoading
+                    ? 'loading models...'
+                    : filteredModelOptions.length === 0
+                      ? 'no models for this provider'
+                      : 'search models...'
+                }
+                value={model}
+              />
+            </label>
+          </div>
 
           {selectedModel ? (
             <p className="inference-playground__meta">
@@ -304,7 +363,7 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
           ) : null}
 
           <button
-            className="button button--primary"
+            className="button button--primary rx-spacebar-clip"
             disabled={pending}
             onClick={() => void handleRun()}
             type="button"

@@ -12,8 +12,20 @@ import {
   updateSellerProvider,
   verifySellerProvider,
 } from '../api';
+import { FlowPanel, FlowTabs, type FlowTab } from '../components/system/FlowTabs.js';
+import { PageHero } from '../components/system/PageHero.js';
+import { WalletGate } from '../components/system/WalletGate.js';
+
+const ACCOUNT_TABS = [
+  { id: 'wallet', label: 'wallet' },
+  { id: 'buyer', label: 'buyer' },
+  { id: 'seller', label: 'seller' },
+] as const satisfies readonly FlowTab[];
+
+type AccountTabId = (typeof ACCOUNT_TABS)[number]['id'];
 
 export function AccountPage() {
+  const [activeTab, setActiveTab] = useState<AccountTabId>('wallet');
   const session = useSWR('/v1/session', fetchSession);
   const sellers = useSWR(
     session.data?.authenticated ? '/v1/seller/providers' : null,
@@ -24,7 +36,7 @@ export function AccountPage() {
     fetchSellerStats
   );
   const purchases = useSWR(session.data?.authenticated ? '/v1/buyer/purchases' : null, () =>
-    fetchBuyerPurchases(50)
+    fetchBuyerPurchases(20)
   );
   const [fundAmount, setFundAmount] = useState('10');
   const [fundStatus, setFundStatus] = useState('');
@@ -98,229 +110,234 @@ export function AccountPage() {
     }
   }
 
+  const apiKeys = session.data?.account?.apiKeys ?? [];
+  const purchaseRows = purchases.data?.data ?? [];
+  const sellerRows = sellers.data?.data ?? [];
+
   return (
-    <section className="beta-page">
-      <header className="beta-hero beta-hero--compact">
-        <div>
-          <p className="eyebrow">account</p>
-          <h1>Keys, usage, sellers, payouts.</h1>
-          <p className="lede">Wallet-bound beta account state.</p>
-        </div>
-        {session.data?.authenticated ? (
-          <button className="button" onClick={() => void signOut()} type="button">
-            sign out
-          </button>
-        ) : null}
-      </header>
+    <section className="beta-page flow-page">
+      <PageHero
+        actions={
+          session.data?.authenticated ? (
+            <button className="button" onClick={() => void signOut()} type="button">
+              sign out
+            </button>
+          ) : null
+        }
+        compact
+        eyebrow="account"
+        lede="Wallet, keys, and seller offers."
+        title="Account."
+      />
 
-      {!session.data?.authenticated ? (
-        <div className="empty-state">
-          <p className="eyebrow">not signed in</p>
-          <p>Use buyer or seller onboarding to create a wallet session first.</p>
-        </div>
-      ) : (
-        <div className="account-grid">
-          <article className="beta-panel">
-            <p className="eyebrow">wallet</p>
-            <h2>{session.data.wallet}</h2>
-            <p>{session.data.account?.sellerProviderIds.length ?? 0} seller providers linked.</p>
-            <p className="account-balance__amount">
-              ${(session.data.account?.balanceUsd ?? 0).toFixed(2)} prepaid balance.
-            </p>
-            {(session.data.account?.totalSavingsUsd ?? 0) > 0 ? (
-              <p>${session.data.account?.totalSavingsUsd?.toFixed(2)} benchmark savings.</p>
-            ) : null}
+      <WalletGate message="Connect wallet to view account state." />
 
-            <form
-              className="account-balance-fund"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void topUpBalance();
-              }}
-            >
-              <p className="eyebrow">top up balance</p>
-              <label className="field">
-                <span>amount usd</span>
-                <input
-                  inputMode="decimal"
-                  min="0.01"
-                  onChange={(event) => setFundAmount(event.target.value)}
-                  step="0.01"
-                  type="number"
-                  value={fundAmount}
-                />
-              </label>
-              <button className="button button--primary" type="submit">
-                credit balance
-              </button>
-              {fundStatus ? <p className="form-status">{fundStatus}</p> : null}
-            </form>
-          </article>
+      {session.data?.authenticated ? (
+        <>
+          <FlowTabs
+            activeId={activeTab}
+            onChange={(id) => setActiveTab(id as AccountTabId)}
+            tabs={ACCOUNT_TABS}
+          />
 
-          <article className="beta-panel">
-            <p className="eyebrow">raid subscription</p>
-            <h2>ERC-7715 weekly budget</h2>
-            <p>{smartPay.status}</p>
-            <div className="mercenary-action-row">
-              <button
-                className="button"
-                disabled={smartPay.busy}
-                onClick={() => void smartPay.connectWallet()}
-                type="button"
-              >
-                connect MetaMask
-              </button>
-              <button
-                className="button button--primary"
-                disabled={smartPay.busy}
-                onClick={() => void smartPay.grantSubscription()}
-                type="button"
-              >
-                grant weekly budget
-              </button>
-              <button
-                className="button"
-                disabled={smartPay.busy}
-                onClick={() => void smartPay.clearSubscription()}
-                type="button"
-              >
-                clear session
-              </button>
+          <FlowPanel active={activeTab === 'wallet'} id="account-wallet">
+            <div className="account-overview">
+              <article className="flow-card">
+                <p className="eyebrow">balance</p>
+                <p className="account-balance__amount">
+                  ${(session.data.account?.balanceUsd ?? 0).toFixed(2)}
+                </p>
+                <p className="quiet-note">{session.data.wallet}</p>
+                {(session.data.account?.totalSavingsUsd ?? 0) > 0 ? (
+                  <p className="quiet-note">
+                    ${session.data.account?.totalSavingsUsd?.toFixed(2)} benchmark savings
+                  </p>
+                ) : null}
+                <form
+                  className="account-balance-fund"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void topUpBalance();
+                  }}
+                >
+                  <label className="field">
+                    <span>top up usd</span>
+                    <input
+                      inputMode="decimal"
+                      min="0.01"
+                      onChange={(event) => setFundAmount(event.target.value)}
+                      step="0.01"
+                      type="number"
+                      value={fundAmount}
+                    />
+                  </label>
+                  <button className="button button--primary" type="submit">
+                    credit balance
+                  </button>
+                  {fundStatus ? <p className="form-status">{fundStatus}</p> : null}
+                </form>
+              </article>
+
+              <article className="flow-card">
+                <p className="eyebrow">raid subscription</p>
+                <p className="quiet-note">{smartPay.status}</p>
+                <div className="mercenary-action-row">
+                  <button
+                    className="button"
+                    disabled={smartPay.busy}
+                    onClick={() => void smartPay.connectWallet()}
+                    type="button"
+                  >
+                    connect MetaMask
+                  </button>
+                  <button
+                    className="button button--primary"
+                    disabled={smartPay.busy}
+                    onClick={() => void smartPay.grantSubscription()}
+                    type="button"
+                  >
+                    grant weekly budget
+                  </button>
+                </div>
+                {smartPay.subscription ? (
+                  <p className="form-status">
+                    ${smartPay.subscription.weeklyBudgetUsd.toFixed(2)} USDC / week until{' '}
+                    {new Date(smartPay.subscription.expiresAt).toLocaleString()}.
+                  </p>
+                ) : (
+                  <button
+                    className="button"
+                    disabled={smartPay.busy}
+                    onClick={() => void smartPay.clearSubscription()}
+                    type="button"
+                  >
+                    clear session
+                  </button>
+                )}
+              </article>
             </div>
-            {smartPay.subscription ? (
-              <p>
-                Active grant: ${smartPay.subscription.weeklyBudgetUsd.toFixed(2)} USDC / week until{' '}
-                {new Date(smartPay.subscription.expiresAt).toLocaleString()}.
-              </p>
-            ) : null}
-          </article>
+          </FlowPanel>
 
-          <article className="beta-panel beta-panel--wide">
-            <p className="eyebrow">buyer API keys</p>
-            <div className="table-list">
-              {(session.data.account?.apiKeys ?? []).length === 0 ? (
-                <p>No API keys yet.</p>
+          <FlowPanel active={activeTab === 'buyer'} id="account-buyer">
+            <article className="flow-card">
+              <p className="eyebrow">api keys</p>
+              {apiKeys.length === 0 ? (
+                <p className="quiet-note">No API keys yet.</p>
               ) : (
-                session.data.account?.apiKeys.map((key) => (
-                  <div className="table-row" key={key.id}>
-                    <span>{key.name}</span>
-                    <span>{key.prefix}</span>
-                    <span>${key.spentUsd.toFixed(2)} spent</span>
-                    <span>{key.revokedAt ? 'revoked' : 'active'}</span>
-                    {!key.revokedAt ? (
-                      <button
-                        className="button"
-                        onClick={() => void revokeKey(key.id)}
-                        type="button"
-                      >
-                        revoke
-                      </button>
-                    ) : null}
-                  </div>
-                ))
-              )}
-            </div>
-          </article>
-
-          <article className="beta-panel beta-panel--wide">
-            <p className="eyebrow">purchase history</p>
-            <div className="table-list">
-              {(purchases.data?.data ?? []).length === 0 ? (
-                <p>No inference purchases yet.</p>
-              ) : (
-                purchases.data?.data.map((purchase) => (
-                  <div className="table-row" key={purchase.id}>
-                    <span>{purchase.modelId ?? 'model n/a'}</span>
-                    <span>{purchase.route}</span>
-                    <span>${purchase.costUsd.toFixed(3)}</span>
-                    <span>
-                      {purchase.savingsUsd != null && purchase.savingsUsd > 0
-                        ? `$${purchase.savingsUsd.toFixed(3)} saved`
-                        : '—'}
-                    </span>
-                    <span>{new Date(purchase.createdAt).toLocaleString()}</span>
-                  </div>
-                ))
-              )}
-            </div>
-            {(purchases.data?.totalSavingsUsd ?? 0) > 0 ? (
-              <p>${purchases.data?.totalSavingsUsd.toFixed(2)} total benchmark savings.</p>
-            ) : null}
-          </article>
-
-          <article className="beta-panel beta-panel--wide seller-stats-panel">
-            <p className="eyebrow">seller dashboard</p>
-            <div className="metric-grid seller-stats-panel__metrics">
-              <Metric
-                label="lifetime gross"
-                value={`$${(sellerStats.data?.grossUsd ?? 0).toFixed(2)}`}
-              />
-              <Metric
-                label="24h earnings"
-                value={`$${(sellerStats.data?.earnings24hUsd ?? 0).toFixed(2)}`}
-              />
-              <Metric label="routed 24h" value={String(sellerStats.data?.routedRequests24h ?? 0)} />
-              <Metric label="active offers" value={String(sellerStats.data?.activeOffers ?? 0)} />
-              <Metric label="paused offers" value={String(sellerStats.data?.pausedOffers ?? 0)} />
-              <Metric label="payouts" value={String(sellerStats.data?.payoutCount ?? 0)} />
-            </div>
-
-            <div className="table-list seller-offer-list">
-              {(sellers.data?.data ?? []).length === 0 ? (
-                <p>No seller endpoints registered.</p>
-              ) : (
-                sellers.data?.data.map((provider) => {
-                  const offerStatus = provider.marketplaceOfferStatus ?? 'active';
-
-                  return (
-                    <div className="table-row seller-offer-row" key={provider.providerId}>
-                      <div className="seller-offer-row__meta">
-                        <strong>{provider.displayName}</strong>
-                        <span>{provider.modelId ?? 'model n/a'}</span>
-                        <span>${provider.pricePerTaskUsd.toFixed(2)}</span>
-                        <span className={`offer-status offer-status--${offerStatus}`}>
-                          {offerStatus}
-                        </span>
-                        <span>{provider.verification?.status ?? 'pending'}</span>
-                      </div>
-                      <div className="seller-offer-row__actions">
+                <div className="table-list">
+                  {apiKeys.map((key) => (
+                    <div className="table-row" key={key.id}>
+                      <span>{key.name}</span>
+                      <span>{key.prefix}</span>
+                      <span>${key.spentUsd.toFixed(2)}</span>
+                      <span>{key.revokedAt ? 'revoked' : 'active'}</span>
+                      {!key.revokedAt ? (
                         <button
                           className="button"
-                          onClick={() => void toggleOffer(provider.providerId, offerStatus)}
+                          onClick={() => void revokeKey(key.id)}
                           type="button"
                         >
-                          {offerStatus === 'paused' ? 'resume offer' : 'pause offer'}
+                          revoke
                         </button>
-                        <button
-                          className="button"
-                          onClick={() => void verifyProvider(provider.providerId)}
-                          type="button"
-                        >
-                          re-verify
-                        </button>
-                      </div>
-                      {sellerActionStatus[provider.providerId] ? (
-                        <p className="form-status seller-offer-row__status">
-                          {sellerActionStatus[provider.providerId]}
-                        </p>
                       ) : null}
                     </div>
-                  );
-                })
+                  ))}
+                </div>
               )}
-            </div>
-          </article>
-        </div>
-      )}
-    </section>
-  );
-}
+            </article>
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="metric">
-      <small>{label}</small>
-      <strong>{value}</strong>
-    </span>
+            <article className="flow-card">
+              <p className="eyebrow">recent purchases</p>
+              {purchaseRows.length === 0 ? (
+                <p className="quiet-note">No inference purchases yet.</p>
+              ) : (
+                <div className="table-list">
+                  {purchaseRows.map((purchase) => (
+                    <div className="table-row" key={purchase.id}>
+                      <span>{purchase.modelId ?? 'model n/a'}</span>
+                      <span>${purchase.costUsd.toFixed(3)}</span>
+                      <span>{new Date(purchase.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {(purchases.data?.totalSavingsUsd ?? 0) > 0 ? (
+                <p className="quiet-note">
+                  ${purchases.data?.totalSavingsUsd.toFixed(2)} total benchmark savings
+                </p>
+              ) : null}
+            </article>
+          </FlowPanel>
+
+          <FlowPanel active={activeTab === 'seller'} id="account-seller">
+            <article className="flow-card account-overview">
+              <div className="flow-card__metric">
+                <span>lifetime gross</span>
+                <strong>${(sellerStats.data?.grossUsd ?? 0).toFixed(2)}</strong>
+              </div>
+              <div className="flow-card__metric">
+                <span>24h earnings</span>
+                <strong>${(sellerStats.data?.earnings24hUsd ?? 0).toFixed(2)}</strong>
+              </div>
+              <div className="flow-card__metric">
+                <span>active offers</span>
+                <strong>{String(sellerStats.data?.activeOffers ?? 0)}</strong>
+              </div>
+              <div className="flow-card__metric">
+                <span>linked providers</span>
+                <strong>{String(session.data.account?.sellerProviderIds.length ?? 0)}</strong>
+              </div>
+            </article>
+
+            <article className="flow-card">
+              <p className="eyebrow">offers</p>
+              {sellerRows.length === 0 ? (
+                <p className="quiet-note">No seller endpoints registered.</p>
+              ) : (
+                <div className="table-list seller-offer-list">
+                  {sellerRows.map((provider) => {
+                    const offerStatus = provider.marketplaceOfferStatus ?? 'active';
+
+                    return (
+                      <div className="table-row seller-offer-row" key={provider.providerId}>
+                        <div className="seller-offer-row__meta">
+                          <strong>{provider.displayName}</strong>
+                          <span>{provider.modelId ?? 'model n/a'}</span>
+                          <span>${provider.pricePerTaskUsd.toFixed(2)}</span>
+                          <span className={`offer-status offer-status--${offerStatus}`}>
+                            {offerStatus}
+                          </span>
+                        </div>
+                        <div className="seller-offer-row__actions">
+                          <button
+                            className="button"
+                            onClick={() => void toggleOffer(provider.providerId, offerStatus)}
+                            type="button"
+                          >
+                            {offerStatus === 'paused' ? 'resume' : 'pause'}
+                          </button>
+                          <button
+                            className="button"
+                            onClick={() => void verifyProvider(provider.providerId)}
+                            type="button"
+                          >
+                            verify
+                          </button>
+                        </div>
+                        {sellerActionStatus[provider.providerId] ? (
+                          <p className="form-status seller-offer-row__status">
+                            {sellerActionStatus[provider.providerId]}
+                          </p>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </article>
+          </FlowPanel>
+        </>
+      ) : null}
+    </section>
   );
 }

@@ -16,3 +16,5 @@ artifacts
 cache
 temp
 .plan-screenshots
+tmp-*.png
+.private/

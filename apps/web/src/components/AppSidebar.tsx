@@ -2,8 +2,6 @@ import { Icon } from '@iconify/react';
 import { BOSSRAID_DOCS_URL } from '@bossraid/ui';
 import { AppHeaderWallet } from './AppHeaderWallet.js';
 import { BossRaidMark } from './BossRaidMark.js';
-import { AttestationProofSidebarTrigger } from '../contexts/AttestationInspectorContext.js';
-import { HostTeeTrustStrip } from './trust/HostTeeTrustStrip.js';
 import { useAttestationInspector } from '../contexts/AttestationInspectorContext.js';
 import {
   isSidebarNavActive,
@@ -23,7 +21,7 @@ type AppSidebarProps = {
 };
 
 export function AppSidebar({ pathname, onNavigate, appTheme, onThemeToggle }: AppSidebarProps) {
-  const { openInspector } = useAttestationInspector();
+  const { isOpen, openInspector } = useAttestationInspector();
 
   return (
     <aside aria-label="Site navigation" className="app-sidebar">
@@ -67,15 +65,25 @@ export function AppSidebar({ pathname, onNavigate, appTheme, onThemeToggle }: Ap
       </div>
 
       <div className="app-sidebar__bottom">
-        <nav aria-label="Proof" className="app-sidebar__section app-sidebar__section--proof">
-          <p className="app-sidebar__section-label">trust</p>
-          <div className="app-sidebar__links">
-            <AttestationProofSidebarTrigger />
-          </div>
-        </nav>
-        <HostTeeTrustStrip variant="sidebar" />
+        <button
+          aria-pressed={isOpen}
+          className={`app-sidebar__tee-pill${isOpen ? ' app-sidebar__tee-pill--active' : ''}`}
+          onClick={() => openInspector()}
+          type="button"
+        >
+          tee attestation
+        </button>
         <AppHeaderWallet onNavigate={onNavigate} />
         <div className="app-sidebar__utility">
+          <button
+            aria-label="TEE attestation"
+            aria-pressed={isOpen}
+            className="app-sidebar__utility-icon app-sidebar__utility-icon--tee"
+            onClick={() => openInspector()}
+            type="button"
+          >
+            <Icon className="icon icon--pixel" icon="pixel:shield-solid" />
+          </button>
           <button
             aria-label={appTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             className="app-sidebar__utility-icon app-sidebar__utility-icon--theme"
@@ -86,14 +94,6 @@ export function AppSidebar({ pathname, onNavigate, appTheme, onThemeToggle }: Ap
               className="icon icon--pixel"
               icon={appTheme === 'dark' ? 'pixel:sun-solid' : 'pixel:moon-solid'}
             />
-          </button>
-          <button
-            aria-label="View TEE attestation"
-            className="app-sidebar__utility-icon app-sidebar__utility-icon--tee"
-            onClick={() => openInspector()}
-            type="button"
-          >
-            <Icon className="icon icon--pixel" icon="pixel:shield-solid" />
           </button>
           <button className="app-sidebar__utility-button" onClick={onThemeToggle} type="button">
             {appTheme === 'dark' ? 'light mode' : 'dark mode'}

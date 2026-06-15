@@ -11,6 +11,8 @@ import {
 import { pauseSellerUpstreamOffer } from '../api/seller-upstream.js';
 import { useWalletAuth } from '../hooks/useWalletAuth.js';
 import { UpstreamTeeVerificationPanel } from '../components/trust/UpstreamTeeVerificationPanel.js';
+import { PageHero } from '../components/system/PageHero.js';
+import { WalletGate } from '../components/system/WalletGate.js';
 
 function resolveHostedProvider(
   source: { type?: string; targetType?: string } | undefined
@@ -22,7 +24,7 @@ function resolveHostedProvider(
 }
 
 export function ManageOffersPage() {
-  const { connectWallet, isAuthenticated } = useWalletAuth('Connect wallet to manage your offers.');
+  const { isAuthenticated } = useWalletAuth('Connect wallet to manage your offers.');
   const sellers = useSWR(isAuthenticated ? '/v1/seller/providers' : null, listSellerProviders);
   const [actionStatus, setActionStatus] = useState<Record<string, string>>({});
 
@@ -90,27 +92,16 @@ export function ManageOffersPage() {
 
   return (
     <section className="beta-page">
-      <header className="beta-hero beta-hero--compact">
-        <div>
-          <p className="eyebrow">sell inference</p>
-          <h1>Manage my offers</h1>
-          <p className="lede">
-            View, pause, and verify TEE attestation on your hosted model offers.
-          </p>
-        </div>
-      </header>
+      <PageHero
+        compact
+        eyebrow="sell inference"
+        lede="Pause, verify, and remove hosted offers."
+        title="Manage my offers"
+      />
 
-      {!isAuthenticated ? (
-        <article className="beta-panel">
-          <button
-            className="button button--primary"
-            onClick={() => void connectWallet()}
-            type="button"
-          >
-            connect wallet
-          </button>
-        </article>
-      ) : (
+      <WalletGate />
+
+      {isAuthenticated ? (
         <div className="manage-offers">
           {hostedOffers.length === 0 ? (
             <article className="beta-panel">
@@ -182,7 +173,7 @@ export function ManageOffersPage() {
             })
           )}
         </div>
-      )}
+      ) : null}
     </section>
   );
 }

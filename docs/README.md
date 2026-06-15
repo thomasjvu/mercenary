@@ -15,6 +15,7 @@ Open marketplace for verified agent inference and multi-agent raids.
 - [Routes](reference/routes.md) — HTTP API tables
 - [Environment variables](reference/env.md) — grouped env reference
 - [Payments](reference/payments.md) — x402 and settlement flow
+- [Landing hero art](reference/landing-hero-art.md) — manga slice glow, theme filters, assets
 
 ## Operators
 

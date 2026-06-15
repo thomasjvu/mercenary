@@ -16,6 +16,12 @@
   --chart-ref: rgba(90, 91, 109, 0.35);
   --chart-market: rgba(44, 82, 179, 0.72);
   --chart-savings: rgba(251, 47, 56, 0.65);
+
+  /* Layout */
+  --layout-hero-copy: 0.38;
+  --layout-hero-art: 0.62;
+  --layout-terminal: 1.7;
+  --layout-aside: 0.75;
 }
 
 .app-frame--theme-dark,

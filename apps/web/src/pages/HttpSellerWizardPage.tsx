@@ -3,6 +3,9 @@ import { createSellerProvider } from '../api/auth.js';
 import { useWalletAuth } from '../hooks/useWalletAuth.js';
 import { SellerPathSwitcher } from '../components/seller/SellerPathSwitcher.js';
 import type { AppRoute } from '../lib/app-routes.js';
+import { FlowSection } from '../components/system/FlowSection.js';
+import { PageHero } from '../components/system/PageHero.js';
+import { WalletGate } from '../components/system/WalletGate.js';
 
 type HttpSellerWizardPageProps = {
   onNavigate: (path: AppRoute) => void;
@@ -71,16 +74,15 @@ export function HttpSellerWizardPage({ onNavigate }: HttpSellerWizardPageProps) 
   }
 
   return (
-    <section className="beta-page seller-wizard">
-      <header className="beta-hero beta-hero--compact">
-        <div>
-          <p className="eyebrow">sell inference</p>
-          <h1>Register HTTP worker</h1>
-          <p className="lede">
-            Point Boss Raid at your provider endpoint. We verify health and list you on the market.
-          </p>
-        </div>
-      </header>
+    <section className="beta-page flow-page seller-wizard seller-wizard--flow">
+      <PageHero
+        compact
+        eyebrow="sell"
+        lede="Register a custom HTTP inference endpoint."
+        title="HTTP worker."
+      />
+
+      <WalletGate message="Connect wallet before registering a worker." />
 
       <SellerPathSwitcher
         active="http"
@@ -88,18 +90,16 @@ export function HttpSellerWizardPage({ onNavigate }: HttpSellerWizardPageProps) 
         onSelectUpstream={() => onNavigate('/onboarding/seller')}
       />
 
-      <div className="seller-wizard__steps">
-        <article className="beta-panel seller-wizard__step">
-          <p className="eyebrow">1 / wallet</p>
+      <div className="flow-stack seller-wizard__steps">
+        <FlowSection done={isAuthenticated} step="01" title="Connect wallet">
           {isAuthenticated ? (
-            <p className="form-status">Signed in as {session?.wallet}.</p>
+            <p className="form-status">{session?.wallet}</p>
           ) : (
             <p className="form-status">{status}</p>
           )}
-        </article>
+        </FlowSection>
 
-        <article className="beta-panel seller-wizard__step">
-          <p className="eyebrow">2 / endpoint</p>
+        <FlowSection step="02" title="Endpoint details">
           <div className="form-grid">
             <label className="field">
               <span>offer name</span>
@@ -169,10 +169,9 @@ export function HttpSellerWizardPage({ onNavigate }: HttpSellerWizardPageProps) 
               />
             </label>
           </div>
-        </article>
+        </FlowSection>
 
-        <article className="beta-panel seller-wizard__step">
-          <p className="eyebrow">3 / register</p>
+        <FlowSection done={Boolean(publishResult)} step="03" title="Register">
           <button
             className="button button--primary"
             disabled={!isAuthenticated || pending}
@@ -183,13 +182,11 @@ export function HttpSellerWizardPage({ onNavigate }: HttpSellerWizardPageProps) 
           </button>
           {error ? <p className="form-status form-status--error">{error}</p> : null}
           <p className="form-status">{status}</p>
-        </article>
+        </FlowSection>
 
         {publishResult ? (
-          <article className="beta-panel seller-wizard__summary seller-wizard__step--done">
-            <p className="eyebrow">published</p>
-            <h2>HTTP worker live.</h2>
-            <p className="lede">
+          <FlowSection className="seller-wizard__summary" done step="done" title="Worker live">
+            <p className="form-status">
               {publishResult.providerId} · verification {publishResult.verificationStatus}
             </p>
             <div className="seller-wizard__summary-actions">
@@ -204,7 +201,7 @@ export function HttpSellerWizardPage({ onNavigate }: HttpSellerWizardPageProps) 
                 view marketplace
               </button>
             </div>
-          </article>
+          </FlowSection>
         ) : null}
       </div>
     </section>
