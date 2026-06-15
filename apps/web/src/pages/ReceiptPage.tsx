@@ -6,7 +6,7 @@ import heroMangaReceiptImage from '../assets/hero-manga-receipt.jpg';
 import { MangaSliceArt } from '../components/system/MangaSliceArt.js';
 import {
   fetchAttestedRaidResult,
-  fetchAttestedRuntime,
+  fetchAttestedRuntimeOptional,
   fetchJson,
   fetchRaidResult,
   fetchRaidStatus,
@@ -63,11 +63,12 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
       revalidateOnFocus: false,
     }
   );
-  const attestedRuntime = useSWR<AttestedEnvelope<AttestedRuntimePayload>>(
-    'receipt-attested-runtime',
-    () => fetchAttestedRuntime(),
+  const attestedRuntime = useSWR<AttestedEnvelope<AttestedRuntimePayload> | undefined>(
+    activeQuery ? 'receipt-attested-runtime' : null,
+    () => fetchAttestedRuntimeOptional(),
     {
       revalidateOnFocus: false,
+      shouldRetryOnError: false,
     }
   );
   const attestedResult = useSWR<AttestedEnvelope<AttestedRaidResultPayload>>(

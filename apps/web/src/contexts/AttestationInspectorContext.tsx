@@ -11,7 +11,7 @@ import useSWR from 'swr';
 import type { UpstreamProviderId } from '@bossraid/constants';
 import { fetchReady } from '../api/health.js';
 import {
-  fetchAttestedRuntime,
+  fetchAttestedRuntimeOptional,
   type AttestedEnvelope,
   type AttestedRuntimePayload,
 } from '../api/raid.js';
@@ -61,14 +61,18 @@ export function AttestationInspectorProvider({ children }: { children: ReactNode
   const [isOpen, setIsOpen] = useState(false);
   const [context, setContext] = useState<AttestationInspectorContextInput>({});
   const [lastContext, setLastContext] = useState<AttestationInspectorContextInput>({});
-  const ready = useSWR('attestation-inspector-ready', fetchReady, {
-    refreshInterval: 30_000,
+  const ready = useSWR(isOpen ? 'attestation-inspector-ready' : null, fetchReady, {
+    revalidateOnFocus: false,
     shouldRetryOnError: false,
   });
-  const attestedRuntime = useSWR('attestation-inspector-runtime', fetchAttestedRuntime, {
-    refreshInterval: 30_000,
-    shouldRetryOnError: false,
-  });
+  const attestedRuntime = useSWR(
+    isOpen ? 'attestation-inspector-runtime' : null,
+    fetchAttestedRuntimeOptional,
+    {
+      revalidateOnFocus: false,
+      shouldRetryOnError: false,
+    }
+  );
   const modelTee = useSWR(
     isOpen && context.modelId ? ['attestation-inspector-model-tee', context.modelId] : null,
     ([, modelId]: [string, string]) => fetchModelTeeSummary(modelId),

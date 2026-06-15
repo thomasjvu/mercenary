@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { SubmissionArtifact } from '@bossraid/shared-types';
 import {
-  fetchAttestedRuntime,
+  fetchAttestedRuntimeOptional,
   fetchRaidAgentLog,
   fetchRaidResult,
   fetchRaidStatus,
@@ -85,13 +85,13 @@ export function useRaidDemo({
   useEffect(() => {
     let cancelled = false;
 
-    void fetchAttestedRuntime()
+    void fetchAttestedRuntimeOptional()
       .then((response) => {
         if (cancelled) {
           return;
         }
-        setRuntimeAttestation(response);
-        setRuntimeAttestationError(null);
+        setRuntimeAttestation(response ?? null);
+        setRuntimeAttestationError(response ? null : 'Runtime attestation is not published yet.');
       })
       .catch((error) => {
         if (cancelled) {

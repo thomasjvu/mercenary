@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 import {
   BASE_CHAIN_ID,
   createPaidFetch,
-  createSmartAccountWalletClient,
   encodeDelegationChain,
   requestRaidSubscription,
   type RaidSubscriptionGrant,
@@ -10,14 +9,7 @@ import {
 } from '@bossraid/smart-pay';
 import type { DelegationChainEntry } from '@bossraid/shared-types';
 import { deleteAgentSession, saveAgentSession } from '../api/smart-pay.js';
-
-type EthereumProvider = {
-  request(args: { method: string; params?: unknown[] }): Promise<unknown>;
-};
-
-function readEthereum(): EthereumProvider | undefined {
-  return (globalThis as typeof globalThis & { ethereum?: EthereumProvider }).ethereum;
-}
+import { connectSmartAccountWallet, formatWalletError } from '../lib/ethereum-provider.js';
 
 export function useSmartAccountPay(chainId = BASE_CHAIN_ID) {
   const [walletClient, setWalletClient] = useState<SmartAccountWalletClient | null>(null);
@@ -27,21 +19,9 @@ export function useSmartAccountPay(chainId = BASE_CHAIN_ID) {
   const [busy, setBusy] = useState(false);
 
   const connectWallet = useCallback(async () => {
-    const ethereum = readEthereum();
-    if (!ethereum) {
-      setStatus('Install MetaMask to use Smart Accounts Kit payments.');
-      return null;
-    }
-
     setBusy(true);
     try {
-      const accounts = (await ethereum.request({ method: 'eth_requestAccounts' })) as string[];
-      const address = accounts[0];
-      if (!address) {
-        throw new Error('Wallet did not return an account.');
-      }
-
-      const client = createSmartAccountWalletClient(ethereum, chainId);
+      const { client, address } = await connectSmartAccountWallet(chainId);
       setWalletClient(client);
       setWalletAddress(address);
       setStatus(
@@ -49,7 +29,7 @@ export function useSmartAccountPay(chainId = BASE_CHAIN_ID) {
       );
       return client;
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Wallet connection failed.');
+      setStatus(formatWalletError(error));
       return null;
     } finally {
       setBusy(false);

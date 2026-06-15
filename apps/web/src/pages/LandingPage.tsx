@@ -287,8 +287,8 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                   className={workflowLayerClass(tab, workflowTab)}
                   key={tab}
                 >
+                  <span className="hero__headline-line">{tabHero.before}</span>
                   <span className="hero__headline-line">
-                    <span>{tabHero.before} </span>
                     <span className="hero__headline-accent">{tabHero.accent}</span>
                   </span>
                   <span className="hero__headline-line">{tabHero.after}</span>

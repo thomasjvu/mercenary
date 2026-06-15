@@ -87,6 +87,20 @@ export async function fetchAttestedRuntime(): Promise<AttestedEnvelope<AttestedR
   return fetchJson<AttestedEnvelope<AttestedRuntimePayload>>('/v1/attested-runtime');
 }
 
+export async function fetchAttestedRuntimeOptional(): Promise<
+  AttestedEnvelope<AttestedRuntimePayload> | undefined
+> {
+  try {
+    return await fetchAttestedRuntime();
+  } catch (error) {
+    if (error instanceof Error && /503|not published|not configured/i.test(error.message)) {
+      return undefined;
+    }
+
+    throw error;
+  }
+}
+
 export async function fetchAttestedRaidResult(
   raidId: string,
   raidAccessToken: string
