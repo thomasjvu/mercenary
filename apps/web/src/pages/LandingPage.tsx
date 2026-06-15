@@ -232,7 +232,6 @@ function workflowLayerClass(tab: WorkflowTabId, activeTab: WorkflowTabId) {
 export function LandingPage({ onNavigate }: LandingPageProps) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [workflowTab, setWorkflowTab] = useState<WorkflowTabId>('seller');
-  const heroCopyRef = useRef<HTMLDivElement | null>(null);
   const infoPanelRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -243,15 +242,6 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
     const timer = window.setTimeout(() => setCopiedKey(null), 1200);
     return () => window.clearTimeout(timer);
   }, [copiedKey]);
-
-  useEffect(() => {
-    const heroCopy = heroCopyRef.current;
-    if (!heroCopy) {
-      return;
-    }
-
-    return bindAsciiRipple(heroCopy);
-  }, []);
 
   useEffect(() => {
     const panel = infoPanelRef.current;
@@ -285,7 +275,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
   return (
     <>
       <section className={`hero hero--workflow-${workflowTab}`} id="top">
-        <div className="hero__copy" ref={heroCopyRef}>
+        <div className="hero__copy">
           <div className="hero__headline-stack workflow-crossfade">
             {WORKFLOW_TAB_ORDER.map((tab) => {
               const tabHero = HERO_BY_WORKFLOW[tab];
@@ -297,16 +287,10 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                   key={tab}
                 >
                   <span className="hero__headline-line">
-                    <span className="ascii-ripple" data-ascii-ripple>
-                      {tabHero.before}{' '}
-                    </span>
-                    <span className="hero__headline-accent ascii-ripple" data-ascii-ripple>
-                      {tabHero.accent}
-                    </span>
+                    <span>{tabHero.before} </span>
+                    <span className="hero__headline-accent">{tabHero.accent}</span>
                   </span>
-                  <span className="hero__headline-line ascii-ripple" data-ascii-ripple>
-                    {tabHero.after}
-                  </span>
+                  <span className="hero__headline-line">{tabHero.after}</span>
                 </h1>
               );
             })}

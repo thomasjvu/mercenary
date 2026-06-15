@@ -518,11 +518,6 @@ h1 {
   color: var(--accent);
 }
 
-.hero h1 .ascii-ripple {
-  display: inline;
-  cursor: default;
-}
-
 .hero__summary {
   display: inline-flex;
   align-items: center;
