@@ -148,7 +148,6 @@ const HERO_BY_WORKFLOW: Record<
     after: 'Get paid on every route.',
     primary: {
       href: '/onboarding/seller',
-      icon: 'pixel:sparkles-solid',
       label: 'sell capacity',
       path: '/onboarding/seller',
     },

@@ -505,12 +505,13 @@ h1 {
 
 .hero h1 {
   font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
-  font-size: clamp(2.85rem, min(5.5vw, 8.8vh), 4.75rem);
+  font-size: clamp(2.1rem, min(4vw, 6.5vh), 3.35rem);
+  max-width: none;
 }
 
 .hero__headline-line {
   display: block;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .hero__headline-accent {
@@ -3861,11 +3862,12 @@ h2 {
 }
 
 .app-shell--landing h1 {
-  font-size: clamp(2.85rem, min(5.5vw, 8.8vh), 4.75rem);
+  font-size: clamp(2.2rem, min(4.2vw, 6.8vh), 3.5rem);
 }
 
 .app-shell--landing .hero h1 {
-  font-size: clamp(3.1rem, min(6.2vw, 10vh), 5.5rem);
+  font-size: clamp(2.35rem, min(4.5vw, 7vh), 3.65rem);
+  line-height: 1.05;
 }
 
 .app-shell--landing .lede {
@@ -8202,4 +8204,410 @@ h2 {
   background: var(--workflow-fill-hover, color-mix(in srgb, var(--rx-red) 88%, #111111));
   color: var(--workflow-ink, var(--rx-white));
   border-color: transparent;
+}
+
+/* =============================================================================
+   Sell inference dashboard (Surplus-style)
+   ============================================================================= */
+
+.sell-page {
+  display: grid;
+  gap: clamp(16px, 2vh, 24px);
+  align-content: start;
+}
+
+.sell-page__intro {
+  display: grid;
+  gap: 6px;
+}
+
+.sell-page__intro h1 {
+  margin: 0;
+  font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(2rem, 3.2vw, 2.8rem);
+  letter-spacing: -0.04em;
+  text-transform: none;
+  max-width: none;
+}
+
+.sell-page__lede {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.sell-dashboard {
+  display: grid;
+  gap: 14px;
+}
+
+.sell-dashboard__summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.95fr);
+  gap: 14px;
+}
+
+.sell-panel {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+}
+
+.app-frame--theme-dark .sell-panel {
+  background: color-mix(in srgb, var(--text) 4%, #111111);
+}
+
+.sell-panel__eyebrow {
+  margin: 0;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.sell-panel__head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sell-earnings__amount-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+
+.sell-earnings__amount {
+  color: #2ea060;
+  font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(2rem, 3vw, 2.6rem);
+  line-height: 1;
+}
+
+.app-frame--theme-dark .sell-earnings__amount {
+  color: #6fe39a;
+}
+
+.sell-earnings__delta {
+  color: #2ea060;
+  font-size: 0.82rem;
+}
+
+.sell-earnings__delta--muted {
+  color: var(--muted);
+}
+
+.sell-earnings__chart {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+  min-height: 120px;
+  padding-top: 8px;
+}
+
+.sell-earnings__chart-col {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  align-content: end;
+  height: 100px;
+}
+
+.sell-earnings__chart-bar {
+  display: block;
+  width: 100%;
+  min-height: 8px;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(180deg, #6fe39a, #2ea060);
+  transform: skewX(-12deg);
+}
+
+.sell-earnings__chart-label {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.62rem;
+  text-align: center;
+}
+
+.sell-earnings__chart-empty {
+  align-self: center;
+  width: 100%;
+  text-align: center;
+}
+
+.sell-earnings__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.sell-earnings__stats div {
+  display: grid;
+  gap: 4px;
+}
+
+.sell-earnings__stats span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.sell-earnings__stats strong {
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.92rem;
+}
+
+.sell-live__badge {
+  color: #2ea060;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sell-live__badge::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #2ea060;
+  vertical-align: middle;
+}
+
+.sell-live__models {
+  display: grid;
+  gap: 12px;
+}
+
+.sell-live__model-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 0.8fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.sell-live__model-copy {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sell-live__model-copy strong {
+  display: block;
+  font-size: 0.88rem;
+}
+
+.sell-live__model-copy span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.sell-live__model-stat {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.sell-live__footer {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.sell-form-row {
+  display: grid;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.sell-form-row--done .sell-form-row__mark {
+  color: #2ea060;
+}
+
+.sell-form-row__lead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sell-form-row__mark {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.sell-form-row__value {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.82rem;
+}
+
+.sell-form-row__fields {
+  display: grid;
+  gap: 10px;
+}
+
+.sell-form-row__fields--grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.sell-form-row--publish {
+  padding-bottom: 4px;
+}
+
+.sell-empty {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  padding: 28px 16px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.sell-empty strong {
+  font-size: 1rem;
+}
+
+.sell-empty p {
+  margin: 0;
+  color: var(--muted);
+  max-width: 36ch;
+}
+
+.sell-empty--compact {
+  padding: 16px;
+}
+
+.sell-offer-table {
+  display: grid;
+  gap: 8px;
+}
+
+.sell-offer-table__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-muted);
+}
+
+.sell-offer-table__row strong {
+  display: block;
+}
+
+.sell-offer-table__row span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.sell-config-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sell-config-card {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-muted);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sell-config-card:hover {
+  border-color: var(--line-strong);
+}
+
+.sell-config-card span {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+}
+
+.sell-demand-list {
+  display: grid;
+  gap: 12px;
+}
+
+.sell-demand-list__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.sell-demand-list__copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sell-demand-list__copy span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.sell-demand-list__stat {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1100px) {
+  .sell-dashboard__summary {
+    grid-template-columns: 1fr;
+  }
+
+  .sell-form-row__fields--grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sell-config-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sell-earnings__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .sell-live__model-row,
+  .sell-demand-list__row,
+  .sell-offer-table__row {
+    grid-template-columns: 1fr;
+  }
+
+  .sell-config-grid {
+    grid-template-columns: 1fr;
+  }
 }
