@@ -130,6 +130,9 @@ Ops UI (`/ops/`) surfaces the same admin routes after login:
 - Persistence: SQLite locally; raids fail closed when storage is unavailable.
 - Native write route: `POST /v1/raid` (`raid_request` body).
 - x402 off until ops toggle or `BOSSRAID_X402_ENABLED=true` on boot.
+- MetaMask cookoff lane: set `BOSSRAID_X402_FACILITATOR_PRESET=metamask_base_mainnet`, `BOSSRAID_X402_ASSET_TRANSFER_METHOD=erc7710`, and a funded wallet on `/demo` (paid mode) or via MCP `bossraid_grant_session` + `POST /v1/raid`.
+- ERC-7710 delegation manager: use `BOSSRAID_DELEGATION_MANAGER_ADDRESS` when MetaMask does not return `signerMeta.delegationManager` from ERC-7715 grants.
+- 1Shot relayer: configure `BOSSRAID_ONESHOT_RELAYER_URL`; API exposes `/v1/relayer/*` and webhook status for agent relay proofs.
 - Settlement: `file` by default; `onchain` only with funded signers and contract env.
 - Successful providers split payout equally.
 - Browser API traffic stays same-origin via `/api/*` (gateway or Cloudflare Pages proxy).

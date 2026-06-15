@@ -11,7 +11,7 @@ export const API_BASE =
 export const RAID_ACCESS_TOKEN_HEADER = 'x-bossraid-raid-token';
 const ACTION_REQUEST_TIMEOUT_MS = TIMEOUTS.ACTION_REQUEST;
 
-export const fetchJson = createFetchJson(API_BASE);
+export const fetchJson = createFetchJson(API_BASE, { credentials: 'include' });
 
 export async function requestJsonDetailedWeb<T>(
   path: string,

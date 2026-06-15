@@ -13,6 +13,12 @@ import type {
   SupportedFramework,
   SupportedLanguage,
 } from './provider.js';
+import type {
+  DelegationChainEntry,
+  RaidDelegationRecord,
+  RaidPaymentProof,
+  VeniceDirectCallRecord,
+} from './delegation.js';
 import type { SettlementExecutionRecord, SettlementSummary } from './settlement.js';
 
 export type RaidStatus =
@@ -110,6 +116,8 @@ export interface HostContext {
   sessionId?: string;
   repoRootHint?: string;
   branchName?: string;
+  delegationChain?: DelegationChainEntry[];
+  sessionAccount?: string;
 }
 
 export interface RaidTaskSpec {
@@ -498,6 +506,9 @@ export interface RaidRecord {
   reputationEvents: ReputationEvent[];
   escrowFundingUsd?: number;
   platformMarkupUsd?: number;
+  paymentProof?: RaidPaymentProof;
+  delegations?: RaidDelegationRecord[];
+  veniceDirectCalls?: VeniceDirectCallRecord[];
 }
 
 export interface SelectedProviders {
@@ -626,6 +637,9 @@ export interface BossRaidResultOutput {
   settlement?: SettlementSummary;
   settlementExecution?: SettlementExecutionRecord;
   reputationEvents?: ReputationEvent[];
+  paymentProof?: RaidPaymentProof;
+  delegations?: RaidDelegationRecord[];
+  veniceDirectCalls?: VeniceDirectCallRecord[];
 }
 
 export interface RewardComputation {

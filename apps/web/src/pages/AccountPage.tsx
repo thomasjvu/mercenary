@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSmartAccountPay } from '../hooks/useSmartAccountPay.js';
 import useSWR from 'swr';
 import {
   deleteBuyerApiKey,
@@ -28,6 +29,7 @@ export function AccountPage() {
   const [fundAmount, setFundAmount] = useState('10');
   const [fundStatus, setFundStatus] = useState('');
   const [sellerActionStatus, setSellerActionStatus] = useState<Record<string, string>>({});
+  const smartPay = useSmartAccountPay();
 
   async function revokeKey(keyId: string) {
     await deleteBuyerApiKey(keyId);
@@ -153,6 +155,44 @@ export function AccountPage() {
               </button>
               {fundStatus ? <p className="form-status">{fundStatus}</p> : null}
             </form>
+          </article>
+
+          <article className="beta-panel">
+            <p className="eyebrow">raid subscription</p>
+            <h2>ERC-7715 weekly budget</h2>
+            <p>{smartPay.status}</p>
+            <div className="mercenary-action-row">
+              <button
+                className="button"
+                disabled={smartPay.busy}
+                onClick={() => void smartPay.connectWallet()}
+                type="button"
+              >
+                connect MetaMask
+              </button>
+              <button
+                className="button button--primary"
+                disabled={smartPay.busy}
+                onClick={() => void smartPay.grantSubscription()}
+                type="button"
+              >
+                grant weekly budget
+              </button>
+              <button
+                className="button"
+                disabled={smartPay.busy}
+                onClick={() => void smartPay.clearSubscription()}
+                type="button"
+              >
+                clear session
+              </button>
+            </div>
+            {smartPay.subscription ? (
+              <p>
+                Active grant: ${smartPay.subscription.weeklyBudgetUsd.toFixed(2)} USDC / week until{' '}
+                {new Date(smartPay.subscription.expiresAt).toLocaleString()}.
+              </p>
+            ) : null}
           </article>
 
           <article className="beta-panel beta-panel--wide">

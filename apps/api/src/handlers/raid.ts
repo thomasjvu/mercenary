@@ -8,6 +8,8 @@ import {
   settlementExecutionChanged,
 } from '../settlement-proof.js';
 
+import { readX402ConfigForContext } from '../lib/x402-runtime.js';
+import { buildRaidPaymentProof } from '../lib/payment-proof.js';
 import { type ApiContext } from '../api-context.js';
 import { createAuthHandlers } from './auth.js';
 import { createPaymentHandlers } from './payment.js';
@@ -208,6 +210,15 @@ export function createRaidHandlers(
       });
       throw error;
     }
+    const paymentProof = buildRaidPaymentProof({
+      launchPayment,
+      config: readX402ConfigForContext(ctx),
+      request,
+    });
+    if (paymentProof) {
+      ctx.orchestrator.attachRaidPaymentProof(response.raidId, paymentProof);
+    }
+
     applyX402Headers(reply, {
       settlement: launchPayment.settlement,
     });

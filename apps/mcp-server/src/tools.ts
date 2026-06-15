@@ -20,7 +20,8 @@ import {
   ensureObject,
   optionalString,
 } from './args.js';
-import { apiBase, apiRequest, getRaidResult, getRaidStatus } from './api-client.js';
+import { setAgentPaymentSession } from './agent-payment.js';
+import { apiBase, apiRequest, getRaidResult, getRaidStatus, paidApiRequest } from './api-client.js';
 
 const DEFAULT_DELEGATE_TIMEOUT_MS = TIMEOUTS.DELEGATE_TIMEOUT;
 const POLL_INTERVAL_MS = 500;
@@ -207,6 +208,23 @@ export const tools = [
     },
   },
   {
+    name: 'bossraid_grant_session',
+    description:
+      'Store an ERC-7715 permission context for redelegated x402 raid payments from MCP host agents.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        sessionAccount: { type: 'string' },
+        permissionFrom: { type: 'string' },
+        permissionContext: { type: 'string' },
+        weeklyBudgetUsd: { type: 'number' },
+        expiresAt: { type: 'string' },
+      },
+      required: ['sessionAccount', 'permissionFrom', 'permissionContext'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'bossraid_provider_stats',
     description: 'List provider state used for routing.',
     inputSchema: {
@@ -270,9 +288,24 @@ export function registerTools(server: Server): void {
           )
         );
 
+      case 'bossraid_grant_session':
+        setAgentPaymentSession({
+          sessionAccount: asString(args.sessionAccount, 'sessionAccount') as `0x${string}`,
+          permissionFrom: asString(args.permissionFrom, 'permissionFrom') as `0x${string}`,
+          permissionContext: asString(args.permissionContext, 'permissionContext'),
+          weeklyBudgetUsd:
+            typeof args.weeklyBudgetUsd === 'number' ? args.weeklyBudgetUsd : undefined,
+          expiresAt: optionalString(args.expiresAt),
+        });
+        return jsonResult({
+          stored: true,
+          sessionAccount: args.sessionAccount,
+          permissionFrom: args.permissionFrom,
+        });
+
       case 'bossraid_spawn':
         return jsonResult(
-          await apiRequest('/v1/raid', {
+          await paidApiRequest('/v1/raid', {
             method: 'POST',
             body: JSON.stringify(args),
           })
@@ -325,7 +358,7 @@ export function registerTools(server: Server): void {
 
 async function delegateRaid(args: Record<string, unknown>) {
   const request = buildBossRaidRequestFromDelegateInput(args);
-  const spawn = (await apiRequest('/v1/raid', {
+  const spawn = (await paidApiRequest('/v1/raid', {
     method: 'POST',
     body: JSON.stringify(request),
   })) as BossRaidSpawnOutput;

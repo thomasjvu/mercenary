@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import type { Provider, ProviderHealth } from '../api';
 import { DemoRaidForm } from '../components/demo/DemoRaidForm';
 import { DemoRaidProgress } from '../components/demo/DemoRaidProgress';
 import { DemoRaidResult } from '../components/demo/DemoRaidResult';
 import { DemoRaidSidebar } from '../components/demo/DemoRaidSidebar';
 import { StatusPill } from '../components/demo/demo-ui';
+import { useSmartAccountPay } from '../hooks/useSmartAccountPay.js';
 import { humanizeStatus, useRaidDemo } from '../hooks/useRaidDemo';
 import heroImage from '../assets/hero.webp';
 import { buildDemoModeLabel } from '../demo-result';
@@ -15,7 +17,14 @@ type DemoPageProps = {
 };
 
 export function DemoPage({ providers, providerHealth, embedded = false }: DemoPageProps) {
-  const demo = useRaidDemo({ providers, providerHealth });
+  const [paidMode, setPaidMode] = useState(false);
+  const smartPay = useSmartAccountPay();
+  const demo = useRaidDemo({
+    providers,
+    providerHealth,
+    paidMode,
+    createFetchWithPayment: smartPay.createFetchWithPayment,
+  });
 
   return (
     <section
@@ -33,6 +42,23 @@ export function DemoPage({ providers, providerHealth, embedded = false }: DemoPa
                   : demo.availabilityLabel
               }`}
             </span>
+          </div>
+
+          <div className="mercenary-mode-switch" role="tablist" aria-label="Demo payment mode">
+            <button
+              className={`mercenary-mode-chip ${!paidMode ? 'mercenary-mode-chip--active' : ''}`}
+              onClick={() => setPaidMode(false)}
+              type="button"
+            >
+              free demo
+            </button>
+            <button
+              className={`mercenary-mode-chip ${paidMode ? 'mercenary-mode-chip--active' : ''}`}
+              onClick={() => setPaidMode(true)}
+              type="button"
+            >
+              paid x402
+            </button>
           </div>
 
           <div className="mercenary-mode-switch" role="tablist" aria-label="Demo transport mode">
@@ -116,6 +142,37 @@ export function DemoPage({ providers, providerHealth, embedded = false }: DemoPa
             />
           ) : null}
         </div>
+
+        {paidMode ? (
+          <div className="mercenary-paid-panel">
+            <p className="eyebrow">MetaMask Smart Accounts</p>
+            <p>{smartPay.status}</p>
+            <div className="mercenary-action-row">
+              <button
+                className="button"
+                disabled={smartPay.busy}
+                onClick={() => void smartPay.connectWallet()}
+                type="button"
+              >
+                connect wallet
+              </button>
+              <button
+                className="button button--primary"
+                disabled={smartPay.busy}
+                onClick={() => void smartPay.grantSubscription()}
+                type="button"
+              >
+                grant weekly budget
+              </button>
+            </div>
+            {smartPay.subscription ? (
+              <p>
+                Subscription active: ${smartPay.subscription.weeklyBudgetUsd.toFixed(2)} USDC /
+                week.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         <DemoRaidForm
           canSendBrief={demo.canSendBrief}

@@ -1,0 +1,31 @@
+{
+  "taskTitle": "Venice private promo raid",
+  "taskDescription": "Create a short promo concept for Boss Raid Mercenary with one hero image and one gameplay patch explanation. Keep the output receipt-friendly and show Venice-backed strict-private routing.",
+  "language": "typescript",
+  "framework": "react",
+  "files": [
+    {
+      "path": "src/demo.ts",
+      "content": "export function describeRaid() {\n  return 'Mercenary coordinates Venice-backed specialists into one receipt.';\n}\n",
+      "sha256": "f7c3b8e2a1d9046c5e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6071829"
+    }
+  ],
+  "constraints": {
+    "numExperts": 2,
+    "maxBudgetUsd": 0.5,
+    "maxLatencySec": 180,
+    "allowExternalSearch": false,
+    "privacyMode": "strict",
+    "allowedModelFamilies": ["venice"],
+    "requirePrivacyFeatures": ["tee_attestation"],
+    "selectionMode": "privacy_first"
+  },
+  "output": {
+    "primaryType": "bundle",
+    "artifactTypes": ["image", "text", "patch"]
+  },
+  "hostContext": {
+    "host": "codex",
+    "sessionId": "hackathon-venice-demo"
+  }
+}

@@ -3,6 +3,27 @@ export type ApiRuntimeSettings = {
   seeded: boolean;
 };
 
+export type RelayerTaskEntry = {
+  taskId: string;
+  wallet?: string;
+  raidId?: string;
+  status: string;
+  transactionHash?: string;
+  createdAt: string;
+  updatedAt: string;
+  memo?: string;
+};
+
+export type AgentPaymentSessionEntry = {
+  wallet: string;
+  sessionAccount: string;
+  permissionFrom: string;
+  permissionContext: string;
+  grantedAt: string;
+  expiresAt: string;
+  weeklyBudgetUsd?: number;
+};
+
 export type PublicAuthNonceEntry = {
   nonce: string;
   wallet?: string;
@@ -96,6 +117,8 @@ export type ApiControlStateSnapshot = {
   sellerPayouts: SellerPayoutEntry[];
   sellerUpstreamConfigs: SellerUpstreamConfigEntry[];
   rateLimits: ApiRateLimitEntry[];
+  relayerTasks: RelayerTaskEntry[];
+  agentPaymentSessions: AgentPaymentSessionEntry[];
   settings: ApiRuntimeSettings;
 };
 

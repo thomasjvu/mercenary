@@ -66,8 +66,8 @@
     "@types/react-dom": "^19.1.9",
     "@typescript-eslint/eslint-plugin": "^8.59.1",
     "@typescript-eslint/parser": "^8.59.1",
-    "@x402/evm": "^2.7.0",
-    "@x402/fetch": "^2.7.0",
+    "@x402/evm": "^2.15.0",
+    "@x402/fetch": "^2.15.0",
     "eslint": "^10.2.1",
     "eslint-plugin-prettier": "^5.5.5",
     "husky": "^9.1.7",
@@ -78,5 +78,8 @@
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.59.1",
     "viem": "^2.47.5"
+  },
+  "dependencies": {
+    "@x402/core": "^2.15.0"
   }
 }

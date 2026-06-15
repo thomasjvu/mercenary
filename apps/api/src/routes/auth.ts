@@ -152,4 +152,61 @@ export function registerAuthRoutes(
     }
     return { revoked: true };
   });
+
+  app.post('/v1/auth/agent-session', async (request, reply) => {
+    const session = requirePublicSession(reply, request.headers);
+    if ('error' in session) {
+      return session;
+    }
+
+    const input = ensureRecordInput(request.body, 'agent_session');
+    const sessionAccount = ensureStringInput(input.sessionAccount, 'agent_session.sessionAccount');
+    const permissionFrom = ensureStringInput(input.permissionFrom, 'agent_session.permissionFrom');
+    const permissionContext = ensureStringInput(
+      input.permissionContext,
+      'agent_session.permissionContext'
+    );
+    const expiresAt = ensureStringInput(input.expiresAt, 'agent_session.expiresAt');
+    const weeklyBudgetUsd =
+      typeof input.weeklyBudgetUsd === 'number' && Number.isFinite(input.weeklyBudgetUsd)
+        ? input.weeklyBudgetUsd
+        : undefined;
+
+    const grant = controlState.upsertAgentPaymentSession({
+      wallet: session.wallet,
+      sessionAccount: sessionAccount.toLowerCase(),
+      permissionFrom: permissionFrom.toLowerCase(),
+      permissionContext,
+      grantedAt: new Date().toISOString(),
+      expiresAt,
+      weeklyBudgetUsd,
+    });
+
+    return { grant };
+  });
+
+  app.get('/v1/auth/agent-session', async (request, reply) => {
+    const session = requirePublicSession(reply, request.headers);
+    if ('error' in session) {
+      return session;
+    }
+
+    const grant = controlState.getAgentPaymentSession(session.wallet);
+    if (!grant) {
+      reply.code(404);
+      return { error: 'not_found', message: 'No agent payment session is stored for this wallet.' };
+    }
+
+    return { grant };
+  });
+
+  app.delete('/v1/auth/agent-session', async (request, reply) => {
+    const session = requirePublicSession(reply, request.headers);
+    if ('error' in session) {
+      return session;
+    }
+
+    controlState.deleteAgentPaymentSession(session.wallet);
+    return { revoked: true };
+  });
 }

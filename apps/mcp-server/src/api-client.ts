@@ -1,5 +1,6 @@
 import type { BossRaidResultOutput, BossRaidStatusOutput } from '@bossraid/shared-types';
 import { HTTP, NETWORK } from '@bossraid/constants';
+import { createAgentPaidFetch } from './agent-payment.js';
 
 export const apiBase =
   process.env.BOSSRAID_API_BASE ?? `http://${NETWORK.LOCALHOST}:${NETWORK.LOCAL_API_PORT}`;
@@ -32,6 +33,46 @@ export function raidHeaders(raidAccessToken?: string): Record<string, string> | 
   return {
     [RAID_ACCESS_TOKEN_HEADER]: raidAccessToken,
   };
+}
+
+export async function paidApiRequest(path: string, init?: RequestInit): Promise<unknown> {
+  const paidFetch = createAgentPaidFetch();
+  if (!paidFetch) {
+    return apiRequest(path, init);
+  }
+
+  const response = await paidFetch(new URL(path, apiBase).toString(), {
+    ...init,
+    headers: {
+      'content-type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+  });
+
+  const text = await response.text();
+  const payload = text.length > 0 ? safeParseJson(text) : undefined;
+
+  if (!response.ok) {
+    const message =
+      response.status === 402
+        ? 'Boss Raid API requires x402 payment. Configure BOSSRAID_AGENT_WALLET_KEY and bossraid_grant_session.'
+        : payload &&
+            typeof payload === 'object' &&
+            payload !== null &&
+            'message' in payload &&
+            typeof payload.message === 'string'
+          ? payload.message
+          : payload &&
+              typeof payload === 'object' &&
+              payload !== null &&
+              'error' in payload &&
+              typeof payload.error === 'string'
+            ? payload.error
+            : `Boss Raid API request failed (${response.status})`;
+    throw new Error(message);
+  }
+
+  return payload ?? { ok: true };
 }
 
 export async function apiRequest(path: string, init?: RequestInit): Promise<unknown> {

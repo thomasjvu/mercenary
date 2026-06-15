@@ -11,6 +11,7 @@ import {
 } from './raid-state.js';
 import type { RaidDeadlineTimerRegistry } from './raid-timers.js';
 import { delay } from './runtime.js';
+import { maybeSynthesizeWithVenice } from './venice-planner.js';
 
 export type OrchestratorFinalizationDeps = {
   requireRaid: (raidId: string) => RaidRecord;
@@ -47,6 +48,17 @@ export async function finalizeRaid(
     refreshParentRaidFromChildren(raid.id, (childRaidId) => deps.requireRaid(childRaidId));
   }
   finalizeRaidRecord(raid);
+
+  if (raid.parentRaidId == null) {
+    const veniceAnswer = await maybeSynthesizeWithVenice(raid);
+    if (veniceAnswer && raid.synthesizedOutput) {
+      raid.synthesizedOutput = {
+        ...raid.synthesizedOutput,
+        answerText: veniceAnswer,
+      };
+      raid.updatedAt = new Date().toISOString();
+    }
+  }
 
   if (raid.parentRaidId == null) {
     for (const submission of raid.rankedSubmissions.filter((item) => item.breakdown.valid)) {

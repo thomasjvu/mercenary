@@ -4,10 +4,13 @@ import * as buyerLedger from './control-state/buyer-ledger.js';
 import * as rateLimits from './control-state/rate-limits.js';
 import * as sellerLedger from './control-state/seller-ledger.js';
 import * as sellerUpstream from './control-state/seller-upstream.js';
+import * as agentSessions from './control-state/agent-sessions.js';
+import * as relayerTasks from './control-state/relayer-tasks.js';
 import * as sessions from './control-state/sessions.js';
 import { ControlStateContext } from './control-state/state-context.js';
 import { createApiControlStateStore } from './control-state/store.js';
 import type {
+  AgentPaymentSessionEntry,
   ApiControlStateStore,
   ApiOpsSessionEntry,
   ApiRuntimeSettings,
@@ -16,6 +19,7 @@ import type {
   PublicAccountEntry,
   PublicAuthNonceEntry,
   PublicSessionEntry,
+  RelayerTaskEntry,
   SellerPayoutEntry,
   SellerUpstreamConfigEntry,
 } from './control-state/types.js';
@@ -242,6 +246,26 @@ export function createApiControlStateFromStore(store: ApiControlStateStore) {
       nowMs = Date.now()
     ): boolean {
       return sellerUpstream.deleteSellerUpstreamConfig(ctx, wallet, provider, nowMs);
+    },
+
+    upsertAgentPaymentSession(entry: AgentPaymentSessionEntry): AgentPaymentSessionEntry {
+      return agentSessions.upsertAgentPaymentSession(ctx, entry);
+    },
+
+    getAgentPaymentSession(wallet: string): AgentPaymentSessionEntry | undefined {
+      return agentSessions.getAgentPaymentSession(ctx, wallet);
+    },
+
+    deleteAgentPaymentSession(wallet: string): void {
+      agentSessions.deleteAgentPaymentSession(ctx, wallet);
+    },
+
+    upsertRelayerTask(entry: RelayerTaskEntry): RelayerTaskEntry {
+      return relayerTasks.upsertRelayerTask(ctx, entry);
+    },
+
+    getRelayerTask(taskId: string): RelayerTaskEntry | undefined {
+      return relayerTasks.getRelayerTask(ctx, taskId);
     },
   };
 }

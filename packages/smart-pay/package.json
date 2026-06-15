@@ -1,0 +1,27 @@
+{
+  "name": "@bossraid/smart-pay",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/smart-pay/src/index.js",
+  "types": "dist/smart-pay/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/smart-pay/src/index.d.ts",
+      "default": "./dist/smart-pay/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@bossraid/shared-types": "workspace:*",
+    "@metamask/smart-accounts-kit": "^0.3.0",
+    "@metamask/x402": "^0.1.0",
+    "@x402/core": "^2.15.0",
+    "@x402/evm": "^2.15.0",
+    "@x402/fetch": "^2.15.0",
+    "viem": "^2.47.5"
+  }
+}

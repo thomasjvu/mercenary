@@ -205,6 +205,20 @@ export class RaidLifecycleCoordinator {
     return getResultQuery(this.queriesContext(), raidId);
   }
 
+  attachRaidPaymentProof(
+    raidId: string,
+    paymentProof: import('@bossraid/shared-types').RaidPaymentProof
+  ): void {
+    const raid = this.raids.get(raidId);
+    if (!raid) {
+      return;
+    }
+
+    raid.paymentProof = paymentProof;
+    raid.updatedAt = new Date().toISOString();
+    this.deps.queuePersistBestEffort();
+  }
+
   recordProviderHeartbeat(
     raidId: string,
     providerId: string,
@@ -306,6 +320,13 @@ export class RaidLifecycleCoordinator {
   }
 
   private async runRaid(raidId: string): Promise<void> {
+    const raid = this.raids.get(raidId);
+    if (raid) {
+      const { maybePlanRaidWithVenice } = await import('./venice-planner.js');
+      await maybePlanRaidWithVenice(raid);
+      this.deps.queuePersistBestEffort();
+    }
+
     await runRaidDispatch(raidId, this.runner());
   }
 

@@ -28,6 +28,9 @@ export default defineConfig(({ mode }) => {
         '@bossraid/proof-ui': fileURLToPath(
           new URL('../../packages/proof-ui/src/index.ts', import.meta.url)
         ),
+        '@bossraid/smart-pay': fileURLToPath(
+          new URL('../../packages/smart-pay/src/index.ts', import.meta.url)
+        ),
       },
     },
     envDir: resolve(repoRoot),

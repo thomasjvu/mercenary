@@ -1011,13 +1011,15 @@ const OutroScene = () => {
             <span style={{ color: colors.accent }}>Mercenary</span> is the orchestrator.
           </div>
           <p style={{ fontSize: 32, lineHeight: 1.42, color: colors.muted, maxWidth: 620 }}>
-            Start from the native raid route, expand into chat compatibility when needed, and keep
-            the execution path real.
+            Connect MetaMask Smart Accounts, grant a weekly raid budget, pay POST /v1/raid with
+            ERC-7710 x402, relay through 1Shot, and route Venice-backed specialists with
+            redelegation proof on the receipt.
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 12 }}>
-            <ActionChip text="POST /v1/raid" accent={colors.accent} />
-            <ActionChip text="OpenAI-compatible chat" accent={colors.cyan} />
-            <ActionChip text="x402 ready" accent={colors.green} />
+            <ActionChip text="ERC-7710 x402" accent={colors.accent} />
+            <ActionChip text="MetaMask Smart Accounts" accent={colors.cyan} />
+            <ActionChip text="Venice intelligence" accent={colors.green} />
+            <ActionChip text="1Shot relayer" accent={colors.accent} />
           </div>
         </div>
 

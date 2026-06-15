@@ -100,6 +100,9 @@ export function getResult(ctx: RaidLifecycleQueriesContext, raidId: string): Bos
     settlement,
     settlementExecution: raid.settlementExecution,
     reputationEvents: raid.reputationEvents,
+    paymentProof: raid.paymentProof,
+    delegations: raid.delegations,
+    veniceDirectCalls: raid.veniceDirectCalls,
   };
 }
 

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@bossraid/constants": "workspace:*",
+    "@bossraid/smart-pay": "workspace:*",
     "@bossraid/http-client": "workspace:*",
     "@bossraid/proof-ui": "workspace:*",
     "@bossraid/shared-types": "workspace:*",

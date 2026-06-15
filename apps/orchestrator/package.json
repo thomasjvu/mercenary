@@ -33,6 +33,7 @@
     "@bossraid/provider-sdk": "workspace:*",
     "@bossraid/raid-core": "workspace:*",
     "@bossraid/shared-types": "workspace:*",
+    "@bossraid/venice-client": "workspace:*",
     "@bossraid/test-fixtures": "workspace:*",
     "viem": "^2.47.5"
   },

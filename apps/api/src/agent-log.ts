@@ -299,6 +299,40 @@ function buildDecisionLog(
         settlementMode: rootRaid.settlementExecution?.mode,
       },
     },
+    ...(rootRaid.paymentProof
+      ? [
+          {
+            at: rootRaid.paymentProof.delegationChain?.at(-1)?.at ?? rootRaid.updatedAt,
+            type: 'payment_redelegation' as const,
+            status: 'complete' as const,
+            summary: `Paid raid via ${rootRaid.paymentProof.method} x402 settlement.`,
+            data: {
+              payer: rootRaid.paymentProof.payer,
+              transaction: rootRaid.paymentProof.transaction,
+              facilitatorUrl: rootRaid.paymentProof.facilitatorUrl,
+              delegationChain: rootRaid.paymentProof.delegationChain,
+              oneshotTaskId: rootRaid.paymentProof.oneshotTaskId,
+            },
+          },
+        ]
+      : []),
+    ...(rootRaid.veniceDirectCalls ?? []).map((call) => ({
+      at: call.at,
+      type: call.phase === 'plan' ? ('venice_plan' as const) : ('venice_synthesize' as const),
+      status: 'complete' as const,
+      summary: call.summary ?? `Venice ${call.phase} call via ${call.model}.`,
+      data: {
+        model: call.model,
+        balanceRemainingUsd: call.balanceRemainingUsd,
+      },
+    })),
+    ...(rootRaid.delegations ?? []).map((delegation) => ({
+      at: delegation.delegatedAt,
+      type: 'workstream_redelegate' as const,
+      status: 'complete' as const,
+      summary: `Mercenary redelegated ${delegation.workstreamLabel ?? 'workstream'} to ${delegation.toProvider}.`,
+      data: delegation as unknown as Record<string, unknown>,
+    })),
   ];
 }
 
@@ -336,6 +370,25 @@ function buildToolCallLog(rootRaid: RaidRecord, executionRaids: RaidRecord[]) {
 
   for (const raid of executionRaids) {
     for (const assignment of Object.values(raid.assignments)) {
+      const redelegation = (raid.delegations ?? []).find(
+        (entry) => entry.toProvider === assignment.providerId
+      );
+      if (redelegation) {
+        toolCalls.push({
+          at: redelegation.delegatedAt,
+          tool: 'agent_redelegate',
+          kind: 'http',
+          status: assignment.status,
+          target: assignment.providerId,
+          details: {
+            fromAgent: redelegation.fromAgent,
+            budgetCapUsd: redelegation.budgetCapUsd,
+            workstreamId: redelegation.workstreamId,
+            workstreamLabel: redelegation.workstreamLabel,
+          },
+        });
+      }
+
       if (assignment.invitedAt) {
         toolCalls.push({
           at: assignment.invitedAt,

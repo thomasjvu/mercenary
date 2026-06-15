@@ -46,6 +46,25 @@ test('x402 can be enabled explicitly', () => {
   assert.equal(config.facilitatorUrl, 'https://facilitator.payai.network');
 });
 
+test('x402 metamask preset enables erc7710 asset transfer method', () => {
+  const config = readX402Config({
+    BOSSRAID_X402_ENABLED: 'true',
+    BOSSRAID_X402_FACILITATOR_PRESET: 'metamask_base_mainnet',
+  });
+
+  assert.equal(config.assetTransferMethod, 'erc7710');
+  assert.match(config.facilitatorUrl ?? '', /tx-sentinel-base-mainnet/);
+
+  const paymentRequired = buildX402PaymentRequired({
+    route: 'raid',
+    env: {
+      BOSSRAID_X402_FACILITATOR_PRESET: 'metamask_base_mainnet',
+    },
+  });
+
+  assert.equal(paymentRequired.accepts[0]?.extra?.assetTransferMethod, 'erc7710');
+});
+
 test('x402 route surcharges read BOSSRAID_X402_*_SURCHARGE_USD env vars', () => {
   const config = readX402Config({
     BOSSRAID_X402_RAID_SURCHARGE_USD: '0.02',

@@ -1,5 +1,9 @@
 import { NETWORK } from '@bossraid/constants';
-import { parseBoolean, readPositiveNumber } from '@bossraid/shared-types';
+import {
+  parseBoolean,
+  readPositiveNumber,
+  type X402AssetTransferMethod,
+} from '@bossraid/shared-types';
 
 export interface X402PaymentRequirement {
   scheme: 'exact';
@@ -60,15 +64,76 @@ export interface X402Config {
   facilitatorFallback?: boolean;
   assetName?: string;
   assetVersion?: string;
+  assetTransferMethod: X402AssetTransferMethod;
 }
 
 export type X402RouteName = 'raid' | 'chat' | 'inference';
+
+export const METAMASK_X402_FACILITATORS = {
+  base_mainnet: 'https://tx-sentinel-base-mainnet.dev-api.cx.metamask.io/platform/v2/x402',
+  base_sepolia: 'https://tx-sentinel-base-sepolia.dev-api.cx.metamask.io/platform/v2/x402',
+} as const;
+
+export type X402FacilitatorPreset = keyof typeof METAMASK_X402_FACILITATORS | 'payai';
 
 const DEFAULT_PAYAI_FACILITATOR_URL = 'https://facilitator.payai.network';
 const DEFAULT_RAID_SURCHARGE_USD = 0.01;
 const DEFAULT_CHAT_SURCHARGE_USD = 0.002;
 const DEFAULT_PLATFORM_MARKUP_BPS = 100;
 const DEFAULT_MAX_TIMEOUT_SECONDS = 90;
+
+export function isMetaMaskFacilitator(facilitatorUrl: string | undefined): boolean {
+  if (!facilitatorUrl) {
+    return false;
+  }
+
+  return (
+    facilitatorUrl.includes('tx-sentinel') ||
+    facilitatorUrl.includes('cx.metamask.io/platform/v2/x402')
+  );
+}
+
+function resolveFacilitatorPreset(
+  env: NodeJS.ProcessEnv
+): keyof typeof METAMASK_X402_FACILITATORS | undefined {
+  const preset = env.BOSSRAID_X402_FACILITATOR_PRESET?.trim().toLowerCase();
+  if (preset === 'metamask_base_mainnet' || preset === 'base_mainnet') {
+    return 'base_mainnet';
+  }
+  if (preset === 'metamask_base_sepolia' || preset === 'base_sepolia') {
+    return 'base_sepolia';
+  }
+  return undefined;
+}
+
+function resolveFacilitatorUrl(env: NodeJS.ProcessEnv, enabled: boolean): string | undefined {
+  if (env.BOSSRAID_X402_FACILITATOR_URL) {
+    return env.BOSSRAID_X402_FACILITATOR_URL;
+  }
+
+  const preset = resolveFacilitatorPreset(env);
+  if (preset) {
+    return METAMASK_X402_FACILITATORS[preset];
+  }
+
+  return enabled ? DEFAULT_PAYAI_FACILITATOR_URL : undefined;
+}
+
+function resolveAssetTransferMethod(
+  env: NodeJS.ProcessEnv,
+  facilitatorUrl: string | undefined
+): X402AssetTransferMethod {
+  const explicit = env.BOSSRAID_X402_ASSET_TRANSFER_METHOD?.trim().toLowerCase();
+  if (explicit === 'permit2' || explicit === 'erc7710') {
+    return explicit;
+  }
+
+  if (isMetaMaskFacilitator(facilitatorUrl)) {
+    return 'erc7710';
+  }
+
+  return 'permit2';
+}
 
 function formatUsdPrice(amountUsd: number): string {
   if (amountUsd >= 1) {
@@ -110,13 +175,11 @@ export function readX402Config(env: NodeJS.ProcessEnv = process.env): X402Config
     DEFAULT_PLATFORM_MARKUP_BPS
   );
 
+  const facilitatorUrl = resolveFacilitatorUrl(env, enabled);
+
   return {
     enabled,
-    facilitatorUrl: env.BOSSRAID_X402_FACILITATOR_URL
-      ? env.BOSSRAID_X402_FACILITATOR_URL!
-      : enabled
-        ? DEFAULT_PAYAI_FACILITATOR_URL
-        : undefined,
+    facilitatorUrl,
     resourceBaseUrl:
       env.BOSSRAID_X402_RESOURCE_BASE_URL ??
       `http://${NETWORK.LOCALHOST}:${NETWORK.LOCAL_API_PORT}`,
@@ -143,6 +206,7 @@ export function readX402Config(env: NodeJS.ProcessEnv = process.env): X402Config
     facilitatorFallback: parseBoolean(env.BOSSRAID_X402_FACILITATOR_FALLBACK),
     assetName: env.BOSSRAID_X402_ASSET_NAME,
     assetVersion: env.BOSSRAID_X402_ASSET_VERSION,
+    assetTransferMethod: resolveAssetTransferMethod(env, facilitatorUrl),
   };
 }
 
@@ -267,6 +331,8 @@ function buildPaymentRequired(
         : '/v1/raid';
   const price = computeChargeUsd(config, route, budgetUsd);
   const assetConfig = resolveAssetConfig(config);
+  const transferExtra =
+    config.assetTransferMethod === 'erc7710' ? { assetTransferMethod: 'erc7710' as const } : {};
 
   return {
     x402Version: 1,
@@ -290,13 +356,11 @@ function buildPaymentRequired(
         maxTimeoutSeconds: options.maxTimeoutSeconds ?? config.maxTimeoutSeconds,
         asset: assetConfig.asset,
         price: formatUsdPrice(price.totalUsd),
-        extra:
-          assetConfig.extra || options.extra
-            ? {
-                ...(assetConfig.extra ?? {}),
-                ...(options.extra ?? {}),
-              }
-            : undefined,
+        extra: {
+          ...(assetConfig.extra ?? {}),
+          ...transferExtra,
+          ...(options.extra ?? {}),
+        },
       },
     ],
   };

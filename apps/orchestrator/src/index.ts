@@ -217,6 +217,13 @@ export class BossRaidOrchestrator {
     return this.raidLifecycle.getResult(raidId);
   }
 
+  attachRaidPaymentProof(
+    raidId: string,
+    paymentProof: import('@bossraid/shared-types').RaidPaymentProof
+  ): void {
+    this.raidLifecycle.attachRaidPaymentProof(raidId, paymentProof);
+  }
+
   recordProviderHeartbeat(
     raidId: string,
     providerId: string,

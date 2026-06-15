@@ -268,6 +268,13 @@ export async function dispatchProvider(
     return;
   }
 
+  const { recordWorkstreamRedelegation } = await import('./raid-redelegation.js');
+  recordWorkstreamRedelegation(
+    raid,
+    providerId,
+    raid.escrowFundingUsd ?? raid.task.constraints.maxBudgetUsd
+  );
+
   const taskPackage = buildProviderTaskPackage(raid.id, raid.task, {
     deadlineUnix: raid.deadlineUnix,
     providerIndex:

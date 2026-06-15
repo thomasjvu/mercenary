@@ -27,6 +27,8 @@ import {
   type LiveRaidRun,
 } from '../demo-result';
 import { buildRaidDemoViewState } from '../demo-specialists';
+import { API_BASE } from '../api/client.js';
+import { spawnPaidRaid } from '../api/paid-raid.js';
 import { buildLiveDemoPayload } from '../default-payload';
 
 export type { DemoRequestMode, LiveRaidRun };
@@ -35,9 +37,16 @@ export type { ConversationSpecialistRecord, SpecialistTraceRecord } from '../dem
 type UseRaidDemoOptions = {
   providers: Provider[];
   providerHealth: ProviderHealth[];
+  paidMode?: boolean;
+  createFetchWithPayment?: () => Promise<typeof fetch>;
 };
 
-export function useRaidDemo({ providers, providerHealth }: UseRaidDemoOptions) {
+export function useRaidDemo({
+  providers,
+  providerHealth,
+  paidMode = false,
+  createFetchWithPayment,
+}: UseRaidDemoOptions) {
   const [demoMode, setDemoMode] = useState<DemoRequestMode>('raid');
   const [liveDemoBrief, setLiveDemoBrief] = useState('');
   const [lastSubmittedBrief, setLastSubmittedBrief] = useState<string | null>(null);
@@ -136,6 +145,31 @@ export function useRaidDemo({ providers, providerHealth }: UseRaidDemoOptions) {
     setReceiptCopied(false);
 
     try {
+      if (paidMode && demoMode === 'raid') {
+        if (!createFetchWithPayment) {
+          throw new Error('Connect MetaMask and grant a raid subscription before paid launch.');
+        }
+
+        const fetchWithPayment = await createFetchWithPayment();
+        const spawn = await spawnPaidRaid(
+          fetchWithPayment,
+          buildLiveDemoPayload(submittedBrief),
+          API_BASE
+        );
+
+        setLiveRaidRun({
+          requestMode: demoMode,
+          spawn,
+          directResponse: false,
+          chatCompletion: undefined,
+          startedAtMs,
+          lastUpdatedAt: new Date().toISOString(),
+          pollError: null,
+        });
+        await refreshLiveRaid(spawn);
+        return;
+      }
+
       const response =
         demoMode === 'raid'
           ? await spawnDemoRaid(buildLiveDemoPayload(submittedBrief))

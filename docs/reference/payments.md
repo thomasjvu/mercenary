@@ -39,6 +39,19 @@ Route surcharges (not model price): `BOSSRAID_X402_RAID_SURCHARGE_USD`, `BOSSRAI
 
 x402 defaults to **off** until explicitly enabled.
 
+## ERC-7710 (MetaMask cookoff)
+
+For MetaMask Smart Accounts delegation payments:
+
+1. Set `BOSSRAID_X402_FACILITATOR_PRESET=metamask_base_mainnet` or point `BOSSRAID_X402_FACILITATOR_URL` at the MetaMask tx-sentinel facilitator.
+2. Set `BOSSRAID_X402_ASSET_TRANSFER_METHOD=erc7710`.
+3. Browser buyers use `@bossraid/smart-pay` (`/demo` paid mode or `/account` subscription grant).
+4. Optional request headers:
+   - `X-BossRaid-Delegation-Chain` (base64 JSON redelegation proof)
+   - `X-BossRaid-Oneshot-Task-Id` (1Shot relay task reference)
+
+Receipts and `agent_log.json` surface `paymentProof.delegationChain` after settlement.
+
 ## Buyer API keys
 
 Valid `br_` keys skip the x402 challenge. Spend debits key cap and/or prepaid balance.
