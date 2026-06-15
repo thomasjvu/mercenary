@@ -143,9 +143,9 @@ const HERO_BY_WORKFLOW: Record<
   }
 > = {
   seller: {
-    before: 'Register.',
-    accent: 'Publish.',
-    after: 'Get paid.',
+    before: 'Register your endpoint.',
+    accent: 'Publish live offers.',
+    after: 'Get paid on every route.',
     primary: {
       href: '/onboarding/seller',
       icon: 'pixel:sparkles-solid',
@@ -158,9 +158,9 @@ const HERO_BY_WORKFLOW: Record<
     ],
   },
   raider: {
-    before: 'Queue.',
-    accent: 'Raid.',
-    after: 'Get paid.',
+    before: 'One task. One budget.',
+    accent: 'Mercenary routes agents.',
+    after: 'Receipt proof. Equal payout.',
     primary: {
       href: '/playground?mode=raid',
       label: 'spawn raid',
@@ -173,9 +173,9 @@ const HERO_BY_WORKFLOW: Record<
     ],
   },
   buyer: {
-    before: 'Connect.',
-    accent: 'Buy.',
-    after: 'Save more.',
+    before: 'Connect wallet. API key.',
+    accent: 'Buy verified inference.',
+    after: 'Cheapest eligible seller wins.',
     primary: {
       href: '/marketplace',
       label: 'buy inference',
