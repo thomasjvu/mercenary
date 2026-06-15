@@ -106,8 +106,8 @@ type AppRoute =
 const WORKFLOW_STEPS: Record<WorkflowTabId, readonly { label: string; value: string }[]> = {
   buyer: [
     { label: '01', value: 'Connect wallet. Create capped API key.' },
-    { label: '02', value: 'Buy discounted inference from marketplace.' },
-    { label: '03', value: 'Prepaid balance tracks spend and savings.' },
+    { label: '02', value: 'Buy discounted inference or fund raid bounties.' },
+    { label: '03', value: 'Balance tracks spend, savings, and receipts.' },
   ],
   seller: [
     { label: '01', value: 'Register upstream or HTTP endpoint.' },
@@ -173,15 +173,16 @@ const HERO_BY_WORKFLOW: Record<
   },
   buyer: {
     before: 'Connect wallet. API key.',
-    accent: 'Buy verified inference.',
-    after: 'Cheapest eligible seller wins.',
+    accent: 'Buy inference or raids.',
+    after: 'Discounted models. Capped bounties.',
     primary: {
       href: '/marketplace',
-      label: 'buy inference',
+      label: 'browse marketplace',
       path: '/marketplace',
     },
     secondary: [
       { href: '/onboarding/buyer', label: 'create api key', path: '/onboarding/buyer' },
+      { href: '/playground?mode=raid', label: 'spawn raid', path: '/playground', mode: 'raid' },
       { href: '/playground', label: 'try a model', path: '/playground' },
     ],
   },
