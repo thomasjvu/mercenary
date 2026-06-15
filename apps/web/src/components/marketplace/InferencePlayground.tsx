@@ -288,18 +288,22 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
             </label>
           </div>
 
-          {selectedModel ? (
-            <p className="inference-playground__meta">
-              {selectedModel.liveSellers > 0
-                ? `${selectedModel.liveSellers} live seller${selectedModel.liveSellers === 1 ? '' : 's'}`
-                : 'catalog reference only'}
-              {selectedModel.referenceRateUsd != null
-                ? ` · from $${selectedModel.referenceRateUsd.toFixed(3)}`
-                : ''}
-              {selectedModel.teeAttested ? ' · tee' : ''}
-              {selectedModel.e2ee ? ' · e2ee' : ''}
-            </p>
-          ) : null}
+          <p className="inference-playground__meta" aria-live="polite">
+            {selectedModel
+              ? [
+                  selectedModel.liveSellers > 0
+                    ? `${selectedModel.liveSellers} live seller${selectedModel.liveSellers === 1 ? '' : 's'}`
+                    : 'catalog reference only',
+                  selectedModel.referenceRateUsd != null
+                    ? `from $${selectedModel.referenceRateUsd.toFixed(3)}`
+                    : null,
+                  selectedModel.teeAttested ? 'tee' : null,
+                  selectedModel.e2ee ? 'e2ee' : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
+              : 'pick a model to see live sellers and rates'}
+          </p>
 
           <label className="field">
             <span>privacy mode</span>
@@ -324,19 +328,20 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
             />
           </label>
 
-          {selectedModel?.e2ee ? (
-            <label className="field">
-              <span>upstream API key (E2EE)</span>
-              <input
-                autoComplete="off"
-                onChange={(event) => setUpstreamApiKey(event.target.value)}
-                placeholder="required for strict E2EE"
-                spellCheck={false}
-                type="password"
-                value={upstreamApiKey}
-              />
-            </label>
-          ) : null}
+          <label className={`field${selectedModel?.e2ee ? '' : ' field--inactive'}`}>
+            <span>upstream API key (E2EE)</span>
+            <input
+              autoComplete="off"
+              disabled={!selectedModel?.e2ee}
+              onChange={(event) => setUpstreamApiKey(event.target.value)}
+              placeholder={
+                selectedModel?.e2ee ? 'required for strict E2EE' : 'only required for E2EE models'
+              }
+              spellCheck={false}
+              type="password"
+              value={upstreamApiKey}
+            />
+          </label>
 
           <label className="field">
             <span>budget usd</span>
@@ -352,15 +357,26 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
             <textarea onChange={(event) => setPrompt(event.target.value)} rows={4} value={prompt} />
           </label>
 
-          {selectedModel?.teeAttested || selectedModel?.e2ee ? (
-            <UpstreamTeeVerificationPanel
-              compact
-              e2ee={selectedModel.e2ee}
-              modelId={model}
-              provider={attestationProvider}
-              teeAttested={selectedModel.teeAttested}
-            />
-          ) : null}
+          <div className="inference-playground__trust-slot">
+            {selectedModel && (selectedModel.teeAttested || selectedModel.e2ee) ? (
+              <UpstreamTeeVerificationPanel
+                compact
+                e2ee={selectedModel.e2ee}
+                modelId={model}
+                provider={attestationProvider}
+                teeAttested={selectedModel.teeAttested}
+              />
+            ) : (
+              <div className="inference-playground__trust-placeholder" aria-hidden={!selectedModel}>
+                <span className="inference-playground__trust-placeholder-label">trust</span>
+                <span>
+                  {selectedModel
+                    ? 'standard routing · no tee verification required'
+                    : 'select a model to inspect attestation'}
+                </span>
+              </div>
+            )}
+          </div>
 
           <button
             className="button button--primary rx-spacebar-clip"

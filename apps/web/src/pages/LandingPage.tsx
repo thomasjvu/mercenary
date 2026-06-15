@@ -226,13 +226,15 @@ type LandingPageProps = {
   onNavigate: (path: AppRoute, options?: { mode?: 'inference' | 'raid'; modelId?: string }) => void;
 };
 
+function workflowLayerClass(tab: WorkflowTabId, activeTab: WorkflowTabId) {
+  return `workflow-crossfade__layer${tab === activeTab ? ' workflow-crossfade__layer--active' : ''}`;
+}
+
 export function LandingPage({ onNavigate }: LandingPageProps) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [workflowTab, setWorkflowTab] = useState<WorkflowTabId>('seller');
-  const workflowPanelRef = useRef<HTMLDivElement | null>(null);
-  const heroHeadlineRef = useRef<HTMLHeadingElement | null>(null);
-  const hero = HERO_BY_WORKFLOW[workflowTab];
-  const heroImage = HERO_IMAGE_BY_WORKFLOW[workflowTab];
+  const heroCopyRef = useRef<HTMLDivElement | null>(null);
+  const infoPanelRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!copiedKey) {
@@ -244,22 +246,22 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
   }, [copiedKey]);
 
   useEffect(() => {
-    const panel = workflowPanelRef.current;
+    const heroCopy = heroCopyRef.current;
+    if (!heroCopy) {
+      return;
+    }
+
+    return bindAsciiRipple(heroCopy);
+  }, []);
+
+  useEffect(() => {
+    const panel = infoPanelRef.current;
     if (!panel) {
       return;
     }
 
     return bindAsciiRipple(panel);
-  }, [workflowTab]);
-
-  useEffect(() => {
-    const headline = heroHeadlineRef.current;
-    if (!headline) {
-      return;
-    }
-
-    return bindAsciiRipple(headline);
-  }, [hero.accent, hero.after, hero.before, workflowTab]);
+  }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -284,48 +286,76 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
   return (
     <>
       <section className={`hero hero--workflow-${workflowTab}`} id="top">
-        <div className="hero__copy">
-          <h1 ref={heroHeadlineRef}>
-            <span className="hero__headline-line">
-              <span className="ascii-ripple" data-ascii-ripple>
-                {hero.before}{' '}
-              </span>
-              <span className="hero__headline-accent ascii-ripple" data-ascii-ripple>
-                {hero.accent}
-              </span>
-            </span>
-            <span className="hero__headline-line ascii-ripple" data-ascii-ripple>
-              {hero.after}
-            </span>
-          </h1>
-          <div className="hero__actions">
-            <a
-              className="button button--primary"
-              href={hero.primary.href}
-              onClick={(event) => {
-                event.preventDefault();
-                onNavigate(hero.primary.path, { mode: hero.primary.mode });
-              }}
-            >
-              {hero.primary.icon ? (
-                <Icon className="icon icon--pixel" icon={hero.primary.icon} />
-              ) : null}
-              {hero.primary.label}
-            </a>
-            {hero.secondary.map((action) => (
-              <a
-                className="button"
-                href={action.href}
-                key={action.href}
-                onClick={(event) => {
-                  event.preventDefault();
-                  onNavigate(action.path, { mode: action.mode });
-                }}
-              >
-                {action.label}
-              </a>
-            ))}
+        <div className="hero__copy" ref={heroCopyRef}>
+          <div className="hero__headline-stack workflow-crossfade">
+            {WORKFLOW_TAB_ORDER.map((tab) => {
+              const tabHero = HERO_BY_WORKFLOW[tab];
+
+              return (
+                <h1
+                  aria-hidden={workflowTab !== tab}
+                  className={workflowLayerClass(tab, workflowTab)}
+                  key={tab}
+                >
+                  <span className="hero__headline-line">
+                    <span className="ascii-ripple" data-ascii-ripple>
+                      {tabHero.before}{' '}
+                    </span>
+                    <span className="hero__headline-accent ascii-ripple" data-ascii-ripple>
+                      {tabHero.accent}
+                    </span>
+                  </span>
+                  <span className="hero__headline-line ascii-ripple" data-ascii-ripple>
+                    {tabHero.after}
+                  </span>
+                </h1>
+              );
+            })}
           </div>
+
+          <div className="hero__actions-stack workflow-crossfade">
+            {WORKFLOW_TAB_ORDER.map((tab) => {
+              const tabHero = HERO_BY_WORKFLOW[tab];
+
+              return (
+                <div
+                  aria-hidden={workflowTab !== tab}
+                  className={`hero__actions ${workflowLayerClass(tab, workflowTab)}`}
+                  key={tab}
+                >
+                  <a
+                    className="button button--primary"
+                    href={tabHero.primary.href}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      onNavigate(tabHero.primary.path, { mode: tabHero.primary.mode });
+                    }}
+                    tabIndex={workflowTab === tab ? 0 : -1}
+                  >
+                    {tabHero.primary.icon ? (
+                      <Icon className="icon icon--pixel" icon={tabHero.primary.icon} />
+                    ) : null}
+                    {tabHero.primary.label}
+                  </a>
+                  {tabHero.secondary.map((action) => (
+                    <a
+                      className="button"
+                      href={action.href}
+                      key={action.href}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        onNavigate(action.path, { mode: action.mode });
+                      }}
+                      tabIndex={workflowTab === tab ? 0 : -1}
+                    >
+                      {action.label}
+                    </a>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+
           <LiveMarketPulse compact />
         </div>
 
@@ -333,23 +363,33 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           <div className="hero__image-set">
             {HERO_SLICE_POSITIONS.map((position, index) => (
               <div className="hero__slice-frame" key={index}>
-                <span
-                  className="hero__slice"
-                  style={{
-                    ['--hero-slice-image' as string]: `url("${heroImage}")`,
-                    ['--hero-slice-position' as string]: `${position}% 50%`,
-                  }}
-                />
-                {(HERO_EYE_GLOWS_BY_WORKFLOW[workflowTab][index] ?? []).map((eye, eyeIndex) => (
+                {WORKFLOW_TAB_ORDER.map((tab) => (
                   <span
-                    className={`hero__eye-glow${eye.variant === 'sensor' ? ' hero__eye-glow--sensor' : ''}`}
-                    key={eyeIndex}
+                    className={`hero__slice hero__slice-layer ${workflowLayerClass(tab, workflowTab)}`}
+                    key={tab}
                     style={{
-                      top: eye.top,
-                      left: eye.left,
-                      ['--hero-eye-width' as string]: eye.width,
+                      ['--hero-slice-image' as string]: `url("${HERO_IMAGE_BY_WORKFLOW[tab]}")`,
+                      ['--hero-slice-position' as string]: `${position}% 50%`,
                     }}
                   />
+                ))}
+                {WORKFLOW_TAB_ORDER.map((tab) => (
+                  <div
+                    className={`hero__eye-glow-set ${workflowLayerClass(tab, workflowTab)}`}
+                    key={tab}
+                  >
+                    {(HERO_EYE_GLOWS_BY_WORKFLOW[tab][index] ?? []).map((eye, eyeIndex) => (
+                      <span
+                        className={`hero__eye-glow${eye.variant === 'sensor' ? ' hero__eye-glow--sensor' : ''}`}
+                        key={eyeIndex}
+                        style={{
+                          top: eye.top,
+                          left: eye.left,
+                          ['--hero-eye-width' as string]: eye.width,
+                        }}
+                      />
+                    ))}
+                  </div>
                 ))}
               </div>
             ))}
@@ -369,6 +409,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
         <aside className="api-notes">
           <section
             className={`info-panel info-panel--compact info-panel--landing-flow info-panel--workflow-${workflowTab}`}
+            ref={infoPanelRef}
           >
             <div className="info-panel__head">
               <p className="eyebrow">how it works</p>
@@ -378,15 +419,23 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 tabs={WORKFLOW_TABS}
               />
             </div>
-            <div className="info-spec" key={workflowTab} ref={workflowPanelRef}>
-              {WORKFLOW_STEPS[workflowTab].map((row) => (
-                <div className="info-spec__row" key={row.label}>
-                  <span className="info-spec__label ascii-ripple" data-ascii-ripple>
-                    {row.label}
-                  </span>
-                  <strong className="info-spec__value ascii-ripple" data-ascii-ripple>
-                    {row.value}
-                  </strong>
+            <div className="info-spec-stack workflow-crossfade">
+              {WORKFLOW_TAB_ORDER.map((tab) => (
+                <div
+                  aria-hidden={workflowTab !== tab}
+                  className={`info-spec ${workflowLayerClass(tab, workflowTab)}`}
+                  key={tab}
+                >
+                  {WORKFLOW_STEPS[tab].map((row) => (
+                    <div className="info-spec__row" key={row.label}>
+                      <span className="info-spec__label ascii-ripple" data-ascii-ripple>
+                        {row.label}
+                      </span>
+                      <strong className="info-spec__value ascii-ripple" data-ascii-ripple>
+                        {row.value}
+                      </strong>
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>

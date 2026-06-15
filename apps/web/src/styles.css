@@ -3653,11 +3653,12 @@ h2 {
 
 .app-shell--landing .hero {
   gap: clamp(12px, 1.4vw, 18px);
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 1fr);
 }
 
 .app-shell--landing .hero__copy,
 .app-shell--landing .hero__art {
-  padding: clamp(14px, 1.6vw, 22px);
+  padding: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -3728,6 +3729,11 @@ h2 {
   box-shadow: none;
   background: transparent;
   filter: none;
+}
+
+.app-shell--landing .hero__slice-layer {
+  position: absolute;
+  inset: 0;
 }
 
 .app-shell--landing .hero__slice::before {
@@ -6265,8 +6271,43 @@ h2 {
 
 .inference-playground__meta {
   margin: -4px 0 12px;
+  min-height: 1.2em;
   color: var(--muted);
   font-size: 0.82rem;
+}
+
+.inference-playground__trust-slot {
+  display: grid;
+  align-content: start;
+  min-height: 88px;
+  margin-top: 12px;
+}
+
+.inference-playground__trust-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 88px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.inference-playground__trust-placeholder-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+}
+
+.field--inactive input:disabled,
+.field--inactive select:disabled,
+.field--inactive textarea:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .inference-playground__grid {
@@ -7262,7 +7303,7 @@ h2 {
   display: flex;
   align-items: stretch;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 0;
   background: var(--surface-inset);
   overflow: hidden;
 }
@@ -7389,7 +7430,7 @@ h2 {
 .upstream-tee-panel {
   display: grid;
   gap: 10px;
-  margin-top: 12px;
+  margin-top: 0;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 12px;

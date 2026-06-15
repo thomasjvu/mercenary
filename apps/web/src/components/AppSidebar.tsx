@@ -71,7 +71,7 @@ export function AppSidebar({ pathname, onNavigate, appTheme, onThemeToggle }: Ap
           onClick={() => openInspector()}
           type="button"
         >
-          tee attestation
+          TEE Attestation
         </button>
         <AppHeaderWallet onNavigate={onNavigate} />
         <div className="app-sidebar__utility">
