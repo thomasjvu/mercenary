@@ -1,5 +1,303 @@
 /* Shared redesign primitives */
 
+.page-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.page-intro h1 {
+  margin: 0;
+  font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(2.4rem, 4.6vw, 3.6rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+  max-width: none;
+}
+
+.page-intro__tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.section-title {
+  margin: 0;
+  font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.1rem, 1.8vw, 1.45rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.page-flat.beta-page {
+  gap: clamp(16px, 2vh, 24px);
+  align-content: start;
+}
+
+.page-flat .beta-panel,
+.page-flat .lane-panel,
+.page-flat .market-card,
+.page-flat .empty-state,
+.page-flat .sell-panel,
+.page-flat .flow-panel {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.page-flat .beta-panel + .beta-panel,
+.page-flat .flow-panel + .flow-panel {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.page-flat .wallet-gate {
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.mercenary-lane-banner {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--mercenary-border, var(--line));
+}
+
+.mercenary-lane-banner--raid {
+  background: color-mix(in srgb, var(--rx-blue) 10%, transparent);
+}
+
+.mercenary-lane-banner--inference {
+  background: color-mix(in srgb, var(--rx-red) 8%, transparent);
+}
+
+.mercenary-lane-banner__kicker {
+  display: block;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.mercenary-lane-banner__label strong {
+  font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+
+.mercenary-lane-banner__copy {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  max-width: 72ch;
+}
+
+.mercenary-mode-chip--raid.mercenary-mode-chip--active {
+  background: color-mix(in srgb, var(--rx-blue) 18%, transparent);
+  border-color: color-mix(in srgb, var(--rx-blue) 42%, var(--line));
+}
+
+.mercenary-mode-chip--inference.mercenary-mode-chip--active {
+  background: color-mix(in srgb, var(--rx-red) 14%, transparent);
+  border-color: color-mix(in srgb, var(--rx-red) 38%, var(--line));
+}
+
+.orchestrator-featured {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.4fr);
+  gap: clamp(16px, 2vw, 28px);
+  align-items: stretch;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.orchestrator-featured__visual {
+  position: relative;
+  min-height: 180px;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.orchestrator-featured__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.orchestrator-featured__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 35%, rgba(12, 14, 18, 0.72) 100%);
+}
+
+.orchestrator-featured__visual .boss-raid-mark {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 1;
+}
+
+.orchestrator-featured__copy {
+  display: grid;
+  gap: 10px;
+  align-content: center;
+}
+
+.orchestrator-featured__eyebrow {
+  margin: 0;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.orchestrator-featured__copy h2 {
+  margin: 0;
+  font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.6rem, 2.4vw, 2.2rem);
+  letter-spacing: -0.03em;
+}
+
+.orchestrator-featured__copy p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+  max-width: 56ch;
+}
+
+.orchestrator-featured__tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.orchestrator-featured__tag {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.raiders-page {
+  gap: clamp(18px, 2.2vh, 28px);
+}
+
+.raiders-section {
+  display: grid;
+  gap: 14px;
+}
+
+.raiders-section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.raiders-section__meta {
+  margin: 0;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.74rem;
+}
+
+.orchestrator-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.orchestrator-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+
+.orchestrator-card--primary {
+  border-top: 2px solid var(--rx-blue);
+}
+
+.orchestrator-card__copy {
+  display: grid;
+  gap: 4px;
+}
+
+.orchestrator-card__copy strong {
+  font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.05rem;
+}
+
+.orchestrator-card__copy span {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+}
+
+.orchestrator-card__copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.raiders-list {
+  display: grid;
+  gap: 12px;
+}
+
+.raiders-list .raider-row {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  border-top: 1px solid var(--line);
+}
+
+.raiders-page .directory-controls {
+  padding: 0 0 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  border-bottom: 1px solid var(--line);
+}
+
+.raiders-page .directory-search,
+.raiders-page .directory-filters,
+.raiders-page .directory-main__summary {
+  padding: 0;
+}
+
+.raiders-page .directory-empty {
+  padding: 20px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.mercenary-page .page-intro {
+  margin-bottom: 2px;
+}
+
+.market-page .page-intro h1,
+.market-page .page-hero__main h1 {
+  font-size: clamp(2.4rem, 4.6vw, 3.6rem);
+}
+
 .page-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -766,6 +1064,46 @@ button.action-steps__value {
   max-width: 760px;
 }
 
+@media (max-width: 720px) {
+  .orchestrator-featured {
+    grid-template-columns: 1fr;
+  }
+
+  .orchestrator-featured__visual {
+    min-height: 160px;
+  }
+
+  .raiders-section__head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .raiders-page .directory-controls {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .raiders-list .raider-row__cover {
+    min-height: 180px;
+  }
+
+  .mercenary-chat__topbar {
+    align-items: stretch;
+  }
+
+  .mercenary-chat__identity {
+    flex: 1 1 100%;
+  }
+
+  .mercenary-mode-switch {
+    flex: 1 1 auto;
+  }
+
+  .mercenary-chat__topbar-actions {
+    width: 100%;
+  }
+}
+
 @media (max-width: 1100px) {
   .hero {
     grid-template-columns: 1fr;
@@ -1056,7 +1394,7 @@ button.action-steps__value {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: clamp(16px, 2vw, 28px);
-  align-items: end;
+  align-items: start;
   padding-bottom: 16px;
   border-bottom: 3px solid var(--rx-blue);
 }
@@ -1108,30 +1446,40 @@ button.action-steps__value {
 
 .model-detail-page__cta {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   min-width: min(280px, 100%);
-  align-self: stretch;
-  align-content: end;
+  align-content: start;
 }
 
 .model-detail-page__quote {
   display: grid;
-  gap: 6px;
+  gap: 4px;
+  text-align: right;
+}
+
+.model-detail-page__price-label {
+  margin: 0;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .model-detail-page__price {
   margin: 0;
+  color: var(--rx-red);
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  font-size: clamp(1.1rem, 1.8vw, 1.45rem);
-  font-weight: 600;
-  line-height: 1.1;
+  font-size: clamp(1.75rem, 2.8vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1;
 }
 
 .model-detail-page__savings {
   margin: 0;
-  color: var(--rx-yellow);
+  color: var(--rx-blue);
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   letter-spacing: 0.04em;
 }
 

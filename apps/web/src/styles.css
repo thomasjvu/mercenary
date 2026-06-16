@@ -379,7 +379,11 @@ button.app-sidebar__utility-icon {
 
 .app-shell:has(.flow-page),
 .app-shell:has(.buyer-page),
-.app-shell:has(.sell-page) {
+.app-shell:has(.sell-page),
+.app-shell:has(.model-detail-page),
+.app-shell:has(.market-page),
+.app-shell:has(.page-flat),
+.app-shell:has(.raiders-page) {
   align-content: start;
 }
 
@@ -4869,6 +4873,20 @@ h2 {
   row-gap: clamp(12px, 1.3vh, 16px);
 }
 
+.mercenary-page {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: clamp(12px, 1.6vh, 18px);
+  min-height: 0;
+  padding: 0;
+}
+
+.mercenary-page .mercenary-demo {
+  flex: 1;
+  min-height: min(68vh, 860px);
+}
+
 .mercenary-demo {
   --mercenary-sidebar-panel: rgba(255, 255, 255, 0.72);
   --mercenary-bubble: rgba(239, 241, 246, 0.96);
@@ -8375,14 +8393,23 @@ h2 {
 .sell-panel {
   display: grid;
   gap: 14px;
-  padding: 18px 20px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.sell-page .sell-dashboard__summary > * {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sell-page .sell-panel--create {
+  padding-top: 4px;
 }
 
 .app-frame--theme-dark .sell-panel {
-  background: color-mix(in srgb, var(--text) 4%, #111111);
+  background: transparent;
 }
 
 .sell-panel__eyebrow {

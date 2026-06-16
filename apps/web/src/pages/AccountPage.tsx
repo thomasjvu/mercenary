@@ -13,7 +13,7 @@ import {
   verifySellerProvider,
 } from '../api';
 import { FlowPanel, FlowTabs, type FlowTab } from '../components/system/FlowTabs.js';
-import { PageHero } from '../components/system/PageHero.js';
+import { PageIntro } from '../components/system/PageIntro.js';
 import { WalletGate } from '../components/system/WalletGate.js';
 
 const ACCOUNT_TABS = [
@@ -115,8 +115,8 @@ export function AccountPage() {
   const sellerRows = sellers.data?.data ?? [];
 
   return (
-    <section className="beta-page flow-page">
-      <PageHero
+    <section className="beta-page page-flat flow-page">
+      <PageIntro
         actions={
           session.data?.authenticated ? (
             <button className="button" onClick={() => void signOut()} type="button">
@@ -124,10 +124,7 @@ export function AccountPage() {
             </button>
           ) : null
         }
-        compact
-        eyebrow="account"
-        lede="Wallet, keys, and seller offers."
-        title="Account."
+        title="Account"
       />
 
       <WalletGate message="Connect wallet to view account state." />

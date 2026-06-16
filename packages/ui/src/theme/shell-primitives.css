@@ -1,0 +1,167 @@
+/* Shared Boss Raid shell primitives — see DESIGN.md */
+
+.page-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: clamp(14px, 1.6vw, 20px);
+  align-items: end;
+}
+
+.page-hero:not(:has(.page-hero__aside)) {
+  grid-template-columns: 1fr;
+}
+
+.page-hero--compact {
+  align-items: start;
+}
+
+.page-hero__main {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.page-hero__main h1 {
+  font-size: clamp(1.6rem, 2.4vw, 2.4rem);
+  line-height: 1.05;
+}
+
+.page-hero__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.page-hero__aside {
+  min-width: 0;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.lede {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.96rem;
+  line-height: 1.45;
+}
+
+.accent-block {
+  position: relative;
+  padding: 10px 12px;
+  background: var(--rx-blue);
+  color: var(--rx-white);
+}
+
+.accent-block--yellow {
+  background: var(--rx-yellow);
+  color: var(--text);
+}
+
+.accent-block--red {
+  background: var(--rx-red);
+  color: var(--rx-white);
+}
+
+.accent-block::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  background: currentColor;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  opacity: 0.72;
+}
+
+.rx-spacebar-clip {
+  clip-path: polygon(0 0, 100% 0, 100% 77%, 66% 77%, 63.4% 100%, 5.2% 100%, 0 79%);
+}
+
+.button.rx-spacebar-clip,
+.info-panel__cta {
+  display: inline-flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+  min-height: clamp(80px, 9.6vh, 96px);
+  padding: clamp(18px, 2vh, 24px) 18px 0;
+  border: 0;
+  border-radius: 0;
+  font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
+  text-transform: uppercase;
+  font-size: clamp(1.35rem, 1.85vw, 1.75rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  box-shadow: none;
+  transform: translateY(-3px);
+  background: linear-gradient(135deg, var(--rx-yellow) 0 84%, var(--rx-red) 84% 100%);
+  color: var(--rx-blue);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.button.rx-spacebar-clip:hover:not(:disabled),
+.info-panel__cta:hover {
+  background: linear-gradient(135deg, var(--rx-blue) 0 82%, var(--rx-red) 82% 100%);
+  color: var(--rx-white);
+  box-shadow: none;
+}
+
+.button.rx-spacebar-clip:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
+.stat-ribbon {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+
+.stat-ribbon__item {
+  display: grid;
+  gap: 3px;
+  padding: 0 16px 0 0;
+}
+
+.stat-ribbon__item + .stat-ribbon__item {
+  padding-left: 16px;
+  border-left: 1px solid var(--line);
+}
+
+.stat-ribbon__item span {
+  color: var(--rx-blue);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stat-ribbon__item strong {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.flat-section {
+  display: grid;
+  gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.flat-section:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}

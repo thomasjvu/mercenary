@@ -8,6 +8,7 @@ Boss Raid is the platform. Mercenary is the orchestrator agent.
 
 ## Read First
 
+- [DESIGN.md](/Users/area/repos/boss-raid/DESIGN.md) — RX-78 visual identity for web, ops, and agents
 - [README.md](/Users/area/repos/boss-raid/README.md)
 - [docs/README.md](/Users/area/repos/boss-raid/docs/README.md)
 - [docs/getting-started.md](/Users/area/repos/boss-raid/docs/getting-started.md)

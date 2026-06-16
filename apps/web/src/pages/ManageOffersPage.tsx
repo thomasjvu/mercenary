@@ -11,7 +11,7 @@ import {
 import { pauseSellerUpstreamOffer } from '../api/seller-upstream.js';
 import { useWalletAuth } from '../hooks/useWalletAuth.js';
 import { UpstreamTeeVerificationPanel } from '../components/trust/UpstreamTeeVerificationPanel.js';
-import { PageHero } from '../components/system/PageHero.js';
+import { PageIntro } from '../components/system/PageIntro.js';
 import { WalletGate } from '../components/system/WalletGate.js';
 
 function resolveHostedProvider(
@@ -91,13 +91,8 @@ export function ManageOffersPage() {
   }
 
   return (
-    <section className="beta-page">
-      <PageHero
-        compact
-        eyebrow="sell inference"
-        lede="Pause, verify, and remove hosted offers."
-        title="Manage my offers"
-      />
+    <section className="beta-page page-flat">
+      <PageIntro title="Manage my offers" />
 
       <WalletGate />
 

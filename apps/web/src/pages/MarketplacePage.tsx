@@ -11,7 +11,7 @@ import { MarketStatsRibbon } from '../components/marketplace/MarketStatsRibbon.j
 import { MarketPriceLadder } from '../components/marketplace/MarketPriceLadder.js';
 import { MarketVolumePanel } from '../components/marketplace/MarketVolumePanel.js';
 import { FeaturedModels } from '../components/marketplace/FeaturedModels.js';
-import { PageHero } from '../components/system/PageHero.js';
+import { PageIntro } from '../components/system/PageIntro.js';
 import { CurlQuickstart } from '../components/terminal/CurlQuickstart.js';
 import { marketMatchesTrustFilter, type MarketplaceTrustFilter } from '../lib/marketplace-trust.js';
 
@@ -45,13 +45,8 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
   const totalMarketCount = allMarkets.data?.data.length ?? 0;
 
   return (
-    <section className="beta-page market-page">
-      <PageHero
-        compact
-        eyebrow="open market"
-        lede="Live order books and USDC settlement."
-        title="Discount verified inference."
-      />
+    <section className="beta-page page-flat market-page">
+      <PageIntro title="Discount verified inference" />
 
       <details className="market-page__quickstart">
         <summary>API quickstart</summary>

@@ -44,7 +44,7 @@ export const RAID_DEMO_PROMPTS = [
 
 export const CHAT_V1_DEMO_PROMPTS = [
   'Hi Mercenary. Give me a short intro to how this compatibility route works.',
-  'Explain how v1 completions differs from the native raid path.',
+  'Explain how discount inference differs from Mercenary raid.',
   'Summarize how you would hire gameplay, art, and promo specialists for a small game launch.',
 ] as const;
 
@@ -117,7 +117,17 @@ export function buildDirectChatSpawn(
 }
 
 export function buildDemoModeLabel(mode: DemoRequestMode): string {
-  return mode === 'chat_v1' ? 'v1 completions' : 'raid chat';
+  return mode === 'chat_v1' ? 'Discount inference' : 'Mercenary raid';
+}
+
+export function buildDemoModeSummary(mode: DemoRequestMode): string {
+  return mode === 'chat_v1'
+    ? 'Single completion routed to the cheapest eligible verified seller on the market.'
+    : 'Multi-agent raid — Mercenary orchestrates verified raiders and returns one receipt-backed result.';
+}
+
+export function buildDemoModeChipLabel(mode: DemoRequestMode): string {
+  return mode === 'chat_v1' ? 'discount inference' : 'mercenary raid';
 }
 
 export function buildRuntimeAttestationLabel(target: string, teePlatform: string): string {

@@ -29,8 +29,7 @@ export function FeaturedModels({
   return (
     <section aria-label="Featured models" className="featured-models">
       <div className="featured-models__head">
-        <p className="eyebrow">featured models</p>
-        <p className="featured-models__lede">Tap to filter the catalog or open a model page.</p>
+        <h2 className="section-title">Featured models</h2>
       </div>
       <div className="featured-models__grid">
         {FEATURED_MARKET_MODELS.map((featured) => {

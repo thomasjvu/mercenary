@@ -7,20 +7,25 @@ export function OpsAuthGate({
   adminTokenInput,
   authPending,
   authMessage,
+  appTheme,
   onTokenChange,
   onSubmit,
+  onThemeToggle,
 }: {
   adminTokenInput: string;
   authPending: boolean;
   authMessage: string | null;
+  appTheme: 'light' | 'dark';
   onTokenChange: (value: string) => void;
   onSubmit: () => void;
+  onThemeToggle: () => void;
 }) {
   return (
     <main className="ops-shell ops-shell--locked">
-      <div className="ops-bg-grid" aria-hidden="true" />
-      <section className="ops-auth-card rx-control-pane">
-        <p className="ops-label rx-control-pane__band">Boss Raid Ops</p>
+      <section className="ops-auth-card">
+        <div className="ops-auth-card__band">
+          <p className="eyebrow">Boss Raid Ops</p>
+        </div>
 
         <form
           className="ops-auth-form"
@@ -29,9 +34,9 @@ export function OpsAuthGate({
             onSubmit();
           }}
         >
-          <div className="ops-auth-card__copy rx-control-pane__body">
+          <div className="ops-auth-card__copy">
             <h1>Unlock control plane.</h1>
-            <p className="ops-lede">Live raids, provider health, replay, settlement.</p>
+            <p className="lede">Live raids, provider health, replay, settlement.</p>
             <p className="quiet-note">
               Public surface:{' '}
               <a className="ops-public-link" href={PUBLIC_WEB_URL}>
@@ -39,7 +44,7 @@ export function OpsAuthGate({
               </a>
             </p>
             <label className="ops-auth-field">
-              <span className="ops-label">admin token</span>
+              <span className="eyebrow">admin token</span>
               <input
                 autoComplete="current-password"
                 className="search ops-auth-input"
@@ -52,7 +57,7 @@ export function OpsAuthGate({
             {authMessage ? <p className="error-note">{authMessage}</p> : null}
           </div>
 
-          <div className="rx-control-pane__unlock">
+          <div className="ops-auth-unlock-wrap">
             <button
               className="button button--primary ops-auth-unlock rx-spacebar-clip"
               disabled={authPending}
@@ -62,11 +67,11 @@ export function OpsAuthGate({
             </button>
           </div>
 
-          <div className="rx-control-pane__footer">
+          <div className="ops-auth-footer ops-topbar__actions">
+            <button className="button" onClick={onThemeToggle} type="button">
+              {appTheme === 'dark' ? 'light mode' : 'dark mode'}
+            </button>
             <DocsButton className="button ops-docs-link" />
-            {!authMessage ? (
-              <p className="quiet-note">Session cookie lifetime follows the API runtime TTL.</p>
-            ) : null}
           </div>
         </form>
       </section>

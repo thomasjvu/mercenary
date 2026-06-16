@@ -8,7 +8,8 @@ import { StatusPill } from '../components/demo/demo-ui';
 import { useSmartAccountPay } from '../hooks/useSmartAccountPay.js';
 import { humanizeStatus, useRaidDemo } from '../hooks/useRaidDemo';
 import heroImage from '../assets/hero.webp';
-import { buildDemoModeLabel } from '../demo-result';
+import { MercenaryLaneBanner } from '../components/demo/MercenaryLaneBanner.js';
+import { buildDemoModeChipLabel, buildDemoModeLabel } from '../demo-result';
 
 type DemoPageProps = {
   providers: Provider[];
@@ -32,6 +33,7 @@ export function DemoPage({ providers, providerHealth, embedded = false }: DemoPa
       id={embedded ? undefined : 'demo'}
     >
       <article className="mercenary-chat">
+        <MercenaryLaneBanner mode={demo.demoMode} />
         <div className="mercenary-chat__topbar">
           <div className="mercenary-chat__identity">
             <strong>Mercenary</strong>
@@ -61,20 +63,22 @@ export function DemoPage({ providers, providerHealth, embedded = false }: DemoPa
             </button>
           </div>
 
-          <div className="mercenary-mode-switch" role="tablist" aria-label="Demo transport mode">
+          <div className="mercenary-mode-switch" role="tablist" aria-label="Mercenary lane">
             <button
-              className={`mercenary-mode-chip ${demo.demoMode === 'raid' ? 'mercenary-mode-chip--active' : ''}`}
+              aria-selected={demo.demoMode === 'raid'}
+              className={`mercenary-mode-chip mercenary-mode-chip--raid${demo.demoMode === 'raid' ? ' mercenary-mode-chip--active' : ''}`}
               onClick={() => demo.handleModeChange('raid')}
               type="button"
             >
-              raid chat
+              {buildDemoModeChipLabel('raid')}
             </button>
             <button
-              className={`mercenary-mode-chip ${demo.demoMode === 'chat_v1' ? 'mercenary-mode-chip--active' : ''}`}
+              aria-selected={demo.demoMode === 'chat_v1'}
+              className={`mercenary-mode-chip mercenary-mode-chip--inference${demo.demoMode === 'chat_v1' ? ' mercenary-mode-chip--active' : ''}`}
               onClick={() => demo.handleModeChange('chat_v1')}
               type="button"
             >
-              v1 completions
+              {buildDemoModeChipLabel('chat_v1')}
             </button>
           </div>
 

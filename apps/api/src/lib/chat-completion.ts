@@ -142,7 +142,7 @@ function buildChatCompletionFallback(
   }
 
   if (status === 'final') {
-    return 'Mercenary did not get an approved specialist answer for this run. Rephrase the request more concretely, or use raid chat if you want a scoped build workflow.';
+    return 'Mercenary did not get an approved specialist answer for this run. Rephrase the request more concretely, or use Mercenary raid if you want a scoped build workflow.';
   }
 
   return `Mercenary opened raid ${raidId} and is still waiting for approved specialist output.`;

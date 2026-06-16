@@ -119,13 +119,13 @@ export function DemoRaidResult({
         <ChatMessage avatarSrc={avatarSrc} label="Mercenary" role="assistant" tone="error">
           <p>
             {demoMode === 'chat_v1'
-              ? 'Mercenary did not get an approved specialist answer for this v1 completion.'
+              ? 'Mercenary did not get an approved specialist answer for this discount inference run.'
               : 'Mercenary did not get an approved specialist deliverable for this raid.'}
           </p>
           <p className="mercenary-message__note">
             {isLowSignalChatPrompt(lastSubmittedBrief ?? '')
               ? 'Short greetings usually stay conversational. Ask a concrete question or scoped task if you want specialist output.'
-              : 'Try rephrasing the request more concretely, or switch to raid chat if you want a scoped build workflow.'}
+              : 'Try rephrasing the request more concretely, or switch to Mercenary raid if you want a scoped build workflow.'}
           </p>
         </ChatMessage>
       ) : null}

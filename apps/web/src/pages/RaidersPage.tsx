@@ -1,11 +1,12 @@
 import { useDeferredValue, useState } from 'react';
-import { formatUsdc, hasErc8004Registration } from '@bossraid/proof-ui';
-import heroMangaRaidersImage from '../assets/hero-manga-raiders.jpg';
-import { MangaSliceArt } from '../components/system/MangaSliceArt.js';
+import { hasErc8004Registration } from '@bossraid/proof-ui';
 import type { Provider, ProviderHealth } from '../api';
 import { RaiderRow } from '../components/raiders/RaiderRow';
 import { RaidersControls } from '../components/raiders/RaidersControls';
-import { SummaryPill } from '@bossraid/ui';
+import { OrchestratorFeatured } from '../components/raiders/OrchestratorFeatured.js';
+import { PageIntro } from '../components/system/PageIntro.js';
+import { MERCENARY_ORCHESTRATOR, partitionRaiders } from '../lib/orchestrators.js';
+import type { AppRoute } from '../lib/app-routes.js';
 import {
   buildRaiderRecord,
   compareRaiders,
@@ -18,10 +19,7 @@ import {
 type RaidersPageProps = {
   providers: Provider[];
   providerHealth: ProviderHealth[];
-  onNavigate: (
-    path: '/' | '/marketplace' | '/playground' | '/raiders' | '/receipt',
-    options?: { mode?: 'inference' | 'raid'; modelId?: string }
-  ) => void;
+  onNavigate: (path: AppRoute, options?: { mode?: 'inference' | 'raid'; modelId?: string }) => void;
 };
 
 export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPageProps) {
@@ -31,11 +29,15 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
   const deferredQuery = useDeferredValue(query.trim().toLowerCase());
 
   const healthMap = new Map(providerHealth.map((entry) => [entry.providerId, entry]));
-  const raiders = providers.map((provider) =>
+  const { orchestrators, specialists } = partitionRaiders(providers);
+  const specialistRaiders = specialists.map((provider) =>
+    buildRaiderRecord(provider, healthMap.get(provider.providerId))
+  );
+  const orchestratorRaiders = orchestrators.map((provider) =>
     buildRaiderRecord(provider, healthMap.get(provider.providerId))
   );
 
-  const filteredRaiders = [...raiders]
+  const filteredRaiders = [...specialistRaiders]
     .filter((raider) => {
       if (statusFilter === 'ready' && !raider.ready) {
         return false;
@@ -53,40 +55,73 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
     })
     .sort((left, right) => compareRaiders(left, right, sortKey));
 
-  const readyCount = raiders.filter((raider) => raider.ready).length;
-  const privacyCount = raiders.filter(
+  const readyCount = specialistRaiders.filter((raider) => raider.ready).length;
+  const privacyCount = specialistRaiders.filter(
     (raider) => raider.privacyScore >= 60 || raider.privacySignals.length >= 2
   ).length;
-  const trustCount = raiders.filter((raider) => raider.trustScore > 0).length;
-  const registeredCount = raiders.filter((raider) =>
+  const registeredCount = specialistRaiders.filter((raider) =>
     hasErc8004Registration(raider.provider)
   ).length;
-  const verifiedCount = raiders.filter(
+  const verifiedCount = specialistRaiders.filter(
     (raider) => readErc8004VerificationStatus(raider.provider) === 'verified'
   ).length;
-  const veniceCount = raiders.filter((raider) => isVeniceProvider(raider.provider)).length;
-  const veteranCount = raiders.filter((raider) => raider.successfulRaids > 0).length;
-  const averagePrice =
-    raiders.length > 0
-      ? formatUsdc(
-          raiders.reduce((total, raider) => total + raider.provider.pricePerTaskUsd, 0) /
-            raiders.length
-        )
-      : 'n/a';
+  const veniceCount = specialistRaiders.filter((raider) =>
+    isVeniceProvider(raider.provider)
+  ).length;
+  const veteranCount = specialistRaiders.filter((raider) => raider.successfulRaids > 0).length;
 
   return (
-    <section
-      className="directory-shell directory-shell--viewport directory-shell--split"
-      id="directory"
-    >
-      <div className="directory-shell__rail">
-        <div className="directory-shell__copy">
-          <p className="eyebrow">queued agents</p>
-          <h1>
-            <span className="directory-hero__headline-line">Verified agents.</span>
-            <span className="directory-hero__headline-line">Queued by proof.</span>
-          </h1>
-          <p className="lede directory-hero__lede">Queued agents by proof, cost, and readiness.</p>
+    <section className="beta-page page-flat raiders-page">
+      <PageIntro title="Raiders" />
+
+      <OrchestratorFeatured onChat={() => onNavigate('/mercenary')} />
+
+      <section aria-label="Orchestrator agents" className="raiders-section">
+        <h2 className="section-title">Orchestrator agents</h2>
+        <div className="orchestrator-grid">
+          <article className="orchestrator-card orchestrator-card--primary">
+            <div className="orchestrator-card__copy">
+              <strong>{MERCENARY_ORCHESTRATOR.displayName}</strong>
+              <span>{MERCENARY_ORCHESTRATOR.id}</span>
+              <p>{MERCENARY_ORCHESTRATOR.description}</p>
+            </div>
+            <button
+              className="button button--primary"
+              onClick={() => onNavigate('/mercenary')}
+              type="button"
+            >
+              open chat
+            </button>
+          </article>
+          {orchestratorRaiders.map((raider) => (
+            <article className="orchestrator-card" key={raider.provider.providerId}>
+              <div className="orchestrator-card__copy">
+                <strong>{raider.provider.displayName}</strong>
+                <span>{raider.provider.providerId}</span>
+                <p>{raider.provider.description ?? 'Registered orchestrator agent.'}</p>
+              </div>
+              <button
+                className="button"
+                onClick={() =>
+                  onNavigate('/playground', {
+                    modelId: raider.provider.modelId ?? undefined,
+                  })
+                }
+                type="button"
+              >
+                try
+              </button>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section aria-label="Specialist raiders" className="raiders-section">
+        <div className="raiders-section__head">
+          <h2 className="section-title">Specialist raiders</h2>
+          <p className="raiders-section__meta">
+            {`${readyCount}/${specialistRaiders.length || 0} ready · ${verifiedCount} verified · ${privacyCount} private`}
+          </p>
         </div>
 
         <RaidersControls
@@ -104,48 +139,29 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
           veteranCount={veteranCount}
         />
 
-        <aside className="page-stage-card page-stage-card--directory page-stage-card--manga">
-          <MangaSliceArt className="page-stage-card__art" src={heroMangaRaidersImage} />
-          <div className="page-stage-card__scrim" />
-          <div className="page-stage-card__copy">
-            <p className="eyebrow">live roster</p>
-            <strong>{`${readyCount}/${raiders.length || 0} ready now`}</strong>
-            <p>{`${verifiedCount} verified · ${privacyCount} private · ${averagePrice} avg`}</p>
-          </div>
-          <div className="page-stage-card__summary">
-            <SummaryPill label="total" value={String(raiders.length)} />
-            <SummaryPill label="ready" value={String(readyCount)} />
-            <SummaryPill label="8004" value={String(verifiedCount)} />
-            <SummaryPill label="trust" value={String(trustCount)} />
-          </div>
-        </aside>
-      </div>
-
-      <div className="directory-list directory-list--scroll">
-        {filteredRaiders.length === 0 ? (
-          <div className="directory-empty">
-            <p className="eyebrow">no match</p>
-            <p>
-              Adjust the search or filters. The list reflects the current queued verified agent
-              registry.
-            </p>
-          </div>
-        ) : (
-          filteredRaiders.map((raider, index) => (
-            <RaiderRow
-              key={raider.provider.providerId}
-              onMarket={() => onNavigate('/marketplace')}
-              onTry={() =>
-                onNavigate('/playground', {
-                  modelId: raider.provider.modelId ?? undefined,
-                })
-              }
-              raider={raider}
-              rank={index + 1}
-            />
-          ))
-        )}
-      </div>
+        <div className="raiders-list">
+          {filteredRaiders.length === 0 ? (
+            <div className="directory-empty">
+              <p className="eyebrow">no match</p>
+              <p>Adjust the search or filters to find specialist raiders in the registry.</p>
+            </div>
+          ) : (
+            filteredRaiders.map((raider, index) => (
+              <RaiderRow
+                key={raider.provider.providerId}
+                onMarket={() => onNavigate('/marketplace')}
+                onTry={() =>
+                  onNavigate('/playground', {
+                    modelId: raider.provider.modelId ?? undefined,
+                  })
+                }
+                raider={raider}
+                rank={index + 1}
+              />
+            ))
+          )}
+        </div>
+      </section>
     </section>
   );
 }

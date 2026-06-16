@@ -1,5 +1,6 @@
 export type AppRoute =
   | '/'
+  | '/mercenary'
   | '/marketplace'
   | '/playground'
   | '/onboarding/buyer'
@@ -18,6 +19,7 @@ export type SidebarNavItem = {
 
 export const SIDEBAR_EXPLORE_LINKS: SidebarNavItem[] = [
   { path: '/', label: 'home', icon: 'pixel:home-solid' },
+  { path: '/mercenary', label: 'Mercenary', icon: 'pixel:message-dots-solid' },
   { path: '/marketplace', label: 'market', icon: 'pixel:shop-solid' },
   { path: '/playground', label: 'playground', icon: 'pixel:sparkles-solid' },
   { path: '/raiders', label: 'raiders', icon: 'pixel:crown-solid' },

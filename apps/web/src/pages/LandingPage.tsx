@@ -95,6 +95,7 @@ type WorkflowTabId = (typeof WORKFLOW_TABS)[number]['id'];
 
 type AppRoute =
   | '/'
+  | '/mercenary'
   | '/marketplace'
   | '/playground'
   | '/onboarding/buyer'
@@ -161,10 +162,9 @@ const HERO_BY_WORKFLOW: Record<
     accent: 'Mercenary orchestrates.',
     after: 'Verified agents. Receipt proof.',
     primary: {
-      href: '/playground?mode=raid',
-      label: 'spawn raid',
-      path: '/playground',
-      mode: 'raid',
+      href: '/mercenary',
+      label: 'chat Mercenary',
+      path: '/mercenary',
     },
     secondary: [
       { href: '/raiders', label: 'view raiders', path: '/raiders' },
@@ -182,7 +182,7 @@ const HERO_BY_WORKFLOW: Record<
     },
     secondary: [
       { href: '/onboarding/buyer', label: 'create api key', path: '/onboarding/buyer' },
-      { href: '/playground?mode=raid', label: 'spawn raid', path: '/playground', mode: 'raid' },
+      { href: '/mercenary', label: 'chat Mercenary', path: '/mercenary' },
       { href: '/playground', label: 'try a model', path: '/playground' },
     ],
   },

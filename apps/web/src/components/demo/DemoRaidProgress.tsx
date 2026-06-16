@@ -31,8 +31,8 @@ export function DemoRaidProgress({
       <ChatMessage avatarSrc={avatarSrc} label="Mercenary" role="assistant">
         <p>
           {demoMode === 'raid'
-            ? 'Talk to Mercenary directly here. I’ll answer normally, and if you ask for real scoped work I’ll open a native raid and hire specialists in the background.'
-            : 'Talk to Mercenary through the v1 compatibility route here. Simple chat stays direct. Scoped work can still open specialists behind the same API.'}
+            ? 'Talk to Mercenary directly here. I’ll answer normally, and if you ask for real scoped work I’ll open a Mercenary raid and hire specialists in the background.'
+            : 'Talk to Mercenary through discount inference here. Simple chat stays direct. Scoped work can still open specialists behind the same API.'}
         </p>
         <p className="mercenary-message__note">
           Mercenary can be wrong, hallucinate, or merge weak specialist output. Verify important
@@ -50,8 +50,8 @@ export function DemoRaidProgress({
         <ChatMessage avatarSrc={avatarSrc} label="Mercenary" role="assistant">
           <p>
             {demoMode === 'raid'
-              ? 'Reviewing the request and opening a native raid.'
-              : 'Reviewing the request and running it through /v1/chat/completions.'}
+              ? 'Reviewing the request and opening a Mercenary raid.'
+              : 'Reviewing the request and routing it through discount inference.'}
           </p>
           <TypingDots />
         </ChatMessage>
@@ -94,11 +94,11 @@ export function DemoRaidProgress({
 
 function buildRaidStatusCopy(run: LiveRaidRun): string {
   if (run.directResponse) {
-    return 'Mercenary answered directly on the v1 route without opening specialists.';
+    return 'Mercenary answered directly on the discount inference route without opening specialists.';
   }
 
   const status = run.status?.status ?? run.spawn.status;
-  const routeLabel = run.requestMode === 'chat_v1' ? 'v1 chat completion' : 'native raid';
+  const routeLabel = run.requestMode === 'chat_v1' ? 'discount inference' : 'Mercenary raid';
 
   if (status === 'queued') {
     return `I accepted the request and I’m matching the ${routeLabel} to live specialists.`;
@@ -106,20 +106,20 @@ function buildRaidStatusCopy(run: LiveRaidRun): string {
 
   if (status === 'running') {
     return run.requestMode === 'chat_v1'
-      ? 'The v1 completion is live. Mercenary is still opening scoped specialist workstreams behind the compatibility layer.'
-      : 'The raid is live. I’m collecting scoped specialist output and filtering weak branches.';
+      ? 'Discount inference is live. Mercenary is still opening scoped specialist workstreams behind the compatibility layer.'
+      : 'The Mercenary raid is live. I’m collecting scoped specialist output and filtering weak branches.';
   }
 
   if (status === 'final' && run.result?.synthesizedOutput) {
     return run.requestMode === 'chat_v1'
-      ? 'The v1 completion is final. Mercenary merged the strongest specialist outputs into one clean assistant answer.'
-      : 'The raid is final. I merged the strongest specialist outputs into one delivery.';
+      ? 'Discount inference is final. Mercenary merged the strongest specialist outputs into one clean assistant answer.'
+      : 'The Mercenary raid is final. I merged the strongest specialist outputs into one delivery.';
   }
 
   if (status === 'final') {
     return run.requestMode === 'chat_v1'
-      ? 'The v1 completion reached a terminal state, but Mercenary did not get an approved specialist answer for this prompt.'
-      : 'The raid reached a terminal state, but I did not get an approved specialist deliverable for this prompt.';
+      ? 'Discount inference reached a terminal state, but Mercenary did not get an approved specialist answer for this prompt.'
+      : 'The Mercenary raid reached a terminal state, but I did not get an approved specialist deliverable for this prompt.';
   }
 
   return `The ${routeLabel} is ${humanizeStatus(status)}.`;

@@ -4,7 +4,7 @@ import { useWalletAuth } from '../hooks/useWalletAuth.js';
 import { SellerPathSwitcher } from '../components/seller/SellerPathSwitcher.js';
 import type { AppRoute } from '../lib/app-routes.js';
 import { FlowSection } from '../components/system/FlowSection.js';
-import { PageHero } from '../components/system/PageHero.js';
+import { PageIntro } from '../components/system/PageIntro.js';
 import { WalletGate } from '../components/system/WalletGate.js';
 
 type HttpSellerWizardPageProps = {
@@ -74,8 +74,8 @@ export function HttpSellerWizardPage({ onNavigate }: HttpSellerWizardPageProps) 
   }
 
   return (
-    <section className="beta-page flow-page seller-wizard seller-wizard--flow">
-      <PageHero
+    <section className="beta-page page-flat flow-page seller-wizard seller-wizard--flow">
+      <PageIntro
         actions={
           <SellerPathSwitcher
             active="http"
@@ -84,10 +84,7 @@ export function HttpSellerWizardPage({ onNavigate }: HttpSellerWizardPageProps) 
             onSelectUpstream={() => onNavigate('/onboarding/seller')}
           />
         }
-        compact
-        eyebrow="sell"
-        lede="Register a custom HTTP inference endpoint."
-        title="HTTP worker."
+        title="HTTP worker"
       />
 
       <WalletGate message="Connect wallet before registering a worker." />

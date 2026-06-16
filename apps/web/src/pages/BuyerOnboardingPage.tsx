@@ -3,7 +3,7 @@ import { Icon } from '@iconify/react';
 import { createBuyerApiKey, fetchSession } from '../api';
 import { useWalletAuth } from '../hooks/useWalletAuth';
 import { FlowSection } from '../components/system/FlowSection.js';
-import { PageHero } from '../components/system/PageHero.js';
+import { PageIntro } from '../components/system/PageIntro.js';
 import { WalletGate } from '../components/system/WalletGate.js';
 import { CurlQuickstart } from '../components/terminal/CurlQuickstart.js';
 import { buildInferenceCurlSnippet } from '../lib/inference-curl.js';
@@ -57,13 +57,8 @@ export function BuyerOnboardingPage() {
   });
 
   return (
-    <section className="beta-page flow-page buyer-page">
-      <PageHero
-        compact
-        eyebrow="buy"
-        lede="Wallet, capped key, inference or raid spend."
-        title="Buy inference."
-      />
+    <section className="beta-page page-flat flow-page buyer-page">
+      <PageIntro title="Buy inference" />
 
       <WalletGate />
 

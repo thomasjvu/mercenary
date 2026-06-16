@@ -65,10 +65,11 @@ export function ModelDetailPage({
 
         {market ? (
           <div className="model-detail-page__cta">
-            <AccentBlock className="model-detail-page__quote" tone="red">
-              <p className="model-detail-page__price">from {formatUsd(market.cheapestRateUsd)}</p>
+            <div className="model-detail-page__quote">
+              <p className="model-detail-page__price-label">from</p>
+              <p className="model-detail-page__price">{formatUsd(market.cheapestRateUsd)}</p>
               {savingsLabel ? <p className="model-detail-page__savings">{savingsLabel}</p> : null}
-            </AccentBlock>
+            </div>
             <button
               className="button button--primary info-panel__cta rx-spacebar-clip"
               onClick={() => onTryModel(modelId)}

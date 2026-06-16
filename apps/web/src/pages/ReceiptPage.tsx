@@ -29,7 +29,7 @@ import { applyDocumentMeta } from '../lib/document-meta.js';
 import { TerminalCodePanel } from '../components/terminal/TerminalCodePanel.js';
 import { buildAttestationSurfaceLabel, isAttestationSignerUnavailable } from '../lib/receipt-url';
 
-type AppRoute = '/' | '/playground' | '/raiders' | '/receipt';
+type AppRoute = '/' | '/mercenary' | '/playground' | '/raiders' | '/receipt';
 
 type ReceiptPageProps = {
   onNavigate: (path: AppRoute, options?: { mode?: 'inference' | 'raid' }) => void;
@@ -186,7 +186,7 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
             </button>
             <a
               className="button"
-              href="/playground?mode=raid"
+              href="/mercenary"
               onClick={(event) => {
                 event.preventDefault();
                 onNavigate('/playground', { mode: 'raid' });
@@ -269,7 +269,7 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
               ) : null}
               <a
                 className="button button--primary"
-                href="/playground?mode=raid"
+                href="/mercenary"
                 onClick={(event) => {
                   event.preventDefault();
                   onNavigate('/playground', { mode: 'raid' });

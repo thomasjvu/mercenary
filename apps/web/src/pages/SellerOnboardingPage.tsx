@@ -23,6 +23,7 @@ import {
 import { UpstreamTeeVerificationPanel } from '../components/trust/UpstreamTeeVerificationPanel.js';
 import type { AppRoute } from '../lib/app-routes.js';
 import { WalletGate } from '../components/system/WalletGate.js';
+import { PageIntro } from '../components/system/PageIntro.js';
 import { SegmentBar } from '../components/system/SegmentBar.js';
 
 const PROVIDER_ORDER: UpstreamProviderId[] = ['venice', 'redpill', 'near', 'chutes', 'phala'];
@@ -136,16 +137,18 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
   }
 
   return (
-    <section className="beta-page sell-page">
-      <header className="sell-page__intro">
-        <h1>Sell inference</h1>
-        <SellerPathSwitcher
-          active="upstream"
-          compact
-          onSelectHttp={() => onNavigate('/onboarding/seller/http')}
-          onSelectUpstream={() => onNavigate('/onboarding/seller')}
-        />
-      </header>
+    <section className="beta-page page-flat sell-page">
+      <PageIntro
+        aside={
+          <SellerPathSwitcher
+            active="upstream"
+            compact
+            onSelectHttp={() => onNavigate('/onboarding/seller/http')}
+            onSelectUpstream={() => onNavigate('/onboarding/seller')}
+          />
+        }
+        title="Sell inference"
+      />
 
       <WalletGate message="Connect wallet before selling inference." />
 

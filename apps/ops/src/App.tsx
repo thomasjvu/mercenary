@@ -19,12 +19,7 @@ import {
 } from './api';
 import { OpsAuthGate } from './components/OpsAuthGate';
 import { OpsProviderSidebar } from './components/OpsProviderSidebar';
-import {
-  OpsHeroStatRow,
-  OpsRaidDetail,
-  OpsRaidHeroMetrics,
-  OpsRaidSnapshot,
-} from './components/OpsRaidDetail';
+import { OpsHeroStatRow, OpsRaidDetail, OpsRaidHeroMetrics } from './components/OpsRaidDetail';
 import {
   OpsMetricsPanel,
   ProductionReadinessPanel,
@@ -33,7 +28,19 @@ import {
 import { SignalMeter, SignalTag, X402PaymentsToggle } from './components/ops-ui';
 import { DEFAULT_SPAWN_PAYLOAD } from './default-payload';
 
+type OpsTheme = 'light' | 'dark';
+
+function readStoredOpsTheme(): OpsTheme {
+  if (typeof window === 'undefined') {
+    return 'light';
+  }
+
+  const stored = window.localStorage.getItem('bossraid-ops-theme');
+  return stored === 'dark' ? 'dark' : 'light';
+}
+
 export function App() {
+  const [appTheme, setAppTheme] = useState<OpsTheme>(readStoredOpsTheme);
   const [adminTokenInput, setAdminTokenInput] = useState('');
   const [authPending, setAuthPending] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -261,7 +268,6 @@ export function App() {
   const canAbort =
     raidStatus.data && !['final', 'cancelled', 'expired'].includes(raidStatus.data.status);
   const canReplay = raidStatus.data && ['first_valid', 'final'].includes(raidStatus.data.status);
-  const dangerState = (health.data?.readyProviders ?? 0) === 0;
   const runningState =
     raidStatus.data?.status === 'running' || raidStatus.data?.status === 'evaluating';
   const expertStates = raidStatus.data?.experts ?? [];
@@ -280,71 +286,82 @@ export function App() {
   const authMessage =
     authError ?? (opsSession.error instanceof Error ? opsSession.error.message : null);
 
+  function handleThemeToggle() {
+    setAppTheme((current) => {
+      const next = current === 'dark' ? 'light' : 'dark';
+      window.localStorage.setItem('bossraid-ops-theme', next);
+      return next;
+    });
+  }
+
   if (!opsReady) {
     return (
-      <OpsAuthGate
-        adminTokenInput={adminTokenInput}
-        authMessage={authMessage}
-        authPending={authPending}
-        onSubmit={() => void handleOpsLogin()}
-        onTokenChange={setAdminTokenInput}
-      />
+      <div
+        className={`ops-frame ops-frame--theme-${appTheme}${appTheme === 'dark' ? ' bossraid-surface-dark' : ''}`}
+      >
+        <div className="bg-grid" aria-hidden="true" />
+        <OpsAuthGate
+          adminTokenInput={adminTokenInput}
+          appTheme={appTheme}
+          authMessage={authMessage}
+          authPending={authPending}
+          onSubmit={() => void handleOpsLogin()}
+          onThemeToggle={handleThemeToggle}
+          onTokenChange={setAdminTokenInput}
+        />
+      </div>
     );
   }
 
   return (
-    <main className="ops-shell">
-      <div className="ops-bg-grid" aria-hidden="true" />
-      <section className="ops-hero">
-        <div className="ops-hero__copy">
-          <div className="ops-hero__intro">
-            <div className="ops-brand">
-              <p className="ops-label">Boss Raid Ops</p>
-              <p className="ops-subbrand">mercenary-v1 / internal surface</p>
-              <a
-                className="ops-public-link"
-                href={`http://${NETWORK.LOCALHOST}:${NETWORK.LOCAL_WEB_PORT}`}
-              >
-                open public web app
-              </a>
-            </div>
-            <OpsHeroStatRow
-              activeProviders={activeProviders.length}
-              healthOk={health.data?.ok ?? false}
-              raidCount={raids.data?.length ?? 0}
-              readyProviders={health.data?.readyProviders ?? 0}
-            />
-          </div>
+    <div
+      className={`ops-frame ops-frame--theme-${appTheme}${appTheme === 'dark' ? ' bossraid-surface-dark' : ''}`}
+    >
+      <div className="bg-grid" aria-hidden="true" />
+      <header className="ops-topbar">
+        <div className="ops-topbar__brand">
+          <strong>Boss Raid Ops</strong>
+          <span>mercenary-v1 / control plane</span>
+        </div>
+        <div className="ops-topbar__actions">
+          <a
+            className="ops-public-link button"
+            href={`http://${NETWORK.LOCALHOST}:${NETWORK.LOCAL_WEB_PORT}`}
+          >
+            public app
+          </a>
+          <button className="button" onClick={handleThemeToggle} type="button">
+            {appTheme === 'dark' ? 'light mode' : 'dark mode'}
+          </button>
+          <button
+            className="button"
+            disabled={authPending}
+            onClick={() => void handleOpsLogout()}
+            type="button"
+          >
+            {authPending ? 'locking' : 'lock ops'}
+          </button>
+          <DocsButton className="button ops-docs-link" />
+        </div>
+      </header>
 
-          <X402PaymentsToggle
-            disabled={x402TogglePending || opsSettings.isLoading}
-            enabled={opsSettings.data?.x402.enabled ?? false}
-            error={x402ToggleError}
-            settings={opsSettings.data?.x402}
-            onToggle={(nextEnabled) => {
-              void handleX402Toggle(nextEnabled);
-            }}
-          />
-
-          <h1>
-            <span className="ops-headline-line">Command the mesh.</span>
-            <span className="ops-headline-line">
-              <span className="ops-headline-accent">Mercenary</span> routes the raid.
-            </span>
-            <span className="ops-headline-line">Ops tracks proof, payout, and readiness.</span>
-          </h1>
-
-          <p className="ops-lede">
-            Launch raids, inspect live provider movement, replay evaluation, toggle x402 payments,
-            and review settlement proof. Public buyers use the web app at port 4173.
-          </p>
-
-          <div className="ops-hero__action-row">
-            <div className="ops-actions">
+      <main className="ops-stage">
+        <header className="page-hero page-hero--compact ops-hero">
+          <div className="page-hero__main">
+            <p className="eyebrow">control plane</p>
+            <h1>
+              Command the mesh. <span className="ops-headline-accent">Mercenary</span> routes the
+              raid.
+            </h1>
+            <p className="lede">
+              Launch raids, inspect provider movement, replay evaluation, toggle x402, and review
+              settlement proof.
+            </p>
+            <div className="page-hero__actions ops-actions">
               <button
                 className="button button--primary"
                 disabled={spawnPending}
-                onClick={handleSpawnRaid}
+                onClick={() => void handleSpawnRaid()}
                 type="button"
               >
                 {spawnPending ? 'launching' : 'launch raid'}
@@ -352,7 +369,7 @@ export function App() {
               <button
                 className="button"
                 disabled={!canReplay || actionPending != null}
-                onClick={handleReplayEvaluation}
+                onClick={() => void handleReplayEvaluation()}
                 type="button"
               >
                 {actionPending === 'replay' ? 'replaying' : 're-score'}
@@ -360,108 +377,103 @@ export function App() {
               <button
                 className="button button--danger"
                 disabled={!canAbort || actionPending != null}
-                onClick={handleAbortRaid}
+                onClick={() => void handleAbortRaid()}
                 type="button"
               >
                 {actionPending === 'abort' ? 'aborting' : 'abort'}
               </button>
-              <button
-                className="button"
-                disabled={authPending}
-                onClick={handleOpsLogout}
-                type="button"
-              >
-                {authPending ? 'locking' : 'lock ops'}
-              </button>
-              <DocsButton className="button ops-docs-link" />
             </div>
+          </div>
+          <aside className="page-hero__aside">
             <SignalMeter
               className="ops-hero__meter"
-              value={health.data?.readyProviders ?? 0}
               total={providerTotal}
+              value={health.data?.readyProviders ?? 0}
+            />
+          </aside>
+        </header>
+
+        <OpsHeroStatRow
+          activeProviders={activeProviders.length}
+          healthOk={health.data?.ok ?? false}
+          raidCount={raids.data?.length ?? 0}
+          readyProviders={health.data?.readyProviders ?? 0}
+        />
+
+        <X402PaymentsToggle
+          disabled={x402TogglePending || opsSettings.isLoading}
+          enabled={opsSettings.data?.x402.enabled ?? false}
+          error={x402ToggleError}
+          settings={opsSettings.data?.x402}
+          onToggle={(nextEnabled) => {
+            void handleX402Toggle(nextEnabled);
+          }}
+        />
+
+        <OpsRaidHeroMetrics
+          approvedProviderCount={approvedProviders.length}
+          payoutPerSuccessfulProvider={raidResult.data?.settlement?.payoutPerSuccessfulProvider}
+          raidStatus={raidStatus.data}
+          selectedRaid={selectedRaid}
+        />
+
+        <section className="ops-mesh-panel flat-section">
+          <div className="panel-head">
+            <div>
+              <p className="eyebrow">mesh</p>
+              <h2>Live provider field</h2>
+            </div>
+            <SignalTag
+              blinking={runningState}
+              label={runningState ? 'mesh live' : 'mesh idle'}
+              variant={runningState ? 'internal' : 'default'}
             />
           </div>
-
-          <OpsRaidHeroMetrics
-            approvedProviderCount={approvedProviders.length}
-            payoutPerSuccessfulProvider={raidResult.data?.settlement?.payoutPerSuccessfulProvider}
-            raidStatus={raidStatus.data}
-            selectedRaid={selectedRaid}
+          <ProviderMesh
+            experts={raidStatus.data?.experts ?? []}
+            providerHealth={providerHealth.data ?? []}
+            providers={providers.data ?? []}
           />
-        </div>
+        </section>
 
-        <div className="ops-hero__art" aria-hidden="true">
-          <div className="ops-window-stack">
-            <article className="ops-window ops-window--front">
-              <div className="ops-window__head">
-                <div>
-                  <p className="ops-label">mesh</p>
-                  <h2>Live provider field</h2>
-                </div>
-                <SignalTag
-                  label={runningState ? 'mesh live' : 'mesh idle'}
-                  variant={runningState ? 'internal' : 'default'}
-                  blinking={runningState}
-                />
-              </div>
-              <div className="ops-window__body">
-                <ProviderMesh
-                  providers={providers.data ?? []}
-                  providerHealth={providerHealth.data ?? []}
-                  experts={raidStatus.data?.experts ?? []}
-                />
-              </div>
-            </article>
+        <OpsRaidDetail
+          activeRaidId={activeRaidId}
+          approvedProviders={approvedProviders}
+          engagedExperts={engagedExperts}
+          expertStates={expertStates}
+          rankedSubmissions={rankedSubmissions}
+          raidId={raidId}
+          raidResult={raidResult.data}
+          raidStatus={raidStatus.data}
+          raids={raids.data ?? []}
+          receiptCopied={receiptCopied}
+          reputationEvents={reputationEvents}
+          routingProof={routingProof}
+          selectedRaid={selectedRaid}
+          settlementExecution={settlementExecution}
+          spawnError={spawnError}
+          spawnPayload={spawnPayload}
+          synthesizedArtifacts={synthesizedArtifacts}
+          synthesizedOutput={synthesizedOutput}
+          synthesizedWorkstreams={synthesizedWorkstreams}
+          onCopyReceipt={() => void handleCopyReceipt()}
+          onSelectRaid={setRaidId}
+          onSpawnPayloadChange={setSpawnPayload}
+        />
 
-            <OpsRaidSnapshot
-              activeRaidId={activeRaidId}
-              approvedProviderCount={approvedProviders.length}
-              dangerState={dangerState}
-              engagedExperts={engagedExperts}
-              raidStatus={raidStatus.data}
-              selectedRaid={selectedRaid}
-            />
-          </div>
-        </div>
-      </section>
+        <section className="ops-reliability">
+          <ProductionReadinessPanel />
+          <SettlementStatusPanel />
+          <OpsMetricsPanel />
+        </section>
 
-      <OpsRaidDetail
-        activeRaidId={activeRaidId}
-        approvedProviders={approvedProviders}
-        engagedExperts={engagedExperts}
-        expertStates={expertStates}
-        rankedSubmissions={rankedSubmissions}
-        raidId={raidId}
-        raidResult={raidResult.data}
-        raidStatus={raidStatus.data}
-        raids={raids.data ?? []}
-        receiptCopied={receiptCopied}
-        reputationEvents={reputationEvents}
-        routingProof={routingProof}
-        selectedRaid={selectedRaid}
-        settlementExecution={settlementExecution}
-        spawnError={spawnError}
-        spawnPayload={spawnPayload}
-        synthesizedArtifacts={synthesizedArtifacts}
-        synthesizedOutput={synthesizedOutput}
-        synthesizedWorkstreams={synthesizedWorkstreams}
-        onCopyReceipt={() => void handleCopyReceipt()}
-        onSelectRaid={setRaidId}
-        onSpawnPayloadChange={setSpawnPayload}
-      />
-
-      <section className="ops-reliability">
-        <ProductionReadinessPanel />
-        <SettlementStatusPanel />
-        <OpsMetricsPanel />
-      </section>
-
-      <OpsProviderSidebar
-        filteredProviders={filteredProviders}
-        providerHealth={providerHealth.data}
-        providerQuery={providerQuery}
-        onQueryChange={setProviderQuery}
-      />
-    </main>
+        <OpsProviderSidebar
+          filteredProviders={filteredProviders}
+          providerHealth={providerHealth.data}
+          providerQuery={providerQuery}
+          onQueryChange={setProviderQuery}
+        />
+      </main>
+    </div>
   );
 }

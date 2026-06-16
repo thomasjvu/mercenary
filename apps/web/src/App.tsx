@@ -13,6 +13,7 @@ import { BuyerOnboardingPage } from './pages/BuyerOnboardingPage';
 import { LandingPage } from './pages/LandingPage';
 import { MarketplacePage } from './pages/MarketplacePage';
 import { ModelDetailPage } from './pages/ModelDetailPage';
+import { MercenaryPage } from './pages/MercenaryPage';
 import { PlaygroundPage } from './pages/PlaygroundPage';
 import {
   isMarketplaceDetailPath,
@@ -47,6 +48,7 @@ export function App() {
   const [appTheme, setAppTheme] = useState<AppTheme>(() => getInitialTheme());
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => getInitialSidebarCollapsed());
   const isLandingRoute = pathname === '/';
+  const isMercenaryRoute = pathname === '/mercenary';
   const isMarketplaceListRoute = isMarketplaceListPath(pathname);
   const marketplaceModelId = readMarketplaceModelId(pathname);
   const isMarketplaceDetailRoute = isMarketplaceDetailPath(pathname);
@@ -66,10 +68,11 @@ export function App() {
         : readPlaygroundMode(search)
       : 'inference';
   const usesDirectoryLayout =
-    (isPlaygroundRoute && playgroundMode === 'raid') || isRaidersRoute || isReceiptRoute;
+    isMercenaryRoute || (isPlaygroundRoute && playgroundMode === 'raid') || isReceiptRoute;
   const playgroundModelId = isPlaygroundRoute ? readPlaygroundModelId(search) : undefined;
 
   const shouldLoadProviderData =
+    isMercenaryRoute ||
     isPlaygroundRoute ||
     isLegacyDemoRoute ||
     isRaidersRoute ||
@@ -93,8 +96,8 @@ export function App() {
       return;
     }
 
-    const nextUrl = buildPlaygroundUrl({ mode: 'raid', search });
-    if (window.location.pathname + window.location.search !== nextUrl) {
+    const nextUrl = '/mercenary';
+    if (window.location.pathname !== nextUrl) {
       window.history.replaceState({}, '', nextUrl);
       window.dispatchEvent(new PopStateEvent('popstate'));
     }
@@ -169,7 +172,7 @@ export function App() {
 
         <div className="app-main">
           <main
-            className={`app-shell ${isLandingRoute ? 'app-shell--landing' : ''} ${usesDirectoryLayout ? 'app-shell--directory' : ''} ${isPlaygroundRoute && playgroundMode === 'raid' ? 'app-shell--demo-route' : ''} ${isRaidersRoute ? 'app-shell--raiders-route' : ''} ${isReceiptRoute ? 'app-shell--receipt-route' : ''}`}
+            className={`app-shell ${isLandingRoute ? 'app-shell--landing' : ''} ${usesDirectoryLayout ? 'app-shell--directory' : ''} ${isMercenaryRoute || (isPlaygroundRoute && playgroundMode === 'raid') ? 'app-shell--demo-route' : ''} ${isReceiptRoute ? 'app-shell--receipt-route' : ''}`}
             ref={appShellRef}
           >
             {isRaidersRoute ? (
@@ -188,6 +191,12 @@ export function App() {
             ) : isMarketplaceListRoute ? (
               <MarketplacePage
                 onOpenModel={(modelId) => navigate('/marketplace', { marketplaceModelId: modelId })}
+              />
+            ) : isMercenaryRoute ? (
+              <MercenaryPage
+                apiError={providers.error ?? providerHealth.error}
+                providerHealth={providerHealth.data ?? []}
+                providers={providers.data ?? []}
               />
             ) : isPlaygroundRoute ? (
               <PlaygroundPage

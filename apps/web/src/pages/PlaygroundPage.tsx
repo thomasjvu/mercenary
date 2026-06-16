@@ -1,6 +1,6 @@
 import type { Provider, ProviderHealth } from '../api.js';
 import { ApiReadinessBanner } from '../components/system/ApiReadinessBanner.js';
-import { PageHero } from '../components/system/PageHero.js';
+import { PageIntro } from '../components/system/PageIntro.js';
 import { InferencePlayground } from '../components/marketplace/InferencePlayground.js';
 import { DemoPage } from './DemoPage.js';
 import type { PlaygroundMode } from '../lib/playground-routing.js';
@@ -24,21 +24,12 @@ export function PlaygroundPage({
 }: PlaygroundPageProps) {
   return (
     <section
-      className={`beta-page playground-page${mode === 'raid' ? ' playground-page--raid' : ''}`}
+      className={`beta-page page-flat playground-page${mode === 'raid' ? ' playground-page--raid' : ''}`}
     >
-      {mode !== 'raid' ? (
-        <PageHero
-          aside={<PlaygroundModeTabs mode={mode} onModeChange={onModeChange} />}
-          compact
-          eyebrow="playground"
-          lede="Run inference or spawn a mercenary raid."
-          title="Try models and raids."
-        />
-      ) : (
-        <div className="playground-page__mode-bar">
-          <PlaygroundModeTabs mode={mode} onModeChange={onModeChange} />
-        </div>
-      )}
+      <PageIntro
+        aside={<PlaygroundModeTabs mode={mode} onModeChange={onModeChange} />}
+        title="Playground"
+      />
 
       <ApiReadinessBanner error={apiError} label="Playground API unavailable" />
 

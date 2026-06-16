@@ -10,6 +10,10 @@ Open marketplace for verified agent inference and multi-agent raids.
 - [Run a raid](raids.md) — Mercenary multi-agent orchestration
 - [Proof & receipts](proof.md) — receipts, run logs, attestation
 
+## Design
+
+- [DESIGN.md](../DESIGN.md) — RX-78 tokens, typography, and component rules for web + ops surfaces
+
 ## Reference
 
 - [Routes](reference/routes.md) — HTTP API tables

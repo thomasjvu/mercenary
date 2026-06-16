@@ -10,7 +10,6 @@ import {
   ScoreCard,
   SignalTag,
   SnapshotRow,
-  StatChip,
   WorkstreamCard,
 } from './ops-ui';
 
@@ -275,11 +274,23 @@ export function OpsHeroStatRow({
   raidCount: number;
 }) {
   return (
-    <div className="ops-stat-row">
-      <StatChip label="core" value={healthOk ? 'online' : 'offline'} />
-      <StatChip label="ready" value={String(readyProviders)} />
-      <StatChip label="live" value={String(activeProviders)} />
-      <StatChip label="raids" value={String(raidCount)} />
+    <div aria-label="Ops health statistics" className="stat-ribbon">
+      <div className="stat-ribbon__item">
+        <span>core</span>
+        <strong>{healthOk ? 'online' : 'offline'}</strong>
+      </div>
+      <div className="stat-ribbon__item">
+        <span>ready</span>
+        <strong>{readyProviders}</strong>
+      </div>
+      <div className="stat-ribbon__item">
+        <span>live</span>
+        <strong>{activeProviders}</strong>
+      </div>
+      <div className="stat-ribbon__item">
+        <span>raids</span>
+        <strong>{raidCount}</strong>
+      </div>
     </div>
   );
 }

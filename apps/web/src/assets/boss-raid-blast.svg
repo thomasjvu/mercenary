@@ -1,16 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" role="img" aria-label="Boss Raid">
-  <path d="M3 20 9 8 11 13 18 4 15 10 24 6 12 22 8 17Z" fill="#fff867" />
-  <path d="M4 18 8 12 10 15 6 20Z" fill="#ffffff" opacity="0.9" />
   <path d="M6 25 21 9 24 12 9 27Z" fill="#2c52b3" />
-  <path d="M8 23 12 16 14 18 10 24Z" fill="#fb2f38" />
+  <path d="M3 20 9 8 11 13 18 4 15 10 24 6 12 22 8 17Z" fill="#fff867" />
   <path d="M15 11 19 7 21 9 17 13Z" fill="#fff867" />
-  <path d="M22 7 27 5 25 9Z" fill="#ffffff" opacity="0.85" />
   <path
     d="M2 19 5 16M2 22 6 20M4 24 8 22M6 26 10 24"
     stroke="#fff867"
     stroke-linecap="square"
     stroke-width="1.1"
   />
+  <path d="M4 18 8 12 10 15 6 20Z" fill="#ffffff" opacity="0.9" />
+  <path d="M22 7 27 5 25 9Z" fill="#ffffff" opacity="0.85" />
+  <path d="M8 23 12 16 14 18 10 24Z" fill="#fb2f38" />
   <circle cx="7.5" cy="20.5" r="1.8" fill="#ffffff" />
   <circle cx="7.5" cy="20.5" r="0.9" fill="#2c52b3" opacity="0.55" />
 </svg>
