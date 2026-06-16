@@ -143,8 +143,8 @@ pre,
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -156,8 +156,8 @@ pre,
 }
 
 .app-sidebar__toggle-icon {
-  width: 11px;
-  height: 11px;
+  width: 8px;
+  height: 8px;
 }
 
 .app-sidebar__toggle:hover,

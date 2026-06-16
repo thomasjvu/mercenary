@@ -20,13 +20,13 @@ export const SIDEBAR_EXPLORE_LINKS: SidebarNavItem[] = [
   { path: '/', label: 'home', icon: 'pixel:home-solid' },
   { path: '/marketplace', label: 'market', icon: 'pixel:shop-solid' },
   { path: '/playground', label: 'playground', icon: 'pixel:sparkles-solid' },
-  { path: '/raiders', label: 'raiders', icon: 'pixel:sword-solid' },
-  { path: '/receipt', label: 'receipt', icon: 'pixel:coin-solid' },
+  { path: '/raiders', label: 'raiders', icon: 'pixel:crown-solid' },
+  { path: '/receipt', label: 'receipt', icon: 'pixel:receipt-solid' },
 ];
 
 export const SIDEBAR_ACCOUNT_LINKS: SidebarNavItem[] = [
   { path: '/account', label: 'account', icon: 'pixel:user-solid' },
-  { path: '/onboarding/buyer', label: 'buy', icon: 'pixel:cart-solid' },
+  { path: '/onboarding/buyer', label: 'buy', icon: 'pixel:shopping-cart-solid' },
   { path: '/onboarding/seller', label: 'new offer', icon: 'pixel:plus-solid' },
   { path: '/sell/offers', label: 'my offers', icon: 'pixel:clipboard-solid' },
 ];

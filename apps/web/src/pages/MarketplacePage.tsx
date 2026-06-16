@@ -47,25 +47,28 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
   return (
     <section className="beta-page market-page">
       <PageHero
-        aside={
-          <CurlQuickstart
-            code={buildInferenceCurlSnippet({
-              apiBase: API_BASE,
-              model: visibleMarkets[0]?.modelId ?? 'gpt-5.5',
-              prompt: 'Run on the cheapest verified seller.',
-              maxBudgetUsd: 1,
-              privacyMode: 'prefer',
-              relativePath: true,
-            })}
-            compact
-            runHref={`/playground?model=${encodeURIComponent(visibleMarkets[0]?.modelId ?? 'gpt-5.5')}`}
-          />
-        }
         compact
         eyebrow="open market"
         lede="Live order books and USDC settlement."
         title="Discount verified inference."
       />
+
+      <details className="market-page__quickstart">
+        <summary>API quickstart</summary>
+        <CurlQuickstart
+          code={buildInferenceCurlSnippet({
+            apiBase: API_BASE,
+            model: visibleMarkets[0]?.modelId ?? 'gpt-5.5',
+            prompt: 'Run on the cheapest verified seller.',
+            maxBudgetUsd: 1,
+            privacyMode: 'prefer',
+            relativePath: true,
+          })}
+          compact
+          runHref={`/playground?model=${encodeURIComponent(visibleMarkets[0]?.modelId ?? 'gpt-5.5')}`}
+          theme="raid"
+        />
+      </details>
 
       <ApiReadinessBanner error={markets.error} label="Marketplace unavailable" />
       <MarketStatsRibbon isLoading={markets.isLoading} markets={markets.data} />

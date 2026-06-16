@@ -10,34 +10,40 @@ export function SellerOrderBook({
   onClose,
   onTry,
   showClose = true,
+  compact = false,
 }: {
   market: InferenceMarket;
   healthBySellerId?: Map<string, ProviderHealth>;
   onClose?: () => void;
   onTry?: () => void;
   showClose?: boolean;
+  compact?: boolean;
 }) {
   return (
-    <section className="seller-order-book">
+    <section className={`seller-order-book${compact ? ' seller-order-book--compact' : ''}`}>
       <div className="seller-order-book__header">
         <div>
           <p className="eyebrow">order book</p>
-          <h2>
-            <ProviderBrandIcon modelProvider={market.modelProvider} /> {market.modelId}
-          </h2>
+          {compact ? null : (
+            <h2>
+              <ProviderBrandIcon modelProvider={market.modelProvider} /> {market.modelId}
+            </h2>
+          )}
         </div>
-        <div className="seller-order-book__actions">
-          {onTry ? (
-            <button className="button button--primary" onClick={onTry} type="button">
-              try this model
-            </button>
-          ) : null}
-          {showClose && onClose ? (
-            <button className="button" onClick={onClose} type="button">
-              close
-            </button>
-          ) : null}
-        </div>
+        {compact ? null : (
+          <div className="seller-order-book__actions">
+            {onTry ? (
+              <button className="button button--primary" onClick={onTry} type="button">
+                try this model
+              </button>
+            ) : null}
+            {showClose && onClose ? (
+              <button className="button" onClick={onClose} type="button">
+                close
+              </button>
+            ) : null}
+          </div>
+        )}
       </div>
 
       <div className="seller-order-book__table-wrap">

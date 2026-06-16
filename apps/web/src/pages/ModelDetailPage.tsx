@@ -4,11 +4,10 @@ import {
   ModelDiscountBar,
   SellerPriceSpreadChart,
 } from '../components/marketplace/MarketDiscountChart.js';
-import { PageHero } from '../components/system/PageHero.js';
+import { AccentBlock } from '../components/system/AccentBlock.js';
 import { UpstreamTeeVerificationPanel } from '../components/trust/UpstreamTeeVerificationPanel.js';
 import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import { isUpstreamProviderId } from '@bossraid/constants';
-import { MarketStatsRibbon } from '../components/marketplace/MarketStatsRibbon.js';
 import { SellerOrderBook } from '../components/marketplace/SellerOrderBook.js';
 import { ProviderBrandIcon } from '../components/ProviderBrandIcon.js';
 import {
@@ -50,34 +49,36 @@ export function ModelDetailPage({
 
   return (
     <section className="beta-page model-detail-page">
-      <PageHero
-        actions={
-          <button className="button model-detail-page__back" onClick={onBack} type="button">
+      <header className="model-detail-page__hero">
+        <div className="model-detail-page__intro">
+          <button className="model-detail-page__back" onClick={onBack} type="button">
             ← all models
           </button>
-        }
-        aside={
-          <div className="quickstart-card">
-            <p className="eyebrow">from {formatUsd(market?.cheapestRateUsd)}</p>
-            {savingsLabel ? <p className="model-detail-page__savings">{savingsLabel}</p> : null}
+          <div className="model-detail-page__identity">
+            <p className="eyebrow model-detail-page__provider">
+              <ProviderBrandIcon modelProvider={market?.modelProvider} size={16} />
+              {market?.modelProvider ?? 'model marketplace'}
+            </p>
+            <h1>{modelId}</h1>
+          </div>
+        </div>
+
+        {market ? (
+          <div className="model-detail-page__cta">
+            <AccentBlock className="model-detail-page__quote" tone="red">
+              <p className="model-detail-page__price">from {formatUsd(market.cheapestRateUsd)}</p>
+              {savingsLabel ? <p className="model-detail-page__savings">{savingsLabel}</p> : null}
+            </AccentBlock>
             <button
-              className="button button--primary"
+              className="button button--primary info-panel__cta rx-spacebar-clip"
               onClick={() => onTryModel(modelId)}
               type="button"
             >
               try in playground
             </button>
           </div>
-        }
-        compact
-        eyebrow={
-          <>
-            <ProviderBrandIcon modelProvider={market?.modelProvider} size={16} />{' '}
-            {market?.modelProvider ?? 'model marketplace'}
-          </>
-        }
-        title={modelId}
-      />
+        ) : null}
+      </header>
 
       {markets.error ? (
         <div className="empty-state">
@@ -96,65 +97,60 @@ export function ModelDetailPage({
         </div>
       ) : (
         <>
-          <MarketStatsRibbon markets={markets.data} />
-
-          <div className="model-detail-page__grid">
-            <article className="beta-panel">
-              <p className="eyebrow">model stats</p>
-              <div className="metric-grid">
-                <Metric
-                  label="sellers"
-                  value={`${market.activeProviderCount}/${market.providerCount}`}
-                />
-                <Metric label="verified" value={String(market.verifiedSellerCount)} />
-                <Metric label="tee verified" value={String(teeSellerCount)} />
-                <Metric label="private" value={String(market.privateSellerCount)} />
-                <Metric label="success" value={formatPercent(market.recentSuccessRate)} />
-                <Metric label="p50" value={formatLatency(market.p50LatencyMs)} />
-                <Metric label="p95" value={formatLatency(market.p95LatencyMs)} />
-                <Metric label="unit" value={market.pricing.declaredUnit} />
-                <Metric
-                  label="token in / 1M"
-                  value={formatUsd(market.pricing.pricePer1mInputTokensUsd, 3)}
-                />
-              </div>
-            </article>
-
-            <div className="market-page__charts market-page__charts--single">
-              <ModelDiscountBar market={market} />
-              <SellerPriceSpreadChart market={market} />
-            </div>
+          <div aria-label="Model statistics" className="model-detail-page__stats">
+            <DetailStat
+              label="sellers"
+              value={`${market.activeProviderCount}/${market.providerCount}`}
+            />
+            <DetailStat label="verified" value={String(market.verifiedSellerCount)} />
+            <DetailStat label="tee" value={String(teeSellerCount)} />
+            <DetailStat label="private" value={String(market.privateSellerCount)} />
+            <DetailStat label="success" value={formatPercent(market.recentSuccessRate)} />
+            <DetailStat label="p50" value={formatLatency(market.p50LatencyMs)} />
+            <DetailStat label="p95" value={formatLatency(market.p95LatencyMs)} />
+            <DetailStat label="unit" value={market.pricing.declaredUnit} />
+            <DetailStat
+              label="in / 1M"
+              value={formatUsd(market.pricing.pricePer1mInputTokensUsd, 3)}
+            />
           </div>
 
-          {catalogEntry?.teeAttested || catalogEntry?.e2ee ? (
-            <article className="beta-panel model-detail-page__tee">
-              <p className="eyebrow">tee verification</p>
-              <UpstreamTeeVerificationPanel
-                e2ee={catalogEntry.e2ee}
-                modelId={modelId}
-                provider={attestationProvider}
-                teeAttested={catalogEntry.teeAttested}
-              />
-            </article>
-          ) : null}
+          <div className="model-detail-page__body">
+            <SellerOrderBook
+              compact
+              healthBySellerId={healthBySellerId}
+              market={market}
+              showClose={false}
+            />
 
-          <SellerOrderBook
-            healthBySellerId={healthBySellerId}
-            market={market}
-            onTry={() => onTryModel(modelId)}
-            showClose={false}
-          />
+            <aside className="model-detail-page__aside">
+              <ModelDiscountBar market={market} />
+              <SellerPriceSpreadChart market={market} />
+
+              {catalogEntry?.teeAttested || catalogEntry?.e2ee ? (
+                <AccentBlock className="model-detail-page__tee" tone="blue">
+                  <p className="eyebrow">tee verification</p>
+                  <UpstreamTeeVerificationPanel
+                    e2ee={catalogEntry.e2ee}
+                    modelId={modelId}
+                    provider={attestationProvider}
+                    teeAttested={catalogEntry.teeAttested}
+                  />
+                </AccentBlock>
+              ) : null}
+            </aside>
+          </div>
         </>
       )}
     </section>
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function DetailStat({ label, value }: { label: string; value: string }) {
   return (
-    <span className="metric">
-      <small>{label}</small>
+    <div className="model-detail-page__stat">
+      <span>{label}</span>
       <strong>{value}</strong>
-    </span>
+    </div>
   );
 }
