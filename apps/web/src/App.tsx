@@ -60,7 +60,8 @@ export function App() {
   const isManageOffersRoute = pathname === '/sell/offers';
   const isAccountRoute = pathname === '/account';
   const isRaidersRoute = pathname === '/raiders';
-  const isReceiptRoute = pathname === '/receipt';
+  const isLegacyReceiptRoute = pathname === '/receipt';
+  const isVerificationRoute = pathname === '/verification';
   const playgroundMode =
     isPlaygroundRoute || isLegacyDemoRoute
       ? isLegacyDemoRoute
@@ -68,7 +69,10 @@ export function App() {
         : readPlaygroundMode(search)
       : 'inference';
   const usesDirectoryLayout =
-    isMercenaryRoute || (isPlaygroundRoute && playgroundMode === 'raid') || isReceiptRoute;
+    isMercenaryRoute ||
+    (isPlaygroundRoute && playgroundMode === 'raid') ||
+    isVerificationRoute ||
+    isLegacyReceiptRoute;
   const playgroundModelId = isPlaygroundRoute ? readPlaygroundModelId(search) : undefined;
 
   const shouldLoadProviderData =
@@ -92,14 +96,25 @@ export function App() {
   );
 
   useEffect(() => {
-    if (typeof window === 'undefined' || pathname !== '/demo') {
+    if (typeof window === 'undefined') {
       return;
     }
 
-    const nextUrl = '/mercenary';
-    if (window.location.pathname !== nextUrl) {
-      window.history.replaceState({}, '', nextUrl);
-      window.dispatchEvent(new PopStateEvent('popstate'));
+    if (pathname === '/demo') {
+      const nextUrl = '/mercenary';
+      if (window.location.pathname !== nextUrl) {
+        window.history.replaceState({}, '', nextUrl);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      }
+      return;
+    }
+
+    if (pathname === '/receipt') {
+      const nextUrl = `/verification${search}`;
+      if (window.location.pathname + window.location.search !== nextUrl) {
+        window.history.replaceState({}, '', nextUrl);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      }
     }
   }, [pathname, search]);
 
@@ -172,7 +187,7 @@ export function App() {
 
         <div className="app-main">
           <main
-            className={`app-shell ${isLandingRoute ? 'app-shell--landing' : ''} ${usesDirectoryLayout ? 'app-shell--directory' : ''} ${isMercenaryRoute || (isPlaygroundRoute && playgroundMode === 'raid') ? 'app-shell--demo-route' : ''} ${isReceiptRoute ? 'app-shell--receipt-route' : ''}`}
+            className={`app-shell ${isLandingRoute ? 'app-shell--landing' : ''} ${usesDirectoryLayout ? 'app-shell--directory' : ''} ${isMercenaryRoute || (isPlaygroundRoute && playgroundMode === 'raid') ? 'app-shell--demo-route' : ''} ${isVerificationRoute || isLegacyReceiptRoute ? 'app-shell--receipt-route' : ''}`}
             ref={appShellRef}
           >
             {isRaidersRoute ? (
@@ -216,8 +231,8 @@ export function App() {
             ) : isManageOffersRoute ? (
               <ManageOffersPage />
             ) : isAccountRoute ? (
-              <AccountPage />
-            ) : isReceiptRoute ? (
+              <AccountPage onNavigate={navigate} />
+            ) : isVerificationRoute || isLegacyReceiptRoute ? (
               <ReceiptPage onNavigate={navigate} />
             ) : (
               <LandingPage onNavigate={navigate} />

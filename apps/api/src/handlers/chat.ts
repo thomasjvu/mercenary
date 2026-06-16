@@ -12,6 +12,7 @@ import {
   type ChatCompletionRouteOptions,
 } from '../lib/chat-completion-pipeline.js';
 import { type ApiContext } from '../api-context.js';
+import { requireMercenaryAccess } from './auth/mercenary-access.js';
 import { createAuthHandlers } from './auth.js';
 import { createManaBillingHandlers } from './billing-mana.js';
 import { createPaymentHandlers } from './payment.js';
@@ -47,6 +48,11 @@ export function createChatHandlers(
     );
     if (rateLimitError) {
       return rateLimitError;
+    }
+
+    const accessError = requireMercenaryAccess(reply, request.headers, auth, manaBilling);
+    if ('error' in accessError) {
+      return accessError.error;
     }
 
     const prepared = prepareChatCompletionRequest(request, pipelineDeps, options);

@@ -56,7 +56,7 @@ pnpm dev:web
 ## If You Change
 
 - architecture: update [docs/operators/architecture.md](/Users/area/repos/boss-raid/docs/operators/architecture.md)
-- routes or payloads: update [docs/reference/routes.md](/Users/area/repos/boss-raid/docs/reference/routes.md) and the matching buyer/seller page in `docs/`
+- routes or payloads: update [docs/reference/routes.md](/Users/area/repos/boss-raid/docs/reference/routes.md) and the matching buyer/seller page in `docs/`. Web route rows are generated from [docs/reference/web-routes.template.json](/Users/area/repos/boss-raid/docs/reference/web-routes.template.json) via `pnpm sync:docs-routes`.
 - commands or env: update [docs/operators/runtime.md](/Users/area/repos/boss-raid/docs/operators/runtime.md) and [docs/reference/env.md](/Users/area/repos/boss-raid/docs/reference/env.md)
 - registration story: update [docs/operators/appendix/synthesis-registration.md](/Users/area/repos/boss-raid/docs/operators/appendix/synthesis-registration.md)
 

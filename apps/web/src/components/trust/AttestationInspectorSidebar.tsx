@@ -91,8 +91,8 @@ export function AttestationInspectorSidebar({
       >
         <div className="attestation-inspector__head">
           <div>
-            <p className="eyebrow">attestation</p>
-            <h2>Proof inspector</h2>
+            <p className="eyebrow">proof</p>
+            <h2>Attestation</h2>
           </div>
           <button className="button" onClick={onClose} type="button">
             close
@@ -101,20 +101,16 @@ export function AttestationInspectorSidebar({
 
         <InspectorContextHeader context={context} />
 
-        <section className="attestation-inspector__panel">
+        <section className="attestation-inspector__panel attestation-inspector__panel--compact">
           <p className="attestation-inspector__section-label">host runtime</p>
-          <div className="attestation-inspector__signal-strip">
-            <SignalRow label="surface" value={runtimeLabel} />
-            <SignalRow label="signed" value={runtimeSigned ? 'yes' : 'pending'} />
-            <SignalRow label="tee socket" value={teeSocketLive ? 'live' : 'offline'} />
-            <SignalRow
-              label="providers"
-              value={
-                runtime
-                  ? `${runtime.payload.readyProviders}/${runtime.payload.providers}`
-                  : 'loading'
-              }
-            />
+          <div className="attestation-inspector__summary">
+            <strong>{runtimeLabel}</strong>
+            <span>
+              {runtimeSigned ? 'signed' : 'unsigned'} · tee {teeSocketLive ? 'live' : 'offline'} ·{' '}
+              {runtime
+                ? `${runtime.payload.readyProviders}/${runtime.payload.providers} ready`
+                : 'loading'}
+            </span>
           </div>
           {runtime?.signer ? (
             <CopyableAddress label="runtime signer" value={runtime.signer} />

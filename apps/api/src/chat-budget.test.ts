@@ -4,7 +4,12 @@ import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-t
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import { buildApiServer, resolveChatTerminalSettleGraceMs } from './index.js';
-import { createTestApiServer, createProviderProfile, readyHealth } from './test/helpers.js';
+import {
+  createTestApiServer,
+  createProviderProfile,
+  readyHealth,
+  wrapMercenaryTestInject,
+} from './test/helpers.js';
 
 test('chat completion requests require an explicit payout budget', async () => {
   const app = createTestApiServer();
@@ -66,10 +71,12 @@ test('chat completion requests can use a server-side default payout budget', asy
     undefined,
     async (profile) => readyHealth(profile.providerId)
   );
-  const app = buildApiServer(orchestrator, {
-    ...process.env,
-    BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: '15',
-  });
+  const app = wrapMercenaryTestInject(
+    buildApiServer(orchestrator, {
+      ...process.env,
+      BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: '15',
+    })
+  );
 
   try {
     const response = await app.inject({

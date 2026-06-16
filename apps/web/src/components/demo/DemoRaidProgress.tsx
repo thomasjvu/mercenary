@@ -4,7 +4,6 @@ import { buildDemoModeLabel } from '../../demo-result';
 import { ChatMessage, StatusPill, TypingDots } from './demo-ui';
 
 type DemoRaidProgressProps = {
-  avatarSrc: string;
   demoMode: DemoRequestMode;
   lastSubmittedBrief: string | null;
   isLaunching: boolean;
@@ -16,7 +15,6 @@ type DemoRaidProgressProps = {
 };
 
 export function DemoRaidProgress({
-  avatarSrc,
   demoMode,
   lastSubmittedBrief,
   isLaunching,
@@ -28,26 +26,25 @@ export function DemoRaidProgress({
 }: DemoRaidProgressProps) {
   return (
     <>
-      <ChatMessage avatarSrc={avatarSrc} label="Mercenary" role="assistant">
+      <ChatMessage role="assistant">
         <p>
           {demoMode === 'raid'
-            ? 'Talk to Mercenary directly here. I’ll answer normally, and if you ask for real scoped work I’ll open a Mercenary raid and hire specialists in the background.'
-            : 'Talk to Mercenary through discount inference here. Simple chat stays direct. Scoped work can still open specialists behind the same API.'}
+            ? 'Chat here. Scoped work opens a raid and routes specialists in the background.'
+            : 'Chat via discount inference. Scoped work can still open specialists behind the route.'}
         </p>
-        <p className="mercenary-message__note">
-          Mercenary can be wrong, hallucinate, or merge weak specialist output. Verify important
-          claims, code, and proofs before you rely on them.
+        <p className="mercenary-message__disclaimer">
+          Verify claims, code, and proofs before you rely on output.
         </p>
       </ChatMessage>
 
       {lastSubmittedBrief ? (
-        <ChatMessage label="You" role="user">
+        <ChatMessage role="user">
           <p>{lastSubmittedBrief}</p>
         </ChatMessage>
       ) : null}
 
       {isLaunching ? (
-        <ChatMessage avatarSrc={avatarSrc} label="Mercenary" role="assistant">
+        <ChatMessage role="assistant">
           <p>
             {demoMode === 'raid'
               ? 'Reviewing the request and opening a Mercenary raid.'
@@ -58,14 +55,14 @@ export function DemoRaidProgress({
       ) : null}
 
       {launchError ? (
-        <ChatMessage avatarSrc={avatarSrc} label="Mercenary" role="assistant" tone="error">
+        <ChatMessage role="assistant" tone="error">
           <p>I could not start the raid.</p>
           <p>{launchError}</p>
         </ChatMessage>
       ) : null}
 
       {liveRaidRun ? (
-        <ChatMessage avatarSrc={avatarSrc} label="Mercenary" role="assistant">
+        <ChatMessage role="assistant">
           <p>{buildRaidStatusCopy(liveRaidRun)}</p>
           <div className="mercenary-pill-row">
             <StatusPill tone="available">{buildDemoModeLabel(liveRaidRun.requestMode)}</StatusPill>

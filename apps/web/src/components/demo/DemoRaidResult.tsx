@@ -18,7 +18,6 @@ type BundleArtifactPreview = {
 };
 
 type DemoRaidResultProps = {
-  avatarSrc: string;
   demoMode: DemoRequestMode;
   lastSubmittedBrief: string | null;
   liveResultText?: string;
@@ -39,7 +38,6 @@ type DemoRaidResultProps = {
 };
 
 export function DemoRaidResult({
-  avatarSrc,
   demoMode,
   lastSubmittedBrief,
   liveResultText,
@@ -76,7 +74,7 @@ export function DemoRaidResult({
   return (
     <>
       {liveResultText || liveArtifacts.length > 0 || livePatch ? (
-        <ChatMessage avatarSrc={avatarSrc} label="Mercenary" role="assistant" tone="success">
+        <ChatMessage role="assistant" tone="success">
           {liveResultText ? (
             <p className="mercenary-final__answer">{liveResultText}</p>
           ) : (
@@ -116,7 +114,7 @@ export function DemoRaidResult({
       !liveResultText &&
       liveArtifacts.length === 0 &&
       !livePatch ? (
-        <ChatMessage avatarSrc={avatarSrc} label="Mercenary" role="assistant" tone="error">
+        <ChatMessage role="assistant" tone="error">
           <p>
             {demoMode === 'chat_v1'
               ? 'Mercenary did not get an approved specialist answer for this discount inference run.'

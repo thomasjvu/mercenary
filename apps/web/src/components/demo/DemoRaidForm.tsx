@@ -56,7 +56,7 @@ export function DemoRaidForm({
       </label>
 
       <div className="mercenary-composer__footer">
-        <p>Enter sends. Shift+Enter adds a line break.</p>
+        <p className="mercenary-composer__hint">Enter sends · Shift+Enter newline</p>
         <div className="mercenary-action-row">
           <button
             className="button button--primary"

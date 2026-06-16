@@ -1,3 +1,4 @@
+import { buildApiUrl } from './client.js';
 import type { RaidSpawnOutput } from './raid.js';
 
 export async function spawnPaidRaid(
@@ -5,7 +6,7 @@ export async function spawnPaidRaid(
   payload: unknown,
   apiBase: string
 ): Promise<RaidSpawnOutput> {
-  const response = await fetchWithPayment(new URL('/v1/raid', apiBase).toString(), {
+  const response = await fetchWithPayment(buildApiUrl('/v1/raid', apiBase), {
     method: 'POST',
     headers: {
       'content-type': 'application/json',

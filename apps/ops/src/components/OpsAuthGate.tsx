@@ -1,7 +1,5 @@
-import { NETWORK } from '@bossraid/constants';
 import { DocsButton } from '@bossraid/ui';
-
-const PUBLIC_WEB_URL = `http://${NETWORK.LOCALHOST}:${NETWORK.LOCAL_WEB_PORT}`;
+import { CONSUMER_LINKS } from '../lib/consumer-urls';
 
 export function OpsAuthGate({
   adminTokenInput,
@@ -39,8 +37,8 @@ export function OpsAuthGate({
             <p className="lede">Live raids, provider health, replay, settlement.</p>
             <p className="quiet-note">
               Public surface:{' '}
-              <a className="ops-public-link" href={PUBLIC_WEB_URL}>
-                {PUBLIC_WEB_URL}
+              <a className="ops-public-link" href={CONSUMER_LINKS.publicApp()}>
+                {CONSUMER_LINKS.publicApp()}
               </a>
             </p>
             <label className="ops-auth-field">

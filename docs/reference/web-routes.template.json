@@ -1,0 +1,45 @@
+{
+  "includeLandingRoute": false,
+  "landingRoute": {
+    "path": "/",
+    "purpose": "Landing"
+  },
+  "routes": [
+    {
+      "path": "/mercenary",
+      "purpose": "Mercenary chat and raid launcher"
+    },
+    {
+      "path": "/marketplace",
+      "purpose": "Model marketplace"
+    },
+    {
+      "path": "/playground",
+      "purpose": "Inference playground and raid mode"
+    },
+    {
+      "path": "`/onboarding/buyer`, `/onboarding/seller`",
+      "purpose": "Onboarding"
+    },
+    {
+      "path": "/account",
+      "purpose": "Keys, sellers, balance"
+    },
+    {
+      "path": "/raiders",
+      "purpose": "Provider directory"
+    },
+    {
+      "path": "/verification",
+      "purpose": "Public proof (`/receipt` redirects here)"
+    },
+    {
+      "path": "/ops/",
+      "purpose": "Ops SPA (readiness, settlement, metrics, x402)"
+    },
+    {
+      "path": "`/api/*`, `/ops-api/*`",
+      "purpose": "Proxied API"
+    }
+  ]
+}

@@ -26,10 +26,7 @@ export function PlaygroundPage({
     <section
       className={`beta-page page-flat playground-page${mode === 'raid' ? ' playground-page--raid' : ''}`}
     >
-      <PageIntro
-        aside={<PlaygroundModeTabs mode={mode} onModeChange={onModeChange} />}
-        title="Playground"
-      />
+      <PageIntro aside={<PlaygroundModeTabs mode={mode} onModeChange={onModeChange} />} />
 
       <ApiReadinessBanner error={apiError} label="Playground API unavailable" />
 

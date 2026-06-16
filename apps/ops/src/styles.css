@@ -1680,3 +1680,156 @@ h3 {
     border-top: 1px solid var(--line);
   }
 }
+
+/* Section nav, confirm dialog, consumer tandem */
+
+.ops-hero--slim .page-hero__main h1 {
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+}
+
+.ops-hero--slim .lede {
+  max-width: 52ch;
+}
+
+.ops-section-nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ops-section-nav__item {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  padding: 8px 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.ops-section-nav__item--active {
+  border-color: var(--rx-blue);
+  background: color-mix(in srgb, var(--rx-blue) 10%, transparent);
+  color: var(--rx-blue);
+}
+
+.ops-section {
+  display: grid;
+  gap: clamp(18px, 2.2vw, 28px);
+}
+
+.ops-consumer-links__grid,
+.ops-launch-actions,
+.ops-proof-actions,
+.ops-live-actions__buttons,
+.ops-x402-panel__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ops-buyer-lane {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+}
+
+.ops-buyer-lane__warning {
+  color: var(--danger);
+  font-size: 0.72rem;
+}
+
+.ops-launch-section,
+.ops-platform-section {
+  display: grid;
+  gap: clamp(18px, 2.2vw, 28px);
+}
+
+.ops-launch-section__body {
+  display: grid;
+  gap: clamp(16px, 2vw, 24px);
+}
+
+.ops-launch-meta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.ops-launch-blockers {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.ops-launch-blockers li {
+  display: grid;
+  gap: 2px;
+}
+
+.ops-x402-status {
+  display: grid;
+  gap: 8px;
+}
+
+.ops-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(17, 17, 17, 0.42);
+}
+
+.ops-confirm-dialog {
+  width: min(560px, 100%);
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel-2);
+}
+
+.ops-confirm-dialog--danger {
+  border-top: 3px solid var(--danger);
+}
+
+.ops-confirm-dialog--warning {
+  border-top: 3px solid var(--rx-blue);
+}
+
+.ops-confirm-dialog__details {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.ops-confirm-dialog__typed {
+  display: grid;
+  gap: 8px;
+}
+
+.ops-confirm-dialog__typed input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  padding: 10px 12px;
+}
+
+.ops-confirm-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}

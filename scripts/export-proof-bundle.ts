@@ -306,7 +306,7 @@ function buildPublicUrls(input: {
   if (input.raidAccessToken) {
     const raidId = encodeURIComponent(input.raidId);
     const token = encodeURIComponent(input.raidAccessToken);
-    urls.receipt = `${base}/receipt?raidId=${raidId}&token=${token}`;
+    urls.receipt = `${base}/verification?raidId=${raidId}&token=${token}`;
     urls.agentLog = `${base}/v1/raid/${raidId}/agent_log.json?token=${token}`;
   }
 

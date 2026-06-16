@@ -10,7 +10,7 @@ export function buildReceiptPath(query: ReceiptQuery): string {
     raidId: query.raidId,
     token: query.token,
   });
-  return `/receipt?${params.toString()}`;
+  return `/verification?${params.toString()}`;
 }
 
 export function buildReceiptUrl(query: ReceiptQuery): string {

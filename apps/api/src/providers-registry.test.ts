@@ -11,6 +11,7 @@ import {
   createRaidRequestBody,
   readyHealth,
   waitFor,
+  wrapMercenaryTestInject,
 } from './test/helpers.js';
 
 test('registry write routes require the configured registry token', async () => {
@@ -320,7 +321,7 @@ test('provider-authenticated settlement route returns provider payout mirror dat
     undefined,
     async (profile) => readyHealth(profile.providerId)
   );
-  const app = buildApiServer(orchestrator);
+  const app = wrapMercenaryTestInject(buildApiServer(orchestrator));
 
   try {
     const spawn = await app.inject({

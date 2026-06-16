@@ -3,15 +3,11 @@ import type { ReactNode } from 'react';
 export type SpecialistTone = 'ready' | 'available' | 'offline' | 'working';
 
 export function ChatMessage({
-  avatarSrc,
   children,
-  label,
   role,
   tone = 'default',
 }: {
-  avatarSrc?: string;
   children: ReactNode;
-  label: string;
   role: 'assistant' | 'user';
   tone?: 'default' | 'error' | 'success';
 }) {
@@ -25,9 +21,6 @@ export function ChatMessage({
             : ''
       }`}
     >
-      {role === 'assistant' && avatarSrc ? (
-        <img alt={label} className="mercenary-message__avatar" src={avatarSrc} />
-      ) : null}
       <div className="mercenary-message__body">
         <div className="mercenary-message__bubble">{children}</div>
       </div>

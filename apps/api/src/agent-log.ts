@@ -159,7 +159,7 @@ export function buildAgentLog(
       receiptPath:
         options.raidAccessToken == null
           ? undefined
-          : `/receipt?raidId=${encodeURIComponent(raid.id)}&token=${encodeURIComponent(options.raidAccessToken)}`,
+          : `/verification?raidId=${encodeURIComponent(raid.id)}&token=${encodeURIComponent(options.raidAccessToken)}`,
     },
     task: {
       title: raid.task.taskTitle,

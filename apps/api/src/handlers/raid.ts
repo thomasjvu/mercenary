@@ -11,15 +11,18 @@ import {
 import { readX402ConfigForContext } from '../lib/x402-runtime.js';
 import { buildRaidPaymentProof } from '../lib/payment-proof.js';
 import { type ApiContext } from '../api-context.js';
+import { requireMercenaryAccess } from './auth/mercenary-access.js';
 import { createAuthHandlers } from './auth.js';
+import { type createManaBillingHandlers } from './billing-mana.js';
 import { createPaymentHandlers } from './payment.js';
 
 export function createRaidHandlers(
   ctx: ApiContext,
   auth: ReturnType<typeof createAuthHandlers>,
+  manaBilling: ReturnType<typeof createManaBillingHandlers>,
   payment: ReturnType<typeof createPaymentHandlers>
 ) {
-  const { requireRateLimit } = auth;
+  const { adminIsAuthorized, requireRateLimit } = auth;
   const { requireReservedLaunchPayment, recordMarketplaceLedgersFromRaid, reconcileLaunchPayment } =
     payment;
 
@@ -83,7 +86,7 @@ export function createRaidHandlers(
       grossUsd,
       feesUsd: 0,
       netUsd: grossUsd,
-      receiptPath: `/receipt?raidId=${raidId}`,
+      receiptPath: `/verification?raidId=${raidId}`,
       settlement: result.settlement,
       settlementExecution: result.settlementExecution,
       assignment: raid.assignments[providerId],
@@ -163,10 +166,7 @@ export function createRaidHandlers(
   async function spawnParsedRaid(
     request: FastifyRequest,
     reply: FastifyReply,
-    parseInput: (value: unknown) => BossRaidSpawnInput,
-    options: {
-      requirePayment?: boolean;
-    } = {}
+    parseInput: (value: unknown) => BossRaidSpawnInput
   ) {
     const rateLimitError = requireRateLimit(
       request,
@@ -179,12 +179,16 @@ export function createRaidHandlers(
       return rateLimitError;
     }
 
+    const accessError = requireMercenaryAccess(reply, request.headers, auth, manaBilling);
+    if ('error' in accessError) {
+      return accessError.error;
+    }
+
     const input = parseInput(request.body);
     await ensureErc8004ProofState({ includeMercenary: false });
-    const launchPayment =
-      options.requirePayment === false
-        ? {}
-        : await requireReservedLaunchPayment('raid', request, input);
+    const launchPayment = adminIsAuthorized(request.headers)
+      ? {}
+      : await requireReservedLaunchPayment('raid', request, input);
     let response;
     try {
       response =

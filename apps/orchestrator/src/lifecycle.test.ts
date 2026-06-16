@@ -44,7 +44,10 @@ test('cancelled raids ignore late provider activity', async () => {
 
   const spawn = await orchestrator.spawnRaid(createSpawnInput());
   await waitFor(() => acceptStarted);
-  assert.equal(spawn.receiptPath, `/receipt?raidId=${spawn.raidId}&token=${spawn.raidAccessToken}`);
+  assert.equal(
+    spawn.receiptPath,
+    `/verification?raidId=${spawn.raidId}&token=${spawn.raidAccessToken}`
+  );
 
   const cancelled = orchestrator.abortRaid(spawn.raidId);
   assert.equal(cancelled.status, 'cancelled');

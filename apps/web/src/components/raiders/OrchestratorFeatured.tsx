@@ -31,7 +31,11 @@ export function OrchestratorFeatured({ onChat }: OrchestratorFeaturedProps) {
             </span>
           ))}
         </div>
-        <button className="button button--primary" onClick={onChat} type="button">
+        <button
+          className="button button--primary info-panel__cta rx-spacebar-clip orchestrator-featured__cta"
+          onClick={onChat}
+          type="button"
+        >
           <Icon className="icon icon--pixel" icon="pixel:message-dots-solid" />
           Chat with Mercenary
         </button>

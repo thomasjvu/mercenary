@@ -1,13 +1,15 @@
-import { NETWORK } from '@bossraid/constants';
 import { startTransition, useDeferredValue, useEffect, useState } from 'react';
 import { DocsButton, ProviderMesh, useRaidPolling } from '@bossraid/ui';
 import useSWR from 'swr';
 import {
   createOpsSession,
   deleteOpsSession,
+  fetchJson,
   fetchOpsSessionStatus,
   fetchOpsSettings,
-  fetchJson,
+  fetchProductionReadiness,
+  fetchReady,
+  spawnOpsRaid,
   updateOpsX402Enabled,
   type OpsSettings,
   type OpsSessionStatus,
@@ -18,17 +20,33 @@ import {
   type RaidStatus,
 } from './api';
 import { OpsAuthGate } from './components/OpsAuthGate';
+import { OpsConfirmDialog } from './components/OpsConfirmDialog';
+import { OpsConsumerLinks } from './components/OpsConsumerLinks';
+import { OpsLaunchSection } from './components/OpsLaunchSection';
+import { OpsPlatformSection } from './components/OpsPlatformSection';
 import { OpsProviderSidebar } from './components/OpsProviderSidebar';
 import { OpsHeroStatRow, OpsRaidDetail, OpsRaidHeroMetrics } from './components/OpsRaidDetail';
 import {
-  OpsMetricsPanel,
-  ProductionReadinessPanel,
-  SettlementStatusPanel,
-} from './components/OpsReliabilityPanels';
-import { SignalMeter, SignalTag, X402PaymentsToggle } from './components/ops-ui';
+  OpsSectionNav,
+  readOpsSectionFromHash,
+  writeOpsSectionHash,
+  type OpsSectionId,
+} from './components/OpsSectionNav';
+import { SignalMeter, SignalTag } from './components/ops-ui';
 import { DEFAULT_SPAWN_PAYLOAD } from './default-payload';
+import { CONSUMER_LINKS } from './lib/consumer-urls';
+import { readRaidReceipt, rememberRaidReceipt } from './lib/raid-receipt-store';
+import { readSpawnPolicySummary } from './lib/spawn-routing';
 
 type OpsTheme = 'light' | 'dark';
+
+type PendingConfirm =
+  | { kind: 'launch' }
+  | { kind: 'abort' }
+  | { kind: 'replay' }
+  | { kind: 'x402-enable' }
+  | { kind: 'x402-disable' }
+  | null;
 
 function readStoredOpsTheme(): OpsTheme {
   if (typeof window === 'undefined') {
@@ -41,19 +59,24 @@ function readStoredOpsTheme(): OpsTheme {
 
 export function App() {
   const [appTheme, setAppTheme] = useState<OpsTheme>(readStoredOpsTheme);
+  const [activeSection, setActiveSection] = useState<OpsSectionId>(readOpsSectionFromHash);
   const [adminTokenInput, setAdminTokenInput] = useState('');
   const [authPending, setAuthPending] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [raidId, setRaidId] = useState<string | null>(null);
   const [spawnPending, setSpawnPending] = useState(false);
   const [actionPending, setActionPending] = useState<'abort' | 'replay' | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [receiptCopied, setReceiptCopied] = useState(false);
   const [providerQuery, setProviderQuery] = useState('');
   const [spawnPayload, setSpawnPayload] = useState(DEFAULT_SPAWN_PAYLOAD);
   const [spawnError, setSpawnError] = useState<string | null>(null);
   const [x402TogglePending, setX402TogglePending] = useState(false);
   const [x402ToggleError, setX402ToggleError] = useState<string | null>(null);
+  const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm>(null);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
   const deferredProviderQuery = useDeferredValue(providerQuery);
+
   const opsSession = useSWR<OpsSessionStatus>('ops-session', fetchOpsSessionStatus, {
     refreshInterval: 60_000,
     revalidateOnFocus: true,
@@ -63,7 +86,14 @@ export function App() {
     refreshInterval: 15_000,
     revalidateOnFocus: true,
   });
-
+  const readiness = useSWR(opsReady ? 'ops-production-readiness' : null, fetchProductionReadiness, {
+    refreshInterval: 30_000,
+    revalidateOnFocus: true,
+  });
+  const buyerReady = useSWR(opsReady ? 'ops-buyer-ready' : null, fetchReady, {
+    refreshInterval: 15_000,
+    revalidateOnFocus: true,
+  });
   const health = useSWR<{ ok: boolean; providers: number; readyProviders: number }>(
     opsReady ? '/health' : null,
     (path: string) => fetchJson(path),
@@ -117,6 +147,15 @@ export function App() {
   }, [opsReady, raidId, raids.data]);
 
   useEffect(() => {
+    function handleHashChange() {
+      setActiveSection(readOpsSectionFromHash());
+    }
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  useEffect(() => {
     if (!receiptCopied) {
       return;
     }
@@ -125,21 +164,35 @@ export function App() {
     return () => window.clearTimeout(timer);
   }, [receiptCopied]);
 
+  function handleSectionChange(section: OpsSectionId) {
+    setActiveSection(section);
+    writeOpsSectionHash(section);
+  }
+
   async function handleSpawnRaid() {
     setSpawnPending(true);
     setSpawnError(null);
+    setConfirmError(null);
 
     try {
       const payload = JSON.parse(spawnPayload) as unknown;
-      const spawn = await fetchJson<{ raidId: string }>('/v1/raid', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload),
+      const spawn = await spawnOpsRaid(payload);
+      rememberRaidReceipt({
+        raidId: spawn.raidId,
+        raidAccessToken: spawn.raidAccessToken,
+        receiptPath: spawn.receiptPath,
       });
-      startTransition(() => setRaidId(spawn.raidId));
-      void Promise.all([raids.mutate(), raidStatus.mutate(), raidResult.mutate()]);
+      startTransition(() => {
+        setRaidId(spawn.raidId);
+        setActiveSection('live');
+        writeOpsSectionHash('live');
+      });
+      await Promise.all([raids.mutate(), raidStatus.mutate(), raidResult.mutate()]);
+      setPendingConfirm(null);
     } catch (error) {
-      setSpawnError(error instanceof Error ? error.message : 'Launch failed.');
+      const message = error instanceof Error ? error.message : 'Launch failed.';
+      setSpawnError(message);
+      setConfirmError(message);
     } finally {
       setSpawnPending(false);
     }
@@ -174,12 +227,16 @@ export function App() {
   async function handleX402Toggle(nextEnabled: boolean) {
     setX402TogglePending(true);
     setX402ToggleError(null);
+    setConfirmError(null);
 
     try {
       const settings = await updateOpsX402Enabled(nextEnabled);
-      await opsSettings.mutate(settings, false);
+      await Promise.all([opsSettings.mutate(settings, false), buyerReady.mutate()]);
+      setPendingConfirm(null);
     } catch (error) {
-      setX402ToggleError(error instanceof Error ? error.message : 'Failed to update x402 setting.');
+      const message = error instanceof Error ? error.message : 'Failed to update x402 setting.';
+      setX402ToggleError(message);
+      setConfirmError(message);
     } finally {
       setX402TogglePending(false);
     }
@@ -205,9 +262,17 @@ export function App() {
       return;
     }
     setActionPending('abort');
+    setActionError(null);
+    setConfirmError(null);
+
     try {
       await fetchJson(`/v1/raid/${raidId}/abort`, { method: 'POST' });
       await Promise.all([raidStatus.mutate(), raidResult.mutate(), raids.mutate()]);
+      setPendingConfirm(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Abort failed.';
+      setActionError(message);
+      setConfirmError(message);
     } finally {
       setActionPending(null);
     }
@@ -218,9 +283,17 @@ export function App() {
       return;
     }
     setActionPending('replay');
+    setActionError(null);
+    setConfirmError(null);
+
     try {
       await fetchJson(`/v1/evaluations/${raidId}/replay`, { method: 'POST' });
       await Promise.all([raidStatus.mutate(), raidResult.mutate(), raids.mutate()]);
+      setPendingConfirm(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Replay failed.';
+      setActionError(message);
+      setConfirmError(message);
     } finally {
       setActionPending(null);
     }
@@ -241,7 +314,122 @@ export function App() {
     }
   }
 
+  function closeConfirm() {
+    if (spawnPending || actionPending || x402TogglePending) {
+      return;
+    }
+    setPendingConfirm(null);
+    setConfirmError(null);
+  }
+
+  function confirmDialogProps():
+    | {
+        open: true;
+        title: string;
+        description: string;
+        confirmLabel: string;
+        severity: 'warning' | 'danger';
+        requireTypedPhrase?: string;
+        details?: string[];
+        pending: boolean;
+        error: string | null;
+        onConfirm: () => void;
+      }
+    | { open: false } {
+    if (!pendingConfirm) {
+      return { open: false };
+    }
+
+    const x402Enabled = opsSettings.data?.x402.enabled ?? false;
+    const blockingChecks =
+      readiness.data?.checks.filter(
+        (check) => check.status === 'fail' && check.severity === 'blocking'
+      ) ?? [];
+
+    if (pendingConfirm.kind === 'launch') {
+      let parsedPayload: unknown;
+      try {
+        parsedPayload = JSON.parse(spawnPayload) as unknown;
+      } catch {
+        parsedPayload = null;
+      }
+      const policy = readSpawnPolicySummary(parsedPayload);
+
+      return {
+        open: true,
+        title: 'Launch internal raid',
+        description:
+          'This uses the admin session, not a buyer wallet. Mercenary remains the paid buyer path when x402 is enabled.',
+        confirmLabel: 'launch raid',
+        severity: 'warning',
+        details: [
+          `max agents ${policy.maxAgents ?? 'n/a'}`,
+          `max budget $${policy.maxTotalCost ?? 'n/a'}`,
+          `x402 ${x402Enabled ? 'enabled' : 'disabled'}`,
+        ],
+        pending: spawnPending,
+        error: confirmError,
+        onConfirm: () => void handleSpawnRaid(),
+      };
+    }
+
+    if (pendingConfirm.kind === 'abort') {
+      return {
+        open: true,
+        title: 'Abort raid',
+        description: `Providers will stop work on ${raidId ?? 'this raid'}. Status moves to cancelled.`,
+        confirmLabel: 'abort raid',
+        severity: 'danger',
+        details: [`status ${raidStatus.data?.status ?? selectedRaid?.status ?? 'unknown'}`],
+        pending: actionPending === 'abort',
+        error: confirmError ?? actionError,
+        onConfirm: () => void handleAbortRaid(),
+      };
+    }
+
+    if (pendingConfirm.kind === 'replay') {
+      return {
+        open: true,
+        title: 'Re-score raid',
+        description: 'Replay evaluation on this finalized raid and refresh ranked submissions.',
+        confirmLabel: 're-score',
+        severity: 'warning',
+        pending: actionPending === 'replay',
+        error: confirmError ?? actionError,
+        onConfirm: () => void handleReplayEvaluation(),
+      };
+    }
+
+    if (pendingConfirm.kind === 'x402-enable') {
+      return {
+        open: true,
+        title: 'Enable paid ingress',
+        description:
+          'Buyers hitting POST /v1/raid and chat routes will need USDC via x402. Free demo paths stay separate.',
+        confirmLabel: 'enable x402',
+        severity: 'danger',
+        details: blockingChecks.map((check) => `${check.id}: ${check.message}`),
+        pending: x402TogglePending,
+        error: confirmError ?? x402ToggleError,
+        onConfirm: () => void handleX402Toggle(true),
+      };
+    }
+
+    return {
+      open: true,
+      title: 'Disable paid ingress',
+      description: 'Public ingress returns to free/demo paths until x402 is enabled again.',
+      confirmLabel: 'disable x402',
+      severity: 'warning',
+      requireTypedPhrase: 'DISABLE',
+      pending: x402TogglePending,
+      error: confirmError ?? x402ToggleError,
+      onConfirm: () => void handleX402Toggle(false),
+    };
+  }
+
   const selectedRaid = (raids.data ?? []).find((raid) => raid.raidId === raidId) ?? raids.data?.[0];
+  const storedReceipt = readRaidReceipt(raidId);
   const filteredProviders = (providers.data ?? []).filter((provider) => {
     const query = deferredProviderQuery.trim().toLowerCase();
     if (!query) {
@@ -271,9 +459,6 @@ export function App() {
   const runningState =
     raidStatus.data?.status === 'running' || raidStatus.data?.status === 'evaluating';
   const expertStates = raidStatus.data?.experts ?? [];
-  const engagedExperts = expertStates.filter(
-    (expert) => !['timed_out', 'failed', 'invalid'].includes(expert.status)
-  ).length;
   const providerTotal = Math.max(health.data?.providers ?? providers.data?.length ?? 0, 6);
   const activeRaidId = selectedRaid?.raidId ?? 'no active raid';
   const rankedSubmissions = raidResult.data?.rankedSubmissions ?? [];
@@ -285,6 +470,8 @@ export function App() {
   const reputationEvents = raidResult.data?.reputationEvents ?? [];
   const authMessage =
     authError ?? (opsSession.error instanceof Error ? opsSession.error.message : null);
+  const dialogProps = confirmDialogProps();
+  const x402Enabled = opsSettings.data?.x402.enabled ?? false;
 
   function handleThemeToggle() {
     setAppTheme((current) => {
@@ -326,7 +513,9 @@ export function App() {
         <div className="ops-topbar__actions">
           <a
             className="ops-public-link button"
-            href={`http://${NETWORK.LOCALHOST}:${NETWORK.LOCAL_WEB_PORT}`}
+            href={CONSUMER_LINKS.publicApp()}
+            rel="noreferrer"
+            target="_blank"
           >
             public app
           </a>
@@ -346,7 +535,7 @@ export function App() {
       </header>
 
       <main className="ops-stage">
-        <header className="page-hero page-hero--compact ops-hero">
+        <header className="page-hero page-hero--compact ops-hero ops-hero--slim">
           <div className="page-hero__main">
             <p className="eyebrow">control plane</p>
             <h1>
@@ -354,35 +543,8 @@ export function App() {
               raid.
             </h1>
             <p className="lede">
-              Launch raids, inspect provider movement, replay evaluation, toggle x402, and review
-              settlement proof.
+              Inspect live raids, gate paid ingress, and jump into buyer-facing surfaces.
             </p>
-            <div className="page-hero__actions ops-actions">
-              <button
-                className="button button--primary"
-                disabled={spawnPending}
-                onClick={() => void handleSpawnRaid()}
-                type="button"
-              >
-                {spawnPending ? 'launching' : 'launch raid'}
-              </button>
-              <button
-                className="button"
-                disabled={!canReplay || actionPending != null}
-                onClick={() => void handleReplayEvaluation()}
-                type="button"
-              >
-                {actionPending === 'replay' ? 'replaying' : 're-score'}
-              </button>
-              <button
-                className="button button--danger"
-                disabled={!canAbort || actionPending != null}
-                onClick={() => void handleAbortRaid()}
-                type="button"
-              >
-                {actionPending === 'abort' ? 'aborting' : 'abort'}
-              </button>
-            </div>
           </div>
           <aside className="page-hero__aside">
             <SignalMeter
@@ -400,80 +562,143 @@ export function App() {
           readyProviders={health.data?.readyProviders ?? 0}
         />
 
-        <X402PaymentsToggle
-          disabled={x402TogglePending || opsSettings.isLoading}
-          enabled={opsSettings.data?.x402.enabled ?? false}
-          error={x402ToggleError}
-          settings={opsSettings.data?.x402}
-          onToggle={(nextEnabled) => {
-            void handleX402Toggle(nextEnabled);
-          }}
-        />
+        <OpsSectionNav activeSection={activeSection} onSelect={handleSectionChange} />
 
-        <OpsRaidHeroMetrics
-          approvedProviderCount={approvedProviders.length}
-          payoutPerSuccessfulProvider={raidResult.data?.settlement?.payoutPerSuccessfulProvider}
-          raidStatus={raidStatus.data}
-          selectedRaid={selectedRaid}
-        />
-
-        <section className="ops-mesh-panel flat-section">
-          <div className="panel-head">
-            <div>
-              <p className="eyebrow">mesh</p>
-              <h2>Live provider field</h2>
-            </div>
-            <SignalTag
-              blinking={runningState}
-              label={runningState ? 'mesh live' : 'mesh idle'}
-              variant={runningState ? 'internal' : 'default'}
+        {activeSection === 'live' ? (
+          <section className="ops-section" id="live">
+            <OpsConsumerLinks
+              buyerPaymentEnabled={buyerReady.data?.payment.enabled ?? null}
+              opsX402Enabled={x402Enabled}
+              receiptQuery={
+                raidId && storedReceipt?.raidAccessToken
+                  ? { raidId, token: storedReceipt.raidAccessToken }
+                  : null
+              }
             />
-          </div>
-          <ProviderMesh
-            experts={raidStatus.data?.experts ?? []}
-            providerHealth={providerHealth.data ?? []}
-            providers={providers.data ?? []}
+
+            <OpsRaidHeroMetrics
+              approvedProviderCount={approvedProviders.length}
+              payoutPerSuccessfulProvider={raidResult.data?.settlement?.payoutPerSuccessfulProvider}
+              raidStatus={raidStatus.data}
+              selectedRaid={selectedRaid}
+            />
+
+            <section className="ops-mesh-panel flat-section">
+              <div className="panel-head">
+                <div>
+                  <p className="eyebrow">mesh</p>
+                  <h2>Live provider field</h2>
+                </div>
+                <SignalTag
+                  blinking={runningState}
+                  label={runningState ? 'mesh live' : 'mesh idle'}
+                  variant={runningState ? 'internal' : 'default'}
+                />
+              </div>
+              <ProviderMesh
+                experts={raidStatus.data?.experts ?? []}
+                providerHealth={providerHealth.data ?? []}
+                providers={providers.data ?? []}
+              />
+            </section>
+
+            <OpsRaidDetail
+              actionError={actionError}
+              actionPending={actionPending}
+              activeRaidId={activeRaidId}
+              approvedProviders={approvedProviders}
+              buyerReceiptToken={storedReceipt?.raidAccessToken ?? null}
+              canAbort={Boolean(canAbort)}
+              canReplay={Boolean(canReplay)}
+              expertStates={expertStates}
+              rankedSubmissions={rankedSubmissions}
+              raidId={raidId}
+              raidResult={raidResult.data}
+              raidStatus={raidStatus.data}
+              raids={raids.data ?? []}
+              receiptCopied={receiptCopied}
+              reputationEvents={reputationEvents}
+              routingProof={routingProof}
+              selectedRaid={selectedRaid}
+              settlementExecution={settlementExecution}
+              synthesizedArtifacts={synthesizedArtifacts}
+              synthesizedOutput={synthesizedOutput}
+              synthesizedWorkstreams={synthesizedWorkstreams}
+              onCopyReceipt={() => void handleCopyReceipt()}
+              onRequestAbort={() => {
+                setConfirmError(null);
+                setPendingConfirm({ kind: 'abort' });
+              }}
+              onRequestReplay={() => {
+                setConfirmError(null);
+                setPendingConfirm({ kind: 'replay' });
+              }}
+              onSelectRaid={setRaidId}
+            />
+          </section>
+        ) : null}
+
+        {activeSection === 'launch' ? (
+          <OpsLaunchSection
+            readiness={readiness.data}
+            spawnError={spawnError}
+            spawnPayload={spawnPayload}
+            spawnPending={spawnPending}
+            x402Enabled={x402Enabled}
+            onPayloadChange={setSpawnPayload}
+            onRequestLaunch={() => {
+              setConfirmError(null);
+              setPendingConfirm({ kind: 'launch' });
+            }}
           />
-        </section>
+        ) : null}
 
-        <OpsRaidDetail
-          activeRaidId={activeRaidId}
-          approvedProviders={approvedProviders}
-          engagedExperts={engagedExperts}
-          expertStates={expertStates}
-          rankedSubmissions={rankedSubmissions}
-          raidId={raidId}
-          raidResult={raidResult.data}
-          raidStatus={raidStatus.data}
-          raids={raids.data ?? []}
-          receiptCopied={receiptCopied}
-          reputationEvents={reputationEvents}
-          routingProof={routingProof}
-          selectedRaid={selectedRaid}
-          settlementExecution={settlementExecution}
-          spawnError={spawnError}
-          spawnPayload={spawnPayload}
-          synthesizedArtifacts={synthesizedArtifacts}
-          synthesizedOutput={synthesizedOutput}
-          synthesizedWorkstreams={synthesizedWorkstreams}
-          onCopyReceipt={() => void handleCopyReceipt()}
-          onSelectRaid={setRaidId}
-          onSpawnPayloadChange={setSpawnPayload}
-        />
+        {activeSection === 'platform' ? (
+          <OpsPlatformSection
+            readiness={readiness.data}
+            settings={opsSettings.data?.x402}
+            settingsLoading={opsSettings.isLoading}
+            toggleError={x402ToggleError}
+            togglePending={x402TogglePending}
+            onRequestDisable={() => {
+              setConfirmError(null);
+              setPendingConfirm({ kind: 'x402-disable' });
+            }}
+            onRequestEnable={() => {
+              setConfirmError(null);
+              setPendingConfirm({ kind: 'x402-enable' });
+            }}
+          />
+        ) : null}
 
-        <section className="ops-reliability">
-          <ProductionReadinessPanel />
-          <SettlementStatusPanel />
-          <OpsMetricsPanel />
-        </section>
-
-        <OpsProviderSidebar
-          filteredProviders={filteredProviders}
-          providerHealth={providerHealth.data}
-          providerQuery={providerQuery}
-          onQueryChange={setProviderQuery}
-        />
+        {activeSection === 'providers' ? (
+          <section className="ops-section" id="providers">
+            <OpsProviderSidebar
+              filteredProviders={filteredProviders}
+              providerHealth={providerHealth.data}
+              providerQuery={providerQuery}
+              onQueryChange={setProviderQuery}
+            />
+          </section>
+        ) : null}
       </main>
+
+      {dialogProps.open ? (
+        <OpsConfirmDialog
+          cancelLabel="cancel"
+          confirmLabel={dialogProps.confirmLabel}
+          description={dialogProps.description}
+          details={dialogProps.details}
+          error={dialogProps.error}
+          open
+          pending={dialogProps.pending}
+          requireTypedPhrase={dialogProps.requireTypedPhrase}
+          severity={dialogProps.severity}
+          title={dialogProps.title}
+          onCancel={closeConfirm}
+          onConfirm={dialogProps.onConfirm}
+        />
+      ) : null}
     </div>
   );
 }

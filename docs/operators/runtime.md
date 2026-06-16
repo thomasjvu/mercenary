@@ -14,13 +14,13 @@ pnpm dev
 
 `pnpm dev` starts evaluator, API, web, ops, and local providers.
 
-| Service   | Default URL                                                               |
-| --------- | ------------------------------------------------------------------------- |
-| web       | `http://127.0.0.1:4173`                                                   |
-| ops       | `http://127.0.0.1:4174` (production readiness, settlement, metrics, x402) |
-| API       | `http://127.0.0.1:8787`                                                   |
-| evaluator | `http://127.0.0.1:8790` or `/tmp/bossraid-evaluator.sock`                 |
-| providers | `9001`, `9002`, `9003`                                                    |
+| Service   | Default URL                                                   |
+| --------- | ------------------------------------------------------------- |
+| web       | `http://127.0.0.1:4173`                                       |
+| ops       | `http://127.0.0.1:4174` (control plane; see **Ops UI** below) |
+| API       | `http://127.0.0.1:8787`                                       |
+| evaluator | `http://127.0.0.1:8790` or `/tmp/bossraid-evaluator.sock`     |
+| providers | `9001`, `9002`, `9003`                                        |
 
 Manual start: `pnpm dev:providers`, `pnpm dev:api`, `pnpm dev:web`, `pnpm dev:ops`, `pnpm dev:evaluator`, `pnpm dev:mcp`.
 
@@ -39,6 +39,30 @@ pnpm serve:gateway
 ```
 
 Serves `/`, `/ops/`, proxies `/api/*` and `/ops-api/*`, exposes `/healthz`.
+
+## Ops UI
+
+Raid ops (`pnpm dev:ops`, port `4174`) is the admin control plane. Authenticate with `BOSSRAID_ADMIN_TOKEN` via `POST /v1/ops/session`.
+
+Sections:
+
+| Section   | Purpose                                                                |
+| --------- | ---------------------------------------------------------------------- |
+| Live raid | Queue, mesh, proof, abort/re-score (confirmed), buyer deep links       |
+| Launch    | Internal admin spawn with confirm; links to Mercenary for buyer wallet |
+| Platform  | x402 enable/disable (confirmed), readiness, settlement, metrics        |
+| Providers | Registry search and health                                             |
+
+Dangerous actions require confirmation:
+
+- **Enable x402** — two-step confirm; blocked when production-readiness has blocking failures
+- **Disable x402** — type `DISABLE` to confirm
+- **Abort raid** — confirm with raid id and status
+- **Launch (ops)** — confirm budget/agents; uses `POST /v1/raid` via admin session (payment bypass when x402 is on)
+
+Consumer tandem: ops links to web routes (`/verification`, `/mercenary`, `/playground?mode=raid`, `/marketplace`) and compares `GET /ready` `payment.enabled` with ops x402 state. Buyer receipt links need `raidAccessToken` from spawn (stored in session for the ops session).
+
+Mercenary and inference launches from the public web require a wallet session cookie on `POST /v1/raid`, `POST /v1/chat/completions`, and `POST /v1/inference/chat/completions` unless the caller uses a buyer API key or mana billing headers. Admin bearer and ops session still bypass payment for internal launches.
 
 Point local web at a hosted API:
 

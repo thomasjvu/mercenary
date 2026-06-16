@@ -9,10 +9,12 @@ import type {
   ProviderViewResponse,
   RaidListItemResponse,
   RaidResultResponse,
+  RaidSpawnOutputResponse,
   RaidStatusResponse,
   RankedSubmissionResponse,
   SettlementStatusResponse,
 } from '@bossraid/shared-types';
+import { resolveOpsSpawnRoute } from './lib/spawn-routing.js';
 
 export type RaidListItem = RaidListItemResponse;
 export type RaidStatus = RaidStatusResponse;
@@ -26,6 +28,17 @@ export type OpsSettings = OpsSettingsResponse;
 export type ProductionReadiness = ProductionReadinessResponse;
 export type SettlementStatus = SettlementStatusResponse;
 export type OpsMetrics = OpsMetricsResponse;
+export type RaidSpawnOutput = RaidSpawnOutputResponse;
+
+export type ReadyResponse = {
+  ok: boolean;
+  payment: {
+    enabled: boolean;
+    network: string;
+    asset: string;
+    facilitatorConfigured: boolean;
+  };
+};
 
 export const API_BASE =
   (import.meta.env.VITE_BOSSRAID_OPS_API_BASE as string | undefined) ?? '/ops-api';
@@ -100,4 +113,18 @@ export async function fetchSettlementStatus(): Promise<SettlementStatus> {
 
 export async function fetchOpsMetrics(): Promise<OpsMetrics> {
   return fetchJson<OpsMetrics>('/v1/ops/metrics');
+}
+
+export async function fetchReady(): Promise<ReadyResponse> {
+  return fetchJson<ReadyResponse>('/ready');
+}
+
+export async function spawnOpsRaid(payload: unknown): Promise<RaidSpawnOutput> {
+  resolveOpsSpawnRoute();
+
+  return fetchJson<RaidSpawnOutput>('/v1/raid', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
 }

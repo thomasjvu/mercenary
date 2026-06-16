@@ -186,7 +186,7 @@ test('per-raid agent log route accepts the raid access token as a query paramete
     assert.equal(body.run.host, 'codex');
     assert.equal(
       body.run.receiptPath,
-      `/receipt?raidId=${spawn.raidId}&token=${spawn.raidAccessToken}`
+      `/verification?raidId=${spawn.raidId}&token=${spawn.raidAccessToken}`
     );
     assert.equal(body.task.constraints.privacyMode, 'strict');
     assert.equal(body.task.constraints.requireErc8004, true);

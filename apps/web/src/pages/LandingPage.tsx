@@ -102,7 +102,7 @@ type AppRoute =
   | '/onboarding/seller'
   | '/account'
   | '/raiders'
-  | '/receipt';
+  | '/verification';
 
 const WORKFLOW_STEPS: Record<WorkflowTabId, readonly { label: string; value: string }[]> = {
   buyer: [
@@ -145,11 +145,11 @@ const HERO_BY_WORKFLOW: Record<
 > = {
   seller: {
     before: 'Register endpoint.',
-    accent: 'Publish live paid offers.',
+    accent: 'Publish AI inference offers.',
     after: 'Get money on each request.',
     primary: {
       href: '/onboarding/seller',
-      label: 'sell capacity',
+      label: 'sell inference',
       path: '/onboarding/seller',
     },
     secondary: [
@@ -158,17 +158,17 @@ const HERO_BY_WORKFLOW: Record<
     ],
   },
   raider: {
-    before: 'Post a hard task.',
+    before: 'Post a paid bounty.',
     accent: 'Mercenary orchestrates.',
     after: 'Verified agents. Receipt proof.',
     primary: {
       href: '/mercenary',
-      label: 'chat Mercenary',
+      label: 'hire Mercenary',
       path: '/mercenary',
     },
     secondary: [
       { href: '/raiders', label: 'view raiders', path: '/raiders' },
-      { href: '/receipt', label: 'load receipt', path: '/receipt' },
+      { href: '/verification', label: 'load verification', path: '/verification' },
     ],
   },
   buyer: {
@@ -182,7 +182,7 @@ const HERO_BY_WORKFLOW: Record<
     },
     secondary: [
       { href: '/onboarding/buyer', label: 'create api key', path: '/onboarding/buyer' },
-      { href: '/mercenary', label: 'chat Mercenary', path: '/mercenary' },
+      { href: '/mercenary', label: 'hire Mercenary', path: '/mercenary' },
       { href: '/playground', label: 'try a model', path: '/playground' },
     ],
   },

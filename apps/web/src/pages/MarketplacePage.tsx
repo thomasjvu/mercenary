@@ -4,14 +4,9 @@ import { API_BASE, fetchMarkets } from '../api';
 import { buildInferenceCurlSnippet } from '../lib/inference-curl.js';
 import { ApiReadinessBanner } from '../components/system/ApiReadinessBanner.js';
 import { buildApiReadinessHint, readApiErrorMessage } from '../lib/api-readiness.js';
-import { MarketDiscountChart } from '../components/marketplace/MarketDiscountChart.js';
-import { MarketSavingsSummary } from '../components/marketplace/MarketSavingsSummary.js';
 import { ModelCatalog } from '../components/marketplace/ModelCatalog.js';
 import { MarketStatsRibbon } from '../components/marketplace/MarketStatsRibbon.js';
-import { MarketPriceLadder } from '../components/marketplace/MarketPriceLadder.js';
-import { MarketVolumePanel } from '../components/marketplace/MarketVolumePanel.js';
 import { FeaturedModels } from '../components/marketplace/FeaturedModels.js';
-import { PageIntro } from '../components/system/PageIntro.js';
 import { CurlQuickstart } from '../components/terminal/CurlQuickstart.js';
 import { marketMatchesTrustFilter, type MarketplaceTrustFilter } from '../lib/marketplace-trust.js';
 
@@ -43,123 +38,147 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
     [filters.trust, visibleMarkets]
   );
   const totalMarketCount = allMarkets.data?.data.length ?? 0;
+  const spotlightModel = visibleMarkets[0]?.modelId ?? 'gpt-5.5';
 
   return (
     <section className="beta-page page-flat market-page">
-      <PageIntro title="Discount verified inference" />
-
-      <details className="market-page__quickstart">
-        <summary>API quickstart</summary>
-        <CurlQuickstart
-          code={buildInferenceCurlSnippet({
-            apiBase: API_BASE,
-            model: visibleMarkets[0]?.modelId ?? 'gpt-5.5',
-            prompt: 'Run on the cheapest verified seller.',
-            maxBudgetUsd: 1,
-            privacyMode: 'prefer',
-            relativePath: true,
-          })}
-          compact
-          runHref={`/playground?model=${encodeURIComponent(visibleMarkets[0]?.modelId ?? 'gpt-5.5')}`}
-          theme="raid"
-        />
-      </details>
-
       <ApiReadinessBanner error={markets.error} label="Marketplace unavailable" />
       <MarketStatsRibbon isLoading={markets.isLoading} markets={markets.data} />
-      <FeaturedModels
-        activeModelId={filters.model.trim() || undefined}
-        markets={allMarkets.data?.data ?? visibleMarkets}
-        onOpenModel={onOpenModel}
-        onSelectModel={(modelId) =>
-          setFilters({
-            ...filters,
-            model: filters.model.trim() === modelId ? '' : modelId,
-          })
-        }
-      />
-      <MarketSavingsSummary
-        activeOffers={markets.data?.stats.activeOffers}
-        markets={trustFilteredMarkets}
-      />
 
-      <div className="market-page__charts">
-        <MarketDiscountChart markets={trustFilteredMarkets} />
-        <MarketPriceLadder markets={trustFilteredMarkets} />
-        <MarketVolumePanel stats={markets.data?.stats} />
+      <div className="market-page__spotlight">
+        <div className="market-page__spotlight-main">
+          <FeaturedModels
+            markets={allMarkets.data?.data ?? visibleMarkets}
+            onOpenModel={onOpenModel}
+          />
+        </div>
+        <aside className="market-page__spotlight-aside beta-panel">
+          <p className="eyebrow">API quickstart</p>
+          <CurlQuickstart
+            code={buildInferenceCurlSnippet({
+              apiBase: API_BASE,
+              model: spotlightModel,
+              prompt: 'Run on the cheapest verified seller.',
+              maxBudgetUsd: 1,
+              privacyMode: 'prefer',
+              relativePath: true,
+            })}
+            compact
+            runHref={`/playground?model=${encodeURIComponent(spotlightModel)}`}
+            theme="raid"
+          />
+        </aside>
       </div>
 
       <div className="marketplace-layout market-page__layout">
-        <aside className="beta-panel beta-panel--filters">
-          <p className="eyebrow">filters</p>
-          <FilterField
-            label="model"
-            onChange={(value) => setFilters({ ...filters, model: value })}
-            placeholder="gpt-5.5"
-            value={filters.model}
-          />
-          <FilterField
-            label="provider"
-            onChange={(value) => setFilters({ ...filters, provider: value })}
-            placeholder="openai"
-            value={filters.provider}
-          />
-          <FilterSelect
-            label="framework"
-            onChange={(value) => setFilters({ ...filters, framework: value })}
-            options={[
-              ['', 'any'],
-              ['codex', 'codex'],
-              ['claude_code', 'claude code'],
-              ['openclaw', 'openclaw'],
-              ['custom', 'custom'],
-            ]}
-            value={filters.framework}
-          />
-          <FilterSelect
-            label="trust"
-            onChange={(value) => setFilters({ ...filters, trust: value as MarketplaceTrustFilter })}
-            options={[
-              ['any', 'any'],
-              ['tee', 'tee attested'],
-              ['e2ee', 'e2ee'],
-              ['private', 'private signals'],
-            ]}
-            value={filters.trust}
-          />
-          <details className="market-page__filters-advanced">
-            <summary>advanced</summary>
-            <FilterSelect
-              label="privacy"
-              onChange={(value) => setFilters({ ...filters, privacy: value })}
-              options={[
-                ['any', 'any'],
-                ['strict', 'strict private'],
-              ]}
-              value={filters.privacy}
+        <aside aria-label="Marketplace filters" className="market-filters">
+          <div className="market-filters__head">
+            <p className="market-filters__title">Refine</p>
+            {filtersActive ? (
+              <button
+                className="market-filters__reset"
+                onClick={() => setFilters({ ...FILTER_DEFAULTS })}
+                type="button"
+              >
+                clear
+              </button>
+            ) : null}
+          </div>
+
+          <label className="market-filters__search">
+            <span className="market-filters__search-label">Search models</span>
+            <input
+              onChange={(event) => setFilters({ ...filters, model: event.target.value })}
+              placeholder="gpt-5.5, claude, venice…"
+              value={filters.model}
+            />
+          </label>
+
+          <div className="market-filters__group">
+            <span className="market-filters__group-label">Trust</span>
+            <div className="market-filters__chips" role="group" aria-label="Trust filter">
+              {(
+                [
+                  ['any', 'any'],
+                  ['tee', 'tee'],
+                  ['e2ee', 'e2ee'],
+                  ['private', 'private'],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  aria-pressed={filters.trust === value}
+                  className={`market-filters__chip${filters.trust === value ? ' market-filters__chip--active' : ''}`}
+                  key={value}
+                  onClick={() => setFilters({ ...filters, trust: value })}
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="market-filters__row">
+            <FilterField
+              compact
+              label="provider"
+              onChange={(value) => setFilters({ ...filters, provider: value })}
+              placeholder="openai"
+              value={filters.provider}
             />
             <FilterSelect
-              label="verify"
-              onChange={(value) => setFilters({ ...filters, verification: value })}
+              compact
+              label="framework"
+              onChange={(value) => setFilters({ ...filters, framework: value })}
               options={[
-                ['any', 'any'],
-                ['verified', 'verified'],
-                ['pending', 'pending'],
-                ['failed', 'failed'],
+                ['', 'any'],
+                ['codex', 'codex'],
+                ['claude_code', 'claude code'],
+                ['openclaw', 'openclaw'],
+                ['custom', 'custom'],
               ]}
-              value={filters.verification}
+              value={filters.framework}
             />
+          </div>
+
+          <details className="market-filters__advanced">
+            <summary>More filters</summary>
+            <div className="market-filters__advanced-body">
+              <FilterSelect
+                compact
+                label="privacy"
+                onChange={(value) => setFilters({ ...filters, privacy: value })}
+                options={[
+                  ['any', 'any'],
+                  ['strict', 'strict private'],
+                ]}
+                value={filters.privacy}
+              />
+              <FilterSelect
+                compact
+                label="verify"
+                onChange={(value) => setFilters({ ...filters, verification: value })}
+                options={[
+                  ['any', 'any'],
+                  ['verified', 'verified'],
+                  ['pending', 'pending'],
+                  ['failed', 'failed'],
+                ]}
+                value={filters.verification}
+              />
+              <FilterField
+                compact
+                inputMode="decimal"
+                label="max budget"
+                onChange={(value) => setFilters({ ...filters, budget: value })}
+                placeholder="1.00"
+                value={filters.budget}
+              />
+            </div>
           </details>
-          <FilterField
-            inputMode="decimal"
-            label="max budget"
-            onChange={(value) => setFilters({ ...filters, budget: value })}
-            placeholder="1.00"
-            value={filters.budget}
-          />
 
           {markets.data?.custody ? (
-            <p className="quiet-note">{markets.data.custody.sellerCredentialPolicy}</p>
+            <p className="market-filters__note">{markets.data.custody.sellerCredentialPolicy}</p>
           ) : null}
         </aside>
 
@@ -206,15 +225,17 @@ function FilterField({
   onChange,
   placeholder,
   inputMode,
+  compact = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   inputMode?: 'decimal' | 'text';
+  compact?: boolean;
 }) {
   return (
-    <label className="field">
+    <label className={`market-filters__field${compact ? ' market-filters__field--compact' : ''}`}>
       <span>{label}</span>
       <input
         inputMode={inputMode}
@@ -231,14 +252,16 @@ function FilterSelect({
   value,
   onChange,
   options,
+  compact = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   options: Array<[string, string]>;
+  compact?: boolean;
 }) {
   return (
-    <label className="field">
+    <label className={`market-filters__field${compact ? ' market-filters__field--compact' : ''}`}>
       <span>{label}</span>
       <select onChange={(event) => onChange(event.target.value)} value={value}>
         {options.map(([optionValue, optionLabel]) => (

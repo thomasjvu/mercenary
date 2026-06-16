@@ -4,7 +4,7 @@ import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-t
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import { buildApiServer, resolveChatTerminalSettleGraceMs } from './index.js';
-import { createProviderProfile, readyHealth } from './test/helpers.js';
+import { createProviderProfile, readyHealth, wrapMercenaryTestInject } from './test/helpers.js';
 
 test('POST /v1/chat/completions accepts general service routing filters', async () => {
   const receivedProviders: string[] = [];
@@ -67,7 +67,7 @@ test('POST /v1/chat/completions accepts general service routing filters', async 
     undefined,
     async (profile) => readyHealth(profile.providerId)
   );
-  const app = buildApiServer(orchestrator);
+  const app = wrapMercenaryTestInject(buildApiServer(orchestrator));
 
   try {
     const response = await app.inject({
@@ -154,7 +154,7 @@ test('POST /v1/inference/chat/completions routes one model call to the cheapest 
     undefined,
     async (profile) => readyHealth(profile.providerId)
   );
-  const app = buildApiServer(orchestrator);
+  const app = wrapMercenaryTestInject(buildApiServer(orchestrator));
 
   try {
     const response = await app.inject({
@@ -231,12 +231,14 @@ test('POST /v1/inference/chat/completions fails closed for strict Alkahest Gemma
     undefined,
     async (profile) => readyHealth(profile.providerId)
   );
-  const app = buildApiServer(orchestrator, {
-    ...process.env,
-    BOSSRAID_API_KEY: 'trusted-client-key',
-    BOSSRAID_MANA_CORE_URL: 'https://mana.example.test',
-    BOSSRAID_MANA_CORE_KEY: 'mana-core-key',
-  });
+  const app = wrapMercenaryTestInject(
+    buildApiServer(orchestrator, {
+      ...process.env,
+      BOSSRAID_API_KEY: 'trusted-client-key',
+      BOSSRAID_MANA_CORE_URL: 'https://mana.example.test',
+      BOSSRAID_MANA_CORE_KEY: 'mana-core-key',
+    })
+  );
 
   try {
     const response = await app.inject({

@@ -106,7 +106,7 @@ export function useSmartAccountPay(chainId = BASE_CHAIN_ID) {
           ]),
     ];
 
-    return createPaidFetch(client, {
+    const paidFetch = await createPaidFetch(client, {
       chainId,
       sessionAccount: (subscription?.sessionAccount ?? walletAddress) as `0x${string}` | undefined,
       permissionContext: subscription?.permissionContext,
@@ -114,6 +114,12 @@ export function useSmartAccountPay(chainId = BASE_CHAIN_ID) {
       delegationManager: subscription?.delegationManager as `0x${string}` | undefined,
       delegationChain,
     });
+
+    return (input: RequestInfo | URL, init?: RequestInit) =>
+      paidFetch(input, {
+        ...init,
+        credentials: 'include',
+      });
   }, [chainId, connectWallet, subscription, walletAddress, walletClient]);
 
   return {

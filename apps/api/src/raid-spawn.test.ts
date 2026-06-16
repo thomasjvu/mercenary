@@ -165,7 +165,7 @@ test('raid status and result require the issued raid access token', async () => 
     assert.ok(spawn.raidAccessToken.length > 10);
     assert.equal(
       spawn.receiptPath,
-      `/receipt?raidId=${spawn.raidId}&token=${spawn.raidAccessToken}`
+      `/verification?raidId=${spawn.raidId}&token=${spawn.raidAccessToken}`
     );
 
     const unauthorizedStatus = await app.inject({

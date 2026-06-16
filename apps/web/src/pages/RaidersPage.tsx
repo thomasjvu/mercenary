@@ -4,7 +4,6 @@ import type { Provider, ProviderHealth } from '../api';
 import { RaiderRow } from '../components/raiders/RaiderRow';
 import { RaidersControls } from '../components/raiders/RaidersControls';
 import { OrchestratorFeatured } from '../components/raiders/OrchestratorFeatured.js';
-import { PageIntro } from '../components/system/PageIntro.js';
 import { MERCENARY_ORCHESTRATOR, partitionRaiders } from '../lib/orchestrators.js';
 import type { AppRoute } from '../lib/app-routes.js';
 import {
@@ -72,8 +71,6 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
 
   return (
     <section className="beta-page page-flat raiders-page">
-      <PageIntro title="Raiders" />
-
       <OrchestratorFeatured onChat={() => onNavigate('/mercenary')} />
 
       <section aria-label="Orchestrator agents" className="raiders-section">

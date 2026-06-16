@@ -141,6 +141,30 @@ export async function waitFor(predicate: () => boolean, timeoutMs = 2_000): Prom
   throw new Error('Timed out waiting for condition.');
 }
 
+type TestInjectOptions = {
+  method?: 'DELETE' | 'GET' | 'HEAD' | 'PATCH' | 'POST' | 'PUT' | 'OPTIONS';
+  url?: string;
+  payload?: string | object | Buffer;
+  headers?: Record<string, string | string[] | undefined>;
+};
+
+export async function injectWithPublicSession(
+  app: ReturnType<typeof buildApiServer>,
+  options: TestInjectOptions,
+  walletIndex = 0
+) {
+  const { cookie } = await createPublicSessionCookie(app, walletIndex);
+  const headers = {
+    ...(options.headers && typeof options.headers === 'object' ? options.headers : {}),
+    cookie,
+  };
+
+  return app.inject({
+    ...options,
+    headers,
+  });
+}
+
 export async function createPublicSessionCookie(
   app: ReturnType<typeof buildApiServer>,
   walletIndex = 0
@@ -184,6 +208,53 @@ export function createTestOrchestrator(
   );
 }
 
+function normalizeInjectOptions(options: string | TestInjectOptions): TestInjectOptions {
+  return typeof options === 'string' ? { url: options } : options;
+}
+
+function mercenaryRouteNeedsSession(method: string | undefined, url: string | undefined) {
+  if (method !== 'POST' || !url) {
+    return false;
+  }
+
+  return url.startsWith('/v1/raid') || url.includes('/chat/completions');
+}
+
+export function wrapMercenaryTestInject<T extends ReturnType<typeof buildApiServer>>(app: T): T {
+  const originalInject = app.inject.bind(app) as (
+    options: string | TestInjectOptions
+  ) => ReturnType<typeof app.inject>;
+  let sessionCookie: string | undefined;
+
+  const injectWithSession = async (options: string | TestInjectOptions) => {
+    const normalized = normalizeInjectOptions(options);
+    const headers = {
+      ...(normalized.headers && typeof normalized.headers === 'object' ? normalized.headers : {}),
+    } as Record<string, string | string[] | undefined>;
+    const authorization = headers.authorization;
+    const hasBearerAuth = typeof authorization === 'string' && authorization.startsWith('Bearer ');
+
+    if (
+      mercenaryRouteNeedsSession(normalized.method, normalized.url) &&
+      !hasBearerAuth &&
+      !headers.cookie
+    ) {
+      sessionCookie ??= (await createPublicSessionCookie(app as ReturnType<typeof buildApiServer>))
+        .cookie;
+      headers.cookie = sessionCookie;
+    }
+
+    return originalInject({
+      ...normalized,
+      headers,
+    });
+  };
+
+  Object.assign(app, { inject: injectWithSession });
+
+  return app;
+}
+
 export function createTestApiServer(
   providers: RaidProvider[] = [],
   env: NodeJS.ProcessEnv = process.env,
@@ -193,7 +264,9 @@ export function createTestApiServer(
     ...env,
     BOSSRAID_SETTLEMENT_MODE: env.BOSSRAID_SETTLEMENT_MODE ?? 'off',
   };
-  return buildApiServer(createTestOrchestrator(providers, timing), testEnv);
+  return wrapMercenaryTestInject(
+    buildApiServer(createTestOrchestrator(providers, timing), testEnv)
+  );
 }
 
 export { buildApiServer, mkdtemp, readFile, rm, join, tmpdir };

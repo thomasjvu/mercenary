@@ -4,7 +4,6 @@ type PagesContext = {
   request: Request;
   env: {
     BOSSRAID_API_ORIGIN?: string;
-    BOSSRAID_DEMO_PROXY_TOKEN?: string;
   };
   params: {
     path?: CatchallParam;
@@ -37,17 +36,9 @@ export async function onRequest(context: PagesContext): Promise<Response> {
   );
   const headers = new Headers(context.request.headers);
   headers.delete('host');
-  headers.delete('x-bossraid-demo-token');
   headers.set('x-forwarded-host', requestUrl.host);
   headers.set('x-forwarded-proto', requestUrl.protocol.replace(/:$/, ''));
   rewriteX402PaymentRequestHeaders(headers);
-
-  if (isDemoSpawnRequest(context.request.method, upstreamUrl.pathname)) {
-    const demoProxyToken = context.env.BOSSRAID_DEMO_PROXY_TOKEN?.trim();
-    if (demoProxyToken) {
-      headers.set('x-bossraid-demo-token', demoProxyToken);
-    }
-  }
 
   const connectingIp = headers.get('cf-connecting-ip');
   if (connectingIp) {
@@ -85,17 +76,6 @@ function buildRelativePath(path: CatchallParam, search: string): string {
 
 function requestAllowsBody(method: string): boolean {
   return method !== 'GET' && method !== 'HEAD';
-}
-
-function isDemoSpawnRequest(method: string, pathname: string): boolean {
-  if (method.toUpperCase() !== 'POST') {
-    return false;
-  }
-
-  return (
-    pathname.replace(/\/+$/, '') === '/api/v1/demo/raid' ||
-    pathname.replace(/\/+$/, '') === '/v1/demo/raid'
-  );
 }
 
 function jsonResponse(status: number, body: Record<string, string>): Response {

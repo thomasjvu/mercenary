@@ -8,6 +8,13 @@ export type ApiResponse<T> = JsonResponse<T>;
 
 export const API_BASE =
   (import.meta.env?.VITE_BOSSRAID_WEB_API_BASE as string | undefined) ?? '/api';
+
+export function buildApiUrl(path: string, apiBase: string = API_BASE): string {
+  const base = apiBase.replace(/\/$/, '');
+  const suffix = path.startsWith('/') ? path : `/${path}`;
+  return `${base}${suffix}`;
+}
+
 export const RAID_ACCESS_TOKEN_HEADER = 'x-bossraid-raid-token';
 const ACTION_REQUEST_TIMEOUT_MS = TIMEOUTS.ACTION_REQUEST;
 

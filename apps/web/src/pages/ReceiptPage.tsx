@@ -29,7 +29,7 @@ import { applyDocumentMeta } from '../lib/document-meta.js';
 import { TerminalCodePanel } from '../components/terminal/TerminalCodePanel.js';
 import { buildAttestationSurfaceLabel, isAttestationSignerUnavailable } from '../lib/receipt-url';
 
-type AppRoute = '/' | '/mercenary' | '/playground' | '/raiders' | '/receipt';
+type AppRoute = '/' | '/mercenary' | '/playground' | '/raiders' | '/verification';
 
 type ReceiptPageProps = {
   onNavigate: (path: AppRoute, options?: { mode?: 'inference' | 'raid' }) => void;
@@ -254,7 +254,7 @@ export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
             <h2>Load one raid receipt.</h2>
             <div className="curl-quickstart curl-quickstart--compact">
               <TerminalCodePanel
-                code="/receipt?raidId=<raidId>&token=<raidAccessToken>"
+                code="/verification?raidId=<raidId>&token=<raidAccessToken>"
                 label="receipt url"
                 layer="front"
                 note="capability link"

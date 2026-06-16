@@ -49,9 +49,9 @@ Response includes chat `choices` and usually a `raid` object with ids and receip
 
 Low-signal greetings on chat may get a direct Mercenary reply with no raid opened.
 
-## Free demo
+## Mercenary (hosted)
 
-Hosted `/demo` can use `POST /v1/demo/raid` when `BOSSRAID_DEMO_ROUTE_ENABLED=true` and `BOSSRAID_DEMO_TOKEN` is set. Callers send `x-bossraid-demo-token`.
+`/mercenary` and `/playground` require a signed-in wallet session before Mercenary launches. The API enforces this on `POST /v1/raid`, `POST /v1/chat/completions`, and `POST /v1/inference/chat/completions` (buyer API key or mana billing headers also satisfy the gate). Paid launches still flow through x402 when `GET /ready` reports `payment.enabled`. Connect wallet and sign in before launching.
 
 ## MCP
 

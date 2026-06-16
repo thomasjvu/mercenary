@@ -1,15 +1,16 @@
 import { Icon } from '@iconify/react';
-import { BOSSRAID_DOCS_URL } from '@bossraid/ui';
+import { useEffect, useState } from 'react';
 import { AppHeaderWallet } from './AppHeaderWallet.js';
 import { BossRaidMark } from './BossRaidMark.js';
 
 import { useAttestationInspector } from '../contexts/AttestationInspectorContext.js';
 import {
+  isExternalSidebarNavItem,
+  isMarketplaceSectionActive,
   isSidebarNavActive,
-  SIDEBAR_ACCOUNT_LINKS,
-  SIDEBAR_EXPLORE_LINKS,
+  SIDEBAR_NAV_LINKS,
   type AppRoute,
-  type SidebarNavItem,
+  type SidebarInternalNavItem,
 } from '../lib/app-routes.js';
 
 type AppTheme = 'light' | 'dark';
@@ -55,35 +56,24 @@ export function AppSidebar({
           </button>
         </div>
 
-        <nav aria-label="Explore" className="app-sidebar__section">
-          <p className="app-sidebar__section-label">explore</p>
+        <nav aria-label="Primary" className="app-sidebar__section">
           <div className="app-sidebar__links">
-            {SIDEBAR_EXPLORE_LINKS.map((link) => (
-              <SidebarLink
-                active={isSidebarNavActive(link.path, pathname)}
-                icon={link.icon}
-                key={link.path}
-                label={link.label}
-                onNavigate={onNavigate}
-                path={link.path}
-              />
-            ))}
-          </div>
-        </nav>
-
-        <nav aria-label="Account" className="app-sidebar__section">
-          <p className="app-sidebar__section-label">account</p>
-          <div className="app-sidebar__links">
-            {SIDEBAR_ACCOUNT_LINKS.map((link) => (
-              <SidebarLink
-                active={isSidebarNavActive(link.path, pathname)}
-                icon={link.icon}
-                key={link.path}
-                label={link.label}
-                onNavigate={onNavigate}
-                path={link.path}
-              />
-            ))}
+            {SIDEBAR_NAV_LINKS.map((link) =>
+              isExternalSidebarNavItem(link) ? (
+                <div className="app-sidebar__entry" key={link.href}>
+                  <SidebarExternalLink href={link.href} icon={link.icon} label={link.label} />
+                </div>
+              ) : (
+                <SidebarNavEntry
+                  active={isSidebarNavActive(link.path, pathname)}
+                  collapsed={collapsed}
+                  item={link}
+                  key={link.path}
+                  onNavigate={onNavigate}
+                  pathname={pathname}
+                />
+              )
+            )}
           </div>
         </nav>
       </div>
@@ -125,35 +115,15 @@ export function AppSidebar({
         <div className="app-sidebar__utility">
           <button
             aria-label={appTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="app-sidebar__utility-icon app-sidebar__utility-icon--theme"
+            className="app-sidebar__utility-icon app-sidebar__utility-icon--social"
             onClick={onThemeToggle}
             type="button"
           >
             <Icon
               className="icon icon--pixel"
-              icon={appTheme === 'dark' ? 'pixel:sun-solid' : 'pixel:moon-solid'}
+              icon={appTheme === 'light' ? 'pixel:lightbulb-solid' : 'pixel:lightbulb'}
             />
           </button>
-          <button className="app-sidebar__utility-button" onClick={onThemeToggle} type="button">
-            {appTheme === 'dark' ? 'light mode' : 'dark mode'}
-          </button>
-          <a
-            aria-label="Documentation"
-            className="app-sidebar__utility-icon app-sidebar__utility-icon--docs"
-            href={BOSSRAID_DOCS_URL}
-            rel="noreferrer"
-            target="_blank"
-          >
-            <Icon className="icon icon--pixel" icon="pixel:scroll-solid" />
-          </a>
-          <a
-            className="app-sidebar__utility-button"
-            href={BOSSRAID_DOCS_URL}
-            rel="noreferrer"
-            target="_blank"
-          >
-            docs
-          </a>
           <a
             aria-label="GitHub"
             className="app-sidebar__utility-icon app-sidebar__utility-icon--social"
@@ -162,6 +132,15 @@ export function AppSidebar({
             target="_blank"
           >
             <Icon className="icon icon--pixel" icon="pixel:github" />
+          </a>
+          <a
+            aria-label="YouTube"
+            className="app-sidebar__utility-icon app-sidebar__utility-icon--social"
+            href="https://www.youtube.com/@ultima_gg"
+            rel="noreferrer"
+            target="_blank"
+          >
+            <Icon className="icon icon--pixel" icon="pixel:youtube" />
           </a>
           <a
             aria-label="X"
@@ -184,21 +163,103 @@ export function AppSidebar({
   );
 }
 
+function SidebarNavEntry({
+  item,
+  active,
+  pathname,
+  collapsed,
+  onNavigate,
+}: {
+  item: SidebarInternalNavItem;
+  active: boolean;
+  pathname: string;
+  collapsed: boolean;
+  onNavigate: (path: AppRoute) => void;
+}) {
+  const hasChildren = Boolean(item.children?.length);
+  const sectionActive = item.path === '/marketplace' && isMarketplaceSectionActive(pathname);
+  const [expanded, setExpanded] = useState(sectionActive);
+
+  useEffect(() => {
+    if (sectionActive) {
+      setExpanded(true);
+    }
+  }, [sectionActive]);
+
+  const showSubnav = hasChildren && !collapsed && expanded;
+
+  if (!hasChildren) {
+    return (
+      <div className={`app-sidebar__entry${active ? ' app-sidebar__entry--active' : ''}`}>
+        <SidebarLink
+          active={active}
+          icon={item.icon}
+          label={item.label}
+          onNavigate={onNavigate}
+          path={item.path}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`app-sidebar__entry app-sidebar__entry--group${active ? ' app-sidebar__entry--active' : ''}${expanded ? ' app-sidebar__entry--expanded' : ''}`}
+    >
+      <div className="app-sidebar__group-head">
+        <SidebarLink
+          active={active}
+          icon={item.icon}
+          label={item.label}
+          onNavigate={onNavigate}
+          path={item.path}
+        />
+        <button
+          aria-expanded={expanded}
+          aria-label={expanded ? 'Collapse marketplace menu' : 'Expand marketplace menu'}
+          className="app-sidebar__group-toggle"
+          onClick={() => setExpanded((open) => !open)}
+          type="button"
+        >
+          <span aria-hidden="true" className="app-sidebar__group-chevron" />
+        </button>
+      </div>
+      {showSubnav ? (
+        <div className="app-sidebar__subnav">
+          {item.children?.map((child) => (
+            <SidebarLink
+              active={isSidebarNavActive(child.path, pathname)}
+              icon={child.icon}
+              key={child.path}
+              label={child.label}
+              onNavigate={onNavigate}
+              path={child.path}
+              sub
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function SidebarLink({
   path,
   label,
   icon,
   active,
   onNavigate,
-}: SidebarNavItem & {
+  sub = false,
+}: SidebarInternalNavItem & {
   active: boolean;
   onNavigate: (path: AppRoute) => void;
+  sub?: boolean;
 }) {
   return (
     <button
       aria-current={active ? 'page' : undefined}
       aria-label={label}
-      className={`app-sidebar__link${active ? ' app-sidebar__link--active' : ''}`}
+      className={`app-sidebar__link${sub ? ' app-sidebar__link--sub' : ''}${active ? ' app-sidebar__link--active' : ''}`}
       onClick={() => onNavigate(path)}
       title={label}
       type="button"
@@ -206,5 +267,30 @@ function SidebarLink({
       <Icon aria-hidden="true" className="app-sidebar__link-icon icon icon--pixel" icon={icon} />
       <span className="app-sidebar__link-label">{label}</span>
     </button>
+  );
+}
+
+function SidebarExternalLink({
+  href,
+  label,
+  icon,
+}: Pick<SidebarInternalNavItem, 'label' | 'icon'> & { href: string }) {
+  return (
+    <a
+      aria-label={label}
+      className="app-sidebar__link app-sidebar__link--external"
+      href={href}
+      rel="noreferrer"
+      target="_blank"
+      title={label}
+    >
+      <Icon aria-hidden="true" className="app-sidebar__link-icon icon icon--pixel" icon={icon} />
+      <span className="app-sidebar__link-label">{label}</span>
+      <Icon
+        aria-hidden="true"
+        className="app-sidebar__link-external-icon icon icon--pixel"
+        icon="pixel:external-link-solid"
+      />
+    </a>
   );
 }

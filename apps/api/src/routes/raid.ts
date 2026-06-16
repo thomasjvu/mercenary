@@ -127,7 +127,7 @@ export function registerRaidRoutes(
   handlers: ApiHandlerGroups
 ): void {
   const { orchestrator } = ctx;
-  const { requireAdmin, requireDemoRouteAccess, requireProviderOrRaidReadAccess } = handlers.auth;
+  const { requireAdmin, requireProviderOrRaidReadAccess } = handlers.auth;
   const { spawnParsedRaid, buildProviderSettlementPayload } = handlers.raid;
 
   app.get('/v1/raids', async (request, reply) => {
@@ -141,17 +141,6 @@ export function registerRaidRoutes(
 
   app.post('/v1/raid', async (request, reply) => {
     return spawnParsedRaid(request, reply, parseBossRaidRequest);
-  });
-
-  app.post('/v1/demo/raid', async (request, reply) => {
-    const demoAccessError = requireDemoRouteAccess(reply, request.headers);
-    if (demoAccessError) {
-      return demoAccessError;
-    }
-
-    return spawnParsedRaid(request, reply, parseBossRaidRequest, {
-      requirePayment: false,
-    });
   });
 
   registerRaidDetailRoutes(app, ctx, handlers);

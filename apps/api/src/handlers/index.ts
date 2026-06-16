@@ -9,7 +9,7 @@ export function createApiHandlers(ctx: ApiContext) {
   const auth = createAuthHandlers(ctx);
   const manaBilling = createManaBillingHandlers(ctx);
   const payment = createPaymentHandlers(ctx, auth, manaBilling);
-  const raid = createRaidHandlers(ctx, auth, payment);
+  const raid = createRaidHandlers(ctx, auth, manaBilling, payment);
   const chat = createChatHandlers(ctx, auth, manaBilling, payment, raid);
 
   return {

@@ -130,7 +130,6 @@ export const HTTP = {
   PAYMENT_SIGNATURE_HEADER: 'payment-signature',
   BOSSRAID_TIMESTAMP_HEADER: 'x-bossraid-timestamp',
   BOSSRAID_PROVIDER_ID_HEADER: 'x-bossraid-provider-id',
-  BOSSRAID_DEMO_TOKEN_HEADER: 'x-bossraid-demo-token',
   BOSSRAID_LAUNCH_RESERVATION_HEADER: 'x-bossraid-launch-reservation',
   BOSSRAID_RAID_TOKEN_HEADER: 'x-bossraid-raid-token',
   BOSSRAID_OPS_SESSION_COOKIE: 'bossraid_ops_session',
@@ -141,7 +140,6 @@ export const API_ROUTES = {
   V1_RAID: '/v1/raid',
   V1_RAIDS: '/v1/raids',
   V1_CHAT_COMPLETIONS: '/v1/chat/completions',
-  V1_DEMO_RAID: '/v1/demo/raid',
   V1_AGENT_JSON: '/v1/agent.json',
   V1_ATTESTED_RUNTIME: '/v1/attested-runtime',
   V1_RUNTIME: '/v1/runtime',
@@ -161,7 +159,7 @@ export const WEB_ROUTES = {
   ROOT: '/',
   DEMO: '/demo',
   RAIDERS: '/raiders',
-  RECEIPT: '/receipt',
+  RECEIPT: '/verification',
 };
 
 // Ops Route Constants

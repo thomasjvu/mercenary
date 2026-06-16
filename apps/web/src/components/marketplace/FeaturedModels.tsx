@@ -3,7 +3,6 @@ import { formatUsd } from '@bossraid/proof-ui';
 import type { InferenceMarket } from '../../api/marketplace.js';
 import { FEATURED_MARKET_MODELS } from '../../lib/featured-models.js';
 import { ProviderBrandIcon } from '../ProviderBrandIcon.js';
-import { SegmentBar } from '../system/SegmentBar.js';
 import {
   computeSavingsPercent,
   resolveMarketBenchmarkTaskUsd,
@@ -12,18 +11,11 @@ import {
 type FeaturedModelsProps = {
   markets: InferenceMarket[];
   onOpenModel: (modelId: string) => void;
-  onSelectModel: (modelId: string) => void;
-  activeModelId?: string;
 };
 
 const catalogById = new Map(INFERENCE_MODEL_CATALOG.map((entry) => [entry.modelId, entry]));
 
-export function FeaturedModels({
-  markets,
-  onOpenModel,
-  onSelectModel,
-  activeModelId,
-}: FeaturedModelsProps) {
+export function FeaturedModels({ markets, onOpenModel }: FeaturedModelsProps) {
   const marketById = new Map(markets.map((market) => [market.modelId, market]));
 
   return (
@@ -31,28 +23,26 @@ export function FeaturedModels({
       <div className="featured-models__head">
         <h2 className="section-title">Featured models</h2>
       </div>
-      <div className="featured-models__grid">
+      <div className="featured-models__grid featured-models__grid--spotlight">
         {FEATURED_MARKET_MODELS.map((featured) => {
           const market = marketById.get(featured.modelId);
           const catalog = catalogById.get(featured.modelId);
           const benchmark = market ? resolveMarketBenchmarkTaskUsd(market) : null;
           const savingsPercent =
             market && benchmark != null && market.cheapestRateUsd != null
-              ? (computeSavingsPercent(benchmark, market.cheapestRateUsd) ?? 0)
-              : 0;
+              ? computeSavingsPercent(benchmark, market.cheapestRateUsd)
+              : null;
           const teeSellerCount =
             market?.sellers.filter((seller) => seller.privacy.teeAttested).length ?? 0;
 
           return (
-            <article
-              className={`featured-models__card${activeModelId === featured.modelId ? ' featured-models__card--active' : ''}`}
+            <button
+              className="featured-models__card"
               key={featured.modelId}
+              onClick={() => onOpenModel(featured.modelId)}
+              type="button"
             >
-              <button
-                className="featured-models__select"
-                onClick={() => onSelectModel(featured.modelId)}
-                type="button"
-              >
+              <span className="featured-models__identity">
                 <ProviderBrandIcon
                   modelProvider={market?.modelProvider ?? catalog?.modelProvider}
                 />
@@ -60,9 +50,9 @@ export function FeaturedModels({
                   <strong>{featured.label}</strong>
                   <span>{featured.modelId}</span>
                 </span>
-              </button>
+              </span>
 
-              <div className="featured-models__meta">
+              <span className="featured-models__meta">
                 <span>
                   {market?.cheapestRateUsd != null
                     ? `from ${formatUsd(market.cheapestRateUsd)}`
@@ -73,29 +63,21 @@ export function FeaturedModels({
                     ? `${market.activeProviderCount} live`
                     : 'no live sellers'}
                 </span>
-              </div>
+              </span>
 
-              {savingsPercent > 0 ? (
-                <SegmentBar segments={18} tone="savings" value={Math.min(100, savingsPercent)} />
-              ) : (
-                <SegmentBar segments={18} tone="market" value={28} />
-              )}
+              {savingsPercent != null && savingsPercent > 0 ? (
+                <span className="featured-models__savings">
+                  {Math.round(savingsPercent)}% below reference
+                </span>
+              ) : null}
 
-              <div className="featured-models__tags">
+              <span className="featured-models__tags">
                 {catalog?.teeAttested || teeSellerCount > 0 ? (
                   <span className="trust-badge trust-badge--tee">tee</span>
                 ) : null}
                 {catalog?.e2ee ? <span className="trust-badge trust-badge--e2ee">e2ee</span> : null}
-              </div>
-
-              <button
-                className="button button--ghost featured-models__open"
-                onClick={() => onOpenModel(featured.modelId)}
-                type="button"
-              >
-                open
-              </button>
-            </article>
+              </span>
+            </button>
           );
         })}
       </div>

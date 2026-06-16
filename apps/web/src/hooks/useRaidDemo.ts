@@ -5,8 +5,6 @@ import {
   fetchRaidAgentLog,
   fetchRaidResult,
   fetchRaidStatus,
-  requestChatCompletion,
-  spawnDemoRaid,
   type AttestedEnvelope,
   type AttestedRuntimePayload,
   type ChatCompletionResponse,
@@ -28,8 +26,19 @@ import {
 } from '../demo-result';
 import { buildRaidDemoViewState } from '../demo-specialists';
 import { API_BASE } from '../api/client.js';
+import { requestPaidChatCompletion } from '../api/paid-chat.js';
 import { spawnPaidRaid } from '../api/paid-raid.js';
 import { buildLiveDemoPayload } from '../default-payload';
+import {
+  createMercenaryThread,
+  deriveMercenaryThreadTitle,
+  findMercenaryThread,
+  loadMercenaryThreadStore,
+  persistMercenaryThreadStore,
+  upsertMercenaryThread,
+  type MercenaryThreadRecord,
+  type MercenaryThreadStore,
+} from '../lib/mercenary-threads.js';
 
 export type { DemoRequestMode, LiveRaidRun };
 export type { ConversationSpecialistRecord, SpecialistTraceRecord } from '../demo-specialists';
@@ -37,28 +46,119 @@ export type { ConversationSpecialistRecord, SpecialistTraceRecord } from '../dem
 type UseRaidDemoOptions = {
   providers: Provider[];
   providerHealth: ProviderHealth[];
-  paidMode?: boolean;
+  paymentEnabled: boolean;
   createFetchWithPayment?: () => Promise<typeof fetch>;
+  persistThreads?: boolean;
 };
+
+function resolveInitialThreadState(persistThreads: boolean) {
+  const store = persistThreads ? loadMercenaryThreadStore() : null;
+  const thread =
+    store != null
+      ? (findMercenaryThread(store, store.activeThreadId) ?? createMercenaryThread())
+      : createMercenaryThread();
+
+  return {
+    store: store ?? { activeThreadId: thread.id, threads: [thread] },
+    thread,
+  };
+}
 
 export function useRaidDemo({
   providers,
   providerHealth,
-  paidMode = false,
+  paymentEnabled,
   createFetchWithPayment,
+  persistThreads = true,
 }: UseRaidDemoOptions) {
-  const [demoMode, setDemoMode] = useState<DemoRequestMode>('raid');
-  const [liveDemoBrief, setLiveDemoBrief] = useState('');
-  const [lastSubmittedBrief, setLastSubmittedBrief] = useState<string | null>(null);
-  const [liveRaidRun, setLiveRaidRun] = useState<LiveRaidRun | null>(null);
+  const initial = resolveInitialThreadState(persistThreads);
+  const [threadStore, setThreadStore] = useState<MercenaryThreadStore>(initial.store);
+  const [activeThreadId, setActiveThreadId] = useState(initial.thread.id);
+  const [demoMode, setDemoMode] = useState<DemoRequestMode>(initial.thread.demoMode);
+  const [liveDemoBrief, setLiveDemoBrief] = useState(initial.thread.liveDemoBrief);
+  const [lastSubmittedBrief, setLastSubmittedBrief] = useState<string | null>(
+    initial.thread.lastSubmittedBrief
+  );
+  const [liveRaidRun, setLiveRaidRun] = useState<LiveRaidRun | null>(initial.thread.liveRaidRun);
   const [isLaunching, setIsLaunching] = useState(false);
-  const [launchError, setLaunchError] = useState<string | null>(null);
+  const [launchError, setLaunchError] = useState<string | null>(initial.thread.launchError);
   const [receiptCopied, setReceiptCopied] = useState(false);
   const [expandedArtifact, setExpandedArtifact] = useState<SubmissionArtifact | null>(null);
   const [runtimeAttestation, setRuntimeAttestation] =
     useState<AttestedEnvelope<AttestedRuntimePayload> | null>(null);
   const [runtimeAttestationError, setRuntimeAttestationError] = useState<string | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
+  const lastPersistedThreadSignature = useRef('');
+
+  function buildThreadSnapshot(): MercenaryThreadRecord {
+    const existing = findMercenaryThread(threadStore, activeThreadId);
+    const title = existing?.titleLocked
+      ? existing.title
+      : deriveMercenaryThreadTitle({ lastSubmittedBrief, liveDemoBrief });
+
+    return {
+      id: activeThreadId,
+      title,
+      titleLocked: existing?.titleLocked,
+      updatedAt: new Date().toISOString(),
+      demoMode,
+      liveDemoBrief,
+      lastSubmittedBrief,
+      liveRaidRun,
+      launchError,
+    };
+  }
+
+  function commitThreadSnapshot(snapshot: MercenaryThreadRecord) {
+    if (!persistThreads) {
+      return;
+    }
+
+    setThreadStore((current) => {
+      const next = {
+        activeThreadId,
+        threads: upsertMercenaryThread(current, snapshot).threads,
+      };
+      persistMercenaryThreadStore(next);
+      return next;
+    });
+  }
+
+  function threadPersistenceSignature(input: {
+    threadId: string;
+    mode: DemoRequestMode;
+    brief: string;
+    submittedBrief: string | null;
+    run: LiveRaidRun | null;
+    error: string | null;
+  }) {
+    return JSON.stringify({
+      activeThreadId: input.threadId,
+      demoMode: input.mode,
+      liveDemoBrief: input.brief,
+      lastSubmittedBrief: input.submittedBrief,
+      liveRaidRun: input.run,
+      launchError: input.error,
+    });
+  }
+
+  function applyThread(thread: MercenaryThreadRecord) {
+    setDemoMode(thread.demoMode);
+    setLiveDemoBrief(thread.liveDemoBrief);
+    setLastSubmittedBrief(thread.lastSubmittedBrief);
+    setLiveRaidRun(thread.liveRaidRun);
+    setLaunchError(thread.launchError);
+    setReceiptCopied(false);
+    setExpandedArtifact(null);
+    lastPersistedThreadSignature.current = threadPersistenceSignature({
+      threadId: thread.id,
+      mode: thread.demoMode,
+      brief: thread.liveDemoBrief,
+      submittedBrief: thread.lastSubmittedBrief,
+      run: thread.liveRaidRun,
+      error: thread.launchError,
+    });
+  }
 
   const viewState = buildRaidDemoViewState({
     demoMode,
@@ -71,6 +171,7 @@ export function useRaidDemo({
     providerHealth,
     runtimeAttestation,
     runtimeAttestationError,
+    paymentEnabled,
   });
 
   useEffect(() => {
@@ -131,6 +232,37 @@ export function useRaidDemo({
     });
   }, [viewState.conversationSignature]);
 
+  useEffect(() => {
+    if (!persistThreads || isLaunching) {
+      return;
+    }
+
+    const signature = threadPersistenceSignature({
+      threadId: activeThreadId,
+      mode: demoMode,
+      brief: liveDemoBrief,
+      submittedBrief: lastSubmittedBrief,
+      run: liveRaidRun,
+      error: launchError,
+    });
+
+    if (signature === lastPersistedThreadSignature.current) {
+      return;
+    }
+
+    lastPersistedThreadSignature.current = signature;
+    commitThreadSnapshot(buildThreadSnapshot());
+  }, [
+    persistThreads,
+    isLaunching,
+    activeThreadId,
+    demoMode,
+    liveDemoBrief,
+    lastSubmittedBrief,
+    liveRaidRun,
+    launchError,
+  ]);
+
   async function launchConversation() {
     const submittedBrief = liveDemoBrief.trim();
     if (!submittedBrief || isLaunching || !viewState.canLaunchLiveRaid) {
@@ -145,14 +277,19 @@ export function useRaidDemo({
     setReceiptCopied(false);
 
     try {
-      if (paidMode && demoMode === 'raid') {
-        if (!createFetchWithPayment) {
-          throw new Error(
-            'Connect MetaMask and subscribe to top up account credit before paid launch.'
-          );
-        }
+      if (!paymentEnabled) {
+        throw new Error('Payment is not configured on this host. Enable x402 before launching.');
+      }
 
-        const fetchWithPayment = await createFetchWithPayment();
+      if (!createFetchWithPayment) {
+        throw new Error(
+          'Connect MetaMask and subscribe to top up account credit before launching.'
+        );
+      }
+
+      const fetchWithPayment = await createFetchWithPayment();
+
+      if (demoMode === 'raid') {
         const spawn = await spawnPaidRaid(
           fetchWithPayment,
           buildLiveDemoPayload(submittedBrief),
@@ -172,44 +309,14 @@ export function useRaidDemo({
         return;
       }
 
-      const response =
-        demoMode === 'raid'
-          ? await spawnDemoRaid(buildLiveDemoPayload(submittedBrief))
-          : await requestChatCompletion(buildDemoChatCompletionPayload(submittedBrief));
-      if (!response.ok || !response.data) {
-        if (response.status === 404) {
-          throw new Error(
-            demoMode === 'raid'
-              ? 'Free demo raid is not enabled on this host. The paid native route stays at POST /v1/raid.'
-              : 'The v1 chat-completions route is not enabled on this host.'
-          );
-        }
-
-        if (response.status === 401) {
-          throw new Error(
-            demoMode === 'raid'
-              ? 'Free demo raid is enabled, but the proxy is missing a valid demo token.'
-              : 'The v1 chat-completions route rejected the request.'
-          );
-        }
-
-        if ((response.error ?? '').toLowerCase().includes('payment required')) {
-          throw new Error(
-            'This host sent /demo to the paid lane. The paid native route stays at POST /v1/raid.'
-          );
-        }
-
-        throw new Error(response.error ?? `Raid launch failed with status ${response.status}.`);
-      }
-
-      const chatCompletion =
-        demoMode === 'chat_v1' ? (response.data as ChatCompletionResponse) : undefined;
-      const directResponse = demoMode === 'chat_v1' && !chatCompletion?.raid;
+      const chatCompletion = await requestPaidChatCompletion(
+        fetchWithPayment,
+        buildDemoChatCompletionPayload(submittedBrief),
+        API_BASE
+      );
+      const directResponse = !chatCompletion.raid;
       const spawn =
-        demoMode === 'raid'
-          ? (response.data as RaidSpawnOutput)
-          : (buildSpawnFromChatCompletion(chatCompletion ?? null) ??
-            buildDirectChatSpawn(chatCompletion));
+        buildSpawnFromChatCompletion(chatCompletion) ?? buildDirectChatSpawn(chatCompletion);
 
       setLiveRaidRun({
         requestMode: demoMode,
@@ -285,17 +392,116 @@ export function useRaidDemo({
     }
   }
 
-  function resetConversation() {
+  function selectThread(threadId: string) {
+    if (isLaunching || threadId === activeThreadId) {
+      return;
+    }
+
+    const currentSnapshot = buildThreadSnapshot();
+    const nextStore = {
+      activeThreadId: threadId,
+      threads: upsertMercenaryThread(threadStore, currentSnapshot).threads,
+    };
+    const nextThread = findMercenaryThread(nextStore, threadId);
+    if (!nextThread) {
+      return;
+    }
+
+    if (persistThreads) {
+      persistMercenaryThreadStore(nextStore);
+    }
+
+    setThreadStore(nextStore);
+    setActiveThreadId(threadId);
+    applyThread(nextThread);
+  }
+
+  function startNewThread() {
     if (isLaunching) {
       return;
     }
 
-    setLiveDemoBrief('');
-    setLastSubmittedBrief(null);
-    setLiveRaidRun(null);
-    setLaunchError(null);
-    setReceiptCopied(false);
-    setExpandedArtifact(null);
+    const currentSnapshot = buildThreadSnapshot();
+    const mergedStore = upsertMercenaryThread(threadStore, currentSnapshot);
+    const newThread = createMercenaryThread();
+    const nextStore = {
+      activeThreadId: newThread.id,
+      threads: [newThread, ...mergedStore.threads],
+    };
+
+    if (persistThreads) {
+      persistMercenaryThreadStore(nextStore);
+    }
+
+    setThreadStore(nextStore);
+    setActiveThreadId(newThread.id);
+    applyThread(newThread);
+  }
+
+  function resetConversation() {
+    startNewThread();
+  }
+
+  function renameThread(threadId: string, title: string) {
+    const trimmed = title.trim() || 'New thread';
+    const nextStore = {
+      activeThreadId,
+      threads: threadStore.threads.map((thread) =>
+        thread.id === threadId
+          ? {
+              ...thread,
+              title: trimmed,
+              titleLocked: true,
+              updatedAt: new Date().toISOString(),
+            }
+          : thread
+      ),
+    };
+
+    if (persistThreads) {
+      persistMercenaryThreadStore(nextStore);
+    }
+
+    setThreadStore(nextStore);
+  }
+
+  function deleteThread(threadId: string) {
+    if (isLaunching) {
+      return;
+    }
+
+    const currentSnapshot = buildThreadSnapshot();
+    const mergedThreads = upsertMercenaryThread(threadStore, currentSnapshot).threads;
+    const nextThreads = mergedThreads.filter((thread) => thread.id !== threadId);
+
+    if (nextThreads.length === 0) {
+      const fresh = createMercenaryThread();
+      const nextStore = { activeThreadId: fresh.id, threads: [fresh] };
+
+      if (persistThreads) {
+        persistMercenaryThreadStore(nextStore);
+      }
+
+      setThreadStore(nextStore);
+      setActiveThreadId(fresh.id);
+      applyThread(fresh);
+      return;
+    }
+
+    const deletingActive = threadId === activeThreadId;
+    const nextActiveId = deletingActive ? nextThreads[0]!.id : activeThreadId;
+    const nextStore = { activeThreadId: nextActiveId, threads: nextThreads };
+
+    if (persistThreads) {
+      persistMercenaryThreadStore(nextStore);
+    }
+
+    setThreadStore(nextStore);
+    setActiveThreadId(nextActiveId);
+
+    if (deletingActive) {
+      applyThread(nextThreads[0]!);
+    }
   }
 
   function handleModeChange(nextMode: DemoRequestMode) {
@@ -328,6 +534,12 @@ export function useRaidDemo({
     launchConversation,
     copyReceiptLink,
     resetConversation,
+    startNewThread,
+    selectThread,
+    renameThread,
+    deleteThread,
+    threads: threadStore.threads,
+    activeThreadId,
     handleModeChange,
     ...viewState,
   };

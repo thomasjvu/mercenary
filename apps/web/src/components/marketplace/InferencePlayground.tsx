@@ -9,7 +9,6 @@ import { fetchMarkets, runInferenceChatCompletion } from '../../api/marketplace.
 
 import { resolveProviderBrand } from '../../lib/provider-brand.js';
 import { TerminalCodePanel } from '../terminal/TerminalCodePanel.js';
-import { UpstreamTeeVerificationPanel } from '../trust/UpstreamTeeVerificationPanel.js';
 import { ModelCombobox } from './ModelCombobox.js';
 import { ProviderCombobox } from './ProviderCombobox.js';
 
@@ -175,6 +174,19 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
       ? JSON.stringify({ content: responseText }, null, 2)
       : 'Run inference to see response metadata here.';
 
+  const modelSummary = selectedModel
+    ? [
+        selectedModel.liveSellers > 0 ? `${selectedModel.liveSellers} live` : 'catalog only',
+        selectedModel.referenceRateUsd != null
+          ? `from $${selectedModel.referenceRateUsd.toFixed(3)}`
+          : null,
+        selectedModel.teeAttested ? 'tee' : null,
+        selectedModel.e2ee ? 'e2ee' : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : 'pick a model';
+
   async function handleRun() {
     if (!apiKey.trim() && !strictE2ee) {
       setError('Add a buyer API key from account onboarding.');
@@ -257,16 +269,16 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
   }
 
   return (
-    <section className="inference-playground">
-      <div className="inference-playground__grid">
+    <section className="inference-playground inference-playground--compact">
+      <div className="inference-playground__layout">
         <div className="beta-panel inference-playground__panel">
-          <div className="inference-playground__model-picker">
+          <div className="inference-playground__field-grid">
             <label className="field">
               <span>provider</span>
               <ProviderCombobox
                 onChange={setProviderFilter}
                 options={providerChoices}
-                placeholder={markets.isLoading ? 'loading providers...' : 'search providers...'}
+                placeholder={markets.isLoading ? 'loading...' : 'any provider'}
                 value={providerFilter}
               />
             </label>
@@ -278,120 +290,86 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
                 options={filteredModelOptions}
                 placeholder={
                   markets.isLoading
-                    ? 'loading models...'
+                    ? 'loading...'
                     : filteredModelOptions.length === 0
-                      ? 'no models for this provider'
+                      ? 'no models'
                       : 'search models...'
                 }
                 value={model}
               />
             </label>
+
+            <label className="field">
+              <span>privacy</span>
+              <select
+                onChange={(event) => setPrivacyMode(event.target.value as 'prefer' | 'strict')}
+                value={privacyMode}
+              >
+                <option value="prefer">prefer private</option>
+                <option value="strict">strict private</option>
+              </select>
+            </label>
+
+            <label className="field">
+              <span>budget usd</span>
+              <input
+                inputMode="decimal"
+                onChange={(event) => setMaxBudget(event.target.value)}
+                value={maxBudget}
+              />
+            </label>
           </div>
 
           <p className="inference-playground__meta" aria-live="polite">
-            {selectedModel
-              ? [
-                  selectedModel.liveSellers > 0
-                    ? `${selectedModel.liveSellers} live seller${selectedModel.liveSellers === 1 ? '' : 's'}`
-                    : 'catalog reference only',
-                  selectedModel.referenceRateUsd != null
-                    ? `from $${selectedModel.referenceRateUsd.toFixed(3)}`
-                    : null,
-                  selectedModel.teeAttested ? 'tee' : null,
-                  selectedModel.e2ee ? 'e2ee' : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')
-              : 'pick a model to see live sellers and rates'}
+            {modelSummary}
           </p>
 
-          <label className="field">
-            <span>privacy mode</span>
-            <select
-              onChange={(event) => setPrivacyMode(event.target.value as 'prefer' | 'strict')}
-              value={privacyMode}
-            >
-              <option value="prefer">prefer private</option>
-              <option value="strict">strict private</option>
-            </select>
-          </label>
-
-          <label className="field">
-            <span>buyer API key</span>
-            <input
-              autoComplete="off"
-              onChange={(event) => setApiKey(event.target.value)}
-              placeholder="br_..."
-              spellCheck={false}
-              type="password"
-              value={apiKey}
-            />
-          </label>
-
-          <label className={`field${selectedModel?.e2ee ? '' : ' field--inactive'}`}>
-            <span>upstream API key (E2EE)</span>
-            <input
-              autoComplete="off"
-              disabled={!selectedModel?.e2ee}
-              onChange={(event) => setUpstreamApiKey(event.target.value)}
-              placeholder={
-                selectedModel?.e2ee ? 'required for strict E2EE' : 'only required for E2EE models'
-              }
-              spellCheck={false}
-              type="password"
-              value={upstreamApiKey}
-            />
-          </label>
-
-          <label className="field">
-            <span>budget usd</span>
-            <input
-              inputMode="decimal"
-              onChange={(event) => setMaxBudget(event.target.value)}
-              value={maxBudget}
-            />
-          </label>
+          <details className="inference-playground__advanced">
+            <summary>credentials</summary>
+            <div className="inference-playground__field-grid inference-playground__field-grid--stack">
+              <label className="field">
+                <span>buyer API key</span>
+                <input
+                  autoComplete="off"
+                  onChange={(event) => setApiKey(event.target.value)}
+                  placeholder="br_..."
+                  spellCheck={false}
+                  type="password"
+                  value={apiKey}
+                />
+              </label>
+              <label className={`field${selectedModel?.e2ee ? '' : ' field--inactive'}`}>
+                <span>upstream key (E2EE)</span>
+                <input
+                  autoComplete="off"
+                  disabled={!selectedModel?.e2ee}
+                  onChange={(event) => setUpstreamApiKey(event.target.value)}
+                  placeholder={selectedModel?.e2ee ? 'required for strict E2EE' : 'E2EE only'}
+                  spellCheck={false}
+                  type="password"
+                  value={upstreamApiKey}
+                />
+              </label>
+            </div>
+          </details>
 
           <label className="field">
             <span>prompt</span>
-            <textarea onChange={(event) => setPrompt(event.target.value)} rows={4} value={prompt} />
+            <textarea onChange={(event) => setPrompt(event.target.value)} rows={3} value={prompt} />
           </label>
 
-          <div className="inference-playground__trust-slot">
-            {selectedModel && (selectedModel.teeAttested || selectedModel.e2ee) ? (
-              <UpstreamTeeVerificationPanel
-                compact
-                e2ee={selectedModel.e2ee}
-                modelId={model}
-                provider={attestationProvider}
-                teeAttested={selectedModel.teeAttested}
-              />
-            ) : (
-              <div className="inference-playground__trust-placeholder" aria-hidden={!selectedModel}>
-                <span className="inference-playground__trust-placeholder-label">trust</span>
-                <span>
-                  {selectedModel
-                    ? 'standard routing · no tee verification required'
-                    : 'select a model to inspect attestation'}
-                </span>
-              </div>
-            )}
+          <div className="inference-playground__actions">
+            <button
+              className="button button--primary rx-spacebar-clip"
+              disabled={pending}
+              onClick={() => void handleRun()}
+              type="button"
+            >
+              {pending ? 'routing...' : 'run request'}
+            </button>
+            {teeStatus ? <span className="inference-playground__status">{teeStatus}</span> : null}
           </div>
 
-          <button
-            className="button button--primary rx-spacebar-clip"
-            disabled={pending}
-            onClick={() => void handleRun()}
-            type="button"
-          >
-            {pending
-              ? 'routing...'
-              : privacyMode === 'strict' && selectedModel?.e2ee
-                ? 'run e2ee request'
-                : 'run request'}
-          </button>
-
-          {teeStatus ? <p className="form-status">{teeStatus}</p> : null}
           {error ? <p className="error-note">{error}</p> : null}
           {responseText ? (
             <article className="inference-playground__response">
@@ -401,51 +379,72 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
           ) : null}
         </div>
 
-        <div className="terminal-deck inference-playground__deck">
-          <div className="terminal-deck__header">
-            <p className="eyebrow">request</p>
-            <div className="terminal-deck__tabs" role="tablist" aria-label="Playground output">
-              <button
-                className={`deck-tab deck-tab--chat ${activePanel === 'curl' ? 'deck-tab--active' : ''}`}
-                onClick={() => setActivePanel('curl')}
-                type="button"
-              >
-                curl
-              </button>
-              <button
-                className={`deck-tab deck-tab--raid ${activePanel === 'response' ? 'deck-tab--active' : ''}`}
-                onClick={() => setActivePanel('response')}
-                type="button"
-              >
-                response
-              </button>
+        <aside className="inference-playground__aside">
+          <section className="inference-playground__trust-card beta-panel">
+            <p className="eyebrow">attestation</p>
+            {selectedModel && (selectedModel.teeAttested || selectedModel.e2ee) ? (
+              <div className="inference-playground__trust-copy">
+                <strong>{selectedModel.teeAttested ? 'TEE attested' : 'E2EE lane'}</strong>
+                <p>
+                  {attestationProvider} · {model || 'model pending'}
+                </p>
+                <p>Verification runs before each request when TEE or strict E2EE is active.</p>
+              </div>
+            ) : (
+              <p className="inference-playground__trust-copy">
+                Standard routing. Select a TEE or E2EE model to inspect upstream proof requirements.
+              </p>
+            )}
+          </section>
+
+          <div className="terminal-deck inference-playground__deck">
+            <div className="terminal-deck__header">
+              <p className="eyebrow">request</p>
+              <div className="terminal-deck__tabs" role="tablist" aria-label="Playground output">
+                <button
+                  className={`deck-tab deck-tab--chat ${activePanel === 'curl' ? 'deck-tab--active' : ''}`}
+                  onClick={() => setActivePanel('curl')}
+                  type="button"
+                >
+                  curl
+                </button>
+                <button
+                  className={`deck-tab deck-tab--raid ${activePanel === 'response' ? 'deck-tab--active' : ''}`}
+                  onClick={() => setActivePanel('response')}
+                  type="button"
+                >
+                  response
+                </button>
+              </div>
+            </div>
+            <div className="terminal-stack">
+              <TerminalCodePanel
+                label="curl"
+                note="openai-compatible"
+                code={curlSnippet}
+                theme="chat"
+                layer={activePanel === 'curl' ? 'front' : 'mid'}
+                onFocus={() => setActivePanel('curl')}
+                actionLabel={copiedKey === 'curl-panel' ? 'copied' : 'copy'}
+                onAction={() => void copySnippet('curl-panel', curlSnippet)}
+              />
+              <TerminalCodePanel
+                label="response"
+                note="seller metadata"
+                code={responseSnippet}
+                theme="raid"
+                layer={activePanel === 'response' ? 'front' : 'back'}
+                onFocus={() => setActivePanel('response')}
+                actionLabel={rawResponse && copiedKey === 'response-panel' ? 'copied' : 'copy'}
+                onAction={
+                  rawResponse
+                    ? () => void copySnippet('response-panel', responseSnippet)
+                    : undefined
+                }
+              />
             </div>
           </div>
-          <div className="terminal-stack">
-            <TerminalCodePanel
-              label="curl"
-              note="openai-compatible"
-              code={curlSnippet}
-              theme="chat"
-              layer={activePanel === 'curl' ? 'front' : 'mid'}
-              onFocus={() => setActivePanel('curl')}
-              actionLabel={copiedKey === 'curl-panel' ? 'copied' : 'copy'}
-              onAction={() => void copySnippet('curl-panel', curlSnippet)}
-            />
-            <TerminalCodePanel
-              label="response"
-              note="seller metadata"
-              code={responseSnippet}
-              theme="raid"
-              layer={activePanel === 'response' ? 'front' : 'back'}
-              onFocus={() => setActivePanel('response')}
-              actionLabel={rawResponse && copiedKey === 'response-panel' ? 'copied' : 'copy'}
-              onAction={
-                rawResponse ? () => void copySnippet('response-panel', responseSnippet) : undefined
-              }
-            />
-          </div>
-        </div>
+        </aside>
       </div>
     </section>
   );

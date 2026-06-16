@@ -373,6 +373,7 @@ type RaidDemoViewStateInput = {
   providerHealth: ProviderHealth[];
   runtimeAttestation: AttestedEnvelope<AttestedRuntimePayload> | null;
   runtimeAttestationError: string | null;
+  paymentEnabled: boolean;
 };
 
 export function buildRaidDemoViewState({
@@ -386,6 +387,7 @@ export function buildRaidDemoViewState({
   providerHealth,
   runtimeAttestation,
   runtimeAttestationError,
+  paymentEnabled,
 }: RaidDemoViewStateInput) {
   const providerById = new Map(providers.map((provider) => [provider.providerId, provider]));
   const healthByProviderId = new Map(providerHealth.map((entry) => [entry.providerId, entry]));
@@ -393,13 +395,15 @@ export function buildRaidDemoViewState({
     (entry) => entry.reachable && entry.ready
   ).length;
   const hostedProviderCount = providerHealth.length > 0 ? providerHealth.length : providers.length;
-  const availabilityLabel =
-    hostedProviderCount > 0
+  const availabilityLabel = !paymentEnabled
+    ? 'Payment not configured'
+    : hostedProviderCount > 0
       ? `${readyProviderCount}/${hostedProviderCount} specialists ready`
       : 'Checking specialists';
   const allowsDirectV1Reply = demoMode === 'chat_v1' && isLowSignalChatPrompt(liveDemoBrief);
   const canLaunchLiveRaid =
-    providerHealth.length === 0 || readyProviderCount > 0 || allowsDirectV1Reply;
+    paymentEnabled &&
+    (providerHealth.length === 0 || readyProviderCount > 0 || allowsDirectV1Reply);
   const canSendBrief = liveDemoBrief.trim().length > 0 && !isLaunching && canLaunchLiveRaid;
   const activeRaidStatus = liveRaidRun?.status?.status ?? liveRaidRun?.spawn.status;
   const raidIsTerminal = activeRaidStatus ? isTerminalRaidStatus(activeRaidStatus) : false;

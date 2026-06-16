@@ -52,41 +52,6 @@ export function createRouteAccessAuth(
     return undefined;
   }
 
-  function demoRouteIsAuthorized(headers: Record<string, string | string[] | undefined>): boolean {
-    if (adminIsAuthorized(headers)) {
-      return true;
-    }
-
-    if (!ctx.demoToken) {
-      return false;
-    }
-
-    return safeEqualString(asSingleHeader(headers['x-bossraid-demo-token']), ctx.demoToken);
-  }
-
-  function requireDemoRouteAccess(
-    reply: FastifyReply,
-    headers: Record<string, string | string[] | undefined>
-  ): { error: string; message?: string } | undefined {
-    if (!ctx.demoRouteEnabled) {
-      reply.code(404);
-      return {
-        error: 'not_found',
-        message: 'Demo raid route is not enabled.',
-      };
-    }
-
-    if (!demoRouteIsAuthorized(headers)) {
-      reply.code(401);
-      return {
-        error: 'unauthorized',
-        message: 'Demo raid route requires a valid x-bossraid-demo-token header.',
-      };
-    }
-
-    return undefined;
-  }
-
   function requireRaidReadAccess(
     reply: FastifyReply,
     raidId: string,
@@ -171,7 +136,6 @@ export function createRouteAccessAuth(
   return {
     adminIsAuthorized,
     requireAdmin,
-    requireDemoRouteAccess,
     requireRaidReadAccess,
     readRaidAccessTokenQuery,
     requireProviderOrRaidReadAccess,

@@ -25,8 +25,6 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 | -------------------------------------------- | ------------------------------------------------------------------ |
 | `BOSSRAID_ADMIN_TOKEN`                       | Admin bearer + ops session bootstrap                               |
 | `BOSSRAID_REGISTRY_TOKEN`                    | `POST /agents/register`                                            |
-| `BOSSRAID_DEMO_ROUTE_ENABLED`                | Enable `POST /v1/demo/raid`                                        |
-| `BOSSRAID_DEMO_TOKEN`                        | Required when demo enabled                                         |
 | `BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST`       | Chat budget fallback                                               |
 | `BOSSRAID_PUBLIC_RATE_LIMIT_*`               | Public spawn/chat limits                                           |
 | `BOSSRAID_BUYER_KEY_RATE_LIMIT_*`            | Per API-key limits                                                 |
@@ -117,12 +115,12 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 
 ## Web, gateway, MCP
 
-| Variable                            | Purpose                    |
-| ----------------------------------- | -------------------------- |
-| `BOSSRAID_API_ORIGIN`               | Gateway/Pages proxy target |
-| `BOSSRAID_DEMO_PROXY_TOKEN`         | Demo proxy header          |
-| `VITE_BOSSRAID_*`                   | Web/ops Vite prefixes      |
-| `BOSSRAID_CLOUDFLARE_PAGES_PROJECT` | Pages deploy               |
+| Variable                            | Purpose                                                               |
+| ----------------------------------- | --------------------------------------------------------------------- |
+| `BOSSRAID_API_ORIGIN`               | Gateway/Pages proxy target                                            |
+| `VITE_BOSSRAID_*`                   | Web/ops Vite prefixes                                                 |
+| `VITE_BOSSRAID_PUBLIC_WEB_ORIGIN`   | Ops deep links to buyer web when web and ops run on different origins |
+| `BOSSRAID_CLOUDFLARE_PAGES_PROJECT` | Pages deploy                                                          |
 
 ## Mana Core (trusted clients)
 

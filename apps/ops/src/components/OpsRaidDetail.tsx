@@ -1,17 +1,8 @@
 import { ArtifactStrip, SettlementProofPanel } from '@bossraid/ui';
 import type { RaidListItem, RaidResult, RaidStatus } from '../api';
+import { buildConsumerReceiptUrl } from '../lib/consumer-urls';
 import { OpsRaidList } from './OpsRaidList';
-import { OpsSpawnPanel } from './OpsSpawnPanel';
-import {
-  formatMs,
-  formatTimestamp,
-  formatUsd,
-  Metric,
-  ScoreCard,
-  SignalTag,
-  SnapshotRow,
-  WorkstreamCard,
-} from './ops-ui';
+import { formatMs, formatUsd, Metric, ScoreCard, SignalTag, WorkstreamCard } from './ops-ui';
 
 type OpsRaidDetailProps = {
   raids: RaidListItem[];
@@ -22,7 +13,6 @@ type OpsRaidDetailProps = {
   activeRaidId: string;
   approvedProviders: string[];
   expertStates: RaidStatus['experts'];
-  engagedExperts: number;
   rankedSubmissions: NonNullable<RaidResult['rankedSubmissions']>;
   synthesizedOutput: RaidResult['synthesizedOutput'];
   synthesizedWorkstreams: NonNullable<RaidResult['synthesizedOutput']>['workstreams'];
@@ -31,11 +21,15 @@ type OpsRaidDetailProps = {
   settlementExecution: RaidResult['settlementExecution'];
   reputationEvents: RaidResult['reputationEvents'];
   receiptCopied: boolean;
-  spawnPayload: string;
-  spawnError: string | null;
+  buyerReceiptToken: string | null;
+  canAbort: boolean;
+  canReplay: boolean;
+  actionPending: 'abort' | 'replay' | null;
+  actionError: string | null;
   onSelectRaid: (raidId: string) => void;
   onCopyReceipt: () => void;
-  onSpawnPayloadChange: (value: string) => void;
+  onRequestAbort: () => void;
+  onRequestReplay: () => void;
 };
 
 export function OpsRaidDetail({
@@ -47,7 +41,6 @@ export function OpsRaidDetail({
   activeRaidId,
   approvedProviders,
   expertStates,
-  engagedExperts,
   rankedSubmissions,
   synthesizedOutput,
   synthesizedWorkstreams,
@@ -56,14 +49,51 @@ export function OpsRaidDetail({
   settlementExecution,
   reputationEvents,
   receiptCopied,
-  spawnPayload,
-  spawnError,
+  buyerReceiptToken,
+  canAbort,
+  canReplay,
+  actionPending,
+  actionError,
   onSelectRaid,
   onCopyReceipt,
-  onSpawnPayloadChange,
+  onRequestAbort,
+  onRequestReplay,
 }: OpsRaidDetailProps) {
+  const buyerReceiptUrl =
+    raidId && buyerReceiptToken
+      ? buildConsumerReceiptUrl({ raidId, token: buyerReceiptToken })
+      : null;
+
   return (
     <>
+      <section className="ops-live-actions flat-section">
+        <div className="panel-head">
+          <div>
+            <p className="eyebrow">raid controls</p>
+            <h2>{activeRaidId}</h2>
+          </div>
+          <div className="ops-live-actions__buttons">
+            <button
+              className="button"
+              disabled={!canReplay || actionPending != null}
+              onClick={onRequestReplay}
+              type="button"
+            >
+              {actionPending === 'replay' ? 'replaying' : 're-score'}
+            </button>
+            <button
+              className="button button--danger"
+              disabled={!canAbort || actionPending != null}
+              onClick={onRequestAbort}
+              type="button"
+            >
+              {actionPending === 'abort' ? 'aborting' : 'abort raid'}
+            </button>
+          </div>
+        </div>
+        {actionError ? <p className="error-note">{actionError}</p> : null}
+      </section>
+
       <section className="ops-workbench">
         <div className="ops-column">
           <article className="ops-panel ops-panel--queue">
@@ -105,12 +135,6 @@ export function OpsRaidDetail({
         </div>
 
         <div className="ops-column">
-          <OpsSpawnPanel
-            spawnError={spawnError}
-            spawnPayload={spawnPayload}
-            onPayloadChange={onSpawnPayloadChange}
-          />
-
           <article className="ops-panel ops-panel--output">
             <div className="panel-head">
               <div>
@@ -163,10 +187,28 @@ export function OpsRaidDetail({
               <p className="ops-label">receipt</p>
               <h3>Proof and settlement</h3>
             </div>
-            <button className="button" onClick={onCopyReceipt} type="button">
-              {receiptCopied ? 'copied' : 'copy receipt'}
-            </button>
+            <div className="ops-proof-actions">
+              {buyerReceiptUrl ? (
+                <a
+                  className="button button--primary"
+                  href={buyerReceiptUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  open buyer receipt
+                </a>
+              ) : null}
+              <button className="button" onClick={onCopyReceipt} type="button">
+                {receiptCopied ? 'copied' : 'copy ops json'}
+              </button>
+            </div>
           </div>
+          {!buyerReceiptUrl ? (
+            <p className="quiet-note">
+              Buyer receipt needs raidAccessToken from spawn. Re-launch from Launch or use
+              Mercenary.
+            </p>
+          ) : null}
           <SettlementProofPanel
             activeRaidId={activeRaidId}
             approvedProviderCount={approvedProviders.length}
@@ -219,46 +261,6 @@ export function OpsRaidHeroMetrics({
       <Metric label="split" value={formatUsd(payoutPerSuccessfulProvider)} />
       <Metric label="risk" value={raidStatus?.sanitization.riskTier ?? 'n/a'} />
     </section>
-  );
-}
-
-export function OpsRaidSnapshot({
-  raidStatus,
-  selectedRaid,
-  activeRaidId,
-  engagedExperts,
-  approvedProviderCount,
-  dangerState,
-}: {
-  raidStatus: RaidStatus | undefined;
-  selectedRaid: RaidListItem | undefined;
-  activeRaidId: string;
-  engagedExperts: number;
-  approvedProviderCount: number;
-  dangerState: boolean;
-}) {
-  return (
-    <article className="ops-window ops-window--back">
-      <div className="ops-window__head">
-        <div>
-          <p className="ops-label">raid snapshot</p>
-          <h2>{activeRaidId}</h2>
-        </div>
-        <SignalTag
-          label={dangerState ? 'limits' : 'stable'}
-          variant={dangerState ? 'danger' : 'default'}
-          blinking={dangerState}
-        />
-      </div>
-      <div className="snapshot-grid">
-        <SnapshotRow label="status" value={raidStatus?.status ?? selectedRaid?.status ?? 'idle'} />
-        <SnapshotRow label="created" value={formatTimestamp(selectedRaid?.createdAt)} />
-        <SnapshotRow label="experts" value={String(engagedExperts)} />
-        <SnapshotRow label="approved" value={String(approvedProviderCount)} />
-        <SnapshotRow label="risk" value={raidStatus?.sanitization.riskTier ?? 'n/a'} />
-        <SnapshotRow label="updated" value={formatTimestamp(selectedRaid?.updatedAt)} />
-      </div>
-    </article>
   );
 }
 

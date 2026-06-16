@@ -4,20 +4,19 @@ Native write route: `POST /v1/raid`.
 
 ## Public write
 
-| Route                                 | Purpose                                                                                                                                                                                                                                          |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `POST /v1/raid`                       | Native raid (`raid_request` shape). Returns `raidId`, `raidAccessToken`, `receiptPath`.                                                                                                                                                          |
-| `POST /v1/chat/completions`           | OpenAI-compatible Mercenary entry. Optional `stream`, `raid_policy`, `raid_request`.                                                                                                                                                             |
-| `POST /v1/inference/chat/completions` | Discount inference. One seller, `cost_first`, rate-card snapshot. Strict E2EE catalog models use the server Venice relay when `raid_policy.privacy_mode` is `strict`; pass `X-BossRaid-Upstream-Api-Key` or configure `BOSSRAID_VENICE_API_KEY`. |
-| `POST /v1/demo/raid`                  | Free demo when `BOSSRAID_DEMO_ROUTE_ENABLED` + `BOSSRAID_DEMO_TOKEN` + `x-bossraid-demo-token`.                                                                                                                                                  |
-| `POST /v1/auth/agent-session`         | Store ERC-7715 permission context for MCP redelegated x402 payments. Requires wallet session cookie.                                                                                                                                             |
-| `GET /v1/auth/agent-session`          | Read stored agent payment session for the signed-in wallet.                                                                                                                                                                                      |
-| `DELETE /v1/auth/agent-session`       | Clear stored agent payment session.                                                                                                                                                                                                              |
-| `POST /v1/relayer/webhook`            | 1Shot relayer status webhook sink.                                                                                                                                                                                                               |
-| `GET /v1/relayer/status/:taskId`      | Poll 1Shot relay task status.                                                                                                                                                                                                                    |
-| `POST /v1/relayer/send`               | Proxy `relayer_send7710Transaction` to the public 1Shot relayer.                                                                                                                                                                                 |
+| Route                                 | Purpose                                                                                                                                                                                                                                                                                              |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/raid`                       | Native raid (`raid_request` shape). Returns `raidId`, `raidAccessToken`, `receiptPath`. Requires wallet session cookie, buyer API key (`Authorization: Bearer br_…`), or mana billing headers unless admin bearer bypasses payment. x402 when enabled.                                               |
+| `POST /v1/chat/completions`           | OpenAI-compatible Mercenary entry. Optional `stream`, `raid_policy`, `raid_request`. Same session/API-key/mana gate as `POST /v1/raid`. x402 when enabled; admin bearer bypasses payment for internal launches.                                                                                      |
+| `POST /v1/inference/chat/completions` | Discount inference. One seller, `cost_first`, rate-card snapshot. Same session/API-key/mana gate as Mercenary routes. Strict E2EE catalog models use the server Venice relay when `raid_policy.privacy_mode` is `strict`; pass `X-BossRaid-Upstream-Api-Key` or configure `BOSSRAID_VENICE_API_KEY`. |
+| `POST /v1/auth/agent-session`         | Store ERC-7715 permission context for MCP redelegated x402 payments. Requires wallet session cookie.                                                                                                                                                                                                 |
+| `GET /v1/auth/agent-session`          | Read stored agent payment session for the signed-in wallet.                                                                                                                                                                                                                                          |
+| `DELETE /v1/auth/agent-session`       | Clear stored agent payment session.                                                                                                                                                                                                                                                                  |
+| `POST /v1/relayer/webhook`            | 1Shot relayer status webhook sink.                                                                                                                                                                                                                                                                   |
+| `GET /v1/relayer/status/:taskId`      | Poll 1Shot relay task status.                                                                                                                                                                                                                                                                        |
+| `POST /v1/relayer/send`               | Proxy `relayer_send7710Transaction` to the public 1Shot relayer.                                                                                                                                                                                                                                     |
 
-`receiptPath` → `/receipt?raidId=...&token=...`
+`receiptPath` → `/verification?raidId=...&token=...`
 
 ## Status, proof, discovery
 
@@ -109,17 +108,21 @@ Admin: `Authorization: Bearer $BOSSRAID_ADMIN_TOKEN` or ops session cookie.
 
 ## Web & gateway
 
+<!-- docs:template:web-routes -->
+
 | Path                                      | Purpose                                        |
 | ----------------------------------------- | ---------------------------------------------- |
-| `/`                                       | Landing                                        |
+| `/mercenary`                              | Mercenary chat and raid launcher               |
 | `/marketplace`                            | Model marketplace                              |
+| `/playground`                             | Inference playground and raid mode             |
 | `/onboarding/buyer`, `/onboarding/seller` | Onboarding                                     |
 | `/account`                                | Keys, sellers, balance                         |
-| `/demo`                                   | Hosted demo                                    |
 | `/raiders`                                | Provider directory                             |
-| `/receipt`                                | Public proof                                   |
+| `/verification`                           | Public proof (`/receipt` redirects here)       |
 | `/ops/`                                   | Ops SPA (readiness, settlement, metrics, x402) |
 | `/api/*`, `/ops-api/*`                    | Proxied API                                    |
+
+<!-- /docs:template:web-routes -->
 
 ## MCP tools
 

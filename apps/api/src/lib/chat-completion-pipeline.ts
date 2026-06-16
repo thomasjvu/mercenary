@@ -177,11 +177,9 @@ export async function launchPaidChatRaid(
 ) {
   const { requireReservedLaunchPayment, reconcileLaunchPayment } = deps.payment;
   await deps.raid.ensureErc8004ProofState({ includeMercenary: false });
-  const launchPayment = await requireReservedLaunchPayment(
-    input.paymentRoute,
-    input.request,
-    input.raidRequest
-  );
+  const launchPayment = deps.auth.adminIsAuthorized(input.request.headers)
+    ? {}
+    : await requireReservedLaunchPayment(input.paymentRoute, input.request, input.raidRequest);
 
   try {
     const spawn =

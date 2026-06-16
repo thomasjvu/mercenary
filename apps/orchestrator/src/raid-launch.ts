@@ -337,7 +337,7 @@ export async function spawnPreparedRaid(
     return {
       raidId: raid.id,
       raidAccessToken,
-      receiptPath: `/receipt?raidId=${encodeURIComponent(raid.id)}&token=${encodeURIComponent(raidAccessToken)}`,
+      receiptPath: `/verification?raidId=${encodeURIComponent(raid.id)}&token=${encodeURIComponent(raidAccessToken)}`,
       status: raid.status,
       selectedExperts: countPreparedExperts(prepared.graph, 'selected'),
       reserveExperts:
@@ -364,7 +364,7 @@ export async function spawnPreparedRaid(
   return {
     raidId: raid.id,
     raidAccessToken,
-    receiptPath: `/receipt?raidId=${encodeURIComponent(raid.id)}&token=${encodeURIComponent(raidAccessToken)}`,
+    receiptPath: `/verification?raidId=${encodeURIComponent(raid.id)}&token=${encodeURIComponent(raidAccessToken)}`,
     status: raid.status,
     selectedExperts: prepared.selectedProviders.primaries.length,
     reserveExperts: prepared.selectedProviders.reserves.length,

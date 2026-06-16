@@ -52,18 +52,22 @@ export function ReceiptRow({ label, value }: { label: string; value: string }) {
   return <OpsLabelValue label={label} value={value} variant="receipt" />;
 }
 
-export function X402PaymentsToggle({
+export function X402PaymentsGate({
   enabled,
   settings,
   disabled,
   error,
-  onToggle,
+  blockingChecks,
+  onRequestEnable,
+  onRequestDisable,
 }: {
   enabled: boolean;
   settings?: OpsX402Settings;
   disabled: boolean;
   error: string | null;
-  onToggle: (nextEnabled: boolean) => void;
+  blockingChecks: Array<{ id: string; message: string }>;
+  onRequestEnable: () => void;
+  onRequestDisable: () => void;
 }) {
   const canEnable = settings?.canEnable ?? false;
   const blockers =
@@ -71,36 +75,53 @@ export function X402PaymentsToggle({
     (!canEnable && !enabled
       ? ['Set BOSSRAID_X402_PAY_TO on the API host before enabling paid routes.']
       : []);
+  const readinessBlockers = blockingChecks.map((check) => `${check.id}: ${check.message}`);
 
   return (
-    <section className="ops-x402-panel" aria-label="x402 payment controls">
+    <section className="ops-x402-panel flat-section" aria-label="x402 payment controls">
       <div className="ops-x402-panel__copy">
-        <p className="ops-label">payments</p>
+        <p className="eyebrow">payments</p>
         <h2>x402 USDC gate</h2>
         <p className="ops-x402-panel__lede">
-          Paid routes stay off until you flip this switch. Toggle here instead of redeploying env
-          vars.
+          Paid ingress requires explicit confirmation. Buyers on POST /v1/raid and chat routes need
+          USDC when enabled.
         </p>
       </div>
 
       <div className="ops-x402-panel__controls">
-        <button
-          aria-pressed={enabled}
-          className={`ops-x402-toggle${enabled ? ' ops-x402-toggle--on' : ''}`}
-          disabled={disabled || (!enabled && !canEnable)}
-          onClick={() => onToggle(!enabled)}
-          type="button"
-        >
-          <span className="ops-x402-toggle__track" aria-hidden="true">
-            <span className="ops-x402-toggle__thumb" />
-          </span>
-          <span className="ops-x402-toggle__label">
-            <strong>{enabled ? 'enabled' : 'disabled'}</strong>
-            <span>
-              {enabled ? 'POST /v1/raid and chat routes require payment' : 'free ingress'}
-            </span>
-          </span>
-        </button>
+        <div className="ops-x402-status">
+          <SignalTag
+            label={enabled ? 'enabled' : 'disabled'}
+            variant={enabled ? 'internal' : 'default'}
+          />
+          <p className="quiet-note">
+            {enabled
+              ? 'POST /v1/raid and chat routes require payment.'
+              : 'Public ingress stays on free/demo paths.'}
+          </p>
+        </div>
+
+        <div className="ops-x402-panel__actions">
+          {!enabled ? (
+            <button
+              className="button button--danger"
+              disabled={disabled || !canEnable || readinessBlockers.length > 0}
+              onClick={onRequestEnable}
+              type="button"
+            >
+              enable paid ingress
+            </button>
+          ) : (
+            <button
+              className="button button--danger"
+              disabled={disabled}
+              onClick={onRequestDisable}
+              type="button"
+            >
+              disable paid ingress
+            </button>
+          )}
+        </div>
 
         <div className="ops-x402-panel__meta">
           <span>facilitator {settings?.facilitator ?? 'n/a'}</span>
@@ -116,6 +137,13 @@ export function X402PaymentsToggle({
           </span>
         </div>
 
+        {readinessBlockers.length > 0 && !enabled ? (
+          <ul className="ops-x402-panel__blockers">
+            {readinessBlockers.map((blocker) => (
+              <li key={blocker}>{blocker}</li>
+            ))}
+          </ul>
+        ) : null}
         {blockers.length > 0 ? (
           <ul className="ops-x402-panel__blockers">
             {blockers.map((blocker) => (

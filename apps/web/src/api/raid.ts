@@ -28,16 +28,6 @@ export type AttestedRaidResultPayload = AttestedRaidResultPayloadResponse;
 export type RaidSpawnOutput = RaidSpawnOutputResponse;
 export type ChatCompletionResponse = ChatCompletionResponseView;
 
-export async function spawnDemoRaid(payload: unknown): Promise<ApiResponse<RaidSpawnOutput>> {
-  return requestJsonDetailed<RaidSpawnOutput>('/v1/demo/raid', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
-}
-
 export async function requestChatCompletion(
   payload: unknown
 ): Promise<ApiResponse<ChatCompletionResponse>> {
