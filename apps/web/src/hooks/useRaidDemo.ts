@@ -26,6 +26,12 @@ import {
   type MercenaryThreadRecord,
   type MercenaryThreadStore,
 } from '../lib/mercenary-threads.js';
+import {
+  buildDeleteThreadStore,
+  buildRenameThreadStore,
+  buildSelectThreadStore,
+  buildStartNewThreadStore,
+} from '../lib/raid-demo-thread-actions.js';
 import { launchPaidRaidDemo, refreshRaidDemoRun } from '../lib/raid-demo-launch.js';
 import {
   applyRaidDemoThreadRecord,
@@ -290,27 +296,22 @@ export function useRaidDemo({
   }
 
   function selectThread(threadId: string) {
-    if (isLaunching || threadId === activeThreadId) {
+    if (isLaunching) {
       return;
     }
 
-    const currentSnapshot = buildThreadSnapshot();
-    const nextStore = {
-      activeThreadId: threadId,
-      threads: upsertMercenaryThread(threadStore, currentSnapshot).threads,
-    };
-    const nextThread = findMercenaryThread(nextStore, threadId);
-    if (!nextThread) {
+    const result = buildSelectThreadStore(threadStore, buildThreadSnapshot(), threadId);
+    if (!result) {
       return;
     }
 
     if (persistThreads) {
-      persistMercenaryThreadStore(nextStore);
+      persistMercenaryThreadStore(result.store);
     }
 
-    setThreadStore(nextStore);
-    setActiveThreadId(threadId);
-    applyThread(nextThread);
+    setThreadStore(result.store);
+    setActiveThreadId(result.store.activeThreadId);
+    applyThread(result.thread);
   }
 
   function startNewThread() {
@@ -318,21 +319,15 @@ export function useRaidDemo({
       return;
     }
 
-    const currentSnapshot = buildThreadSnapshot();
-    const mergedStore = upsertMercenaryThread(threadStore, currentSnapshot);
-    const newThread = createMercenaryThread();
-    const nextStore = {
-      activeThreadId: newThread.id,
-      threads: [newThread, ...mergedStore.threads],
-    };
+    const result = buildStartNewThreadStore(threadStore, buildThreadSnapshot());
 
     if (persistThreads) {
-      persistMercenaryThreadStore(nextStore);
+      persistMercenaryThreadStore(result.store);
     }
 
-    setThreadStore(nextStore);
-    setActiveThreadId(newThread.id);
-    applyThread(newThread);
+    setThreadStore(result.store);
+    setActiveThreadId(result.store.activeThreadId);
+    applyThread(result.thread);
   }
 
   function resetConversation() {
@@ -340,20 +335,7 @@ export function useRaidDemo({
   }
 
   function renameThread(threadId: string, title: string) {
-    const trimmed = title.trim() || 'New thread';
-    const nextStore = {
-      activeThreadId,
-      threads: threadStore.threads.map((thread) =>
-        thread.id === threadId
-          ? {
-              ...thread,
-              title: trimmed,
-              titleLocked: true,
-              updatedAt: new Date().toISOString(),
-            }
-          : thread
-      ),
-    };
+    const nextStore = buildRenameThreadStore(threadStore, activeThreadId, threadId, title);
 
     if (persistThreads) {
       persistMercenaryThreadStore(nextStore);
@@ -367,37 +349,22 @@ export function useRaidDemo({
       return;
     }
 
-    const currentSnapshot = buildThreadSnapshot();
-    const mergedThreads = upsertMercenaryThread(threadStore, currentSnapshot).threads;
-    const nextThreads = mergedThreads.filter((thread) => thread.id !== threadId);
-
-    if (nextThreads.length === 0) {
-      const fresh = createMercenaryThread();
-      const nextStore = { activeThreadId: fresh.id, threads: [fresh] };
-
-      if (persistThreads) {
-        persistMercenaryThreadStore(nextStore);
-      }
-
-      setThreadStore(nextStore);
-      setActiveThreadId(fresh.id);
-      applyThread(fresh);
-      return;
-    }
-
-    const deletingActive = threadId === activeThreadId;
-    const nextActiveId = deletingActive ? nextThreads[0]!.id : activeThreadId;
-    const nextStore = { activeThreadId: nextActiveId, threads: nextThreads };
+    const result = buildDeleteThreadStore(
+      threadStore,
+      buildThreadSnapshot(),
+      activeThreadId,
+      threadId
+    );
 
     if (persistThreads) {
-      persistMercenaryThreadStore(nextStore);
+      persistMercenaryThreadStore(result.store);
     }
 
-    setThreadStore(nextStore);
-    setActiveThreadId(nextActiveId);
+    setThreadStore(result.store);
+    setActiveThreadId(result.store.activeThreadId);
 
-    if (deletingActive) {
-      applyThread(nextThreads[0]!);
+    if (result.thread) {
+      applyThread(result.thread);
     }
   }
 
