@@ -1,6 +1,20 @@
 .app-frame--theme-dark .app-shell--landing .hero--workflow-raider {
-  --workflow-label: var(--rx-yellow);
+  --workflow-label: #111111;
   --workflow-ink: #111111;
+}
+
+.app-frame--theme-dark
+  .app-shell--landing
+  .hero--workflow-raider
+  .hero__headline-line:has(> .hero__headline-accent),
+.app-frame--theme-dark .app-shell--landing .info-panel--workflow-raider .info-panel__head .eyebrow {
+  background: var(--rx-yellow);
+  color: #111111;
+}
+
+.app-frame--theme-dark .app-shell--landing .hero--workflow-raider .hero__headline-accent {
+  background: transparent;
+  color: inherit;
 }
 
 .app-frame--theme-dark {
@@ -581,6 +595,6 @@
 }
 
 .app-frame--theme-dark .app-shell--landing .info-panel--workflow-raider {
-  --workflow-label: var(--rx-yellow);
+  --workflow-label: #111111;
   --workflow-ink: #111111;
 }

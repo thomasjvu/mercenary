@@ -1,5 +1,4 @@
 import { Icon } from '@iconify/react';
-import { BossRaidMark } from './BossRaidMark.js';
 import { AppSidebarFooter } from './sidebar/AppSidebarFooter.js';
 import { SidebarExternalLink } from './sidebar/SidebarExternalLink.js';
 import { SidebarNavEntry } from './sidebar/SidebarNavEntry.js';
@@ -40,7 +39,6 @@ export function AppSidebar({
       <div className="app-sidebar__top">
         <div className="app-sidebar__brand-row">
           <button className="app-sidebar__brand" onClick={() => onNavigate('/')} type="button">
-            <BossRaidMark compact />
             <span className="app-sidebar__title">Boss Raid</span>
           </button>
           <button

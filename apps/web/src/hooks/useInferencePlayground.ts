@@ -20,6 +20,11 @@ type UseInferencePlaygroundOptions = {
   initialModelId?: string;
 };
 
+export type PlaygroundUserMessage = {
+  message: string;
+  variant: 'guide' | 'error';
+};
+
 export function useInferencePlayground({ initialModelId }: UseInferencePlaygroundOptions = {}) {
   const markets = useSWR('playground-markets', () => fetchMarkets());
 
@@ -36,7 +41,7 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
   const [privacyMode, setPrivacyMode] = useState<'prefer' | 'strict'>('prefer');
   const [maxBudget, setMaxBudget] = useState('1');
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<PlaygroundUserMessage | null>(null);
   const [responseText, setResponseText] = useState<string | null>(null);
   const [rawResponse, setRawResponse] = useState<unknown>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -169,23 +174,31 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
 
   async function handleRun() {
     if (!apiKey.trim() && !strictE2ee) {
-      setError('Add a buyer API key from account onboarding.');
+      setError({
+        message: 'Add a buyer API key from account onboarding.',
+        variant: 'guide',
+      });
       return;
     }
     if (strictE2ee && !upstreamApiKey.trim()) {
-      setError(
-        'Strict E2EE models need an upstream API key (or configure BOSSRAID_VENICE_API_KEY server-side).'
-      );
+      setError({
+        message:
+          'Strict E2EE models need an upstream API key (or configure BOSSRAID_VENICE_API_KEY server-side).',
+        variant: 'guide',
+      });
       return;
     }
 
     if (!model.trim()) {
-      setError('Pick a model.');
+      setError({ message: 'Pick a model.', variant: 'guide' });
       return;
     }
 
     if (selectedModel && selectedModel.liveSellers === 0 && privacyMode !== 'strict') {
-      setError('No live sellers for this model yet. Pick a model with active sellers.');
+      setError({
+        message: 'No live sellers for this model yet. Pick a model with active sellers.',
+        variant: 'guide',
+      });
       return;
     }
 
@@ -233,7 +246,10 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
       }
       setActivePanel('response');
     } catch (runError) {
-      setError(runError instanceof Error ? runError.message : 'Inference request failed.');
+      setError({
+        message: runError instanceof Error ? runError.message : 'Inference request failed.',
+        variant: 'error',
+      });
     } finally {
       setPending(false);
     }

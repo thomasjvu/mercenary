@@ -1,4 +1,5 @@
 import { FormField, FormInput, FormSelect } from '../system/FormField.js';
+import { UserErrorNote } from '../system/UserErrorNote.js';
 import { TerminalCodePanel } from '../terminal/TerminalCodePanel.js';
 import { useInferencePlayground } from '../../hooks/useInferencePlayground.js';
 import { ModelCombobox } from './ModelCombobox.js';
@@ -104,7 +105,9 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
             ) : null}
           </div>
 
-          {state.error ? <p className="error-note">{state.error}</p> : null}
+          {state.error ? (
+            <UserErrorNote variant={state.error.variant}>{state.error.message}</UserErrorNote>
+          ) : null}
           {state.responseText ? (
             <article className="inference-playground__response">
               <p className="eyebrow">assistant</p>

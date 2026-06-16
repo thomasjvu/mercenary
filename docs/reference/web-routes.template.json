@@ -34,6 +34,10 @@
       "purpose": "Public proof (`/receipt` redirects here)"
     },
     {
+      "path": "/terms-of-service, /privacy-policy, /acceptable-use-policy",
+      "purpose": "Legal policies"
+    },
+    {
       "path": "/ops/",
       "purpose": "Ops SPA (readiness, settlement, metrics, x402)"
     },

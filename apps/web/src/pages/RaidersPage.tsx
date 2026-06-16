@@ -29,11 +29,13 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
 
   return (
     <section className="page-shell page-flat raiders-page">
-      <OrchestratorFeatured onChat={() => onNavigate('/mercenary')} />
-      <OrchestratorAgentsSection
-        onNavigate={onNavigate}
-        orchestratorRaiders={orchestratorRaiders}
-      />
+      <div className="raiders-orchestrator-layout">
+        <OrchestratorFeatured onChat={() => onNavigate('/mercenary')} />
+        <OrchestratorAgentsSection
+          onNavigate={onNavigate}
+          orchestratorRaiders={orchestratorRaiders}
+        />
+      </div>
       <SpecialistRaidersSection
         filteredRaiders={filteredRaiders}
         isActive={isActive}

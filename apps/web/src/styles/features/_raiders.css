@@ -1,18 +1,33 @@
 /* Raiders directory & orchestrator */
 
-.orchestrator-featured {
+.raiders-orchestrator-layout {
   display: grid;
-  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.4fr);
-  gap: clamp(16px, 2vw, 28px);
-  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(18px, 2.2vw, 28px);
+  align-items: start;
   padding-bottom: 18px;
   border-bottom: 1px solid var(--line);
+}
+
+.orchestrator-featured {
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 14px;
+  align-content: start;
+  min-width: 0;
+}
+
+.orchestrator-featured__main {
+  display: grid;
+  grid-template-columns: minmax(108px, 0.42fr) minmax(0, 1fr);
+  gap: clamp(12px, 1.5vw, 18px);
+  align-items: start;
 }
 
 .orchestrator-featured__visual {
   position: relative;
   aspect-ratio: 1;
-  max-width: 280px;
+  width: 100%;
   overflow: hidden;
   border-radius: 14px;
   border: 1px solid var(--line);
@@ -29,7 +44,8 @@
 .orchestrator-featured__copy {
   display: grid;
   gap: 10px;
-  align-content: center;
+  align-content: start;
+  min-width: 0;
 }
 
 .orchestrator-featured__copy h2 {
@@ -47,10 +63,14 @@
 }
 
 .orchestrator-featured__cta {
-  width: min(100%, 360px);
-  margin-top: 20px;
+  width: 100%;
+  margin-top: 0;
   font-size: clamp(1.1rem, 1.6vw, 1.35rem);
   letter-spacing: 0.08em;
+}
+
+.raiders-orchestrator-layout .raiders-section {
+  min-width: 0;
 }
 
 .raiders-page {
@@ -294,13 +314,15 @@
   margin-top: 10px;
 }
 
-@media (max-width: 720px) {
-  .orchestrator-featured {
+@media (max-width: 900px) {
+  .raiders-orchestrator-layout {
     grid-template-columns: 1fr;
   }
+}
 
-  .orchestrator-featured__visual {
-    max-width: none;
+@media (max-width: 720px) {
+  .orchestrator-featured__main {
+    grid-template-columns: minmax(96px, 0.38fr) minmax(0, 1fr);
   }
 
   .raiders-section__head {

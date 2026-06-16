@@ -26,6 +26,8 @@
     "docker:up": "node scripts/docker-compose.mjs up --build",
     "eigencompute:build": "docker build --platform linux/amd64 -f Dockerfile.eigencompute -t bossraid-eigencompute:local .",
     "eigencompute:build-job": "docker build --platform linux/amd64 -f Dockerfile.eigencompute --target evaluator-job -t bossraid-evaluator-job:eigencompute-local .",
+    "export:legal-character": "node scripts/export-legal-character-video.mjs",
+    "generate:legal-character": "node .private/demo-video/scripts/venice-legal-character.mjs --regen-image",
     "export:proof-bundle": "TSX_TSCONFIG_PATH=tsconfig.base.json node --import tsx scripts/export-proof-bundle.ts",
     "game-raid:build-payload": "node scripts/build-game-raid-payload.mjs",
     "serve:gateway": "node scripts/serve-gateway.mjs",

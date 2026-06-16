@@ -553,7 +553,7 @@ button.action-steps__value {
   --workflow-fill: var(--rx-yellow);
   --workflow-fill-hover: color-mix(in srgb, var(--rx-yellow) 88%, #111111);
   --workflow-ink: var(--text);
-  --workflow-label: color-mix(in srgb, var(--rx-yellow) 62%, #111111);
+  --workflow-label: #111111;
 }
 
 .app-shell--landing .info-panel--workflow-buyer {

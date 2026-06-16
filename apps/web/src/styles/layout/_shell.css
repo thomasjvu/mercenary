@@ -115,18 +115,18 @@ pre,
 }
 
 .app-sidebar__brand-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   width: 100%;
 }
 
 .app-sidebar__brand {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 10px;
   min-width: 0;
-  flex: 1;
+  min-height: 1.55rem;
   border: 0;
   background: transparent;
   color: inherit;
@@ -139,8 +139,10 @@ pre,
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: 14px;
-  height: 14px;
+  align-self: center;
+  width: 20px;
+  height: 1.55rem;
+  margin-top: -0.04em;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -151,9 +153,11 @@ pre,
   transition: color 160ms ease, opacity 160ms ease;
 }
 
-.app-sidebar__toggle-icon {
-  width: 8px;
-  height: 8px;
+.app-sidebar__toggle .app-sidebar__toggle-icon.icon--pixel {
+  display: block;
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
 }
 
 .app-sidebar__toggle:hover,
@@ -195,11 +199,12 @@ pre,
 }
 
 .app-sidebar__title {
+  display: block;
   color: var(--text);
   font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
-  font-size: 1.12rem;
+  font-size: clamp(1.35rem, 2.2vw, 1.55rem);
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;
@@ -362,9 +367,11 @@ pre,
 
 .app-sidebar__utility {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 4px;
+  width: 100%;
 }
 
 .app-sidebar__utility-button,
@@ -381,8 +388,9 @@ pre,
 }
 
 .app-sidebar__utility-icon {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface-muted);
@@ -407,7 +415,7 @@ button.app-sidebar__utility-icon {
 
 .app-sidebar__credit {
   margin: 0;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--muted) 62%, transparent);
   font-size: 0.64rem;
   letter-spacing: 0.04em;
   line-height: 1.5;
@@ -419,6 +427,12 @@ button.app-sidebar__utility-icon {
 
 .app-sidebar .app-header-wallet__session-bar {
   width: 100%;
+}
+
+.app-sidebar .app-header-wallet__session-bar.button,
+.app-sidebar .app-header-wallet__session-bar.button:hover {
+  box-shadow: none;
+  transform: none;
 }
 
 .app-sidebar__wallet-collapsed {
@@ -1080,6 +1094,33 @@ h2 {
 .form-status {
   color: var(--muted);
   line-height: 1.55;
+}
+
+.user-error-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.user-error-note__icon {
+  flex: 0 0 auto;
+  margin-top: 0.18em;
+}
+
+.user-error-note__text {
+  min-width: 0;
+}
+
+.user-error-note--guide .user-error-note__icon {
+  color: var(--rx-blue);
+}
+
+.user-error-note--error .user-error-note__icon {
+  color: #d45b5b;
 }
 
 .page-shell {

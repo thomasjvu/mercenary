@@ -80,13 +80,22 @@
   grid-template-columns: minmax(0, 1.25fr) minmax(300px, 1fr);
 }
 
+.app-shell--landing .hero {
+  border-bottom: 0;
+}
+
 .app-shell--landing .hero__copy,
 .app-shell--landing .hero__art {
   padding: 0;
   border: 0;
+  border-bottom: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+}
+
+.app-shell--landing .hero__image-set {
+  inset: 0;
 }
 
 .app-shell--landing .hero__copy::before,
@@ -107,7 +116,24 @@
   --workflow-fill: var(--rx-yellow);
   --workflow-fill-hover: color-mix(in srgb, var(--rx-yellow) 88%, #111111);
   --workflow-ink: var(--text);
-  --workflow-label: color-mix(in srgb, var(--rx-yellow) 62%, #111111);
+  --workflow-label: #111111;
+}
+
+.app-shell--landing .hero--workflow-raider .hero__headline-line:has(> .hero__headline-accent) {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  line-height: 1;
+  padding: 0.06em 0.32em;
+  background: var(--rx-yellow);
+  color: #111111;
+}
+
+.app-shell--landing .hero--workflow-raider .hero__headline-accent {
+  display: inline;
+  padding: 0;
+  background: transparent;
+  color: inherit;
 }
 
 .app-shell--landing .hero--workflow-buyer {
@@ -211,6 +237,21 @@
   margin-top: clamp(6px, 0.8vh, 10px);
   padding-top: clamp(6px, 0.8vh, 8px);
   gap: 8px;
+  border-top: 0;
+}
+
+.app-shell--landing .terminal-deck__header .eyebrow,
+.app-shell--landing .info-panel__head .eyebrow {
+  font-size: clamp(0.9rem, 1.05vw, 1.05rem);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.app-shell--landing .info-panel--workflow-raider .info-panel__head .eyebrow {
+  display: inline-block;
+  padding: 0.2em 0.45em;
+  background: var(--rx-yellow);
+  color: #111111;
 }
 
 .app-shell--landing .api-grid {

@@ -17,4 +17,5 @@ cache
 temp
 .plan-screenshots
 tmp-*.png
+apps/web/public/boss-raid-pfp.png
 .private/

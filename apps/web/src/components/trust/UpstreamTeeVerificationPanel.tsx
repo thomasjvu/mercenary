@@ -5,6 +5,7 @@ import {
   type TeeAttestationResponse,
 } from '../../api/marketplace-tee.js';
 import { useAttestationInspector } from '../../contexts/AttestationInspectorContext.js';
+import { FormStatus } from '../system/FormField.js';
 
 type UpstreamTeeVerificationPanelProps = {
   provider: UpstreamProviderId;
@@ -79,7 +80,7 @@ export function UpstreamTeeVerificationPanel({
         </button>
       </div>
 
-      {error ? <p className="form-status form-status--error">{error}</p> : null}
+      {error ? <FormStatus tone="error">{error}</FormStatus> : null}
 
       {result ? (
         <div className="upstream-tee-panel__result">

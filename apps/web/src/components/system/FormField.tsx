@@ -1,4 +1,5 @@
 import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
+import { UserErrorNote } from './UserErrorNote.js';
 
 type FormFieldProps = {
   label: string;
@@ -56,9 +57,15 @@ export function FormSelect({
 export function FormStatus({
   children,
   tone,
+  variant = 'error',
 }: {
   children: ReactNode;
   tone?: 'error' | 'success';
+  variant?: 'guide' | 'error';
 }) {
+  if (tone === 'error') {
+    return <UserErrorNote variant={variant}>{children}</UserErrorNote>;
+  }
+
   return <p className={`form-status${tone ? ` form-status--${tone}` : ''}`}>{children}</p>;
 }

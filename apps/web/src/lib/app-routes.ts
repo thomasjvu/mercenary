@@ -11,7 +11,10 @@ export type AppRoute =
   | '/sell/offers'
   | '/account'
   | '/raiders'
-  | '/verification';
+  | '/verification'
+  | '/terms-of-service'
+  | '/privacy-policy'
+  | '/acceptable-use-policy';
 
 export type SidebarInternalNavItem = {
   path: AppRoute;

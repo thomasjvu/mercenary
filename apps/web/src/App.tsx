@@ -29,6 +29,7 @@ import { RaidersPage } from './pages/RaidersPage';
 import { SellerOnboardingPage } from './pages/SellerOnboardingPage';
 import { HttpSellerWizardPage } from './pages/HttpSellerWizardPage';
 import { ManageOffersPage } from './pages/ManageOffersPage';
+import { LegalPage, type LegalPageKind } from './pages/LegalPage';
 type AppTheme = 'light' | 'dark';
 
 const LANDING_THEME_STORAGE_KEY = 'bossraid.landing-theme';
@@ -61,6 +62,7 @@ export function App() {
   const isRaidersRoute = pathname === '/raiders';
   const isLegacyReceiptRoute = pathname === '/receipt';
   const isVerificationRoute = pathname === '/verification';
+  const legalPageKind = readLegalPageKind(pathname);
   const playgroundMode = isPlaygroundRoute ? readPlaygroundMode(search) : 'inference';
   const usesDirectoryLayout =
     isMercenaryRoute ||
@@ -218,6 +220,8 @@ export function App() {
               <AccountPage onNavigate={navigate} />
             ) : isVerificationRoute || isLegacyReceiptRoute ? (
               <ReceiptPage onNavigate={navigate} />
+            ) : legalPageKind ? (
+              <LegalPage kind={legalPageKind} onNavigate={navigate} />
             ) : (
               <LandingPage onNavigate={navigate} />
             )}
@@ -226,6 +230,19 @@ export function App() {
       </div>
     </AttestationInspectorProvider>
   );
+}
+
+function readLegalPageKind(pathname: string): LegalPageKind | null {
+  if (pathname === '/terms-of-service') {
+    return 'terms';
+  }
+  if (pathname === '/privacy-policy') {
+    return 'privacy';
+  }
+  if (pathname === '/acceptable-use-policy') {
+    return 'aup';
+  }
+  return null;
 }
 
 function getInitialSidebarCollapsed(): boolean {
