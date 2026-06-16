@@ -1,0 +1,157 @@
+/* =============================================================================
+   Shared loading + activity meters
+   ============================================================================= */
+
+.loading-pulse {
+  display: grid;
+  gap: 8px;
+}
+
+.loading-pulse__label {
+  margin: 0;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.loading-pulse__bars {
+  display: grid;
+  grid-template-columns: repeat(var(--pulse-count, 6), minmax(0, 1fr));
+  gap: 4px;
+  min-height: 14px;
+  align-items: end;
+}
+
+.loading-pulse__bar {
+  display: block;
+  min-width: 0;
+  height: 10px;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--text) 14%, transparent);
+  opacity: 0.34;
+  transform: skewX(-16deg);
+  animation: segment-pulse 1.1s ease-in-out infinite;
+  animation-delay: calc(var(--pulse-index, 0) * 90ms);
+}
+
+.loading-pulse__bar:nth-child(2n) {
+  height: 10px;
+}
+
+.loading-pulse__bar:nth-child(3n) {
+  height: 10px;
+}
+
+.activity-meter__track {
+  display: grid;
+  grid-template-columns: repeat(var(--meter-count, 10), minmax(0, 1fr));
+  gap: 4px;
+  align-items: end;
+}
+
+.activity-meter__bar {
+  display: block;
+  min-width: 0;
+  height: 10px;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--text) 14%, transparent);
+  opacity: 0.3;
+  transform: skewX(-16deg);
+  animation: segment-pulse 1.3s ease-in-out infinite;
+  animation-delay: calc(var(--meter-index, 0) * 90ms);
+}
+
+.activity-meter__bar:nth-child(2n) {
+  height: 10px;
+}
+
+.activity-meter__bar:nth-child(3n) {
+  height: 10px;
+}
+
+.activity-meter__bar--on {
+  background: var(--rx-red);
+  border-color: transparent;
+  opacity: 1;
+  animation-name: segment-pulse-live;
+}
+
+@keyframes segment-pulse {
+  0%,
+  100% {
+    opacity: 0.34;
+  }
+
+  50% {
+    opacity: 0.72;
+  }
+}
+
+@keyframes segment-pulse-live {
+  0%,
+  100% {
+    opacity: 0.82;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.rx-segment-bar {
+  display: grid;
+  grid-template-columns: repeat(var(--segment-count, 28), minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  align-items: end;
+}
+
+.rx-segment-bar__block {
+  display: block;
+  min-width: 0;
+  height: 10px;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--text) 14%, transparent);
+  opacity: 0.28;
+  transform: skewX(-16deg);
+}
+
+.rx-segment-bar__block:nth-child(2n) {
+  height: 11px;
+}
+
+.rx-segment-bar__block:nth-child(3n) {
+  height: 9px;
+}
+
+.rx-segment-bar__block--lit {
+  opacity: 1;
+}
+
+.rx-segment-bar--ref .rx-segment-bar__block--lit {
+  background: var(--chart-ref);
+}
+
+.rx-segment-bar--market .rx-segment-bar__block--lit {
+  background: var(--chart-market);
+}
+
+.rx-segment-bar--savings .rx-segment-bar__block--lit {
+  background: var(--chart-savings);
+}
+
+.rx-segment-bar--volume .rx-segment-bar__block--lit {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--rx-blue) 88%, white),
+    var(--rx-blue)
+  );
+}
+

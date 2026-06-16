@@ -1,3 +1,7 @@
+import { FilterChips } from '../system/FilterChips.js';
+import { FilterSearch } from '../system/FilterSearch.js';
+import { FilterSelect } from '../system/FilterSelect.js';
+import { RefinePanel } from '../system/RefinePanel.js';
 import {
   SORT_OPTIONS,
   STATUS_OPTIONS,
@@ -22,66 +26,50 @@ export function RaidersDirectoryToolbar({
   onReset,
 }: RaidersDirectoryToolbarProps) {
   return (
-    <aside aria-label="Raiders search and filters" className="raiders-directory">
-      <div className="raiders-directory__head">
-        <p className="raiders-directory__title">Refine</p>
-        <div className="raiders-directory__head-actions">
-          {isActive ? (
-            <button className="raiders-directory__reset" onClick={onReset} type="button">
-              clear
-            </button>
-          ) : null}
-          <p className="raiders-directory__count">
-            {shownCount} of {totalCount}
-          </p>
-        </div>
-      </div>
-
-      <label className="raiders-directory__search">
-        <span className="raiders-directory__label">Search</span>
-        <input
-          onChange={(event) => onPatch({ query: event.target.value })}
-          placeholder="Name, model, specialty…"
-          spellCheck={false}
-          type="search"
-          value={state.query}
-        />
-      </label>
+    <RefinePanel
+      aria-label="Raiders search and filters"
+      className="raiders-directory"
+      countClassName="raiders-directory__count"
+      countLabel={`${shownCount} of ${totalCount}`}
+      headClassName="raiders-directory__head"
+      isActive={isActive}
+      onReset={onReset}
+      resetClassName="raiders-directory__reset"
+      titleClassName="raiders-directory__title"
+    >
+      <FilterSearch
+        className="raiders-directory__search"
+        label="Search"
+        labelClassName="raiders-directory__label"
+        onChange={(value) => onPatch({ query: value })}
+        placeholder="Name, model, specialty…"
+        value={state.query}
+      />
 
       <div className="raiders-directory__controls">
-        <div className="raiders-directory__group">
-          <span className="raiders-directory__label">Status</span>
-          <div aria-label="Status filter" className="raiders-directory__chips" role="group">
-            {STATUS_OPTIONS.map((option) => (
-              <button
-                aria-pressed={state.statusFilter === option.key}
-                className={`raiders-directory__chip${state.statusFilter === option.key ? ' raiders-directory__chip--active' : ''}`}
-                key={option.key}
-                onClick={() => onPatch({ statusFilter: option.key })}
-                type="button"
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <label className="raiders-directory__sort">
-          <span className="raiders-directory__label">Sort</span>
-          <select
-            onChange={(event) =>
-              onPatch({ sortKey: event.target.value as RaidersDirectoryState['sortKey'] })
-            }
-            value={state.sortKey}
-          >
-            {SORT_OPTIONS.map((option) => (
-              <option key={option.key} value={option.key}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <FilterChips
+          ariaLabel="Status filter"
+          chipClassName="raiders-directory__chip"
+          activeClassName="raiders-directory__chip--active"
+          chipsClassName="raiders-directory__chips"
+          groupClassName="raiders-directory__group"
+          groupLabel="Status"
+          groupLabelClassName="raiders-directory__label"
+          onChange={(value) => onPatch({ statusFilter: value })}
+          options={STATUS_OPTIONS.map((option) => ({
+            value: option.key,
+            label: option.label,
+          }))}
+          value={state.statusFilter}
+        />
+        <FilterSelect
+          className="raiders-directory__sort"
+          label="Sort"
+          onChange={(value) => onPatch({ sortKey: value as RaidersDirectoryState['sortKey'] })}
+          options={SORT_OPTIONS.map((option) => [option.key, option.label])}
+          value={state.sortKey}
+        />
       </div>
-    </aside>
+    </RefinePanel>
   );
 }

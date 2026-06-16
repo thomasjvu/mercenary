@@ -1,17 +1,23 @@
-import { INFERENCE_MODEL_CATALOG, type InferenceCatalogEntry } from '@bossraid/constants';
+import {
+  INFERENCE_MODEL_CATALOG,
+  MARKETPLACE_BENCHMARK_PRICING,
+  MARKETPLACE_REFERENCE_INPUT_TOKENS,
+  MARKETPLACE_REFERENCE_OUTPUT_TOKENS,
+  type InferenceCatalogEntry,
+} from '@bossraid/constants';
+import { providerMatchesMarketplaceConstraints } from '@bossraid/provider-registry';
 import { estimateTokenMeteredUsd, readProviderPricing } from '@bossraid/raid-core';
 import {
   type ChatCompletionRequest,
   type ProviderPricing,
   type ProviderProfile,
+  type ProviderVerificationStatus,
   asSingleHeader,
 } from '@bossraid/shared-types';
 import { safeEqualString } from './http.js';
 import type { MarketplaceQueryParams } from './marketplace-query.js';
 
-/** Reference profile for comparing token-metered sellers on the public marketplace. */
-export const MARKETPLACE_REFERENCE_INPUT_TOKENS = 1_000;
-export const MARKETPLACE_REFERENCE_OUTPUT_TOKENS = 1_024;
+export { MARKETPLACE_REFERENCE_INPUT_TOKENS, MARKETPLACE_REFERENCE_OUTPUT_TOKENS };
 
 export interface InferenceMarketSeller {
   sellerId: string;
@@ -153,40 +159,46 @@ export function readTrustedAlkahestClient(
   return { sourceAppId: 'alkahest' };
 }
 
+function providerMatchesMarketplaceQuery(
+  provider: ProviderProfile,
+  options: MarketplaceQueryParams = {}
+): boolean {
+  if (!resolveProviderMarketModelId(provider)) {
+    return false;
+  }
+
+  if (
+    typeof options.maxBudgetUsd === 'number' &&
+    readProviderMarketRateUsd(provider) > options.maxBudgetUsd
+  ) {
+    return false;
+  }
+
+  return providerMatchesMarketplaceConstraints(
+    provider,
+    {
+      allowedModelIds: options.modelId ? [options.modelId] : undefined,
+      allowedModelProviders: options.modelProvider ? [options.modelProvider] : undefined,
+      allowedAgentFrameworks: options.agentFramework ? [options.agentFramework] : undefined,
+      requiredVerificationStatus: options.verificationStatus as
+        | ProviderVerificationStatus
+        | undefined,
+      privacyMode: options.privacyMode === 'strict' ? 'strict' : undefined,
+      requirePrivacyFeatures:
+        options.privacyMode === 'strict'
+          ? (['tee_attested', 'e2ee', 'signed_outputs', 'no_data_retention'] as const)
+          : undefined,
+      onlineOnly: false,
+    },
+    { skipFreshnessCheck: true }
+  );
+}
+
 export function filterEligibleMarketplaceProviders(
   providers: ProviderProfile[],
   options: MarketplaceQueryParams = {}
 ): ProviderProfile[] {
-  return providers.filter((provider) => {
-    if (options.modelId && provider.modelId !== options.modelId) {
-      return false;
-    }
-    if (options.modelProvider && provider.modelProvider !== options.modelProvider) {
-      return false;
-    }
-    if (options.agentFramework && provider.agentFramework !== options.agentFramework) {
-      return false;
-    }
-    if (
-      typeof options.maxBudgetUsd === 'number' &&
-      readProviderMarketRateUsd(provider) > options.maxBudgetUsd
-    ) {
-      return false;
-    }
-    if (
-      options.verificationStatus &&
-      (provider.verification?.status ?? 'pending') !== options.verificationStatus
-    ) {
-      return false;
-    }
-    if (options.privacyMode === 'strict' && !providerHasStrictPrivateMarketMetadata(provider)) {
-      return false;
-    }
-    if ((provider.marketplaceOfferStatus ?? 'active') === 'paused') {
-      return false;
-    }
-    return Boolean(resolveProviderMarketModelId(provider));
-  });
+  return providers.filter((provider) => providerMatchesMarketplaceQuery(provider, options));
 }
 
 export function buildInferenceMarketSnapshot(
@@ -240,49 +252,32 @@ export function resolveDiscountInferenceDefaultMaxTotalCost(
   const minTrustScore = Number.isFinite(minTrustScoreValue) ? minTrustScoreValue : undefined;
   const rates = providers
     .filter((provider) => {
-      if ((provider.marketplaceOfferStatus ?? 'active') === 'paused') {
-        return false;
-      }
-      if (modelIds.length > 0 && !provider.modelId) {
-        return false;
-      }
-      if (modelIds.length > 0 && provider.modelId && !modelIds.includes(provider.modelId)) {
-        return false;
-      }
       if (
-        modelProviders &&
-        modelProviders.length > 0 &&
-        (!provider.modelProvider || !modelProviders.includes(provider.modelProvider))
+        provider.status !== 'available' ||
+        !Number.isFinite(readProviderMarketRateUsd(provider))
       ) {
         return false;
       }
-      if (
-        agentFrameworks &&
-        agentFrameworks.length > 0 &&
-        (!provider.agentFramework || !agentFrameworks.includes(provider.agentFramework))
-      ) {
-        return false;
-      }
-      if (
-        requiredVerificationStatus &&
-        provider.verification?.status !== requiredVerificationStatus
-      ) {
-        return false;
-      }
-      if (privacyMode === 'strict' && !providerHasStrictPrivateMarketMetadata(provider)) {
-        return false;
-      }
-      if (requireErc8004 && !provider.erc8004?.agentId) {
-        return false;
-      }
-      if (
-        typeof minTrustScore === 'number' &&
-        (provider.trust?.score ?? (provider.erc8004?.registrationTx ? 80 : 0)) < minTrustScore
-      ) {
-        return false;
-      }
-      return (
-        provider.status === 'available' && Number.isFinite(readProviderMarketRateUsd(provider))
+
+      return providerMatchesMarketplaceConstraints(
+        provider,
+        {
+          allowedModelIds: modelIds,
+          allowedModelProviders: modelProviders,
+          allowedAgentFrameworks: agentFrameworks,
+          requiredVerificationStatus: requiredVerificationStatus as
+            | ProviderVerificationStatus
+            | undefined,
+          privacyMode: privacyMode === 'strict' ? 'strict' : undefined,
+          requirePrivacyFeatures:
+            privacyMode === 'strict'
+              ? (['tee_attested', 'e2ee', 'signed_outputs', 'no_data_retention'] as const)
+              : undefined,
+          requireErc8004,
+          minTrustScore,
+          onlineOnly: false,
+        },
+        { skipFreshnessCheck: true }
       );
     })
     .map((provider) => readProviderMarketRateUsd(provider))
@@ -386,9 +381,7 @@ export function buildInferenceMarkets(providers: ProviderProfile[]): InferenceMa
         p95LatencyMs: p95Latencies[p95Latencies.length - 1] ?? null,
         cheapestRateUsd,
         pricing: {
-          benchmarkSource: 'models.dev' as const,
-          benchmarkUrl: 'https://models.dev/api.json' as const,
-          benchmarkMode: 'static_reference_only' as const,
+          ...MARKETPLACE_BENCHMARK_PRICING,
           declaredUnit,
           cheapestPricePerTaskUsd: cheapestRateUsd,
           pricePer1mInputTokensUsd: null,
@@ -443,9 +436,7 @@ function buildCatalogOnlyMarket(entry: InferenceCatalogEntry): InferenceMarket {
     p95LatencyMs: null,
     cheapestRateUsd: referenceRateUsd,
     pricing: {
-      benchmarkSource: 'models.dev',
-      benchmarkUrl: 'https://models.dev/api.json',
-      benchmarkMode: 'static_reference_only',
+      ...MARKETPLACE_BENCHMARK_PRICING,
       declaredUnit: 'token_metered',
       cheapestPricePerTaskUsd: referenceRateUsd,
       pricePer1mInputTokensUsd: entry.inputPer1mUsd,

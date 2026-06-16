@@ -1,4 +1,3 @@
-import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import { isUpstreamProviderId } from '@bossraid/constants';
 import { useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
@@ -7,6 +6,7 @@ import { buildInferenceCurlSnippet } from '../../lib/inference-curl.js';
 import { verifyMarketplaceTeeAttestation } from '../../api/marketplace-tee.js';
 import { fetchMarkets, runInferenceChatCompletion } from '../../api/marketplace.js';
 
+import { buildPlaygroundModelOptions } from '../../lib/playground-models.js';
 import { resolveProviderBrand } from '../../lib/provider-brand.js';
 import { TerminalCodePanel } from '../terminal/TerminalCodePanel.js';
 import { ModelCombobox } from './ModelCombobox.js';
@@ -19,41 +19,13 @@ type InferencePlaygroundProps = {
   initialModelId?: string;
 };
 
-type ModelOption = {
-  modelId: string;
-  displayName: string;
-  modelProvider: string;
-  liveSellers: number;
-  referenceRateUsd: number | null;
-  teeAttested: boolean;
-  e2ee: boolean;
-  attestationVendor: string;
-};
-
 export function InferencePlayground({ initialModelId }: InferencePlaygroundProps) {
   const markets = useSWR('playground-markets', () => fetchMarkets());
-  const catalogById = useMemo(
-    () => new Map(INFERENCE_MODEL_CATALOG.map((entry) => [entry.modelId, entry])),
-    []
-  );
 
-  const modelOptions = useMemo<ModelOption[]>(() => {
-    return (markets.data?.data ?? [])
-      .map((market) => {
-        const catalog = catalogById.get(market.modelId);
-        return {
-          modelId: market.modelId,
-          displayName: catalog?.displayName ?? market.modelId,
-          modelProvider: market.modelProvider ?? catalog?.modelProvider ?? 'unknown',
-          liveSellers: market.activeProviderCount ?? market.providerCount ?? 0,
-          referenceRateUsd: market.cheapestRateUsd,
-          teeAttested: catalog?.teeAttested ?? false,
-          e2ee: catalog?.e2ee ?? false,
-          attestationVendor: catalog?.attestationVendor ?? catalog?.modelProvider ?? 'venice',
-        };
-      })
-      .sort((left, right) => left.displayName.localeCompare(right.displayName));
-  }, [catalogById, markets.data?.data]);
+  const modelOptions = useMemo(
+    () => buildPlaygroundModelOptions(markets.data?.data ?? []),
+    [markets.data?.data]
+  );
 
   const [model, setModel] = useState(initialModelId ?? '');
   const [providerFilter, setProviderFilter] = useState('');

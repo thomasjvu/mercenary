@@ -1,0 +1,61 @@
+/* Shared refine-panel primitives — aliases for marketplace and raiders filter UIs */
+
+.market-filters__chip,
+.raiders-directory__chip {
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  padding: 0 10px;
+  text-transform: lowercase;
+  transition:
+    border-color 160ms ease,
+    color 160ms ease,
+    background-color 160ms ease;
+}
+
+.market-filters__chip:hover,
+.raiders-directory__chip:hover {
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+.market-filters__chip--active,
+.raiders-directory__chip--active {
+  border-color: color-mix(in srgb, var(--rx-blue) 48%, var(--line));
+  background: color-mix(in srgb, var(--rx-blue) 10%, transparent);
+  color: var(--text);
+}
+
+.market-filters__search input,
+.raiders-directory__search input {
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.market-filters__search input:focus,
+.raiders-directory__search input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--rx-blue) 42%, var(--line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rx-blue) 12%, transparent);
+}
+
+.market-filters__reset,
+.raiders-directory__reset {
+  border: 0;
+  background: transparent;
+  color: var(--rx-blue);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  padding: 0;
+  text-decoration: underline;
+  text-transform: uppercase;
+}

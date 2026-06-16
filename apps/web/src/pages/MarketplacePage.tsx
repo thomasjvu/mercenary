@@ -1,8 +1,13 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { API_BASE, fetchMarkets } from '../api';
 import { buildInferenceCurlSnippet } from '../lib/inference-curl.js';
 import { ApiReadinessBanner } from '../components/system/ApiReadinessBanner.js';
+import { EmptyState } from '../components/system/EmptyState.js';
+import { FilterChips } from '../components/system/FilterChips.js';
+import { FilterSearch } from '../components/system/FilterSearch.js';
+import { FilterSelect } from '../components/system/FilterSelect.js';
+import { RefinePanel } from '../components/system/RefinePanel.js';
 import { buildApiReadinessHint, readApiErrorMessage } from '../lib/api-readiness.js';
 import { ModelCatalog } from '../components/marketplace/ModelCatalog.js';
 import { MarketStatsRibbon } from '../components/marketplace/MarketStatsRibbon.js';
@@ -71,52 +76,30 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
       </div>
 
       <div className="marketplace-layout market-page__layout">
-        <aside aria-label="Marketplace filters" className="market-filters">
-          <div className="market-filters__head">
-            <p className="market-filters__title">Refine</p>
-            {filtersActive ? (
-              <button
-                className="market-filters__reset"
-                onClick={() => setFilters({ ...FILTER_DEFAULTS })}
-                type="button"
-              >
-                clear
-              </button>
-            ) : null}
-          </div>
+        <RefinePanel
+          aria-label="Marketplace filters"
+          isActive={filtersActive}
+          onReset={() => setFilters({ ...FILTER_DEFAULTS })}
+        >
+          <FilterSearch
+            label="Search models"
+            onChange={(value) => setFilters({ ...filters, model: value })}
+            placeholder="gpt-5.5, claude, venice…"
+            value={filters.model}
+          />
 
-          <label className="market-filters__search">
-            <span className="market-filters__search-label">Search models</span>
-            <input
-              onChange={(event) => setFilters({ ...filters, model: event.target.value })}
-              placeholder="gpt-5.5, claude, venice…"
-              value={filters.model}
-            />
-          </label>
-
-          <div className="market-filters__group">
-            <span className="market-filters__group-label">Trust</span>
-            <div className="market-filters__chips" role="group" aria-label="Trust filter">
-              {(
-                [
-                  ['any', 'any'],
-                  ['tee', 'tee'],
-                  ['e2ee', 'e2ee'],
-                  ['private', 'private'],
-                ] as const
-              ).map(([value, label]) => (
-                <button
-                  aria-pressed={filters.trust === value}
-                  className={`market-filters__chip${filters.trust === value ? ' market-filters__chip--active' : ''}`}
-                  key={value}
-                  onClick={() => setFilters({ ...filters, trust: value })}
-                  type="button"
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <FilterChips
+            ariaLabel="Trust filter"
+            groupLabel="Trust"
+            onChange={(value) => setFilters({ ...filters, trust: value })}
+            options={[
+              { value: 'any', label: 'any' },
+              { value: 'tee', label: 'tee' },
+              { value: 'e2ee', label: 'e2ee' },
+              { value: 'private', label: 'private' },
+            ]}
+            value={filters.trust}
+          />
 
           <div className="market-filters__row">
             <FilterField
@@ -180,7 +163,7 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
           {markets.data?.custody ? (
             <p className="market-filters__note">{markets.data.custody.sellerCredentialPolicy}</p>
           ) : null}
-        </aside>
+        </RefinePanel>
 
         <div className="market-page__main">
           {markets.error ? (
@@ -244,43 +227,6 @@ function FilterField({
         value={value}
       />
     </label>
-  );
-}
-
-function FilterSelect({
-  label,
-  value,
-  onChange,
-  options,
-  compact = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<[string, string]>;
-  compact?: boolean;
-}) {
-  return (
-    <label className={`market-filters__field${compact ? ' market-filters__field--compact' : ''}`}>
-      <span>{label}</span>
-      <select onChange={(event) => onChange(event.target.value)} value={value}>
-        {options.map(([optionValue, optionLabel]) => (
-          <option key={optionValue || 'any'} value={optionValue}>
-            {optionLabel}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-function EmptyState({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
-  return (
-    <div className="empty-state">
-      <p className="eyebrow">{title}</p>
-      <p>{body}</p>
-      {action}
-    </div>
   );
 }
 

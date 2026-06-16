@@ -32,8 +32,10 @@ pnpm install
 cp .env.example .env
 pnpm check
 pnpm build
-pnpm --filter @bossraid/api test
+pnpm --filter @bossraid/api test:all
 pnpm --filter @bossraid/orchestrator test
+pnpm --filter @bossraid/api test src/marketplace-inference.test.ts
+pnpm --filter @bossraid/web test src/lib/*.test.ts
 pnpm dev
 ```
 
