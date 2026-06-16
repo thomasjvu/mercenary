@@ -1,4 +1,6 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { shouldLaunchOnComposerKey } from '../../lib/demo-composer.js';
+
 type DemoRaidFormProps = {
   liveDemoBrief: string;
   hasConversation: boolean;
@@ -19,7 +21,7 @@ export function DemoRaidForm({
   onLaunch,
 }: DemoRaidFormProps) {
   function handleComposerKeyDown(event: ReactKeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key !== 'Enter' || event.shiftKey) {
+    if (!shouldLaunchOnComposerKey(event.key, event.shiftKey)) {
       return;
     }
 
