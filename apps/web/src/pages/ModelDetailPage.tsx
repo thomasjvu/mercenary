@@ -20,7 +20,7 @@ export function ModelDetailPage({
   const state = useModelDetailPage(modelId, providerHealth);
 
   return (
-    <section className="beta-page model-detail-page">
+    <section className="page-shell model-detail-page">
       <ModelDetailHero modelId={modelId} onBack={onBack} onTryModel={onTryModel} state={state} />
 
       {state.markets.error ? (

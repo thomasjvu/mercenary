@@ -2,44 +2,17 @@
    Receipt page
    ============================================================================= */
 
-.directory-shell--viewport,
 .receipt-shell--viewport {
   height: 100%;
   min-height: 0;
   overflow: hidden;
 }
 
-.directory-shell__rail {
-  min-height: 0;
-  display: grid;
-  align-content: start;
-  gap: var(--panel-gap);
-}
-
-.directory-shell__header,
-.directory-shell__copy {
-  display: grid;
-  gap: var(--panel-gap);
-}
-
-.directory-shell__hero,
 .receipt-shell__hero {
   display: grid;
   grid-template-columns: minmax(0, 1.04fr) minmax(320px, 0.96fr);
   gap: clamp(18px, 1.8vw, 24px);
   align-items: stretch;
-}
-
-.directory-shell__header {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: clamp(18px, 1.8vw, 24px);
-}
-
-.directory-summary-bar {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: var(--panel-gap);
 }
 
 .receipt-shell,
@@ -62,6 +35,16 @@
 
 .receipt-shell__lede {
   max-width: 54ch;
+}
+
+.receipt-shell__headline-line {
+  display: block;
+}
+
+.receipt-shell__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .receipt-shell__body {
@@ -411,16 +394,13 @@
 }
 
 .summary-pill span,
-.directory-list__head span,
 .list-metric,
 .raider-row__provider-id,
-.raider-row__meta,
-.directory-empty p:last-child {
+.raider-row__meta {
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
 }
 
-.summary-pill span,
-.directory-list__head span {
+.summary-pill span {
   color: var(--muted);
   font-size: 0.72rem;
   letter-spacing: 0.08em;
@@ -446,8 +426,7 @@
   align-items: start;
 }
 
-.receipt-dashboard--scroll,
-.directory-list--scroll {
+.receipt-dashboard--scroll {
   min-height: 0;
   overflow: auto;
   padding-right: 6px;
@@ -700,17 +679,6 @@
   flex-wrap: wrap;
 }
 
-.directory-list {
-  display: grid;
-  gap: 16px;
-  min-height: 0;
-}
-
-.directory-shell--split .directory-list {
-  height: 100%;
-  align-content: start;
-}
-
 .raider-row {
   display: grid;
   grid-template-columns: minmax(260px, 0.82fr) minmax(0, 1.18fr);
@@ -904,296 +872,6 @@
   text-overflow: ellipsis;
 }
 
-.directory-hero,
-.directory-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr);
-  gap: clamp(20px, 1.8vw, 28px);
-  align-items: start;
-}
-
-.directory-hero__copy,
-.directory-main,
-.directory-sidebar {
-  display: grid;
-  gap: var(--panel-gap);
-}
-
-.directory-hero__copy {
-  padding-top: 4px;
-}
-
-.directory-hero__headline-line {
-  display: block;
-}
-
-.directory-hero__lede {
-  max-width: 18ch;
-}
-
-.directory-kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--panel-gap);
-}
-
-.directory-metric-card {
-  display: grid;
-  gap: 8px;
-  padding: clamp(14px, 1.3vh, 16px) 18px;
-  border: 1px solid var(--line);
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--radius);
-  background: var(--panel-surface);
-  box-shadow: var(--panel-shadow);
-}
-
-.directory-metric-card strong {
-  font-size: clamp(1.5rem, 2.5vw, 2rem);
-  line-height: 1;
-}
-
-.directory-metric-card span {
-  color: var(--muted);
-  font-size: 0.88rem;
-  line-height: 1.45;
-}
-
-.directory-leaderboards {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--panel-gap);
-}
-
-.leaderboard-panel {
-  display: grid;
-  gap: 12px;
-  padding: clamp(14px, 1.3vh, 16px) 18px;
-  border: 1px solid var(--line);
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--radius);
-  background: var(--panel-surface);
-  box-shadow: var(--panel-shadow);
-}
-
-.leaderboard-panel__head {
-  display: grid;
-  gap: 4px;
-}
-
-.leaderboard-list {
-  display: grid;
-  gap: 8px;
-}
-
-.leaderboard-empty {
-  color: var(--muted);
-  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  font-size: 0.78rem;
-  line-height: 1.5;
-}
-
-.leaderboard-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: start;
-  padding-top: 8px;
-  border-top: 1px solid var(--line-soft);
-  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-}
-
-.leaderboard-row:first-child {
-  padding-top: 0;
-  border-top: 0;
-}
-
-.leaderboard-row__rank {
-  color: var(--rx-red);
-  font-size: 0.74rem;
-  letter-spacing: 0.08em;
-}
-
-.leaderboard-row__copy {
-  display: grid;
-  gap: 2px;
-}
-
-.leaderboard-row__copy strong,
-.leaderboard-row__metric strong {
-  font-size: 0.82rem;
-}
-
-.leaderboard-row__copy span,
-.leaderboard-row__metric span,
-.directory-main__summary,
-.directory-search__label {
-  color: var(--muted);
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.leaderboard-row__metric {
-  display: grid;
-  gap: 2px;
-  justify-items: end;
-}
-
-.directory-main__header {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.directory-main__summary {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 0 18px 18px;
-}
-
-.directory-main__summary span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 10px;
-  border: 1px solid var(--line-soft);
-  border-radius: 999px;
-  background: rgba(15, 28, 46, 0.03);
-}
-
-.directory-controls {
-  display: grid;
-  grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1fr) auto;
-  align-items: end;
-  gap: clamp(12px, 1.4vw, 18px);
-  padding: 0;
-  border: 1px solid var(--line);
-  position: relative;
-  overflow: hidden;
-  border-radius: 22px;
-  background: var(--surface);
-  box-shadow: none;
-}
-
-.directory-shell--split .directory-controls {
-  grid-template-columns: 1fr;
-  align-items: stretch;
-  gap: 12px;
-}
-
-.directory-search {
-  display: grid;
-  gap: 8px;
-  padding: 18px 18px 0;
-}
-
-.directory-search__label,
-.directory-filter-group__label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.directory-search__input {
-  width: 100%;
-  min-height: 48px;
-  border: 1px solid var(--line-strong);
-  border-radius: 16px;
-  background: var(--surface-inset);
-  color: var(--text);
-  padding: 0 14px;
-  box-shadow: inset 0 1px 0 rgba(44, 82, 179, 0.06);
-}
-
-.directory-search__input::placeholder {
-  color: rgba(90, 91, 109, 0.72);
-}
-
-.directory-search__input:focus {
-  outline: 1px solid rgba(44, 82, 179, 0.42);
-  border-color: rgba(44, 82, 179, 0.42);
-  box-shadow:
-    0 0 0 4px rgba(44, 82, 179, 0.1),
-    inset 0 1px 0 rgba(44, 82, 179, 0.06);
-}
-
-.directory-filters {
-  display: grid;
-  gap: 12px;
-  padding: 0 18px;
-}
-
-.directory-filter-group {
-  display: grid;
-  gap: 8px;
-}
-
-.directory-pill-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 6px;
-  border: 1px solid var(--line-soft);
-  border-radius: 18px;
-  background: rgba(15, 28, 46, 0.03);
-}
-
-.directory-pill {
-  min-height: 36px;
-  padding: 0 14px;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: lowercase;
-  transition:
-    background 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease,
-    transform 160ms ease;
-}
-
-.directory-pill:hover {
-  border-color: rgba(44, 82, 179, 0.14);
-  background: var(--surface-elevated);
-  color: var(--rx-blue);
-}
-
-.directory-pill--active {
-  border-color: rgba(255, 248, 103, 0.46);
-  background: var(--rx-yellow);
-  color: var(--rx-blue);
-  box-shadow: 0 6px 16px rgba(255, 248, 103, 0.18);
-}
-
-.page-stage-card--directory {
-  min-height: 186px;
-  gap: 12px;
-  padding: 14px;
-}
-
-.page-stage-card--directory .page-stage-card__copy {
-  gap: 6px;
-}
-
-.page-stage-card--directory .page-stage-card__copy strong {
-  font-size: clamp(1.34rem, 1.8vw, 1.7rem);
-}
-
-.page-stage-card--directory .page-stage-card__summary {
-  gap: 8px;
-}
-
 .raider-row .signal-strip {
   gap: 6px;
   flex: 1 1 240px;
@@ -1209,58 +887,9 @@
   text-transform: uppercase;
 }
 
-.raider-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--panel-gap);
-}
-
-.raider-card {
-  content-visibility: auto;
-  display: grid;
-  gap: 12px;
-  padding: clamp(14px, 1.3vh, 16px) 18px;
-  border: 1px solid var(--line);
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--radius);
-  background: var(--panel-surface);
-  box-shadow: var(--panel-shadow);
-}
-
-.raider-card__head {
-  display: flex;
-  align-items: start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.raider-card__provider-id,
-.raider-card__description,
-.raider-card__facts,
-.directory-empty p:last-child {
-  color: var(--muted);
-}
-
-.raider-card__provider-id,
-.raider-card__facts,
 .card-metric,
-.status-chip,
-.directory-signal-row,
-.directory-surface-row,
-.directory-empty p:last-child {
+.status-chip {
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-}
-
-.raider-card__description {
-  font-size: 0.92rem;
-  line-height: 1.5;
-}
-
-.raider-card__metrics {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
 }
 
 .card-metric {
@@ -1273,21 +902,13 @@
   text-transform: uppercase;
 }
 
-.card-metric span,
-.raider-card__facts span {
+.card-metric span {
   color: var(--muted);
 }
 
 .card-metric strong {
   font-size: 0.94rem;
   color: var(--text);
-}
-
-.raider-card__facts {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  font-size: 0.72rem;
 }
 
 .raider-chip-group {
@@ -1341,58 +962,6 @@
 .status-chip--offline {
   background: rgba(90, 91, 109, 0.14);
   color: var(--rx-steel);
-}
-
-.directory-sidepanel {
-  gap: 14px;
-}
-
-.directory-signal-list,
-.directory-surface-list {
-  display: grid;
-  gap: 8px;
-}
-
-.directory-signal-row,
-.directory-surface-row {
-  display: grid;
-  gap: 10px;
-  padding-top: 8px;
-  border-top: 1px solid var(--line-soft);
-  font-size: 0.74rem;
-  letter-spacing: 0.04em;
-  text-transform: lowercase;
-}
-
-.directory-signal-row {
-  grid-template-columns: 1fr auto;
-}
-
-.directory-surface-row {
-  grid-template-columns: 116px minmax(0, 1fr);
-}
-
-.directory-signal-row:first-child,
-.directory-surface-row:first-child {
-  padding-top: 0;
-  border-top: 0;
-}
-
-.directory-signal-row span,
-.directory-surface-row span {
-  color: var(--muted);
-}
-
-.directory-empty {
-  display: grid;
-  gap: 8px;
-  padding: clamp(14px, 1.3vh, 16px) 18px;
-  border: 1px solid var(--line);
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--radius);
-  background: var(--panel-surface);
-  box-shadow: var(--panel-shadow);
 }
 
 .terminal-deck,
@@ -1972,11 +1541,6 @@
 .proof-card::before,
 .summary-pill::before,
 .raider-row::before,
-.raider-card::before,
-.directory-controls::before,
-.directory-metric-card::before,
-.leaderboard-panel::before,
-.directory-empty::before,
 .receipt-form::before,
 .receipt-proof-note::before,
 .receipt-empty::before,

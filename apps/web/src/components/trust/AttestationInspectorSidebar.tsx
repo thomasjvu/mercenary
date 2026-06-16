@@ -1,7 +1,7 @@
 import type { MarketplaceModelTeeSummaryView } from '@bossraid/shared-types';
 import type { AttestedEnvelope, AttestedRuntimePayload } from '../../api/raid.js';
 import type { ReadyResponse } from '../../api/health.js';
-import { buildRuntimeAttestationLabel } from '../../demo-result.js';
+import { buildRuntimeAttestationLabel } from '../../mercenary-result.js';
 import { buildAttestedRuntimeUrl, buildAgentManifestUrl } from '../../lib/receipt-url.js';
 import type { AttestationInspectorContextInput } from '../../contexts/AttestationInspectorContext.js';
 import type { ReceiptUpstreamAttestationRow } from '../../lib/receipt-attestation-view.js';

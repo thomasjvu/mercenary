@@ -1,0 +1,318 @@
+/* Raiders directory & orchestrator */
+
+.orchestrator-featured {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.4fr);
+  gap: clamp(16px, 2vw, 28px);
+  align-items: stretch;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.orchestrator-featured__visual {
+  position: relative;
+  aspect-ratio: 1;
+  max-width: 280px;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface-muted);
+}
+
+.orchestrator-featured__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.orchestrator-featured__copy {
+  display: grid;
+  gap: 10px;
+  align-content: center;
+}
+
+.orchestrator-featured__copy h2 {
+  margin: 0;
+  font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.6rem, 2.4vw, 2.2rem);
+  letter-spacing: -0.03em;
+}
+
+.orchestrator-featured__copy p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+  max-width: 56ch;
+}
+
+.orchestrator-featured__cta {
+  width: min(100%, 360px);
+  margin-top: 20px;
+  font-size: clamp(1.1rem, 1.6vw, 1.35rem);
+  letter-spacing: 0.08em;
+}
+
+.raiders-page {
+  gap: clamp(18px, 2.2vh, 28px);
+}
+
+.raiders-section {
+  display: grid;
+  gap: 14px;
+}
+
+.raiders-section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.raiders-section__meta {
+  margin: 0;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.74rem;
+}
+
+.orchestrator-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.orchestrator-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+
+.orchestrator-card--primary {
+  border-top: 2px solid var(--rx-blue);
+}
+
+.orchestrator-card__copy {
+  display: grid;
+  gap: 4px;
+}
+
+.orchestrator-card__copy strong {
+  font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.05rem;
+}
+
+.orchestrator-card__copy span {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+}
+
+.orchestrator-card__copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.raiders-list {
+  display: grid;
+  gap: 12px;
+}
+
+.raiders-list .raider-row {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  border-top: 1px solid var(--line);
+}
+
+.raiders-directory {
+  display: grid;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.raiders-directory__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.raiders-directory__title {
+  margin: 0;
+  font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.raiders-directory__head-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.raiders-directory__reset {
+  border: 0;
+  background: transparent;
+  color: var(--rx-blue);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  padding: 0;
+  text-decoration: underline;
+  text-transform: uppercase;
+}
+
+.raiders-directory__count {
+  margin: 0;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.raiders-directory__label {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.raiders-directory__search {
+  display: grid;
+  gap: 6px;
+}
+
+.raiders-directory__search input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-inset);
+  color: var(--text);
+  font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.88rem;
+  padding: 0 14px;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.raiders-directory__search input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--rx-blue) 42%, var(--line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rx-blue) 12%, transparent);
+}
+
+.raiders-directory__controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 180px);
+  align-items: end;
+  gap: 12px 16px;
+}
+
+.raiders-directory__group {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.raiders-directory__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.raiders-directory__chip {
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  padding: 0 10px;
+  text-transform: lowercase;
+  transition:
+    border-color 160ms ease,
+    color 160ms ease,
+    background-color 160ms ease;
+}
+
+.raiders-directory__chip:hover {
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+.raiders-directory__chip--active {
+  border-color: color-mix(in srgb, var(--rx-blue) 48%, var(--line));
+  background: color-mix(in srgb, var(--rx-blue) 10%, transparent);
+  color: var(--text);
+}
+
+.raiders-directory__sort {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.raiders-directory__sort select {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-inset);
+  color: var(--text);
+  cursor: pointer;
+  font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.82rem;
+  padding: 0 10px;
+}
+
+.raiders-directory__empty {
+  display: grid;
+  gap: 10px;
+  padding: 20px 0;
+}
+
+.raider-row__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+@media (max-width: 720px) {
+  .orchestrator-featured {
+    grid-template-columns: 1fr;
+  }
+
+  .orchestrator-featured__visual {
+    max-width: none;
+  }
+
+  .raiders-section__head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .raiders-directory__controls {
+    grid-template-columns: 1fr;
+  }
+
+  .raiders-list .raider-row__cover {
+    min-height: 180px;
+  }
+}

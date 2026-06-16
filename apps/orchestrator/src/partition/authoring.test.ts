@@ -99,8 +99,12 @@ describe('partition authoring', () => {
     const textGameTask = {
       ...gameTask(),
       output: { primaryType: 'text', artifactTypes: ['text'] },
-      constraints: { allowedOutputTypes: ['text'], requireSpecializations: [] },
-    } as SanitizedTaskSpec;
+      constraints: {
+        ...gameTask().constraints,
+        allowedOutputTypes: ['text'],
+        requireSpecializations: [],
+      },
+    } as unknown as SanitizedTaskSpec;
     const authored = authorContributionFamilyWorkstreams(textGameTask, family.workstreams);
     const answer = authored.find((workstream) => workstream.id === 'answer');
     const constraints = authored.find((workstream) => workstream.id === 'constraints');

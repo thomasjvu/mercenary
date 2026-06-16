@@ -28,7 +28,7 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
   const summaryLabel = `${summary.readyCount}/${summary.totalCount || 0} ready · ${summary.verifiedCount} verified · ${summary.privacyCount} private`;
 
   return (
-    <section className="beta-page page-flat raiders-page">
+    <section className="page-shell page-flat raiders-page">
       <OrchestratorFeatured onChat={() => onNavigate('/mercenary')} />
       <OrchestratorAgentsSection
         onNavigate={onNavigate}

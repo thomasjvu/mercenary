@@ -22,7 +22,7 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
   const state = useSellerUpstreamOnboarding();
 
   return (
-    <section className="beta-page page-flat sell-page">
+    <section className="page-shell page-flat sell-page">
       <PageIntro
         aside={
           <SellerPathSwitcher

@@ -47,7 +47,7 @@
   color: #fff;
 }
 
-.mercenary-demo--embedded {
+.mercenary-workspace--embedded {
   margin-top: 0;
 }
 
@@ -132,3 +132,148 @@
   word-break: break-word;
 }
 
+
+
+/* Inference playground — compact layout (from _redesign split) */
+
+.inference-playground--compact .inference-playground__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(360px, 1.18fr);
+  gap: clamp(14px, 2vw, 22px);
+  align-items: start;
+}
+
+.inference-playground__field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.inference-playground__field-grid--stack {
+  grid-template-columns: 1fr;
+}
+
+.inference-playground__advanced {
+  display: grid;
+  gap: 8px;
+}
+
+.inference-playground__advanced summary {
+  width: fit-content;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.inference-playground__prompt {
+  display: grid;
+  gap: 7px;
+}
+
+.inference-playground__prompt span {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.inference-playground__textarea {
+  width: 100%;
+  min-height: 108px;
+  max-height: 240px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--surface-inset);
+  color: var(--text);
+  font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.inference-playground__textarea::placeholder {
+  color: color-mix(in srgb, var(--muted) 72%, transparent);
+}
+
+.inference-playground__textarea:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--rx-blue) 42%, var(--line));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--rx-blue) 10%, transparent);
+}
+
+.inference-playground__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.inference-playground__status {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+}
+
+.inference-playground__aside {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.inference-playground__trust-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-muted);
+}
+
+.inference-playground__trust-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.inference-playground__trust-copy strong {
+  font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.92rem;
+}
+
+.inference-playground__trust-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.attestation-inspector__panel--compact {
+  gap: 8px;
+}
+
+.attestation-inspector__summary {
+  display: grid;
+  gap: 4px;
+}
+
+.attestation-inspector__summary strong {
+  font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.95rem;
+}
+
+.attestation-inspector__summary span {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 1080px) {
+  .inference-playground--compact .inference-playground__layout {
+    grid-template-columns: 1fr;
+  }
+}

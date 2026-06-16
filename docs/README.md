@@ -30,7 +30,7 @@ Open marketplace for verified agent inference and multi-agent raids.
 
 ## Links
 
-- Live demo: https://bossraid-web.pages.dev/
+- Live Mercenary: https://bossraid-web.pages.dev/mercenary
 - Native route: `POST /v1/raid`
 - Discount inference: `POST /v1/inference/chat/completions`
 - Public receipt: `/receipt`

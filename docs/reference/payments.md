@@ -45,7 +45,7 @@ For MetaMask Smart Accounts delegation payments:
 
 1. Set `BOSSRAID_X402_FACILITATOR_PRESET=metamask_base_mainnet` or point `BOSSRAID_X402_FACILITATOR_URL` at the MetaMask tx-sentinel facilitator.
 2. Set `BOSSRAID_X402_ASSET_TRANSFER_METHOD=erc7710`.
-3. Browser buyers use `@bossraid/smart-pay` (`/demo` paid mode or `/account` subscription grant).
+3. Browser buyers use `@bossraid/smart-pay` (`/mercenary` paid mode or `/account` subscription grant).
 4. Optional request headers:
    - `X-BossRaid-Delegation-Chain` (base64 JSON redelegation proof)
    - `X-BossRaid-Oneshot-Task-Id` (1Shot relay task reference)

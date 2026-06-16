@@ -18,7 +18,7 @@ export function AccountPage({ onNavigate }: AccountPageProps) {
   }
 
   return (
-    <section className="beta-page page-flat flow-page">
+    <section className="page-shell page-flat flow-page">
       <PageIntro
         actions={
           <button className="button" onClick={() => void state.signOut()} type="button">

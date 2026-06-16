@@ -1,12 +1,12 @@
-import type { DemoRequestMode, LiveRaidRun } from '../demo-result.js';
+import type { MercenaryRequestMode, LiveRaidRun } from '../mercenary-result.js';
 
 export type MercenaryThreadRecord = {
   id: string;
   title: string;
   titleLocked?: boolean;
   updatedAt: string;
-  demoMode: DemoRequestMode;
-  liveDemoBrief: string;
+  requestMode: MercenaryRequestMode;
+  raidBrief: string;
   lastSubmittedBrief: string | null;
   liveRaidRun: LiveRaidRun | null;
   launchError: string | null;
@@ -17,7 +17,7 @@ export type MercenaryThreadStore = {
   threads: MercenaryThreadRecord[];
 };
 
-const STORAGE_KEY = 'bossraid.mercenary.threads.v1';
+const STORAGE_KEY = 'bossraid.mercenary.threads.v2';
 const MAX_THREADS = 24;
 
 export function createMercenaryThreadId(): string {
@@ -30,9 +30,9 @@ export function createMercenaryThreadId(): string {
 
 export function deriveMercenaryThreadTitle(input: {
   lastSubmittedBrief?: string | null;
-  liveDemoBrief?: string;
+  raidBrief?: string;
 }): string {
-  const source = input.lastSubmittedBrief?.trim() || input.liveDemoBrief?.trim();
+  const source = input.lastSubmittedBrief?.trim() || input.raidBrief?.trim();
   if (!source) {
     return 'New thread';
   }
@@ -49,8 +49,8 @@ export function createMercenaryThread(
     id: createMercenaryThreadId(),
     title: 'New thread',
     updatedAt: now,
-    demoMode: 'raid',
-    liveDemoBrief: '',
+    requestMode: 'raid',
+    raidBrief: '',
     lastSubmittedBrief: null,
     liveRaidRun: null,
     launchError: null,

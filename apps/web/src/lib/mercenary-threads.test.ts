@@ -8,7 +8,7 @@ import {
 
 test('deriveMercenaryThreadTitle truncates long briefs', () => {
   const title = deriveMercenaryThreadTitle({
-    liveDemoBrief: 'Ship the marketplace base price columns before the next deploy window',
+    raidBrief: 'Ship the marketplace base price columns before the next deploy window',
   });
 
   assert.ok(title.endsWith('…'));

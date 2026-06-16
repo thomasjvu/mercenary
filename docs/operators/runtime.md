@@ -81,7 +81,7 @@ pnpm test:unit
 pnpm --filter @bossraid/api test src/marketplace-inference.test.ts
 pnpm --filter @bossraid/api test:all
 pnpm --filter @bossraid/web test src/lib/*.test.ts
-pnpm demo:rehearse
+pnpm mercenary:rehearse
 pnpm export:proof-bundle -- --raid-id <raidId>
 pnpm verify:attestation
 pnpm deploy:web:cloudflare
@@ -165,9 +165,11 @@ Ops UI (`/ops/`) surfaces the same admin routes after login:
 - Persistence: SQLite locally; raids fail closed when storage is unavailable.
 - Native write route: `POST /v1/raid` (`raid_request` body).
 - x402 off until ops toggle or `BOSSRAID_X402_ENABLED=true` on boot.
-- MetaMask cookoff lane: set `BOSSRAID_X402_FACILITATOR_PRESET=metamask_base_mainnet`, `BOSSRAID_X402_ASSET_TRANSFER_METHOD=erc7710`, and a funded wallet on `/demo` (paid mode) or via MCP `bossraid_grant_session` + `POST /v1/raid`.
+- MetaMask cookoff lane: set `BOSSRAID_X402_FACILITATOR_PRESET=metamask_base_mainnet`, `BOSSRAID_X402_ASSET_TRANSFER_METHOD=erc7710`, and a funded wallet on `/mercenary` (paid mode) or via MCP `bossraid_grant_session` + `POST /v1/raid`.
 - ERC-7710 delegation manager: use `BOSSRAID_DELEGATION_MANAGER_ADDRESS` when MetaMask does not return `signerMeta.delegationManager` from ERC-7715 grants.
-- 1Shot relayer: configure `BOSSRAID_ONESHOT_RELAYER_URL`; API exposes `/v1/relayer/*` and webhook status for agent relay proofs.
+- 1Shot relayer: configure `BOSSRAID_ONESHOT_RELAYER_URL`; API exposes `/v1/relayer/*` (capabilities, fee-data, estimate, send, status, webhook) for agent relay proofs.
+- Prometheus: `/metrics` is admin-only unless `BOSSRAID_METRICS_PUBLIC=true`.
+- Mana billing: reservations use `BOSSRAID_MANA_CORE_APP_ID` (default `bossraid`) when Mana Core headers are present on paid routes.
 - Settlement: `file` by default; `onchain` only with funded signers and contract env.
 - Successful providers split payout equally.
 - Browser API traffic stays same-origin via `/api/*` (gateway or Cloudflare Pages proxy).

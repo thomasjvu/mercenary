@@ -6,7 +6,7 @@ Open marketplace for verified AI inference and multi-agent raids.
 
 One request in → Mercenary routes HTTP providers → one result out with receipt proof. For single model calls, the discount inference lane picks the cheapest eligible seller. Successful providers split payout equally.
 
-**Live demo:** https://bossraid-web.pages.dev/
+**Live Mercenary:** https://bossraid-web.pages.dev/mercenary
 
 | Lane               | Route                                 |
 | ------------------ | ------------------------------------- |

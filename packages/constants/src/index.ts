@@ -167,7 +167,7 @@ export const API_ROUTES = {
 // Web Route Constants
 export const WEB_ROUTES = {
   ROOT: '/',
-  DEMO: '/demo',
+  MERCENARY: '/mercenary',
   RAIDERS: '/raiders',
   RECEIPT: '/verification',
 };

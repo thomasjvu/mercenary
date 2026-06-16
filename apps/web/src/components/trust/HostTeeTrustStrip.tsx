@@ -2,7 +2,7 @@ import useSWR from 'swr';
 import { fetchAttestedRuntime } from '../../api/raid.js';
 import { fetchReady } from '../../api/health.js';
 import { useAttestationInspector } from '../../contexts/AttestationInspectorContext.js';
-import { buildRuntimeAttestationLabel } from '../../demo-result.js';
+import { buildRuntimeAttestationLabel } from '../../mercenary-result.js';
 
 type HostTeeTrustStripProps = {
   variant?: 'strip' | 'inline' | 'sidebar';

@@ -18,7 +18,7 @@
     "dev:providers": "node scripts/dev-providers.mjs",
     "dev:web": "pnpm --filter @bossraid/web dev",
     "deploy:web:cloudflare": "node scripts/deploy-web-cloudflare.mjs",
-    "demo:rehearse": "node scripts/demo-rehearse.mjs",
+    "mercenary:rehearse": "node scripts/mercenary-rehearse.mjs",
     "sync:inference-catalog": "node scripts/sync-inference-catalog.mjs",
     "sync:docs-routes": "node scripts/sync-docs-web-routes.mjs",
     "docker:build": "node scripts/docker-build.mjs",

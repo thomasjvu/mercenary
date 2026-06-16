@@ -7,7 +7,7 @@ export function ManageOffersPage() {
   const state = useManageOffers();
 
   return (
-    <section className="beta-page page-flat">
+    <section className="page-shell page-flat">
       <PageIntro title="Manage my offers" />
 
       <WalletGate />
@@ -15,7 +15,7 @@ export function ManageOffersPage() {
       {state.isAuthenticated ? (
         <div className="manage-offers">
           {state.hostedOffers.length === 0 ? (
-            <article className="beta-panel">
+            <article className="page-panel">
               <p>No hosted offers yet. Create one from the sell wizard.</p>
             </article>
           ) : (

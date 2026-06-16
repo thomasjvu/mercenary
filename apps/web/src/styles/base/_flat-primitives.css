@@ -1,0 +1,139 @@
+/* Flat design primitives for page-shell and landing */
+
+.page-flat .proof-card,
+.page-flat .summary-pill,
+.page-flat .raider-row,
+.page-flat .receipt-form,
+.page-flat .receipt-proof-note,
+.page-flat .receipt-empty,
+.page-flat .receipt-panel,
+.page-flat .receipt-card,
+.page-flat .workflow-panel,
+.page-flat .workflow-note-panel,
+.page-flat .info-panel,
+.app-shell--landing .proof-card,
+.app-shell--landing .summary-pill,
+.app-shell--landing .raider-row,
+.app-shell--landing .receipt-form,
+.app-shell--landing .receipt-proof-note,
+.app-shell--landing .receipt-empty,
+.app-shell--landing .receipt-panel,
+.app-shell--landing .receipt-card,
+.app-shell--landing .workflow-panel,
+.app-shell--landing .workflow-note-panel,
+.app-shell--landing .info-panel {
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.page-flat .proof-card strong,
+.page-flat .summary-pill strong,
+.page-flat .receipt-card strong,
+.page-flat .proof-link-row a,
+.page-flat .signal-chip--proof,
+.page-flat .signal-chip--private,
+.page-flat .list-metric strong,
+.page-flat .card-metric strong,
+.page-flat .info-spec__value,
+.page-flat .info-list strong,
+.app-shell--landing .proof-card strong,
+.app-shell--landing .summary-pill strong,
+.app-shell--landing .receipt-card strong,
+.app-shell--landing .proof-link-row a,
+.app-shell--landing .signal-chip--proof,
+.app-shell--landing .signal-chip--private,
+.app-shell--landing .list-metric strong,
+.app-shell--landing .card-metric strong,
+.app-shell--landing .info-spec__value,
+.app-shell--landing .info-list strong {
+  color: var(--text);
+}
+
+.page-flat .button,
+.page-flat .deck-tab,
+.page-flat .receipt-field__input,
+.page-flat .signal-chip,
+.page-flat .raider-chip,
+.page-flat .status-chip,
+.page-flat .workflow-badge,
+.page-flat .workflow-step__index,
+.page-flat .terminal-window__head .button,
+.app-shell--landing .button,
+.app-shell--landing .deck-tab,
+.app-shell--landing .receipt-field__input,
+.app-shell--landing .signal-chip,
+.app-shell--landing .raider-chip,
+.app-shell--landing .status-chip,
+.app-shell--landing .workflow-badge,
+.app-shell--landing .workflow-step__index,
+.app-shell--landing .terminal-window__head .button {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.page-flat .button,
+.app-shell--landing .button {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.page-flat .button:hover,
+.app-shell--landing .button:hover {
+  background: transparent;
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: none;
+  transform: none;
+}
+
+.page-flat .button--primary,
+.app-shell--landing .button--primary {
+  background: var(--accent);
+  color: var(--rx-white);
+  border-color: var(--accent);
+}
+
+.page-flat .button--primary:hover,
+.app-shell--landing .button--primary:hover {
+  background: var(--accent);
+  color: var(--rx-white);
+  border-color: var(--accent);
+}
+
+.page-flat .deck-tab,
+.page-flat .signal-chip,
+.page-flat .raider-chip,
+.page-flat .status-chip,
+.page-flat .workflow-badge,
+.app-shell--landing .deck-tab,
+.app-shell--landing .signal-chip,
+.app-shell--landing .raider-chip,
+.app-shell--landing .status-chip,
+.app-shell--landing .workflow-badge {
+  background: transparent;
+}
+
+.page-flat .deck-tab--active,
+.app-shell--landing .deck-tab--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--rx-white);
+}
+
+.page-flat .receipt-field__input,
+.app-shell--landing .receipt-field__input {
+  background: var(--bg);
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.page-flat .receipt-field__input:focus,
+.app-shell--landing .receipt-field__input:focus {
+  outline: 1px solid rgba(251, 47, 56, 0.42);
+  border-color: rgba(251, 47, 56, 0.42);
+  box-shadow: none;
+}

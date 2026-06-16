@@ -11,7 +11,7 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
   const featuredMarkets = state.allMarkets.data?.data ?? state.trustFilteredMarkets;
 
   return (
-    <section className="beta-page page-flat market-page">
+    <section className="page-shell page-flat market-page">
       <ApiReadinessBanner error={state.markets.error} label="Marketplace unavailable" />
       <MarketStatsRibbon isLoading={state.markets.isLoading} markets={state.markets.data} />
 
@@ -19,7 +19,7 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
         <div className="market-page__spotlight-main">
           <FeaturedModels markets={featuredMarkets} onOpenModel={onOpenModel} />
         </div>
-        <aside className="market-page__spotlight-aside beta-panel">
+        <aside className="market-page__spotlight-aside page-panel">
           <p className="eyebrow">API quickstart</p>
           <CurlQuickstart
             code={state.spotlightCurl}

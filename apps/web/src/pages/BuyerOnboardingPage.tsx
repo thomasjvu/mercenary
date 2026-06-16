@@ -10,7 +10,7 @@ export function BuyerOnboardingPage() {
   const state = useBuyerApiKeyOnboarding();
 
   return (
-    <section className="beta-page page-flat flow-page buyer-page">
+    <section className="page-shell page-flat flow-page buyer-page">
       <PageIntro title="Buy inference" />
 
       <WalletGate />

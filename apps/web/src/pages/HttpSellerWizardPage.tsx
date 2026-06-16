@@ -19,7 +19,7 @@ export function HttpSellerWizardPage({ onNavigate }: HttpSellerWizardPageProps) 
   const state = useHttpSellerRegistration();
 
   return (
-    <section className="beta-page page-flat flow-page seller-wizard seller-wizard--flow">
+    <section className="page-shell page-flat flow-page seller-wizard seller-wizard--flow">
       <PageIntro
         actions={
           <SellerPathSwitcher

@@ -14,7 +14,7 @@ export function ManageOfferCard({ provider, state }: ManageOfferCardProps) {
   const offerStatus = provider.marketplaceOfferStatus ?? 'active';
 
   return (
-    <article className="beta-panel manage-offers__card">
+    <article className="page-panel manage-offers__card">
       <div className="manage-offers__main">
         <h2>{provider.displayName}</h2>
         <p className="manage-offers__meta">

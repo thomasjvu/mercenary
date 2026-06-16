@@ -4,36 +4,41 @@ Native write route: `POST /v1/raid`.
 
 ## Public write
 
-| Route                                 | Purpose                                                                                                                                                                                                                                                                                              |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POST /v1/raid`                       | Native raid (`raid_request` shape). Returns `raidId`, `raidAccessToken`, `receiptPath`. Requires wallet session cookie, buyer API key (`Authorization: Bearer br_…`), or mana billing headers unless admin bearer bypasses payment. x402 when enabled.                                               |
-| `POST /v1/chat/completions`           | OpenAI-compatible Mercenary entry. Optional `stream`, `raid_policy`, `raid_request`. Same session/API-key/mana gate as `POST /v1/raid`. x402 when enabled; admin bearer bypasses payment for internal launches.                                                                                      |
-| `POST /v1/inference/chat/completions` | Discount inference. One seller, `cost_first`, rate-card snapshot. Same session/API-key/mana gate as Mercenary routes. Strict E2EE catalog models use the server Venice relay when `raid_policy.privacy_mode` is `strict`; pass `X-BossRaid-Upstream-Api-Key` or configure `BOSSRAID_VENICE_API_KEY`. |
-| `POST /v1/auth/agent-session`         | Store ERC-7715 permission context for MCP redelegated x402 payments. Requires wallet session cookie.                                                                                                                                                                                                 |
-| `GET /v1/auth/agent-session`          | Read stored agent payment session for the signed-in wallet.                                                                                                                                                                                                                                          |
-| `DELETE /v1/auth/agent-session`       | Clear stored agent payment session.                                                                                                                                                                                                                                                                  |
-| `POST /v1/relayer/webhook`            | 1Shot relayer status webhook sink.                                                                                                                                                                                                                                                                   |
-| `GET /v1/relayer/status/:taskId`      | Poll 1Shot relay task status.                                                                                                                                                                                                                                                                        |
-| `POST /v1/relayer/send`               | Proxy `relayer_send7710Transaction` to the public 1Shot relayer.                                                                                                                                                                                                                                     |
+| Route                                   | Purpose                                                                                                                                                                                                                                                                                              |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/raid`                         | Native raid (`raid_request` shape). Returns `raidId`, `raidAccessToken`, `receiptPath`. Requires wallet session cookie, buyer API key (`Authorization: Bearer br_…`), or mana billing headers unless admin bearer bypasses payment. x402 when enabled.                                               |
+| `POST /v1/chat/completions`             | OpenAI-compatible Mercenary entry. Optional `stream`, `raid_policy`, `raid_request`. Same session/API-key/mana gate as `POST /v1/raid`. x402 when enabled; admin bearer bypasses payment for internal launches.                                                                                      |
+| `POST /v1/inference/chat/completions`   | Discount inference. One seller, `cost_first`, rate-card snapshot. Same session/API-key/mana gate as Mercenary routes. Strict E2EE catalog models use the server Venice relay when `raid_policy.privacy_mode` is `strict`; pass `X-BossRaid-Upstream-Api-Key` or configure `BOSSRAID_VENICE_API_KEY`. |
+| `POST /v1/auth/agent-session`           | Store ERC-7715 permission context for MCP redelegated x402 payments. Requires wallet session cookie.                                                                                                                                                                                                 |
+| `GET /v1/auth/agent-session`            | Read stored agent payment session for the signed-in wallet.                                                                                                                                                                                                                                          |
+| `DELETE /v1/auth/agent-session`         | Clear stored agent payment session.                                                                                                                                                                                                                                                                  |
+| `GET /v1/relayer/capabilities/:chainId` | 1Shot relayer chain capabilities.                                                                                                                                                                                                                                                                    |
+| `POST /v1/relayer/fee-data`             | Gas/fee quote for ERC-7710 relay (`chainId`, `token`).                                                                                                                                                                                                                                               |
+| `POST /v1/relayer/estimate`             | Estimate ERC-7710 relay bundle before send.                                                                                                                                                                                                                                                          |
+| `POST /v1/relayer/send`                 | Proxy `relayer_send7710Transaction` to the public 1Shot relayer.                                                                                                                                                                                                                                     |
+| `GET /v1/relayer/status/:taskId`        | Poll 1Shot relay task status.                                                                                                                                                                                                                                                                        |
+| `POST /v1/relayer/webhook`              | 1Shot relayer status webhook sink.                                                                                                                                                                                                                                                                   |
 
 `receiptPath` → `/verification?raidId=...&token=...`
 
 ## Status, proof, discovery
 
-| Route                                 | Auth               | Purpose                       |
-| ------------------------------------- | ------------------ | ----------------------------- |
-| `GET /health`                         | —                  | Health + ready providers      |
-| `GET /ready`                          | —                  | Beta readiness gates          |
-| `GET /metrics`                        | admin\*            | Prometheus metrics            |
-| `GET /v1/raid/:raidId`                | raid token / admin | Status                        |
-| `GET /v1/raid/:raidId/result`         | raid token / admin | Result + routing + settlement |
-| `GET /v1/raid/:raidId/agent_log.json` | query `token`      | Run log                       |
+| Route                                      | Auth                          | Purpose                                        |
+| ------------------------------------------ | ----------------------------- | ---------------------------------------------- |
+| `GET /health`                              | —                             | Health + ready providers                       |
+| `GET /ready`                               | —                             | Beta readiness gates                           |
+| `GET /metrics`                             | admin\*                       | Prometheus metrics                             |
+| `GET /v1/raid/:raidId`                     | raid token / admin            | Status                                         |
+| `GET /v1/raid/:raidId/result`              | raid token / admin            | Result + routing + settlement                  |
+| `GET /v1/raid/:raidId/provider-settlement` | raid token / provider / admin | Per-provider settlement slice (`?providerId=`) |
+| `GET /v1/raid/:raidId/agent_log.json`      | query `token`                 | Run log                                        |
 
 | `GET /v1/agent.json` | — | Mercenary manifest |
 | `GET /v1/attested-runtime` | — | Signed runtime (`MNEMONIC`) |
 | `GET /v1/raid/:raidId/attested-result` | raid token | Signed result |
 | `GET /v1/providers` | — | Provider list |
 | `GET /v1/providers/health` | — | Readiness snapshot |
+| `GET /v1/providers/:providerId/stats` | admin | Provider profile + endpoint (ops/MCP) |
 | `GET /v1/models` | — | Model catalog + filters |
 | `GET /v1/prices` | — | Compact pricing |
 | `GET /v1/markets` | — | Order book by model |
@@ -54,30 +59,44 @@ Native write route: `POST /v1/raid`.
 
 Output types: `text`, `patch`, `json`, `image`, `video`, `bundle`.
 
+## Hosted inference gateway
+
+Public base: `BOSSRAID_INFERENCE_GATEWAY_BASE` (default API origin). Orchestrator dispatches hosted sellers here instead of direct worker callbacks.
+
+| Route                                      | Auth     | Purpose                                      |
+| ------------------------------------------ | -------- | -------------------------------------------- |
+| `GET /gateway/:providerId/health`          | —        | Hosted seller readiness + upstream config    |
+| `POST /gateway/:providerId/v1/raid/accept` | provider | Accept raid task package; runs inference job |
+
+Provider auth: `Authorization`, `X-BossRaid-Provider-Id`, `X-BossRaid-Timestamp`, `X-BossRaid-Signature`.
+
 ## Public beta accounts
 
-| Route                                                  | Purpose                                                                              |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| `POST /v1/auth/nonce`                                  | Wallet nonce                                                                         |
-| `POST /v1/auth/verify`                                 | Wallet session                                                                       |
-| `GET/DELETE /v1/session`                               | Session read/clear                                                                   |
-| `GET/POST/DELETE /v1/buyer/api-keys`                   | Buyer `br_` keys                                                                     |
-| `GET/POST/PATCH /v1/seller/providers`                  | Seller CRUD                                                                          |
-| `POST /v1/seller/providers/:id/verify`                 | Re-verify                                                                            |
-| `POST /v1/seller/upstream/:provider/connect`           | Validate + store upstream API key (`venice`, `redpill`, `near`, `chutes`, `phala`)   |
-| `GET /v1/seller/upstream/:provider/config`             | Upstream connection status                                                           |
-| `GET /v1/seller/upstream/:provider/models/catalog`     | Boss Raid catalog for provider (no upstream API key; includes reference token rates) |
-| `GET /v1/seller/upstream/:provider/models`             | Merged catalog for seller (requires connected upstream key)                          |
-| `POST /v1/seller/upstream/:provider/offers`            | Publish hosted model offers                                                          |
-| `DELETE /v1/seller/upstream/:provider/offers/:modelId` | Pause hosted offer                                                                   |
-| `GET /v1/seller/upstream/status`                       | All connected upstream providers for seller                                          |
-| `POST /v1/marketplace/tee/attestation`                 | Fetch + verify upstream TEE attestation for model                                    |
-| `GET /v1/marketplace/models/:modelId/tee`              | Catalog TEE summary + cached attestation                                             |
-| `GET /v1/seller/earnings`                              | Payout ledger                                                                        |
-| `GET /v1/seller/stats`                                 | Dashboard metrics + per-model Boss Raid routed volume (`modelDemand`)                |
-| `GET /v1/buyer/purchases`                              | Purchase history                                                                     |
-| `GET/POST /v1/buyer/balance`                           | Prepaid balance                                                                      |
-| `GET /v1/marketplace/stats`                            | Public counters                                                                      |
+| Route                                                  | Purpose                                                                                      |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `POST /v1/auth/nonce`                                  | Wallet nonce                                                                                 |
+| `POST /v1/auth/verify`                                 | Wallet session                                                                               |
+| `GET/DELETE /v1/session`                               | Session read/clear                                                                           |
+| `GET/POST /v1/buyer/api-keys`                          | List/create buyer `br_` keys                                                                 |
+| `DELETE /v1/buyer/api-keys/:keyId`                     | Revoke buyer API key                                                                         |
+| `GET/POST/PATCH /v1/seller/providers`                  | Seller CRUD                                                                                  |
+| `POST /v1/seller/providers/:id/verify`                 | Re-verify                                                                                    |
+| `POST /v1/seller/upstream/:provider/connect`           | Validate + store upstream API key (`venice`, `redpill`, `near`, `chutes`, `phala`)           |
+| `GET /v1/seller/upstream/:provider/config`             | Upstream connection status                                                                   |
+| `GET /v1/seller/upstream/:provider/models/catalog`     | Boss Raid catalog for provider (no upstream API key; includes reference token rates)         |
+| `GET /v1/seller/upstream/:provider/models`             | Merged catalog for seller (requires connected upstream key)                                  |
+| `POST /v1/seller/upstream/:provider/offers`            | Publish hosted model offers                                                                  |
+| `DELETE /v1/seller/upstream/:provider/offers/:modelId` | Pause hosted offer                                                                           |
+| `GET /v1/seller/upstream/status`                       | All connected upstream providers for seller                                                  |
+| `POST /v1/marketplace/tee/attestation`                 | Fetch + verify upstream TEE attestation for model                                            |
+| `POST /v1/marketplace/tee/attestation/preflight`       | Validate upstream API key + TEE attestation before connect (`provider`, `modelId`, `apiKey`) |
+| `GET /v1/marketplace/models/:modelId/tee`              | Catalog TEE summary + cached attestation                                                     |
+| `GET /v1/seller/earnings`                              | Payout ledger                                                                                |
+| `GET /v1/seller/stats`                                 | Dashboard metrics + per-model Boss Raid routed volume (`modelDemand`)                        |
+| `GET /v1/buyer/purchases`                              | Purchase history                                                                             |
+| `GET /v1/buyer/balance`                                | Prepaid balance read                                                                         |
+| `POST /v1/buyer/balance/fund`                          | Credit prepaid balance (session wallet)                                                      |
+| `GET /v1/marketplace/stats`                            | Public counters                                                                              |
 
 Buyer API keys on paid routes skip x402 and debit spend caps.
 
@@ -92,17 +111,18 @@ Strict E2EE inference responses include `privacy.receiptId` pointing at these ro
 
 ## Admin & ops
 
-| Route                              | Purpose                                   |
-| ---------------------------------- | ----------------------------------------- |
-| `GET /v1/runtime`                  | Diagnostics                               |
-| `GET /v1/raids`                    | Raid list                                 |
-| `POST /v1/raid/:id/abort`          | Abort                                     |
-| `POST /v1/evaluations/:id/replay`  | Replay eval                               |
-| `GET /v1/ops/metrics`              | JSON metrics (counters + route latency)   |
-| `GET /v1/ops/production-readiness` | Launch checklist (pass/warn/fail checks)  |
-| `GET/POST/DELETE /v1/ops/session`  | Ops session                               |
-| `GET/PATCH /v1/ops/settings`       | x402 toggle + facilitator/pay-to blockers |
-| `GET /v1/ops/settlement/status`    | Settlement mode, chain, contract health   |
+| Route                                 | Purpose                                            |
+| ------------------------------------- | -------------------------------------------------- |
+| `GET /v1/runtime`                     | Diagnostics                                        |
+| `POST /v1/runtime/evaluator-smoke`    | Admin evaluator probe (requires runtime execution) |
+| `GET /v1/raids`                       | Raid list                                          |
+| `POST /v1/raid/:raidId/abort`         | Abort                                              |
+| `POST /v1/evaluations/:raidId/replay` | Replay eval                                        |
+| `GET /v1/ops/metrics`                 | JSON metrics (counters + route latency)            |
+| `GET /v1/ops/production-readiness`    | Launch checklist (pass/warn/fail checks)           |
+| `GET/POST/DELETE /v1/ops/session`     | Ops session                                        |
+| `GET/PATCH /v1/ops/settings`          | x402 toggle + facilitator/pay-to blockers          |
+| `GET /v1/ops/settlement/status`       | Settlement mode, chain, contract health            |
 
 Admin: `Authorization: Bearer $BOSSRAID_ADMIN_TOKEN` or ops session cookie.
 

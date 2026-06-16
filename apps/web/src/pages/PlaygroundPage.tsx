@@ -1,8 +1,8 @@
 import type { Provider, ProviderHealth } from '../api.js';
+import { MercenaryWorkspace } from '../components/mercenary/MercenaryWorkspace.js';
 import { ApiReadinessBanner } from '../components/system/ApiReadinessBanner.js';
 import { PageIntro } from '../components/system/PageIntro.js';
 import { InferencePlayground } from '../components/marketplace/InferencePlayground.js';
-import { DemoPage } from './DemoPage.js';
 import type { PlaygroundMode } from '../lib/playground-routing.js';
 
 type PlaygroundPageProps = {
@@ -24,14 +24,14 @@ export function PlaygroundPage({
 }: PlaygroundPageProps) {
   return (
     <section
-      className={`beta-page page-flat playground-page${mode === 'raid' ? ' playground-page--raid' : ''}`}
+      className={`page-shell page-flat playground-page${mode === 'raid' ? ' playground-page--raid' : ''}`}
     >
       <PageIntro aside={<PlaygroundModeTabs mode={mode} onModeChange={onModeChange} />} />
 
       <ApiReadinessBanner error={apiError} label="Playground API unavailable" />
 
       {mode === 'raid' ? (
-        <DemoPage providerHealth={providerHealth} providers={providers} embedded />
+        <MercenaryWorkspace embedded providerHealth={providerHealth} providers={providers} />
       ) : (
         <InferencePlayground initialModelId={initialModelId} />
       )}

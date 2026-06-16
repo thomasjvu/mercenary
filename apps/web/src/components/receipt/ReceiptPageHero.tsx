@@ -19,13 +19,13 @@ export function ReceiptPageHero({ state, onNavigate }: ReceiptPageHeroProps) {
       <div className="receipt-shell__copy">
         <p className="eyebrow">shareable receipt</p>
         <h1>
-          <span className="directory-hero__headline-line">One raid.</span>
-          <span className="directory-hero__headline-line">One receipt.</span>
+          <span className="receipt-shell__headline-line">One raid.</span>
+          <span className="receipt-shell__headline-line">One receipt.</span>
         </h1>
         <p className="lede receipt-shell__lede">
           Load one run, its result, proof links, and settlement record.
         </p>
-        <div className="directory-hero__actions">
+        <div className="receipt-shell__actions">
           <button
             className="button button--primary"
             disabled={!activeQuery}

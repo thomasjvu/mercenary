@@ -45,6 +45,7 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 | `BOSSRAID_PHALA_API_KEY`                     | Optional platform key for catalog TEE attest                       |
 | `BOSSRAID_PROVIDER_HEALTH_TIMEOUT_MS`        | Health probe timeout                                               |
 | `BOSSRAID_TRUST_PROXY`                       | Trust forwarded headers                                            |
+| `BOSSRAID_METRICS_PUBLIC`                    | `true` exposes `/metrics` without admin auth (default: admin only) |
 
 ## x402
 
@@ -124,11 +125,12 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 
 ## Mana Core (trusted clients)
 
-| Variable                 | Purpose               |
-| ------------------------ | --------------------- |
-| `BOSSRAID_MANA_CORE_URL` | Mana Core API         |
-| `BOSSRAID_MANA_CORE_KEY` | Internal key          |
-| `BOSSRAID_API_KEY`       | Trusted client bearer |
+| Variable                    | Purpose                                       |
+| --------------------------- | --------------------------------------------- |
+| `BOSSRAID_MANA_CORE_URL`    | Mana Core API                                 |
+| `BOSSRAID_MANA_CORE_KEY`    | Internal key                                  |
+| `BOSSRAID_MANA_CORE_APP_ID` | Mana reservation `appId` (default `bossraid`) |
+| `BOSSRAID_API_KEY`          | Trusted client bearer                         |
 
 ## Production acknowledgements
 

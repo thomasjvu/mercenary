@@ -1,6 +1,6 @@
 import type { Provider, ProviderHealth } from '../api.js';
+import { MercenaryWorkspace } from '../components/mercenary/MercenaryWorkspace.js';
 import { ApiReadinessBanner } from '../components/system/ApiReadinessBanner.js';
-import { DemoPage } from './DemoPage.js';
 
 type MercenaryPageProps = {
   providers: Provider[];
@@ -10,9 +10,9 @@ type MercenaryPageProps = {
 
 export function MercenaryPage({ providers, providerHealth, apiError }: MercenaryPageProps) {
   return (
-    <section className="beta-page page-flat mercenary-page">
+    <section className="page-shell page-flat mercenary-page">
       <ApiReadinessBanner error={apiError} label="Mercenary API unavailable" />
-      <DemoPage providerHealth={providerHealth} providers={providers} />
+      <MercenaryWorkspace providerHealth={providerHealth} providers={providers} />
     </section>
   );
 }

@@ -14,7 +14,7 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
   return (
     <section className="inference-playground inference-playground--compact">
       <div className="inference-playground__layout">
-        <div className="beta-panel inference-playground__panel">
+        <div className="page-panel inference-playground__panel">
           <div className="inference-playground__field-grid">
             <FormField label="provider">
               <ProviderCombobox
@@ -114,7 +114,7 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
         </div>
 
         <aside className="inference-playground__aside">
-          <section className="inference-playground__trust-card beta-panel">
+          <section className="inference-playground__trust-card page-panel">
             <p className="eyebrow">attestation</p>
             {state.selectedModel &&
             (state.selectedModel.teeAttested || state.selectedModel.e2ee) ? (

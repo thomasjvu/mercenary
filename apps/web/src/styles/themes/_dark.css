@@ -1,0 +1,586 @@
+.app-frame--theme-dark .app-shell--landing .hero--workflow-raider {
+  --workflow-label: var(--rx-yellow);
+  --workflow-ink: #111111;
+}
+
+.app-frame--theme-dark {
+  color-scheme: dark;
+  color: var(--text);
+  --bg: #090909;
+  --text: #f1f4fb;
+  --muted: #d4d8e4;
+  --line: rgba(241, 244, 251, 0.14);
+  --line-strong: rgba(241, 244, 251, 0.24);
+  --line-soft: rgba(241, 244, 251, 0.1);
+}
+
+.app-frame--theme-dark::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: #090909;
+}
+
+.app-frame--theme-dark .bg-grid {
+  display: none;
+}
+
+.app-frame--theme-dark .hero__summary {
+  color: rgba(241, 244, 251, 0.8);
+}
+
+.app-frame--theme-dark .hero__slice {
+  filter: saturate(0.84) contrast(1.02) brightness(0.9);
+}
+
+.app-frame--theme-dark .app-shell--landing .hero__slice::before {
+  filter: saturate(0.84) contrast(1.02) brightness(0.9);
+}
+
+.app-frame--theme-dark .app-shell--landing .hero__image-set:hover .hero__slice::before {
+  filter: saturate(0.88) contrast(1.04) brightness(0.94);
+}
+
+.app-frame--theme-dark .app-shell--landing .hero__eye-glow {
+  opacity: 1;
+}
+
+.app-frame--theme-dark .button {
+  background: rgba(18, 20, 27, 0.46);
+  border-color: rgba(241, 244, 251, 0.18);
+  color: var(--text);
+}
+
+.app-frame--theme-dark .button:hover {
+  background: rgba(18, 20, 27, 0.62);
+  border-color: rgba(241, 244, 251, 0.28);
+  color: var(--text);
+}
+
+.app-frame--theme-dark .button--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #110d10;
+}
+
+.app-frame--theme-dark .button--primary:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #110d10;
+}
+
+.app-frame--theme-dark .deck-tab {
+  background: rgba(18, 20, 27, 0.46);
+  border-color: rgba(241, 244, 251, 0.18);
+  color: rgba(241, 244, 251, 0.82);
+}
+
+.app-frame--theme-dark .deck-tab--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #110d10;
+}
+
+.app-frame--theme-dark .deck-tab--chat.deck-tab--active {
+  background: var(--rx-blue);
+  border-color: var(--rx-blue);
+  color: var(--rx-white);
+}
+
+.app-frame--theme-dark .deck-tab--raid.deck-tab--active {
+  background: var(--rx-yellow);
+  border-color: var(--rx-yellow);
+  color: #111111;
+}
+
+.app-frame--theme-dark .deck-tab--mcp.deck-tab--active {
+  background: var(--rx-red);
+  border-color: var(--rx-red);
+  color: var(--rx-white);
+}
+
+.app-frame--theme-dark .terminal-window__head .button {
+  background: transparent;
+  border-color: currentColor;
+}
+
+.app-frame--theme-dark .terminal-window__head .button:hover {
+  background: transparent;
+  color: inherit;
+  border-color: currentColor;
+}
+
+.app-frame--theme-dark .terminal-window--chat {
+  background: #22449f;
+}
+
+.app-frame--theme-dark .terminal-window--raid {
+  background: #f0e85f;
+}
+
+.app-frame--theme-dark .terminal-window--mcp {
+  background: #d9333c;
+}
+
+.app-frame--theme-dark .terminal-window--chat h2,
+.app-frame--theme-dark .terminal-window--chat .code-panel,
+.app-frame--theme-dark .terminal-window--chat .terminal-window__head .button,
+.app-frame--theme-dark .terminal-window--mcp h2,
+.app-frame--theme-dark .terminal-window--mcp .code-panel,
+.app-frame--theme-dark .terminal-window--mcp .terminal-window__head .button {
+  color: var(--rx-white);
+}
+
+.app-frame--theme-dark .terminal-window--raid h2,
+.app-frame--theme-dark .terminal-window--raid .code-panel,
+.app-frame--theme-dark .terminal-window--raid .terminal-window__head .button {
+  color: #111111;
+}
+
+.app-frame--theme-dark .terminal-window--chat .terminal-window__head p,
+.app-frame--theme-dark .terminal-window--mcp .terminal-window__head p {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.app-frame--theme-dark .terminal-window--raid .terminal-window__head p {
+  color: rgba(17, 17, 17, 0.72);
+}
+
+.app-frame--theme-dark .info-panel__cta {
+  color: #110d10;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 232, 232, 0.12),
+    0 0 0 1px rgba(251, 47, 56, 0.36);
+}
+
+.app-frame--theme-dark .info-panel__cta:hover {
+  color: #110d10;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 232, 232, 0.12),
+    0 0 0 1px rgba(251, 47, 56, 0.36);
+}
+
+.app-frame--theme-dark .footer {
+  color: rgba(241, 244, 251, 0.82);
+}
+
+.app-frame--theme-dark .footer a,
+.app-frame--theme-dark .footer__theme-toggle,
+.app-frame--theme-dark .footer__separator {
+  color: inherit;
+}
+
+.app-frame--theme-dark .footer__credit a,
+.app-frame--theme-dark .footer__links a:hover,
+.app-frame--theme-dark .footer__links a:focus-visible,
+.app-frame--theme-dark .footer__links a[aria-label]:hover,
+.app-frame--theme-dark .footer__links a[aria-label]:focus-visible,
+.app-frame--theme-dark .footer__credit a:hover,
+.app-frame--theme-dark .footer__credit a:focus-visible,
+.app-frame--theme-dark .footer__theme-toggle:hover,
+.app-frame--theme-dark .footer__route-link--active {
+  color: var(--rx-yellow);
+}
+
+.app-frame--theme-dark .receipt-field__input {
+  background: rgba(18, 20, 27, 0.72);
+  border-color: rgba(241, 244, 251, 0.18);
+  color: var(--text);
+  box-shadow: none;
+}
+
+.app-frame--theme-dark .footer__credit,
+.app-frame--theme-dark .footer__links {
+  background: transparent;
+  border-color: rgba(241, 244, 251, 0.18);
+  color: var(--text);
+  box-shadow: none;
+}
+
+.app-frame--theme-dark .receipt-field__input::placeholder {
+  color: rgba(212, 216, 228, 0.58);
+}
+
+.app-frame--theme-dark .receipt-field__input {
+  box-shadow: none;
+}
+
+.app-frame--theme-dark.app-shell--directory {
+  --panel-surface: rgba(18, 20, 27, 0.52);
+  --panel-surface-soft: rgba(18, 20, 27, 0.42);
+}
+
+.app-frame--theme-dark .page-stage-card {
+  background: rgba(18, 20, 27, 0.72);
+  border-color: rgba(241, 244, 251, 0.14);
+}
+
+.app-frame--theme-dark .page-stage-card__scrim {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(8, 10, 15, 0.08),
+      rgba(8, 10, 15, 0.78) 48%,
+      rgba(8, 10, 15, 0.94)
+    ),
+    linear-gradient(135deg, rgba(255, 248, 103, 0.14), transparent 54%);
+}
+
+.app-frame--theme-dark .page-stage-card__copy p:last-child {
+  color: rgba(241, 244, 251, 0.72);
+}
+
+.app-frame--theme-dark .page-stage-card__summary .summary-pill {
+  background: rgba(12, 14, 20, 0.82);
+  border-color: rgba(241, 244, 251, 0.12);
+}
+
+.app-frame--theme-dark .summary-pill,
+.app-frame--theme-dark .proof-card,
+.app-frame--theme-dark .raider-row,
+.app-frame--theme-dark .receipt-form,
+.app-frame--theme-dark .receipt-proof-note,
+.app-frame--theme-dark .receipt-empty,
+.app-frame--theme-dark .receipt-panel,
+.app-frame--theme-dark .receipt-card {
+  background: rgba(18, 20, 27, 0.52);
+  border-color: rgba(241, 244, 251, 0.18);
+  border-top-color: rgba(241, 244, 251, 0.18);
+}
+
+.app-frame--theme-dark .list-metric {
+  background: rgba(241, 244, 251, 0.04);
+  border-color: rgba(241, 244, 251, 0.12);
+}
+
+.app-frame--theme-dark .proof-link-row,
+.app-frame--theme-dark .receipt-list__row {
+  border-top-color: rgba(241, 244, 251, 0.12);
+  border-bottom-color: rgba(241, 244, 251, 0.12);
+}
+
+.app-frame--theme-dark .proof-link-row a {
+  color: var(--text);
+}
+
+.app-frame--theme-dark .signal-chip,
+.app-frame--theme-dark .raider-chip {
+  background: rgba(18, 20, 27, 0.44);
+  border-color: rgba(241, 244, 251, 0.14);
+}
+
+.app-frame--theme-dark .raider-row .signal-chip {
+  background: rgba(18, 20, 27, 0.4);
+  border-color: rgba(241, 244, 251, 0.12);
+}
+
+.app-frame--theme-dark .raider-price {
+  color: var(--rx-yellow);
+}
+
+.app-frame--theme-dark .status-chip--ready {
+  background: rgba(44, 82, 179, 0.22);
+  border-color: rgba(44, 82, 179, 0.48);
+  color: var(--text);
+}
+
+.app-frame--theme-dark .status-chip--offline {
+  background: rgba(241, 244, 251, 0.06);
+  border-color: rgba(241, 244, 251, 0.14);
+  color: var(--muted);
+}
+
+.app-frame--theme-dark.app-shell--mercenary-route {
+  background: #090909;
+}
+
+.app-frame--theme-dark .mercenary-workspace {
+  --mercenary-sidebar-panel: rgba(16, 18, 25, 0.86);
+  --mercenary-bubble: rgba(23, 27, 36, 0.92);
+  --mercenary-border: rgba(241, 244, 251, 0.12);
+  --mercenary-border-strong: rgba(241, 244, 251, 0.18);
+  --mercenary-shadow: 0 20px 42px rgba(0, 0, 0, 0.32), 0 2px 8px rgba(0, 0, 0, 0.22);
+  --mercenary-user-bg: #26415f;
+  --mercenary-user-border: rgba(73, 110, 161, 0.72);
+  --mercenary-user-text: #f1f4fb;
+}
+
+.app-frame--theme-dark .mercenary-chat__topbar,
+.app-frame--theme-dark .mercenary-composer__textarea,
+.app-frame--theme-dark .mercenary-suggestion,
+.app-frame--theme-dark .mercenary-sidebar__signal,
+.app-frame--theme-dark .mercenary-sidebar__actionchip,
+.app-frame--theme-dark .mercenary-mode-switch {
+  background: rgba(17, 20, 28, 0.92);
+  border-color: var(--mercenary-border);
+  color: var(--text);
+  box-shadow: none;
+}
+
+.app-frame--theme-dark .mercenary-message__meta,
+.app-frame--theme-dark .mercenary-chat__identity span,
+.app-frame--theme-dark .mercenary-message__note,
+.app-frame--theme-dark .mercenary-list__meta,
+.app-frame--theme-dark .mercenary-list__copy small,
+.app-frame--theme-dark .mercenary-composer__footer p,
+.app-frame--theme-dark .mercenary-list__copy p,
+.app-frame--theme-dark .mercenary-link span,
+.app-frame--theme-dark .mercenary-sidebar__eyebrow,
+.app-frame--theme-dark .mercenary-sidebar__signal span,
+.app-frame--theme-dark .mercenary-sidebar__specialist-copy small,
+.app-frame--theme-dark .mercenary-sidebar__specialist-copy p,
+.app-frame--theme-dark .mercenary-sidebar__note,
+.app-frame--theme-dark .mercenary-sidebar__disclosure-summary span,
+.app-frame--theme-dark .mercenary-sidebar__link span,
+.app-frame--theme-dark .mercenary-sidebar__actionchip,
+.app-frame--theme-dark .mercenary-sidebar__micro-link {
+  color: rgba(212, 216, 228, 0.78);
+}
+
+.app-frame--theme-dark .mercenary-message__avatar {
+  border-color: var(--mercenary-border);
+}
+
+.app-frame--theme-dark .mercenary-message__bubble,
+.app-frame--theme-dark .mercenary-list__item,
+.app-frame--theme-dark .mercenary-link,
+.app-frame--theme-dark .mercenary-artifact,
+.app-frame--theme-dark .mercenary-lightbox__dialog,
+.app-frame--theme-dark .mercenary-trace {
+  background: rgba(17, 20, 28, 0.82);
+  color: var(--text);
+}
+
+.app-frame--theme-dark .mercenary-artifact,
+.app-frame--theme-dark .mercenary-artifact__preview,
+.app-frame--theme-dark .mercenary-artifact__bundle-file,
+.app-frame--theme-dark .mercenary-artifact__action,
+.app-frame--theme-dark .mercenary-lightbox__body,
+.app-frame--theme-dark .mercenary-lightbox__close {
+  border-color: var(--mercenary-border);
+  background: rgba(17, 20, 28, 0.9);
+}
+
+.app-frame--theme-dark .mercenary-artifact__bundle-strip img {
+  background: rgba(241, 244, 251, 0.06);
+}
+
+.app-frame--theme-dark .mercenary-trace__outcome,
+.app-frame--theme-dark .mercenary-trace__event p,
+.app-frame--theme-dark .mercenary-trace__summary span,
+.app-frame--theme-dark .mercenary-trace__event-meta span {
+  color: rgba(212, 216, 228, 0.78);
+}
+
+.app-frame--theme-dark .mercenary-message--success .mercenary-message__bubble {
+  background: rgba(18, 26, 41, 0.94);
+}
+
+.app-frame--theme-dark .mercenary-message--error .mercenary-message__bubble {
+  background: rgba(76, 24, 28, 0.56);
+  border-color: rgba(251, 47, 56, 0.24);
+}
+
+.app-frame--theme-dark .mercenary-sidebar,
+.app-frame--theme-dark .mercenary-sidebar__panel,
+.app-frame--theme-dark .mercenary-sidebar__signal,
+.app-frame--theme-dark .mercenary-sidebar__actionchip,
+.app-frame--theme-dark .mercenary-sidebar__specialist,
+.app-frame--theme-dark .mercenary-sidebar__link,
+.app-frame--theme-dark .mercenary-sidebar__disclosure-summary {
+  border-color: rgba(241, 244, 251, 0.08);
+}
+
+.app-frame--theme-dark .mercenary-sidebar__link:hover strong,
+.app-frame--theme-dark .mercenary-sidebar__actionchip:hover,
+.app-frame--theme-dark .mercenary-sidebar__micro-link:hover {
+  color: #c7d8ff;
+}
+
+.app-frame--theme-dark .mercenary-sidebar__dot--available {
+  background: rgba(241, 244, 251, 0.36);
+}
+
+.app-frame--theme-dark .mercenary-sidebar__meter {
+  --meter-fill: rgba(241, 244, 251, 0.36);
+}
+
+.app-frame--theme-dark .mercenary-sidebar__meter--ready {
+  --meter-fill: #c7d8ff;
+}
+
+.app-frame--theme-dark .mercenary-sidebar__meter--working {
+  --meter-fill: #ffd4be;
+}
+
+.app-frame--theme-dark .mercenary-sidebar__meter--offline {
+  --meter-fill: #ff8f97;
+}
+
+.app-frame--theme-dark .mercenary-sidebar__meter-bar {
+  background: rgba(241, 244, 251, 0.08);
+}
+
+.app-frame--theme-dark .mercenary-mode-chip--active,
+.app-frame--theme-dark .mercenary-proof-chip {
+  background: rgba(241, 244, 251, 0.08);
+  color: rgba(241, 244, 251, 0.88);
+  box-shadow: none;
+}
+
+.app-frame--theme-dark .mercenary-status--ready {
+  background: rgba(44, 82, 179, 0.22);
+  border-color: rgba(44, 82, 179, 0.36);
+  color: var(--text);
+}
+
+.app-frame--theme-dark .mercenary-status--working {
+  background: rgba(188, 77, 25, 0.22);
+  border-color: rgba(188, 77, 25, 0.32);
+  color: #ffd4be;
+}
+
+.app-frame--theme-dark .mercenary-status--available {
+  background: rgba(241, 244, 251, 0.06);
+  border-color: rgba(241, 244, 251, 0.14);
+  color: rgba(212, 216, 228, 0.82);
+}
+
+.app-frame--theme-dark .mercenary-status--offline {
+  background: rgba(251, 47, 56, 0.14);
+  border-color: rgba(251, 47, 56, 0.22);
+  color: #ffb5bb;
+}
+
+.app-frame--theme-dark .mercenary-suggestion:hover,
+.app-frame--theme-dark .mercenary-suggestion--active {
+  background: rgba(44, 82, 179, 0.12);
+  border-color: rgba(44, 82, 179, 0.24);
+}
+
+.app-frame--theme-dark .mercenary-typing span {
+  background: rgba(212, 216, 228, 0.62);
+}
+
+.app-frame--theme-dark .mercenary-toolbar__group {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.app-frame--theme-dark .mercenary-toolbar__chip--active {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.app-frame--theme-dark .mercenary-toolbar__chip--raid.mercenary-toolbar__chip--active {
+  color: color-mix(in srgb, var(--rx-blue) 72%, white);
+}
+
+.app-frame--theme-dark .mercenary-toolbar__chip--inference.mercenary-toolbar__chip--active {
+  color: var(--rx-red);
+}
+
+.app-frame--theme-dark .mercenary-dock__chip:hover,
+.app-frame--theme-dark .mercenary-dock__chip--button:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.app-frame--theme-dark
+  .mercenary-chat-shell__overlay
+  .info-panel__cta.mercenary-chat-shell__cta {
+  color: var(--rx-white);
+}
+
+.app-frame--theme-dark .mercenary-chat-shell__backdrop {
+  opacity: 0.62;
+  filter: blur(3px);
+  transform: scale(1.01);
+  transform-origin: center center;
+}
+
+.app-frame--theme-dark .mercenary-chat-shell__overlay {
+  --gate-edge-mask: radial-gradient(
+    ellipse 104% 90% at 50% 46%,
+    #000 0%,
+    #000 38%,
+    rgba(0, 0, 0, 0.72) 58%,
+    transparent 100%
+  );
+  background: radial-gradient(
+    ellipse 104% 90% at 50% 46%,
+    color-mix(in srgb, var(--bg) 42%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 24%, transparent) 46%,
+    transparent 100%
+  );
+  backdrop-filter: blur(10px) saturate(1.02);
+  -webkit-backdrop-filter: blur(10px) saturate(1.02);
+  mask-image: var(--gate-edge-mask);
+  -webkit-mask-image: var(--gate-edge-mask);
+}
+
+.app-frame--theme-dark .app-sidebar__tee-pill {
+  background: rgba(18, 20, 27, 0.46);
+  border-color: rgba(241, 244, 251, 0.18);
+  color: rgba(241, 244, 251, 0.82);
+}
+
+.app-frame--theme-dark .app-sidebar__tee-pill--active {
+  border-color: var(--rx-blue);
+  background: var(--rx-blue);
+  color: var(--rx-white);
+}
+
+.app-frame--theme-dark .app-shell--landing .info-panel__cta {
+  margin-top: auto;
+  background: var(--workflow-fill, var(--rx-red));
+  color: var(--workflow-ink, var(--rx-white));
+  white-space: normal;
+}
+
+.app-frame--theme-dark .app-shell--landing .info-panel__cta:hover {
+  background: var(--workflow-fill-hover, color-mix(in srgb, var(--rx-red) 88%, #111111));
+  color: var(--workflow-ink, var(--rx-white));
+  border-color: transparent;
+}
+
+.app-frame--theme-dark .app-shell--landing .hero__copy,
+.app-frame--theme-dark .app-shell--landing .hero__art,
+.app-frame--theme-dark .app-shell--landing .quest-xp-meter {
+  background: transparent;
+  box-shadow: none;
+}
+
+.app-frame--theme-dark .button.rx-spacebar-clip,
+.app-frame--theme-dark .info-panel__cta.rx-spacebar-clip {
+  color: var(--rx-white);
+}
+
+.app-frame--theme-dark .app-shell--landing .info-panel__head .flow-tabs__tab {
+  background: rgba(18, 20, 27, 0.46);
+  border-color: rgba(241, 244, 251, 0.18);
+  color: rgba(241, 244, 251, 0.82);
+}
+
+.app-frame--theme-dark .app-shell--landing .info-panel__head .flow-tabs__tab--blue.flow-tabs__tab--active {
+  border-color: var(--rx-blue);
+  background: var(--rx-blue);
+  color: var(--rx-white);
+}
+
+.app-frame--theme-dark .app-shell--landing .info-panel__head .flow-tabs__tab--yellow.flow-tabs__tab--active {
+  border-color: var(--rx-yellow);
+  background: var(--rx-yellow);
+  color: #111111;
+}
+
+.app-frame--theme-dark .app-shell--landing .info-panel__head .flow-tabs__tab--red.flow-tabs__tab--active {
+  border-color: var(--rx-red);
+  background: var(--rx-red);
+  color: var(--rx-white);
+}
+
+.app-frame--theme-dark .app-shell--landing .info-panel--workflow-raider {
+  --workflow-label: var(--rx-yellow);
+  --workflow-ink: #111111;
+}

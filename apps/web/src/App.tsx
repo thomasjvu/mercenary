@@ -53,7 +53,6 @@ export function App() {
   const marketplaceModelId = readMarketplaceModelId(pathname);
   const isMarketplaceDetailRoute = isMarketplaceDetailPath(pathname);
   const isPlaygroundRoute = pathname === '/playground';
-  const isLegacyDemoRoute = pathname === '/demo';
   const isBuyerOnboardingRoute = pathname === '/onboarding/buyer';
   const isSellerOnboardingRoute = pathname === '/onboarding/seller';
   const isHttpSellerOnboardingRoute = pathname === '/onboarding/seller/http';
@@ -62,12 +61,7 @@ export function App() {
   const isRaidersRoute = pathname === '/raiders';
   const isLegacyReceiptRoute = pathname === '/receipt';
   const isVerificationRoute = pathname === '/verification';
-  const playgroundMode =
-    isPlaygroundRoute || isLegacyDemoRoute
-      ? isLegacyDemoRoute
-        ? 'raid'
-        : readPlaygroundMode(search)
-      : 'inference';
+  const playgroundMode = isPlaygroundRoute ? readPlaygroundMode(search) : 'inference';
   const usesDirectoryLayout =
     isMercenaryRoute ||
     (isPlaygroundRoute && playgroundMode === 'raid') ||
@@ -78,7 +72,6 @@ export function App() {
   const shouldLoadProviderData =
     isMercenaryRoute ||
     isPlaygroundRoute ||
-    isLegacyDemoRoute ||
     isRaidersRoute ||
     isMarketplaceListRoute ||
     isMarketplaceDetailRoute;
@@ -97,15 +90,6 @@ export function App() {
 
   useEffect(() => {
     if (typeof window === 'undefined') {
-      return;
-    }
-
-    if (pathname === '/demo') {
-      const nextUrl = '/mercenary';
-      if (window.location.pathname !== nextUrl) {
-        window.history.replaceState({}, '', nextUrl);
-        window.dispatchEvent(new PopStateEvent('popstate'));
-      }
       return;
     }
 
@@ -187,7 +171,7 @@ export function App() {
 
         <div className="app-main">
           <main
-            className={`app-shell ${isLandingRoute ? 'app-shell--landing' : ''} ${usesDirectoryLayout ? 'app-shell--directory' : ''} ${isMercenaryRoute || (isPlaygroundRoute && playgroundMode === 'raid') ? 'app-shell--demo-route' : ''} ${isVerificationRoute || isLegacyReceiptRoute ? 'app-shell--receipt-route' : ''}`}
+            className={`app-shell ${isLandingRoute ? 'app-shell--landing' : ''} ${usesDirectoryLayout ? 'app-shell--directory' : ''} ${isMercenaryRoute || (isPlaygroundRoute && playgroundMode === 'raid') ? 'app-shell--mercenary-route' : ''} ${isVerificationRoute || isLegacyReceiptRoute ? 'app-shell--receipt-route' : ''}`}
             ref={appShellRef}
           >
             {isRaidersRoute ? (
@@ -222,7 +206,7 @@ export function App() {
                 providerHealth={providerHealth.data ?? []}
                 providers={providers.data ?? []}
               />
-            ) : isLegacyDemoRoute ? null : isBuyerOnboardingRoute ? (
+            ) : isBuyerOnboardingRoute ? (
               <BuyerOnboardingPage />
             ) : isSellerOnboardingRoute ? (
               <SellerOnboardingPage onNavigate={navigate} />
