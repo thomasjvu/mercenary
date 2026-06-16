@@ -1668,3 +1668,296 @@
   border-color: transparent;
 }
 
+.market-stats-ribbon {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: var(--panel-gap);
+}
+
+.market-stats-ribbon__stat {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.market-stats-ribbon__stat span {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.mercenary-receipt-cta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.app-frame--theme-dark .app-shell--landing .hero__copy,
+.app-frame--theme-dark .app-shell--landing .hero__art,
+.app-frame--theme-dark .app-shell--landing .quest-xp-meter {
+  background: transparent;
+  box-shadow: none;
+}
+
+.featured-models {
+  display: grid;
+  gap: 12px;
+  margin-bottom: var(--panel-gap);
+}
+
+.featured-models__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.featured-models__lede {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.featured-models__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--panel-gap);
+}
+
+.featured-models__card {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.featured-models__card:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-elevated);
+  transform: translateY(-1px);
+}
+
+.featured-models__identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.featured-models__copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.featured-models__copy strong {
+  font-size: 0.96rem;
+}
+
+.featured-models__copy span {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+}
+
+.featured-models__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+}
+
+.featured-models__savings {
+  color: var(--rx-blue);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.featured-models__tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-height: 22px;
+}
+
+.market-page__layout {
+  align-items: start;
+}
+
+.market-page__main {
+  display: grid;
+  gap: var(--panel-gap);
+  min-width: 0;
+}
+
+.market-page__policy {
+  display: grid;
+  gap: 8px;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+.model-catalog__toolbar {
+  display: flex;
+  align-items: end;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.field--inline {
+  min-width: 180px;
+}
+
+.model-catalog__count {
+  margin: 0 0 0 auto;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.model-catalog__table-wrap,
+.seller-order-book__table-wrap {
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.model-catalog__table,
+.seller-order-book__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.model-catalog__table th,
+.model-catalog__table td,
+.seller-order-book__table th,
+.seller-order-book__table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.model-catalog__table th,
+.seller-order-book__table th {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.model-catalog__row--active {
+  background: var(--accent-surface);
+}
+
+.model-catalog__model-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.model-catalog__model-button span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.model-catalog__cards {
+  display: none;
+  gap: 12px;
+}
+
+.model-catalog__card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.model-catalog__card-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+  margin: 0;
+}
+
+.model-catalog__card-stats div {
+  display: grid;
+  gap: 2px;
+}
+
+.model-catalog__card-stats dt {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.model-catalog__card-stats dd {
+  margin: 0;
+  font-size: 0.86rem;
+}
+
+.seller-order-book {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.seller-order-book__header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.seller-order-book__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.seller-order-book__lede {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.seller-order-book__table td span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+

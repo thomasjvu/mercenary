@@ -3,7 +3,9 @@
 @import './features/_redesign.css';
 @import './layout/_shell.css';
 @import './features/_receipt.css';
-@import './features/_landing-legacy.css';
+@import './features/_landing-surfaces.css';
+@import './features/_mercenary-demo.css';
+@import './features/_playground.css';
 @import './base/_utilities.css';
 @import './features/_marketplace-legacy.css';
 @import './features/_sell.css';

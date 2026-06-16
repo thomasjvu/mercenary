@@ -2,43 +2,36 @@ import { useEffect, useRef, useState } from 'react';
 import type { SubmissionArtifact } from '@bossraid/shared-types';
 import {
   fetchAttestedRuntimeOptional,
-  fetchRaidAgentLog,
-  fetchRaidResult,
-  fetchRaidStatus,
   type AttestedEnvelope,
   type AttestedRuntimePayload,
-  type ChatCompletionResponse,
   type Provider,
   type ProviderHealth,
   type RaidSpawnOutput,
 } from '../api';
-import { pollRaidSnapshot } from '@bossraid/proof-ui';
 import { isTerminalRaidStatus, readErrorMessage } from '../demo-format';
 import {
   buildAbsolutePath,
-  buildDemoChatCompletionPayload,
-  buildDirectChatSpawn,
-  buildSpawnFromChatCompletion,
   CHAT_V1_DEMO_PROMPTS,
   RAID_DEMO_PROMPTS,
   type DemoRequestMode,
   type LiveRaidRun,
 } from '../demo-result';
 import { buildRaidDemoViewState } from '../demo-specialists';
-import { API_BASE } from '../api/client.js';
-import { requestPaidChatCompletion } from '../api/paid-chat.js';
-import { spawnPaidRaid } from '../api/paid-raid.js';
-import { buildLiveDemoPayload } from '../default-payload';
 import {
   createMercenaryThread,
   deriveMercenaryThreadTitle,
   findMercenaryThread,
-  loadMercenaryThreadStore,
   persistMercenaryThreadStore,
   upsertMercenaryThread,
   type MercenaryThreadRecord,
   type MercenaryThreadStore,
 } from '../lib/mercenary-threads.js';
+import { launchPaidRaidDemo, refreshRaidDemoRun } from '../lib/raid-demo-launch.js';
+import {
+  applyRaidDemoThreadRecord,
+  buildRaidDemoThreadPersistenceSignature,
+  resolveInitialRaidDemoThreadState,
+} from '../lib/raid-demo-thread-store.js';
 
 export type { DemoRequestMode, LiveRaidRun };
 export type { ConversationSpecialistRecord, SpecialistTraceRecord } from '../demo-specialists';
@@ -51,19 +44,6 @@ type UseRaidDemoOptions = {
   persistThreads?: boolean;
 };
 
-function resolveInitialThreadState(persistThreads: boolean) {
-  const store = persistThreads ? loadMercenaryThreadStore() : null;
-  const thread =
-    store != null
-      ? (findMercenaryThread(store, store.activeThreadId) ?? createMercenaryThread())
-      : createMercenaryThread();
-
-  return {
-    store: store ?? { activeThreadId: thread.id, threads: [thread] },
-    thread,
-  };
-}
-
 export function useRaidDemo({
   providers,
   providerHealth,
@@ -71,7 +51,7 @@ export function useRaidDemo({
   createFetchWithPayment,
   persistThreads = true,
 }: UseRaidDemoOptions) {
-  const initial = resolveInitialThreadState(persistThreads);
+  const initial = resolveInitialRaidDemoThreadState(persistThreads);
   const [threadStore, setThreadStore] = useState<MercenaryThreadStore>(initial.store);
   const [activeThreadId, setActiveThreadId] = useState(initial.thread.id);
   const [demoMode, setDemoMode] = useState<DemoRequestMode>(initial.thread.demoMode);
@@ -124,40 +104,16 @@ export function useRaidDemo({
     });
   }
 
-  function threadPersistenceSignature(input: {
-    threadId: string;
-    mode: DemoRequestMode;
-    brief: string;
-    submittedBrief: string | null;
-    run: LiveRaidRun | null;
-    error: string | null;
-  }) {
-    return JSON.stringify({
-      activeThreadId: input.threadId,
-      demoMode: input.mode,
-      liveDemoBrief: input.brief,
-      lastSubmittedBrief: input.submittedBrief,
-      liveRaidRun: input.run,
-      launchError: input.error,
-    });
-  }
-
   function applyThread(thread: MercenaryThreadRecord) {
-    setDemoMode(thread.demoMode);
-    setLiveDemoBrief(thread.liveDemoBrief);
-    setLastSubmittedBrief(thread.lastSubmittedBrief);
-    setLiveRaidRun(thread.liveRaidRun);
-    setLaunchError(thread.launchError);
+    const applied = applyRaidDemoThreadRecord(thread);
+    setDemoMode(applied.demoMode);
+    setLiveDemoBrief(applied.liveDemoBrief);
+    setLastSubmittedBrief(applied.lastSubmittedBrief);
+    setLiveRaidRun(applied.liveRaidRun);
+    setLaunchError(applied.launchError);
     setReceiptCopied(false);
     setExpandedArtifact(null);
-    lastPersistedThreadSignature.current = threadPersistenceSignature({
-      threadId: thread.id,
-      mode: thread.demoMode,
-      brief: thread.liveDemoBrief,
-      submittedBrief: thread.lastSubmittedBrief,
-      run: thread.liveRaidRun,
-      error: thread.launchError,
-    });
+    lastPersistedThreadSignature.current = applied.persistenceSignature;
   }
 
   const viewState = buildRaidDemoViewState({
@@ -237,7 +193,7 @@ export function useRaidDemo({
       return;
     }
 
-    const signature = threadPersistenceSignature({
+    const signature = buildRaidDemoThreadPersistenceSignature({
       threadId: activeThreadId,
       mode: demoMode,
       brief: liveDemoBrief,
@@ -268,8 +224,6 @@ export function useRaidDemo({
     if (!submittedBrief || isLaunching || !viewState.canLaunchLiveRaid) {
       return;
     }
-    const startedAtMs = Date.now();
-
     setIsLaunching(true);
     setLaunchError(null);
     setLastSubmittedBrief(submittedBrief);
@@ -288,48 +242,16 @@ export function useRaidDemo({
       }
 
       const fetchWithPayment = await createFetchWithPayment();
-
-      if (demoMode === 'raid') {
-        const spawn = await spawnPaidRaid(
-          fetchWithPayment,
-          buildLiveDemoPayload(submittedBrief),
-          API_BASE
-        );
-
-        setLiveRaidRun({
-          requestMode: demoMode,
-          spawn,
-          directResponse: false,
-          chatCompletion: undefined,
-          startedAtMs,
-          lastUpdatedAt: new Date().toISOString(),
-          pollError: null,
-        });
-        await refreshLiveRaid(spawn);
-        return;
-      }
-
-      const chatCompletion = await requestPaidChatCompletion(
+      const launched = await launchPaidRaidDemo({
+        demoMode,
+        submittedBrief,
         fetchWithPayment,
-        buildDemoChatCompletionPayload(submittedBrief),
-        API_BASE
-      );
-      const directResponse = !chatCompletion.raid;
-      const spawn =
-        buildSpawnFromChatCompletion(chatCompletion) ?? buildDirectChatSpawn(chatCompletion);
-
-      setLiveRaidRun({
-        requestMode: demoMode,
-        spawn,
-        directResponse,
-        chatCompletion,
-        startedAtMs,
-        lastUpdatedAt: new Date().toISOString(),
-        pollError: null,
       });
 
-      if (!directResponse) {
-        await refreshLiveRaid(spawn);
+      setLiveRaidRun(launched);
+
+      if (!launched.directResponse) {
+        await refreshLiveRaid(launched.spawn);
       }
     } catch (error) {
       setLaunchError(readErrorMessage(error));
@@ -339,43 +261,18 @@ export function useRaidDemo({
   }
 
   async function refreshLiveRaid(spawn: RaidSpawnOutput) {
-    const {
-      status: statusResult,
-      result: resultResult,
-      agentLog: agentLogResult,
-    } = await pollRaidSnapshot({
-      fetchStatus: () => fetchRaidStatus(spawn.raidId, spawn.raidAccessToken),
-      fetchResult: () => fetchRaidResult(spawn.raidId, spawn.raidAccessToken),
-      fetchAgentLog: () => fetchRaidAgentLog(spawn.raidId, spawn.raidAccessToken),
-    });
-
     setLiveRaidRun((current) => {
       if (!current || current.spawn.raidId !== spawn.raidId) {
         return current;
       }
 
-      const nextStatus = statusResult.status === 'fulfilled' ? statusResult.value : current.status;
-      const nextResult = resultResult.status === 'fulfilled' ? resultResult.value : current.result;
-      const nextAgentLog =
-        agentLogResult?.status === 'fulfilled' ? agentLogResult.value : current.agentLog;
-      const nextRaidStatus = nextStatus?.status ?? current.spawn.status;
-      const pollError =
-        statusResult.status === 'rejected'
-          ? readErrorMessage(statusResult.reason)
-          : resultResult.status === 'rejected' && isTerminalRaidStatus(nextRaidStatus)
-            ? readErrorMessage(resultResult.reason)
-            : null;
+      void refreshRaidDemoRun(spawn, current).then((next) => {
+        if (next) {
+          setLiveRaidRun((latest) => (latest?.spawn.raidId === spawn.raidId ? next : latest));
+        }
+      });
 
-      return {
-        ...current,
-        completedAtMs:
-          current.completedAtMs ?? (isTerminalRaidStatus(nextRaidStatus) ? Date.now() : undefined),
-        status: nextStatus,
-        result: nextResult,
-        agentLog: nextAgentLog,
-        lastUpdatedAt: new Date().toISOString(),
-        pollError,
-      };
+      return current;
     });
   }
 

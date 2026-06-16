@@ -59,6 +59,39 @@ describe('partition', () => {
     assert.equal(familyId, 'patch_root');
   });
 
+  it('selects text family for text tasks', () => {
+    const familyId = getRootContributionFamilyId(
+      textTask('Summarize the migration risks for the API rollout.')
+    );
+
+    assert.equal(familyId, 'text_root');
+  });
+
+  it('selects game family for game tasks', () => {
+    const familyId = getRootContributionFamilyId({
+      title: 'GB Studio boss intro',
+      description: 'Build a playable GB Studio boss intro and pixel-art pack.',
+      language: 'typescript',
+      framework: 'gb-studio',
+      files: [{ path: 'game/project.gbsproj', content: '{}', sha256: 'demo-game-file' }],
+      output: { primaryType: 'patch', artifactTypes: ['patch', 'text'] },
+      constraints: { allowedOutputTypes: ['patch', 'text'], requireSpecializations: [] },
+      failingSignals: {
+        errors: [],
+        reproSteps: ['open project'],
+        expectedBehavior: 'Return a playable GB Studio patch plus pixel-art support.',
+      },
+      sanitizationReport: {
+        riskTier: 'safe',
+        redactedSecrets: 0,
+        redactedIdentifiers: 0,
+        trimmedFiles: 0,
+      },
+    } as unknown as SanitizedTaskSpec);
+
+    assert.equal(familyId, 'game_root');
+  });
+
   it('allocates experts across workstreams', () => {
     const allocations = buildContributionWorkstreamAllocations({
       task: textTask('Summarize the migration risks for the API rollout.'),
