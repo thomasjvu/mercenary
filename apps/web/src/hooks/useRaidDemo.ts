@@ -18,7 +18,6 @@ import {
 } from '../demo-result';
 import { buildRaidDemoViewState } from '../demo-specialists';
 import {
-  createMercenaryThread,
   deriveMercenaryThreadTitle,
   findMercenaryThread,
   persistMercenaryThreadStore,
