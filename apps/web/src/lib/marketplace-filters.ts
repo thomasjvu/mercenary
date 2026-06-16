@@ -12,6 +12,33 @@ export const MARKETPLACE_FILTER_DEFAULTS = {
 
 export type MarketplaceFilters = typeof MARKETPLACE_FILTER_DEFAULTS;
 
+export const MARKETPLACE_TRUST_OPTIONS = [
+  { value: 'any', label: 'any' },
+  { value: 'tee', label: 'tee' },
+  { value: 'e2ee', label: 'e2ee' },
+  { value: 'private', label: 'private' },
+] as const;
+
+export const MARKETPLACE_FRAMEWORK_OPTIONS = [
+  ['', 'any'],
+  ['codex', 'codex'],
+  ['claude_code', 'claude code'],
+  ['openclaw', 'openclaw'],
+  ['custom', 'custom'],
+] as const;
+
+export const MARKETPLACE_PRIVACY_OPTIONS = [
+  ['any', 'any'],
+  ['strict', 'strict private'],
+] as const;
+
+export const MARKETPLACE_VERIFICATION_OPTIONS = [
+  ['any', 'any'],
+  ['verified', 'verified'],
+  ['pending', 'pending'],
+  ['failed', 'failed'],
+] as const;
+
 export function hasActiveMarketplaceFilters(filters: MarketplaceFilters): boolean {
   return (
     filters.model.trim() !== '' ||

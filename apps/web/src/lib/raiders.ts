@@ -184,6 +184,19 @@ export function formatPrivacySignalLabel(signal: string) {
   }
 }
 
+export function summarizeRaiderDirectory(raiders: RaiderRecord[]) {
+  return {
+    readyCount: raiders.filter((raider) => raider.ready).length,
+    privacyCount: raiders.filter(
+      (raider) => raider.privacyScore >= 60 || raider.privacySignals.length >= 2
+    ).length,
+    verifiedCount: raiders.filter(
+      (raider) => readErc8004VerificationStatus(raider.provider) === 'verified'
+    ).length,
+    totalCount: raiders.length,
+  };
+}
+
 export function pickDisplayPrivacySignals(signals: string[]) {
   const priority = ['tee', 'signed', 'e2ee', 'no-retention'];
   const selected: string[] = [];

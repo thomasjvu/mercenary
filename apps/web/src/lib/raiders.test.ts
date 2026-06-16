@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Provider } from '../api/index.js';
-import { buildRaiderRecord, compareRaiders, isVeniceProvider } from './raiders.js';
+import {
+  buildRaiderRecord,
+  compareRaiders,
+  isVeniceProvider,
+  summarizeRaiderDirectory,
+} from './raiders.js';
 
 test('buildRaiderRecord indexes provider fields for search', () => {
   const record = buildRaiderRecord(
@@ -53,4 +58,40 @@ test('compareRaiders sorts by reputation and wins', () => {
   assert.ok(compareRaiders(low, high, 'reputation') > 0);
   assert.ok(compareRaiders(low, high, 'wins') > 0);
   assert.ok(compareRaiders(low, high, 'price') > 0);
+});
+
+test('summarizeRaiderDirectory counts ready, private, and verified raiders', () => {
+  const ready = buildRaiderRecord(
+    {
+      providerId: 'ready',
+      displayName: 'Ready',
+      status: 'available',
+      pricePerTaskUsd: 1,
+      reputation: { globalScore: 0.8, totalSuccessfulRaids: 1, totalRaids: 1 },
+      specializations: [],
+      erc8004: { verification: { status: 'verified' } },
+      privacy: { teeAttested: true, e2ee: true },
+      scores: { reputationScore: 80, privacyScore: 80 },
+    } as Provider,
+    { providerId: 'ready', ready: true, reachable: true }
+  );
+  const offline = buildRaiderRecord(
+    {
+      providerId: 'offline',
+      displayName: 'Offline',
+      status: 'offline',
+      pricePerTaskUsd: 1,
+      reputation: { globalScore: 0.2, totalSuccessfulRaids: 0, totalRaids: 0 },
+      specializations: [],
+      scores: { reputationScore: 20, privacyScore: 10 },
+    } as Provider,
+    { providerId: 'offline', ready: false, reachable: false }
+  );
+
+  assert.deepEqual(summarizeRaiderDirectory([ready, offline]), {
+    readyCount: 1,
+    privacyCount: 1,
+    verifiedCount: 1,
+    totalCount: 2,
+  });
 });
