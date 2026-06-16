@@ -24,9 +24,21 @@ export const MODEL_BENCHMARK_OUTPUT_PER_1M_USD: Record<string, number> = {
   'gemma-4-31b-it': 0.55,
 };
 
+export function normalizeBenchmarkModelId(modelId: string): string {
+  const trimmed = modelId.trim();
+  const slashIndex = trimmed.lastIndexOf('/');
+  return slashIndex >= 0 ? trimmed.slice(slashIndex + 1) : trimmed;
+}
+
 export function estimateBenchmarkTaskUsd(modelId: string): number | undefined {
   const key = modelId.trim();
-  return MODEL_BENCHMARK_TASK_USD[key] ?? CATALOG_BENCHMARK_TASK_USD[key];
+  const normalized = normalizeBenchmarkModelId(key);
+  return (
+    MODEL_BENCHMARK_TASK_USD[key] ??
+    MODEL_BENCHMARK_TASK_USD[normalized] ??
+    CATALOG_BENCHMARK_TASK_USD[key] ??
+    CATALOG_BENCHMARK_TASK_USD[normalized]
+  );
 }
 
 export function estimateBenchmarkPriceUsd(input: {

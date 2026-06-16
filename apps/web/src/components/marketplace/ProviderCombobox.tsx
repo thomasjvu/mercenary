@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
+import { useSearchCombobox } from '../../hooks/useSearchCombobox.js';
 import { ProviderBrandIcon } from '../ProviderBrandIcon.js';
 
 export type ProviderComboboxOption = {
@@ -15,10 +16,8 @@ type ProviderComboboxProps = {
 };
 
 export function ProviderCombobox({ options, value, onChange, placeholder }: ProviderComboboxProps) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const rootRef = useRef<HTMLDivElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const { open, query, setQuery, rootRef, inputRef, handleSelect, openList, toggleList } =
+    useSearchCombobox(onChange);
 
   const allCount = useMemo(
     () => options.reduce((total, option) => total + option.count, 0),
@@ -46,24 +45,6 @@ export function ProviderCombobox({ options, value, onChange, placeholder }: Prov
     return rows;
   }, [allCount, options, query]);
 
-  useEffect(() => {
-    function handlePointerDown(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-        setQuery('');
-      }
-    }
-    document.addEventListener('mousedown', handlePointerDown);
-    return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, []);
-
-  function handleSelect(providerId: string) {
-    onChange(providerId);
-    setOpen(false);
-    setQuery('');
-    inputRef.current?.blur();
-  }
-
   return (
     <div className="model-combobox" ref={rootRef}>
       <div className="model-combobox__control">
@@ -74,17 +55,12 @@ export function ProviderCombobox({ options, value, onChange, placeholder }: Prov
           className="model-combobox__input"
           onChange={(event) => {
             setQuery(event.target.value);
-            setOpen(true);
+            openList();
           }}
-          onFocus={() => {
-            setOpen(true);
-            setQuery('');
-          }}
+          onFocus={openList}
           onKeyDown={(event) => {
             if (event.key === 'Escape') {
-              setOpen(false);
-              setQuery('');
-              inputRef.current?.blur();
+              toggleList();
             }
             if (event.key === 'Enter' && open && filtered[0]) {
               event.preventDefault();
@@ -103,17 +79,7 @@ export function ProviderCombobox({ options, value, onChange, placeholder }: Prov
         <button
           aria-label={open ? 'Close provider list' : 'Open provider list'}
           className="model-combobox__toggle"
-          onClick={() => {
-            if (open) {
-              setOpen(false);
-              setQuery('');
-              inputRef.current?.blur();
-              return;
-            }
-            setOpen(true);
-            setQuery('');
-            inputRef.current?.focus();
-          }}
+          onClick={toggleList}
           type="button"
         >
           <span aria-hidden="true">{open ? '▴' : '▾'}</span>

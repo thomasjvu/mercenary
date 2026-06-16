@@ -4,19 +4,15 @@ import {
   computeSavingsUsd,
   estimateBenchmarkPriceUsd,
   estimateBenchmarkTaskUsd,
+  normalizeBenchmarkModelId,
 } from '@bossraid/constants';
 
 export {
   computeSavingsPercent,
   computeSavingsUsd,
   estimateBenchmarkTaskUsd,
+  normalizeBenchmarkModelId,
 } from '@bossraid/constants';
-
-export function normalizeBenchmarkModelId(modelId: string): string {
-  const trimmed = modelId.trim();
-  const slashIndex = trimmed.lastIndexOf('/');
-  return slashIndex >= 0 ? trimmed.slice(slashIndex + 1) : trimmed;
-}
 
 export function resolveBenchmarkTaskUsd(input: {
   modelId: string;

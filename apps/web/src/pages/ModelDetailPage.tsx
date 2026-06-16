@@ -5,6 +5,7 @@ import {
   SellerPriceSpreadChart,
 } from '../components/marketplace/MarketDiscountChart.js';
 import { AccentBlock } from '../components/system/AccentBlock.js';
+import { EmptyState } from '../components/system/EmptyState.js';
 import { UpstreamTeeVerificationPanel } from '../components/trust/UpstreamTeeVerificationPanel.js';
 import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import { isUpstreamProviderId } from '@bossraid/constants';
@@ -87,20 +88,14 @@ export function ModelDetailPage({
       </header>
 
       {markets.error ? (
-        <div className="empty-state">
-          <p className="eyebrow">unavailable</p>
-          <p>Could not load market data for {modelId}.</p>
-        </div>
+        <EmptyState body={`Could not load market data for ${modelId}.`} title="unavailable" />
       ) : markets.isLoading ? (
-        <div className="empty-state">
-          <p className="eyebrow">loading</p>
-          <p>Reading seller order book...</p>
-        </div>
+        <EmptyState body="Reading seller order book..." title="loading" />
       ) : !market ? (
-        <div className="empty-state">
-          <p className="eyebrow">no sellers</p>
-          <p>No eligible sellers are registered for {modelId}.</p>
-        </div>
+        <EmptyState
+          body={`No eligible sellers are registered for ${modelId}.`}
+          title="no sellers"
+        />
       ) : (
         <>
           <div aria-label="Model statistics" className="model-detail-page__stats">

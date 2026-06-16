@@ -12,6 +12,8 @@ import {
   resolveMarketBaseInputPer1mUsd,
   resolveMarketBaseOutputPer1mUsd,
 } from '../../lib/marketplace-pricing.js';
+import { FilterSearch } from '../system/FilterSearch.js';
+import { FilterSelect } from '../system/FilterSelect.js';
 import { ProviderBrandIcon } from '../ProviderBrandIcon.js';
 import { SegmentBar } from '../system/SegmentBar.js';
 
@@ -45,27 +47,27 @@ export function ModelCatalog({ markets, onOpenModel }: ModelCatalogProps) {
   return (
     <div className="model-catalog model-catalog--cards">
       <div className="model-catalog__toolbar">
-        <label className="field field--inline">
-          <span>search models</span>
-          <input
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="gpt-5.5, claude, gemma..."
-            value={query}
-          />
-        </label>
-        <label className="field field--inline">
-          <span>sort</span>
-          <select
-            onChange={(event) => setSortKey(event.target.value as ModelSortKey)}
-            value={sortKey}
-          >
-            <option value="price">cheapest first</option>
-            <option value="sellers">most sellers</option>
-            <option value="success">success rate</option>
-            <option value="latency">p50 latency</option>
-            <option value="model">model id</option>
-          </select>
-        </label>
+        <FilterSearch
+          className="field field--inline"
+          label="search models"
+          labelClassName=""
+          onChange={setQuery}
+          placeholder="gpt-5.5, claude, gemma..."
+          value={query}
+        />
+        <FilterSelect
+          className="field field--inline"
+          label="sort"
+          onChange={(value) => setSortKey(value as ModelSortKey)}
+          options={[
+            ['price', 'cheapest first'],
+            ['sellers', 'most sellers'],
+            ['success', 'success rate'],
+            ['latency', 'p50 latency'],
+            ['model', 'model id'],
+          ]}
+          value={sortKey}
+        />
         <p className="model-catalog__count">{filtered.length} models</p>
       </div>
 

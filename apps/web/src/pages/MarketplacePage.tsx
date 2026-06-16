@@ -6,31 +6,26 @@ import { ApiReadinessBanner } from '../components/system/ApiReadinessBanner.js';
 import { EmptyState } from '../components/system/EmptyState.js';
 import { FilterChips } from '../components/system/FilterChips.js';
 import { FilterSearch } from '../components/system/FilterSearch.js';
+import { FilterField } from '../components/system/FilterField.js';
 import { FilterSelect } from '../components/system/FilterSelect.js';
 import { RefinePanel } from '../components/system/RefinePanel.js';
 import { buildApiReadinessHint, readApiErrorMessage } from '../lib/api-readiness.js';
+import {
+  MARKETPLACE_FILTER_DEFAULTS,
+  buildMarketplaceQueryParams,
+  hasActiveMarketplaceFilters,
+  type MarketplaceFilters,
+} from '../lib/marketplace-filters.js';
 import { ModelCatalog } from '../components/marketplace/ModelCatalog.js';
 import { MarketStatsRibbon } from '../components/marketplace/MarketStatsRibbon.js';
 import { FeaturedModels } from '../components/marketplace/FeaturedModels.js';
 import { CurlQuickstart } from '../components/terminal/CurlQuickstart.js';
-import { marketMatchesTrustFilter, type MarketplaceTrustFilter } from '../lib/marketplace-trust.js';
-
-const FILTER_DEFAULTS = {
-  model: '',
-  provider: '',
-  framework: '',
-  trust: 'any' as MarketplaceTrustFilter,
-  privacy: 'any',
-  verification: 'any',
-  budget: '',
-};
-
-type MarketplaceFilters = typeof FILTER_DEFAULTS;
+import { marketMatchesTrustFilter } from '../lib/marketplace-trust.js';
 
 export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string) => void }) {
-  const [filters, setFilters] = useState<MarketplaceFilters>(FILTER_DEFAULTS);
-  const params = useMemo(() => buildMarketParams(filters), [filters]);
-  const filtersActive = useMemo(() => hasActiveFilters(filters), [filters]);
+  const [filters, setFilters] = useState<MarketplaceFilters>(MARKETPLACE_FILTER_DEFAULTS);
+  const params = useMemo(() => buildMarketplaceQueryParams(filters), [filters]);
+  const filtersActive = useMemo(() => hasActiveMarketplaceFilters(filters), [filters]);
   const markets = useSWR(
     ['markets', params.toString()],
     () => fetchMarkets(Object.fromEntries(params.entries())),
@@ -79,7 +74,7 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
         <RefinePanel
           aria-label="Marketplace filters"
           isActive={filtersActive}
-          onReset={() => setFilters({ ...FILTER_DEFAULTS })}
+          onReset={() => setFilters({ ...MARKETPLACE_FILTER_DEFAULTS })}
         >
           <FilterSearch
             label="Search models"
@@ -179,7 +174,7 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
                 filtersActive && totalMarketCount > 0 ? (
                   <button
                     className="button"
-                    onClick={() => setFilters({ ...FILTER_DEFAULTS })}
+                    onClick={() => setFilters({ ...MARKETPLACE_FILTER_DEFAULTS })}
                     type="button"
                   >
                     clear filters
@@ -200,55 +195,4 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
       </div>
     </section>
   );
-}
-
-function FilterField({
-  label,
-  value,
-  onChange,
-  placeholder,
-  inputMode,
-  compact = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  inputMode?: 'decimal' | 'text';
-  compact?: boolean;
-}) {
-  return (
-    <label className={`market-filters__field${compact ? ' market-filters__field--compact' : ''}`}>
-      <span>{label}</span>
-      <input
-        inputMode={inputMode}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        value={value}
-      />
-    </label>
-  );
-}
-
-function hasActiveFilters(filters: MarketplaceFilters) {
-  return (
-    filters.model.trim() !== '' ||
-    filters.provider.trim() !== '' ||
-    filters.framework !== '' ||
-    filters.trust !== 'any' ||
-    filters.privacy !== 'any' ||
-    filters.verification !== 'any' ||
-    filters.budget.trim() !== ''
-  );
-}
-
-function buildMarketParams(filters: MarketplaceFilters) {
-  const params = new URLSearchParams();
-  if (filters.model.trim()) params.set('model_id', filters.model.trim());
-  if (filters.provider.trim()) params.set('model_provider', filters.provider.trim());
-  if (filters.framework) params.set('agent_framework', filters.framework);
-  if (filters.privacy === 'strict') params.set('privacy_mode', 'strict');
-  if (filters.verification !== 'any') params.set('verification_status', filters.verification);
-  if (filters.budget.trim()) params.set('max_budget_usd', filters.budget.trim());
-  return params;
 }
