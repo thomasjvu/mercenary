@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
 import type { UpstreamProviderId } from '@bossraid/constants';
 import { upstreamProviderLabel, type UpstreamCatalogModel } from '../../api/seller-upstream.js';
+import { useModelPickerModal } from '../../hooks/useModelPickerModal.js';
+import { FormInput } from '../system/FormField.js';
 
 type ModelPickerModalProps = {
   models: UpstreamCatalogModel[];
@@ -17,51 +18,7 @@ export function ModelPickerModal({
   onClose,
   onConfirm,
 }: ModelPickerModalProps) {
-  const [query, setQuery] = useState('');
-  const [selection, setSelection] = useState<Set<string>>(() => new Set(selectedIds));
-  const [onlyUpstream, setOnlyUpstream] = useState(false);
-  const [onlyTee, setOnlyTee] = useState(false);
-
-  const filtered = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    return models.filter((model) => {
-      if (onlyUpstream && !model.upstreamFound) {
-        return false;
-      }
-      if (onlyTee && !model.teeAttested && !model.e2ee) {
-        return false;
-      }
-      if (!normalized) {
-        return true;
-      }
-      return (
-        model.modelId.toLowerCase().includes(normalized) ||
-        model.displayName.toLowerCase().includes(normalized)
-      );
-    });
-  }, [models, onlyTee, onlyUpstream, query]);
-
-  function toggleModel(modelId: string) {
-    setSelection((current) => {
-      const next = new Set(current);
-      if (next.has(modelId)) {
-        next.delete(modelId);
-      } else {
-        next.add(modelId);
-      }
-      return next;
-    });
-  }
-
-  function selectVisible() {
-    setSelection((current) => {
-      const next = new Set(current);
-      for (const model of filtered) {
-        next.add(model.modelId);
-      }
-      return next;
-    });
-  }
+  const picker = useModelPickerModal({ models, selectedIds });
 
   return (
     <div className="seller-modal" role="dialog" aria-modal="true" aria-label="Select models">
@@ -77,7 +34,8 @@ export function ModelPickerModal({
             <p className="eyebrow">{upstreamProviderLabel(provider)} models</p>
             <h2>Select models to offer</h2>
             <p className="lede">
-              {selection.size} selected · {filtered.length} visible · {models.length} supported
+              {picker.selection.size} selected · {picker.filtered.length} visible · {models.length}{' '}
+              supported
             </p>
           </div>
           <button className="button" onClick={onClose} type="button">
@@ -86,43 +44,42 @@ export function ModelPickerModal({
         </header>
 
         <div className="seller-modal__toolbar">
-          <label className="field field--inline">
-            <span>search</span>
-            <input
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="claude, gemma, tee..."
-              value={query}
-            />
-          </label>
+          <FormInput
+            className="field field--inline"
+            label="search"
+            onChange={(event) => picker.setQuery(event.target.value)}
+            placeholder="claude, gemma, tee..."
+            value={picker.query}
+          />
           <label className="check-row">
             <input
-              checked={onlyUpstream}
-              onChange={(event) => setOnlyUpstream(event.target.checked)}
+              checked={picker.onlyUpstream}
+              onChange={(event) => picker.setOnlyUpstream(event.target.checked)}
               type="checkbox"
             />
             only models on your account
           </label>
           <label className="check-row">
             <input
-              checked={onlyTee}
-              onChange={(event) => setOnlyTee(event.target.checked)}
+              checked={picker.onlyTee}
+              onChange={(event) => picker.setOnlyTee(event.target.checked)}
               type="checkbox"
             />
             tee / e2ee only
           </label>
-          <button className="button" onClick={selectVisible} type="button">
+          <button className="button" onClick={picker.selectVisible} type="button">
             select visible
           </button>
         </div>
 
         <div className="seller-model-grid">
-          {filtered.map((model) => {
-            const selected = selection.has(model.modelId);
+          {picker.filtered.map((model) => {
+            const selected = picker.selection.has(model.modelId);
             return (
               <button
                 className={`seller-model-card${selected ? ' seller-model-card--selected' : ''}`}
                 key={model.modelId}
-                onClick={() => toggleModel(model.modelId)}
+                onClick={() => picker.toggleModel(model.modelId)}
                 type="button"
               >
                 <span className="seller-model-card__title">{model.displayName}</span>
@@ -160,11 +117,11 @@ export function ModelPickerModal({
           </button>
           <button
             className="button button--primary"
-            disabled={selection.size === 0}
-            onClick={() => onConfirm([...selection])}
+            disabled={picker.selection.size === 0}
+            onClick={() => onConfirm([...picker.selection])}
             type="button"
           >
-            use {selection.size} model{selection.size === 1 ? '' : 's'}
+            use {picker.selection.size} model{picker.selection.size === 1 ? '' : 's'}
           </button>
         </footer>
       </div>

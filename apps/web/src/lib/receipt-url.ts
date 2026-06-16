@@ -17,6 +17,33 @@ export function buildReceiptUrl(query: ReceiptQuery): string {
   return new URL(buildReceiptPath(query), window.location.origin).toString();
 }
 
+export function parseReceiptQueryPaste(value: string): ReceiptQuery | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  try {
+    const url = new URL(
+      trimmed,
+      typeof window !== 'undefined' ? window.location.origin : undefined
+    );
+    const raidId = url.searchParams.get('raidId') ?? url.searchParams.get('raid_id') ?? '';
+    const token =
+      url.searchParams.get('token') ??
+      url.searchParams.get('raidAccessToken') ??
+      url.searchParams.get('raid_access_token') ??
+      '';
+    if (raidId && token) {
+      return { raidId, token };
+    }
+  } catch {
+    // not a URL — fall through
+  }
+
+  return null;
+}
+
 export function readReceiptQuery(): ReceiptQuery | null {
   if (typeof window === 'undefined') {
     return null;

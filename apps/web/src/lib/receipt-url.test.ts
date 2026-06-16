@@ -9,6 +9,7 @@ import {
   buildReceiptPath,
   buildReceiptUrl,
   isAttestationSignerUnavailable,
+  parseReceiptQueryPaste,
   readReceiptQuery,
 } from './receipt-url.js';
 
@@ -64,6 +65,41 @@ test('readReceiptQuery accepts canonical and legacy param names', () => {
       raidId: 'legacy-raid',
       token: 'legacy-token',
     });
+  } finally {
+    if (originalLocation === undefined) {
+      Reflect.deleteProperty(globalThis, 'window');
+    } else {
+      Object.defineProperty(globalThis, 'window', {
+        configurable: true,
+        value: { location: originalLocation },
+      });
+    }
+  }
+});
+
+test('parseReceiptQueryPaste extracts raid id and token from pasted receipt urls', () => {
+  const originalLocation = globalThis.window?.location;
+
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      location: { origin: 'https://bossraid.example', search: '' },
+    },
+  });
+
+  try {
+    assert.deepEqual(
+      parseReceiptQueryPaste(
+        'https://bossraid.example/verification?raidId=raid-42&raidAccessToken=tok-99'
+      ),
+      { raidId: 'raid-42', token: 'tok-99' }
+    );
+    assert.deepEqual(
+      parseReceiptQueryPaste('/verification?raid_id=legacy&raid_access_token=legacy-tok'),
+      { raidId: 'legacy', token: 'legacy-tok' }
+    );
+    assert.equal(parseReceiptQueryPaste('not-a-url'), null);
+    assert.equal(parseReceiptQueryPaste(''), null);
   } finally {
     if (originalLocation === undefined) {
       Reflect.deleteProperty(globalThis, 'window');

@@ -2,33 +2,10 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
   buildReceiptPath,
   buildReceiptUrl,
+  parseReceiptQueryPaste,
   readReceiptQuery,
   type ReceiptQuery,
 } from '../lib/receipt-url';
-
-function parseReceiptPaste(value: string): { raidId: string; token: string } | null {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
-
-  try {
-    const url = new URL(trimmed, window.location.origin);
-    const raidId = url.searchParams.get('raidId') ?? url.searchParams.get('raid_id') ?? '';
-    const token =
-      url.searchParams.get('token') ??
-      url.searchParams.get('raidAccessToken') ??
-      url.searchParams.get('raid_access_token') ??
-      '';
-    if (raidId && token) {
-      return { raidId, token };
-    }
-  } catch {
-    // not a URL — fall through
-  }
-
-  return null;
-}
 
 export function useReceiptQuery() {
   const initialQuery = useMemo(readReceiptQuery, []);
@@ -50,7 +27,7 @@ export function useReceiptQuery() {
   function handleRaidIdChange(value: string) {
     setRaidIdInput(value);
     setFormError(null);
-    const parsed = parseReceiptPaste(value);
+    const parsed = parseReceiptQueryPaste(value);
     if (parsed) {
       setRaidIdInput(parsed.raidId);
       setTokenInput(parsed.token);
@@ -60,7 +37,7 @@ export function useReceiptQuery() {
   function handleTokenChange(value: string) {
     setTokenInput(value);
     setFormError(null);
-    const parsed = parseReceiptPaste(value);
+    const parsed = parseReceiptQueryPaste(value);
     if (parsed) {
       setRaidIdInput(parsed.raidId);
       setTokenInput(parsed.token);

@@ -1,5 +1,6 @@
 import { type FormEvent } from 'react';
-import { buildAttestedRuntimeUrl } from '../../lib/receipt-url';
+import { FormField, FormStatus } from '../system/FormField.js';
+import { buildAttestedRuntimeUrl } from '../../lib/receipt-url.js';
 
 type ReceiptQueryFormProps = {
   raidIdInput: string;
@@ -22,8 +23,7 @@ export function ReceiptQueryForm({
 
   return (
     <form className="receipt-form" onSubmit={onSubmit}>
-      <label className="receipt-field">
-        <span>raid id</span>
+      <FormField className="receipt-field" label="raid id">
         <input
           className="receipt-field__input"
           onChange={(event) => onRaidIdChange(event.target.value)}
@@ -32,9 +32,8 @@ export function ReceiptQueryForm({
           type="text"
           value={raidIdInput}
         />
-      </label>
-      <label className="receipt-field">
-        <span>raid access token</span>
+      </FormField>
+      <FormField className="receipt-field" label="raid access token">
         <input
           className="receipt-field__input"
           onChange={(event) => onTokenChange(event.target.value)}
@@ -43,8 +42,8 @@ export function ReceiptQueryForm({
           type="text"
           value={tokenInput}
         />
-      </label>
-      {formError ? <p className="form-status form-status--error">{formError}</p> : null}
+      </FormField>
+      {formError ? <FormStatus tone="error">{formError}</FormStatus> : null}
       <div className="receipt-form__actions">
         <button className="button button--primary" disabled={!canSubmit} type="submit">
           load receipt
