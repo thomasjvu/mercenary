@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import test from 'node:test';
+import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import type { ProviderAcceptance } from '@bossraid/shared-types';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
@@ -87,7 +88,11 @@ test('GET /v1/models and /v1/markets expose discount inference marketplace data'
     const models = modelsResponse.json().data as Array<{
       id: string;
       bossraid: { cheapest_rate_usd: number | null; catalog_only?: boolean };
-      pricing: { declaredUnit: string; pricePer1mInputTokensUsd: number | null };
+      pricing: {
+        declaredUnit: string;
+        pricePer1mInputTokensUsd: number | null;
+        pricePer1mOutputTokensUsd: number | null;
+      };
     }>;
     assert.equal(
       models.some((model) => model.id === 'gpt-5.5'),
@@ -106,7 +111,16 @@ test('GET /v1/models and /v1/markets expose discount inference marketplace data'
     assert.equal(gptMarket.bossraid.cheapest_rate_usd, 0.03);
     assert.equal(gptMarket.bossraid.catalog_only, false);
     assert.equal(gptMarket.pricing.declaredUnit, 'token_metered');
-    assert.equal(gptMarket.pricing.pricePer1mInputTokensUsd, 0.1);
+    assert.equal(gptMarket.pricing.pricePer1mInputTokensUsd, null);
+
+    const veniceCatalog = INFERENCE_MODEL_CATALOG.find(
+      (entry) => entry.modelId === 'venice-uncensored-1-2'
+    );
+    assert.ok(veniceCatalog);
+    const veniceMarket = models.find((model) => model.id === 'venice-uncensored-1-2');
+    assert.ok(veniceMarket);
+    assert.equal(veniceMarket.pricing.pricePer1mInputTokensUsd, veniceCatalog.inputPer1mUsd);
+    assert.equal(veniceMarket.pricing.pricePer1mOutputTokensUsd, veniceCatalog.outputPer1mUsd);
 
     const marketsResponse = await app.inject({
       method: 'GET',
@@ -118,6 +132,8 @@ test('GET /v1/models and /v1/markets expose discount inference marketplace data'
     assert.equal(market.pricing.declaredUnit, 'token_metered');
     assert.equal(market.pricing.referenceInputTokens, 1_000);
     assert.equal(market.pricing.referenceOutputTokens, 1_024);
+    assert.equal(market.pricing.pricePer1mInputTokensUsd, null);
+    assert.equal(market.sellers[0].pricing.pricePer1mInputTokensUsd, 0.1);
     assert.equal(market.sellers[0].pricing.rateCardHash, 'market-rate-card-v1');
     assert.equal(market.sellers[0].pricing.maxContextTokens, 131_072);
     assert.deepEqual(

@@ -7,6 +7,11 @@ import {
   computeSavingsPercent,
   resolveMarketBenchmarkTaskUsd,
 } from '../../lib/marketplace-benchmark.js';
+import {
+  formatPer1mTokenPrice,
+  resolveMarketBaseInputPer1mUsd,
+  resolveMarketBaseOutputPer1mUsd,
+} from '../../lib/marketplace-pricing.js';
 
 type FeaturedModelsProps = {
   markets: InferenceMarket[];
@@ -34,6 +39,14 @@ export function FeaturedModels({ markets, onOpenModel }: FeaturedModelsProps) {
               : null;
           const teeSellerCount =
             market?.sellers.filter((seller) => seller.privacy.teeAttested).length ?? 0;
+          const baseInputPer1mUsd =
+            market != null
+              ? resolveMarketBaseInputPer1mUsd(market)
+              : (catalog?.inputPer1mUsd ?? null);
+          const baseOutputPer1mUsd =
+            market != null
+              ? resolveMarketBaseOutputPer1mUsd(market)
+              : (catalog?.outputPer1mUsd ?? null);
 
           return (
             <button
@@ -54,14 +67,16 @@ export function FeaturedModels({ markets, onOpenModel }: FeaturedModelsProps) {
 
               <span className="featured-models__meta">
                 <span>
+                  base {formatPer1mTokenPrice(baseInputPer1mUsd)} /{' '}
+                  {formatPer1mTokenPrice(baseOutputPer1mUsd)} per 1M
+                </span>
+                <span>
                   {market?.cheapestRateUsd != null
                     ? `from ${formatUsd(market.cheapestRateUsd)}`
                     : 'catalog reference'}
-                </span>
-                <span>
                   {market && market.activeProviderCount > 0
-                    ? `${market.activeProviderCount} live`
-                    : 'no live sellers'}
+                    ? ` · ${market.activeProviderCount} live`
+                    : ' · no live sellers'}
                 </span>
               </span>
 

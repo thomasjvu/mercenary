@@ -391,16 +391,10 @@ export function buildInferenceMarkets(providers: ProviderProfile[]): InferenceMa
           benchmarkMode: 'static_reference_only' as const,
           declaredUnit,
           cheapestPricePerTaskUsd: cheapestRateUsd,
-          pricePer1mInputTokensUsd:
-            activeSellers.find((seller) => seller.pricing.pricePer1mInputTokensUsd != null)?.pricing
-              .pricePer1mInputTokensUsd ?? null,
-          pricePer1mOutputTokensUsd:
-            activeSellers.find((seller) => seller.pricing.pricePer1mOutputTokensUsd != null)
-              ?.pricing.pricePer1mOutputTokensUsd ?? null,
-          referenceInputTokens:
-            declaredUnit === 'token_metered' ? MARKETPLACE_REFERENCE_INPUT_TOKENS : null,
-          referenceOutputTokens:
-            declaredUnit === 'token_metered' ? MARKETPLACE_REFERENCE_OUTPUT_TOKENS : null,
+          pricePer1mInputTokensUsd: null,
+          pricePer1mOutputTokensUsd: null,
+          referenceInputTokens: MARKETPLACE_REFERENCE_INPUT_TOKENS,
+          referenceOutputTokens: MARKETPLACE_REFERENCE_OUTPUT_TOKENS,
         },
         sellers,
       };
@@ -416,6 +410,22 @@ function estimateCatalogReferenceRateUsd(entry: InferenceCatalogEntry): number {
   const input = (MARKETPLACE_REFERENCE_INPUT_TOKENS / 1_000_000) * entry.inputPer1mUsd;
   const output = (MARKETPLACE_REFERENCE_OUTPUT_TOKENS / 1_000_000) * entry.outputPer1mUsd;
   return Math.max(0.01, Number((input + output).toFixed(4)));
+}
+
+function applyCatalogReferencePricing(
+  market: InferenceMarket,
+  entry: InferenceCatalogEntry
+): InferenceMarket {
+  return {
+    ...market,
+    pricing: {
+      ...market.pricing,
+      pricePer1mInputTokensUsd: entry.inputPer1mUsd,
+      pricePer1mOutputTokensUsd: entry.outputPer1mUsd,
+      referenceInputTokens: MARKETPLACE_REFERENCE_INPUT_TOKENS,
+      referenceOutputTokens: MARKETPLACE_REFERENCE_OUTPUT_TOKENS,
+    },
+  };
 }
 
 function buildCatalogOnlyMarket(entry: InferenceCatalogEntry): InferenceMarket {
@@ -451,7 +461,10 @@ export function mergeInferenceCatalogMarkets(liveMarkets: InferenceMarket[]): In
   const merged = new Map(liveMarkets.map((market) => [market.modelId, market]));
 
   for (const entry of INFERENCE_MODEL_CATALOG) {
-    if (!merged.has(entry.modelId)) {
+    const existing = merged.get(entry.modelId);
+    if (existing) {
+      merged.set(entry.modelId, applyCatalogReferencePricing(existing, entry));
+    } else {
       merged.set(entry.modelId, buildCatalogOnlyMarket(entry));
     }
   }

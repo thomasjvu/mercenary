@@ -17,6 +17,11 @@ import {
 } from '../lib/marketplace-benchmark.js';
 import { formatUsd } from '@bossraid/proof-ui';
 import { formatLatency, formatPercent, formatSavingsLabel } from '../lib/marketplace-format.js';
+import {
+  formatPer1mTokenPrice,
+  resolveMarketBaseInputPer1mUsd,
+  resolveMarketBaseOutputPer1mUsd,
+} from '../lib/marketplace-pricing.js';
 
 type ModelDetailPageProps = {
   modelId: string;
@@ -111,8 +116,12 @@ export function ModelDetailPage({
             <DetailStat label="p95" value={formatLatency(market.p95LatencyMs)} />
             <DetailStat label="unit" value={market.pricing.declaredUnit} />
             <DetailStat
-              label="in / 1M"
-              value={formatUsd(market.pricing.pricePer1mInputTokensUsd, 3)}
+              label="base in"
+              value={formatPer1mTokenPrice(resolveMarketBaseInputPer1mUsd(market))}
+            />
+            <DetailStat
+              label="base out"
+              value={formatPer1mTokenPrice(resolveMarketBaseOutputPer1mUsd(market))}
             />
           </div>
 

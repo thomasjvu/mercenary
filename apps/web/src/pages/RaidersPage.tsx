@@ -1,19 +1,11 @@
-import { useDeferredValue, useState } from 'react';
-import { hasErc8004Registration } from '@bossraid/proof-ui';
 import type { Provider, ProviderHealth } from '../api';
 import { RaiderRow } from '../components/raiders/RaiderRow';
-import { RaidersControls } from '../components/raiders/RaidersControls';
+import { RaidersDirectoryToolbar } from '../components/raiders/RaidersDirectoryToolbar.js';
 import { OrchestratorFeatured } from '../components/raiders/OrchestratorFeatured.js';
 import { MERCENARY_ORCHESTRATOR, partitionRaiders } from '../lib/orchestrators.js';
 import type { AppRoute } from '../lib/app-routes.js';
-import {
-  buildRaiderRecord,
-  compareRaiders,
-  isVeniceProvider,
-  readErc8004VerificationStatus,
-  type SortKey,
-  type StatusFilter,
-} from '../lib/raiders';
+import { buildRaiderRecord, readErc8004VerificationStatus } from '../lib/raiders';
+import { useRaidersDirectory } from '../lib/use-raiders-directory.js';
 
 type RaidersPageProps = {
   providers: Provider[];
@@ -22,11 +14,6 @@ type RaidersPageProps = {
 };
 
 export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPageProps) {
-  const [query, setQuery] = useState('');
-  const [sortKey, setSortKey] = useState<SortKey>('reputation');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const deferredQuery = useDeferredValue(query.trim().toLowerCase());
-
   const healthMap = new Map(providerHealth.map((entry) => [entry.providerId, entry]));
   const { orchestrators, specialists } = partitionRaiders(providers);
   const specialistRaiders = specialists.map((provider) =>
@@ -35,39 +22,16 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
   const orchestratorRaiders = orchestrators.map((provider) =>
     buildRaiderRecord(provider, healthMap.get(provider.providerId))
   );
-
-  const filteredRaiders = [...specialistRaiders]
-    .filter((raider) => {
-      if (statusFilter === 'ready' && !raider.ready) {
-        return false;
-      }
-      if (statusFilter === 'available' && raider.activityTone === 'offline') {
-        return false;
-      }
-      if (statusFilter === 'offline' && raider.activityTone !== 'offline') {
-        return false;
-      }
-      if (!deferredQuery) {
-        return true;
-      }
-      return raider.searchIndex.includes(deferredQuery);
-    })
-    .sort((left, right) => compareRaiders(left, right, sortKey));
+  const { state, filteredRaiders, patchState, reset, isActive } =
+    useRaidersDirectory(specialistRaiders);
 
   const readyCount = specialistRaiders.filter((raider) => raider.ready).length;
   const privacyCount = specialistRaiders.filter(
     (raider) => raider.privacyScore >= 60 || raider.privacySignals.length >= 2
   ).length;
-  const registeredCount = specialistRaiders.filter((raider) =>
-    hasErc8004Registration(raider.provider)
-  ).length;
   const verifiedCount = specialistRaiders.filter(
     (raider) => readErc8004VerificationStatus(raider.provider) === 'verified'
   ).length;
-  const veniceCount = specialistRaiders.filter((raider) =>
-    isVeniceProvider(raider.provider)
-  ).length;
-  const veteranCount = specialistRaiders.filter((raider) => raider.successfulRaids > 0).length;
 
   return (
     <section className="beta-page page-flat raiders-page">
@@ -121,26 +85,25 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
           </p>
         </div>
 
-        <RaidersControls
-          filteredCount={filteredRaiders.length}
-          onQueryChange={setQuery}
-          onSortKeyChange={setSortKey}
-          onStatusFilterChange={setStatusFilter}
-          privacyCount={privacyCount}
-          query={query}
-          registeredCount={registeredCount}
-          sortKey={sortKey}
-          statusFilter={statusFilter}
-          veniceCount={veniceCount}
-          verifiedCount={verifiedCount}
-          veteranCount={veteranCount}
+        <RaidersDirectoryToolbar
+          isActive={isActive}
+          onPatch={patchState}
+          onReset={reset}
+          shownCount={filteredRaiders.length}
+          state={state}
+          totalCount={specialistRaiders.length}
         />
 
         <div className="raiders-list">
           {filteredRaiders.length === 0 ? (
-            <div className="directory-empty">
+            <div className="raiders-directory__empty">
               <p className="eyebrow">no match</p>
               <p>Adjust the search or filters to find specialist raiders in the registry.</p>
+              {isActive ? (
+                <button className="button" onClick={reset} type="button">
+                  clear filters
+                </button>
+              ) : null}
             </div>
           ) : (
             filteredRaiders.map((raider, index) => (

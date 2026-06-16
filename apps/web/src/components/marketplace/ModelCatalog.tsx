@@ -7,6 +7,11 @@ import {
 } from '../../lib/marketplace-benchmark.js';
 import { formatUsd } from '@bossraid/proof-ui';
 import { formatLatency, formatPercent, formatSavingsLabel } from '../../lib/marketplace-format.js';
+import {
+  formatPer1mTokenPrice,
+  resolveMarketBaseInputPer1mUsd,
+  resolveMarketBaseOutputPer1mUsd,
+} from '../../lib/marketplace-pricing.js';
 import { ProviderBrandIcon } from '../ProviderBrandIcon.js';
 import { SegmentBar } from '../system/SegmentBar.js';
 
@@ -69,13 +74,14 @@ export function ModelCatalog({ markets, onOpenModel }: ModelCatalogProps) {
           <thead>
             <tr>
               <th>model</th>
+              <th title="Reference input price per 1M tokens (models.dev)">base in</th>
+              <th title="Reference output price per 1M tokens (models.dev)">base out</th>
               <th>from</th>
               <th>savings</th>
               <th>sellers</th>
               <th>success</th>
               <th>p50</th>
               <th>tee</th>
-              <th>unit</th>
             </tr>
           </thead>
           <tbody>
@@ -120,6 +126,8 @@ function useMarketPresentation(market: InferenceMarket) {
 
 function ModelRow({ market, onOpen }: { market: InferenceMarket; onOpen: () => void }) {
   const { teeSellerCount, savingsPercent, savingsLabel } = useMarketPresentation(market);
+  const baseInputPer1mUsd = resolveMarketBaseInputPer1mUsd(market);
+  const baseOutputPer1mUsd = resolveMarketBaseOutputPer1mUsd(market);
 
   return (
     <tr>
@@ -135,6 +143,8 @@ function ModelRow({ market, onOpen }: { market: InferenceMarket; onOpen: () => v
           </span>
         </button>
       </td>
+      <td>{formatPer1mTokenPrice(baseInputPer1mUsd)}</td>
+      <td>{formatPer1mTokenPrice(baseOutputPer1mUsd)}</td>
       <td>{formatUsd(market.cheapestRateUsd)}</td>
       <td>
         <div className="model-catalog__savings">
@@ -156,13 +166,14 @@ function ModelRow({ market, onOpen }: { market: InferenceMarket; onOpen: () => v
           '—'
         )}
       </td>
-      <td>{market.pricing.declaredUnit}</td>
     </tr>
   );
 }
 
 function ModelCard({ market, onOpen }: { market: InferenceMarket; onOpen: () => void }) {
   const { teeSellerCount, savingsPercent, savingsLabel } = useMarketPresentation(market);
+  const baseInputPer1mUsd = resolveMarketBaseInputPer1mUsd(market);
+  const baseOutputPer1mUsd = resolveMarketBaseOutputPer1mUsd(market);
 
   return (
     <article className="model-catalog__card">
@@ -178,6 +189,14 @@ function ModelCard({ market, onOpen }: { market: InferenceMarket; onOpen: () => 
       </button>
 
       <dl className="model-catalog__card-stats">
+        <div>
+          <dt>base in</dt>
+          <dd>{formatPer1mTokenPrice(baseInputPer1mUsd)}</dd>
+        </div>
+        <div>
+          <dt>base out</dt>
+          <dd>{formatPer1mTokenPrice(baseOutputPer1mUsd)}</dd>
+        </div>
         <div>
           <dt>from</dt>
           <dd>{formatUsd(market.cheapestRateUsd)}</dd>
