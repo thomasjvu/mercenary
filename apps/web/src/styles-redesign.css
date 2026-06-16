@@ -125,43 +125,25 @@
 
 .orchestrator-featured__visual {
   position: relative;
-  min-height: 180px;
+  aspect-ratio: 1;
+  max-width: 280px;
   overflow: hidden;
-  border-radius: 6px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface-muted);
 }
 
 .orchestrator-featured__image {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.orchestrator-featured__scrim {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent 35%, rgba(12, 14, 18, 0.72) 100%);
-}
-
-.orchestrator-featured__visual .boss-raid-mark {
-  position: absolute;
-  left: 14px;
-  bottom: 14px;
-  z-index: 1;
 }
 
 .orchestrator-featured__copy {
   display: grid;
   gap: 10px;
   align-content: center;
-}
-
-.orchestrator-featured__eyebrow {
-  margin: 0;
-  color: var(--muted);
-  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  font-size: 0.68rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }
 
 .orchestrator-featured__copy h2 {
@@ -178,25 +160,11 @@
   max-width: 56ch;
 }
 
-.orchestrator-featured__tags {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.orchestrator-featured__tag {
-  padding: 4px 8px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  font-size: 0.68rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 .orchestrator-featured__cta {
   width: min(100%, 360px);
-  margin-top: 4px;
+  margin-top: 20px;
+  font-size: clamp(1.1rem, 1.6vw, 1.35rem);
+  letter-spacing: 0.08em;
 }
 
 .raiders-page {
@@ -490,31 +458,48 @@ button.action-steps__value {
 
 /* RX-78 spacebar CTA — shared by landing spawn raid + playground run */
 .rx-spacebar-clip {
+  --spacebar-label-lift: clamp(3px, 0.55vh, 6px);
   clip-path: polygon(0 0, 100% 0, 100% 77%, 66% 77%, 63.4% 100%, 5.2% 100%, 0 79%);
 }
 
-.button.rx-spacebar-clip {
+.button.rx-spacebar-clip,
+.info-panel__cta.rx-spacebar-clip {
   display: inline-flex;
   align-items: flex-start;
   justify-content: center;
   width: 100%;
   height: clamp(80px, 9.6vh, 96px);
   min-height: clamp(80px, 9.6vh, 96px);
-  padding: clamp(18px, 2vh, 24px) 18px 0;
+  padding: clamp(24px, 2.45vh, 30px) 18px 0;
   border: 0;
   border-radius: 0;
+  background: var(--rx-red);
+  color: var(--rx-white);
   font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
   text-transform: uppercase;
   font-size: clamp(1.35rem, 1.85vw, 1.75rem);
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0.1em;
-  box-shadow: none;
-  transform: translateY(-3px);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 226, 226, 0.18),
+    0 0 0 1px rgba(251, 47, 56, 0.28);
+  transform: translateY(calc(-1 * var(--spacebar-label-lift)));
 }
 
-.button.rx-spacebar-clip:hover:not(:disabled) {
-  box-shadow: none;
+.button.rx-spacebar-clip:hover:not(:disabled),
+.info-panel__cta.rx-spacebar-clip:hover {
+  background: color-mix(in srgb, var(--rx-red) 88%, #111111);
+  color: var(--rx-white);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 226, 226, 0.18),
+    0 0 0 1px rgba(251, 47, 56, 0.28);
+  transform: translateY(calc(-1 * var(--spacebar-label-lift)));
+}
+
+.app-frame--theme-dark .button.rx-spacebar-clip,
+.app-frame--theme-dark .info-panel__cta.rx-spacebar-clip {
+  color: var(--rx-white);
 }
 
 .button.rx-spacebar-clip:disabled {
@@ -1108,7 +1093,7 @@ button.action-steps__value {
   }
 
   .orchestrator-featured__visual {
-    min-height: 160px;
+    max-width: none;
   }
 
   .raiders-section__head {
@@ -2344,12 +2329,72 @@ button.action-steps__value {
   max-width: 34ch;
   color: var(--muted);
   font-size: 0.82rem;
+  font-style: italic;
   line-height: 1.5;
 }
 
-.mercenary-chat-shell__cta {
-  width: min(100%, 280px);
+.mercenary-chat-shell__overlay .info-panel__cta.mercenary-chat-shell__cta {
+  --spacebar-label-lift: clamp(3px, 0.55vh, 6px);
+  display: inline-flex;
+  width: auto;
+  min-width: 420px;
+  max-width: min(100%, 580px);
   margin-top: 4px;
+  padding: clamp(24px, 2.45vh, 30px) 88px 0;
+  background: var(--rx-red);
+  color: var(--rx-white);
+  font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.5rem, 2.1vw, 1.85rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  height: clamp(92px, 10vh, 108px);
+  min-height: clamp(92px, 10vh, 108px);
+  align-items: flex-start;
+  justify-content: center;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 226, 226, 0.18),
+    0 0 0 1px rgba(251, 47, 56, 0.28);
+  transform: translateY(calc(-1 * var(--spacebar-label-lift)));
+}
+
+.mercenary-chat-shell__overlay .info-panel__cta.mercenary-chat-shell__cta:hover {
+  background: color-mix(in srgb, var(--rx-red) 88%, #111111);
+  color: var(--rx-white);
+  transform: translateY(calc(-1 * var(--spacebar-label-lift)));
+}
+
+.app-frame--theme-dark
+  .mercenary-chat-shell__overlay
+  .info-panel__cta.mercenary-chat-shell__cta {
+  color: var(--rx-white);
+}
+
+.app-frame--theme-dark .mercenary-chat-shell__backdrop {
+  opacity: 0.62;
+  filter: blur(3px);
+  transform: scale(1.01);
+  transform-origin: center center;
+}
+
+.app-frame--theme-dark .mercenary-chat-shell__overlay {
+  --gate-edge-mask: radial-gradient(
+    ellipse 104% 90% at 50% 46%,
+    #000 0%,
+    #000 38%,
+    rgba(0, 0, 0, 0.72) 58%,
+    transparent 100%
+  );
+  background: radial-gradient(
+    ellipse 104% 90% at 50% 46%,
+    color-mix(in srgb, var(--bg) 42%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 24%, transparent) 46%,
+    transparent 100%
+  );
+  backdrop-filter: blur(10px) saturate(1.02);
+  -webkit-backdrop-filter: blur(10px) saturate(1.02);
+  mask-image: var(--gate-edge-mask);
+  -webkit-mask-image: var(--gate-edge-mask);
 }
 
 .mercenary-run-panel {
@@ -2614,6 +2659,44 @@ button.action-steps__value {
   font-size: 0.68rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.inference-playground__prompt {
+  display: grid;
+  gap: 7px;
+}
+
+.inference-playground__prompt span {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.inference-playground__textarea {
+  width: 100%;
+  min-height: 108px;
+  max-height: 240px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--surface-inset);
+  color: var(--text);
+  font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.inference-playground__textarea::placeholder {
+  color: color-mix(in srgb, var(--muted) 72%, transparent);
+}
+
+.inference-playground__textarea:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--rx-blue) 42%, var(--line));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--rx-blue) 10%, transparent);
 }
 
 .inference-playground__actions {

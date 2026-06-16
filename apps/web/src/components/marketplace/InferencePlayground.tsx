@@ -353,9 +353,15 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
             </div>
           </details>
 
-          <label className="field">
+          <label className="inference-playground__prompt">
             <span>prompt</span>
-            <textarea onChange={(event) => setPrompt(event.target.value)} rows={3} value={prompt} />
+            <textarea
+              className="inference-playground__textarea"
+              onChange={(event) => setPrompt(event.target.value)}
+              placeholder="Describe the request you want routed through the marketplace…"
+              rows={4}
+              value={prompt}
+            />
           </label>
 
           <div className="inference-playground__actions">

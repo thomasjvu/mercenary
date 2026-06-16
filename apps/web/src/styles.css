@@ -6635,11 +6635,13 @@ h2 {
   margin-top: 8px;
   background: var(--rx-red);
   color: var(--rx-white);
+  transform: translateY(calc(-1 * var(--spacebar-label-lift, clamp(3px, 0.55vh, 6px))));
 }
 
 .inference-playground .button.rx-spacebar-clip:hover:not(:disabled) {
   background: color-mix(in srgb, var(--rx-red) 88%, #111111);
   color: var(--rx-white);
+  transform: translateY(calc(-1 * var(--spacebar-label-lift, clamp(3px, 0.55vh, 6px))));
 }
 
 .inference-playground__lede {
