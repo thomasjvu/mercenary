@@ -885,6 +885,68 @@ h2 {
   background: var(--rx-blue);
 }
 
+.button--pill {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  box-shadow: none;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+  transform: none;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.button--pill:hover,
+.button--pill:active,
+.button--pill:focus-visible {
+  border-color: var(--rx-blue);
+  background: var(--rx-blue);
+  color: var(--rx-white);
+  box-shadow: none;
+  transform: none;
+}
+
+.button--pill--active,
+.button--pill[aria-pressed='true'] {
+  border-color: var(--rx-blue);
+  background: var(--rx-blue);
+  color: var(--rx-white);
+}
+
+.button--pill--active:hover,
+.button--pill--active:active,
+.button--pill--active:focus-visible,
+.button--pill[aria-pressed='true']:hover,
+.button--pill[aria-pressed='true']:active,
+.button--pill[aria-pressed='true']:focus-visible {
+  border-color: var(--rx-blue);
+  background: var(--rx-blue);
+  color: var(--rx-white);
+}
+
+.button--pill:disabled,
+.button--pill:disabled:hover,
+.button--pill:disabled:active {
+  border-color: var(--line);
+  background: transparent;
+  color: var(--muted);
+  opacity: 0.56;
+  transform: none;
+  box-shadow: none;
+}
+
+.button--pill.button--block {
+  width: 100%;
+}
+
 .meter {
   display: flex;
   align-items: flex-end;

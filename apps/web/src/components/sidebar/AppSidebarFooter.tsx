@@ -23,7 +23,7 @@ export function AppSidebarFooter({
     <div className="app-sidebar__bottom">
       <button
         aria-pressed={isInspectorOpen}
-        className={`app-sidebar__tee-pill${isInspectorOpen ? ' app-sidebar__tee-pill--active' : ''}`}
+        className={`button button--pill button--block app-sidebar__tee-pill${isInspectorOpen ? ' button--pill--active' : ''}`}
         onClick={onOpenInspector}
         type="button"
       >

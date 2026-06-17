@@ -47,9 +47,7 @@ export function MercenaryWorkspace({
     <section className={`mercenary-workspace${embedded ? ' mercenary-workspace--embedded' : ''}`}>
       <article className="mercenary-chat">
         <MercenaryChatHeader
-          balanceUsd={walletAuth.session?.account?.balanceUsd}
           hasConversation={mercenary.hasConversation}
-          isAuthenticated={isSignedIn}
           isLaunching={mercenary.isLaunching}
           onResetConversation={mercenary.resetConversation}
         />
@@ -100,8 +98,10 @@ export function MercenaryWorkspace({
           ) : null}
 
           <MercenaryRaidForm
+            balanceUsd={walletAuth.session?.account?.balanceUsd}
             canSendBrief={mercenary.canSendBrief && isSignedIn}
             hasConversation={mercenary.hasConversation}
+            isAuthenticated={isSignedIn}
             isLaunching={mercenary.isLaunching}
             maxBudgetUsd={mercenary.maxBudgetUsd}
             onBriefChange={mercenary.setRaidBrief}

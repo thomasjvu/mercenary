@@ -26,23 +26,9 @@ export function ReceiptPage() {
               onSubmit={state.handleLoadReceipt}
               onTokenChange={state.setTokenInput}
               raidIdInput={state.raidIdInput}
-              terminal
+              terminal={!showDashboard}
               tokenInput={state.tokenInput}
             />
-
-            {state.activeQuery && !hasLoadError ? (
-              <div className="verification-terminal__meta">
-                <span className="verification-terminal__status">{state.currentReceiptStatus}</span>
-                <button
-                  className="button"
-                  disabled={!state.activeQuery}
-                  onClick={state.handleCopyLink}
-                  type="button"
-                >
-                  {state.shareCopied ? 'copied' : 'copy link'}
-                </button>
-              </div>
-            ) : null}
 
             {hasLoadError ? <ReceiptLoadError compact state={state} /> : null}
           </article>
@@ -50,6 +36,22 @@ export function ReceiptPage() {
 
         {showDashboard ? (
           <div className="verification-page__results">
+            <header className="verification-receipt-bar">
+              <div className="verification-receipt-bar__copy">
+                <span className="verification-receipt-bar__status">
+                  {state.currentReceiptStatus}
+                </span>
+                <span className="verification-receipt-bar__id">{state.activeQuery?.raidId}</span>
+              </div>
+              <button
+                className="button button--ghost verification-receipt-bar__action"
+                disabled={!state.activeQuery}
+                onClick={state.handleCopyLink}
+                type="button"
+              >
+                {state.shareCopied ? 'copied' : 'copy link'}
+              </button>
+            </header>
             <ReceiptLoadedDashboard state={state} />
           </div>
         ) : null}

@@ -5,6 +5,7 @@ type FilterSelectProps = {
   options: Array<[string, string]>;
   compact?: boolean;
   className?: string;
+  disabled?: boolean;
 };
 
 export function FilterSelect({
@@ -14,6 +15,7 @@ export function FilterSelect({
   options,
   compact = false,
   className,
+  disabled = false,
 }: FilterSelectProps) {
   const fieldClass =
     className ?? `market-filters__field${compact ? ' market-filters__field--compact' : ''}`;
@@ -21,7 +23,7 @@ export function FilterSelect({
   return (
     <label className={fieldClass}>
       <span>{label}</span>
-      <select onChange={(event) => onChange(event.target.value)} value={value}>
+      <select disabled={disabled} onChange={(event) => onChange(event.target.value)} value={value}>
         {options.map(([optionValue, optionLabel]) => (
           <option key={optionValue || 'any'} value={optionValue}>
             {optionLabel}

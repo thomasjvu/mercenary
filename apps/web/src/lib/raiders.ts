@@ -9,6 +9,8 @@ export type StatusFilter = 'all' | 'ready' | 'available' | 'offline';
 export type RaiderRecord = {
   provider: Provider;
   ready: boolean;
+  isOnline: boolean;
+  onlineLabel: 'online' | 'offline';
   activityLabel: string;
   activityTone: 'ready' | 'available' | 'offline';
   reputationScore: number;
@@ -58,16 +60,20 @@ export function buildRaiderRecord(
 
   const ready = health?.ready === true;
   const reachable = health?.reachable === true;
+  const activityTone: RaiderRecord['activityTone'] = ready
+    ? 'ready'
+    : reachable || provider.status === 'available'
+      ? 'available'
+      : 'offline';
+  const isOnline = activityTone !== 'offline';
 
   return {
     provider,
     ready,
+    isOnline,
+    onlineLabel: isOnline ? 'online' : 'offline',
     activityLabel: ready ? 'ready' : reachable ? 'reachable' : provider.status,
-    activityTone: ready
-      ? 'ready'
-      : reachable || provider.status === 'available'
-        ? 'available'
-        : 'offline',
+    activityTone,
     reputationScore:
       provider.scores?.reputationScore ?? Math.round(provider.reputation.globalScore * 100),
     privacyScore: provider.scores?.privacyScore ?? provider.privacy?.score ?? 0,
@@ -182,6 +188,24 @@ export function formatPrivacySignalLabel(signal: string) {
     default:
       return signal;
   }
+}
+
+export function summarizeRaiderPriceBounds(raiders: RaiderRecord[]): { min: number; max: number } {
+  const prices = raiders
+    .map((raider) => raider.provider.pricePerTaskUsd)
+    .filter((price) => Number.isFinite(price) && price >= 0);
+
+  if (prices.length === 0) {
+    return { min: 0, max: 5 };
+  }
+
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+
+  return {
+    min,
+    max: max > min ? max : min + 0.5,
+  };
 }
 
 export function summarizeRaiderDirectory(raiders: RaiderRecord[]) {

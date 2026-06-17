@@ -32,6 +32,7 @@ type ReceiptAttestationSectionProps = {
   teeProviderCount: number;
   settlementExecution: RaidResult['settlementExecution'];
   upstreamAttestations: ReceiptUpstreamAttestationRow[];
+  compact?: boolean;
 };
 
 export function ReceiptAttestationSection({
@@ -50,17 +51,20 @@ export function ReceiptAttestationSection({
   teeProviderCount,
   settlementExecution,
   upstreamAttestations,
+  compact = false,
 }: ReceiptAttestationSectionProps) {
   const { openInspector } = useAttestationInspector();
   const privacyCompliance = settlementExecution?.privacyCompliance;
   return (
-    <article className="receipt-surface">
-      <div className="receipt-surface__head">
-        <div>
-          <p className="eyebrow">proof</p>
-          <h2>Attestation</h2>
+    <article className={`receipt-surface${compact ? ' receipt-surface--compact' : ''}`}>
+      {!compact ? (
+        <div className="receipt-surface__head">
+          <div>
+            <p className="eyebrow">proof</p>
+            <h2>Attestation</h2>
+          </div>
         </div>
-      </div>
+      ) : null}
       <ReceiptProofPanel
         attestationTarget={attestationTarget}
         attestationTee={attestationTee}
@@ -103,29 +107,33 @@ export function ReceiptAttestationSection({
         signedProviderCount={signedProviderCount}
         teeProviderCount={teeProviderCount}
       />
-      <div className="receipt-surface__section">
-        <div className="receipt-surface__section-head">
-          <p className="eyebrow">upstream tee proof</p>
-          <button
-            className="button button--ghost"
-            onClick={() =>
-              openInspector({
-                raidId: activeQuery.raidId,
-                upstreamAttestations,
-              })
-            }
-            type="button"
-          >
-            open inspector
-          </button>
-        </div>
-        <ReceiptUpstreamAttestationPanel
-          overallPassed={privacyCompliance?.overallPassed}
-          overallScore={privacyCompliance?.overallScore}
-          privacyMode={privacyCompliance?.privacyMode}
-          rows={upstreamAttestations}
-        />
-      </div>
+      {upstreamAttestations.length > 0 ? (
+        <details className="receipt-disclosure receipt-disclosure--nested">
+          <summary>upstream tee proof</summary>
+          <div className="receipt-surface__section receipt-surface__section--nested">
+            <div className="receipt-surface__section-head">
+              <button
+                className="button button--ghost"
+                onClick={() =>
+                  openInspector({
+                    raidId: activeQuery.raidId,
+                    upstreamAttestations,
+                  })
+                }
+                type="button"
+              >
+                open inspector
+              </button>
+            </div>
+            <ReceiptUpstreamAttestationPanel
+              overallPassed={privacyCompliance?.overallPassed}
+              overallScore={privacyCompliance?.overallScore}
+              privacyMode={privacyCompliance?.privacyMode}
+              rows={upstreamAttestations}
+            />
+          </div>
+        </details>
+      ) : null}
     </article>
   );
 }

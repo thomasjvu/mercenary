@@ -9,6 +9,7 @@ type SpecialistRaidersSectionProps = {
   state: RaidersDirectoryState;
   filteredRaiders: RaiderRecord[];
   totalCount: number;
+  priceBounds: { min: number; max: number };
   isActive: boolean;
   onPatch: (patch: Partial<RaidersDirectoryState>) => void;
   onReset: () => void;
@@ -20,6 +21,7 @@ export function SpecialistRaidersSection({
   state,
   filteredRaiders,
   totalCount,
+  priceBounds,
   isActive,
   onPatch,
   onReset,
@@ -32,41 +34,46 @@ export function SpecialistRaidersSection({
         <p className="raiders-section__meta">{summaryLabel}</p>
       </div>
 
-      <RaidersDirectoryToolbar
-        isActive={isActive}
-        onPatch={onPatch}
-        onReset={onReset}
-        shownCount={filteredRaiders.length}
-        state={state}
-        totalCount={totalCount}
-      />
+      <div className="marketplace-layout raiders-section__layout">
+        <RaidersDirectoryToolbar
+          isActive={isActive}
+          onPatch={onPatch}
+          onReset={onReset}
+          priceBounds={priceBounds}
+          shownCount={filteredRaiders.length}
+          state={state}
+          totalCount={totalCount}
+        />
 
-      <div className="raiders-list">
-        {filteredRaiders.length === 0 ? (
-          <div className="raiders-directory__empty">
-            <p className="eyebrow">no match</p>
-            <p>Adjust the search or filters to find specialist raiders in the registry.</p>
-            {isActive ? (
-              <button className="button" onClick={onReset} type="button">
-                clear filters
-              </button>
-            ) : null}
+        <div className="raiders-section__main">
+          <div className="raiders-list">
+            {filteredRaiders.length === 0 ? (
+              <div className="raiders-directory__empty">
+                <p className="eyebrow">no match</p>
+                <p>Adjust the search or filters to find specialist raiders in the registry.</p>
+                {isActive ? (
+                  <button className="button" onClick={onReset} type="button">
+                    clear filters
+                  </button>
+                ) : null}
+              </div>
+            ) : (
+              filteredRaiders.map((raider, index) => (
+                <RaiderRow
+                  key={raider.provider.providerId}
+                  onMarket={() => onNavigate('/marketplace')}
+                  onTry={() =>
+                    onNavigate('/playground', {
+                      modelId: raider.provider.modelId ?? undefined,
+                    })
+                  }
+                  raider={raider}
+                  rank={index + 1}
+                />
+              ))
+            )}
           </div>
-        ) : (
-          filteredRaiders.map((raider, index) => (
-            <RaiderRow
-              key={raider.provider.providerId}
-              onMarket={() => onNavigate('/marketplace')}
-              onTry={() =>
-                onNavigate('/playground', {
-                  modelId: raider.provider.modelId ?? undefined,
-                })
-              }
-              raider={raider}
-              rank={index + 1}
-            />
-          ))
-        )}
+        </div>
       </div>
     </section>
   );

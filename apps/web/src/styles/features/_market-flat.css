@@ -276,7 +276,7 @@
   border-radius: 12px;
   background: var(--rx-blue);
   color: var(--on-blue);
-  box-shadow: 0 14px 28px color-mix(in srgb, var(--rx-blue) 28%, transparent);
+  box-shadow: none;
 }
 
 .market-filters__head {
@@ -425,6 +425,51 @@
 
 .market-filters__field select {
   cursor: pointer;
+}
+
+.market-filters__field select:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
+.market-filters__price-slider {
+  display: grid;
+  gap: 8px;
+}
+
+.market-filters__price-slider-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.market-filters__price-slider-label {
+  color: color-mix(in srgb, var(--on-blue) 72%, transparent);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.market-filters__price-slider-value {
+  color: var(--on-blue);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.market-filters__price-slider-input {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--on-blue);
+  cursor: pointer;
+}
+
+.market-filters__price-slider-input:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--on-blue) 48%, transparent);
+  outline-offset: 2px;
 }
 
 .market-filters__advanced {

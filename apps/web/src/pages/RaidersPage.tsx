@@ -3,7 +3,11 @@ import { OrchestratorFeatured } from '../components/raiders/OrchestratorFeatured
 import { OrchestratorAgentsSection } from '../components/raiders/OrchestratorAgentsSection.js';
 import { SpecialistRaidersSection } from '../components/raiders/SpecialistRaidersSection.js';
 import type { AppRoute } from '../lib/app-routes.js';
-import { buildRaiderRecord, summarizeRaiderDirectory } from '../lib/raiders';
+import {
+  buildRaiderRecord,
+  summarizeRaiderDirectory,
+  summarizeRaiderPriceBounds,
+} from '../lib/raiders';
 import { isMercenaryOrchestratorProvider, partitionRaiders } from '../lib/orchestrators.js';
 import { useRaidersDirectory } from '../lib/use-raiders-directory.js';
 
@@ -25,6 +29,7 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
   const { state, filteredRaiders, patchState, reset, isActive } =
     useRaidersDirectory(specialistRaiders);
   const summary = summarizeRaiderDirectory(specialistRaiders);
+  const priceBounds = summarizeRaiderPriceBounds(specialistRaiders);
   const summaryLabel = `${summary.readyCount}/${summary.totalCount || 0} ready · ${summary.verifiedCount} verified · ${summary.privacyCount} private`;
 
   return (
@@ -42,6 +47,7 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
         onNavigate={onNavigate}
         onPatch={patchState}
         onReset={reset}
+        priceBounds={priceBounds}
         state={state}
         summaryLabel={summaryLabel}
         totalCount={specialistRaiders.length}

@@ -74,4 +74,32 @@ test('hasActiveRaidersDirectory detects non-default state', () => {
     true
   );
   assert.equal(hasActiveRaidersDirectory({ ...RAIDERS_DIRECTORY_DEFAULTS, query: 'gpt' }), true);
+  assert.equal(
+    hasActiveRaidersDirectory({ ...RAIDERS_DIRECTORY_DEFAULTS, maxPriceUsd: 0.25 }),
+    true
+  );
+});
+
+test('filterAndSortRaiders applies max price ceiling and sorts by price', () => {
+  const cheap = buildFixture({ providerId: 'cheap', pricePerTaskUsd: 0.2 });
+  const mid = buildFixture({
+    providerId: 'mid',
+    displayName: 'Mid',
+    pricePerTaskUsd: 0.6,
+  });
+  const pricey = buildFixture({
+    providerId: 'pricey',
+    displayName: 'Pricey',
+    pricePerTaskUsd: 1.2,
+  });
+
+  const filtered = filterAndSortRaiders([pricey, mid, cheap], {
+    ...RAIDERS_DIRECTORY_DEFAULTS,
+    maxPriceUsd: 0.6,
+  });
+
+  assert.deepEqual(
+    filtered.map((raider) => raider.provider.providerId),
+    ['cheap', 'mid']
+  );
 });

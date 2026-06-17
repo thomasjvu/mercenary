@@ -149,181 +149,208 @@
   line-height: 1.45;
 }
 
+.raiders-section__layout {
+  align-items: start;
+}
+
+.raiders-section__main {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
 .raiders-list {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
-.raiders-list .raider-row {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  border-top: 1px solid var(--line);
-}
-
-.raiders-directory {
+.raiders-list .raider-row--compact {
   display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
   gap: 12px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--line);
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: none;
+  min-height: 0;
+  content-visibility: auto;
 }
 
-.raiders-directory__head {
+.raider-row__avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+}
+
+.raider-row__avatar {
+  display: block;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid var(--line-soft);
+  filter: saturate(1.02);
+}
+
+.raider-row__presence {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 2px solid var(--surface);
+}
+
+.raider-row__presence--ready {
+  background: var(--rx-blue);
+}
+
+.raider-row__presence--available {
+  background: var(--rx-yellow);
+}
+
+.raider-row__presence--offline {
+  background: var(--rx-steel);
+}
+
+.raider-row__content {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.raider-row__headline {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  min-width: 0;
 }
 
-.raiders-directory__title {
-  margin: 0;
+.raider-row__identity {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.raider-row__identity strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 
-.raiders-directory__head-actions {
+.raider-row__meta-line {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.raiders-directory__reset {
-  border: 0;
-  background: transparent;
-  color: var(--rx-blue);
-  cursor: pointer;
+  gap: 6px;
+  margin: 0;
+  min-width: 0;
+  color: var(--muted);
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   font-size: 0.68rem;
-  letter-spacing: 0.06em;
-  padding: 0;
-  text-decoration: underline;
-  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
-.raiders-directory__count {
-  margin: 0;
+.raider-row__online {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  text-transform: lowercase;
+}
+
+.raider-row__online-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.raider-row__online--online {
+  color: var(--rx-blue);
+}
+
+.raider-row__online--offline {
+  color: var(--rx-steel);
+}
+
+.raider-row__meta-line > span:nth-child(3) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.raider-row__price {
+  color: var(--rx-blue);
+  flex-shrink: 0;
+}
+
+.raider-row__signals {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.raider-row__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 22px;
+  padding: 0 7px;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  background: var(--surface-muted);
   color: var(--muted);
+}
+
+.raider-row__badge-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.raider-row__badge-value {
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.raiders-list .raider-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-top: 0;
+}
+
+.raiders-list .raider-row__actions .button--pill {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 0.64rem;
+}
+
+.market-filters .raiders-directory__count {
+  margin: 0;
+  color: color-mix(in srgb, var(--on-blue) 72%, transparent);
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   font-size: 0.68rem;
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
 
-.raiders-directory__label {
-  color: var(--muted);
-  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  font-size: 0.64rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.raiders-directory__search {
-  display: grid;
-  gap: 6px;
-}
-
-.raiders-directory__search input {
-  width: 100%;
-  min-height: 40px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface-inset);
-  color: var(--text);
-  font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.88rem;
-  padding: 0 14px;
-  transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease;
-}
-
-.raiders-directory__search input:focus {
-  outline: none;
-  border-color: color-mix(in srgb, var(--rx-blue) 42%, var(--line));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rx-blue) 12%, transparent);
-}
-
-.raiders-directory__controls {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(140px, 180px);
-  align-items: end;
-  gap: 12px 16px;
-}
-
-.raiders-directory__group {
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-}
-
-.raiders-directory__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.raiders-directory__chip {
-  min-height: 28px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  font-size: 0.68rem;
-  letter-spacing: 0.04em;
-  padding: 0 10px;
-  text-transform: lowercase;
-  transition:
-    border-color 160ms ease,
-    color 160ms ease,
-    background-color 160ms ease;
-}
-
-.raiders-directory__chip:hover {
-  border-color: var(--line-strong);
-  color: var(--text);
-}
-
-.raiders-directory__chip--active {
-  border-color: color-mix(in srgb, var(--rx-blue) 48%, var(--line));
-  background: color-mix(in srgb, var(--rx-blue) 10%, transparent);
-  color: var(--text);
-}
-
-.raiders-directory__sort {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-}
-
-.raiders-directory__sort select {
-  width: 100%;
-  min-height: 34px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface-inset);
-  color: var(--text);
-  cursor: pointer;
-  font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.82rem;
-  padding: 0 10px;
-}
-
 .raiders-directory__empty {
   display: grid;
   gap: 10px;
   padding: 20px 0;
-}
-
-.raider-row__actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 10px;
 }
 
 @media (max-width: 900px) {
@@ -342,11 +369,13 @@
     align-items: flex-start;
   }
 
-  .raiders-directory__controls {
-    grid-template-columns: 1fr;
+  .raiders-list .raider-row--compact {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
   }
 
-  .raiders-list .raider-row__cover {
-    min-height: 180px;
+  .raiders-list .raider-row__actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
   }
 }

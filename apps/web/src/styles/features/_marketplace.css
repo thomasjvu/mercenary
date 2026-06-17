@@ -1571,42 +1571,7 @@
 }
 
 .app-sidebar__tee-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   gap: 8px;
-  width: 100%;
-  min-height: 36px;
-  padding: 0 12px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--muted);
-  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  transition:
-    background-color 140ms ease,
-    border-color 140ms ease,
-    color 140ms ease;
-}
-
-.app-sidebar__tee-pill:hover {
-  color: var(--text);
-  border-color: var(--line-strong);
-}
-
-.app-sidebar__tee-pill--active {
-  border-color: var(--rx-blue);
-  background: var(--rx-blue);
-  color: var(--rx-white);
-}
-
-.app-sidebar__tee-pill--active:hover {
-  border-color: var(--rx-blue);
-  background: var(--rx-blue);
-  color: var(--rx-white);
 }
 
 .attestation-inspector__links {

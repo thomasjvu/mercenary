@@ -25,6 +25,8 @@ test('buildRaiderRecord indexes provider fields for search', () => {
 
   assert.equal(record.ready, true);
   assert.equal(record.activityTone, 'ready');
+  assert.equal(record.isOnline, true);
+  assert.equal(record.onlineLabel, 'online');
   assert.ok(record.searchIndex.includes('venice'));
   assert.ok(isVeniceProvider(record.provider));
 });

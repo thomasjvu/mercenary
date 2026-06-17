@@ -2,7 +2,7 @@
 
 .page-flat .proof-card,
 .page-flat .summary-pill,
-.page-flat .raider-row,
+.page-flat .raider-row:not(.raider-row--compact),
 .page-flat .receipt-form,
 .page-flat .receipt-proof-note,
 .page-flat .receipt-empty,
@@ -13,7 +13,7 @@
 .page-flat .info-panel,
 .app-shell--landing .proof-card,
 .app-shell--landing .summary-pill,
-.app-shell--landing .raider-row,
+.app-shell--landing .raider-row:not(.raider-row--compact),
 .app-shell--landing .receipt-form,
 .app-shell--landing .receipt-proof-note,
 .app-shell--landing .receipt-empty,
@@ -88,6 +88,34 @@
   border-color: var(--accent);
   box-shadow: none;
   transform: none;
+}
+
+.page-flat .button--pill,
+.app-shell--landing .button--pill {
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  border-color: var(--line);
+}
+
+.page-flat .button--pill:hover,
+.page-flat .button--pill:active,
+.page-flat .button--pill:focus-visible,
+.app-shell--landing .button--pill:hover,
+.app-shell--landing .button--pill:active,
+.app-shell--landing .button--pill:focus-visible {
+  border-color: var(--rx-blue);
+  background: var(--rx-blue);
+  color: var(--rx-white);
+}
+
+.page-flat .button--pill--active,
+.page-flat .button--pill[aria-pressed='true'],
+.app-shell--landing .button--pill--active,
+.app-shell--landing .button--pill[aria-pressed='true'] {
+  border-color: var(--rx-blue);
+  background: var(--rx-blue);
+  color: var(--rx-white);
 }
 
 .page-flat .button--primary,

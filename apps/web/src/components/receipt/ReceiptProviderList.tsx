@@ -17,17 +17,20 @@ function ReceiptProviderRow({ row }: { row: ReceiptProviderRowData }) {
 
 type ReceiptProviderListProps = {
   rows: ReceiptProviderRowData[];
+  compact?: boolean;
 };
 
-export function ReceiptProviderList({ rows }: ReceiptProviderListProps) {
+export function ReceiptProviderList({ rows, compact = false }: ReceiptProviderListProps) {
   return (
-    <article className="receipt-surface">
-      <div className="receipt-surface__head">
-        <div>
-          <p className="eyebrow">queued verified agents</p>
-          <h2>Providers</h2>
+    <article className={`receipt-surface${compact ? ' receipt-surface--compact' : ''}`}>
+      {!compact ? (
+        <div className="receipt-surface__head">
+          <div>
+            <p className="eyebrow">queued verified agents</p>
+            <h2>Providers</h2>
+          </div>
         </div>
-      </div>
+      ) : null}
       <div className="receipt-provider-list">
         {rows.length ? (
           rows.map((row) => <ReceiptProviderRow key={row.providerId} row={row} />)

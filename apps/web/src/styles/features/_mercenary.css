@@ -1206,7 +1206,14 @@
   letter-spacing: -0.03em;
 }
 
-.mercenary-chat__balance {
+.mercenary-composer__footer-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mercenary-composer__credit {
   color: var(--text);
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   font-size: 0.72rem;
@@ -1819,13 +1826,14 @@
   padding: 2px 2px 2px 0;
 }
 
-.mercenary-threads__row:hover,
-.mercenary-threads__row--active {
+.mercenary-threads__row:hover {
   background: var(--surface-muted);
 }
 
-.mercenary-threads__row--active {
-  border-color: var(--mercenary-border, var(--line));
+.mercenary-threads__row--active,
+.mercenary-threads__row--active:hover {
+  background: var(--rx-red);
+  border-color: var(--rx-red);
 }
 
 .mercenary-threads__row--editing {
@@ -1845,9 +1853,12 @@
   text-align: left;
 }
 
-.mercenary-threads__row:hover .mercenary-threads__select,
-.mercenary-threads__row--active .mercenary-threads__select {
+.mercenary-threads__row:hover .mercenary-threads__select {
   color: var(--text);
+}
+
+.mercenary-threads__row--active .mercenary-threads__select {
+  color: var(--rx-white);
 }
 
 .mercenary-threads__input {
@@ -1906,6 +1917,15 @@
 
 .mercenary-threads__action:hover {
   color: var(--text);
+}
+
+.mercenary-threads__row--active .mercenary-threads__action {
+  color: color-mix(in srgb, var(--rx-white) 72%, transparent);
+}
+
+.mercenary-threads__row--active .mercenary-threads__action:hover,
+.mercenary-threads__row--active .mercenary-threads__action--delete:hover {
+  color: var(--rx-white);
 }
 
 .mercenary-threads__action--delete:hover {

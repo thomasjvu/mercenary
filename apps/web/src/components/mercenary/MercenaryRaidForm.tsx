@@ -5,6 +5,8 @@ import { shouldLaunchOnComposerKey } from '../../lib/mercenary-composer.js';
 type MercenaryRaidFormProps = {
   raidBrief: string;
   maxBudgetUsd: number;
+  balanceUsd?: number;
+  isAuthenticated: boolean;
   hasConversation: boolean;
   promptSuggestions: readonly string[];
   canSendBrief: boolean;
@@ -17,6 +19,8 @@ type MercenaryRaidFormProps = {
 export function MercenaryRaidForm({
   raidBrief,
   maxBudgetUsd,
+  balanceUsd,
+  isAuthenticated,
   hasConversation,
   promptSuggestions,
   canSendBrief,
@@ -25,6 +29,7 @@ export function MercenaryRaidForm({
   onBudgetChange,
   onLaunch,
 }: MercenaryRaidFormProps) {
+  const balanceLabel = isAuthenticated ? `$${(balanceUsd ?? 0).toFixed(2)} credit` : null;
   function handleComposerKeyDown(event: ReactKeyboardEvent<HTMLTextAreaElement>) {
     if (!shouldLaunchOnComposerKey(event.key, event.shiftKey)) {
       return;
@@ -73,19 +78,22 @@ export function MercenaryRaidForm({
       </label>
 
       <div className="mercenary-composer__footer">
-        <label className="mercenary-composer__budget">
-          <span>Budget USD</span>
-          <input
-            className="mercenary-composer__budget-input"
-            disabled={isLaunching}
-            inputMode="decimal"
-            min={1}
-            onChange={(event) => handleBudgetChange(event.target.value)}
-            step={1}
-            type="number"
-            value={maxBudgetUsd}
-          />
-        </label>
+        <div className="mercenary-composer__footer-start">
+          <label className="mercenary-composer__budget">
+            <span>Budget USD</span>
+            <input
+              className="mercenary-composer__budget-input"
+              disabled={isLaunching}
+              inputMode="decimal"
+              min={1}
+              onChange={(event) => handleBudgetChange(event.target.value)}
+              step={1}
+              type="number"
+              value={maxBudgetUsd}
+            />
+          </label>
+          {balanceLabel ? <span className="mercenary-composer__credit">{balanceLabel}</span> : null}
+        </div>
         <p className="mercenary-composer__hint">Enter sends · Shift+Enter newline</p>
         <div className="mercenary-action-row">
           <button

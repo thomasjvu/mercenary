@@ -535,16 +535,16 @@
   -webkit-mask-image: var(--gate-edge-mask);
 }
 
-.app-frame--theme-dark .app-sidebar__tee-pill {
+.app-frame--theme-dark .button--pill:not(.button--pill--active):not([aria-pressed='true']) {
   background: rgba(18, 20, 27, 0.46);
   border-color: rgba(241, 244, 251, 0.18);
   color: rgba(241, 244, 251, 0.82);
 }
 
-.app-frame--theme-dark .app-sidebar__tee-pill--active {
-  border-color: var(--rx-blue);
-  background: var(--rx-blue);
+.app-frame--theme-dark .button--pill:not(.button--pill--active):not([aria-pressed='true']):hover {
+  border-color: rgba(241, 244, 251, 0.32);
   color: var(--rx-white);
+  background: rgba(18, 20, 27, 0.62);
 }
 
 .app-frame--theme-dark .app-sidebar__version:hover,
