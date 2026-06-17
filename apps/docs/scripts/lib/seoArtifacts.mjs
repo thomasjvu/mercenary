@@ -1,4 +1,4 @@
-import { documentationTree } from '../../shared/documentation-config.js';
+import { documentationTree, homepageConfig } from '../../shared/documentation-config.js';
 import {
   buildAbsoluteUrl,
   DEFAULT_OG_IMAGE_PATH,
@@ -152,7 +152,9 @@ export function createSeoRouteEntries(docsIndex, documentsByPath, options = {}) 
     }
   };
 
-  if (!options.skipSiteRoutes) {
+  const includeHomepage = options.includeHomepage ?? homepageConfig.enabled;
+
+  if (!options.skipSiteRoutes && includeHomepage) {
     registerRoute({
       routePath: '/',
       canonicalPath: '/',

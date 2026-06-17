@@ -9,6 +9,10 @@ papers is a static documentation framework for teams that want full visual contr
 - **Fast sites:** Static deploy, prefetch, lazy-loaded heavy viewers
 - **Competitive surface:** OpenAPI explorer, llms.txt, search, version/i18n scaffolding
 
+## Homepage toggle
+
+Set `homepageConfig.enabled` in `shared/documentation-config.js`. When `false`, `/` redirects to the first docs collection page and the landing route is omitted from sitemap and route HTML generation.
+
 ## Content collections (Boss Raid dogfood)
 
 Boss Raid splits **framework** (`apps/docs/`) from **content** (`content/docs/`, `content/dev-docs/`).

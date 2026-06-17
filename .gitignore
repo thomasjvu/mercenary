@@ -7,6 +7,7 @@ build
 .env
 .env.*
 !.env.example
+!apps/docs/.env.production
 .synthesis-credentials
 .synthesis-registration.json
 .moltbook-credentials

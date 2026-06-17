@@ -17,6 +17,8 @@ pnpm dev:docs
 
 Dev server: `http://localhost:3333`
 
+Theme: copy `.env.example` to `.env.local` (defaults to `VITE_PAPERS_THEME=rx-78`). Homepage landing is off — set `homepageConfig.enabled` in `shared/documentation-config.js` to restore it.
+
 ## Authoring
 
 1. Edit Markdown in `content/docs/` or `content/dev-docs/`.

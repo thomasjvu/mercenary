@@ -40,7 +40,7 @@ export const openapiConfig = {
 
 /** @type {import('./documentation-config.js').HomepageConfig} */
 export const homepageConfig = {
-  enabled: true,
+  enabled: false,
   hero: {
     title: 'Boss Raid',
     subtitle: 'Verified inference and multi-agent raids',
