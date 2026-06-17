@@ -87,7 +87,7 @@ Slices inherit `background-size: 400% 100%` from `.hero__slice`. Inline `backgro
 | raider       | `apps/web/src/assets/hero-manga-raiders.jpg` |
 | buyer        | `apps/web/src/assets/hero-manga-buyer.jpg`   |
 
-All three panels use **Mercenary Mk-0** (symmetrical temple spikes, hex reactor, triple visor) in B&W manga ink with visor and accent color baked into the JPG. Every tab uses **two separate horizontal visor eye slots** — never one continuous bar. No CSS eye overlays — `HERO_EYE_GLOWS_BY_WORKFLOW` is empty for every tab.
+All three panels use **Mercenary Mk-0** (symmetrical temple spikes, hex reactor, triple visor) in B&W manga ink with **cyan-blue** visor eye slots baked into the JPG. Every tab uses **two separate horizontal visor eye slots** — never one continuous bar. Dark theme (`--hero-eye-glow: var(--rx-blue)`) matches the art. No CSS eye overlays — `HERO_EYE_GLOWS_BY_WORKFLOW` is empty for every tab.
 
 Regenerate from OC references:
 

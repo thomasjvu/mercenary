@@ -133,7 +133,7 @@ export const HERO_BY_WORKFLOW: Record<WorkflowTabId, LandingHeroConfig> = {
   },
   buyer: {
     before: 'Load up wallet.',
-    accent: 'Inference or raids.',
+    accent: 'Buy inference or raids.',
     after: 'Discounted. Capped budget.',
     primary: {
       href: '/marketplace',

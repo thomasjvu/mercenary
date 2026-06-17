@@ -104,6 +104,8 @@
 }
 
 .app-shell--landing .hero--workflow-seller {
+  --hero-eye-glow: var(--rx-blue);
+  --hero-eye-halo: color-mix(in srgb, var(--rx-blue) 62%, transparent);
   --workflow-fill: var(--rx-blue);
   --workflow-fill-hover: color-mix(in srgb, var(--rx-blue) 88%, #111111);
   --workflow-ink: var(--rx-white);
@@ -111,8 +113,8 @@
 }
 
 .app-shell--landing .hero--workflow-raider {
-  --hero-eye-glow: var(--rx-yellow);
-  --hero-eye-halo: color-mix(in srgb, var(--rx-yellow) 62%, transparent);
+  --hero-eye-glow: var(--rx-blue);
+  --hero-eye-halo: color-mix(in srgb, var(--rx-blue) 62%, transparent);
   --workflow-fill: var(--rx-yellow);
   --workflow-fill-hover: color-mix(in srgb, var(--rx-yellow) 88%, #111111);
   --workflow-ink: var(--text);
@@ -137,8 +139,8 @@
 }
 
 .app-shell--landing .hero--workflow-buyer {
-  --hero-eye-glow: var(--rx-red);
-  --hero-eye-halo: color-mix(in srgb, var(--rx-red) 62%, transparent);
+  --hero-eye-glow: var(--rx-blue);
+  --hero-eye-halo: color-mix(in srgb, var(--rx-blue) 62%, transparent);
   --workflow-fill: var(--rx-red);
   --workflow-fill-hover: color-mix(in srgb, var(--rx-red) 88%, #111111);
   --workflow-ink: var(--rx-white);
@@ -212,11 +214,11 @@
   height: 3%;
   width: var(--hero-eye-width, 10%);
   border-radius: 2px;
-  background: var(--hero-eye-glow, var(--rx-yellow));
+  background: var(--hero-eye-glow, var(--rx-blue));
   box-shadow:
-    0 0 8px var(--hero-eye-glow, var(--rx-yellow)),
-    0 0 16px var(--hero-eye-halo, color-mix(in srgb, var(--rx-yellow) 62%, transparent)),
-    0 0 32px var(--hero-eye-halo, color-mix(in srgb, var(--rx-yellow) 62%, transparent));
+    0 0 8px var(--hero-eye-glow, var(--rx-blue)),
+    0 0 16px var(--hero-eye-halo, color-mix(in srgb, var(--rx-blue) 62%, transparent)),
+    0 0 32px var(--hero-eye-halo, color-mix(in srgb, var(--rx-blue) 62%, transparent));
   mix-blend-mode: screen;
   opacity: 0.96;
   pointer-events: none;
