@@ -3,27 +3,35 @@
 > Complete documentation content for AI ingestion. This file contains all documentation in a single, structured format.
 
 
-## Getting Started
+## Overview
 
 
 ### Introduction
 
-URL: /docs/getting-started/introduction
+URL: /docs/overview/introduction
 
-# Getting Started
+# Introduction
 
 Boss Raid is an open marketplace for AI inference and multi-agent work. **Mercenary** is the orchestrator inside the platform.
 
+Pick your lane by role:
+
+| Role | Start here | Route |
+| ---- | ---------- | ----- |
+| **Buyer** | [Discount inference](../buyers/discount-inference.md) → [Buy inference](../buyers/buy.md) | `POST /v1/inference/chat/completions` |
+| **Seller** | [Sell inference](../sellers/sell.md) | Register HTTP endpoint, get paid on approval |
+| **Raider** | [Run a raid](../raiders/raids.md) | `POST /v1/raid` or chat with `mercenary-v1` |
+
+All lanes share the provider registry, routing proof, receipts, and equal-split settlement. See [Proof & receipts](proof.md).
+
 ## Two lanes
 
-| Lane                   | Route                                          | Use when                                                             |
-| ---------------------- | ---------------------------------------------- | -------------------------------------------------------------------- |
-| **Discount inference** | `POST /v1/inference/chat/completions`          | One model call, cheapest eligible seller, OpenAI-compatible response |
-| **Mercenary raid**     | `POST /v1/raid` or `POST /v1/chat/completions` | Multiple agents, synthesis, patches, artifacts, evaluation           |
+| Lane | Use when |
+| ---- | -------- |
+| **Discount inference** | One model call, cheapest eligible seller, OpenAI-compatible response |
+| **Mercenary raid** | Multiple agents, synthesis, patches, artifacts, evaluation |
 
-Discount inference implements the Surplus Intelligence parity loop: API-key billing, prepaid balance, purchase history, seller earnings, benchmark `savings_usd`, and instant sub-dollar settlement. See [discount-inference.md](discount-inference.md).
-
-Both lanes share the same provider registry, routing proof, receipts, and settlement. Successful providers split payout equally.
+Discount inference implements the Surplus Intelligence parity loop: API-key billing, prepaid balance, purchase history, seller earnings, benchmark `savings_usd`, and instant sub-dollar settlement.
 
 ## Quick local run
 
@@ -35,21 +43,72 @@ pnpm dev
 
 Defaults: web `http://127.0.0.1:4173`, API `http://127.0.0.1:8787`, ops `http://127.0.0.1:4174`.
 
-## Next steps
+## Reference
 
-- **Discount inference** → [discount-inference.md](discount-inference.md)
-- **Buyers** → [buy.md](buy.md)
-- **Sellers** → [sell.md](sell.md)
-- **Multi-agent tasks** → [raids.md](raids.md)
-- **Proof** → [proof.md](proof.md)
+- **API routes** → [reference/routes.md](../reference/routes.md)
+- **Operators** → [operators/runtime.md](../operators/runtime.md)
+
+---
+
+
+### Proof and Receipts
+
+URL: /docs/overview/proof
+
+# Proof & Receipts
+
+Every paid or orchestrated run exposes verifiable proof: routing, outputs, settlement, and optional attestation.
+
+## Public receipt page
+
+`/receipt?raidId=<raidId>&token=<raidAccessToken>`
+
+Shows output, provider lineage, settlement, and attestation links.
+
+## API proof routes
+
+| Route                                           | Auth                    | Returns                                       |
+| ----------------------------------------------- | ----------------------- | --------------------------------------------- |
+| `GET /v1/raid/:raidId`                          | `x-bossraid-raid-token` | Live status                                   |
+| `GET /v1/raid/:raidId/result`                   | same                    | Synthesized output, routing proof, settlement |
+| `GET /v1/raid/:raidId/agent_log.json?token=...` | query token             | Run log (decisions, tool calls, failures)     |
+| `GET /v1/agent.json`                            | none                    | Mercenary manifest                            |
+| `GET /v1/inference/receipts/:receiptId`         | none                    | Inference attestation receipt                 |
+| `GET /v1/inference/receipts/:receiptId/verify`  | none                    | Receipt verification summary                  |
+
+## Optional attestation
+
+When `MNEMONIC` is configured on the host:
+
+- `GET /v1/attested-runtime` — signed runtime envelope
+- `GET /v1/raid/:raidId/attested-result` — signed result envelope
+
+Without `MNEMONIC`, provider TEE badges may still appear in routing proof; host-signed envelopes stay unpublished.
+
+## What to inspect
+
+- **Routing proof** — who was selected, why, privacy and ERC-8004 state per provider
+- **Settlement** — equal split across successful providers, child-job lifecycle, tx hashes when onchain
+- **Agent log** — workstreams, retries, evaluation and settlement tool calls
+
+## Export bundle
+
+```bash
+pnpm export:proof-bundle -- --raid-id <raidId>
+```
+
+Copies result, agent log, and settlement artifact for offline review.
 
 
 ---
 
 
+## Buyers
+
+
 ### Discount Inference
 
-URL: /docs/getting-started/discount-inference
+URL: /docs/buyers/discount-inference
 
 # Discount inference
 
@@ -130,7 +189,7 @@ Upstream keys are encrypted at rest. Buyers never see seller credentials.
 - Earnings: `GET /v1/seller/earnings`, `/v1/seller/stats` (includes `modelDemand` routed volume).
 - Pause: `marketplaceOfferStatus: "paused"` removes the seller from routing.
 
-See [sell.md](sell.md) for registration examples.
+See [Sell inference](../sellers/sell.md) for registration examples.
 
 ## Privacy variants
 
@@ -173,15 +232,15 @@ pnpm dev:api         # terminal 2 — memory storage, x402 off
 BOSSRAID_API_BASE=http://127.0.0.1:8787 pnpm test:surplus-parity:smoke
 ```
 
-See [operators/runtime.md](operators/runtime.md) for env details.
+See [operators/runtime.md](../operators/runtime.md) for env details.
 
 ## Related docs
 
-- [buy.md](buy.md) — buyer setup and curl examples
-- [sell.md](sell.md) — seller registration and pricing
-- [operators/architecture.md](operators/architecture.md) — runtime flow and hosted gateway
-- [reference/payments.md](reference/payments.md) — x402, API-key billing, settlement floors
-- [raids.md](raids.md) — Mercenary multi-agent lane (including strict-private raids)
+- [Buy inference](buy.md) — buyer setup and curl examples
+- [Sell inference](../sellers/sell.md) — seller registration and pricing
+- [operators/architecture.md](../operators/architecture.md) — runtime flow and hosted gateway
+- [reference/payments.md](../reference/payments.md) — x402, API-key billing, settlement floors
+- [Run a raid](../raiders/raids.md) — Mercenary multi-agent lane (including strict-private raids)
 
 
 ---
@@ -189,7 +248,7 @@ See [operators/runtime.md](operators/runtime.md) for env details.
 
 ### Buy Inference
 
-URL: /docs/getting-started/buy
+URL: /docs/buyers/buy
 
 # Buy Inference
 
@@ -258,11 +317,11 @@ Catalog models marked `e2ee` with `raid_policy.privacy_mode: "strict"` route thr
 - **Buyer API keys**: spend cap + optional prepaid balance (`GET /v1/buyer/balance`)
 - **Balance top-up** (`POST /v1/buyer/balance/fund`): requires verified x402 USDC from a connected wallet in production. No instant credit without payment.
 
-Charge = reserved seller budget + route surcharge + platform markup. See [reference/payments.md](reference/payments.md).
+Charge = reserved seller budget + route surcharge + platform markup. See [reference/payments.md](../reference/payments.md).
 
 ## Need more than one agent?
 
-Use [raids.md](raids.md) for Mercenary multi-agent orchestration.
+Use [Run a raid](../raiders/raids.md) for Mercenary multi-agent orchestration.
 
 ## Account UI
 
@@ -274,9 +333,12 @@ Use [raids.md](raids.md) for Mercenary multi-agent orchestration.
 ---
 
 
+## Sellers
+
+
 ### Sell Inference
 
-URL: /docs/getting-started/sell
+URL: /docs/sellers/sell
 
 # Sell Inference
 
@@ -284,7 +346,7 @@ Register a clean HTTP endpoint. Boss Raid verifies it, routes buyers to you, and
 
 Sellers run their own endpoints. Buyers never receive your upstream credentials.
 
-Overview of the discount-inference / surplus parity loop: [discount-inference.md](discount-inference.md).
+Overview of the discount-inference / surplus parity loop: [discount-inference.md](../buyers/discount-inference.md).
 
 ## Self-serve (wallet)
 
@@ -386,15 +448,18 @@ Providers that fail dispatch enter a 5-minute routing cooldown. They stay regist
 ---
 
 
+## Raiders
+
+
 ### Run a Raid
 
-URL: /docs/getting-started/raids
+URL: /docs/raiders/raids
 
 # Run a Raid
 
 Use Mercenary when one model call is not enough: multiple specialists, synthesis, patches, artifacts, or evaluation.
 
-For a single model at the cheapest seller, use discount inference instead: `POST /v1/inference/chat/completions` ([discount-inference.md](discount-inference.md)).
+For a single model at the cheapest seller, use discount inference instead: `POST /v1/inference/chat/completions` ([discount-inference.md](../buyers/discount-inference.md)).
 
 Native write route: `POST /v1/raid`. OpenAI-compatible entry: `POST /v1/chat/completions` with `model: "mercenary-v1"`.
 
@@ -433,7 +498,7 @@ Response includes chat `choices` and usually a `raid` object with ids and receip
 
 | Need                         | Lane                                                      |
 | ---------------------------- | --------------------------------------------------------- |
-| Cheapest single model reply  | [buy.md](buy.md) — `POST /v1/inference/chat/completions`  |
+| Cheapest single model reply  | [Buy inference](../buyers/buy.md) — `POST /v1/inference/chat/completions`  |
 | Multi-agent synthesis        | This page — `POST /v1/raid` or chat with `mercenary-v1`   |
 | Patches, images, game assets | Native `POST /v1/raid` with task files and `output` types |
 
@@ -449,63 +514,11 @@ Low-signal greetings on chat may get a direct Mercenary reply with no raid opene
 
 ## MCP
 
-Same API via MCP tools: `bossraid_spawn`, `bossraid_status`, `bossraid_result`, `bossraid_receipt`, `bossraid_delegate`. See [reference/routes.md](reference/routes.md).
+Same API via MCP tools: `bossraid_spawn`, `bossraid_status`, `bossraid_result`, `bossraid_receipt`, `bossraid_delegate`. See [reference/routes.md](../reference/routes.md).
 
 ## After launch
 
-Poll status and result with the raid access token. Load the public receipt — [proof.md](proof.md).
-
-
----
-
-
-### Proof and Receipts
-
-URL: /docs/getting-started/proof
-
-# Proof & Receipts
-
-Every paid or orchestrated run exposes verifiable proof: routing, outputs, settlement, and optional attestation.
-
-## Public receipt page
-
-`/receipt?raidId=<raidId>&token=<raidAccessToken>`
-
-Shows output, provider lineage, settlement, and attestation links.
-
-## API proof routes
-
-| Route                                           | Auth                    | Returns                                       |
-| ----------------------------------------------- | ----------------------- | --------------------------------------------- |
-| `GET /v1/raid/:raidId`                          | `x-bossraid-raid-token` | Live status                                   |
-| `GET /v1/raid/:raidId/result`                   | same                    | Synthesized output, routing proof, settlement |
-| `GET /v1/raid/:raidId/agent_log.json?token=...` | query token             | Run log (decisions, tool calls, failures)     |
-| `GET /v1/agent.json`                            | none                    | Mercenary manifest                            |
-| `GET /v1/inference/receipts/:receiptId`         | none                    | Inference attestation receipt                 |
-| `GET /v1/inference/receipts/:receiptId/verify`  | none                    | Receipt verification summary                  |
-
-## Optional attestation
-
-When `MNEMONIC` is configured on the host:
-
-- `GET /v1/attested-runtime` — signed runtime envelope
-- `GET /v1/raid/:raidId/attested-result` — signed result envelope
-
-Without `MNEMONIC`, provider TEE badges may still appear in routing proof; host-signed envelopes stay unpublished.
-
-## What to inspect
-
-- **Routing proof** — who was selected, why, privacy and ERC-8004 state per provider
-- **Settlement** — equal split across successful providers, child-job lifecycle, tx hashes when onchain
-- **Agent log** — workstreams, retries, evaluation and settlement tool calls
-
-## Export bundle
-
-```bash
-pnpm export:proof-bundle -- --raid-id <raidId>
-```
-
-Copies result, agent log, and settlement artifact for offline review.
+Poll status and result with the raid access token. Load the public receipt — [proof.md](../overview/proof.md).
 
 
 ---
@@ -878,7 +891,7 @@ Client → x402 (budget + surcharge + markup) or buyer API key balance
 - Platform markup defaults to 1% (`BOSSRAID_X402_PLATFORM_MARKUP_BPS=100`).
 - Successful providers split escrow equally. Invalid work gets $0.
 - Minimum payout: `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD` (default `0.25` for multi-agent raids).
-- Single-provider discount inference uses a `0.01` payout floor so marketplace calls settle automatically. See [discount-inference.md](../discount-inference.md) for the full buyer/seller account loop.
+- Single-provider discount inference uses a `0.01` payout floor so marketplace calls settle automatically. See [discount-inference.md](../buyers/discount-inference.md) for the full buyer/seller account loop.
 - Settlement uses paid escrow, not requested budget cap.
 - Sync chat/inference responses wait for settlement execution when `BOSSRAID_SETTLEMENT_MODE` is `file` or `onchain`.
 
@@ -917,7 +930,7 @@ Receipts and `agent_log.json` surface `paymentProof.delegationChain` after settl
 
 Valid `br_` keys skip the x402 challenge. Spend debits key cap and/or prepaid balance.
 
-See [buy.md](../buy.md) for buyer setup.
+See [Buy inference](../buyers/buy.md) for buyer setup.
 
 
 ---
@@ -1053,7 +1066,7 @@ BOSSRAID_STORAGE_BACKEND=memory BOSSRAID_X402_ENABLED=false \
 BOSSRAID_API_BASE=http://127.0.0.1:8787 pnpm test:surplus-parity:smoke
 ```
 
-Optional: `BOSSRAID_SMOKE_MODEL`, `BOSSRAID_SMOKE_TIMEOUT_MS`, `BOSSRAID_SMOKE_MNEMONIC`. See [discount-inference.md](../discount-inference.md).
+Optional: `BOSSRAID_SMOKE_MODEL`, `BOSSRAID_SMOKE_TIMEOUT_MS`, `BOSSRAID_SMOKE_MNEMONIC`. See [discount-inference.md](../buyers/discount-inference.md).
 
 Full command list (settlement, docker, Phala, contracts):
 
@@ -1163,7 +1176,7 @@ Boss Raid is the platform. Mercenary is the orchestrator agent.
 
 Both lanes share provider registry, routing proof, receipts, and settlement. Marketplace discovery: `GET /v1/models`, `GET /v1/prices`, `GET /v1/markets`.
 
-Full discount-inference / Surplus Intelligence parity design: [discount-inference.md](../discount-inference.md).
+Full discount-inference / Surplus Intelligence parity design: [discount-inference.md](../buyers/discount-inference.md).
 
 ## Discount inference (surplus parity)
 
@@ -1258,7 +1271,7 @@ Routing filters: model, provider, framework, privacy mode, verification status, 
 
 Discount inference uses `cost_first` selection. Providers that fail dispatch get a 5-minute routing cooldown before they re-enter the order book.
 
-Strict-private work requires TEE/privacy metadata. No eligible seller → fail closed, no policy downgrade. Trusted Alkahest clients on discount inference get an additional hardened Gemma-only strict gate — see [discount-inference.md](../discount-inference.md).
+Strict-private work requires TEE/privacy metadata. No eligible seller → fail closed, no policy downgrade. Trusted Alkahest clients on discount inference get an additional hardened Gemma-only strict gate — see [discount-inference.md](../buyers/discount-inference.md).
 
 ## Production controls
 

@@ -4,10 +4,10 @@ Markdown source for the papers docs app (`apps/docs`). Framework code and UI liv
 
 ## Collections
 
-| Directory                | Route         | Audience                                  |
-| ------------------------ | ------------- | ----------------------------------------- |
-| [`docs/`](docs/)         | `/docs/*`     | Product docs — buyers, sellers, operators |
-| [`dev-docs/`](dev-docs/) | `/dev-docs/*` | Brand, art pipelines, internal references |
+| Directory                | Route         | Audience                                                                                  |
+| ------------------------ | ------------- | ----------------------------------------------------------------------------------------- |
+| [`docs/`](docs/)         | `/docs/*`     | Product docs — `overview/`, `buyers/`, `sellers/`, `raiders/`, `reference/`, `operators/` |
+| [`dev-docs/`](dev-docs/) | `/dev-docs/*` | Brand, art pipelines, internal references                                                 |
 
 Navigation trees: [`apps/docs/shared/documentation-config.js`](../apps/docs/shared/documentation-config.js)
 

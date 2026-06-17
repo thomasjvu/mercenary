@@ -121,7 +121,7 @@ BOSSRAID_STORAGE_BACKEND=memory BOSSRAID_X402_ENABLED=false \
 BOSSRAID_API_BASE=http://127.0.0.1:8787 pnpm test:surplus-parity:smoke
 ```
 
-Optional: `BOSSRAID_SMOKE_MODEL`, `BOSSRAID_SMOKE_TIMEOUT_MS`, `BOSSRAID_SMOKE_MNEMONIC`. See [discount-inference.md](../discount-inference.md).
+Optional: `BOSSRAID_SMOKE_MODEL`, `BOSSRAID_SMOKE_TIMEOUT_MS`, `BOSSRAID_SMOKE_MNEMONIC`. See [discount-inference.md](../buyers/discount-inference.md).
 
 Full command list (settlement, docker, Phala, contracts):
 

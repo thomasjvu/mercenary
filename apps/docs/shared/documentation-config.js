@@ -53,8 +53,8 @@ export const homepageConfig = {
     },
     cta: {
       primary: {
-        text: 'Getting started',
-        href: '/docs/getting-started/introduction',
+        text: 'Introduction',
+        href: '/docs/overview/introduction',
       },
       secondary: {
         text: 'Dev docs',
@@ -64,26 +64,24 @@ export const homepageConfig = {
   },
   features: [
     {
-      title: 'Two buyer lanes',
-      description:
-        'Discount inference and Mercenary raids share registry, receipts, and settlement.',
-      icon: 'mingcute:route-line',
+      title: 'Buyers',
+      description: 'Discount inference, API keys, prepaid balance, and purchase receipts.',
+      icon: 'mingcute:shopping-cart-1-line',
     },
     {
-      title: 'Operator runbooks',
+      title: 'Sellers',
+      description: 'Register HTTP endpoints, upstream hosting, verification, and payouts.',
+      icon: 'mingcute:store-line',
+    },
+    {
+      title: 'Raiders',
+      description: 'Mercenary multi-agent raids, synthesis, strict-private work, and MCP tools.',
+      icon: 'mingcute:sword-line',
+    },
+    {
+      title: 'Operators',
       description: 'Architecture, runtime commands, production readiness, and trust boundaries.',
       icon: 'mingcute:settings-3-line',
-    },
-    {
-      title: 'RX-78 dev docs',
-      description:
-        'Brand tokens, typography, and art pipelines live in a separate dev-docs collection.',
-      icon: 'mingcute:palette-line',
-    },
-    {
-      title: 'Search-ready',
-      description: 'Pagefind full-text search ships with production builds.',
-      icon: 'mingcute:search-line',
     },
   ],
   quickStart: {
@@ -97,9 +95,10 @@ export const homepageConfig = {
   },
   footer: {
     links: [
-      { text: 'Documentation', href: '/docs/getting-started/introduction' },
+      { text: 'Introduction', href: '/docs/overview/introduction' },
+      { text: 'Buyers', href: '/docs/buyers/buy' },
+      { text: 'Raiders', href: '/docs/raiders/raids' },
       { text: 'Dev docs', href: '/dev-docs/brand/rx-78-design-system' },
-      { text: 'Mercenary', href: 'https://bossraid-web.pages.dev/mercenary' },
       { text: 'GitHub', href: 'https://github.com/thomasjvu/mercenary' },
     ],
   },
@@ -109,44 +108,67 @@ export const homepageConfig = {
 export const documentationTree = [
   {
     type: 'directory',
-    name: 'Getting Started',
-    path: 'getting-started',
+    name: 'Overview',
+    path: 'overview',
+    expanded: true,
     children: [
       {
         type: 'file',
         name: 'Introduction.md',
-        path: 'getting-started/introduction',
-        tags: ['getting-started', 'overview'],
-      },
-      {
-        type: 'file',
-        name: 'Discount Inference.md',
-        path: 'getting-started/discount-inference',
-        tags: ['inference', 'marketplace'],
-      },
-      {
-        type: 'file',
-        name: 'Buy Inference.md',
-        path: 'getting-started/buy',
-        tags: ['buyer', 'api-keys'],
-      },
-      {
-        type: 'file',
-        name: 'Sell Inference.md',
-        path: 'getting-started/sell',
-        tags: ['seller', 'upstream'],
-      },
-      {
-        type: 'file',
-        name: 'Run a Raid.md',
-        path: 'getting-started/raids',
-        tags: ['raid', 'mercenary'],
+        path: 'overview/introduction',
+        tags: ['overview', 'getting-started'],
       },
       {
         type: 'file',
         name: 'Proof and Receipts.md',
-        path: 'getting-started/proof',
-        tags: ['receipt', 'attestation'],
+        path: 'overview/proof',
+        tags: ['receipt', 'attestation', 'proof'],
+      },
+    ],
+  },
+  {
+    type: 'directory',
+    name: 'Buyers',
+    path: 'buyers',
+    expanded: true,
+    children: [
+      {
+        type: 'file',
+        name: 'Discount Inference.md',
+        path: 'buyers/discount-inference',
+        tags: ['buyer', 'inference', 'marketplace'],
+      },
+      {
+        type: 'file',
+        name: 'Buy Inference.md',
+        path: 'buyers/buy',
+        tags: ['buyer', 'api-keys'],
+      },
+    ],
+  },
+  {
+    type: 'directory',
+    name: 'Sellers',
+    path: 'sellers',
+    children: [
+      {
+        type: 'file',
+        name: 'Sell Inference.md',
+        path: 'sellers/sell',
+        tags: ['seller', 'upstream'],
+      },
+    ],
+  },
+  {
+    type: 'directory',
+    name: 'Raiders',
+    path: 'raiders',
+    children: [
+      {
+        type: 'file',
+        name: 'Run a Raid.md',
+        path: 'raiders/raids',
+        tags: ['raid', 'mercenary', 'raider'],
       },
     ],
   },

@@ -2,7 +2,7 @@
 
 Use Mercenary when one model call is not enough: multiple specialists, synthesis, patches, artifacts, or evaluation.
 
-For a single model at the cheapest seller, use discount inference instead: `POST /v1/inference/chat/completions` ([discount-inference.md](discount-inference.md)).
+For a single model at the cheapest seller, use discount inference instead: `POST /v1/inference/chat/completions` ([discount-inference.md](../buyers/discount-inference.md)).
 
 Native write route: `POST /v1/raid`. OpenAI-compatible entry: `POST /v1/chat/completions` with `model: "mercenary-v1"`.
 
@@ -39,11 +39,11 @@ Response includes chat `choices` and usually a `raid` object with ids and receip
 
 ## When to use which lane
 
-| Need                         | Lane                                                      |
-| ---------------------------- | --------------------------------------------------------- |
-| Cheapest single model reply  | [buy.md](buy.md) — `POST /v1/inference/chat/completions`  |
-| Multi-agent synthesis        | This page — `POST /v1/raid` or chat with `mercenary-v1`   |
-| Patches, images, game assets | Native `POST /v1/raid` with task files and `output` types |
+| Need                         | Lane                                                                      |
+| ---------------------------- | ------------------------------------------------------------------------- |
+| Cheapest single model reply  | [Buy inference](../buyers/buy.md) — `POST /v1/inference/chat/completions` |
+| Multi-agent synthesis        | This page — `POST /v1/raid` or chat with `mercenary-v1`                   |
+| Patches, images, game assets | Native `POST /v1/raid` with task files and `output` types                 |
 
 ## Policy knobs
 
@@ -57,8 +57,8 @@ Low-signal greetings on chat may get a direct Mercenary reply with no raid opene
 
 ## MCP
 
-Same API via MCP tools: `bossraid_spawn`, `bossraid_status`, `bossraid_result`, `bossraid_receipt`, `bossraid_delegate`. See [reference/routes.md](reference/routes.md).
+Same API via MCP tools: `bossraid_spawn`, `bossraid_status`, `bossraid_result`, `bossraid_receipt`, `bossraid_delegate`. See [reference/routes.md](../reference/routes.md).
 
 ## After launch
 
-Poll status and result with the raid access token. Load the public receipt — [proof.md](proof.md).
+Poll status and result with the raid access token. Load the public receipt — [proof.md](../overview/proof.md).

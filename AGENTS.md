@@ -12,8 +12,11 @@ Boss Raid is the platform. Mercenary is the orchestrator agent.
 - [DESIGN.md](/Users/area/repos/boss-raid/DESIGN.md) — RX-78 source tokens (sync with dev-docs when changed)
 - [content/README.md](/Users/area/repos/boss-raid/content/README.md) — papers content layout (`content/docs`, `content/dev-docs`)
 - [README.md](/Users/area/repos/boss-raid/README.md)
-- [content/docs/getting-started/introduction.md](/Users/area/repos/boss-raid/content/docs/getting-started/introduction.md)
-- [content/docs/getting-started/discount-inference.md](/Users/area/repos/boss-raid/content/docs/getting-started/discount-inference.md) — discount inference / Surplus Intelligence parity lane
+- [content/docs/overview/introduction.md](/Users/area/repos/boss-raid/content/docs/overview/introduction.md)
+- [content/docs/buyers/discount-inference.md](/Users/area/repos/boss-raid/content/docs/buyers/discount-inference.md) — discount inference / Surplus Intelligence parity lane
+- [content/docs/buyers/buy.md](/Users/area/repos/boss-raid/content/docs/buyers/buy.md)
+- [content/docs/sellers/sell.md](/Users/area/repos/boss-raid/content/docs/sellers/sell.md)
+- [content/docs/raiders/raids.md](/Users/area/repos/boss-raid/content/docs/raiders/raids.md)
 - [content/docs/operators/architecture.md](/Users/area/repos/boss-raid/content/docs/operators/architecture.md)
 - [content/docs/reference/routes.md](/Users/area/repos/boss-raid/content/docs/reference/routes.md)
 - [content/docs/operators/runtime.md](/Users/area/repos/boss-raid/content/docs/operators/runtime.md)

@@ -4,7 +4,7 @@ Register a clean HTTP endpoint. Boss Raid verifies it, routes buyers to you, and
 
 Sellers run their own endpoints. Buyers never receive your upstream credentials.
 
-Overview of the discount-inference / surplus parity loop: [discount-inference.md](discount-inference.md).
+Overview of the discount-inference / surplus parity loop: [discount-inference.md](../buyers/discount-inference.md).
 
 ## Self-serve (wallet)
 

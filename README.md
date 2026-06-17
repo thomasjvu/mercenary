@@ -38,14 +38,14 @@ Published on the papers site (`apps/docs`) with content in [`content/`](content/
 
 Full guide: **[content/README.md](content/README.md)**
 
-| Audience           | Start here                                                                                               |
-| ------------------ | -------------------------------------------------------------------------------------------------------- |
-| Discount inference | [content/docs/getting-started/discount-inference.md](content/docs/getting-started/discount-inference.md) |
-| Buyers             | [content/docs/getting-started/buy.md](content/docs/getting-started/buy.md)                               |
-| Sellers            | [content/docs/getting-started/sell.md](content/docs/getting-started/sell.md)                             |
-| Multi-agent        | [content/docs/getting-started/raids.md](content/docs/getting-started/raids.md)                           |
-| Operators          | [content/docs/operators/runtime.md](content/docs/operators/runtime.md)                                   |
-| Brand / RX-78      | [content/dev-docs/brand/rx-78-design-system.md](content/dev-docs/brand/rx-78-design-system.md)           |
+| Audience      | Start here                                                                                     |
+| ------------- | ---------------------------------------------------------------------------------------------- |
+| Introduction  | [content/docs/overview/introduction.md](content/docs/overview/introduction.md)                 |
+| Buyers        | [content/docs/buyers/buy.md](content/docs/buyers/buy.md)                                       |
+| Sellers       | [content/docs/sellers/sell.md](content/docs/sellers/sell.md)                                   |
+| Raiders       | [content/docs/raiders/raids.md](content/docs/raiders/raids.md)                                 |
+| Operators     | [content/docs/operators/runtime.md](content/docs/operators/runtime.md)                         |
+| Brand / RX-78 | [content/dev-docs/brand/rx-78-design-system.md](content/dev-docs/brand/rx-78-design-system.md) |
 
 ## Repo layout
 

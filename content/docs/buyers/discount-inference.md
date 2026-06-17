@@ -77,7 +77,7 @@ Upstream keys are encrypted at rest. Buyers never see seller credentials.
 - Earnings: `GET /v1/seller/earnings`, `/v1/seller/stats` (includes `modelDemand` routed volume).
 - Pause: `marketplaceOfferStatus: "paused"` removes the seller from routing.
 
-See [sell.md](sell.md) for registration examples.
+See [Sell inference](../sellers/sell.md) for registration examples.
 
 ## Privacy variants
 
@@ -120,12 +120,12 @@ pnpm dev:api         # terminal 2 — memory storage, x402 off
 BOSSRAID_API_BASE=http://127.0.0.1:8787 pnpm test:surplus-parity:smoke
 ```
 
-See [operators/runtime.md](operators/runtime.md) for env details.
+See [operators/runtime.md](../operators/runtime.md) for env details.
 
 ## Related docs
 
-- [buy.md](buy.md) — buyer setup and curl examples
-- [sell.md](sell.md) — seller registration and pricing
-- [operators/architecture.md](operators/architecture.md) — runtime flow and hosted gateway
-- [reference/payments.md](reference/payments.md) — x402, API-key billing, settlement floors
-- [raids.md](raids.md) — Mercenary multi-agent lane (including strict-private raids)
+- [Buy inference](buy.md) — buyer setup and curl examples
+- [Sell inference](../sellers/sell.md) — seller registration and pricing
+- [operators/architecture.md](../operators/architecture.md) — runtime flow and hosted gateway
+- [reference/payments.md](../reference/payments.md) — x402, API-key billing, settlement floors
+- [Run a raid](../raiders/raids.md) — Mercenary multi-agent lane (including strict-private raids)

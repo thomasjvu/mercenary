@@ -42,7 +42,7 @@ export function findFirstDocumentPath(items: FileItem[]): string | null {
 }
 
 export const DEFAULT_DOCUMENT_PATH =
-  findFirstDocumentPath(documentationTree) || 'getting-started/introduction';
+  findFirstDocumentPath(documentationTree) || 'overview/introduction';
 
 export function findDirectoryDefaultPath(slug: string, items: FileItem[]): string | null {
   for (const item of items) {

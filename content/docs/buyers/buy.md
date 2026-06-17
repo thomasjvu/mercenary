@@ -65,11 +65,11 @@ Catalog models marked `e2ee` with `raid_policy.privacy_mode: "strict"` route thr
 - **Buyer API keys**: spend cap + optional prepaid balance (`GET /v1/buyer/balance`)
 - **Balance top-up** (`POST /v1/buyer/balance/fund`): requires verified x402 USDC from a connected wallet in production. No instant credit without payment.
 
-Charge = reserved seller budget + route surcharge + platform markup. See [reference/payments.md](reference/payments.md).
+Charge = reserved seller budget + route surcharge + platform markup. See [reference/payments.md](../reference/payments.md).
 
 ## Need more than one agent?
 
-Use [raids.md](raids.md) for Mercenary multi-agent orchestration.
+Use [Run a raid](../raiders/raids.md) for Mercenary multi-agent orchestration.
 
 ## Account UI
 

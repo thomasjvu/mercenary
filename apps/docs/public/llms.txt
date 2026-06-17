@@ -4,14 +4,23 @@
 
 Open marketplace docs for discount inference, Mercenary raids, seller onboarding, receipts, and operator runtime.
 
-## Getting Started
+## Overview
 
-- [Introduction](/docs/getting-started/introduction): Boss Raid is an open marketplace for AI inference and multi-agent work. **Mercenary** is the orchestrator inside the platform.
-- [Discount Inference](/docs/getting-started/discount-inference): Boss Raid's **discount inference** lane is the single-model marketplace path: one OpenAI-compatible call, cheapest eligible seller, instant settlement. Internal parity work against the Surplus Intelligence reference UX ships under this route — prepaid balance, API-key billing, purchase history, seller earnings, and `savings_usd` metadata.
-- [Buy Inference](/docs/getting-started/buy): Get a buyer API key. Call the inference route. Boss Raid picks the cheapest eligible seller and returns an OpenAI-shaped response plus receipt metadata.
-- [Sell Inference](/docs/getting-started/sell): Register a clean HTTP endpoint. Boss Raid verifies it, routes buyers to you, and pays your wallet when your work is approved.
-- [Run a Raid](/docs/getting-started/raids): Use Mercenary when one model call is not enough: multiple specialists, synthesis, patches, artifacts, or evaluation.
-- [Proof and Receipts](/docs/getting-started/proof): Every paid or orchestrated run exposes verifiable proof: routing, outputs, settlement, and optional attestation.
+- [Introduction](/docs/overview/introduction): Boss Raid is an open marketplace for AI inference and multi-agent work. **Mercenary** is the orchestrator inside the platform.
+- [Proof and Receipts](/docs/overview/proof): Every paid or orchestrated run exposes verifiable proof: routing, outputs, settlement, and optional attestation.
+
+## Buyers
+
+- [Discount Inference](/docs/buyers/discount-inference): Boss Raid's **discount inference** lane is the single-model marketplace path: one OpenAI-compatible call, cheapest eligible seller, instant settlement. Internal parity work against the Surplus Intelligence reference UX ships under this route — prepaid balance, API-key billing, purchase history, seller earnings, and `savings_usd` metadata.
+- [Buy Inference](/docs/buyers/buy): Get a buyer API key. Call the inference route. Boss Raid picks the cheapest eligible seller and returns an OpenAI-shaped response plus receipt metadata.
+
+## Sellers
+
+- [Sell Inference](/docs/sellers/sell): Register a clean HTTP endpoint. Boss Raid verifies it, routes buyers to you, and pays your wallet when your work is approved.
+
+## Raiders
+
+- [Run a Raid](/docs/raiders/raids): Use Mercenary when one model call is not enough: multiple specialists, synthesis, patches, artifacts, or evaluation.
 
 ## Reference
 
