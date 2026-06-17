@@ -3,8 +3,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const templatePath = resolve(repoRoot, 'docs/reference/web-routes.template.json');
-const routesDocPath = resolve(repoRoot, 'docs/reference/routes.md');
+const templatePath = resolve(repoRoot, 'content/docs/reference/web-routes.template.json');
+const routesDocPath = resolve(repoRoot, 'content/docs/reference/routes.md');
 const startMarker = '<!-- docs:template:web-routes -->';
 const endMarker = '<!-- /docs:template:web-routes -->';
 
@@ -41,7 +41,7 @@ if (start === -1 || end === -1 || end <= start) {
 
 const nextDoc = `${routesDoc.slice(0, start + startMarker.length)}\n${table}\n${routesDoc.slice(end)}`;
 await writeFile(routesDocPath, nextDoc);
-
+console.log(`Updated ${routesDocPath}`);
 console.log(
   `Synced Web & gateway routes (${routes.length} rows, landing ${template.includeLandingRoute ? 'included' : 'excluded'}).`
 );

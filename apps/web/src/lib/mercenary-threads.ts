@@ -1,11 +1,12 @@
-import type { MercenaryRequestMode, LiveRaidRun } from '../mercenary-result.js';
+import type { LiveRaidRun } from '../mercenary-result.js';
+import { DEFAULT_MERCENARY_BUDGET_USD } from '../mercenary-result.js';
 
 export type MercenaryThreadRecord = {
   id: string;
   title: string;
   titleLocked?: boolean;
   updatedAt: string;
-  requestMode: MercenaryRequestMode;
+  maxBudgetUsd: number;
   raidBrief: string;
   lastSubmittedBrief: string | null;
   liveRaidRun: LiveRaidRun | null;
@@ -17,7 +18,8 @@ export type MercenaryThreadStore = {
   threads: MercenaryThreadRecord[];
 };
 
-const STORAGE_KEY = 'bossraid.mercenary.threads.v2';
+const STORAGE_KEY = 'bossraid.mercenary.threads.v3';
+const LEGACY_STORAGE_KEY = 'bossraid.mercenary.threads.v2';
 const MAX_THREADS = 24;
 
 export function createMercenaryThreadId(): string {
@@ -49,7 +51,7 @@ export function createMercenaryThread(
     id: createMercenaryThreadId(),
     title: 'New thread',
     updatedAt: now,
-    requestMode: 'raid',
+    maxBudgetUsd: DEFAULT_MERCENARY_BUDGET_USD,
     raidBrief: '',
     lastSubmittedBrief: null,
     liveRaidRun: null,
@@ -58,34 +60,67 @@ export function createMercenaryThread(
   };
 }
 
+function normalizeLegacyThread(
+  thread: MercenaryThreadRecord & { requestMode?: string }
+): MercenaryThreadRecord {
+  return {
+    id: thread.id,
+    title: thread.title,
+    titleLocked: thread.titleLocked,
+    updatedAt: thread.updatedAt,
+    maxBudgetUsd:
+      typeof thread.maxBudgetUsd === 'number' && Number.isFinite(thread.maxBudgetUsd)
+        ? thread.maxBudgetUsd
+        : DEFAULT_MERCENARY_BUDGET_USD,
+    raidBrief: thread.raidBrief ?? '',
+    lastSubmittedBrief: thread.lastSubmittedBrief ?? null,
+    liveRaidRun: thread.liveRaidRun ?? null,
+    launchError: thread.launchError ?? null,
+  };
+}
+
+function readThreadStore(raw: string | null): MercenaryThreadStore | null {
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as MercenaryThreadStore;
+    if (!parsed?.activeThreadId || !Array.isArray(parsed.threads) || parsed.threads.length === 0) {
+      return null;
+    }
+
+    const activeExists = parsed.threads.some((thread) => thread.id === parsed.activeThreadId);
+    return {
+      activeThreadId: activeExists ? parsed.activeThreadId : parsed.threads[0]!.id,
+      threads: parsed.threads.map((thread) =>
+        normalizeLegacyThread(thread as MercenaryThreadRecord & { requestMode?: string })
+      ),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function loadMercenaryThreadStore(): MercenaryThreadStore {
   if (typeof window === 'undefined') {
     const thread = createMercenaryThread();
     return { activeThreadId: thread.id, threads: [thread] };
   }
 
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      const thread = createMercenaryThread();
-      return { activeThreadId: thread.id, threads: [thread] };
-    }
-
-    const parsed = JSON.parse(raw) as MercenaryThreadStore;
-    if (!parsed?.activeThreadId || !Array.isArray(parsed.threads) || parsed.threads.length === 0) {
-      const thread = createMercenaryThread();
-      return { activeThreadId: thread.id, threads: [thread] };
-    }
-
-    const activeExists = parsed.threads.some((thread) => thread.id === parsed.activeThreadId);
-    return {
-      activeThreadId: activeExists ? parsed.activeThreadId : parsed.threads[0]!.id,
-      threads: parsed.threads,
-    };
-  } catch {
-    const thread = createMercenaryThread();
-    return { activeThreadId: thread.id, threads: [thread] };
+  const current = readThreadStore(window.localStorage.getItem(STORAGE_KEY));
+  if (current) {
+    return current;
   }
+
+  const legacy = readThreadStore(window.localStorage.getItem(LEGACY_STORAGE_KEY));
+  if (legacy) {
+    persistMercenaryThreadStore(legacy);
+    return legacy;
+  }
+
+  const thread = createMercenaryThread();
+  return { activeThreadId: thread.id, threads: [thread] };
 }
 
 export function persistMercenaryThreadStore(store: MercenaryThreadStore): void {

@@ -21,13 +21,6 @@ export function OrchestratorAgentsSection({
             <span>{MERCENARY_ORCHESTRATOR.id}</span>
             <p>{MERCENARY_ORCHESTRATOR.description}</p>
           </div>
-          <button
-            className="button button--primary"
-            onClick={() => onNavigate('/mercenary')}
-            type="button"
-          >
-            open chat
-          </button>
         </article>
         {orchestratorRaiders.map((raider) => (
           <article className="orchestrator-card" key={raider.provider.providerId}>

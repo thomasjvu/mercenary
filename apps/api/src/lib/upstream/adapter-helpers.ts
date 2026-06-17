@@ -19,7 +19,10 @@ export async function fetchUpstreamModelsWithFallback(input: {
 
   try {
     return await input.fetchModels();
-  } catch {
+  } catch (error) {
+    if (env.NODE_ENV === 'production') {
+      throw error;
+    }
     return input.mockModels;
   }
 }

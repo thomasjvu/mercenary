@@ -33,6 +33,7 @@
     "@bossraid/shared-types": "workspace:*",
     "@bossraid/test-fixtures": "workspace:*",
     "@bossraid/validator": "workspace:*",
+    "@bossraid/venice-client": "workspace:*",
     "@payai/facilitator": "^2.3.4",
     "fastify": "^5.2.1",
     "viem": "^2.47.5"

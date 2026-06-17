@@ -416,12 +416,26 @@ button.action-steps__value {
 }
 
 .app-shell--landing .terminal-window--front {
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 8px));
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - 18px),
+    calc(100% - 18px) 100%,
+    18px 100%,
+    0 calc(100% - 8px)
+  );
 }
 
 .app-shell--landing .terminal-window--mid,
 .app-shell--landing .terminal-window--back {
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 6px));
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - 14px),
+    calc(100% - 14px) 100%,
+    14px 100%,
+    0 calc(100% - 6px)
+  );
 }
 
 .rx-control-pane {
@@ -433,7 +447,14 @@ button.action-steps__value {
   border: 0;
   background: transparent;
   overflow: hidden;
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 20px 100%, 0 calc(100% - 10px));
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - 20px),
+    calc(100% - 20px) 100%,
+    20px 100%,
+    0 calc(100% - 10px)
+  );
 }
 
 .rx-control-pane > .eyebrow {
@@ -554,6 +575,16 @@ button.action-steps__value {
   --workflow-fill-hover: color-mix(in srgb, var(--rx-yellow) 88%, #111111);
   --workflow-ink: var(--text);
   --workflow-label: #111111;
+}
+
+.app-shell--landing .info-panel--workflow-raider .info-spec__label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.4em;
+  padding: 0.14em 0.4em;
+  background: var(--rx-yellow);
+  color: #111111;
 }
 
 .app-shell--landing .info-panel--workflow-buyer {
@@ -677,7 +708,12 @@ button.action-steps__value {
 
 .page-stage-card--manga .page-stage-card__scrim {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.78) 52%, rgba(255, 255, 255, 0.94)),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.02),
+      rgba(255, 255, 255, 0.78) 52%,
+      rgba(255, 255, 255, 0.94)
+    ),
     linear-gradient(135deg, rgba(44, 82, 179, 0.08), transparent 58%);
 }
 
@@ -696,6 +732,32 @@ button.action-steps__value {
 .buyer-page .flow-stack {
   max-width: none;
   width: 100%;
+}
+
+.buyer-page__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(16px, 2vw, 28px);
+  align-items: start;
+  width: 100%;
+}
+
+.buyer-page__main,
+.buyer-page__aside {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.buyer-page__create-key {
+  align-self: start;
+  max-width: 100%;
+}
+
+@media (max-width: 900px) {
+  .buyer-page__layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 .flow-section {

@@ -28,9 +28,12 @@ export function registerInferenceReceiptRoutes(app: FastifyInstance, ctx: ApiCon
     }
 
     const checks = receipt.tee.checks ?? [];
+    const allowMockVerification = ctx.env.NODE_ENV !== 'production';
     return {
       receiptId: receipt.receiptId,
-      valid: receipt.verificationStatus === 'verified' || receipt.verificationStatus === 'mock',
+      valid:
+        receipt.verificationStatus === 'verified' ||
+        (allowMockVerification && receipt.verificationStatus === 'mock'),
       verificationStatus: receipt.verificationStatus,
       modelId: receipt.modelId,
       providerId: receipt.providerId,

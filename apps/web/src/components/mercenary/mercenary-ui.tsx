@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { formatTimestamp } from '../../mercenary-format.js';
 
 export type SpecialistTone = 'ready' | 'available' | 'offline' | 'working';
 
@@ -6,10 +7,12 @@ export function ChatMessage({
   children,
   role,
   tone = 'default',
+  timestamp,
 }: {
   children: ReactNode;
   role: 'assistant' | 'user';
   tone?: 'default' | 'error' | 'success';
+  timestamp?: string;
 }) {
   return (
     <article
@@ -22,6 +25,11 @@ export function ChatMessage({
       }`}
     >
       <div className="mercenary-message__body">
+        {timestamp ? (
+          <time className="mercenary-message__time" dateTime={timestamp}>
+            {formatTimestamp(timestamp)}
+          </time>
+        ) : null}
         <div className="mercenary-message__bubble">{children}</div>
       </div>
     </article>

@@ -161,7 +161,7 @@ function selectPrimaryChatPrompt(chatRequest?: ChatCompletionRequest): string {
   return userMessages[userMessages.length - 1] ?? '';
 }
 
-function buildDirectMercenaryChatReply(prompt: string): string {
+export function buildDirectMercenaryChatReply(prompt: string): string {
   const normalizedPrompt = prompt.trim().toLowerCase();
 
   if (/^who are you\b/.test(normalizedPrompt)) {

@@ -432,6 +432,7 @@ test('POST /v1/chat/completions answers low-signal chat directly without opening
     buildApiServer(orchestrator, {
       ...process.env,
       BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: '8',
+      BOSSRAID_VENICE_MOCK: '1',
     })
   );
 
@@ -506,6 +507,7 @@ test('POST /v1/chat/completions keeps follow-up joke prompts direct without open
     buildApiServer(orchestrator, {
       ...process.env,
       BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: '8',
+      BOSSRAID_VENICE_MOCK: '1',
     })
   );
 

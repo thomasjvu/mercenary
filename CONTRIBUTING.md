@@ -9,10 +9,10 @@ Mercenary is the orchestrator inside Boss Raid.
 Read these first:
 
 - [README.md](/Users/area/repos/boss-raid/README.md)
-- [docs/README.md](/Users/area/repos/boss-raid/docs/README.md)
-- [docs/operators/architecture.md](/Users/area/repos/boss-raid/docs/operators/architecture.md)
-- [docs/reference/routes.md](/Users/area/repos/boss-raid/docs/reference/routes.md)
-- [docs/operators/runtime.md](/Users/area/repos/boss-raid/docs/operators/runtime.md)
+- [content/README.md](/Users/area/repos/boss-raid/content/README.md)
+- [content/docs/operators/architecture.md](/Users/area/repos/boss-raid/content/docs/operators/architecture.md)
+- [content/docs/reference/routes.md](/Users/area/repos/boss-raid/content/docs/reference/routes.md)
+- [content/docs/operators/runtime.md](/Users/area/repos/boss-raid/content/docs/operators/runtime.md)
 - [AGENTS.md](/Users/area/repos/boss-raid/AGENTS.md)
 
 ## Rules
@@ -54,7 +54,7 @@ pnpm dev:ops
 - Keep provider workers HTTP only.
 - Keep the public API raid-oriented by design.
 - Default evaluator runtime execution stays off unless explicitly needed and documented.
-- If you change architecture, routes, commands, env, or registration flow, update the matching docs in `docs/`.
+- If you change architecture, routes, commands, env, or registration flow, update the matching pages in `content/docs/`.
 
 ## Pull Requests
 

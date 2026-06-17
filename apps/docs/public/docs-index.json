@@ -1,0 +1,40 @@
+{
+  "generated": "2026-06-17T18:10:49.629Z",
+  "paths": [
+    "getting-started/introduction",
+    "getting-started/discount-inference",
+    "getting-started/buy",
+    "getting-started/sell",
+    "getting-started/raids",
+    "getting-started/proof",
+    "reference/routes",
+    "reference/env",
+    "reference/payments",
+    "operators/runtime",
+    "operators/architecture",
+    "operators/trust-and-safety",
+    "operators/appendix/README",
+    "operators/appendix/hackathon",
+    "operators/appendix/infisical",
+    "operators/appendix/synthesis-registration"
+  ],
+  "count": 16,
+  "titles": {
+    "getting-started/introduction": "Getting Started",
+    "getting-started/discount-inference": "Discount inference",
+    "getting-started/buy": "Buy Inference",
+    "getting-started/sell": "Sell Inference",
+    "getting-started/raids": "Run a Raid",
+    "getting-started/proof": "Proof & Receipts",
+    "reference/routes": "Routes",
+    "reference/env": "Environment Variables",
+    "reference/payments": "Payments",
+    "operators/runtime": "Runtime & Commands",
+    "operators/architecture": "Architecture",
+    "operators/trust-and-safety": "Trust & Safety",
+    "operators/appendix/README": "Appendix",
+    "operators/appendix/hackathon": "Hackathon",
+    "operators/appendix/infisical": "Infisical Secret Workflow",
+    "operators/appendix/synthesis-registration": "Synthesis Registration"
+  }
+}

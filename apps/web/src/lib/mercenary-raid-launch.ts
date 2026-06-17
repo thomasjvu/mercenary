@@ -7,46 +7,25 @@ import {
   type RaidSpawnOutput,
 } from '../api';
 import { requestPaidChatCompletion } from '../api/paid-chat.js';
-import { spawnPaidRaid } from '../api/paid-raid.js';
 import { API_BASE } from '../api/client.js';
 import { isTerminalRaidStatus, readErrorMessage } from '../mercenary-format';
 import {
   buildMercenaryChatCompletionPayload,
   buildDirectChatSpawn,
   buildSpawnFromChatCompletion,
-  type MercenaryRequestMode,
   type LiveRaidRun,
 } from '../mercenary-result';
-import { buildMercenaryRaidPayload } from '../default-payload';
 
 export async function launchPaidMercenaryRaid(input: {
-  requestMode: MercenaryRequestMode;
   submittedBrief: string;
+  maxBudgetUsd: number;
   fetchWithPayment: typeof fetch;
 }): Promise<LiveRaidRun> {
   const startedAtMs = Date.now();
 
-  if (input.requestMode === 'raid') {
-    const spawn = await spawnPaidRaid(
-      input.fetchWithPayment,
-      buildMercenaryRaidPayload(input.submittedBrief),
-      API_BASE
-    );
-
-    return {
-      requestMode: input.requestMode,
-      spawn,
-      directResponse: false,
-      chatCompletion: undefined,
-      startedAtMs,
-      lastUpdatedAt: new Date().toISOString(),
-      pollError: null,
-    };
-  }
-
   const chatCompletion = await requestPaidChatCompletion(
     input.fetchWithPayment,
-    buildMercenaryChatCompletionPayload(input.submittedBrief),
+    buildMercenaryChatCompletionPayload(input.submittedBrief, input.maxBudgetUsd),
     API_BASE
   );
   const directResponse = !chatCompletion.raid;
@@ -54,7 +33,6 @@ export async function launchPaidMercenaryRaid(input: {
     buildSpawnFromChatCompletion(chatCompletion) ?? buildDirectChatSpawn(chatCompletion);
 
   return {
-    requestMode: input.requestMode,
     spawn,
     directResponse,
     chatCompletion,

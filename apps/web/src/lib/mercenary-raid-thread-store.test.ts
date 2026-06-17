@@ -9,7 +9,7 @@ import {
 test('buildMercenaryRaidThreadPersistenceSignature tracks thread state', () => {
   const signature = buildMercenaryRaidThreadPersistenceSignature({
     threadId: 'thread-a',
-    mode: 'raid',
+    maxBudgetUsd: 12,
     brief: 'Ship marketplace cleanup',
     submittedBrief: 'Ship marketplace cleanup',
     run: null,
@@ -23,14 +23,14 @@ test('buildMercenaryRaidThreadPersistenceSignature tracks thread state', () => {
 test('applyMercenaryRaidThreadRecord maps persisted thread fields', () => {
   const thread = createMercenaryThread({
     id: 'thread-b',
-    requestMode: 'chat_v1',
+    maxBudgetUsd: 15,
     raidBrief: 'hello',
     lastSubmittedBrief: 'hello',
     launchError: 'payment required',
   });
 
   const applied = applyMercenaryRaidThreadRecord(thread);
-  assert.equal(applied.requestMode, 'chat_v1');
+  assert.equal(applied.maxBudgetUsd, 15);
   assert.equal(applied.launchError, 'payment required');
   assert.match(applied.persistenceSignature, /payment required/);
 });

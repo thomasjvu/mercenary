@@ -1,4 +1,4 @@
-import type { MercenaryRequestMode, LiveRaidRun } from '../mercenary-result';
+import type { LiveRaidRun } from '../mercenary-result';
 import {
   createMercenaryThread,
   findMercenaryThread,
@@ -22,7 +22,7 @@ export function resolveInitialMercenaryRaidThreadState(persistThreads: boolean) 
 
 export function buildMercenaryRaidThreadPersistenceSignature(input: {
   threadId: string;
-  mode: MercenaryRequestMode;
+  maxBudgetUsd: number;
   brief: string;
   submittedBrief: string | null;
   run: LiveRaidRun | null;
@@ -30,7 +30,7 @@ export function buildMercenaryRaidThreadPersistenceSignature(input: {
 }) {
   return JSON.stringify({
     activeThreadId: input.threadId,
-    requestMode: input.mode,
+    maxBudgetUsd: input.maxBudgetUsd,
     raidBrief: input.brief,
     lastSubmittedBrief: input.submittedBrief,
     liveRaidRun: input.run,
@@ -40,14 +40,14 @@ export function buildMercenaryRaidThreadPersistenceSignature(input: {
 
 export function applyMercenaryRaidThreadRecord(thread: MercenaryThreadRecord) {
   return {
-    requestMode: thread.requestMode,
+    maxBudgetUsd: thread.maxBudgetUsd,
     raidBrief: thread.raidBrief,
     lastSubmittedBrief: thread.lastSubmittedBrief,
     liveRaidRun: thread.liveRaidRun,
     launchError: thread.launchError,
     persistenceSignature: buildMercenaryRaidThreadPersistenceSignature({
       threadId: thread.id,
-      mode: thread.requestMode,
+      maxBudgetUsd: thread.maxBudgetUsd,
       brief: thread.raidBrief,
       submittedBrief: thread.lastSubmittedBrief,
       run: thread.liveRaidRun,

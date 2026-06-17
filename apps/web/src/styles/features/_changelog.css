@@ -5,7 +5,7 @@
 .changelog-page__header {
   display: grid;
   gap: clamp(14px, 2vw, 22px);
-  margin-bottom: clamp(32px, 4.5vw, 52px);
+  margin-bottom: clamp(24px, 3.5vw, 36px);
   padding-bottom: clamp(24px, 3.5vw, 36px);
   border-bottom: 1px solid var(--line);
 }
@@ -19,6 +19,73 @@
   text-transform: uppercase;
 }
 
+.changelog-toc {
+  display: grid;
+  gap: 10px;
+  margin-bottom: clamp(28px, 4vw, 40px);
+  padding: clamp(14px, 2vw, 18px);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-muted) 42%, transparent);
+}
+
+.changelog-toc__title {
+  margin: 0;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.changelog-toc__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.changelog-toc__item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: 10px 12px;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+}
+
+.changelog-toc__link {
+  color: var(--rx-blue);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.changelog-toc__link:hover {
+  color: var(--accent);
+}
+
+.changelog-toc__date {
+  color: var(--muted);
+}
+
+.changelog-toc__tag {
+  color: var(--rx-red);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  text-transform: lowercase;
+}
+
+.changelog-toc__tag:hover {
+  color: var(--accent);
+}
+
+.changelog-toc__tag--pending {
+  color: var(--muted);
+  cursor: default;
+}
+
 .changelog-feed {
   display: grid;
   gap: clamp(28px, 4vw, 40px);
@@ -29,6 +96,7 @@
   gap: clamp(14px, 2vw, 18px);
   padding-bottom: clamp(24px, 3vw, 32px);
   border-bottom: 1px solid var(--line);
+  scroll-margin-top: clamp(72px, 10vh, 96px);
 }
 
 .changelog-release:last-child {
@@ -47,22 +115,51 @@
 .changelog-release__version {
   display: inline-flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: 8px;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
 }
 
 .changelog-release__version-label {
-  font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.04em;
+}
+
+.changelog-release__version-link {
+  color: var(--rx-blue);
+  text-decoration: none;
+}
+
+.changelog-release__version-link:hover {
+  color: var(--accent);
 }
 
 .changelog-release__channel {
   color: var(--rx-blue);
-  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   font-size: 0.68rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.changelog-release__tag-link,
+.changelog-release__tag-pending {
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+}
+
+.changelog-release__tag-link {
+  color: var(--rx-red);
+  text-decoration: none;
+}
+
+.changelog-release__tag-link:hover {
+  color: var(--accent);
+}
+
+.changelog-release__tag-pending {
+  color: var(--muted);
 }
 
 .changelog-release__date {
@@ -75,7 +172,10 @@
 .changelog-release__summary {
   margin: 0;
   color: var(--text);
-  line-height: 1.55;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.84rem;
+  line-height: 1.65;
+  letter-spacing: 0.01em;
 }
 
 .changelog-release__sections {
@@ -90,8 +190,11 @@
 
 .changelog-release__section h2 {
   margin: 0;
-  font-size: 0.92rem;
-  letter-spacing: -0.02em;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .changelog-release__section ul {
@@ -103,5 +206,8 @@
 
 .changelog-release__section li {
   color: var(--muted);
-  line-height: 1.6;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.8rem;
+  line-height: 1.65;
+  letter-spacing: 0.01em;
 }

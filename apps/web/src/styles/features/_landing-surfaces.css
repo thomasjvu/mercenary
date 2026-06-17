@@ -167,7 +167,7 @@
   color: var(--muted);
 }
 
-/* Landing hero slices: see docs/reference/landing-hero-art.md */
+/* Landing hero slices: see content/dev-docs/brand/landing-hero-art.md */
 .app-shell--landing .hero__slice {
   position: relative;
   overflow: hidden;

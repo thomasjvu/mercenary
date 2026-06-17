@@ -1,12 +1,13 @@
 import { type FastifyReply, type FastifyRequest } from 'fastify';
 import { streamDirectChatCompletionResponse } from '../lib/chat-completion.js';
 import {
+  applyMercenaryPlannerRaidRequest,
   authorizeChatCompletionRequest,
   deliverBufferedChatCompletion,
   deliverStreamingChatCompletion,
   launchPaidChatRaid,
   prepareChatCompletionRequest,
-  tryDirectChatCompletionResponse,
+  tryMercenaryPlannerDirectResponse,
   tryE2eeChatRelay,
   type ChatCompletionPipelineDeps,
   type ChatCompletionRouteOptions,
@@ -83,24 +84,30 @@ export function createChatHandlers(
       return authorization.error;
     }
 
-    const directResponse = tryDirectChatCompletionResponse(
+    const plannerResult = await tryMercenaryPlannerDirectResponse(
       prepared.chatRequest,
       prepared.created,
-      options
+      options,
+      pipelineDeps.ctx.env
     );
-    if (directResponse) {
+    if (plannerResult?.response) {
       if (prepared.chatRequest.stream) {
-        await streamDirectChatCompletionResponse(reply, directResponse);
+        await streamDirectChatCompletionResponse(reply, plannerResult.response);
         return;
       }
 
-      return directResponse;
+      return plannerResult.response;
     }
+
+    const raidRequest = applyMercenaryPlannerRaidRequest(
+      prepared.raidRequest,
+      plannerResult?.decision ?? { action: 'raid' }
+    );
 
     const { launchPayment, spawn } = await launchPaidChatRaid(
       {
         request,
-        raidRequest: prepared.raidRequest,
+        raidRequest,
         paymentRoute: prepared.paymentRoute,
       },
       pipelineDeps
@@ -112,7 +119,7 @@ export function createChatHandlers(
           request,
           reply,
           chatRequest: prepared.chatRequest,
-          raidRequest: prepared.raidRequest,
+          raidRequest,
           spawn,
           created: prepared.created,
           launchPayment,
@@ -128,7 +135,7 @@ export function createChatHandlers(
         request,
         reply,
         chatRequest: prepared.chatRequest,
-        raidRequest: prepared.raidRequest,
+        raidRequest,
         spawn,
         created: prepared.created,
         launchPayment,

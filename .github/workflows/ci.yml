@@ -34,8 +34,17 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Docs build
+        run: pnpm build:docs
+
       - name: API Tests
         run: pnpm --filter @bossraid/api test
 
       - name: Orchestrator Tests
         run: pnpm --filter @bossraid/orchestrator test
+
+      - name: Smart Pay Tests
+        run: pnpm --filter @bossraid/smart-pay test
+
+      - name: Production deploy env audit
+        run: NODE_ENV=production BOSSRAID_SETTLEMENT_MODE=onchain BOSSRAID_X402_ENABLED=true node scripts/audit-production-deploy-env.mjs

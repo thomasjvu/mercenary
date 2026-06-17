@@ -5,7 +5,6 @@ import type {
   RaidSpawnOutput,
   RaidStatus as RaidStatusSnapshot,
 } from './api';
-import { isLowSignalChatPrompt } from './mercenary-chat.js';
 
 export {
   selectApprovedProviderIds,
@@ -20,10 +19,7 @@ export {
   selectWorkstreams,
 } from './lib/raid-result-view.js';
 
-export type MercenaryRequestMode = 'raid' | 'chat_v1';
-
 export type LiveRaidRun = {
-  requestMode: MercenaryRequestMode;
   spawn: RaidSpawnOutput;
   directResponse?: boolean;
   chatCompletion?: ChatCompletionResponse;
@@ -36,25 +32,20 @@ export type LiveRaidRun = {
   pollError?: string | null;
 };
 
-export const RAID_PROMPTS = [
+export const MERCENARY_PROMPTS = [
   'Hi Mercenary. What can you actually help me with here?',
   'How do you decide when a request needs specialists instead of a direct answer?',
   'Build a one-room GB Studio microgame with one boss, one key, one exit, and a matching 12-second trailer.',
 ] as const;
 
-export const CHAT_V1_PROMPTS = [
-  'Hi Mercenary. Give me a short intro to how this compatibility route works.',
-  'Explain how discount inference differs from Mercenary raid.',
-  'Summarize how you would hire gameplay, art, and promo specialists for a small game launch.',
-] as const;
+export const DEFAULT_MERCENARY_BUDGET_USD = 12;
 
-const V1_CHAT_MODEL = 'gpt-4.1-mini';
-
-export function buildMercenaryChatCompletionPayload(brief: string) {
-  const lowSignalChat = isLowSignalChatPrompt(brief);
-
+export function buildMercenaryChatCompletionPayload(
+  brief: string,
+  maxBudgetUsd = DEFAULT_MERCENARY_BUDGET_USD
+) {
   return {
-    model: V1_CHAT_MODEL,
+    model: 'mercenary-v1',
     messages: [
       {
         role: 'system',
@@ -66,8 +57,16 @@ export function buildMercenaryChatCompletionPayload(brief: string) {
       },
     ],
     raid_policy: {
-      max_agents: lowSignalChat ? 1 : 3,
-      max_latency_sec: lowSignalChat ? 20 : 60,
+      max_agents: 3,
+      required_capabilities: ['analysis'],
+      allowed_model_families: ['openai', 'venice'],
+      min_reputation_score: 70,
+      require_erc8004: true,
+      min_trust_score: 75,
+      privacy_mode: 'prefer',
+      require_privacy_features: ['signed_outputs'],
+      max_total_cost: maxBudgetUsd,
+      selection_mode: 'privacy_first',
     },
   };
 }
@@ -114,20 +113,6 @@ export function buildDirectChatSpawn(
       trimmedFiles: 0,
     },
   };
-}
-
-export function buildRequestModeLabel(mode: MercenaryRequestMode): string {
-  return mode === 'chat_v1' ? 'Discount inference' : 'Mercenary raid';
-}
-
-export function buildRequestModeSummary(mode: MercenaryRequestMode): string {
-  return mode === 'chat_v1'
-    ? 'Single completion routed to the cheapest eligible verified seller on the market.'
-    : 'Multi-agent raid — Mercenary orchestrates verified raiders and returns one receipt-backed result.';
-}
-
-export function buildRequestModeChipLabel(mode: MercenaryRequestMode): string {
-  return mode === 'chat_v1' ? 'discount inference' : 'mercenary raid';
 }
 
 export function buildRuntimeAttestationLabel(target: string, teePlatform: string): string {

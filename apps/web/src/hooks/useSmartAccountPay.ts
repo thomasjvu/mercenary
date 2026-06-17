@@ -1,15 +1,34 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   BASE_CHAIN_ID,
   createPaidFetch,
+  DEFAULT_WEEKLY_BUDGET_USD,
   encodeDelegationChain,
   requestRaidSubscription,
   type RaidSubscriptionGrant,
   type SmartAccountWalletClient,
 } from '@bossraid/smart-pay';
 import type { DelegationChainEntry } from '@bossraid/shared-types';
-import { deleteAgentSession, saveAgentSession } from '../api/smart-pay.js';
+import {
+  deleteAgentSession,
+  fetchAgentSession,
+  saveAgentSession,
+  type AgentSessionGrant,
+} from '../api/smart-pay.js';
 import { connectSmartAccountWallet, formatWalletError } from '../lib/ethereum-provider.js';
+
+function agentGrantToSubscription(grant: AgentSessionGrant): RaidSubscriptionGrant {
+  return {
+    wallet: grant.wallet,
+    sessionAccount: grant.sessionAccount,
+    permissionFrom: grant.permissionFrom,
+    permissionContext: grant.permissionContext,
+    grantedAt: grant.grantedAt,
+    expiresAt: grant.expiresAt,
+    weeklyBudgetUsd: grant.weeklyBudgetUsd ?? DEFAULT_WEEKLY_BUDGET_USD,
+    delegationChain: [],
+  };
+}
 
 export function useSmartAccountPay(chainId = BASE_CHAIN_ID) {
   const [walletClient, setWalletClient] = useState<SmartAccountWalletClient | null>(null);
@@ -19,6 +38,35 @@ export function useSmartAccountPay(chainId = BASE_CHAIN_ID) {
     'Connect MetaMask to authorize weekly USDC spend for paid inference and raids.'
   );
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const stored = await fetchAgentSession();
+        if (cancelled || !stored?.grant) {
+          return;
+        }
+
+        const expiresAtMs = Date.parse(stored.grant.expiresAt);
+        if (!Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now()) {
+          return;
+        }
+
+        setSubscription(agentGrantToSubscription(stored.grant));
+        setStatus(
+          `Restored agent payment session for ${stored.grant.sessionAccount}. Grant a new subscription after expiry.`
+        );
+      } catch {
+        // No wallet session or no stored grant.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const connectWallet = useCallback(async () => {
     setBusy(true);

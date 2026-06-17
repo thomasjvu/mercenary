@@ -8,6 +8,8 @@ import { verifyPhalaTeeAttestation } from '@bossraid/privacy-engine';
 export interface PrivacyFeaturesConfig {
   featuresClaimed: PrivacyFeatureKey[];
   teeSocketPath?: string;
+  externalApiCalls?: string[];
+  dataRetained?: boolean;
 }
 
 function buildDeclaration(
@@ -57,8 +59,8 @@ export async function buildProviderPrivacyAttestation(
     featuresClaimed: config.featuresClaimed,
     featuresVerified,
     teeAttestation: teeResult,
-    externalApiCalls: [],
-    dataRetained: false,
+    externalApiCalls: config.externalApiCalls ?? [],
+    dataRetained: config.dataRetained ?? false,
     signedDeclaration: declaration,
   };
 }

@@ -500,9 +500,7 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
-.app-frame--theme-dark
-  .mercenary-chat-shell__overlay
-  .info-panel__cta.mercenary-chat-shell__cta {
+.app-frame--theme-dark .mercenary-chat-shell__overlay .info-panel__cta.mercenary-chat-shell__cta {
   color: var(--rx-white);
 }
 
@@ -545,6 +543,11 @@
   color: var(--rx-white);
 }
 
+.app-frame--theme-dark .app-sidebar__version:hover,
+.app-frame--theme-dark .app-sidebar__version--active {
+  color: var(--rx-yellow);
+}
+
 .app-frame--theme-dark .app-shell--landing .info-panel__cta {
   margin-top: auto;
   background: var(--workflow-fill, var(--rx-red));
@@ -570,25 +573,45 @@
   color: var(--rx-white);
 }
 
+.app-frame--theme-dark
+  .app-shell--landing
+  .info-panel--workflow-raider
+  .info-panel__cta.rx-spacebar-clip,
+.app-frame--theme-dark
+  .app-shell--landing
+  .info-panel--workflow-raider
+  .info-panel__cta.rx-spacebar-clip:hover {
+  color: #111111;
+}
+
 .app-frame--theme-dark .app-shell--landing .info-panel__head .flow-tabs__tab {
   background: rgba(18, 20, 27, 0.46);
   border-color: rgba(241, 244, 251, 0.18);
   color: rgba(241, 244, 251, 0.82);
 }
 
-.app-frame--theme-dark .app-shell--landing .info-panel__head .flow-tabs__tab--blue.flow-tabs__tab--active {
+.app-frame--theme-dark
+  .app-shell--landing
+  .info-panel__head
+  .flow-tabs__tab--blue.flow-tabs__tab--active {
   border-color: var(--rx-blue);
   background: var(--rx-blue);
   color: var(--rx-white);
 }
 
-.app-frame--theme-dark .app-shell--landing .info-panel__head .flow-tabs__tab--yellow.flow-tabs__tab--active {
+.app-frame--theme-dark
+  .app-shell--landing
+  .info-panel__head
+  .flow-tabs__tab--yellow.flow-tabs__tab--active {
   border-color: var(--rx-yellow);
   background: var(--rx-yellow);
   color: #111111;
 }
 
-.app-frame--theme-dark .app-shell--landing .info-panel__head .flow-tabs__tab--red.flow-tabs__tab--active {
+.app-frame--theme-dark
+  .app-shell--landing
+  .info-panel__head
+  .flow-tabs__tab--red.flow-tabs__tab--active {
   border-color: var(--rx-red);
   background: var(--rx-red);
   color: var(--rx-white);

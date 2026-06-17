@@ -24,7 +24,6 @@ test('isLowSignalChatPrompt detects greetings and joke prompts', () => {
 
 test('mercenary API path builders preserve raid access tokens', () => {
   const run: LiveRaidRun = {
-    requestMode: 'raid',
     spawn: {
       raidId: 'raid_demo_1',
       raidAccessToken: 'token_demo',

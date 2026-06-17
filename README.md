@@ -34,15 +34,18 @@ pnpm dev:web
 
 ## Docs
 
-Full guide: **[docs/README.md](docs/README.md)**
+Published on the papers site (`apps/docs`) with content in [`content/`](content/). Preview locally with `pnpm dev:docs`.
 
-| Audience           | Start here                                               |
-| ------------------ | -------------------------------------------------------- |
-| Discount inference | [docs/discount-inference.md](docs/discount-inference.md) |
-| Buyers             | [docs/buy.md](docs/buy.md)                               |
-| Sellers            | [docs/sell.md](docs/sell.md)                             |
-| Multi-agent        | [docs/raids.md](docs/raids.md)                           |
-| Operators          | [docs/operators/runtime.md](docs/operators/runtime.md)   |
+Full guide: **[content/README.md](content/README.md)**
+
+| Audience           | Start here                                                                                               |
+| ------------------ | -------------------------------------------------------------------------------------------------------- |
+| Discount inference | [content/docs/getting-started/discount-inference.md](content/docs/getting-started/discount-inference.md) |
+| Buyers             | [content/docs/getting-started/buy.md](content/docs/getting-started/buy.md)                               |
+| Sellers            | [content/docs/getting-started/sell.md](content/docs/getting-started/sell.md)                             |
+| Multi-agent        | [content/docs/getting-started/raids.md](content/docs/getting-started/raids.md)                           |
+| Operators          | [content/docs/operators/runtime.md](content/docs/operators/runtime.md)                                   |
+| Brand / RX-78      | [content/dev-docs/brand/rx-78-design-system.md](content/dev-docs/brand/rx-78-design-system.md)           |
 
 ## Repo layout
 

@@ -14,8 +14,8 @@ Use this skill when a task involves:
 
 ## Read First
 
-- [docs/operators/appendix/synthesis-registration.md](/Users/area/repos/boss-raid/docs/operators/appendix/synthesis-registration.md)
-- [docs/operators/appendix/hackathon.md](/Users/area/repos/boss-raid/docs/operators/appendix/hackathon.md)
+- [content/docs/operators/appendix/synthesis-registration.md](/Users/area/repos/boss-raid/content/docs/operators/appendix/synthesis-registration.md)
+- [content/docs/operators/appendix/hackathon.md](/Users/area/repos/boss-raid/content/docs/operators/appendix/hackathon.md)
 - [examples/provider-registration.base-mainnet.example.json](/Users/area/Desktop/boss-raid/examples/provider-registration.base-mainnet.example.json)
 - [references/provider-specializations.md](/Users/area/Desktop/boss-raid/skills/bossraid-provider-acp-registration/references/provider-specializations.md)
 

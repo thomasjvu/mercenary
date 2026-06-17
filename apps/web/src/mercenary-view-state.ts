@@ -1,13 +1,6 @@
 import type { AttestedEnvelope, AttestedRuntimePayload, Provider, ProviderHealth } from './api';
-import { isLowSignalChatPrompt } from './mercenary-chat.js';
 import { formatElapsedMs, humanizeStatus, isTerminalRaidStatus } from './mercenary-format';
-import {
-  buildRequestModeLabel,
-  CHAT_V1_PROMPTS,
-  RAID_PROMPTS,
-  type MercenaryRequestMode,
-  type LiveRaidRun,
-} from './mercenary-result';
+import { MERCENARY_PROMPTS, type LiveRaidRun } from './mercenary-result';
 import { deriveRuntimeAttestationStatus } from './lib/runtime-attestation-status.js';
 import {
   buildConversationSpecialistRecords,
@@ -24,7 +17,6 @@ import {
 } from './lib/raid-result-view.js';
 
 type MercenaryRaidViewStateInput = {
-  requestMode: MercenaryRequestMode;
   raidBrief: string;
   isLaunching: boolean;
   lastSubmittedBrief: string | null;
@@ -38,7 +30,6 @@ type MercenaryRaidViewStateInput = {
 };
 
 export function buildMercenaryRaidViewState({
-  requestMode,
   raidBrief,
   isLaunching,
   lastSubmittedBrief,
@@ -61,10 +52,8 @@ export function buildMercenaryRaidViewState({
     : hostedProviderCount > 0
       ? `${readyProviderCount}/${hostedProviderCount} specialists ready`
       : 'Checking specialists';
-  const allowsDirectV1Reply = requestMode === 'chat_v1' && isLowSignalChatPrompt(raidBrief);
   const canLaunchLiveRaid =
-    paymentEnabled &&
-    (providerHealth.length === 0 || readyProviderCount > 0 || allowsDirectV1Reply);
+    paymentEnabled && (providerHealth.length === 0 || readyProviderCount > 0);
   const canSendBrief = raidBrief.trim().length > 0 && !isLaunching && canLaunchLiveRaid;
   const activeRaidStatus = liveRaidRun?.status?.status ?? liveRaidRun?.spawn.status;
   const raidIsTerminal = activeRaidStatus ? isTerminalRaidStatus(activeRaidStatus) : false;
@@ -144,12 +133,10 @@ export function buildMercenaryRaidViewState({
   const runSignals: Array<{ label: string; value: string }> = liveRaidRun
     ? liveRaidRun.directResponse
       ? [
-          { label: 'mode', value: buildRequestModeLabel(liveRaidRun.requestMode) },
           { label: 'time', value: elapsedLabel },
           { label: 'route', value: 'direct' },
         ]
       : [
-          { label: 'mode', value: buildRequestModeLabel(liveRaidRun.requestMode) },
           { label: 'time', value: elapsedLabel },
           { label: 'invited', value: String(liveRaidRun.spawn.selectedExperts) },
           {
@@ -160,7 +147,6 @@ export function buildMercenaryRaidViewState({
           },
         ]
     : [
-        { label: 'mode', value: buildRequestModeLabel(requestMode) },
         { label: 'ready', value: compactAvailabilityLabel },
         { label: 'runtime', value: runtimeSummaryValue },
       ];
@@ -171,9 +157,8 @@ export function buildMercenaryRaidViewState({
     { label: 'sig', value: `${signedSpecialistCount}/${specialistRosterCount}` },
   ];
   const hasConversation = Boolean(lastSubmittedBrief || liveRaidRun || launchError);
-  const promptSuggestions = requestMode === 'raid' ? RAID_PROMPTS : CHAT_V1_PROMPTS;
+  const promptSuggestions = MERCENARY_PROMPTS;
   const conversationSignature = [
-    requestMode,
     lastSubmittedBrief ?? '',
     isLaunching ? 'launching' : 'idle',
     launchError ?? '',

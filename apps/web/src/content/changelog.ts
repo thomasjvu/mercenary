@@ -1,5 +1,6 @@
 /**
  * Product changelog for the web app. Update this file when shipping user-facing changes.
+ * Set `gitTag` when a GitHub release tag is cut (e.g. `v0.1.0`).
  */
 
 export type ChangelogSection = {
@@ -12,6 +13,8 @@ export type ChangelogRelease = {
   channel: 'beta';
   date: string;
   summary: string;
+  /** GitHub release tag — set when tagged; links render on the changelog page. */
+  gitTag?: string | null;
   sections: ChangelogSection[];
 };
 
@@ -22,6 +25,7 @@ export const CHANGELOG_RELEASES: ChangelogRelease[] = [
     version: '0.1.0',
     channel: 'beta',
     date: 'June 16, 2026',
+    gitTag: null,
     summary:
       'Public beta shell with legal policies, marketplace polish, and Mercenary presence on legal pages.',
     sections: [
@@ -59,6 +63,7 @@ export const CHANGELOG_RELEASES: ChangelogRelease[] = [
     version: '0.0.9',
     channel: 'beta',
     date: 'June 15, 2026',
+    gitTag: null,
     summary: 'Maintainability refactor across web shell, marketplace, and Mercenary flows.',
     sections: [
       {

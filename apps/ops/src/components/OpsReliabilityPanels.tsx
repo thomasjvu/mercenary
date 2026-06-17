@@ -50,7 +50,7 @@ function buildSettlementRunbookHints(status: SettlementStatus): string[] {
     hints.push(
       'Evaluator signer: BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY must match BOSSRAID_EVALUATOR_ADDRESS.'
     );
-    hints.push('See docs/reference/payments.md for payout env and ops launch checklist.');
+    hints.push('See content/docs/reference/payments.md for payout env and ops launch checklist.');
   }
 
   return hints;

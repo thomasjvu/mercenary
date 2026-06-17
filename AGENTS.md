@@ -8,14 +8,15 @@ Boss Raid is the platform. Mercenary is the orchestrator agent.
 
 ## Read First
 
-- [DESIGN.md](/Users/area/repos/boss-raid/DESIGN.md) — RX-78 visual identity for web, ops, and agents
+- [content/dev-docs/brand/rx-78-design-system.md](/Users/area/repos/boss-raid/content/dev-docs/brand/rx-78-design-system.md) — RX-78 visual identity (published dev-docs)
+- [DESIGN.md](/Users/area/repos/boss-raid/DESIGN.md) — RX-78 source tokens (sync with dev-docs when changed)
+- [content/README.md](/Users/area/repos/boss-raid/content/README.md) — papers content layout (`content/docs`, `content/dev-docs`)
 - [README.md](/Users/area/repos/boss-raid/README.md)
-- [docs/README.md](/Users/area/repos/boss-raid/docs/README.md)
-- [docs/getting-started.md](/Users/area/repos/boss-raid/docs/getting-started.md)
-- [docs/discount-inference.md](/Users/area/repos/boss-raid/docs/discount-inference.md) — discount inference / Surplus Intelligence parity lane
-- [docs/operators/architecture.md](/Users/area/repos/boss-raid/docs/operators/architecture.md)
-- [docs/reference/routes.md](/Users/area/repos/boss-raid/docs/reference/routes.md)
-- [docs/operators/runtime.md](/Users/area/repos/boss-raid/docs/operators/runtime.md)
+- [content/docs/getting-started/introduction.md](/Users/area/repos/boss-raid/content/docs/getting-started/introduction.md)
+- [content/docs/getting-started/discount-inference.md](/Users/area/repos/boss-raid/content/docs/getting-started/discount-inference.md) — discount inference / Surplus Intelligence parity lane
+- [content/docs/operators/architecture.md](/Users/area/repos/boss-raid/content/docs/operators/architecture.md)
+- [content/docs/reference/routes.md](/Users/area/repos/boss-raid/content/docs/reference/routes.md)
+- [content/docs/operators/runtime.md](/Users/area/repos/boss-raid/content/docs/operators/runtime.md)
 
 ## Rules
 
@@ -44,22 +45,26 @@ Manual:
 pnpm dev:providers
 pnpm dev:api
 pnpm dev:web
+pnpm dev:docs
 ```
 
 ## Current Constraints
 
 - provider workers are HTTP only
-- persistence is file-backed
+- persistence is sqlite or memory (not file-backed)
 - public API is raid-oriented by design
 - x402 and OpenAI-compatible chat endpoints are built
-- separate privacy engine is not built yet
+- privacy engine library gates strict-private raids; attestation telemetry is still partial (see content/docs/operators/architecture.md)
+- full production requires `GET /v1/ops/production-readiness` with `ok: true` (onchain settlement, x402, TEE, no upstream mocks)
 
 ## If You Change
 
-- architecture: update [docs/operators/architecture.md](/Users/area/repos/boss-raid/docs/operators/architecture.md)
-- routes or payloads: update [docs/reference/routes.md](/Users/area/repos/boss-raid/docs/reference/routes.md) and the matching buyer/seller page in `docs/`. Web route rows are generated from [docs/reference/web-routes.template.json](/Users/area/repos/boss-raid/docs/reference/web-routes.template.json) via `pnpm sync:docs-routes`.
-- commands or env: update [docs/operators/runtime.md](/Users/area/repos/boss-raid/docs/operators/runtime.md) and [docs/reference/env.md](/Users/area/repos/boss-raid/docs/reference/env.md)
-- registration story: update [docs/operators/appendix/synthesis-registration.md](/Users/area/repos/boss-raid/docs/operators/appendix/synthesis-registration.md)
+- architecture: update [content/docs/operators/architecture.md](/Users/area/repos/boss-raid/content/docs/operators/architecture.md)
+- routes or payloads: update [content/docs/reference/routes.md](/Users/area/repos/boss-raid/content/docs/reference/routes.md) and the matching buyer/seller page in `content/docs/`. Web route rows are generated from [content/docs/reference/web-routes.template.json](/Users/area/repos/boss-raid/content/docs/reference/web-routes.template.json) via `pnpm sync:docs-routes`.
+- commands or env: update [content/docs/operators/runtime.md](/Users/area/repos/boss-raid/content/docs/operators/runtime.md) and [content/docs/reference/env.md](/Users/area/repos/boss-raid/content/docs/reference/env.md)
+- registration story: update [content/docs/operators/appendix/synthesis-registration.md](/Users/area/repos/boss-raid/content/docs/operators/appendix/synthesis-registration.md)
+- brand / RX-78: update [content/dev-docs/brand/rx-78-design-system.md](/Users/area/repos/boss-raid/content/dev-docs/brand/rx-78-design-system.md) and sync [DESIGN.md](/Users/area/repos/boss-raid/DESIGN.md)
+- papers framework: update [apps/docs/FRAMEWORK.md](/Users/area/repos/boss-raid/apps/docs/FRAMEWORK.md); pull with `pnpm papers:sync-upstream`, push with `pnpm papers:sync-downstream`
 
 ## Coding Standards
 

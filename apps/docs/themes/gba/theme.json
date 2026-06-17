@@ -1,0 +1,20 @@
+{
+  "id": "gba",
+  "name": "Game Boy",
+  "description": "1-bit Game Boy palette for Oblivion — square UI, pixel icons, fixed dark palette.",
+  "author": "Oblivion",
+  "css": "tokens.css",
+  "fontCss": "fonts.css",
+  "iconSet": "pixelarticons",
+  "defaultColorMode": "dark",
+  "features": {
+    "lightDarkToggle": false
+  },
+  "fonts": [
+    {
+      "preload": "/fonts/GeistPixel-Square.woff2",
+      "type": "font/woff2",
+      "crossOrigin": true
+    }
+  ]
+}

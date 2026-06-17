@@ -47,9 +47,7 @@ export function MercenaryWorkspace({
           hasConversation={mercenary.hasConversation}
           isAuthenticated={isSignedIn}
           isLaunching={mercenary.isLaunching}
-          onRequestModeChange={mercenary.handleModeChange}
           onResetConversation={mercenary.resetConversation}
-          requestMode={mercenary.requestMode}
         />
 
         <MercenaryChatGate
@@ -67,11 +65,11 @@ export function MercenaryWorkspace({
               launchError={mercenary.launchError}
               liveRaidRun={mercenary.liveRaidRun}
               raidIsTerminal={mercenary.raidIsTerminal}
-              requestMode={mercenary.requestMode}
             />
 
             {mercenary.liveRaidRun ? (
               <MercenaryRaidResult
+                completedAt={mercenary.liveRaidRun.lastUpdatedAt}
                 directResponse={mercenary.liveRaidRun.directResponse}
                 expandedArtifact={mercenary.expandedArtifact}
                 hasLiveRun={Boolean(mercenary.liveRaidRun)}
@@ -86,7 +84,6 @@ export function MercenaryWorkspace({
                 raidIsTerminal={mercenary.raidIsTerminal}
                 receiptCopied={mercenary.receiptCopied}
                 receiptPath={mercenary.liveRaidRun.spawn.receiptPath ?? null}
-                requestMode={mercenary.liveRaidRun.requestMode}
               />
             ) : null}
           </div>
@@ -102,7 +99,9 @@ export function MercenaryWorkspace({
             canSendBrief={mercenary.canSendBrief && isSignedIn}
             hasConversation={mercenary.hasConversation}
             isLaunching={mercenary.isLaunching}
+            maxBudgetUsd={mercenary.maxBudgetUsd}
             onBriefChange={mercenary.setRaidBrief}
+            onBudgetChange={mercenary.setMaxBudgetUsd}
             onLaunch={() => void mercenary.launchConversation()}
             promptSuggestions={mercenary.promptSuggestions}
             raidBrief={mercenary.raidBrief}

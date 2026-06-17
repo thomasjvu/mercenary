@@ -1,6 +1,11 @@
 import { type FastifyInstance } from 'fastify';
 import { readSettlementMode, readStorageBackend } from '@bossraid/constants';
-import { isSettlementGateConfigured } from '../lib/settlement-mode.js';
+import { readBooleanEnv } from '../lib/env.js';
+import { readEnabledUpstreamMocks } from '../lib/production-readiness.js';
+import {
+  isFullOnchainSettlementConfigured,
+  isSettlementGateConfigured,
+} from '../lib/settlement-mode.js';
 import { readTeeSocketState } from '../lib/tee.js';
 import { readX402ConfigForContext } from '../lib/x402-runtime.js';
 
@@ -46,13 +51,23 @@ export function registerHealthRoutes(
       !x402Config.enabled ||
       (Boolean(x402Config.facilitatorUrl) &&
         x402Config.payTo !== '0x0000000000000000000000000000000000000000');
+    const isProduction = env.NODE_ENV === 'production';
+    const upstreamMocksDisabled = readEnabledUpstreamMocks(env).length === 0;
+    const onchainSettlementReady =
+      settlementMode === 'onchain' && isFullOnchainSettlementConfigured(env);
+    const productionSettlementReady = !isProduction || onchainSettlementReady;
+    const productionMocksReady = !isProduction || upstreamMocksDisabled;
+    const productionBalanceFundReady =
+      !isProduction || !readBooleanEnv(env.BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND);
     const gates = {
       api: true,
       storage: persistence.healthy,
       secretsEncrypted,
       providers: providerHealth.length > 0 && providerHealth.some((provider) => provider.ready),
       x402: x402Configured,
-      settlement: settlementConfigured,
+      settlement: settlementConfigured && productionSettlementReady,
+      upstreamMocksDisabled: productionMocksReady,
+      unverifiedBalanceFundDisabled: productionBalanceFundReady,
       tee: {
         configured: Boolean(env.MNEMONIC),
         platform: env.BOSSRAID_TEE_PLATFORM ?? null,
@@ -67,7 +82,9 @@ export function registerHealthRoutes(
         gates.secretsEncrypted &&
         gates.providers &&
         gates.x402 &&
-        gates.settlement,
+        gates.settlement &&
+        gates.upstreamMocksDisabled &&
+        gates.unverifiedBalanceFundDisabled,
       gates,
       providers: orchestrator.listProviders().length,
       readyProviders: providerHealth.filter((provider) => provider.ready).length,

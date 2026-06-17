@@ -10,13 +10,7 @@ import {
   type RaidSpawnOutput,
 } from '../api';
 import { isTerminalRaidStatus, readErrorMessage } from '../mercenary-format';
-import {
-  buildAbsolutePath,
-  CHAT_V1_PROMPTS,
-  RAID_PROMPTS,
-  type MercenaryRequestMode,
-  type LiveRaidRun,
-} from '../mercenary-result';
+import { buildAbsolutePath, type LiveRaidRun } from '../mercenary-result';
 import { buildMercenaryRaidViewState } from '../mercenary-specialists';
 import {
   deriveMercenaryThreadTitle,
@@ -57,7 +51,7 @@ export function useMercenaryRaid({
   const initial = resolveInitialMercenaryRaidThreadState(persistThreads);
   const [threadStore, setThreadStore] = useState<MercenaryThreadStore>(initial.store);
   const [activeThreadId, setActiveThreadId] = useState(initial.thread.id);
-  const [requestMode, setRequestMode] = useState<MercenaryRequestMode>(initial.thread.requestMode);
+  const [maxBudgetUsd, setMaxBudgetUsd] = useState(initial.thread.maxBudgetUsd);
   const [raidBrief, setRaidBrief] = useState(initial.thread.raidBrief);
   const [lastSubmittedBrief, setLastSubmittedBrief] = useState<string | null>(
     initial.thread.lastSubmittedBrief
@@ -89,7 +83,7 @@ export function useMercenaryRaid({
       title,
       titleLocked: existing?.titleLocked,
       updatedAt: new Date().toISOString(),
-      requestMode,
+      maxBudgetUsd,
       raidBrief,
       lastSubmittedBrief,
       liveRaidRun,
@@ -114,7 +108,7 @@ export function useMercenaryRaid({
 
   function applyThread(thread: MercenaryThreadRecord) {
     const applied = applyMercenaryRaidThreadRecord(thread);
-    setRequestMode(applied.requestMode);
+    setMaxBudgetUsd(applied.maxBudgetUsd);
     setRaidBrief(applied.raidBrief);
     setLastSubmittedBrief(applied.lastSubmittedBrief);
     setLiveRaidRun(applied.liveRaidRun);
@@ -124,7 +118,6 @@ export function useMercenaryRaid({
   }
 
   const viewState = buildMercenaryRaidViewState({
-    requestMode,
     raidBrief,
     isLaunching,
     lastSubmittedBrief,
@@ -193,7 +186,7 @@ export function useMercenaryRaid({
 
     const signature = buildMercenaryRaidThreadPersistenceSignature({
       threadId: activeThreadId,
-      mode: requestMode,
+      maxBudgetUsd,
       brief: raidBrief,
       submittedBrief: lastSubmittedBrief,
       run: liveRaidRun,
@@ -210,7 +203,7 @@ export function useMercenaryRaid({
     persistThreads,
     isLaunching,
     activeThreadId,
-    requestMode,
+    maxBudgetUsd,
     raidBrief,
     lastSubmittedBrief,
     liveRaidRun,
@@ -240,8 +233,8 @@ export function useMercenaryRaid({
 
       const fetchWithPayment = await createFetchWithPayment();
       const launched = await launchPaidMercenaryRaid({
-        requestMode,
         submittedBrief,
+        maxBudgetUsd,
         fetchWithPayment,
       });
 
@@ -350,20 +343,9 @@ export function useMercenaryRaid({
     }
   }
 
-  function handleModeChange(nextMode: MercenaryRequestMode) {
-    if (isLaunching || nextMode === requestMode) {
-      return;
-    }
-
-    setRequestMode(nextMode);
-    setLastSubmittedBrief(null);
-    setLiveRaidRun(null);
-    setLaunchError(null);
-    setExpandedArtifact(null);
-  }
-
   return {
-    requestMode,
+    maxBudgetUsd,
+    setMaxBudgetUsd,
     raidBrief,
     setRaidBrief,
     lastSubmittedBrief,
@@ -385,7 +367,6 @@ export function useMercenaryRaid({
     deleteThread,
     threads: threadStore.threads,
     activeThreadId,
-    handleModeChange,
     ...viewState,
   };
 }

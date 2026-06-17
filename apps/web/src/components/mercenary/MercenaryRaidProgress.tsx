@@ -1,10 +1,8 @@
-import { formatTimestamp, humanizeStatus } from '../../mercenary-format.js';
-import type { LiveRaidRun, MercenaryRequestMode } from '../../mercenary-result.js';
-import { buildRequestModeLabel } from '../../mercenary-result';
+import { humanizeStatus } from '../../mercenary-format.js';
+import type { LiveRaidRun } from '../../mercenary-result.js';
 import { ChatMessage, StatusPill, TypingDots } from './mercenary-ui';
 
 type MercenaryRaidProgressProps = {
-  requestMode: MercenaryRequestMode;
   lastSubmittedBrief: string | null;
   isLaunching: boolean;
   launchError: string | null;
@@ -15,7 +13,6 @@ type MercenaryRaidProgressProps = {
 };
 
 export function MercenaryRaidProgress({
-  requestMode,
   lastSubmittedBrief,
   isLaunching,
   launchError,
@@ -24,56 +21,42 @@ export function MercenaryRaidProgress({
   raidIsTerminal,
   elapsedLabel,
 }: MercenaryRaidProgressProps) {
+  const submittedAt = liveRaidRun?.startedAtMs
+    ? new Date(liveRaidRun.startedAtMs).toISOString()
+    : new Date().toISOString();
+
   return (
     <>
-      <ChatMessage role="assistant">
-        <p>
-          {requestMode === 'raid'
-            ? 'Chat here. Scoped work opens a raid and routes specialists in the background.'
-            : 'Chat via discount inference. Scoped work can still open specialists behind the route.'}
-        </p>
-        <p className="mercenary-message__disclaimer">
-          Verify claims, code, and proofs before you rely on output.
-        </p>
-      </ChatMessage>
-
       {lastSubmittedBrief ? (
-        <ChatMessage role="user">
+        <ChatMessage role="user" timestamp={submittedAt}>
           <p>{lastSubmittedBrief}</p>
         </ChatMessage>
       ) : null}
 
       {isLaunching ? (
-        <ChatMessage role="assistant">
-          <p>
-            {requestMode === 'raid'
-              ? 'Reviewing the request and opening a Mercenary raid.'
-              : 'Reviewing the request and routing it through discount inference.'}
-          </p>
+        <ChatMessage role="assistant" timestamp={new Date().toISOString()}>
+          <p>Reviewing the request and deciding whether to answer directly or open specialists.</p>
           <TypingDots />
         </ChatMessage>
       ) : null}
 
       {launchError ? (
-        <ChatMessage role="assistant" tone="error">
-          <p>I could not start the raid.</p>
+        <ChatMessage role="assistant" tone="error" timestamp={new Date().toISOString()}>
+          <p>I could not start the request.</p>
           <p>{launchError}</p>
         </ChatMessage>
       ) : null}
 
       {liveRaidRun ? (
-        <ChatMessage role="assistant">
+        <ChatMessage role="assistant" timestamp={liveRaidRun.lastUpdatedAt}>
           <p>{buildRaidStatusCopy(liveRaidRun)}</p>
           <div className="mercenary-pill-row">
-            <StatusPill tone="available">
-              {buildRequestModeLabel(liveRaidRun.requestMode)}
-            </StatusPill>
             <StatusPill
               tone={raidIsTerminal ? 'ready' : 'working'}
             >{`status ${humanizeStatus(activeRaidStatus ?? 'queued')}`}</StatusPill>
             <StatusPill tone="available">
               {liveRaidRun.directResponse
-                ? 'no raid launched'
+                ? 'direct reply'
                 : `${liveRaidRun.spawn.selectedExperts} specialists invited`}
             </StatusPill>
             <StatusPill tone="available">{`time ${elapsedLabel}`}</StatusPill>
@@ -81,7 +64,6 @@ export function MercenaryRaidProgress({
               <StatusPill tone="available">{`eta ${liveRaidRun.spawn.estimatedFirstResultSec}s`}</StatusPill>
             ) : null}
           </div>
-          <p className="mercenary-message__note">{`Updated ${formatTimestamp(liveRaidRun.lastUpdatedAt)}`}</p>
           {liveRaidRun.pollError ? (
             <p className="mercenary-message__note">Last refresh error: {liveRaidRun.pollError}</p>
           ) : null}
@@ -93,33 +75,26 @@ export function MercenaryRaidProgress({
 
 function buildRaidStatusCopy(run: LiveRaidRun): string {
   if (run.directResponse) {
-    return 'Mercenary answered directly on the discount inference route without opening specialists.';
+    return 'Mercenary answered directly without opening specialists.';
   }
 
   const status = run.status?.status ?? run.spawn.status;
-  const routeLabel = run.requestMode === 'chat_v1' ? 'discount inference' : 'Mercenary raid';
 
   if (status === 'queued') {
-    return `I accepted the request and I’m matching the ${routeLabel} to live specialists.`;
+    return 'I accepted the request and I’m matching specialists.';
   }
 
   if (status === 'running') {
-    return run.requestMode === 'chat_v1'
-      ? 'Discount inference is live. Mercenary is still opening scoped specialist workstreams behind the compatibility layer.'
-      : 'The Mercenary raid is live. I’m collecting scoped specialist output and filtering weak branches.';
+    return 'Mercenary is live. I’m collecting scoped specialist output and filtering weak branches.';
   }
 
   if (status === 'final' && run.result?.synthesizedOutput) {
-    return run.requestMode === 'chat_v1'
-      ? 'Discount inference is final. Mercenary merged the strongest specialist outputs into one clean assistant answer.'
-      : 'The Mercenary raid is final. I merged the strongest specialist outputs into one delivery.';
+    return 'Mercenary is final. I merged the strongest specialist outputs into one delivery.';
   }
 
   if (status === 'final') {
-    return run.requestMode === 'chat_v1'
-      ? 'Discount inference reached a terminal state, but Mercenary did not get an approved specialist answer for this prompt.'
-      : 'The Mercenary raid reached a terminal state, but I did not get an approved specialist deliverable for this prompt.';
+    return 'Mercenary reached a terminal state, but I did not get an approved specialist deliverable for this prompt.';
   }
 
-  return `The ${routeLabel} is ${humanizeStatus(status)}.`;
+  return `Mercenary is ${humanizeStatus(status)}.`;
 }

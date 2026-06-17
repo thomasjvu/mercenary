@@ -14,13 +14,17 @@ import {
 } from './inference-marketplace.js';
 import {
   buildChatCompletionResponse,
-  buildDirectChatCompletionResponse,
   streamDirectChatCompletionResponse,
   streamChatCompletionResponse,
   waitForTerminalRaidOutput,
 } from './chat-completion.js';
 import { enforceBuyerBudget } from './account.js';
 import { executeE2eeChatRelay } from './e2ee-chat-relay.js';
+import {
+  applyMercenaryPlannerOverrides,
+  buildPlannerDirectChatCompletionResponse,
+  planMercenaryChatResponse,
+} from './mercenary-planner.js';
 import { resolveChatE2eeRoute } from './e2ee-chat-route.js';
 import { type ApiContext } from '../api-context.js';
 import { type createAuthHandlers } from '../handlers/auth.js';
@@ -155,16 +159,36 @@ export function authorizeChatCompletionRequest(
   return { publicAuth };
 }
 
-export function tryDirectChatCompletionResponse(
+export async function tryMercenaryPlannerDirectResponse(
   chatRequest: ChatCompletionRequest,
   created: number,
-  options: ChatCompletionRouteOptions = {}
+  options: ChatCompletionRouteOptions = {},
+  env: NodeJS.ProcessEnv = process.env
 ) {
   if (options.discountInference) {
     return null;
   }
 
-  return buildDirectChatCompletionResponse(chatRequest, created);
+  const decision = await planMercenaryChatResponse({ chatRequest, env });
+  if (decision.action !== 'direct' || !decision.reply) {
+    return { decision };
+  }
+
+  return {
+    decision,
+    response: buildPlannerDirectChatCompletionResponse(chatRequest, created, decision.reply),
+  };
+}
+
+export function applyMercenaryPlannerRaidRequest(
+  raidRequest: BossRaidSpawnInput,
+  decision: Awaited<ReturnType<typeof planMercenaryChatResponse>>
+) {
+  if (decision.action !== 'raid') {
+    return raidRequest;
+  }
+
+  return applyMercenaryPlannerOverrides(raidRequest, decision.raidPolicyOverrides);
 }
 
 export async function launchPaidChatRaid(

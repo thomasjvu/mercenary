@@ -167,6 +167,18 @@
   min-width: 0;
 }
 
+.mercenary-message__time {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.mercenary-message--user .mercenary-message__time {
+  text-align: right;
+}
+
 .mercenary-message--user .mercenary-message__body {
   justify-items: end;
 }
@@ -589,6 +601,28 @@
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.mercenary-composer__budget {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.mercenary-composer__budget-input {
+  width: 72px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--mercenary-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.98);
+  color: var(--text);
+  font-family: inherit;
+  font-size: inherit;
 }
 
 .mercenary-suggestion {

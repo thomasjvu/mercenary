@@ -54,6 +54,10 @@ async function runProviderJob(
     logger.info(
       `[provider-agent] ${providerConfig.providerId} submit raid=${body.raidId} run=${providerRunId}`
     );
+    const externalApiCalls =
+      providerConfig.stubMode || !providerConfig.modelApiBase
+        ? []
+        : [new URL(providerConfig.modelApiBase).origin];
     const privacyAttestation = await buildProviderPrivacyAttestation(
       providerConfig.providerId,
       body.raidId,
@@ -61,6 +65,8 @@ async function runProviderJob(
         featuresClaimed:
           providerConfig.privacyFeatures as string[] as import('@bossraid/shared-types').PrivacyFeatureKey[],
         teeSocketPath: providerConfig.teeSocketPath,
+        externalApiCalls,
+        dataRetained: false,
       }
     );
     await callback(`/v1/providers/${body.providerId}/submit`, {

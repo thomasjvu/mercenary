@@ -43,20 +43,6 @@ export async function fetchSellerStats(): Promise<SellerStats> {
   return fetchJson<SellerStats>('/v1/seller/stats');
 }
 
-/** Local smoke/tests only — production UI must use x402 paid fetch. */
-export async function fundBuyerBalanceDevOnly(amountUsd: number): Promise<{
-  wallet: string;
-  balanceUsd: number;
-  creditedUsd: number;
-  currency: string;
-}> {
-  return fetchJson('/v1/buyer/balance/fund', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ amountUsd }),
-  });
-}
-
 export async function runInferenceChatCompletion(input: {
   apiKey?: string;
   model: string;

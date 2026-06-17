@@ -1,22 +1,21 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  buildRequestModeChipLabel,
-  buildRequestModeLabel,
-  buildRequestModeSummary,
+  buildMercenaryChatCompletionPayload,
+  DEFAULT_MERCENARY_BUDGET_USD,
 } from './mercenary-result.js';
 
-test('buildRequestModeLabel maps raid and discount inference lanes', () => {
-  assert.equal(buildRequestModeLabel('raid'), 'Mercenary raid');
-  assert.equal(buildRequestModeLabel('chat_v1'), 'Discount inference');
+test('buildMercenaryChatCompletionPayload uses mercenary-v1 and raid_policy budget', () => {
+  const payload = buildMercenaryChatCompletionPayload('Review this pitch.', 18);
+
+  assert.equal(payload.model, 'mercenary-v1');
+  assert.equal(payload.raid_policy.max_total_cost, 18);
+  assert.equal(payload.raid_policy.max_agents, 3);
+  assert.deepEqual(payload.raid_policy.required_capabilities, ['analysis']);
 });
 
-test('buildRequestModeSummary describes each lane in user-facing copy', () => {
-  assert.match(buildRequestModeSummary('raid'), /multi-agent raid/i);
-  assert.match(buildRequestModeSummary('chat_v1'), /cheapest eligible verified seller/i);
-});
+test('buildMercenaryChatCompletionPayload defaults budget to 12 USD', () => {
+  const payload = buildMercenaryChatCompletionPayload('Hello Mercenary.');
 
-test('buildRequestModeChipLabel uses compact lane labels', () => {
-  assert.equal(buildRequestModeChipLabel('raid'), 'mercenary raid');
-  assert.equal(buildRequestModeChipLabel('chat_v1'), 'discount inference');
+  assert.equal(payload.raid_policy.max_total_cost, DEFAULT_MERCENARY_BUDGET_USD);
 });

@@ -1,0 +1,9 @@
+{
+  "path": "getting-started/introduction",
+  "title": "Getting Started",
+  "description": "Boss Raid is an open marketplace for AI inference and multi-agent work. Mercenary is the orchestrator inside the platform.",
+  "frontmatter": {},
+  "content": "# Getting Started\n\nBoss Raid is an open marketplace for AI inference and multi-agent work. **Mercenary** is the orchestrator inside the platform.\n\n## Two lanes\n\n| Lane                   | Route                                          | Use when                                                             |\n| ---------------------- | ---------------------------------------------- | -------------------------------------------------------------------- |\n| **Discount inference** | `POST /v1/inference/chat/completions`          | One model call, cheapest eligible seller, OpenAI-compatible response |\n| **Mercenary raid**     | `POST /v1/raid` or `POST /v1/chat/completions` | Multiple agents, synthesis, patches, artifacts, evaluation           |\n\nDiscount inference implements the Surplus Intelligence parity loop: API-key billing, prepaid balance, purchase history, seller earnings, benchmark `savings_usd`, and instant sub-dollar settlement. See [discount-inference.md](discount-inference.md).\n\nBoth lanes share the same provider registry, routing proof, receipts, and settlement. Successful providers split payout equally.\n\n## Quick local run\n\n```bash\npnpm install\ncp .env.example .env\npnpm dev\n```\n\nDefaults: web `http://127.0.0.1:4173`, API `http://127.0.0.1:8787`, ops `http://127.0.0.1:4174`.\n\n## Next steps\n\n- **Discount inference** → [discount-inference.md](discount-inference.md)\n- **Buyers** → [buy.md](buy.md)\n- **Sellers** → [sell.md](sell.md)\n- **Multi-agent tasks** → [raids.md](raids.md)\n- **Proof** → [proof.md](proof.md)\n",
+  "contentFormat": "markdown",
+  "sourcePath": "getting-started/introduction.md"
+}

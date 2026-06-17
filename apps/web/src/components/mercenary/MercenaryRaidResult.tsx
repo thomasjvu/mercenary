@@ -1,13 +1,11 @@
 import type { SubmissionArtifact } from '@bossraid/shared-types';
 import { isLowSignalChatPrompt } from '../../mercenary-chat.js';
-import type { MercenaryRequestMode } from '../../mercenary-result.js';
 import { useArtifactLightbox } from '../../hooks/useArtifactLightbox.js';
 import { ArtifactGallery } from './ArtifactGallery.js';
 import { ArtifactLightbox } from './ArtifactLightbox.js';
 import { ChatMessage } from './mercenary-ui';
 
 type MercenaryRaidResultProps = {
-  requestMode: MercenaryRequestMode;
   lastSubmittedBrief: string | null;
   liveResultText?: string;
   liveExplanation?: string;
@@ -16,6 +14,7 @@ type MercenaryRaidResultProps = {
   directResponse?: boolean;
   hasLiveRun: boolean;
   raidIsTerminal: boolean;
+  completedAt?: string;
   expandedArtifact: SubmissionArtifact | null;
   onOpenArtifact: (artifact: SubmissionArtifact) => void;
   onCloseArtifact: () => void;
@@ -26,7 +25,6 @@ type MercenaryRaidResultProps = {
 };
 
 export function MercenaryRaidResult({
-  requestMode,
   lastSubmittedBrief,
   liveResultText,
   liveExplanation,
@@ -35,6 +33,7 @@ export function MercenaryRaidResult({
   directResponse,
   hasLiveRun,
   raidIsTerminal,
+  completedAt,
   expandedArtifact,
   onOpenArtifact,
   onCloseArtifact,
@@ -47,14 +46,14 @@ export function MercenaryRaidResult({
   return (
     <>
       {liveResultText || liveArtifacts.length > 0 || livePatch ? (
-        <ChatMessage role="assistant" tone="success">
+        <ChatMessage role="assistant" tone="success" timestamp={completedAt}>
           {liveResultText ? (
             <p className="mercenary-final__answer">{liveResultText}</p>
           ) : (
             <p>Final delivery is ready.</p>
           )}
           {liveExplanation && !liveResultText ? <p>{liveExplanation}</p> : null}
-          {requestMode === 'chat_v1' && !directResponse ? (
+          {!directResponse ? (
             <p className="mercenary-message__note">
               Returned through `/v1/chat/completions` and linked back to the same raid receipt and
               trace.
@@ -87,16 +86,12 @@ export function MercenaryRaidResult({
       !liveResultText &&
       liveArtifacts.length === 0 &&
       !livePatch ? (
-        <ChatMessage role="assistant" tone="error">
-          <p>
-            {requestMode === 'chat_v1'
-              ? 'Mercenary did not get an approved specialist answer for this discount inference run.'
-              : 'Mercenary did not get an approved specialist deliverable for this raid.'}
-          </p>
+        <ChatMessage role="assistant" tone="error" timestamp={completedAt}>
+          <p>Mercenary did not get an approved specialist deliverable for this request.</p>
           <p className="mercenary-message__note">
             {isLowSignalChatPrompt(lastSubmittedBrief ?? '')
               ? 'Short greetings usually stay conversational. Ask a concrete question or scoped task if you want specialist output.'
-              : 'Try rephrasing the request more concretely, or switch to Mercenary raid if you want a scoped build workflow.'}
+              : 'Try rephrasing the request more concretely with clearer deliverables.'}
           </p>
         </ChatMessage>
       ) : null}
