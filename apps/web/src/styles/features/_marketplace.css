@@ -220,13 +220,11 @@
 .app-frame--sidebar-collapsed .app-sidebar__title,
 .app-frame--sidebar-collapsed .app-sidebar__section-label,
 .app-frame--sidebar-collapsed .app-sidebar__credit,
-.app-frame--sidebar-collapsed .app-sidebar__legal,
 .app-frame--sidebar-collapsed .app-sidebar__tee-pill,
 .app-frame--sidebar-collapsed .app-sidebar__utility-button,
 .app-sidebar--collapsed .app-sidebar__title,
 .app-sidebar--collapsed .app-sidebar__section-label,
 .app-sidebar--collapsed .app-sidebar__credit,
-.app-sidebar--collapsed .app-sidebar__legal,
 .app-sidebar--collapsed .app-sidebar__tee-pill,
 .app-sidebar--collapsed .app-sidebar__utility-button {
   display: none;
@@ -261,9 +259,10 @@
 }
 
 .app-frame--sidebar-collapsed .app-sidebar__brand,
-.app-sidebar--collapsed .app-sidebar__brand {
-  justify-content: center;
-  width: 100%;
+.app-sidebar--collapsed .app-sidebar__brand,
+.app-frame--sidebar-collapsed .app-sidebar__version,
+.app-sidebar--collapsed .app-sidebar__version {
+  display: none;
 }
 
 .app-frame--sidebar-collapsed .app-sidebar__link,
@@ -302,7 +301,6 @@
   .app-sidebar__title,
   .app-sidebar__section-label,
   .app-sidebar__credit,
-  .app-sidebar__legal,
   .app-sidebar__tee-pill,
   .app-sidebar__utility-button {
     display: none;
@@ -331,9 +329,9 @@
     margin-top: 0;
   }
 
-  .app-sidebar__brand {
-    justify-content: center;
-    width: 100%;
+  .app-sidebar__brand,
+  .app-sidebar__version {
+    display: none;
   }
 
   .app-sidebar__link {

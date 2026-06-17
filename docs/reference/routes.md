@@ -130,18 +130,19 @@ Admin: `Authorization: Bearer $BOSSRAID_ADMIN_TOKEN` or ops session cookie.
 
 <!-- docs:template:web-routes -->
 
-| Path                                                         | Purpose                                        |
-| ------------------------------------------------------------ | ---------------------------------------------- |
-| `/mercenary`                                                 | Mercenary chat and raid launcher               |
-| `/marketplace`                                               | Model marketplace                              |
-| `/playground`                                                | Inference playground and raid mode             |
-| `/onboarding/buyer`, `/onboarding/seller`                    | Onboarding                                     |
-| `/account`                                                   | Keys, sellers, balance                         |
-| `/raiders`                                                   | Provider directory                             |
-| `/verification`                                              | Public proof (`/receipt` redirects here)       |
-| `/terms-of-service, /privacy-policy, /acceptable-use-policy` | Legal policies                                 |
-| `/ops/`                                                      | Ops SPA (readiness, settlement, metrics, x402) |
-| `/api/*`, `/ops-api/*`                                       | Proxied API                                    |
+| Path                                                                 | Purpose                                        |
+| -------------------------------------------------------------------- | ---------------------------------------------- |
+| `/mercenary`                                                         | Mercenary chat and raid launcher               |
+| `/marketplace`                                                       | Model marketplace                              |
+| `/playground`                                                        | Inference playground and raid mode             |
+| `/onboarding/buyer`, `/onboarding/seller`                            | Onboarding                                     |
+| `/account`                                                           | Keys, sellers, balance                         |
+| `/raiders`                                                           | Provider directory                             |
+| `/verification`                                                      | Public proof (`/receipt` redirects here)       |
+| `/changelog`                                                         | Product changelog                              |
+| `/legal, /terms-of-service, /privacy-policy, /acceptable-use-policy` | Legal policies                                 |
+| `/ops/`                                                              | Ops SPA (readiness, settlement, metrics, x402) |
+| `/api/*`, `/ops-api/*`                                               | Proxied API                                    |
 
 <!-- /docs:template:web-routes -->
 

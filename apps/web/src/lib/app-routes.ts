@@ -12,6 +12,8 @@ export type AppRoute =
   | '/account'
   | '/raiders'
   | '/verification'
+  | '/legal'
+  | '/changelog'
   | '/terms-of-service'
   | '/privacy-policy'
   | '/acceptable-use-policy';
@@ -51,6 +53,20 @@ export const SIDEBAR_NAV_LINKS: SidebarNavItem[] = [
   { path: '/playground', label: 'playground', icon: 'pixel:sparkles-solid' },
   { path: '/raiders', label: 'raiders', icon: 'pixel:crown-solid' },
   { path: '/verification', label: 'verification', icon: 'pixel:receipt-solid' },
+  {
+    path: '/legal',
+    label: 'legal',
+    icon: 'pixel:bookmark-solid',
+    children: [
+      { path: '/terms-of-service', label: 'terms', icon: 'pixel:clipboard-solid' },
+      { path: '/privacy-policy', label: 'privacy', icon: 'pixel:lock-solid' },
+      {
+        path: '/acceptable-use-policy',
+        label: 'acceptable use',
+        icon: 'pixel:check-circle-solid',
+      },
+    ],
+  },
   { href: BOSSRAID_DOCS_URL, label: 'docs', icon: 'pixel:notebook-solid' },
 ];
 
@@ -62,13 +78,40 @@ const MARKETPLACE_CHILD_PATHS = new Set<AppRoute>([
   '/sell/offers',
 ]);
 
+const LEGAL_CHILD_PATHS = new Set<AppRoute>([
+  '/legal',
+  '/terms-of-service',
+  '/privacy-policy',
+  '/acceptable-use-policy',
+]);
+
 export function isMarketplaceSectionActive(pathname: string): boolean {
   return MARKETPLACE_CHILD_PATHS.has(pathname as AppRoute) || pathname.startsWith('/marketplace/');
+}
+
+export function isLegalSectionActive(pathname: string): boolean {
+  return LEGAL_CHILD_PATHS.has(pathname as AppRoute);
+}
+
+export function isNavGroupSectionActive(path: AppRoute, pathname: string): boolean {
+  if (path === '/marketplace') {
+    return isMarketplaceSectionActive(pathname);
+  }
+
+  if (path === '/legal') {
+    return isLegalSectionActive(pathname);
+  }
+
+  return false;
 }
 
 export function isSidebarNavActive(path: AppRoute, pathname: string): boolean {
   if (path === '/marketplace') {
     return isMarketplaceSectionActive(pathname);
+  }
+
+  if (path === '/legal') {
+    return isLegalSectionActive(pathname);
   }
 
   if (path === '/onboarding/seller') {

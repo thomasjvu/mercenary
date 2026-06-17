@@ -116,9 +116,9 @@ pre,
 
 .app-sidebar__brand-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 6px 8px;
   width: 100%;
 }
 
@@ -132,6 +132,27 @@ pre,
   color: inherit;
   cursor: pointer;
   padding: 0;
+}
+
+.app-sidebar__version {
+  align-self: end;
+  border: 0;
+  background: transparent;
+  color: var(--rx-blue);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  padding: 0 0 0.12em;
+  text-transform: lowercase;
+  transition: color 160ms ease, opacity 160ms ease;
+}
+
+.app-sidebar__version:hover,
+.app-sidebar__version--active {
+  color: var(--accent);
 }
 
 .app-sidebar__toggle {

@@ -9,6 +9,7 @@ import {
   SIDEBAR_NAV_LINKS,
   type AppRoute,
 } from '../lib/app-routes.js';
+import { releaseChannelLabel } from '../lib/release.js';
 
 type AppTheme = 'light' | 'dark';
 
@@ -40,6 +41,14 @@ export function AppSidebar({
         <div className="app-sidebar__brand-row">
           <button className="app-sidebar__brand" onClick={() => onNavigate('/')} type="button">
             <span className="app-sidebar__title">Boss Raid</span>
+          </button>
+          <button
+            aria-current={pathname === '/changelog' ? 'page' : undefined}
+            className={`app-sidebar__version${pathname === '/changelog' ? ' app-sidebar__version--active' : ''}`}
+            onClick={() => onNavigate('/changelog')}
+            type="button"
+          >
+            {releaseChannelLabel()}
           </button>
           <button
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}

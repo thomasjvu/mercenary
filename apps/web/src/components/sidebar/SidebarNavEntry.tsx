@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  isMarketplaceSectionActive,
+  isNavGroupSectionActive,
   isSidebarNavActive,
   type AppRoute,
   type SidebarInternalNavItem,
@@ -23,7 +23,7 @@ export function SidebarNavEntry({
   onNavigate,
 }: SidebarNavEntryProps) {
   const hasChildren = Boolean(item.children?.length);
-  const sectionActive = item.path === '/marketplace' && isMarketplaceSectionActive(pathname);
+  const sectionActive = isNavGroupSectionActive(item.path, pathname);
   const [expanded, setExpanded] = useState(sectionActive);
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export function SidebarNavEntry({
         />
         <button
           aria-expanded={expanded}
-          aria-label={expanded ? 'Collapse marketplace menu' : 'Expand marketplace menu'}
+          aria-label={expanded ? `Collapse ${item.label} menu` : `Expand ${item.label} menu`}
           className="app-sidebar__group-toggle"
           onClick={() => setExpanded((open) => !open)}
           type="button"

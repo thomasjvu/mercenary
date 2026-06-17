@@ -34,7 +34,11 @@
       "purpose": "Public proof (`/receipt` redirects here)"
     },
     {
-      "path": "/terms-of-service, /privacy-policy, /acceptable-use-policy",
+      "path": "/changelog",
+      "purpose": "Product changelog"
+    },
+    {
+      "path": "/legal, /terms-of-service, /privacy-policy, /acceptable-use-policy",
       "purpose": "Legal policies"
     },
     {

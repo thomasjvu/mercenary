@@ -37,8 +37,10 @@ export function LegalPage({ kind, onNavigate }: LegalPageProps) {
   return (
     <section className="page-shell page-flat legal-page">
       <div className="legal-page__content">
-        <PageIntro title={page.title} />
-        <p className="legal-document__meta">Last updated: {page.updated}</p>
+        <header className="legal-page__header">
+          <PageIntro title={page.title} />
+          <p className="legal-document__meta">Last updated: {page.updated}</p>
+        </header>
         <Content onNavigate={onNavigate} />
       </div>
       <LegalCharacterLayer />

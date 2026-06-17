@@ -73,15 +73,6 @@ export function AppSidebarFooter({
           <Icon className="icon icon--pixel" icon="pixel:github" />
         </a>
         <a
-          aria-label="YouTube"
-          className="app-sidebar__utility-icon app-sidebar__utility-icon--social"
-          href="https://www.youtube.com/@ultima_gg"
-          rel="noreferrer"
-          target="_blank"
-        >
-          <Icon className="icon icon--pixel" icon="pixel:youtube" />
-        </a>
-        <a
           aria-label="X"
           className="app-sidebar__utility-icon app-sidebar__utility-icon--social"
           href="https://x.com/ultima_gg"
@@ -99,45 +90,16 @@ export function AppSidebarFooter({
         >
           <Icon className="icon icon--pixel" icon="pixel:threads" />
         </a>
+        <a
+          aria-label="YouTube"
+          className="app-sidebar__utility-icon app-sidebar__utility-icon--social"
+          href="https://www.youtube.com/@ultima_gg"
+          rel="noreferrer"
+          target="_blank"
+        >
+          <Icon className="icon icon--pixel" icon="pixel:youtube" />
+        </a>
       </div>
-      <nav aria-label="Legal" className="app-sidebar__legal">
-        <a
-          className="legal-footer__link"
-          href="/terms-of-service"
-          onClick={(event) => {
-            event.preventDefault();
-            onNavigate('/terms-of-service');
-          }}
-        >
-          terms
-        </a>
-        <span aria-hidden="true" className="app-sidebar__legal-sep">
-          ·
-        </span>
-        <a
-          className="legal-footer__link"
-          href="/privacy-policy"
-          onClick={(event) => {
-            event.preventDefault();
-            onNavigate('/privacy-policy');
-          }}
-        >
-          privacy
-        </a>
-        <span aria-hidden="true" className="app-sidebar__legal-sep">
-          ·
-        </span>
-        <a
-          className="legal-footer__link"
-          href="/acceptable-use-policy"
-          onClick={(event) => {
-            event.preventDefault();
-            onNavigate('/acceptable-use-policy');
-          }}
-        >
-          acceptable use
-        </a>
-      </nav>
       <p className="app-sidebar__credit">
         © 2026 Boss Raid ·{' '}
         <a href="https://ultima.gg" rel="noreferrer" target="_blank">

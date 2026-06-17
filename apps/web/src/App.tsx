@@ -29,6 +29,7 @@ import { RaidersPage } from './pages/RaidersPage';
 import { SellerOnboardingPage } from './pages/SellerOnboardingPage';
 import { HttpSellerWizardPage } from './pages/HttpSellerWizardPage';
 import { ManageOffersPage } from './pages/ManageOffersPage';
+import { ChangelogPage } from './pages/ChangelogPage';
 import { LegalPage, type LegalPageKind } from './pages/LegalPage';
 type AppTheme = 'light' | 'dark';
 
@@ -62,6 +63,7 @@ export function App() {
   const isRaidersRoute = pathname === '/raiders';
   const isLegacyReceiptRoute = pathname === '/receipt';
   const isVerificationRoute = pathname === '/verification';
+  const isChangelogRoute = pathname === '/changelog';
   const legalPageKind = readLegalPageKind(pathname);
   const playgroundMode = isPlaygroundRoute ? readPlaygroundMode(search) : 'inference';
   const usesDirectoryLayout =
@@ -220,6 +222,8 @@ export function App() {
               <AccountPage onNavigate={navigate} />
             ) : isVerificationRoute || isLegacyReceiptRoute ? (
               <ReceiptPage onNavigate={navigate} />
+            ) : isChangelogRoute ? (
+              <ChangelogPage />
             ) : legalPageKind ? (
               <LegalPage kind={legalPageKind} onNavigate={navigate} />
             ) : (
@@ -233,7 +237,7 @@ export function App() {
 }
 
 function readLegalPageKind(pathname: string): LegalPageKind | null {
-  if (pathname === '/terms-of-service') {
+  if (pathname === '/legal' || pathname === '/terms-of-service') {
     return 'terms';
   }
   if (pathname === '/privacy-policy') {

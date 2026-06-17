@@ -11,6 +11,8 @@ Canonical reference stills for Venice / Seedream generation. Use together — ne
 | `mercenary-mk0-front.png`    | Front orthographic armor read                                       |
 | `s06-hero-frame.png`         | Hero pose energy from endcard clip                                  |
 | `s01-hero-frame.png`         | Launch dash silhouette, thruster read                               |
+| `copy-x-stance-ref.png`      | Legal float pose only — Copy X wide fighting stance (not design)    |
+| `legal-float-ref.png`        | Legal float QA — dual temple spikes + palm charge shot target       |
 
 Refresh frames and copies:
 
@@ -20,7 +22,8 @@ pnpm sync:oc-references
 
 ## Must keep
 
-- Single chrome sensor horn on **right temple only**
+- Single chrome sensor horn on **right temple only** (canonical pfp / hero clips)
+- **Legal float exception (S07):** matching symmetrical chrome spike fins on **both temples** plus localized palm charge glow
 - Triple-segment horizontal visor band — **no V-fin, no twin antenna**
 - Off-center **hex** chest reactor `#fb2f38` — not a round cockpit
 - Trapezoid **wedge** shoulders with one yellow `#fff867` chevron each

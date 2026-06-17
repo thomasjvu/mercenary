@@ -1,0 +1,107 @@
+.changelog-page {
+  max-width: 68ch;
+}
+
+.changelog-page__header {
+  display: grid;
+  gap: clamp(14px, 2vw, 22px);
+  margin-bottom: clamp(32px, 4.5vw, 52px);
+  padding-bottom: clamp(24px, 3.5vw, 36px);
+  border-bottom: 1px solid var(--line);
+}
+
+.changelog-page__meta {
+  margin: 0;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.changelog-feed {
+  display: grid;
+  gap: clamp(28px, 4vw, 40px);
+}
+
+.changelog-release {
+  display: grid;
+  gap: clamp(14px, 2vw, 18px);
+  padding-bottom: clamp(24px, 3vw, 32px);
+  border-bottom: 1px solid var(--line);
+}
+
+.changelog-release:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.changelog-release__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.changelog-release__version {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.changelog-release__version-label {
+  font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.changelog-release__channel {
+  color: var(--rx-blue);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.changelog-release__date {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.changelog-release__summary {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.changelog-release__sections {
+  display: grid;
+  gap: clamp(16px, 2.2vw, 22px);
+}
+
+.changelog-release__section {
+  display: grid;
+  gap: 8px;
+}
+
+.changelog-release__section h2 {
+  margin: 0;
+  font-size: 0.92rem;
+  letter-spacing: -0.02em;
+}
+
+.changelog-release__section ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 6px;
+}
+
+.changelog-release__section li {
+  color: var(--muted);
+  line-height: 1.6;
+}

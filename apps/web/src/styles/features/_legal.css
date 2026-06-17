@@ -15,18 +15,41 @@
 
 .legal-page__character {
   position: sticky;
+  isolation: isolate;
   top: clamp(64px, 8vh, 112px);
   align-self: start;
-  width: min(100%, clamp(520px, 52vw, 680px));
+  width: min(100%, clamp(440px, 44vw, 580px));
   margin-left: auto;
-  margin-right: clamp(-12px, -1vw, 0px);
-  opacity: 0.24;
+  margin-right: clamp(-8px, -0.5vw, 0px);
+  opacity: 0.26;
   pointer-events: none;
   z-index: 0;
-  filter: saturate(0.94);
+  filter: saturate(0.96) drop-shadow(0 0 14px color-mix(in srgb, var(--rx-blue) 14%, transparent));
+}
+
+.legal-page__character-aura {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  z-index: -1;
+}
+
+.legal-page__character-aura--core {
+  inset: 28% 16% 30%;
+  background: radial-gradient(
+    ellipse at 50% 48%,
+    color-mix(in srgb, var(--rx-blue) 14%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 8%, transparent) 38%,
+    transparent 68%
+  );
+  filter: blur(12px);
+  opacity: 0.55;
+  animation: legal-aura-core 5.5s ease-in-out infinite;
 }
 
 .legal-page__character-video {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   height: auto;
@@ -35,8 +58,22 @@
 }
 
 .app-frame--theme-dark .legal-page__character {
-  opacity: 0.2;
-  filter: saturate(0.88) brightness(1.06);
+  opacity: 0.22;
+  filter: saturate(0.92) brightness(1.04)
+    drop-shadow(0 0 16px color-mix(in srgb, var(--rx-blue) 16%, transparent));
+}
+
+@keyframes legal-aura-core {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.98);
+  }
+
+  50% {
+    opacity: 0.62;
+    transform: scale(1.02);
+  }
 }
 
 @media (max-width: 1080px) {
@@ -53,11 +90,23 @@
   .legal-page__character {
     display: none;
   }
+
+  .legal-page__character-aura {
+    animation: none;
+  }
 }
 
 .legal-document {
   display: grid;
   gap: clamp(20px, 2.5vw, 28px);
+}
+
+.legal-page__header {
+  display: grid;
+  gap: clamp(14px, 2vw, 22px);
+  margin-bottom: clamp(32px, 4.5vw, 52px);
+  padding-bottom: clamp(24px, 3.5vw, 36px);
+  border-bottom: 1px solid var(--line);
 }
 
 .legal-document__meta {
@@ -142,18 +191,4 @@
 .legal-document__related a:hover,
 .legal-footer__link:hover {
   color: var(--accent);
-}
-
-.app-sidebar__legal {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-  margin: -2px 0 0;
-  font-size: 0.62rem;
-  letter-spacing: 0.04em;
-  text-transform: lowercase;
-}
-
-.app-sidebar__legal-sep {
-  color: color-mix(in srgb, var(--muted) 55%, transparent);
 }

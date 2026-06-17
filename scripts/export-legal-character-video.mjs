@@ -21,7 +21,7 @@ const result = spawnSync(
     '-i',
     source,
     '-vf',
-    'fps=24,scale=560:-2:flags=lanczos,colorkey=0xFFFFFF:0.14:0.08,format=rgba',
+    'fps=24,scale=500:-2:flags=lanczos,colorkey=0xFFFFFF:0.14:0.08,format=rgba,trim=duration=4.75,setpts=PTS-STARTPTS',
     '-an',
     '-c:v',
     'libvpx-vp9',
