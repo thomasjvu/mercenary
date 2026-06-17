@@ -4,6 +4,7 @@ export type SavedBuyerApiKey = {
   prefix: string;
   apiKey: string;
   createdAt: string;
+  spendLimitUsd?: number;
 };
 
 const STORAGE_KEY = 'bossraid.buyerApiKeys';
@@ -32,7 +33,8 @@ function readVault(): SavedBuyerApiKey[] {
         typeof entry.name === 'string' &&
         typeof entry.prefix === 'string' &&
         typeof entry.apiKey === 'string' &&
-        typeof entry.createdAt === 'string'
+        typeof entry.createdAt === 'string' &&
+        (entry.spendLimitUsd == null || typeof entry.spendLimitUsd === 'number')
     );
   } catch {
     return [];

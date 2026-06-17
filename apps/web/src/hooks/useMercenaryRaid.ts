@@ -38,6 +38,8 @@ type UseMercenaryRaidOptions = {
   providerHealth: ProviderHealth[];
   paymentEnabled: boolean;
   createFetchWithPayment?: () => Promise<typeof fetch>;
+  paymentMode?: 'wallet' | 'api_key';
+  apiKeySecret?: string;
   persistThreads?: boolean;
 };
 
@@ -46,6 +48,8 @@ export function useMercenaryRaid({
   providerHealth,
   paymentEnabled,
   createFetchWithPayment,
+  paymentMode = 'wallet',
+  apiKeySecret,
   persistThreads = true,
 }: UseMercenaryRaidOptions) {
   const initial = resolveInitialMercenaryRaidThreadState(persistThreads);
@@ -128,6 +132,7 @@ export function useMercenaryRaid({
     runtimeAttestation,
     runtimeAttestationError,
     paymentEnabled,
+    paymentMode,
   });
 
   useEffect(() => {
@@ -221,20 +226,28 @@ export function useMercenaryRaid({
     setLiveRaidRun(null);
 
     try {
-      if (!paymentEnabled) {
+      const usesApiKey = paymentMode === 'api_key' && Boolean(apiKeySecret?.trim());
+
+      if (!usesApiKey && !paymentEnabled) {
         throw new Error('Payment is not configured on this host. Enable x402 before launching.');
       }
 
-      if (!createFetchWithPayment) {
+      if (!usesApiKey && !createFetchWithPayment) {
         throw new Error(
           'Connect MetaMask and subscribe to top up account credit before launching.'
         );
       }
 
-      const fetchWithPayment = await createFetchWithPayment();
+      if (usesApiKey && !apiKeySecret?.trim()) {
+        throw new Error('Selected API key is missing its secret. Re-save the key from /account.');
+      }
+
+      const fetchWithPayment = usesApiKey ? undefined : await createFetchWithPayment?.();
       const launched = await launchPaidMercenaryRaid({
         submittedBrief,
-        maxBudgetUsd,
+        maxBudgetUsd: Math.max(maxBudgetUsd, 1),
+        paymentMode: usesApiKey ? 'api_key' : 'wallet',
+        apiKey: apiKeySecret,
         fetchWithPayment,
       });
 

@@ -154,7 +154,7 @@ pre,
   line-height: 1;
   padding: 0;
   text-transform: lowercase;
-  transform: translateY(-1px);
+  transform: translateY(0);
   transition:
     color 160ms ease,
     opacity 160ms ease;
@@ -542,9 +542,27 @@ button.app-sidebar__utility-icon {
   overflow: hidden;
 }
 
+.app-shell--receipt-route {
+  height: auto;
+  min-height: 0;
+  align-content: start;
+  grid-template-rows: auto;
+  overflow: visible;
+}
+
 .app-frame:has(.app-shell--landing) .app-main {
   height: 100dvh;
   overflow: hidden;
+}
+
+.app-frame:has(.app-shell--receipt-route) .app-main {
+  height: auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.app-frame:has(.app-shell--receipt-route:not(:has(.verification-page--loaded))) .bg-grid {
+  display: none;
 }
 
 .app-frame:has(.app-shell--landing) .bg-grid {
@@ -623,7 +641,7 @@ h2 {
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 0.46fr) minmax(0, 0.54fr);
+  grid-template-columns: minmax(0, 0.4fr) minmax(0, 0.6fr);
   gap: clamp(16px, 1.6vw, 24px);
   align-items: stretch;
   min-height: clamp(300px, 34vh, 400px);

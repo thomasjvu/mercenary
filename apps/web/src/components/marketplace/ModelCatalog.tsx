@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { InferenceMarket } from '../../api/marketplace.js';
 import {
   computeSavingsPercent,
@@ -12,64 +12,25 @@ import {
   resolveMarketBaseInputPer1mUsd,
   resolveMarketBaseOutputPer1mUsd,
 } from '../../lib/marketplace-pricing.js';
-import { FilterSearch } from '../system/FilterSearch.js';
-import { FilterSelect } from '../system/FilterSelect.js';
+import type { MarketplaceSortKey } from '../../lib/marketplace-filters.js';
 import { ProviderBrandIcon } from '../ProviderBrandIcon.js';
 import { SegmentBar } from '../system/SegmentBar.js';
 
-export type ModelSortKey = 'price' | 'sellers' | 'success' | 'latency' | 'model';
-
 type ModelCatalogProps = {
   markets: InferenceMarket[];
+  sortKey: MarketplaceSortKey;
   onOpenModel: (modelId: string) => void;
 };
 
-export function ModelCatalog({ markets, onOpenModel }: ModelCatalogProps) {
-  const [query, setQuery] = useState('');
-  const [sortKey, setSortKey] = useState<ModelSortKey>('price');
-
-  const filtered = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    const rows = markets.filter((market) => {
-      if (!normalizedQuery) {
-        return true;
-      }
-
-      return (
-        market.modelId.toLowerCase().includes(normalizedQuery) ||
-        market.modelProvider?.toLowerCase().includes(normalizedQuery) === true
-      );
-    });
-
-    return rows.sort((left, right) => compareMarkets(left, right, sortKey));
-  }, [markets, query, sortKey]);
+export function ModelCatalog({ markets, sortKey, onOpenModel }: ModelCatalogProps) {
+  const sorted = useMemo(
+    () => [...markets].sort((left, right) => compareMarkets(left, right, sortKey)),
+    [markets, sortKey]
+  );
 
   return (
     <div className="model-catalog model-catalog--cards">
-      <div className="model-catalog__toolbar">
-        <FilterSearch
-          className="field field--inline"
-          label="search models"
-          labelClassName=""
-          onChange={setQuery}
-          placeholder="gpt-5.5, claude, gemma..."
-          value={query}
-        />
-        <FilterSelect
-          className="field field--inline"
-          label="sort"
-          onChange={(value) => setSortKey(value as ModelSortKey)}
-          options={[
-            ['price', 'cheapest first'],
-            ['sellers', 'most sellers'],
-            ['success', 'success rate'],
-            ['latency', 'p50 latency'],
-            ['model', 'model id'],
-          ]}
-          value={sortKey}
-        />
-        <p className="model-catalog__count">{filtered.length} models</p>
-      </div>
+      <p className="model-catalog__count">{sorted.length} models</p>
 
       <div className="model-catalog__table-wrap">
         <table className="model-catalog__table">
@@ -87,7 +48,7 @@ export function ModelCatalog({ markets, onOpenModel }: ModelCatalogProps) {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((market) => (
+            {sorted.map((market) => (
               <ModelRow
                 key={market.modelId}
                 market={market}
@@ -99,7 +60,7 @@ export function ModelCatalog({ markets, onOpenModel }: ModelCatalogProps) {
       </div>
 
       <div className="model-catalog__cards">
-        {filtered.map((market) => (
+        {sorted.map((market) => (
           <ModelCard
             key={market.modelId}
             market={market}
@@ -240,7 +201,11 @@ function ModelCard({ market, onOpen }: { market: InferenceMarket; onOpen: () => 
   );
 }
 
-function compareMarkets(left: InferenceMarket, right: InferenceMarket, sortKey: ModelSortKey) {
+function compareMarkets(
+  left: InferenceMarket,
+  right: InferenceMarket,
+  sortKey: MarketplaceSortKey
+) {
   switch (sortKey) {
     case 'sellers':
       return (

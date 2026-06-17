@@ -172,7 +172,13 @@
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   font-size: 0.68rem;
   letter-spacing: 0.04em;
-  margin-bottom: 6px;
+  margin-top: 6px;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.mercenary-message:hover .mercenary-message__time {
+  opacity: 1;
 }
 
 .mercenary-message--user .mercenary-message__time {
@@ -1693,6 +1699,64 @@
   font-size: 0.62rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.mercenary-run-panel__payment {
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--mercenary-border, var(--line));
+}
+
+.mercenary-run-panel__payment-row {
+  display: grid;
+  grid-template-columns: minmax(68px, 0.42fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.mercenary-run-panel__payment-row > span {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mercenary-run-panel__select,
+.mercenary-run-panel__budget-input {
+  width: 100%;
+  min-height: 30px;
+  border: 1px solid var(--mercenary-border, var(--line));
+  border-radius: 8px;
+  background: var(--surface-inset);
+  color: var(--text);
+  font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.78rem;
+  padding: 0 8px;
+}
+
+.mercenary-run-panel__budget-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mercenary-run-panel__budget-field .mercenary-run-panel__budget-input {
+  flex: 1;
+}
+
+.mercenary-run-panel__payment-meta,
+.mercenary-run-panel__payment-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.mercenary-run-panel__payment-create {
+  display: grid;
+  gap: 6px;
 }
 
 .mercenary-threads {

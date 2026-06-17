@@ -104,6 +104,15 @@ export function createApiControlStateFromStore(store: ApiControlStateStore) {
       return buyerLedger.createBuyerApiKey(ctx, input);
     },
 
+    updateBuyerApiKeySpendLimit(
+      wallet: string,
+      keyId: string,
+      spendLimitUsd: number,
+      nowMs = Date.now()
+    ): BuyerApiKeyEntry | undefined {
+      return buyerLedger.updateBuyerApiKeySpendLimit(ctx, wallet, keyId, spendLimitUsd, nowMs);
+    },
+
     revokeBuyerApiKey(wallet: string, keyId: string, nowMs = Date.now()): boolean {
       return buyerLedger.revokeBuyerApiKey(ctx, wallet, keyId, nowMs);
     },

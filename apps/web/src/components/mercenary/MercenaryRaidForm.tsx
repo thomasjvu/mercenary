@@ -36,8 +36,8 @@ export function MercenaryRaidForm({
 
   function handleBudgetChange(rawValue: string) {
     const parsed = Number(rawValue);
-    if (!Number.isFinite(parsed) || parsed <= 0) {
-      onBudgetChange(DEFAULT_MERCENARY_BUDGET_USD);
+    if (!Number.isFinite(parsed) || parsed < 1) {
+      onBudgetChange(Math.max(DEFAULT_MERCENARY_BUDGET_USD, 1));
       return;
     }
 

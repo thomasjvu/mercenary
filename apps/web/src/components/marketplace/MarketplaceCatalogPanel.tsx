@@ -44,5 +44,11 @@ export function MarketplaceCatalogPanel({ state, onOpenModel }: MarketplaceCatal
     );
   }
 
-  return <ModelCatalog markets={trustFilteredMarkets} onOpenModel={onOpenModel} />;
+  return (
+    <ModelCatalog
+      markets={trustFilteredMarkets}
+      onOpenModel={onOpenModel}
+      sortKey={state.filters.sort}
+    />
+  );
 }

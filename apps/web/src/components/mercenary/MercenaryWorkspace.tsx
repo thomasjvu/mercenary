@@ -3,6 +3,7 @@ import type { Provider, ProviderHealth } from '../../api';
 import { fetchReady } from '../../api/health.js';
 import { useSmartAccountPay } from '../../hooks/useSmartAccountPay.js';
 import { useWalletAuth } from '../../hooks/useWalletAuth.js';
+import { useMercenaryPayment } from '../../hooks/useMercenaryPayment.js';
 import { useMercenaryRaid } from '../../hooks/useMercenaryRaid';
 import { MercenaryChatGate, SIGN_IN_IDLE_STATUS } from './MercenaryChatGate.js';
 import { MercenaryChatHeader } from './MercenaryChatHeader.js';
@@ -28,6 +29,7 @@ export function MercenaryWorkspace({
   });
   const walletAuth = useWalletAuth(SIGN_IN_IDLE_STATUS);
   const smartPay = useSmartAccountPay();
+  const payment = useMercenaryPayment();
   const paymentEnabled = ready.data?.payment.enabled === true;
   const isSignedIn = walletAuth.isAuthenticated;
 
@@ -36,6 +38,8 @@ export function MercenaryWorkspace({
     providerHealth,
     paymentEnabled,
     createFetchWithPayment: smartPay.createFetchWithPayment,
+    paymentMode: payment.paymentMode,
+    apiKeySecret: payment.apiKeySecret,
     persistThreads: !embedded,
   });
 
@@ -112,7 +116,21 @@ export function MercenaryWorkspace({
       <MercenaryRaidSidebar
         activeRaidStatus={mercenary.activeRaidStatus}
         activeThreadId={mercenary.activeThreadId}
+        budgetPending={payment.budgetPending}
+        budgetStatus={payment.budgetStatus}
         canLaunchLiveRaid={mercenary.canLaunchLiveRaid}
+        isLaunching={mercenary.isLaunching}
+        keyCreate={payment.keyCreate}
+        keyOptions={payment.keyOptions}
+        maxBudgetUsd={mercenary.maxBudgetUsd}
+        onMaxBudgetUsdChange={mercenary.setMaxBudgetUsd}
+        onSaveSpendLimit={() => void payment.saveSpendLimit()}
+        onSelectApiKey={payment.selectApiKey}
+        onSpendLimitDraftChange={payment.setSpendLimitDraft}
+        paymentMode={payment.paymentMode}
+        selectedApiKeyId={payment.selectedApiKeyId}
+        selectedKey={payment.selectedKey}
+        spendLimitDraft={payment.spendLimitDraft}
         highlightedSidebarSpecialists={mercenary.highlightedSidebarSpecialists}
         liveRaidRun={mercenary.liveRaidRun}
         mercenaryDecisionTrace={mercenary.mercenaryDecisionTrace}

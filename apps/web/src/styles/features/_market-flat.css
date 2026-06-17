@@ -37,6 +37,59 @@
   background: var(--surface-muted);
 }
 
+.market-page__spotlight-aside .curl-quickstart--compact .terminal-stack,
+.market-page__spotlight-aside .curl-quickstart .terminal-stack {
+  min-height: 0;
+}
+
+.market-page__spotlight-aside .terminal-window--front {
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - 18px),
+    calc(100% - 18px) 100%,
+    18px 100%,
+    0 calc(100% - 8px)
+  );
+  border-radius: 0;
+}
+
+.market-page__spotlight-aside .terminal-window {
+  border: 1px solid var(--line);
+  background: var(--code-bg);
+  box-shadow: none;
+  color: var(--text);
+}
+
+.market-page__spotlight-aside .terminal-window__head {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.market-page__spotlight-aside .code-panel {
+  max-height: 120px;
+  padding: 8px 12px;
+  border-radius: 0;
+  background: var(--code-bg);
+  color: var(--text);
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.market-page__spotlight-aside .terminal-window--raid h2,
+.market-page__spotlight-aside .terminal-window--raid .terminal-window__head .button,
+.market-page__spotlight-aside .terminal-window--raid .terminal-window__head p {
+  color: var(--muted);
+}
+
+.market-page__spotlight-aside .curl-quickstart__actions {
+  width: 100%;
+}
+
+.market-page__spotlight-aside .curl-quickstart__actions .rx-spacebar-clip {
+  width: 100%;
+}
+
 .market-page__spotlight .featured-models__grid--spotlight {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
@@ -161,13 +214,13 @@
   background: transparent;
 }
 
-  .market-page .featured-models__card + .featured-models__card {
-    border-left: 1px solid var(--line);
-  }
+.market-page .featured-models__card + .featured-models__card {
+  border-left: 1px solid var(--line);
+}
 
-  .market-filters__row {
-    grid-template-columns: 1fr;
-  }
+.market-filters__row {
+  grid-template-columns: 1fr;
+}
 
 .market-page .featured-models__card:hover {
   background: var(--accent-surface);
@@ -219,10 +272,11 @@
   display: grid;
   gap: 14px;
   padding: 16px;
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--rx-blue) 72%, var(--line));
   border-radius: 12px;
-  background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
-  backdrop-filter: blur(8px);
+  background: var(--rx-blue);
+  color: var(--on-blue);
+  box-shadow: 0 14px 28px color-mix(in srgb, var(--rx-blue) 28%, transparent);
 }
 
 .market-filters__head {
@@ -238,12 +292,13 @@
   font-size: 0.92rem;
   font-weight: 600;
   letter-spacing: -0.02em;
+  color: inherit;
 }
 
 .market-filters__reset {
   border: 0;
   background: transparent;
-  color: var(--rx-blue);
+  color: var(--on-blue);
   cursor: pointer;
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   font-size: 0.68rem;
@@ -259,7 +314,7 @@
 }
 
 .market-filters__search-label {
-  color: var(--muted);
+  color: color-mix(in srgb, var(--on-blue) 72%, transparent);
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   font-size: 0.64rem;
   letter-spacing: 0.08em;
@@ -269,7 +324,7 @@
 .market-filters__search input {
   width: 100%;
   min-height: 40px;
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--on-blue) 28%, transparent);
   border-radius: 999px;
   background: var(--surface-inset);
   color: var(--text);
@@ -293,7 +348,7 @@
 }
 
 .market-filters__group-label {
-  color: var(--muted);
+  color: color-mix(in srgb, var(--on-blue) 72%, transparent);
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   font-size: 0.64rem;
   letter-spacing: 0.08em;
@@ -308,10 +363,10 @@
 
 .market-filters__chip {
   min-height: 28px;
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--on-blue) 36%, transparent);
   border-radius: 999px;
-  background: transparent;
-  color: var(--muted);
+  background: color-mix(in srgb, var(--on-blue) 8%, transparent);
+  color: color-mix(in srgb, var(--on-blue) 82%, transparent);
   cursor: pointer;
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   font-size: 0.68rem;
@@ -325,14 +380,14 @@
 }
 
 .market-filters__chip:hover {
-  border-color: var(--line-strong);
-  color: var(--text);
+  border-color: color-mix(in srgb, var(--on-blue) 58%, transparent);
+  color: var(--on-blue);
 }
 
 .market-filters__chip--active {
-  border-color: color-mix(in srgb, var(--rx-blue) 48%, var(--line));
-  background: color-mix(in srgb, var(--rx-blue) 10%, transparent);
-  color: var(--text);
+  border-color: var(--on-blue);
+  background: var(--on-blue);
+  color: var(--rx-blue);
 }
 
 .market-filters__row {
@@ -348,7 +403,7 @@
 }
 
 .market-filters__field > span {
-  color: var(--muted);
+  color: color-mix(in srgb, var(--on-blue) 72%, transparent);
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   font-size: 0.64rem;
   letter-spacing: 0.08em;
@@ -359,7 +414,7 @@
 .market-filters__field select {
   width: 100%;
   min-height: 34px;
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--on-blue) 28%, transparent);
   border-radius: 8px;
   background: var(--surface-inset);
   color: var(--text);
@@ -373,13 +428,13 @@
 }
 
 .market-filters__advanced {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid color-mix(in srgb, var(--on-blue) 24%, transparent);
   padding-top: 10px;
 }
 
 .market-filters__advanced summary {
   cursor: pointer;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--on-blue) 72%, transparent);
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
   font-size: 0.68rem;
   letter-spacing: 0.06em;
@@ -399,7 +454,7 @@
 
 .market-filters__note {
   margin: 0;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--on-blue) 72%, transparent);
   font-size: 0.72rem;
   line-height: 1.45;
 }
@@ -430,13 +485,8 @@
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
 }
 
-.market-page .model-catalog__toolbar {
-  margin-bottom: 0;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--line);
-}
-
 .market-page .model-catalog__count {
+  margin: 0 0 10px;
   font-size: 0.74rem;
   letter-spacing: 0.04em;
 }
@@ -474,7 +524,6 @@
 .market-page .model-catalog__savings span {
   color: var(--rx-red);
 }
-
 
 @media (max-width: 1100px) {
   .market-page .featured-models__card + .featured-models__card {

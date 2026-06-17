@@ -90,7 +90,14 @@ Rate-card changes affect future quotes only. Settlement uses the immutable quote
 
 ## Payout
 
-Successful providers split escrow equally. Multi-agent raids use the default payout threshold (`$0.25`). Single-provider discount inference settles down to `$0.01`. No winner/runner-up logic.
+Successful providers split escrow equally. Invalid or rejected work gets $0. No winner/runner-up logic.
+
+| Lane                                 | Minimum payout                                         |
+| ------------------------------------ | ------------------------------------------------------ |
+| Multi-agent raids                    | `$0.25` default (`BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD`) |
+| Discount inference (single provider) | `$0.01`                                                |
+
+Onchain payouts require `BOSSRAID_SETTLEMENT_MODE=onchain`, a funded settlement treasury, and `BOSSRAID_SETTLEMENT_FUND_JOBS=true` in production. Full rules: [reference/payments.md](../reference/payments.md#payouts-sellers).
 
 Track earnings: `GET /v1/seller/earnings`, dashboard at `/account`.
 

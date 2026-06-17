@@ -30,6 +30,8 @@ import { SellerOnboardingPage } from './pages/SellerOnboardingPage';
 import { HttpSellerWizardPage } from './pages/HttpSellerWizardPage';
 import { ManageOffersPage } from './pages/ManageOffersPage';
 import { ChangelogPage } from './pages/ChangelogPage';
+import { ChangelogReleasePage } from './pages/ChangelogReleasePage';
+import { readChangelogVersion } from './lib/changelog.js';
 import { LegalPage, type LegalPageKind } from './pages/LegalPage';
 type AppTheme = 'light' | 'dark';
 
@@ -63,7 +65,9 @@ export function App() {
   const isRaidersRoute = pathname === '/raiders';
   const isLegacyReceiptRoute = pathname === '/receipt';
   const isVerificationRoute = pathname === '/verification';
-  const isChangelogRoute = pathname === '/changelog';
+  const changelogVersion = readChangelogVersion(pathname);
+  const isChangelogIndexRoute = pathname === '/changelog';
+  const isChangelogReleaseRoute = changelogVersion !== null;
   const legalPageKind = readLegalPageKind(pathname);
   const playgroundMode = isPlaygroundRoute ? readPlaygroundMode(search) : 'inference';
   const usesDirectoryLayout =
@@ -221,8 +225,10 @@ export function App() {
             ) : isAccountRoute ? (
               <AccountPage onNavigate={navigate} />
             ) : isVerificationRoute || isLegacyReceiptRoute ? (
-              <ReceiptPage onNavigate={navigate} />
-            ) : isChangelogRoute ? (
+              <ReceiptPage />
+            ) : isChangelogReleaseRoute && changelogVersion ? (
+              <ChangelogReleasePage version={changelogVersion} />
+            ) : isChangelogIndexRoute ? (
               <ChangelogPage />
             ) : legalPageKind ? (
               <LegalPage kind={legalPageKind} onNavigate={navigate} />

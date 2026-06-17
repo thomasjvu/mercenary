@@ -2,6 +2,7 @@ import { Icon } from '@iconify/react';
 import { FlowSection } from '../components/system/FlowSection.js';
 import { FormInput, FormStatus } from '../components/system/FormField.js';
 import { PageIntro } from '../components/system/PageIntro.js';
+import { PaymentFeesCallout } from '../components/system/PaymentFeesCallout.js';
 import { WalletGate } from '../components/system/WalletGate.js';
 import { CurlQuickstart } from '../components/terminal/CurlQuickstart.js';
 import { useBuyerApiKeyOnboarding } from '../hooks/useBuyerApiKeyOnboarding.js';
@@ -14,6 +15,7 @@ export function BuyerOnboardingPage() {
       <PageIntro title="Buy inference" />
 
       <WalletGate />
+      <PaymentFeesCallout role="buyer" />
 
       <div className="buyer-page__layout">
         <div className="buyer-page__main">

@@ -33,6 +33,7 @@ export function useBuyerApiKeyCreate({
         prefix: created.key.prefix,
         apiKey: created.apiKey,
         createdAt: created.key.createdAt,
+        spendLimitUsd: created.key.spendLimitUsd,
       });
       setCreatedKey(created.apiKey);
       await onCreated?.(created.apiKey);

@@ -50,11 +50,15 @@
 }
 
 .app-frame--theme-dark .app-shell--landing .hero__slice::before {
-  filter: saturate(0.84) contrast(1.02) brightness(0.9);
+  filter: saturate(0.92) contrast(1.04) brightness(0.94);
 }
 
-.app-frame--theme-dark .app-shell--landing .hero__image-set:hover .hero__slice::before {
-  filter: saturate(0.88) contrast(1.04) brightness(0.94);
+.app-frame--theme-dark .app-shell--landing .hero__slice::after {
+  filter: saturate(0) contrast(1.08) brightness(0.9);
+}
+
+.app-frame--theme-dark .app-shell--landing .hero__image-set:hover .hero__slice::after {
+  filter: saturate(0) contrast(1.12) brightness(0.94);
 }
 
 .app-frame--theme-dark .app-shell--landing .hero__eye-glow {

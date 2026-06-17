@@ -1,19 +1,7 @@
 import { buildApiUrl } from './client.js';
 import type { ChatCompletionResponse } from './raid.js';
 
-export async function requestPaidChatCompletion(
-  fetchWithPayment: typeof fetch,
-  payload: unknown,
-  apiBase: string
-): Promise<ChatCompletionResponse> {
-  const response = await fetchWithPayment(buildApiUrl('/v1/chat/completions', apiBase), {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
-
+async function parseChatCompletionResponse(response: Response): Promise<ChatCompletionResponse> {
   const text = await response.text();
   const data = text.length > 0 ? (JSON.parse(text) as ChatCompletionResponse) : undefined;
 
@@ -30,4 +18,37 @@ export async function requestPaidChatCompletion(
   }
 
   return data;
+}
+
+export async function requestApiKeyChatCompletion(
+  apiKey: string,
+  payload: unknown,
+  apiBase: string
+): Promise<ChatCompletionResponse> {
+  const response = await fetch(buildApiUrl('/v1/chat/completions', apiBase), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${apiKey.trim()}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseChatCompletionResponse(response);
+}
+
+export async function requestPaidChatCompletion(
+  fetchWithPayment: typeof fetch,
+  payload: unknown,
+  apiBase: string
+): Promise<ChatCompletionResponse> {
+  const response = await fetchWithPayment(buildApiUrl('/v1/chat/completions', apiBase), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseChatCompletionResponse(response);
 }

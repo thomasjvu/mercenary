@@ -6,7 +6,7 @@ import {
   type ChatCompletionResponse,
   type RaidSpawnOutput,
 } from '../api';
-import { requestPaidChatCompletion } from '../api/paid-chat.js';
+import { requestApiKeyChatCompletion, requestPaidChatCompletion } from '../api/paid-chat.js';
 import { API_BASE } from '../api/client.js';
 import { isTerminalRaidStatus, readErrorMessage } from '../mercenary-format';
 import {
@@ -19,15 +19,17 @@ import {
 export async function launchPaidMercenaryRaid(input: {
   submittedBrief: string;
   maxBudgetUsd: number;
-  fetchWithPayment: typeof fetch;
+  paymentMode: 'wallet' | 'api_key';
+  apiKey?: string;
+  fetchWithPayment?: typeof fetch;
 }): Promise<LiveRaidRun> {
   const startedAtMs = Date.now();
+  const payload = buildMercenaryChatCompletionPayload(input.submittedBrief, input.maxBudgetUsd);
 
-  const chatCompletion = await requestPaidChatCompletion(
-    input.fetchWithPayment,
-    buildMercenaryChatCompletionPayload(input.submittedBrief, input.maxBudgetUsd),
-    API_BASE
-  );
+  const chatCompletion =
+    input.paymentMode === 'api_key'
+      ? await requestApiKeyChatCompletion(input.apiKey ?? '', payload, API_BASE)
+      : await requestPaidChatCompletion(input.fetchWithPayment ?? fetch, payload, API_BASE);
   const directResponse = !chatCompletion.raid;
   const spawn =
     buildSpawnFromChatCompletion(chatCompletion) ?? buildDirectChatSpawn(chatCompletion);

@@ -9,6 +9,27 @@ export const MERCENARY_ORCHESTRATOR = {
   specializations: ['orchestration', 'raid routing', 'receipt synthesis'],
 } as const;
 
+export type PipelineOrchestrator = {
+  id: string;
+  displayName: string;
+  status: 'in pipeline';
+};
+
+export const PIPELINE_ORCHESTRATORS: readonly PipelineOrchestrator[] = [
+  { id: 'orchestrator-v2', displayName: '???', status: 'in pipeline' },
+  { id: 'orchestrator-v3', displayName: '???', status: 'in pipeline' },
+  { id: 'orchestrator-v4', displayName: '???', status: 'in pipeline' },
+];
+
+export function isMercenaryOrchestratorProvider(provider: Provider): boolean {
+  const haystack = [provider.providerId, provider.agentId, provider.displayName]
+    .filter((value): value is string => typeof value === 'string' && value.length > 0)
+    .join(' ')
+    .toLowerCase();
+
+  return haystack.includes('mercenary');
+}
+
 export function isOrchestratorProvider(provider: Provider): boolean {
   const haystack = [
     provider.providerId,

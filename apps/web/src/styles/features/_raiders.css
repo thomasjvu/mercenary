@@ -114,6 +114,18 @@
   border-top: 2px solid var(--rx-blue);
 }
 
+.orchestrator-card--preview {
+  opacity: 0.78;
+}
+
+.orchestrator-card__status {
+  color: var(--rx-blue);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .orchestrator-card__copy {
   display: grid;
   gap: 4px;

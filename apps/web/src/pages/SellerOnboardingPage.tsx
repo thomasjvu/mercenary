@@ -9,6 +9,7 @@ import { SellerDemandPanel } from '../components/seller/SellerDemandPanel.js';
 import { SellerOffersPanel } from '../components/seller/SellerOffersPanel.js';
 import { SellerPublishSuccessPanel } from '../components/seller/SellerPublishSuccessPanel.js';
 import { SellerSavedConfigsPanel } from '../components/seller/SellerSavedConfigsPanel.js';
+import { PaymentFeesCallout } from '../components/system/PaymentFeesCallout.js';
 import { WalletGate } from '../components/system/WalletGate.js';
 import { PageIntro } from '../components/system/PageIntro.js';
 import { useSellerUpstreamOnboarding } from '../hooks/useSellerUpstreamOnboarding.js';
@@ -36,6 +37,7 @@ export function SellerOnboardingPage({ onNavigate }: SellerOnboardingPageProps) 
       />
 
       <WalletGate message="Connect wallet before selling inference." />
+      <PaymentFeesCallout role="seller" />
 
       <div className="sell-dashboard">
         <div className="sell-dashboard__summary">

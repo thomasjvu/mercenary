@@ -1,37 +1,58 @@
-import { ReceiptEmptyState } from '../components/receipt/ReceiptEmptyState.js';
 import { ReceiptLoadedDashboard } from '../components/receipt/ReceiptLoadedDashboard.js';
 import { ReceiptLoadError } from '../components/receipt/ReceiptLoadError.js';
-import { ReceiptPageHero } from '../components/receipt/ReceiptPageHero.js';
 import { ReceiptQueryForm } from '../components/receipt/ReceiptQueryForm.js';
+import { VerificationBackdrop } from '../components/receipt/VerificationBackdrop.js';
 import { useReceiptPage } from '../hooks/useReceiptPage.js';
-import type { AppRoute } from '../lib/app-routes.js';
 
-type ReceiptPageProps = {
-  onNavigate: (path: AppRoute, options?: { mode?: 'inference' | 'raid' }) => void;
-};
-
-export function ReceiptPage({ onNavigate }: ReceiptPageProps) {
+export function ReceiptPage() {
   const state = useReceiptPage();
   const hasLoadError = Boolean(state.status.error || state.result.error);
   const showDashboard = Boolean(state.activeQuery && !hasLoadError);
 
   return (
-    <section className="receipt-shell receipt-shell--viewport" id="receipt">
-      <ReceiptPageHero onNavigate={onNavigate} state={state} />
+    <section
+      className={`verification-page${showDashboard ? ' verification-page--loaded' : ''}`}
+      id="receipt"
+    >
+      <VerificationBackdrop />
 
-      <ReceiptQueryForm
-        formError={state.formError}
-        onRaidIdChange={state.setRaidIdInput}
-        onSubmit={state.handleLoadReceipt}
-        onTokenChange={state.setTokenInput}
-        raidIdInput={state.raidIdInput}
-        tokenInput={state.tokenInput}
-      />
+      <div className="verification-page__content">
+        <div className="verification-terminal verification-terminal--sleek">
+          <article className="verification-terminal__window">
+            <ReceiptQueryForm
+              compact
+              formError={state.formError}
+              onRaidIdChange={state.setRaidIdInput}
+              onSubmit={state.handleLoadReceipt}
+              onTokenChange={state.setTokenInput}
+              raidIdInput={state.raidIdInput}
+              terminal
+              tokenInput={state.tokenInput}
+            />
 
-      <div className="receipt-shell__body">
-        {!state.activeQuery ? <ReceiptEmptyState onNavigate={onNavigate} state={state} /> : null}
-        {hasLoadError ? <ReceiptLoadError state={state} /> : null}
-        {showDashboard ? <ReceiptLoadedDashboard state={state} /> : null}
+            {state.activeQuery && !hasLoadError ? (
+              <div className="verification-terminal__meta">
+                <span className="verification-terminal__status">{state.currentReceiptStatus}</span>
+                <button
+                  className="button"
+                  disabled={!state.activeQuery}
+                  onClick={state.handleCopyLink}
+                  type="button"
+                >
+                  {state.shareCopied ? 'copied' : 'copy link'}
+                </button>
+              </div>
+            ) : null}
+
+            {hasLoadError ? <ReceiptLoadError compact state={state} /> : null}
+          </article>
+        </div>
+
+        {showDashboard ? (
+          <div className="verification-page__results">
+            <ReceiptLoadedDashboard state={state} />
+          </div>
+        ) : null}
       </div>
     </section>
   );

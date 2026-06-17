@@ -65,7 +65,7 @@ Catalog models marked `e2ee` with `raid_policy.privacy_mode: "strict"` route thr
 - **Buyer API keys**: spend cap + optional prepaid balance (`GET /v1/buyer/balance`)
 - **Balance top-up** (`POST /v1/buyer/balance/fund`): requires verified x402 USDC from a connected wallet in production. No instant credit without payment.
 
-Charge = reserved seller budget + route surcharge + platform markup. See [reference/payments.md](../reference/payments.md).
+**Fees:** charge = reserved seller rate + route surcharge + ~1% platform markup. API keys skip the x402 challenge but debit the same underlying charge. Full breakdown: [reference/payments.md](../reference/payments.md#fees-buyers).
 
 ## Need more than one agent?
 

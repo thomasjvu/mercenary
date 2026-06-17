@@ -27,6 +27,7 @@ type MercenaryRaidViewStateInput = {
   runtimeAttestation: AttestedEnvelope<AttestedRuntimePayload> | null;
   runtimeAttestationError: string | null;
   paymentEnabled: boolean;
+  paymentMode?: 'wallet' | 'api_key';
 };
 
 export function buildMercenaryRaidViewState({
@@ -40,6 +41,7 @@ export function buildMercenaryRaidViewState({
   runtimeAttestation,
   runtimeAttestationError,
   paymentEnabled,
+  paymentMode = 'wallet',
 }: MercenaryRaidViewStateInput) {
   const providerById = new Map(providers.map((provider) => [provider.providerId, provider]));
   const healthByProviderId = new Map(providerHealth.map((entry) => [entry.providerId, entry]));
@@ -47,13 +49,17 @@ export function buildMercenaryRaidViewState({
     (entry) => entry.reachable && entry.ready
   ).length;
   const hostedProviderCount = providerHealth.length > 0 ? providerHealth.length : providers.length;
-  const availabilityLabel = !paymentEnabled
+  const paymentReady = paymentEnabled || paymentMode === 'api_key';
+  const availabilityLabel = !paymentReady
     ? 'Payment not configured'
-    : hostedProviderCount > 0
-      ? `${readyProviderCount}/${hostedProviderCount} specialists ready`
-      : 'Checking specialists';
-  const canLaunchLiveRaid =
-    paymentEnabled && (providerHealth.length === 0 || readyProviderCount > 0);
+    : paymentMode === 'api_key'
+      ? hostedProviderCount > 0
+        ? `${readyProviderCount}/${hostedProviderCount} specialists ready · API key`
+        : 'Checking specialists · API key'
+      : hostedProviderCount > 0
+        ? `${readyProviderCount}/${hostedProviderCount} specialists ready`
+        : 'Checking specialists';
+  const canLaunchLiveRaid = paymentReady && (providerHealth.length === 0 || readyProviderCount > 0);
   const canSendBrief = raidBrief.trim().length > 0 && !isLaunching && canLaunchLiveRaid;
   const activeRaidStatus = liveRaidRun?.status?.status ?? liveRaidRun?.spawn.status;
   const raidIsTerminal = activeRaidStatus ? isTerminalRaidStatus(activeRaidStatus) : false;

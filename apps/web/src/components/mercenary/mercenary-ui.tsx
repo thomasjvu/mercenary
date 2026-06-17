@@ -25,12 +25,12 @@ export function ChatMessage({
       }`}
     >
       <div className="mercenary-message__body">
+        <div className="mercenary-message__bubble">{children}</div>
         {timestamp ? (
           <time className="mercenary-message__time" dateTime={timestamp}>
             {formatTimestamp(timestamp)}
           </time>
         ) : null}
-        <div className="mercenary-message__bubble">{children}</div>
       </div>
     </article>
   );

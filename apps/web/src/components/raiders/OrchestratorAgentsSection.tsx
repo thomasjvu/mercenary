@@ -1,4 +1,4 @@
-import { MERCENARY_ORCHESTRATOR } from '../../lib/orchestrators.js';
+import { MERCENARY_ORCHESTRATOR, PIPELINE_ORCHESTRATORS } from '../../lib/orchestrators.js';
 import type { RaiderRecord } from '../../lib/raiders.js';
 import type { AppRoute } from '../../lib/app-routes.js';
 
@@ -19,7 +19,6 @@ export function OrchestratorAgentsSection({
           <div className="orchestrator-card__copy">
             <strong>{MERCENARY_ORCHESTRATOR.displayName}</strong>
             <span>{MERCENARY_ORCHESTRATOR.id}</span>
-            <p>{MERCENARY_ORCHESTRATOR.description}</p>
           </div>
         </article>
         {orchestratorRaiders.map((raider) => (
@@ -27,7 +26,6 @@ export function OrchestratorAgentsSection({
             <div className="orchestrator-card__copy">
               <strong>{raider.provider.displayName}</strong>
               <span>{raider.provider.providerId}</span>
-              <p>{raider.provider.description ?? 'Registered orchestrator agent.'}</p>
             </div>
             <button
               className="button"
@@ -40,6 +38,15 @@ export function OrchestratorAgentsSection({
             >
               try
             </button>
+          </article>
+        ))}
+        {PIPELINE_ORCHESTRATORS.map((agent) => (
+          <article className="orchestrator-card orchestrator-card--preview" key={agent.id}>
+            <div className="orchestrator-card__copy">
+              <strong>{agent.displayName}</strong>
+              <span>{agent.id}</span>
+              <span className="orchestrator-card__status">{agent.status}</span>
+            </div>
           </article>
         ))}
       </div>

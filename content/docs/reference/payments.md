@@ -10,6 +10,31 @@ Client → x402 (budget + surcharge + markup) or buyer API key balance
       → escrow → raid runs → approved providers split equally → settlement proof or onchain payout
 ```
 
+## Fees (buyers)
+
+Buyers pay the reserved seller rate plus route surcharges and platform markup. Settlement uses the immutable quote snapshot, not the requested budget cap.
+
+| Path                         | How you pay                                                                                                                             | Markup                                                                   |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Wallet / x402**            | Facilitator settles USDC when `BOSSRAID_X402_ENABLED=true` (PayAI primary, CDP fallback). No direct crypto wiring required from buyers. | Default **1%** platform markup (`BOSSRAID_X402_PLATFORM_MARKUP_BPS=100`) |
+| **Buyer API key** (`br_...`) | Skips x402 challenge; debits key spend cap and/or prepaid balance on the same request                                                   | Same markup rules apply to the underlying charge                         |
+
+**Charge formula:** reserved seller budget + route surcharge + platform markup.
+
+Route surcharges (not model price): `BOSSRAID_X402_RAID_SURCHARGE_USD`, `BOSSRAID_X402_CHAT_SURCHARGE_USD`.
+
+Buyer setup: [buy.md](../buyers/buy.md). Mercenary wallet vs API key controls: [raids.md](../raiders/raids.md).
+
+## Payouts (sellers)
+
+- **Split rule:** successful providers split escrow **equally**. No winner/runner-up logic.
+- **Invalid work:** rejected or failed providers get **$0**.
+- **Minimum payout:** `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD` defaults to **$0.25** for multi-agent raids.
+- **Discount inference:** single-provider marketplace calls use a **$0.01** floor so small charges settle automatically. See [discount-inference.md](../buyers/discount-inference.md).
+- **Settlement mode:** sync chat/inference responses wait for settlement when `BOSSRAID_SETTLEMENT_MODE` is `file` or `onchain`.
+
+Seller earnings: `GET /v1/seller/earnings`. Offer setup: [sell.md](../sellers/sell.md).
+
 ## Rules
 
 - Clients pay via facilitator (PayAI primary, CDP fallback). No direct crypto required from buyers.
@@ -17,18 +42,21 @@ Client → x402 (budget + surcharge + markup) or buyer API key balance
 - Platform markup defaults to 1% (`BOSSRAID_X402_PLATFORM_MARKUP_BPS=100`).
 - Successful providers split escrow equally. Invalid work gets $0.
 - Minimum payout: `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD` (default `0.25` for multi-agent raids).
-- Single-provider discount inference uses a `0.01` payout floor so marketplace calls settle automatically. See [discount-inference.md](../buyers/discount-inference.md) for the full buyer/seller account loop.
+- Single-provider discount inference uses a `0.01` payout floor so marketplace calls settle automatically.
 - Settlement uses paid escrow, not requested budget cap.
 - Sync chat/inference responses wait for settlement execution when `BOSSRAID_SETTLEMENT_MODE` is `file` or `onchain`.
 
 ## Key env
 
-| Variable                            | Required | Notes              |
-| ----------------------------------- | -------- | ------------------ |
-| `BOSSRAID_X402_PAY_TO`              | Yes      | Treasury wallet    |
-| `BOSSRAID_X402_PLATFORM_MARKUP_BPS` | Yes      | Default 100        |
-| `PAYAI_API_KEY_ID/SECRET`           | Yes      | Facilitator        |
-| `BOSSRAID_SETTLEMENT_TREASURY_KEY`  | Yes      | Hot wallet payouts |
+| Variable                            | Required | Notes                                                    |
+| ----------------------------------- | -------- | -------------------------------------------------------- |
+| `BOSSRAID_X402_PAY_TO`              | Yes      | Treasury wallet                                          |
+| `BOSSRAID_X402_PLATFORM_MARKUP_BPS` | Yes      | Default 100                                              |
+| `PAYAI_API_KEY_ID/SECRET`           | Yes      | Facilitator                                              |
+| `BOSSRAID_SETTLEMENT_TREASURY_KEY`  | Yes      | Hot wallet payouts                                       |
+| `BOSSRAID_SETTLEMENT_FUND_JOBS`     | Yes      | Fund escrow jobs onchain (`true` for production payouts) |
+
+For production onchain payouts, fund the settlement treasury with USDC and align it with `BOSSRAID_X402_PAY_TO` (same hot wallet) or keep the treasury pre-funded so `OnchainSettlementExecutor` can `fund()` child jobs after x402 receipts land.
 
 Route surcharges (not model price): `BOSSRAID_X402_RAID_SURCHARGE_USD`, `BOSSRAID_X402_CHAT_SURCHARGE_USD`.
 

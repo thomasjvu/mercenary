@@ -66,6 +66,31 @@ test('public wallet auth creates a session and buyer API keys are hashed and rev
     assert.equal(listed.json().data.length, 1);
     assert.equal(listed.json().data[0].prefix, created.json().key.prefix);
 
+    const patched = await app.inject({
+      method: 'PATCH',
+      url: `/v1/buyer/api-keys/${created.json().key.id}`,
+      headers: {
+        cookie: session.cookie,
+      },
+      payload: {
+        spendLimitUsd: 5,
+      },
+    });
+    assert.equal(patched.statusCode, 200);
+    assert.equal(patched.json().key.spendLimitUsd, 5);
+
+    const belowMinimum = await app.inject({
+      method: 'PATCH',
+      url: `/v1/buyer/api-keys/${created.json().key.id}`,
+      headers: {
+        cookie: session.cookie,
+      },
+      payload: {
+        spendLimitUsd: 0,
+      },
+    });
+    assert.equal(belowMinimum.statusCode, 400);
+
     const revoked = await app.inject({
       method: 'DELETE',
       url: `/v1/buyer/api-keys/${created.json().key.id}`,

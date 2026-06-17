@@ -21,7 +21,7 @@
 .app-shell--landing .receipt-card,
 .app-shell--landing .workflow-panel,
 .app-shell--landing .workflow-note-panel,
-.app-shell--landing .info-panel {
+.app-shell--landing .info-panel:not(.info-panel--landing-flow) {
   border: 0;
   border-top: 1px solid var(--line);
   border-radius: 0;

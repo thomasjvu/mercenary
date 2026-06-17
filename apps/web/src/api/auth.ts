@@ -66,6 +66,19 @@ export async function deleteBuyerApiKey(keyId: string): Promise<{ revoked: boole
   });
 }
 
+export async function updateBuyerApiKey(
+  keyId: string,
+  payload: { spendLimitUsd: number }
+): Promise<{ key: BuyerApiKey }> {
+  return fetchJson<{ key: BuyerApiKey }>(`/v1/buyer/api-keys/${encodeURIComponent(keyId)}`, {
+    method: 'PATCH',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function listSellerProviders(): Promise<{ object: 'list'; data: Provider[] }> {
   return fetchJson<{ object: 'list'; data: Provider[] }>('/v1/seller/providers');
 }

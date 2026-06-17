@@ -4,7 +4,7 @@ import { OrchestratorAgentsSection } from '../components/raiders/OrchestratorAge
 import { SpecialistRaidersSection } from '../components/raiders/SpecialistRaidersSection.js';
 import type { AppRoute } from '../lib/app-routes.js';
 import { buildRaiderRecord, summarizeRaiderDirectory } from '../lib/raiders';
-import { partitionRaiders } from '../lib/orchestrators.js';
+import { isMercenaryOrchestratorProvider, partitionRaiders } from '../lib/orchestrators.js';
 import { useRaidersDirectory } from '../lib/use-raiders-directory.js';
 
 type RaidersPageProps = {
@@ -19,9 +19,9 @@ export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPa
   const specialistRaiders = specialists.map((provider) =>
     buildRaiderRecord(provider, healthMap.get(provider.providerId))
   );
-  const orchestratorRaiders = orchestrators.map((provider) =>
-    buildRaiderRecord(provider, healthMap.get(provider.providerId))
-  );
+  const orchestratorRaiders = orchestrators
+    .filter((provider) => !isMercenaryOrchestratorProvider(provider))
+    .map((provider) => buildRaiderRecord(provider, healthMap.get(provider.providerId)));
   const { state, filteredRaiders, patchState, reset, isActive } =
     useRaidersDirectory(specialistRaiders);
   const summary = summarizeRaiderDirectory(specialistRaiders);

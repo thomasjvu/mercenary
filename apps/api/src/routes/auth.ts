@@ -119,10 +119,13 @@ export function registerAuthRoutes(
     const name = ensureOptionalStringInput(input.name, 'buyer_api_key.name') ?? 'Default key';
     const requestedSpendLimit =
       input.spendLimitUsd == null && input.spend_limit_usd == null
-        ? buyerKeyDefaultSpendLimitUsd
-        : ensurePositiveNumberInput(
-            input.spendLimitUsd ?? input.spend_limit_usd,
-            'buyer_api_key.spend_limit_usd'
+        ? Math.max(buyerKeyDefaultSpendLimitUsd ?? 1, 1)
+        : Math.max(
+            1,
+            ensurePositiveNumberInput(
+              input.spendLimitUsd ?? input.spend_limit_usd,
+              'buyer_api_key.spend_limit_usd'
+            )
           );
     const rawKey = `br_${randomBytes(24).toString('base64url')}`;
     const key = controlState.createBuyerApiKey({
@@ -151,6 +154,49 @@ export function registerAuthRoutes(
       return { error: 'not_found' };
     }
     return { revoked: true };
+  });
+
+  app.patch('/v1/buyer/api-keys/:keyId', async (request, reply) => {
+    const session = requirePublicSession(reply, request.headers);
+    if ('error' in session) {
+      return session;
+    }
+
+    const keyId = (request.params as { keyId: string }).keyId;
+    const input = ensureRecordInput(request.body, 'buyer_api_key');
+    const spendLimitUsd = Math.max(
+      1,
+      ensurePositiveNumberInput(
+        input.spendLimitUsd ?? input.spend_limit_usd,
+        'buyer_api_key.spend_limit_usd'
+      )
+    );
+
+    const existing = controlState
+      .listBuyerApiKeys(session.wallet)
+      .find((key) => key.id === keyId && key.status === 'active');
+    if (!existing) {
+      reply.code(404);
+      return { error: 'not_found' };
+    }
+
+    if (spendLimitUsd < existing.spentUsd) {
+      reply.code(400);
+      return {
+        error: 'spend_limit_below_spent',
+        message: 'API key spend limit cannot be lower than amount already spent.',
+      };
+    }
+
+    const updated = controlState.updateBuyerApiKeySpendLimit(session.wallet, keyId, spendLimitUsd);
+    if (!updated) {
+      reply.code(404);
+      return { error: 'not_found' };
+    }
+
+    return {
+      key: sanitizeBuyerApiKey(updated),
+    };
   });
 
   app.post('/v1/auth/agent-session', async (request, reply) => {

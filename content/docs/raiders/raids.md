@@ -53,7 +53,18 @@ Low-signal greetings on chat may get a direct Mercenary reply with no raid opene
 
 ## Mercenary (hosted)
 
-`/mercenary` and `/playground` require a signed-in wallet session before Mercenary launches. The API enforces this on `POST /v1/raid`, `POST /v1/chat/completions`, and `POST /v1/inference/chat/completions` (buyer API key or mana billing headers also satisfy the gate). Paid launches still flow through x402 when `GET /ready` reports `payment.enabled`. Connect wallet and sign in before launching.
+`/mercenary` and `/playground` require a signed-in wallet session before Mercenary launches. The API enforces this on `POST /v1/raid`, `POST /v1/chat/completions`, and `POST /v1/inference/chat/completions` (buyer API key or mana billing headers also satisfy the gate).
+
+On `/mercenary`, the sidebar run panel shows status, attestation, and payment controls:
+
+- **Wallet credit** (default) — paid launches flow through x402 when `GET /ready` reports `payment.enabled`.
+- **API key** — pick a saved `br_...` key to skip x402; debits key spend cap and/or prepaid balance.
+- **Key budget** — set per-key spend limit (min $1) via `PATCH /v1/buyer/api-keys/:keyId`.
+- **Per raid** — `max_total_cost` for the current message (min $1).
+
+Fees and seller payouts are documented in [reference/payments.md](../reference/payments.md), not in the Mercenary sidebar.
+
+Connect wallet and sign in before launching.
 
 ## MCP
 

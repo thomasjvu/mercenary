@@ -347,7 +347,6 @@
   .app-sidebar__link-icon {
     display: inline-flex;
   }
-
 }
 
 @media (max-width: 760px) {
@@ -886,12 +885,26 @@
 }
 
 .inference-playground__deck .terminal-window--front {
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0 calc(100% - 8px));
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - 18px),
+    calc(100% - 18px) 100%,
+    18px 100%,
+    0 calc(100% - 8px)
+  );
 }
 
 .inference-playground__deck .terminal-window--mid,
 .inference-playground__deck .terminal-window--back {
-  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 6px));
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - 14px),
+    calc(100% - 14px) 100%,
+    14px 100%,
+    0 calc(100% - 6px)
+  );
 }
 
 .inference-playground__deck .code-panel {
@@ -1622,7 +1635,7 @@
   min-height: 0;
   overflow: hidden;
   grid-template-rows: minmax(0, 1.02fr) minmax(0, 0.98fr);
-  row-gap: clamp(8px, 1vh, 12px);
+  row-gap: 0;
 }
 
 .app-shell--landing .hero {
@@ -1644,6 +1657,12 @@
 .app-shell--landing .info-panel--landing-flow {
   height: 100%;
   min-height: 0;
+  border: 0;
+  border-top: 0;
+}
+
+.app-shell--landing .api-notes {
+  border-top: 0;
 }
 
 .app-shell--landing .info-panel__cta {
@@ -1944,4 +1963,3 @@
   color: var(--muted);
   font-size: 0.76rem;
 }
-

@@ -1,7 +1,7 @@
 import type { FlowTab } from '../components/system/FlowTabs.js';
-import heroMangaBuyerImage from '../assets/hero-manga-buyer.jpg';
-import heroMangaImage from '../assets/hero-manga.jpg';
-import heroMangaRaidersImage from '../assets/hero-manga-raiders.jpg';
+import heroMangaBuyerImage from '../assets/hero-manga-buyer.webp';
+import heroMangaImage from '../assets/hero-manga.webp';
+import heroMangaRaidersImage from '../assets/hero-manga-raiders.webp';
 import { buildInferenceCurlSnippet, resolvePublicApiBase } from './inference-curl.js';
 import type { AppRoute } from './app-routes.js';
 
@@ -45,11 +45,14 @@ export const WORKFLOW_TAB_CYCLE_MS = 30_000;
 
 export type WorkflowTabId = (typeof WORKFLOW_TABS)[number]['id'];
 
-export const HERO_IMAGE_BY_WORKFLOW = {
+export const HERO_MANGA_IMAGE_BY_WORKFLOW = {
   seller: heroMangaImage,
   raider: heroMangaRaidersImage,
   buyer: heroMangaBuyerImage,
 } as const satisfies Record<WorkflowTabId, string>;
+
+/** Same composition as manga — color layer skips B&W multiply/desaturate. */
+export const HERO_COLOR_IMAGE_BY_WORKFLOW = HERO_MANGA_IMAGE_BY_WORKFLOW;
 
 export const HERO_SLICE_POSITIONS = [0, 33.333, 66.666, 100] as const;
 
@@ -112,10 +115,7 @@ export const HERO_BY_WORKFLOW: Record<WorkflowTabId, LandingHeroConfig> = {
       label: 'sell inference',
       path: '/onboarding/seller',
     },
-    secondary: [
-      { href: '/marketplace', label: 'buy inference', path: '/marketplace' },
-      { href: '/playground', label: 'try a model', path: '/playground' },
-    ],
+    secondary: [{ href: '/marketplace', label: 'buy inference', path: '/marketplace' }],
   },
   raider: {
     before: 'Post a paid bounty.',
@@ -126,10 +126,7 @@ export const HERO_BY_WORKFLOW: Record<WorkflowTabId, LandingHeroConfig> = {
       label: 'hire Mercenary',
       path: '/mercenary',
     },
-    secondary: [
-      { href: '/raiders', label: 'view raiders', path: '/raiders' },
-      { href: '/verification', label: 'load verification', path: '/verification' },
-    ],
+    secondary: [{ href: '/raiders', label: 'view raiders', path: '/raiders' }],
   },
   buyer: {
     before: 'Load up wallet.',
@@ -140,11 +137,7 @@ export const HERO_BY_WORKFLOW: Record<WorkflowTabId, LandingHeroConfig> = {
       label: 'browse marketplace',
       path: '/marketplace',
     },
-    secondary: [
-      { href: '/onboarding/buyer', label: 'create api key', path: '/onboarding/buyer' },
-      { href: '/mercenary', label: 'hire Mercenary', path: '/mercenary' },
-      { href: '/playground', label: 'try a model', path: '/playground' },
-    ],
+    secondary: [{ href: '/mercenary', label: 'hire Mercenary', path: '/mercenary' }],
   },
 };
 

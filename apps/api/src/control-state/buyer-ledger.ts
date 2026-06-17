@@ -49,6 +49,27 @@ export function createBuyerApiKey(
   return structuredClone(key);
 }
 
+export function updateBuyerApiKeySpendLimit(
+  ctx: ControlStateContext,
+  wallet: string,
+  keyId: string,
+  spendLimitUsd: number,
+  nowMs = Date.now()
+): BuyerApiKeyEntry | undefined {
+  const normalizedWallet = wallet.toLowerCase();
+  const { snapshot } = ctx.readPrunedState(nowMs);
+  const key = snapshot.buyerApiKeys.find(
+    (item) => item.wallet === normalizedWallet && item.id === keyId && item.status === 'active'
+  );
+  if (!key) {
+    return undefined;
+  }
+
+  key.spendLimitUsd = spendLimitUsd;
+  ctx.writeState(snapshot);
+  return structuredClone(key);
+}
+
 export function revokeBuyerApiKey(
   ctx: ControlStateContext,
   wallet: string,

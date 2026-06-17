@@ -88,6 +88,7 @@
 .app-shell--landing .hero__art {
   padding: 0;
   border: 0;
+  border-top: 0;
   border-bottom: 0;
   border-radius: 0;
   background: transparent;
@@ -183,29 +184,119 @@
   inset: 0;
 }
 
-.app-shell--landing .hero__slice::before {
+.app-shell--landing .hero__slice::before,
+.app-shell--landing .hero__slice::after {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: var(--hero-slice-image);
   background-position: var(--hero-slice-position, 50% 50%);
   background-size: 400% 100%;
   background-repeat: no-repeat;
+  transition:
+    opacity 320ms ease,
+    filter 320ms ease;
+}
+
+.app-shell--landing .hero__slice::before {
+  background-image: var(--hero-slice-image-color);
+  filter: contrast(1.05) saturate(1.12) brightness(1.04);
+  opacity: 1;
+}
+
+.app-shell--landing .hero__slice::after {
+  background-image: var(--hero-slice-image-manga);
   background-color: rgba(17, 17, 17, 0.08);
   background-blend-mode: multiply;
   filter: contrast(1.1) saturate(0) brightness(1.02);
+  opacity: 0;
 }
 
-.app-shell--landing .hero__slice-frame:nth-child(2n) .hero__slice::before {
+.app-shell--landing .hero__slice-frame:nth-child(2n) .hero__slice::after {
   background-color: rgba(17, 17, 17, 0.06);
 }
 
-.app-shell--landing .hero__slice-frame:nth-child(3n) .hero__slice::before {
+.app-shell--landing .hero__slice-frame:nth-child(3n) .hero__slice::after {
   background-color: rgba(17, 17, 17, 0.1);
 }
 
 .app-shell--landing .hero__image-set:hover .hero__slice::before {
+  opacity: 0;
+}
+
+.app-shell--landing .hero__image-set:hover .hero__slice::after {
+  opacity: 1;
   filter: contrast(1.14) saturate(0) brightness(1.04);
+}
+
+.app-shell--landing .hero__slice-frame {
+  --hero-float-amount: 3px;
+  animation: hero-slice-float 5.5s ease-in-out infinite;
+  transition: transform 200ms ease;
+}
+
+.app-shell--landing .hero__slice-frame:nth-child(1) {
+  --hero-slice-x: -20px;
+  --hero-slice-y: -8px;
+  animation-delay: 0s;
+}
+
+.app-shell--landing .hero__slice-frame:nth-child(2) {
+  --hero-slice-x: -8px;
+  --hero-slice-y: 8px;
+  animation-delay: -1.4s;
+}
+
+.app-shell--landing .hero__slice-frame:nth-child(3) {
+  --hero-slice-x: 8px;
+  --hero-slice-y: -8px;
+  animation-delay: -2.8s;
+}
+
+.app-shell--landing .hero__slice-frame:nth-child(4) {
+  --hero-slice-x: 20px;
+  --hero-slice-y: 8px;
+  animation-delay: -4.1s;
+}
+
+@keyframes hero-slice-float {
+  0%,
+  100% {
+    transform: translate3d(var(--hero-slice-x), var(--hero-slice-y), 0);
+  }
+
+  50% {
+    transform: translate3d(
+      var(--hero-slice-x),
+      calc(var(--hero-slice-y) - var(--hero-float-amount)),
+      0
+    );
+  }
+}
+
+.app-shell--landing .hero__image-set:hover .hero__slice-frame {
+  animation: none;
+}
+
+.app-shell--landing .hero__image-set:hover .hero__slice-frame:nth-child(1) {
+  transform: translate3d(-4px, 0, 0);
+}
+
+.app-shell--landing .hero__image-set:hover .hero__slice-frame:nth-child(2) {
+  transform: translate3d(-2px, 0, 0);
+}
+
+.app-shell--landing .hero__image-set:hover .hero__slice-frame:nth-child(3) {
+  transform: translate3d(2px, 0, 0);
+}
+
+.app-shell--landing .hero__image-set:hover .hero__slice-frame:nth-child(4) {
+  transform: translate3d(4px, 0, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell--landing .hero__slice-frame {
+    animation: none;
+  }
 }
 
 .app-shell--landing .hero__eye-glow {
@@ -637,35 +728,34 @@
     background-size: 400% 100%;
   }
 
-  .hero__slice-frame:nth-child(1) {
-    transform: translate3d(-10px, -4px, 0);
+  .app-shell--landing .hero__slice-frame {
+    --hero-float-amount: 2px;
   }
 
-  .hero__slice-frame:nth-child(2) {
-    transform: translate3d(-4px, 4px, 0);
+  .app-shell--landing .hero__slice-frame:nth-child(1) {
+    --hero-slice-x: -10px;
+    --hero-slice-y: -4px;
   }
 
-  .hero__slice-frame:nth-child(3) {
-    transform: translate3d(4px, -4px, 0);
+  .app-shell--landing .hero__slice-frame:nth-child(2) {
+    --hero-slice-x: -4px;
+    --hero-slice-y: 4px;
   }
 
-  .hero__slice-frame:nth-child(4) {
-    transform: translate3d(10px, 4px, 0);
+  .app-shell--landing .hero__slice-frame:nth-child(3) {
+    --hero-slice-x: 4px;
+    --hero-slice-y: -4px;
   }
 
-  .hero__image-set:hover .hero__slice-frame:nth-child(1) {
-    transform: translate3d(0, 0, 0);
+  .app-shell--landing .hero__slice-frame:nth-child(4) {
+    --hero-slice-x: 10px;
+    --hero-slice-y: 4px;
   }
 
-  .hero__image-set:hover .hero__slice-frame:nth-child(2) {
-    transform: translate3d(0, 0, 0);
-  }
-
-  .hero__image-set:hover .hero__slice-frame:nth-child(3) {
-    transform: translate3d(0, 0, 0);
-  }
-
-  .hero__image-set:hover .hero__slice-frame:nth-child(4) {
+  .app-shell--landing .hero__image-set:hover .hero__slice-frame:nth-child(1),
+  .app-shell--landing .hero__image-set:hover .hero__slice-frame:nth-child(2),
+  .app-shell--landing .hero__image-set:hover .hero__slice-frame:nth-child(3),
+  .app-shell--landing .hero__image-set:hover .hero__slice-frame:nth-child(4) {
     transform: translate3d(0, 0, 0);
   }
 
@@ -682,4 +772,3 @@
     gap: 6px;
   }
 }
-

@@ -6,8 +6,10 @@ import { RefinePanel } from '../system/RefinePanel.js';
 import {
   MARKETPLACE_FRAMEWORK_OPTIONS,
   MARKETPLACE_PRIVACY_OPTIONS,
+  MARKETPLACE_SORT_OPTIONS,
   MARKETPLACE_TRUST_OPTIONS,
   MARKETPLACE_VERIFICATION_OPTIONS,
+  type MarketplaceSortKey,
 } from '../../lib/marketplace-filters.js';
 import type { MarketplacePageState } from '../../hooks/useMarketplacePage.js';
 
@@ -16,7 +18,7 @@ type MarketplaceFiltersPanelProps = {
 };
 
 export function MarketplaceFiltersPanel({ state }: MarketplaceFiltersPanelProps) {
-  const { filters, patchFilters, filtersActive, resetFilters, markets } = state;
+  const { filters, patchFilters, filtersActive, resetFilters } = state;
 
   return (
     <RefinePanel aria-label="Marketplace filters" isActive={filtersActive} onReset={resetFilters}>
@@ -25,6 +27,14 @@ export function MarketplaceFiltersPanel({ state }: MarketplaceFiltersPanelProps)
         onChange={(value) => patchFilters({ model: value })}
         placeholder="gpt-5.5, claude, venice…"
         value={filters.model}
+      />
+
+      <FilterSelect
+        compact
+        label="sort"
+        onChange={(value) => patchFilters({ sort: value as MarketplaceSortKey })}
+        options={[...MARKETPLACE_SORT_OPTIONS]}
+        value={filters.sort}
       />
 
       <FilterChips
@@ -79,10 +89,6 @@ export function MarketplaceFiltersPanel({ state }: MarketplaceFiltersPanelProps)
           />
         </div>
       </details>
-
-      {markets.data?.custody ? (
-        <p className="market-filters__note">{markets.data.custody.sellerCredentialPolicy}</p>
-      ) : null}
     </RefinePanel>
   );
 }

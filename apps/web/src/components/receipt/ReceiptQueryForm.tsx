@@ -1,6 +1,5 @@
 import { type FormEvent } from 'react';
 import { FormField, FormStatus } from '../system/FormField.js';
-import { buildAttestedRuntimeUrl } from '../../lib/receipt-url.js';
 
 type ReceiptQueryFormProps = {
   raidIdInput: string;
@@ -9,6 +8,8 @@ type ReceiptQueryFormProps = {
   onRaidIdChange: (value: string) => void;
   onTokenChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  compact?: boolean;
+  terminal?: boolean;
 };
 
 export function ReceiptQueryForm({
@@ -18,11 +19,20 @@ export function ReceiptQueryForm({
   onRaidIdChange,
   onTokenChange,
   onSubmit,
+  compact,
+  terminal,
 }: ReceiptQueryFormProps) {
   const canSubmit = raidIdInput.trim().length > 0 && tokenInput.trim().length > 0;
+  const formClassName = [
+    'receipt-form',
+    compact ? 'receipt-form--compact' : '',
+    terminal ? 'receipt-form--terminal' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <form className="receipt-form" onSubmit={onSubmit}>
+    <form className={formClassName} onSubmit={onSubmit}>
       <FormField className="receipt-field" label="raid id">
         <input
           className="receipt-field__input"
@@ -45,12 +55,13 @@ export function ReceiptQueryForm({
       </FormField>
       {formError ? <FormStatus tone="error">{formError}</FormStatus> : null}
       <div className="receipt-form__actions">
-        <button className="button button--primary" disabled={!canSubmit} type="submit">
+        <button
+          className={`button button--primary${terminal ? ' rx-spacebar-clip' : ''}`}
+          disabled={!canSubmit}
+          type="submit"
+        >
           load receipt
         </button>
-        <a className="button" href={buildAttestedRuntimeUrl()} rel="noreferrer" target="_blank">
-          runtime proof
-        </a>
       </div>
     </form>
   );

@@ -10,6 +10,7 @@ type CurlQuickstartProps = {
   runLabel?: string;
   onRun?: () => void;
   compact?: boolean;
+  spacebarCta?: boolean;
 };
 
 export function CurlQuickstart({
@@ -21,7 +22,11 @@ export function CurlQuickstart({
   runLabel = 'run in playground',
   onRun,
   compact,
+  spacebarCta,
 }: CurlQuickstartProps) {
+  const ctaClassName = spacebarCta
+    ? 'button button--primary info-panel__cta rx-spacebar-clip'
+    : 'button button--primary';
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -36,23 +41,25 @@ export function CurlQuickstart({
 
   return (
     <div className={`curl-quickstart${compact ? ' curl-quickstart--compact' : ''}`}>
-      <TerminalCodePanel
-        actionLabel={copied ? 'copied' : 'copy'}
-        code={code}
-        label={label}
-        layer="front"
-        note={note}
-        onAction={() => void handleCopy()}
-        theme={theme}
-      />
+      <div className="terminal-stack">
+        <TerminalCodePanel
+          actionLabel={copied ? 'copied' : 'copy'}
+          code={code}
+          label={label}
+          layer="front"
+          note={note}
+          onAction={() => void handleCopy()}
+          theme={theme}
+        />
+      </div>
       {runHref || onRun ? (
         <div className="curl-quickstart__actions">
           {runHref ? (
-            <a className="button button--primary" href={runHref}>
+            <a className={ctaClassName} href={runHref}>
               {runLabel}
             </a>
           ) : (
-            <button className="button button--primary" onClick={onRun} type="button">
+            <button className={ctaClassName} onClick={onRun} type="button">
               {runLabel}
             </button>
           )}

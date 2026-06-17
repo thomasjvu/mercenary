@@ -38,8 +38,8 @@
       "purpose": "Public proof (`/receipt` redirects here)"
     },
     {
-      "path": "/changelog",
-      "purpose": "Product changelog"
+      "path": "/changelog, `/changelog/:version`",
+      "purpose": "Product changelog (index shows latest release)"
     },
     {
       "path": "/legal, /terms-of-service, /privacy-policy, /acceptable-use-policy",

@@ -9,6 +9,7 @@ import {
   SIDEBAR_NAV_LINKS,
   type AppRoute,
 } from '../lib/app-routes.js';
+import { isChangelogPath } from '../lib/changelog.js';
 import { releaseChannelLabel } from '../lib/release.js';
 
 type AppTheme = 'light' | 'dark';
@@ -44,8 +45,8 @@ export function AppSidebar({
               <span className="app-sidebar__title">Boss Raid</span>
             </button>
             <button
-              aria-current={pathname === '/changelog' ? 'page' : undefined}
-              className={`app-sidebar__version${pathname === '/changelog' ? ' app-sidebar__version--active' : ''}`}
+              aria-current={isChangelogPath(pathname) ? 'page' : undefined}
+              className={`app-sidebar__version${isChangelogPath(pathname) ? ' app-sidebar__version--active' : ''}`}
               onClick={() => onNavigate('/changelog')}
               type="button"
             >

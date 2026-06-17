@@ -78,6 +78,7 @@ Provider auth: `Authorization`, `X-BossRaid-Provider-Id`, `X-BossRaid-Timestamp`
 | `POST /v1/auth/verify`                                 | Wallet session                                                                               |
 | `GET/DELETE /v1/session`                               | Session read/clear                                                                           |
 | `GET/POST /v1/buyer/api-keys`                          | List/create buyer `br_` keys                                                                 |
+| `PATCH /v1/buyer/api-keys/:keyId`                      | Update buyer API key spend limit (`spendLimitUsd`, min $1)                                   |
 | `DELETE /v1/buyer/api-keys/:keyId`                     | Revoke buyer API key                                                                         |
 | `GET/POST/PATCH /v1/seller/providers`                  | Seller CRUD                                                                                  |
 | `POST /v1/seller/providers/:id/verify`                 | Re-verify                                                                                    |
@@ -130,20 +131,20 @@ Admin: `Authorization: Bearer $BOSSRAID_ADMIN_TOKEN` or ops session cookie.
 
 <!-- docs:template:web-routes -->
 
-| Path                                                                 | Purpose                                                                                      |
-| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `/mercenary`                                                         | Unified Mercenary chat (`POST /v1/chat/completions`, budget USD, planner-driven direct/raid) |
-| `/marketplace`                                                       | Model marketplace                                                                            |
-| `/playground`                                                        | Inference playground and raid mode                                                           |
-| `/onboarding/buyer`, `/onboarding/seller`, `/onboarding/seller/http` | Buyer and seller onboarding                                                                  |
-| `/sell/offers`                                                       | Seller offer management                                                                      |
-| `/account`                                                           | Keys, sellers, balance                                                                       |
-| `/raiders`                                                           | Provider directory                                                                           |
-| `/verification`                                                      | Public proof (`/receipt` redirects here)                                                     |
-| `/changelog`                                                         | Product changelog                                                                            |
-| `/legal, /terms-of-service, /privacy-policy, /acceptable-use-policy` | Legal policies                                                                               |
-| `/ops/`                                                              | Ops SPA (readiness, settlement, metrics, x402)                                               |
-| `/api/*`, `/ops-api/*`                                               | Proxied API                                                                                  |
+| Path                                                                 | Purpose                                        |
+| -------------------------------------------------------------------- | ---------------------------------------------- |
+| `/mercenary`                                                         | Mercenary chat and raid launcher               |
+| `/marketplace`                                                       | Model marketplace                              |
+| `/playground`                                                        | Inference playground and raid mode             |
+| `/onboarding/buyer`, `/onboarding/seller`, `/onboarding/seller/http` | Buyer and seller onboarding                    |
+| `/sell/offers`                                                       | Seller offer management                        |
+| `/account`                                                           | Keys, sellers, balance                         |
+| `/raiders`                                                           | Provider directory                             |
+| `/verification`                                                      | Public proof (`/receipt` redirects here)       |
+| /changelog, `/changelog/:version`                                    | Product changelog (index shows latest release) |
+| `/legal, /terms-of-service, /privacy-policy, /acceptable-use-policy` | Legal policies                                 |
+| `/ops/`                                                              | Ops SPA (readiness, settlement, metrics, x402) |
+| `/api/*`, `/ops-api/*`                                               | Proxied API                                    |
 
 <!-- /docs:template:web-routes -->
 

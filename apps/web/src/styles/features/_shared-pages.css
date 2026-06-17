@@ -196,6 +196,28 @@ button.action-steps__value {
   font-size: 0.86rem;
 }
 
+.payment-callout {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--rx-blue) 42%, var(--line));
+  border-left: 3px solid var(--rx-blue);
+  background: color-mix(in srgb, var(--rx-blue) 8%, var(--surface-muted));
+}
+
+.payment-callout p {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.payment-callout a {
+  color: var(--rx-blue);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .curl-quickstart {
   display: grid;
   gap: 10px;
@@ -296,7 +318,7 @@ button.action-steps__value {
   grid-template-rows: minmax(0, 1.02fr) minmax(0, 0.98fr);
   align-content: stretch;
   align-items: stretch;
-  row-gap: clamp(8px, 1vh, 12px);
+  row-gap: 0;
   padding-top: var(--stage-pad-y);
   padding-bottom: var(--stage-pad-y);
 }

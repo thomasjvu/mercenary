@@ -7,7 +7,10 @@ import type {
   SpecialistTraceRecord,
 } from '../../mercenary-specialist-types.js';
 import type { MercenaryThreadRecord } from '../../lib/mercenary-threads.js';
+import type { BuyerApiKeyCreateState } from '../../hooks/useBuyerApiKeyCreate.js';
+import type { MercenaryPaymentKeyOption } from '../../hooks/useMercenaryPayment.js';
 import { MercenaryAgentCard } from './MercenaryAgentCard.js';
+import { MercenaryPaymentPanel } from './MercenaryPaymentPanel.js';
 import { MercenaryThreadList } from './MercenaryThreadList.js';
 import { SpecialistProgressMeter, StatusPill } from './mercenary-ui';
 
@@ -34,6 +37,20 @@ type MercenaryRaidSidebarProps = {
   onNewThread?: () => void;
   onRenameThread?: (threadId: string, title: string) => void;
   onDeleteThread?: (threadId: string) => void;
+  paymentMode?: 'wallet' | 'api_key';
+  keyOptions?: MercenaryPaymentKeyOption[];
+  selectedApiKeyId?: string;
+  onSelectApiKey?: (keyId: string) => void;
+  selectedKey?: MercenaryPaymentKeyOption;
+  spendLimitDraft?: string;
+  onSpendLimitDraftChange?: (value: string) => void;
+  onSaveSpendLimit?: () => void;
+  budgetStatus?: string | null;
+  budgetPending?: boolean;
+  maxBudgetUsd?: number;
+  onMaxBudgetUsdChange?: (value: number) => void;
+  keyCreate?: BuyerApiKeyCreateState;
+  isLaunching?: boolean;
 };
 
 export function MercenaryRaidSidebar({
@@ -59,6 +76,20 @@ export function MercenaryRaidSidebar({
   onNewThread,
   onRenameThread,
   onDeleteThread,
+  paymentMode = 'wallet',
+  keyOptions = [],
+  selectedApiKeyId = '',
+  onSelectApiKey,
+  selectedKey,
+  spendLimitDraft = '1',
+  onSpendLimitDraftChange,
+  onSaveSpendLimit,
+  budgetStatus = null,
+  budgetPending = false,
+  maxBudgetUsd = 12,
+  onMaxBudgetUsdChange,
+  keyCreate,
+  isLaunching = false,
 }: MercenaryRaidSidebarProps) {
   const runTone = liveRaidRun
     ? raidIsTerminal
@@ -118,6 +149,28 @@ export function MercenaryRaidSidebar({
           <span>attestation</span>
           <StatusPill tone={runtimeAttestationTone}>{runtimeAttestationStatus}</StatusPill>
         </div>
+        {onSelectApiKey &&
+        onMaxBudgetUsdChange &&
+        onSpendLimitDraftChange &&
+        onSaveSpendLimit &&
+        keyCreate ? (
+          <MercenaryPaymentPanel
+            budgetPending={budgetPending}
+            budgetStatus={budgetStatus}
+            isLaunching={isLaunching}
+            keyCreate={keyCreate}
+            keyOptions={keyOptions}
+            maxBudgetUsd={maxBudgetUsd}
+            onMaxBudgetUsdChange={onMaxBudgetUsdChange}
+            onSaveSpendLimit={onSaveSpendLimit}
+            onSelectApiKey={onSelectApiKey}
+            onSpendLimitDraftChange={onSpendLimitDraftChange}
+            paymentMode={paymentMode}
+            selectedApiKeyId={selectedApiKeyId}
+            selectedKey={selectedKey}
+            spendLimitDraft={spendLimitDraft}
+          />
+        ) : null}
       </section>
 
       {showThreadList &&

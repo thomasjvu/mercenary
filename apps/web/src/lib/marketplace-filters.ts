@@ -1,5 +1,15 @@
 import type { MarketplaceTrustFilter } from './marketplace-trust.js';
 
+export const MARKETPLACE_SORT_OPTIONS = [
+  ['price', 'cheapest first'],
+  ['sellers', 'most sellers'],
+  ['success', 'success rate'],
+  ['latency', 'p50 latency'],
+  ['model', 'model id'],
+] as const;
+
+export type MarketplaceSortKey = (typeof MARKETPLACE_SORT_OPTIONS)[number][0];
+
 export const MARKETPLACE_FILTER_DEFAULTS = {
   model: '',
   provider: '',
@@ -8,6 +18,7 @@ export const MARKETPLACE_FILTER_DEFAULTS = {
   privacy: 'any',
   verification: 'any',
   budget: '',
+  sort: 'price' as MarketplaceSortKey,
 };
 
 export type MarketplaceFilters = typeof MARKETPLACE_FILTER_DEFAULTS;

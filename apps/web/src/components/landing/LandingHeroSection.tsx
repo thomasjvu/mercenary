@@ -3,7 +3,8 @@ import { LiveMarketPulse } from '../marketplace/LiveMarketPulse.js';
 import {
   HERO_BY_WORKFLOW,
   HERO_EYE_GLOWS_BY_WORKFLOW,
-  HERO_IMAGE_BY_WORKFLOW,
+  HERO_COLOR_IMAGE_BY_WORKFLOW,
+  HERO_MANGA_IMAGE_BY_WORKFLOW,
   HERO_SLICE_POSITIONS,
   WORKFLOW_TAB_ORDER,
   workflowLayerClass,
@@ -105,7 +106,8 @@ function LandingHeroArt({ workflowTab }: { workflowTab: WorkflowTabId }) {
                 className={`hero__slice hero__slice-layer ${workflowLayerClass(tab, workflowTab)}`}
                 key={tab}
                 style={{
-                  ['--hero-slice-image' as string]: `url("${HERO_IMAGE_BY_WORKFLOW[tab]}")`,
+                  ['--hero-slice-image-color' as string]: `url("${HERO_COLOR_IMAGE_BY_WORKFLOW[tab]}")`,
+                  ['--hero-slice-image-manga' as string]: `url("${HERO_MANGA_IMAGE_BY_WORKFLOW[tab]}")`,
                   ['--hero-slice-position' as string]: `${position}% 50%`,
                 }}
               />

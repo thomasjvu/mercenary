@@ -24,7 +24,9 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
           <CurlQuickstart
             code={state.spotlightCurl}
             compact
+            note=""
             runHref={`/playground?model=${encodeURIComponent(state.spotlightModel)}`}
+            spacebarCta
             theme="raid"
           />
         </aside>
