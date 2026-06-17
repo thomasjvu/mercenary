@@ -56,6 +56,7 @@ export interface X402Config {
     raid: number;
     chat: number;
     inference: number;
+    balance: number;
   };
   cdpApiKeyId?: string;
   cdpApiKeySecret?: string;
@@ -67,7 +68,7 @@ export interface X402Config {
   assetTransferMethod: X402AssetTransferMethod;
 }
 
-export type X402RouteName = 'raid' | 'chat' | 'inference';
+export type X402RouteName = 'raid' | 'chat' | 'inference' | 'balance';
 
 export const METAMASK_X402_FACILITATORS = {
   base_mainnet: 'https://tx-sentinel-base-mainnet.dev-api.cx.metamask.io/platform/v2/x402',
@@ -198,6 +199,7 @@ export function readX402Config(env: NodeJS.ProcessEnv = process.env): X402Config
       raid: raidSurchargeUsd,
       chat: chatSurchargeUsd,
       inference: chatSurchargeUsd,
+      balance: 0,
     },
     cdpApiKeyId: env.CDP_API_KEY_ID,
     cdpApiKeySecret: env.CDP_API_KEY_SECRET,
@@ -328,7 +330,9 @@ function buildPaymentRequired(
       ? '/v1/chat/completions'
       : route === 'inference'
         ? '/v1/inference/chat/completions'
-        : '/v1/raid';
+        : route === 'balance'
+          ? '/v1/buyer/balance/fund'
+          : '/v1/raid';
   const price = computeChargeUsd(config, route, budgetUsd);
   const assetConfig = resolveAssetConfig(config);
   const transferExtra =
@@ -350,7 +354,9 @@ function buildPaymentRequired(
             ? 'Boss Raid chat completion request'
             : route === 'inference'
               ? 'Boss Raid discount inference request'
-              : 'Boss Raid native raid request',
+              : route === 'balance'
+                ? 'Boss Raid prepaid balance top-up'
+                : 'Boss Raid native raid request',
         mimeType: 'application/json',
         payTo: config.payTo,
         maxTimeoutSeconds: options.maxTimeoutSeconds ?? config.maxTimeoutSeconds,

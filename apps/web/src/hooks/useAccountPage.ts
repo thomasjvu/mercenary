@@ -12,6 +12,10 @@ import {
   updateSellerProvider,
   verifySellerProvider,
 } from '../api';
+import { removeSavedBuyerApiKey } from '../lib/buyer-api-key-vault.js';
+import { buildApiUrl } from '../api/client.js';
+import { fetchReady } from '../api/health.js';
+import { useBuyerApiKeyCreate } from './useBuyerApiKeyCreate.js';
 import { useSmartAccountPay } from './useSmartAccountPay.js';
 
 export const ACCOUNT_TABS = [
@@ -53,9 +57,16 @@ export function useAccountPage({ onNavigate }: UseAccountPageOptions) {
   const [fundStatus, setFundStatus] = useState('');
   const [sellerActionStatus, setSellerActionStatus] = useState<Record<string, string>>({});
   const smartPay = useSmartAccountPay();
+  const keyCreate = useBuyerApiKeyCreate({
+    defaultName: 'Account API key',
+    onCreated: async () => {
+      await session.mutate();
+    },
+  });
 
   async function revokeKey(keyId: string) {
     await deleteBuyerApiKey(keyId);
+    removeSavedBuyerApiKey(keyId);
     await session.mutate();
   }
 
@@ -71,9 +82,34 @@ export function useAccountPage({ onNavigate }: UseAccountPageOptions) {
       return;
     }
 
-    setFundStatus('Crediting prepaid balance...');
+    setFundStatus('Processing balance top-up...');
     try {
-      const result = await fundBuyerBalance(amountUsd);
+      const ready = await fetchReady();
+      let result: { creditedUsd: number; balanceUsd: number };
+
+      if (ready.payment.enabled) {
+        const paidFetch = await smartPay.createFetchWithPayment();
+        const response = await paidFetch(buildApiUrl('/v1/buyer/balance/fund'), {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ amountUsd }),
+        });
+        const body = (await response.json().catch(() => null)) as {
+          message?: string;
+          creditedUsd?: number;
+          balanceUsd?: number;
+        } | null;
+        if (!response.ok) {
+          throw new Error(body?.message ?? `Balance top-up failed (${response.status}).`);
+        }
+        result = {
+          creditedUsd: body?.creditedUsd ?? amountUsd,
+          balanceUsd: body?.balanceUsd ?? 0,
+        };
+      } else {
+        result = await fundBuyerBalance(amountUsd);
+      }
+
       await session.mutate();
       setFundStatus(
         `Credited $${result.creditedUsd.toFixed(2)}. New balance $${result.balanceUsd.toFixed(2)}.`
@@ -137,6 +173,7 @@ export function useAccountPage({ onNavigate }: UseAccountPageOptions) {
     fundStatus,
     sellerActionStatus,
     smartPay,
+    keyCreate,
     apiKeys,
     purchaseRows,
     sellerRows,

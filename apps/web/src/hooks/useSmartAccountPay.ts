@@ -8,7 +8,6 @@ import {
   type SmartAccountWalletClient,
 } from '@bossraid/smart-pay';
 import type { DelegationChainEntry } from '@bossraid/shared-types';
-import { fundBuyerBalance } from '../api/auth.js';
 import { deleteAgentSession, saveAgentSession } from '../api/smart-pay.js';
 import { connectSmartAccountWallet, formatWalletError } from '../lib/ethereum-provider.js';
 
@@ -17,7 +16,7 @@ export function useSmartAccountPay(chainId = BASE_CHAIN_ID) {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<RaidSubscriptionGrant | null>(null);
   const [status, setStatus] = useState(
-    'Connect MetaMask to subscribe and top up prepaid account credit.'
+    'Connect MetaMask to authorize weekly USDC spend for paid inference and raids.'
   );
   const [busy, setBusy] = useState(false);
 
@@ -28,7 +27,7 @@ export function useSmartAccountPay(chainId = BASE_CHAIN_ID) {
       setWalletClient(client);
       setWalletAddress(address);
       setStatus(
-        `Connected ${address}. Start a weekly subscription to top up credit for inference and raids.`
+        `Connected ${address}. Grant a weekly subscription to pay for inference and raids via x402.`
       );
       return client;
     } catch (error) {
@@ -59,9 +58,8 @@ export function useSmartAccountPay(chainId = BASE_CHAIN_ID) {
         expiresAt: grant.expiresAt,
         weeklyBudgetUsd: grant.weeklyBudgetUsd,
       });
-      const funded = await fundBuyerBalance(grant.weeklyBudgetUsd);
       setStatus(
-        `Subscribed at $${grant.weeklyBudgetUsd.toFixed(2)} USDC/week. Credited $${funded.creditedUsd.toFixed(2)} — balance now $${funded.balanceUsd.toFixed(2)}.`
+        `Subscribed at $${grant.weeklyBudgetUsd.toFixed(2)} USDC/week. Use wallet top-up or paid launches — balance is not auto-credited.`
       );
       return grant;
     } catch (error) {

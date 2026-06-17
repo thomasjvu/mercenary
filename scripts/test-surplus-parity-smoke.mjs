@@ -63,7 +63,18 @@ async function main() {
     headers: { cookie, 'content-type': 'application/json' },
     body: JSON.stringify({ amountUsd: 2 }),
   });
-  steps.push({ step: 'fund_balance', ok: funded.status === 200, body: funded.body });
+  const fundOk =
+    funded.status === 200 ||
+    (funded.status === 402 && funded.body?.error === 'payment_required');
+  steps.push({
+    step: 'fund_balance',
+    ok: fundOk,
+    body: funded.body,
+    note:
+      funded.status === 402
+        ? 'skipped: x402 required; inference uses API key spend cap'
+        : undefined,
+  });
 
   const keyCreate = await fetchJson(`${apiBase}/v1/buyer/api-keys`, {
     method: 'POST',

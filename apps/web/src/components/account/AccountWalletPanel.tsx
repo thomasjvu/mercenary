@@ -22,6 +22,9 @@ export function AccountWalletPanel({ state }: AccountWalletPanelProps) {
             ${session.account?.totalSavingsUsd?.toFixed(2)} benchmark savings
           </p>
         ) : null}
+        <p className="quiet-note">
+          Top-ups require a verified x402 USDC payment from your connected wallet.
+        </p>
         <form
           className="account-balance-fund"
           onSubmit={(event) => {
@@ -38,8 +41,8 @@ export function AccountWalletPanel({ state }: AccountWalletPanelProps) {
             type="number"
             value={state.fundAmount}
           />
-          <button className="button button--primary" type="submit">
-            credit balance
+          <button className="button button--primary" disabled={state.smartPay.busy} type="submit">
+            pay with wallet
           </button>
           {state.fundStatus ? <FormStatus>{state.fundStatus}</FormStatus> : null}
         </form>
@@ -48,7 +51,7 @@ export function AccountWalletPanel({ state }: AccountWalletPanelProps) {
       <article className="flow-card">
         <p className="eyebrow">account subscription</p>
         <p className="quiet-note">
-          Weekly MetaMask permission tops up prepaid credit for marketplace inference and raids.
+          Weekly MetaMask permission authorizes x402 payments for marketplace inference and raids.
         </p>
         <p className="quiet-note">{state.smartPay.status}</p>
         <div className="mercenary-action-row">
@@ -68,7 +71,7 @@ export function AccountWalletPanel({ state }: AccountWalletPanelProps) {
             }
             type="button"
           >
-            subscribe & top up
+            subscribe
           </button>
         </div>
         {state.smartPay.subscription ? (

@@ -95,7 +95,7 @@ Provider auth: `Authorization`, `X-BossRaid-Provider-Id`, `X-BossRaid-Timestamp`
 | `GET /v1/seller/stats`                                 | Dashboard metrics + per-model Boss Raid routed volume (`modelDemand`)                        |
 | `GET /v1/buyer/purchases`                              | Purchase history                                                                             |
 | `GET /v1/buyer/balance`                                | Prepaid balance read                                                                         |
-| `POST /v1/buyer/balance/fund`                          | Credit prepaid balance (session wallet)                                                      |
+| `POST /v1/buyer/balance/fund`                          | Credit prepaid balance (session wallet; x402 payment when enabled)                           |
 | `GET /v1/marketplace/stats`                            | Public counters                                                                              |
 
 Buyer API keys on paid routes skip x402 and debit spend caps.

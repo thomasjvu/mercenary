@@ -1,3 +1,4 @@
+import { readBooleanEnv } from '@bossraid/constants';
 import { type FastifyInstance } from 'fastify';
 import { parseProviderRegistrationInput } from '@bossraid/api-contracts';
 import { buildSelfServeProviderRegistrationInput } from '../lib/account.js';
@@ -9,6 +10,8 @@ import { serializeProviderHealth, serializeProviderProfile } from '../lib/serial
 import { computeSellerModelDemand } from '../marketplace-stats.js';
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../handlers/index.js';
+import { readX402ConfigForContext } from '../lib/x402-runtime.js';
+import { applyX402Headers, requireX402Payment } from '../x402.js';
 
 export function registerAccountRoutes(
   app: FastifyInstance,
@@ -211,11 +214,36 @@ export function registerAccountRoutes(
       reply.code(400);
       return { error: 'invalid_amount', message: 'amountUsd must be a positive number.' };
     }
-    const account = controlState.creditBuyerBalance(session.wallet, amountUsd);
+
+    const x402Config = readX402ConfigForContext(ctx);
+    const allowUnverifiedBalanceFund = readBooleanEnv(
+      ctx.env.BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND
+    );
+    let creditedUsd = amountUsd;
+
+    if (x402Config.enabled) {
+      const payment = await requireX402Payment({
+        route: 'balance',
+        headers: request.headers,
+        config: x402Config,
+        budgetUsd: amountUsd,
+      });
+      creditedUsd = payment.escrowFundingUsd;
+      applyX402Headers(reply, { settlement: payment.settlement });
+    } else if (!allowUnverifiedBalanceFund) {
+      reply.code(402);
+      return {
+        error: 'payment_required',
+        message:
+          'Balance top-ups require x402 payments. Enable BOSSRAID_X402_ENABLED or set BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND=true for local development only.',
+      };
+    }
+
+    const account = controlState.creditBuyerBalance(session.wallet, creditedUsd);
     return {
       wallet: account.wallet,
       balanceUsd: account.balanceUsd,
-      creditedUsd: amountUsd,
+      creditedUsd,
       currency: 'USD',
     };
   });

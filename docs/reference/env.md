@@ -62,6 +62,7 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 | `BOSSRAID_X402_ASSET_TRANSFER_METHOD`          | `permit2` (default) or `erc7710` for ERC-7710 delegation payments                                |
 | `BOSSRAID_DELEGATION_MANAGER_ADDRESS`          | ERC-7710 delegation manager on Base; falls back to MetaMask permission `signerMeta` when omitted |
 | `BOSSRAID_X402_BUYER_PRIVATE_KEY`              | Wallet smoke tests and MCP agent one-shot payments                                               |
+| `BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND`       | Local dev only: allow `POST /v1/buyer/balance/fund` without x402 when payments are disabled      |
 | `PAYAI_API_KEY_ID`, `PAYAI_API_KEY_SECRET`     | PayAI facilitator                                                                                |
 | `CDP_API_KEY_*`                                | CDP fallback                                                                                     |
 

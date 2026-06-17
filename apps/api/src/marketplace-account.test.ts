@@ -348,8 +348,8 @@ test('surplus parity: API key skips x402, funds balance, records purchases and s
   const app = buildApiServer(orchestrator, {
     ...process.env,
     BOSSRAID_STORAGE_BACKEND: 'memory',
-    BOSSRAID_X402_ENABLED: 'true',
-    BOSSRAID_X402_PAY_TO: '0xabc',
+    BOSSRAID_X402_ENABLED: 'false',
+    BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND: 'true',
   });
 
   try {

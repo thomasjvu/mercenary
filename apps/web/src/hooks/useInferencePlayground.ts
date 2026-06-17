@@ -4,6 +4,11 @@ import useSWR from 'swr';
 import { API_BASE } from '../api/client.js';
 import { verifyMarketplaceTeeAttestation } from '../api/marketplace-tee.js';
 import { fetchMarkets, runInferenceChatCompletion } from '../api/marketplace.js';
+import {
+  getSavedBuyerApiKey,
+  listSavedBuyerApiKeys,
+  type SavedBuyerApiKey,
+} from '../lib/buyer-api-key-vault.js';
 import { buildInferenceCurlSnippet } from '../lib/inference-curl.js';
 import { buildPlaygroundModelOptions } from '../lib/playground-models.js';
 import { resolveProviderBrand } from '../lib/provider-brand.js';
@@ -36,6 +41,8 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
   const [model, setModel] = useState(initialModelId ?? '');
   const [providerFilter, setProviderFilter] = useState('');
   const [prompt, setPrompt] = useState('One-line launch status update.');
+  const [savedApiKeys, setSavedApiKeys] = useState<readonly SavedBuyerApiKey[]>([]);
+  const [selectedApiKeyId, setSelectedApiKeyId] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [upstreamApiKey, setUpstreamApiKey] = useState('');
   const [privacyMode, setPrivacyMode] = useState<'prefer' | 'strict'>('prefer');
@@ -83,15 +90,38 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
       return;
     }
 
+    const vaultKeys = listSavedBuyerApiKeys();
+    setSavedApiKeys(vaultKeys);
+
     const stored = window.sessionStorage.getItem(API_KEY_STORAGE_KEY);
     if (stored) {
       setApiKey(stored);
+      const matched = vaultKeys.find((entry) => entry.apiKey === stored);
+      if (matched) {
+        setSelectedApiKeyId(matched.id);
+      }
+    } else if (vaultKeys.length > 0) {
+      setSelectedApiKeyId(vaultKeys[0].id);
+      setApiKey(vaultKeys[0].apiKey);
     }
+
     const storedUpstream = window.sessionStorage.getItem(UPSTREAM_KEY_STORAGE_KEY);
     if (storedUpstream) {
       setUpstreamApiKey(storedUpstream);
     }
   }, []);
+
+  function selectSavedApiKey(keyId: string) {
+    setSelectedApiKeyId(keyId);
+    if (!keyId) {
+      return;
+    }
+
+    const saved = getSavedBuyerApiKey(keyId);
+    if (saved) {
+      setApiKey(saved.apiKey);
+    }
+  }
 
   useEffect(() => {
     if (!model && filteredModelOptions.length > 0) {
@@ -175,7 +205,7 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
   async function handleRun() {
     if (!apiKey.trim() && !strictE2ee) {
       setError({
-        message: 'Add a buyer API key from account onboarding.',
+        message: 'Add a buyer API key from account or load a saved key below.',
         variant: 'guide',
       });
       return;
@@ -276,6 +306,9 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
     setProviderFilter,
     prompt,
     setPrompt,
+    savedApiKeys,
+    selectedApiKeyId,
+    selectSavedApiKey,
     apiKey,
     setApiKey,
     upstreamApiKey,

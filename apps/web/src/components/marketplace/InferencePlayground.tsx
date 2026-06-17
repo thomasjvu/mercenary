@@ -57,10 +57,34 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
           <details className="inference-playground__advanced">
             <summary>credentials</summary>
             <div className="inference-playground__field-grid inference-playground__field-grid--stack">
+              {state.savedApiKeys.length > 0 ? (
+                <FormSelect
+                  label="saved api key"
+                  onChange={(event) => state.selectSavedApiKey(event.target.value)}
+                  options={[
+                    ['', 'select a saved key'],
+                    ...state.savedApiKeys.map((entry) => [
+                      entry.id,
+                      `${entry.name} (${entry.prefix})`,
+                    ]),
+                  ]}
+                  value={state.selectedApiKeyId}
+                />
+              ) : null}
               <FormInput
                 autoComplete="off"
                 label="buyer API key"
-                onChange={(event) => state.setApiKey(event.target.value)}
+                onChange={(event) => {
+                  state.setApiKey(event.target.value);
+                  if (
+                    state.selectedApiKeyId &&
+                    event.target.value !==
+                      state.savedApiKeys.find((entry) => entry.id === state.selectedApiKeyId)
+                        ?.apiKey
+                  ) {
+                    state.selectSavedApiKey('');
+                  }
+                }}
                 placeholder="br_..."
                 spellCheck={false}
                 type="password"
