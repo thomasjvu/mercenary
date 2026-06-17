@@ -63,7 +63,7 @@ Landing repeats the same filter under a higher-specificity selector:
 }
 ```
 
-Because this rule is more specific than the landing light filter, dark mode keeps yellow visor glows and warm highlights instead of the B&W light-mode pass.
+Because this rule is more specific than the landing light filter, dark mode keeps cyan-blue visor eye slots and warm highlights instead of the B&W light-mode pass.
 
 ### 3. Layout-only landing overrides
 
