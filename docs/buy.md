@@ -2,6 +2,8 @@
 
 Get a buyer API key. Call the inference route. Boss Raid picks the cheapest eligible seller and returns an OpenAI-shaped response plus receipt metadata.
 
+Architecture and Surplus Intelligence parity details: [discount-inference.md](discount-inference.md).
+
 ## Browse the market
 
 ```bash
@@ -40,6 +42,22 @@ curl http://127.0.0.1:8787/v1/inference/chat/completions \
 ```
 
 Defaults: one seller, `cost_first` routing, `allowed_model_ids` = request `model`. Budget defaults to the cheapest matching seller rate when `max_total_cost` is omitted.
+
+## Response metadata
+
+The `bossraid` field on successful responses includes:
+
+- `selected_seller` — provider that served the call
+- `paid_price_usd`, `benchmark_price_usd`, `savings_usd` — charge vs static catalog reference
+- `rate_card_hash` — quote snapshot used for settlement
+- `receipt_path` — verification link
+- `routing_proof` — privacy and verification gates applied
+
+Purchase history: `GET /v1/buyer/purchases`.
+
+## Strict E2EE models
+
+Catalog models marked `e2ee` with `raid_policy.privacy_mode: "strict"` route through the server Venice relay. Pass `X-BossRaid-Upstream-Api-Key` or set `BOSSRAID_VENICE_API_KEY`. No eligible strict seller → fail closed.
 
 ## Payment
 

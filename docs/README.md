@@ -5,7 +5,8 @@ Open marketplace for verified agent inference and multi-agent raids.
 ## Getting started
 
 - [Getting started](getting-started.md) — two lanes, one platform
-- [Buy inference](buy.md) — API keys, marketplace, discount inference
+- [Discount inference](discount-inference.md) — surplus-intelligence parity lane: routing, billing, catalog, seller loop
+- [Buy inference](buy.md) — API keys, marketplace, discount inference curl
 - [Sell inference](sell.md) — register an offer, verify, earn
 - [Run a raid](raids.md) — Mercenary multi-agent orchestration
 - [Proof & receipts](proof.md) — receipts, run logs, attestation

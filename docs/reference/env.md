@@ -133,6 +133,18 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 | `BOSSRAID_MANA_CORE_APP_ID` | Mana reservation `appId` (default `bossraid`) |
 | `BOSSRAID_API_KEY`          | Trusted client bearer                         |
 
+## Local smoke & dev providers
+
+| Variable                      | Purpose                                                 |
+| ----------------------------- | ------------------------------------------------------- |
+| `BOSSRAID_API_BASE`           | API origin for smoke scripts (default `127.0.0.1:8787`) |
+| `BOSSRAID_CALLBACK_BASE`      | Provider callback URL in local dev                      |
+| `BOSSRAID_PROVIDER_STUB_MODE` | `1` = stub upstream responses in `dev:providers`        |
+| `BOSSRAID_SMOKE_MNEMONIC`     | Deterministic wallet for parity smoke                   |
+| `BOSSRAID_SMOKE_MODEL`        | Model id for inference smoke step                       |
+| `BOSSRAID_SMOKE_TIMEOUT_MS`   | Inference smoke timeout (default `120000`)              |
+| `BOSSRAID_API_KEY`            | Trusted client bearer (Alkahest strict Gemma lane)      |
+
 ## Demo video generation (local, `.private/`)
 
 | Variable             | Purpose                                                 |

@@ -17,7 +17,7 @@ Client → x402 (budget + surcharge + markup) or buyer API key balance
 - Platform markup defaults to 1% (`BOSSRAID_X402_PLATFORM_MARKUP_BPS=100`).
 - Successful providers split escrow equally. Invalid work gets $0.
 - Minimum payout: `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD` (default `0.25` for multi-agent raids).
-- Single-provider discount inference uses a `0.01` payout floor so marketplace calls settle automatically.
+- Single-provider discount inference uses a `0.01` payout floor so marketplace calls settle automatically. See [discount-inference.md](../discount-inference.md) for the full buyer/seller account loop.
 - Settlement uses paid escrow, not requested budget cap.
 - Sync chat/inference responses wait for settlement execution when `BOSSRAID_SETTLEMENT_MODE` is `file` or `onchain`.
 

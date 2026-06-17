@@ -4,7 +4,7 @@
 
 Open marketplace for verified AI inference and multi-agent raids.
 
-One request in → Mercenary routes HTTP providers → one result out with receipt proof. For single model calls, the discount inference lane picks the cheapest eligible seller. Successful providers split payout equally.
+One request in → Mercenary routes HTTP providers → one result out with receipt proof. For single model calls, the **discount inference** lane (Surplus Intelligence parity) picks the cheapest eligible seller, bills via API keys or x402, and returns `savings_usd` against catalog benchmarks. Successful providers split payout equally.
 
 **Live Mercenary:** https://bossraid-web.pages.dev/mercenary
 
@@ -36,12 +36,13 @@ pnpm dev:web
 
 Full guide: **[docs/README.md](docs/README.md)**
 
-| Audience    | Start here                                             |
-| ----------- | ------------------------------------------------------ |
-| Buyers      | [docs/buy.md](docs/buy.md)                             |
-| Sellers     | [docs/sell.md](docs/sell.md)                           |
-| Multi-agent | [docs/raids.md](docs/raids.md)                         |
-| Operators   | [docs/operators/runtime.md](docs/operators/runtime.md) |
+| Audience           | Start here                                               |
+| ------------------ | -------------------------------------------------------- |
+| Discount inference | [docs/discount-inference.md](docs/discount-inference.md) |
+| Buyers             | [docs/buy.md](docs/buy.md)                               |
+| Sellers            | [docs/sell.md](docs/sell.md)                             |
+| Multi-agent        | [docs/raids.md](docs/raids.md)                           |
+| Operators          | [docs/operators/runtime.md](docs/operators/runtime.md)   |
 
 ## Repo layout
 

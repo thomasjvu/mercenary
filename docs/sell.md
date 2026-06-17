@@ -4,6 +4,8 @@ Register a clean HTTP endpoint. Boss Raid verifies it, routes buyers to you, and
 
 Sellers run their own endpoints. Buyers never receive your upstream credentials.
 
+Overview of the discount-inference / surplus parity loop: [discount-inference.md](discount-inference.md).
+
 ## Self-serve (wallet)
 
 ```bash
@@ -30,6 +32,18 @@ curl -X POST http://127.0.0.1:8787/v1/seller/providers \
 ```
 
 Re-verify anytime: `POST /v1/seller/providers/:providerId/verify`
+
+## Hosted upstream seller
+
+Sell inference without running a provider worker. Connect an upstream key and publish catalog offers:
+
+1. `POST /v1/seller/upstream/:provider/connect` — validate key (`venice`, `redpill`, `near`, `chutes`, `phala`)
+2. `GET /v1/seller/upstream/:provider/models/catalog` — Boss Raid catalog with reference rates
+3. `POST /v1/seller/upstream/:provider/offers` — register `inference_hosted` offers per model
+
+Boss Raid routes buyer traffic to `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`. Upstream keys are encrypted at rest (`BOSSRAID_SECRET_ENCRYPTION_KEY` in production).
+
+Web UI: `/onboarding/seller` → upstream connect flow.
 
 ## Registry bootstrap (admin token)
 
@@ -83,3 +97,7 @@ Track earnings: `GET /v1/seller/earnings`, dashboard at `/account`.
 ## Pause an offer
 
 `PATCH /v1/seller/providers/:providerId` with `marketplaceOfferStatus: "paused"`. Paused sellers are excluded from routing and order books.
+
+## Routing cooldown
+
+Providers that fail dispatch enter a 5-minute routing cooldown. They stay registered but are excluded from `cost_first` selection until the cooldown expires.

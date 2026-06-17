@@ -16,7 +16,9 @@ Buyers use wallet sessions or `br_` API keys (hashed, encrypted at rest, spend c
 
 Routing filters: model, provider, framework, privacy mode, verification status, budget.
 
-Strict-private work requires TEE/privacy metadata. No eligible seller → fail closed, no policy downgrade.
+Discount inference uses `cost_first` selection. Providers that fail dispatch get a 5-minute routing cooldown before they re-enter the order book.
+
+Strict-private work requires TEE/privacy metadata. No eligible seller → fail closed, no policy downgrade. Trusted Alkahest clients on discount inference get an additional hardened Gemma-only strict gate — see [discount-inference.md](../discount-inference.md).
 
 ## Production controls
 

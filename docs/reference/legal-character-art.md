@@ -21,7 +21,7 @@ Canonical stills live in `assets/oc-references/`. See [DESIGN-LOCK.md](../../ass
 | `copy-x-stance-ref.png`                    | Wide fighting stance reference (pose only)        |
 | `legal-float-ref.png`                      | QA target — dual temple spikes + palm charge shot |
 
-**S07 legal-float exception:** symmetrical chrome spike fins on both temples and a localized cyan charge sphere at the extended palm. Canonical pfp/hero clips keep the single right sensor horn.
+**S07 legal-float add-on:** localized cyan charge sphere at the extended palm. Canonical pfp and legal float both use symmetrical temple spike fins.
 
 ## Generation pipeline
 

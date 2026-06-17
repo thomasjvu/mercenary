@@ -36,6 +36,7 @@ Regenerate legal-page Mercenary float (Venice; requires `VENICE_API_KEY` in `.pr
 
 ```bash
 pnpm sync:oc-references
+pnpm generate:pfp               # Mercenary bust portrait → assets/boss-raid-pfp.png
 pnpm generate:legal-character   # keyframe + clip + webm export
 pnpm export:legal-character   # re-export webm from existing S07 MP4 only
 ```
@@ -94,6 +95,7 @@ pnpm --filter @bossraid/web test src/lib/*.test.ts
 pnpm mercenary:rehearse
 pnpm export:proof-bundle -- --raid-id <raidId>
 pnpm verify:attestation
+pnpm test:surplus-parity:smoke
 pnpm deploy:web:cloudflare
 ```
 
@@ -104,6 +106,18 @@ BOSSRAID_CLOUDFLARE_PAGES_PROJECT=bossraid-web \
 BOSSRAID_API_ORIGIN=https://bossraid-web.pages.dev/api \
 pnpm deploy:web:cloudflare
 ```
+
+## Discount inference parity smoke
+
+End-to-end Surplus Intelligence parity check: marketplace stats, wallet session, balance fund, API key, inference call, purchases, seller ledger.
+
+```bash
+pnpm dev:providers
+BOSSRAID_STORAGE_BACKEND=memory BOSSRAID_X402_ENABLED=false pnpm dev:api
+BOSSRAID_API_BASE=http://127.0.0.1:8787 pnpm test:surplus-parity:smoke
+```
+
+Optional: `BOSSRAID_SMOKE_MODEL`, `BOSSRAID_SMOKE_TIMEOUT_MS`, `BOSSRAID_SMOKE_MNEMONIC`. See [discount-inference.md](../discount-inference.md).
 
 Full command list (settlement, docker, Phala, contracts):
 

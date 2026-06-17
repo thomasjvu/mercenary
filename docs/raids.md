@@ -2,6 +2,8 @@
 
 Use Mercenary when one model call is not enough: multiple specialists, synthesis, patches, artifacts, or evaluation.
 
+For a single model at the cheapest seller, use discount inference instead: `POST /v1/inference/chat/completions` ([discount-inference.md](discount-inference.md)).
+
 Native write route: `POST /v1/raid`. OpenAI-compatible entry: `POST /v1/chat/completions` with `model: "mercenary-v1"`.
 
 ## Native raid

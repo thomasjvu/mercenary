@@ -11,6 +11,22 @@ Boss Raid is the platform. Mercenary is the orchestrator agent.
 
 Both lanes share provider registry, routing proof, receipts, and settlement. Marketplace discovery: `GET /v1/models`, `GET /v1/prices`, `GET /v1/markets`.
 
+Full discount-inference / Surplus Intelligence parity design: [discount-inference.md](../discount-inference.md).
+
+## Discount inference (surplus parity)
+
+Single-provider marketplace lane. API normalizes every request to `maxAgents: 1` and `selectionMode: cost_first` (`apps/api/src/lib/inference-marketplace-policy.ts`).
+
+**Buyer account loop** — wallet session → `br_` API keys → optional prepaid balance → inference call. API keys skip x402 (`apps/api/src/handlers/payment.ts`). Purchases and benchmark savings land in buyer ledger (`apps/api/src/control-state/buyer-ledger.ts`). Response `bossraid` metadata includes `selected_seller`, `savings_usd`, `rate_card_hash` (`apps/api/src/handlers/billing-mana.ts`).
+
+**Seller account loop** — HTTP providers or hosted upstream offers (`inference_hosted`) → earnings ledger (`apps/api/src/control-state/seller-ledger.ts`) → payout on approval. Paused offers and 5-minute routing cooldowns after dispatch failure keep bad sellers out of the order book (`apps/orchestrator/src/orchestrator-provider-registry.ts`).
+
+**Settlement** — single-provider inference uses a `$0.01` payout floor (`packages/constants/src/settlement.ts`). Multi-agent raids keep the `$0.25` default.
+
+**Catalog** — `packages/constants/src/inference-catalog.ts` fills discovery when no live seller exists. Benchmark prices drive `savings_usd` (`packages/constants/src/marketplace-benchmark.ts`).
+
+**Privacy forks** — strict E2EE catalog models use the Venice relay (`apps/api/src/lib/e2ee-chat-route.ts`). Trusted Alkahest clients get a hardened Gemma-only strict lane (`readTrustedAlkahestClient` in `inference-marketplace-policy.ts`).
+
 ## Runtime flow
 
 1. Client hits API (raid, chat, inference, or MCP).
