@@ -440,3 +440,27 @@ test('surplus parity: API key skips x402, funds balance, records purchases and s
     await app.close();
   }
 });
+
+test('production balance fund rejects unverified credit when x402 is disabled', async () => {
+  const app = buildApiServer(new BossRaidOrchestrator([], undefined, undefined, undefined), {
+    ...process.env,
+    NODE_ENV: 'production',
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+    BOSSRAID_X402_ENABLED: 'false',
+    BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND: 'true',
+  });
+
+  try {
+    const session = await createPublicSessionCookie(app, 11);
+    const funded = await app.inject({
+      method: 'POST',
+      url: '/v1/buyer/balance/fund',
+      headers: { cookie: session.cookie },
+      payload: { amountUsd: 3 },
+    });
+    assert.equal(funded.statusCode, 503);
+    assert.equal(funded.json().error, 'payments_disabled');
+  } finally {
+    await app.close();
+  }
+});

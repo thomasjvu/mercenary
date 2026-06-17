@@ -104,9 +104,11 @@ Cloudflare Pages deploy (requires Wrangler auth):
 
 ```bash
 BOSSRAID_CLOUDFLARE_PAGES_PROJECT=bossraid-web \
-BOSSRAID_API_ORIGIN=https://bossraid-web.pages.dev/api \
+BOSSRAID_API_ORIGIN=https://<your-phala-or-public-api-host>/api \
 pnpm deploy:web:cloudflare
 ```
+
+Set the Cloudflare Pages secret `BOSSRAID_API_ORIGIN` to your public API host (Phala CVM), not a self-referential `pages.dev/api` loop. The API host must have `BOSSRAID_X402_ENABLED=true` before wallet top-ups work.
 
 ## Discount inference parity smoke
 
@@ -114,7 +116,8 @@ End-to-end Surplus Intelligence parity check: marketplace stats, wallet session,
 
 ```bash
 pnpm dev:providers
-BOSSRAID_STORAGE_BACKEND=memory BOSSRAID_X402_ENABLED=false pnpm dev:api
+BOSSRAID_STORAGE_BACKEND=memory BOSSRAID_X402_ENABLED=false \
+  BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND=true pnpm dev:api
 BOSSRAID_API_BASE=http://127.0.0.1:8787 pnpm test:surplus-parity:smoke
 ```
 

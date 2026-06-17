@@ -7,7 +7,6 @@ import {
   fetchBuyerPurchases,
   fetchSellerStats,
   fetchSession,
-  fundBuyerBalance,
   listSellerProviders,
   updateSellerProvider,
   verifySellerProvider,
@@ -85,34 +84,36 @@ export function useAccountPage({ onNavigate }: UseAccountPageOptions) {
     setFundStatus('Processing balance top-up...');
     try {
       const ready = await fetchReady();
-      let result: { creditedUsd: number; balanceUsd: number };
+      if (!ready.payment.enabled) {
+        setFundStatus('Payments are not configured on this API host. Top-ups require x402.');
+        return;
+      }
 
-      if (ready.payment.enabled) {
-        const paidFetch = await smartPay.createFetchWithPayment();
-        const response = await paidFetch(buildApiUrl('/v1/buyer/balance/fund'), {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ amountUsd }),
-        });
-        const body = (await response.json().catch(() => null)) as {
-          message?: string;
-          creditedUsd?: number;
-          balanceUsd?: number;
-        } | null;
-        if (!response.ok) {
-          throw new Error(body?.message ?? `Balance top-up failed (${response.status}).`);
-        }
-        result = {
-          creditedUsd: body?.creditedUsd ?? amountUsd,
-          balanceUsd: body?.balanceUsd ?? 0,
-        };
-      } else {
-        result = await fundBuyerBalance(amountUsd);
+      if (!smartPay.walletAddress) {
+        setFundStatus('Connect MetaMask before topping up.');
+        return;
+      }
+
+      const paidFetch = await smartPay.createFetchWithPayment();
+      const response = await paidFetch(buildApiUrl('/v1/buyer/balance/fund'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ amountUsd }),
+      });
+      const body = (await response.json().catch(() => null)) as {
+        message?: string;
+        creditedUsd?: number;
+        balanceUsd?: number;
+        payment?: { transaction?: string; payer?: string };
+      } | null;
+      if (!response.ok) {
+        throw new Error(body?.message ?? `Balance top-up failed (${response.status}).`);
       }
 
       await session.mutate();
+      const txNote = body?.payment?.transaction ? ` Tx ${body.payment.transaction}.` : '';
       setFundStatus(
-        `Credited $${result.creditedUsd.toFixed(2)}. New balance $${result.balanceUsd.toFixed(2)}.`
+        `Credited $${(body?.creditedUsd ?? amountUsd).toFixed(2)}. New balance $${(body?.balanceUsd ?? 0).toFixed(2)}.${txNote}`
       );
     } catch (error) {
       setFundStatus(error instanceof Error ? error.message : 'Balance top-up failed.');

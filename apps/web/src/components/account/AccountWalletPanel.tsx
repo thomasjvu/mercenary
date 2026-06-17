@@ -23,8 +23,18 @@ export function AccountWalletPanel({ state }: AccountWalletPanelProps) {
           </p>
         ) : null}
         <p className="quiet-note">
-          Top-ups require a verified x402 USDC payment from your connected wallet.
+          Top-ups require x402 USDC payment. Connect MetaMask, then approve the wallet transaction.
         </p>
+        {!state.smartPay.walletAddress ? (
+          <button
+            className="button"
+            disabled={state.smartPay.busy}
+            onClick={() => void state.smartPay.connectWallet()}
+            type="button"
+          >
+            connect MetaMask to top up
+          </button>
+        ) : null}
         <form
           className="account-balance-fund"
           onSubmit={(event) => {
@@ -41,7 +51,11 @@ export function AccountWalletPanel({ state }: AccountWalletPanelProps) {
             type="number"
             value={state.fundAmount}
           />
-          <button className="button button--primary" disabled={state.smartPay.busy} type="submit">
+          <button
+            className="button button--primary"
+            disabled={state.smartPay.busy || !state.smartPay.walletAddress}
+            type="submit"
+          >
             pay with wallet
           </button>
           {state.fundStatus ? <FormStatus>{state.fundStatus}</FormStatus> : null}

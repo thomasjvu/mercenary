@@ -43,7 +43,8 @@ export async function fetchSellerStats(): Promise<SellerStats> {
   return fetchJson<SellerStats>('/v1/seller/stats');
 }
 
-export async function fundBuyerBalance(amountUsd: number): Promise<{
+/** Local smoke/tests only — production UI must use x402 paid fetch. */
+export async function fundBuyerBalanceDevOnly(amountUsd: number): Promise<{
   wallet: string;
   balanceUsd: number;
   creditedUsd: number;

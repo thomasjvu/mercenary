@@ -65,15 +65,16 @@ async function main() {
   });
   const fundOk =
     funded.status === 200 ||
+    funded.status === 503 ||
     (funded.status === 402 && funded.body?.error === 'payment_required');
   steps.push({
     step: 'fund_balance',
     ok: fundOk,
     body: funded.body,
     note:
-      funded.status === 402
-        ? 'skipped: x402 required; inference uses API key spend cap'
-        : undefined,
+      funded.status === 200
+        ? undefined
+        : 'skipped: x402 required; inference uses API key spend cap',
   });
 
   const keyCreate = await fetchJson(`${apiBase}/v1/buyer/api-keys`, {

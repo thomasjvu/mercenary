@@ -216,10 +216,17 @@ export function registerAccountRoutes(
     }
 
     const x402Config = readX402ConfigForContext(ctx);
-    const allowUnverifiedBalanceFund = readBooleanEnv(
-      ctx.env.BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND
-    );
+    const isProduction = ctx.env.NODE_ENV === 'production';
+    const allowUnverifiedBalanceFund =
+      !isProduction && readBooleanEnv(ctx.env.BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND);
     let creditedUsd = amountUsd;
+    let settlement:
+      | {
+          transaction?: string;
+          payer?: string;
+          network?: string;
+        }
+      | undefined;
 
     if (x402Config.enabled) {
       const payment = await requireX402Payment({
@@ -229,13 +236,17 @@ export function registerAccountRoutes(
         budgetUsd: amountUsd,
       });
       creditedUsd = payment.escrowFundingUsd;
+      settlement = payment.settlement;
       applyX402Headers(reply, { settlement: payment.settlement });
-    } else if (!allowUnverifiedBalanceFund) {
-      reply.code(402);
+    } else if (allowUnverifiedBalanceFund) {
+      creditedUsd = amountUsd;
+    } else {
+      reply.code(503);
       return {
-        error: 'payment_required',
-        message:
-          'Balance top-ups require x402 payments. Enable BOSSRAID_X402_ENABLED or set BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND=true for local development only.',
+        error: 'payments_disabled',
+        message: isProduction
+          ? 'Balance top-ups require x402 payments. Enable BOSSRAID_X402_ENABLED and configure facilitator credentials.'
+          : 'Balance top-ups require x402 payments. Enable BOSSRAID_X402_ENABLED or set BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND=true for local development only.',
       };
     }
 
@@ -245,6 +256,15 @@ export function registerAccountRoutes(
       balanceUsd: account.balanceUsd,
       creditedUsd,
       currency: 'USD',
+      ...(settlement?.transaction || settlement?.payer
+        ? {
+            payment: {
+              transaction: settlement.transaction,
+              payer: settlement.payer,
+              network: settlement.network,
+            },
+          }
+        : {}),
     };
   });
 }

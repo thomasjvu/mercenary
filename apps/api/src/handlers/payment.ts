@@ -284,6 +284,12 @@ export function createPaymentHandlers(
 
     const x402Config = readX402ConfigForContext(ctx);
     if (!x402Config.enabled) {
+      if (ctx.env.NODE_ENV === 'production') {
+        throw new ApiContractError(
+          'Wallet-paid launches require x402 on this host. Use a buyer API key, mana billing, or enable x402.',
+          503
+        );
+      }
       return {};
     }
 

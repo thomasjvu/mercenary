@@ -116,10 +116,17 @@ pre,
 
 .app-sidebar__brand-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: end;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 6px 8px;
   width: 100%;
+}
+
+.app-sidebar__brand-group {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
 }
 
 .app-sidebar__brand {
@@ -135,7 +142,7 @@ pre,
 }
 
 .app-sidebar__version {
-  align-self: end;
+  flex: 0 0 auto;
   border: 0;
   background: transparent;
   color: var(--rx-blue);
@@ -145,8 +152,9 @@ pre,
   font-weight: 500;
   letter-spacing: 0.1em;
   line-height: 1;
-  padding: 0 0 0.12em;
+  padding: 0;
   text-transform: lowercase;
+  transform: translateY(-2px);
   transition: color 160ms ease, opacity 160ms ease;
 }
 

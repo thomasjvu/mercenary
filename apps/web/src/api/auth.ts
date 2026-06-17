@@ -111,4 +111,4 @@ export async function fetchSellerEarnings(): Promise<SellerEarnings> {
 }
 
 export type { BuyerPurchase, BuyerPurchasesResponse, SellerStats } from './marketplace.js';
-export { fetchBuyerPurchases, fetchSellerStats, fundBuyerBalance } from './marketplace.js';
+export { fetchBuyerPurchases, fetchSellerStats } from './marketplace.js';

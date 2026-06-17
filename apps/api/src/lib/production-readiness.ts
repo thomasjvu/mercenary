@@ -131,6 +131,30 @@ export function buildProductionReadinessReport(input: {
     details: input.x402,
   });
 
+  const productionEnv = input.env.NODE_ENV === 'production';
+  addCheck({
+    id: 'unverified_balance_fund',
+    status:
+      !productionEnv || !readBooleanEnv(input.env.BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND)
+        ? 'pass'
+        : 'fail',
+    severity: 'blocking',
+    message:
+      'BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND must stay disabled in production. Balance top-ups require verified x402 payments.',
+    details: {
+      allowUnverifiedBalanceFund: readBooleanEnv(input.env.BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND),
+    },
+  });
+
+  const enabledMocks = readEnabledUpstreamMocks(input.env);
+  addCheck({
+    id: 'upstream_mocks_disabled',
+    status: !productionEnv || enabledMocks.length === 0 ? 'pass' : 'fail',
+    severity: 'blocking',
+    message: 'Upstream inference, TEE, and provider stub mocks must be disabled in production.',
+    details: { enabledMocks },
+  });
+
   addCheck({
     id: 'onchain_settlement',
     status: input.settlement.configured ? 'pass' : 'fail',
@@ -266,6 +290,21 @@ export function buildProductionReadinessReport(input: {
       action: check.message,
     })),
   };
+}
+
+const UPSTREAM_MOCK_ENV_KEYS = [
+  'BOSSRAID_UPSTREAM_MOCK',
+  'BOSSRAID_UPSTREAM_TEE_MOCK',
+  'BOSSRAID_VENICE_MOCK',
+  'BOSSRAID_REDPILL_MOCK',
+  'BOSSRAID_NEAR_MOCK',
+  'BOSSRAID_CHUTES_MOCK',
+  'BOSSRAID_PHALA_MOCK',
+  'BOSSRAID_PROVIDER_STUB_MODE',
+] as const;
+
+export function readEnabledUpstreamMocks(env: NodeJS.ProcessEnv): string[] {
+  return UPSTREAM_MOCK_ENV_KEYS.filter((key) => readBooleanEnv(env[key]));
 }
 
 export function hasStrongOperationalSecret(value: string | undefined, minLength = 32): boolean {

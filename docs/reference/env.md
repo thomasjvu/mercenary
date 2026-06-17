@@ -49,22 +49,22 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 
 ## x402
 
-| Variable                                       | Purpose                                                                                          |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `BOSSRAID_X402_ENABLED`                        | Default `false`; ops toggle overrides live                                                       |
-| `BOSSRAID_X402_PAY_TO`                         | Treasury wallet                                                                                  |
-| `BOSSRAID_X402_RAID_SURCHARGE_USD`             | Flat raid surcharge (default `0.01`)                                                             |
-| `BOSSRAID_X402_CHAT_SURCHARGE_USD`             | Flat chat/inference surcharge (default `0.002`)                                                  |
-| `BOSSRAID_X402_PLATFORM_MARKUP_BPS`            | Platform markup (default `100` = 1%)                                                             |
-| `BOSSRAID_X402_NETWORK`, `BOSSRAID_X402_ASSET` | Payment asset config                                                                             |
-| `BOSSRAID_X402_FACILITATOR_PRESET`             | `metamask_base_mainnet` or `metamask_base_sepolia` for cookoff facilitator                       |
-| `BOSSRAID_X402_FACILITATOR_URL`                | Override facilitator URL (MetaMask tx-sentinel or PayAI)                                         |
-| `BOSSRAID_X402_ASSET_TRANSFER_METHOD`          | `permit2` (default) or `erc7710` for ERC-7710 delegation payments                                |
-| `BOSSRAID_DELEGATION_MANAGER_ADDRESS`          | ERC-7710 delegation manager on Base; falls back to MetaMask permission `signerMeta` when omitted |
-| `BOSSRAID_X402_BUYER_PRIVATE_KEY`              | Wallet smoke tests and MCP agent one-shot payments                                               |
-| `BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND`       | Local dev only: allow `POST /v1/buyer/balance/fund` without x402 when payments are disabled      |
-| `PAYAI_API_KEY_ID`, `PAYAI_API_KEY_SECRET`     | PayAI facilitator                                                                                |
-| `CDP_API_KEY_*`                                | CDP fallback                                                                                     |
+| Variable                                       | Purpose                                                                                                      |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `BOSSRAID_X402_ENABLED`                        | Default `false`; ops toggle overrides live                                                                   |
+| `BOSSRAID_X402_PAY_TO`                         | Treasury wallet                                                                                              |
+| `BOSSRAID_X402_RAID_SURCHARGE_USD`             | Flat raid surcharge (default `0.01`)                                                                         |
+| `BOSSRAID_X402_CHAT_SURCHARGE_USD`             | Flat chat/inference surcharge (default `0.002`)                                                              |
+| `BOSSRAID_X402_PLATFORM_MARKUP_BPS`            | Platform markup (default `100` = 1%)                                                                         |
+| `BOSSRAID_X402_NETWORK`, `BOSSRAID_X402_ASSET` | Payment asset config                                                                                         |
+| `BOSSRAID_X402_FACILITATOR_PRESET`             | `metamask_base_mainnet` or `metamask_base_sepolia` for cookoff facilitator                                   |
+| `BOSSRAID_X402_FACILITATOR_URL`                | Override facilitator URL (MetaMask tx-sentinel or PayAI)                                                     |
+| `BOSSRAID_X402_ASSET_TRANSFER_METHOD`          | `permit2` (default) or `erc7710` for ERC-7710 delegation payments                                            |
+| `BOSSRAID_DELEGATION_MANAGER_ADDRESS`          | ERC-7710 delegation manager on Base; falls back to MetaMask permission `signerMeta` when omitted             |
+| `BOSSRAID_X402_BUYER_PRIVATE_KEY`              | Wallet smoke tests and MCP agent one-shot payments                                                           |
+| `BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND`       | **Test/dev only.** Never set in production. Allows unverified `POST /v1/buyer/balance/fund` when x402 is off |
+| `PAYAI_API_KEY_ID`, `PAYAI_API_KEY_SECRET`     | PayAI facilitator                                                                                            |
+| `CDP_API_KEY_*`                                | CDP fallback                                                                                                 |
 
 ## MetaMask cookoff / agent payments
 
