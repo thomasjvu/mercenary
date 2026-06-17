@@ -334,6 +334,60 @@ export function buildCanonicalCollectionPath(collection, path = '', options = {}
   });
 }
 
+export function buildCollectionRouteVariants(collection, path = '', options = {}) {
+  const normalizedPath = normalizeDocPath(path);
+  const { versioning, i18n } = getFeatureState(options);
+  const routePaths = new Set();
+
+  routePaths.add(
+    buildCollectionRoutePath(collection, normalizedPath, {
+      ...options,
+      includeVersion: false,
+      includeLocale: false,
+    })
+  );
+
+  if (versioning.enabled) {
+    for (const version of versioning.versions) {
+      routePaths.add(
+        buildCollectionRoutePath(collection, normalizedPath, {
+          ...options,
+          version,
+          includeVersion: true,
+          includeLocale: false,
+        })
+      );
+    }
+  }
+
+  if (i18n.enabled) {
+    for (const locale of i18n.locales) {
+      routePaths.add(
+        buildCollectionRoutePath(collection, normalizedPath, {
+          ...options,
+          locale,
+          includeVersion: false,
+          includeLocale: true,
+        })
+      );
+    }
+  }
+
+  if (versioning.enabled || i18n.enabled) {
+    for (const context of getDocsVariantContexts(options)) {
+      routePaths.add(
+        buildCanonicalCollectionPath(collection, normalizedPath, {
+          ...options,
+          version: context.version,
+          locale: context.locale,
+        })
+      );
+    }
+  }
+
+  return Array.from(routePaths);
+}
+
 export function parseCollectionRoutePath(collection, slug = '', options = {}) {
   return parseDocsRoutePath(slug, options);
 }
