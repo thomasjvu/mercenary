@@ -223,9 +223,9 @@ pre,
   display: block;
   color: var(--text);
   font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
-  font-size: clamp(1.35rem, 2.2vw, 1.55rem);
-  font-weight: 800;
-  letter-spacing: 0.05em;
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
   line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;

@@ -37,6 +37,7 @@ Regenerate legal-page Mercenary float (Venice; requires `VENICE_API_KEY` in `.pr
 ```bash
 pnpm sync:oc-references
 pnpm generate:pfp               # Mercenary bust portrait → assets/boss-raid-pfp.png
+pnpm generate:landing-hero      # seller / raider / buyer manga panels → apps/web/src/assets/
 pnpm generate:legal-character   # keyframe + clip + webm export
 pnpm export:legal-character   # re-export webm from existing S07 MP4 only
 ```

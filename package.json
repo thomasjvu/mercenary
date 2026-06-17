@@ -28,6 +28,8 @@
     "eigencompute:build-job": "docker build --platform linux/amd64 -f Dockerfile.eigencompute --target evaluator-job -t bossraid-evaluator-job:eigencompute-local .",
     "export:legal-character": "node scripts/export-legal-character-video.mjs",
     "generate:legal-character": "node .private/demo-video/scripts/venice-legal-character.mjs --regen-image",
+    "generate:pfp": "node .private/demo-video/scripts/venice-pfp.mjs",
+    "generate:landing-hero": "node .private/demo-video/scripts/venice-landing-hero.mjs",
     "sync:oc-references": "node .private/demo-video/scripts/sync-oc-references.mjs",
     "export:proof-bundle": "TSX_TSCONFIG_PATH=tsconfig.base.json node --import tsx scripts/export-proof-bundle.ts",
     "game-raid:build-payload": "node scripts/build-game-raid-payload.mjs",

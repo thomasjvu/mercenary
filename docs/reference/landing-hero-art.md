@@ -87,7 +87,16 @@ Slices inherit `background-size: 400% 100%` from `.hero__slice`. Inline `backgro
 | raider       | `apps/web/src/assets/hero-manga-raiders.jpg` |
 | buyer        | `apps/web/src/assets/hero-manga-buyer.jpg`   |
 
-Raider and buyer art uses the same RX-78 Gundam reference as seller (B&W manga, different pose). Seller keeps baked yellow eyes in the JPG. Raider and buyer use CSS eye overlays (`HERO_EYE_GLOWS_BY_WORKFLOW`) tinted yellow and red to match workflow tabs.
+All three panels use **Mercenary Mk-0** (symmetrical temple spikes, hex reactor, triple visor) in B&W manga ink with visor and accent color baked into the JPG. No CSS eye overlays — `HERO_EYE_GLOWS_BY_WORKFLOW` is empty for every tab.
+
+Regenerate from OC references:
+
+```bash
+pnpm sync:oc-references
+pnpm generate:landing-hero
+```
+
+Prompts: `.private/demo-video/prompts/landing-hero-workflows.md`
 
 ## Changing the look
 

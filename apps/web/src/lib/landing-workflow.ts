@@ -65,28 +65,8 @@ export const HERO_EYE_GLOWS_BY_WORKFLOW: Record<
   Partial<Record<number, readonly HeroEyeGlow[]>>
 > = {
   seller: {},
-  raider: {
-    1: [
-      { top: '34%', left: '46%', width: '9%' },
-      { top: '34%', left: '60%', width: '9%' },
-      { top: '19%', left: '53%', width: '4%', variant: 'sensor' },
-    ],
-    2: [
-      { top: '34%', left: '32%', width: '9%' },
-      { top: '34%', left: '46%', width: '9%' },
-    ],
-  },
-  buyer: {
-    1: [
-      { top: '17%', left: '50%', width: '8%' },
-      { top: '17%', left: '63%', width: '8%' },
-    ],
-    2: [
-      { top: '17%', left: '34%', width: '8%' },
-      { top: '17%', left: '47%', width: '8%' },
-      { top: '8%', left: '40%', width: '3.5%', variant: 'sensor' },
-    ],
-  },
+  raider: {},
+  buyer: {},
 };
 
 export const WORKFLOW_STEPS: Record<WorkflowTabId, readonly { label: string; value: string }[]> = {

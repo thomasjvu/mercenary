@@ -22,8 +22,8 @@ pnpm sync:oc-references
 
 ## Must keep
 
-- Single chrome sensor horn on **right temple only** (canonical pfp / hero clips)
-- **Legal float exception (S07):** matching symmetrical chrome spike fins on **both temples** plus localized palm charge glow
+- Matching symmetrical chrome sensor spike fins on **both temples** (canonical pfp and legal float)
+- **Legal float (S07):** localized palm charge glow in addition to dual temple spikes
 - Triple-segment horizontal visor band — **no V-fin, no twin antenna**
 - Off-center **hex** chest reactor `#fb2f38` — not a round cockpit
 - Trapezoid **wedge** shoulders with one yellow `#fff867` chevron each
