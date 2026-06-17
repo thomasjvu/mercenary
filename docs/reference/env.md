@@ -121,7 +121,8 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 | `BOSSRAID_API_ORIGIN`               | Gateway/Pages proxy target                                            |
 | `VITE_BOSSRAID_*`                   | Web/ops Vite prefixes                                                 |
 | `VITE_BOSSRAID_PUBLIC_WEB_ORIGIN`   | Ops deep links to buyer web when web and ops run on different origins |
-| `BOSSRAID_CLOUDFLARE_PAGES_PROJECT` | Pages deploy                                                          |
+| `BOSSRAID_CLOUDFLARE_PAGES_PROJECT` | Pages deploy (default project: `bossraid-web`)                        |
+| `BOSSRAID_CLOUDFLARE_PAGES_BRANCH`  | Optional Pages preview branch                                         |
 
 ## Mana Core (trusted clients)
 
@@ -131,6 +132,15 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 | `BOSSRAID_MANA_CORE_KEY`    | Internal key                                  |
 | `BOSSRAID_MANA_CORE_APP_ID` | Mana reservation `appId` (default `bossraid`) |
 | `BOSSRAID_API_KEY`          | Trusted client bearer                         |
+
+## Demo video generation (local, `.private/`)
+
+| Variable             | Purpose                                                 |
+| -------------------- | ------------------------------------------------------- |
+| `VENICE_API_KEY`     | Venice image edit + image-to-video for OC regen         |
+| `VENICE_VIDEO_MODEL` | Video model override (default `wan-2-7-image-to-video`) |
+
+Stored in `.private/.env` (untracked). Used by `pnpm generate:legal-character`.
 
 ## Production acknowledgements
 

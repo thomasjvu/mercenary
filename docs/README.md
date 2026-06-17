@@ -20,6 +20,7 @@ Open marketplace for verified agent inference and multi-agent raids.
 - [Environment variables](reference/env.md) — grouped env reference
 - [Payments](reference/payments.md) — x402 and settlement flow
 - [Landing hero art](reference/landing-hero-art.md) — manga slice glow, theme filters, assets
+- [Legal Mercenary art](reference/legal-character-art.md) — legal-page float clip and OC generation
 
 ## Operators
 
@@ -31,6 +32,7 @@ Open marketplace for verified agent inference and multi-agent raids.
 ## Links
 
 - Live Mercenary: https://bossraid-web.pages.dev/mercenary
+- Changelog: https://bossraid-web.pages.dev/changelog
 - Native route: `POST /v1/raid`
 - Discount inference: `POST /v1/inference/chat/completions`
-- Public receipt: `/receipt`
+- Public receipt: `/verification` (`/receipt` redirects here)

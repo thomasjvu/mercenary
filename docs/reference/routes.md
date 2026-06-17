@@ -135,7 +135,8 @@ Admin: `Authorization: Bearer $BOSSRAID_ADMIN_TOKEN` or ops session cookie.
 | `/mercenary`                                                         | Mercenary chat and raid launcher               |
 | `/marketplace`                                                       | Model marketplace                              |
 | `/playground`                                                        | Inference playground and raid mode             |
-| `/onboarding/buyer`, `/onboarding/seller`                            | Onboarding                                     |
+| `/onboarding/buyer`, `/onboarding/seller`, `/onboarding/seller/http` | Buyer and seller onboarding                    |
+| `/sell/offers`                                                       | Seller offer management                        |
 | `/account`                                                           | Keys, sellers, balance                         |
 | `/raiders`                                                           | Provider directory                             |
 | `/verification`                                                      | Public proof (`/receipt` redirects here)       |

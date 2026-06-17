@@ -15,7 +15,7 @@ export type ChangelogRelease = {
   sections: ChangelogSection[];
 };
 
-export const CHANGELOG_UPDATED = 'June 16, 2026';
+export const CHANGELOG_UPDATED = 'June 17, 2026';
 
 export const CHANGELOG_RELEASES: ChangelogRelease[] = [
   {
@@ -38,6 +38,7 @@ export const CHANGELOG_RELEASES: ChangelogRelease[] = [
         title: 'Web UI',
         items: [
           'Floating Mercenary clip on legal pages with pfp-locked generation and seamless hover loop.',
+          'Legal float regen: symmetrical temple spikes and localized palm charge-shot glow.',
           'Favicon synced from boss-raid-pfp; sidebar wordmark without logo mark.',
           'Playground user-error notes with italic copy and pixel icon.',
           'Collapsed sidebar: menu toggle first, social order adjusted, footer legal links removed.',

@@ -32,6 +32,16 @@ pnpm sync:inference-catalog
 
 Writes `packages/constants/src/inference-catalog.ts` and `packages/constants/data/inference-model-pricing.json` (Venice rates from public `/models`; Redpill, NEAR, Chutes, Phala from static script rates).
 
+Regenerate legal-page Mercenary float (Venice; requires `VENICE_API_KEY` in `.private/.env`):
+
+```bash
+pnpm sync:oc-references
+pnpm generate:legal-character   # keyframe + clip + webm export
+pnpm export:legal-character   # re-export webm from existing S07 MP4 only
+```
+
+See [reference/legal-character-art.md](../reference/legal-character-art.md).
+
 Gateway (built web + ops on one origin):
 
 ```bash
@@ -84,6 +94,14 @@ pnpm --filter @bossraid/web test src/lib/*.test.ts
 pnpm mercenary:rehearse
 pnpm export:proof-bundle -- --raid-id <raidId>
 pnpm verify:attestation
+pnpm deploy:web:cloudflare
+```
+
+Cloudflare Pages deploy (requires Wrangler auth):
+
+```bash
+BOSSRAID_CLOUDFLARE_PAGES_PROJECT=bossraid-web \
+BOSSRAID_API_ORIGIN=https://bossraid-web.pages.dev/api \
 pnpm deploy:web:cloudflare
 ```
 

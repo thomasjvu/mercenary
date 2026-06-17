@@ -18,8 +18,12 @@
       "purpose": "Inference playground and raid mode"
     },
     {
-      "path": "`/onboarding/buyer`, `/onboarding/seller`",
-      "purpose": "Onboarding"
+      "path": "`/onboarding/buyer`, `/onboarding/seller`, `/onboarding/seller/http`",
+      "purpose": "Buyer and seller onboarding"
+    },
+    {
+      "path": "/sell/offers",
+      "purpose": "Seller offer management"
     },
     {
       "path": "/account",
