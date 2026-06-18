@@ -6,7 +6,7 @@ import {
   formatPrivacyFeatureLabel,
 } from './receipt-attestation-view.js';
 
-const providers: Provider[] = [
+const providers = [
   {
     providerId: 'seller-a',
     displayName: 'Seller A',
@@ -15,7 +15,7 @@ const providers: Provider[] = [
     pricePerTaskUsd: 1,
     modelFamily: 'gpt',
   },
-];
+] as unknown as Provider[];
 
 const result = {
   approvedSubmissions: [

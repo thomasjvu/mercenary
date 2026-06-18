@@ -32,7 +32,7 @@ export function FormInput({ label, className = 'field', ...inputProps }: FormInp
 type FormSelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
   label: string;
   className?: string;
-  options: Array<[string, string]>;
+  options: ReadonlyArray<readonly [string, string]>;
 };
 
 export function FormSelect({

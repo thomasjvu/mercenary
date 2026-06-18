@@ -12,6 +12,7 @@ import {
   resolveRewardUsd,
 } from './lib/bounty-e2e-env.mjs';
 import { runBountyEscrowE2e } from './lib/bounty-e2e-run.mjs';
+import { runCommand, sleep, stopChild } from './lib/process-harness.mjs';
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 loadBountyE2eEnv(rootDir);
@@ -28,14 +29,13 @@ const providerId = provider.providerId;
 const providerToken = resolveProviderToken(provider);
 const providerAddressMap = loadProviderAddressMapJson(rootDir);
 
-let mode = 'unverified';
-if (onchainBootstrap) {
-  const walletKey =
-    process.env.BOSSRAID_X402_BUYER_PRIVATE_KEY?.trim() ||
+const mode = onchainBootstrap
+  ? process.env.BOSSRAID_X402_BUYER_PRIVATE_KEY?.trim() ||
     process.env.EVM_PRIVATE_KEY?.trim() ||
-    process.env.BOSSRAID_CLIENT_PRIVATE_KEY?.trim();
-  mode = walletKey ? 'wallet' : 'mock';
-}
+    process.env.BOSSRAID_CLIENT_PRIVATE_KEY?.trim()
+    ? 'wallet'
+    : 'mock'
+  : 'unverified';
 
 const rewardUsd = resolveRewardUsd();
 const posterPrivateKey = resolvePosterPrivateKey(mode);
@@ -54,8 +54,11 @@ const env = {
   BOSSRAID_EVAL_SANDBOX_TOKEN: process.env.BOSSRAID_EVAL_SANDBOX_TOKEN ?? 'local-dev-eval-token',
 };
 
+if (providerAddressMap) {
+  env.BOSSRAID_PROVIDER_ADDRESS_MAP_JSON = providerAddressMap;
+}
+
 if (onchainBootstrap) {
-  loadBountyE2eEnv(rootDir);
   Object.assign(env, {
     BOSSRAID_SETTLEMENT_MODE: 'onchain',
     BOSSRAID_X402_ENABLED: 'true',
@@ -63,18 +66,12 @@ if (onchainBootstrap) {
     BOSSRAID_X402_FACILITATOR_URL: mockFacilitatorUrl,
     BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND: 'false',
   });
-  if (providerAddressMap) {
-    env.BOSSRAID_PROVIDER_ADDRESS_MAP_JSON = providerAddressMap;
-  }
 } else {
   Object.assign(env, {
     BOSSRAID_SETTLEMENT_MODE: 'file',
     BOSSRAID_X402_ENABLED: 'false',
     BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND: 'true',
   });
-  if (providerAddressMap) {
-    env.BOSSRAID_PROVIDER_ADDRESS_MAP_JSON = providerAddressMap;
-  }
 }
 
 let apiChild;
@@ -175,45 +172,4 @@ async function waitForHttp(url, label, timeoutMs, method = 'GET') {
     await sleep(250);
   }
   throw new Error(`Timed out waiting for ${label} at ${url}`);
-}
-
-async function runCommand(rootDir, env, command, args) {
-  await new Promise((resolvePromise, reject) => {
-    const child = spawn(command, args, {
-      cwd: rootDir,
-      stdio: 'inherit',
-      env,
-    });
-    child.on('error', reject);
-    child.on('close', (code, signal) => {
-      if (signal) {
-        reject(new Error(`${command} ${args.join(' ')} exited via signal ${signal}`));
-        return;
-      }
-      if (code !== 0) {
-        reject(new Error(`${command} ${args.join(' ')} exited with code ${code ?? 0}`));
-        return;
-      }
-      resolvePromise(undefined);
-    });
-  });
-}
-
-async function stopChild(child) {
-  if (!child || child.killed || child.exitCode !== null || child.signalCode !== null) {
-    return;
-  }
-  await new Promise((resolvePromise) => {
-    child.once('close', () => resolvePromise(undefined));
-    child.kill('SIGTERM');
-    setTimeout(() => {
-      if (!child.killed) {
-        child.kill('SIGKILL');
-      }
-    }, 2_000);
-  });
-}
-
-function sleep(ms) {
-  return new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
 }

@@ -1,23 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
-import { mkdtemp } from 'node:fs/promises';
-import { join } from 'node:path';
-import { tmpdir } from 'node:os';
-import { BountyStore } from './lib/bounty-store.js';
-import { BountyService } from './lib/bounty-service.js';
 import type { ProviderProfile } from '@bossraid/shared-types';
+import { hashDeliveryPayload } from './lib/bounty-service.js';
+import { createTestBountyService } from './test/helpers.js';
 
 test('bounty lifecycle: create, fund, bid, award, deliver, accept', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'bossraid-bounty-test-'));
-  const store = new BountyStore(join(dir, 'bounties.sqlite'));
-  const service = new BountyService(store, {
-    defaultBiddingDays: 7,
-    defaultAwardDays: 3,
-    defaultDeliveryDays: 14,
-    defaultAcceptDays: 7,
-    autoAwardMax: 3,
-  });
+  const { service } = await createTestBountyService();
 
   const bounty = service.createBounty('0xPoster00000000000000000000000000000001', {
     title: 'Ship docs',
@@ -51,7 +39,7 @@ test('bounty lifecycle: create, fund, bid, award, deliver, accept', async () => 
   const delivered = await service.deliverAward(awarded.awards[0]!.id, 'pqf_test', {
     artifactSummary: 'Docs shipped',
     artifactsJson,
-    deliveryHash: createHash('sha256').update(artifactsJson).digest('hex'),
+    deliveryHash: hashDeliveryPayload(artifactsJson),
   });
   assert.equal(delivered.status, 'delivered');
 
@@ -60,14 +48,14 @@ test('bounty lifecycle: create, fund, bid, award, deliver, accept', async () => 
 });
 
 test('auto-awards top bid after award deadline', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'bossraid-bounty-deadline-'));
-  const store = new BountyStore(join(dir, 'bounties.sqlite'));
-  const service = new BountyService(store, {
-    defaultBiddingDays: 7,
-    defaultAwardDays: 3,
-    defaultDeliveryDays: 1,
-    defaultAcceptDays: 1,
-    autoAwardMax: 1,
+  const { service, store } = await createTestBountyService({
+    prefix: 'bossraid-bounty-deadline-',
+    env: {
+      ...process.env,
+      BOSSRAID_BOUNTY_DEFAULT_DELIVERY_DAYS: '1',
+      BOSSRAID_BOUNTY_DEFAULT_ACCEPT_DAYS: '1',
+      BOSSRAID_BOUNTY_AUTO_AWARD_MAX: '1',
+    },
   });
 
   const bounty = service.createBounty('0xPoster00000000000000000000000000000002', {
@@ -102,14 +90,8 @@ test('auto-awards top bid after award deadline', async () => {
 });
 
 test('rejects double fund when escrow is already recorded', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'bossraid-bounty-double-fund-'));
-  const store = new BountyStore(join(dir, 'bounties.sqlite'));
-  const service = new BountyService(store, {
-    defaultBiddingDays: 7,
-    defaultAwardDays: 3,
-    defaultDeliveryDays: 14,
-    defaultAcceptDays: 7,
-    autoAwardMax: 3,
+  const { service } = await createTestBountyService({
+    prefix: 'bossraid-bounty-double-fund-',
   });
   const bounty = service.createBounty('0xPoster00000000000000000000000000000003', {
     title: 'Double fund',
@@ -128,14 +110,12 @@ test('rejects double fund when escrow is already recorded', async () => {
 });
 
 test('claim is blocked before accept deadline', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'bossraid-bounty-claim-'));
-  const store = new BountyStore(join(dir, 'bounties.sqlite'));
-  const service = new BountyService(store, {
-    defaultBiddingDays: 7,
-    defaultAwardDays: 3,
-    defaultDeliveryDays: 14,
-    defaultAcceptDays: 7,
-    autoAwardMax: 1,
+  const { service } = await createTestBountyService({
+    prefix: 'bossraid-bounty-claim-',
+    env: {
+      ...process.env,
+      BOSSRAID_BOUNTY_AUTO_AWARD_MAX: '1',
+    },
   });
   const bounty = service.createBounty('0xPoster00000000000000000000000000000004', {
     title: 'Claim gate',
@@ -155,7 +135,7 @@ test('claim is blocked before accept deadline', async () => {
   const delivered = await service.deliverAward(awarded.awards[0]!.id, 'pqf_claim', {
     artifactSummary: 'done',
     artifactsJson,
-    deliveryHash: createHash('sha256').update(artifactsJson).digest('hex'),
+    deliveryHash: hashDeliveryPayload(artifactsJson),
   });
   await assert.rejects(() => service.claimAward(delivered.id), /Accept deadline has not passed/);
 });

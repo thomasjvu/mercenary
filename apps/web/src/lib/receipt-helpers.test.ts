@@ -8,21 +8,26 @@ import {
   summarizeCanonicalOutput,
 } from './receipt-helpers.js';
 
-const provider: Provider = {
+const provider = {
   providerId: 'seller-a',
   displayName: 'Seller A',
   status: 'available',
   specializations: ['text'],
   pricePerTaskUsd: 1,
   modelFamily: 'gpt',
-};
+} as unknown as Provider;
 
 const result = {
   synthesizedOutput: {
     answerText: 'Canonical answer for the raid.',
     artifacts: [
-      { type: 'image', url: 'https://example.com/preview.png', mimeType: 'image/png' },
-      { type: 'text', content: 'notes' },
+      {
+        outputType: 'image',
+        label: 'preview',
+        uri: 'https://example.com/preview.png',
+        mimeType: 'image/png',
+      },
+      { outputType: 'text', label: 'notes', uri: '' },
     ],
     contributingProviderIds: ['seller-a'],
     supportingProviderIds: [],
@@ -51,7 +56,7 @@ test('pickPreviewArtifacts keeps only renderable media', () => {
   const artifacts = result.synthesizedOutput?.artifacts ?? [];
   const preview = pickPreviewArtifacts(artifacts);
   assert.equal(preview.length, 1);
-  assert.equal(preview[0]?.type, 'image');
+  assert.equal(preview[0]?.outputType, 'image');
 });
 
 test('summarizeCanonicalOutput prefers canonical text', () => {

@@ -1,16 +1,25 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { decodePaymentResponseHeader, x402Client, x402HTTPClient } from '@x402/fetch';
-import { ExactEvmScheme } from '@x402/evm';
-import { ExactEvmSchemeV1 } from '@x402/evm/v1';
+import { decodePaymentResponseHeader } from '@x402/fetch';
 import { privateKeyToAccount } from 'viem/accounts';
 import { loadLocalEnv } from './env.mjs';
+import {
+  buildApiUrl,
+  decodeBase64Json,
+  formatBody,
+  normalizeHexPrivateKey,
+  parseCliArgs,
+  readBody,
+  readCliArg,
+  resolveApiBase,
+} from './lib/http-e2e.mjs';
+import { runMockPayment, runWalletPayment } from './lib/x402-e2e-payment.mjs';
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 loadLocalEnv(rootDir);
 
-const args = parseArgs(process.argv.slice(2));
+const args = parseCliArgs(process.argv.slice(2));
 if (args.has('help')) {
   console.log(
     [
@@ -27,16 +36,15 @@ if (args.has('help')) {
   );
   process.exit(0);
 }
-const route = readStringArg(args, 'route') ?? process.env.BOSSRAID_X402_E2E_ROUTE ?? 'raid';
-const mode = readStringArg(args, 'mode') ?? process.env.BOSSRAID_X402_E2E_MODE ?? 'wallet';
-const apiBase =
-  readStringArg(args, 'api-base') ??
-  process.env.BOSSRAID_X402_E2E_API_BASE ??
-  process.env.BOSSRAID_API_BASE ??
-  process.env.VITE_BOSSRAID_API_BASE ??
-  'http://127.0.0.1:8787';
+
+const route = readCliArg(args, 'route') ?? process.env.BOSSRAID_X402_E2E_ROUTE ?? 'raid';
+const mode = readCliArg(args, 'mode') ?? process.env.BOSSRAID_X402_E2E_MODE ?? 'wallet';
+const apiBase = resolveApiBase(readCliArg(args, 'api-base'), {
+  ...process.env,
+  BOSSRAID_X402_E2E_API_BASE: process.env.BOSSRAID_X402_E2E_API_BASE,
+});
 const payloadFile =
-  readStringArg(args, 'payload-file') ?? resolve(rootDir, defaultPayloadForRoute(route));
+  readCliArg(args, 'payload-file') ?? resolve(rootDir, defaultPayloadForRoute(route));
 
 if (route !== 'raid' && route !== 'chat' && route !== 'inference') {
   throw new Error(`Unsupported --route "${route}". Use "raid", "chat", or "inference".`);
@@ -59,7 +67,7 @@ console.log(
       step: 'start',
       route,
       mode,
-      url: url.toString(),
+      url,
       payloadFile,
     },
     null,
@@ -96,23 +104,32 @@ console.log(
   )
 );
 
+const reservationId = readReservationId(challengeResponse.headers, paymentRequired);
 const paidResponse =
   mode === 'mock'
-    ? await runMockPayment(url, payload, paymentRequired, challengeResponse.headers)
-    : await runWalletPayment(url, payload, paymentRequired);
+    ? await runMockPayment({
+        url,
+        payload,
+        headers: { 'x-bossraid-launch-reservation': reservationId },
+        payer: '0x000000000000000000000000000000000000dEaD',
+      })
+    : await runWalletPayment({
+        url,
+        payload,
+        paymentRequired,
+        headers: { 'x-bossraid-launch-reservation': reservationId },
+        account: privateKeyToAccount(normalizeHexPrivateKey(readWalletPrivateKey())),
+      });
 
 const paymentResponseHeader = paidResponse.headers.get('payment-response');
 const settlement = paymentResponseHeader
   ? decodePaymentResponseHeader(paymentResponseHeader)
   : undefined;
-const responseText = await paidResponse.text();
-const responseBody = tryParseJson(responseText);
+const responseBody = await readBody(paidResponse);
 
 if (!paidResponse.ok) {
   throw new Error(
-    `Paid request failed with ${paidResponse.status}: ${
-      typeof responseBody === 'string' ? responseBody : JSON.stringify(responseBody)
-    }`
+    `Paid request failed with ${paidResponse.status}: ${formatBody(responseBody)}`
   );
 }
 
@@ -157,66 +174,24 @@ console.log(
   )
 );
 
-async function runMockPayment(url, payload, paymentRequired, challengeHeaders) {
-  const reservationId =
-    challengeHeaders.get('x-bossraid-launch-reservation') ??
-    paymentRequired.accepts?.[0]?.extra?.reservationId;
-  if (typeof reservationId !== 'string' || reservationId.length === 0) {
-    throw new Error('Mock payment requires x-bossraid-launch-reservation from the 402 challenge.');
-  }
-
-  return fetch(url, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-bossraid-launch-reservation': reservationId,
-      'payment-signature': encodeBase64Json({
-        proof: 'facilitator-signed-payment',
-        payer: '0x000000000000000000000000000000000000dEaD',
-      }),
-    },
-    body: JSON.stringify(payload),
-  });
-}
-
-async function runWalletPayment(url, payload, paymentRequired) {
+function readWalletPrivateKey() {
   const rawPrivateKey = process.env.BOSSRAID_X402_BUYER_PRIVATE_KEY ?? process.env.EVM_PRIVATE_KEY;
   if (!rawPrivateKey) {
     throw new Error(
       'BOSSRAID_X402_BUYER_PRIVATE_KEY or EVM_PRIVATE_KEY is required for --mode wallet.'
     );
   }
+  return rawPrivateKey;
+}
 
-  const account = privateKeyToAccount(normalizeHexPrivateKey(rawPrivateKey));
-  const client = x402Client.fromConfig({
-    schemes: [
-      ...['base-sepolia', 'base', 'sepolia', 'ethereum'].map((network) => ({
-        x402Version: 1,
-        network,
-        client: new ExactEvmSchemeV1(account),
-      })),
-      {
-        network: 'eip155:*',
-        client: new ExactEvmScheme(account),
-      },
-    ],
-  });
-  const httpClient = new x402HTTPClient(client);
-  const paymentPayload = await client.createPaymentPayload(paymentRequired);
-  const reservationId = paymentRequired.accepts?.[0]?.extra?.reservationId;
+function readReservationId(challengeHeaders, paymentRequired) {
+  const reservationId =
+    challengeHeaders.get('x-bossraid-launch-reservation') ??
+    paymentRequired.accepts?.[0]?.extra?.reservationId;
   if (typeof reservationId !== 'string' || reservationId.length === 0) {
-    throw new Error('PAYMENT-REQUIRED did not include a reservationId.');
+    throw new Error('x-bossraid-launch-reservation is required for x402 payment.');
   }
-
-  return fetch(url, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-bossraid-launch-reservation': reservationId,
-      ...httpClient.encodePaymentSignatureHeader(paymentPayload),
-    },
-    body: JSON.stringify(payload),
-  });
+  return reservationId;
 }
 
 async function fetchJson(url, payload, extraHeaders = {}) {
@@ -229,11 +204,10 @@ async function fetchJson(url, payload, extraHeaders = {}) {
     body: JSON.stringify(payload),
   });
 
-  const text = await response.text();
   return {
     status: response.status,
     headers: response.headers,
-    body: tryParseJson(text),
+    body: await readBody(response),
   };
 }
 
@@ -254,64 +228,4 @@ function defaultPayloadForRoute(route) {
   return route === 'chat'
     ? 'examples/chat-completion-request.json'
     : 'examples/unity-bug/task.json';
-}
-
-function encodeBase64Json(value) {
-  return Buffer.from(JSON.stringify(value), 'utf8').toString('base64');
-}
-
-function decodeBase64Json(value) {
-  return JSON.parse(Buffer.from(value, 'base64').toString('utf8'));
-}
-
-function buildApiUrl(base, relativePath) {
-  const url = new URL(base);
-  url.pathname = url.pathname.endsWith('/') ? url.pathname : `${url.pathname}/`;
-  url.search = '';
-  url.hash = '';
-  return new URL(relativePath.replace(/^\/+/, ''), url);
-}
-
-function normalizeHexPrivateKey(value) {
-  return value.startsWith('0x') ? value : `0x${value}`;
-}
-
-function tryParseJson(value) {
-  if (!value) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(value);
-  } catch {
-    return value;
-  }
-}
-
-function parseArgs(argv) {
-  const options = new Map();
-
-  for (let index = 0; index < argv.length; index += 1) {
-    const token = argv[index];
-    if (!token || !token.startsWith('--')) {
-      continue;
-    }
-
-    const key = token.slice(2);
-    const next = argv[index + 1];
-    if (!next || next.startsWith('--')) {
-      options.set(key, 'true');
-      continue;
-    }
-
-    options.set(key, next);
-    index += 1;
-  }
-
-  return options;
-}
-
-function readStringArg(options, key) {
-  const value = options.get(key);
-  return value && value !== 'true' ? value : undefined;
 }

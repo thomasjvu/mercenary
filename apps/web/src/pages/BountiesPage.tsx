@@ -1,9 +1,10 @@
-import { useState, type FormEvent } from 'react';
+import { type FormEvent } from 'react';
 import useSWR from 'swr';
-import { listBounties, createBounty, fundBounty } from '../api/bounties.js';
-import { fetchReady } from '../api/health.js';
-import { useSmartAccountPay } from '../hooks/useSmartAccountPay.js';
+import { listBounties } from '../api/bounties.js';
+import { EmptyState } from '../components/system/EmptyState.js';
+import { useCreateAndFundBounty } from '../hooks/useCreateAndFundBounty.js';
 import type { AppRoute } from '../lib/app-routes.js';
+import { bountyDetailPath } from '../lib/bounty-routing.js';
 
 type BountiesPageProps = {
   onNavigate: (path: AppRoute, options?: { bountyId?: string }) => void;
@@ -11,39 +12,23 @@ type BountiesPageProps = {
 
 export function BountiesPage({ onNavigate }: BountiesPageProps) {
   const board = useSWR('bounties-open', () => listBounties('open'));
-  const smartPay = useSmartAccountPay();
-  const [error, setError] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  const { walletAddress, creating, error, setError, createAndFund } = useCreateAndFundBounty();
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setCreating(true);
     setError(null);
     const form = new FormData(event.currentTarget);
     try {
-      const created = await createBounty({
+      const bounty = await createAndFund({
         title: String(form.get('title') ?? ''),
         description: String(form.get('description') ?? ''),
         requirements: String(form.get('requirements') ?? ''),
         rewardAmountUsd: Number(form.get('rewardAmountUsd') ?? 0),
       });
-
-      const ready = await fetchReady();
-      if (ready.payment.enabled) {
-        if (!smartPay.walletAddress) {
-          throw new Error('Connect MetaMask before funding bounty escrow.');
-        }
-        const paidFetch = await smartPay.createFetchWithPayment();
-        await fundBounty(created.bounty.id, { openNow: true }, paidFetch);
-      } else {
-        await fundBounty(created.bounty.id, { openNow: true });
-      }
       await board.mutate();
-      onNavigate('/bounties', { bountyId: created.bounty.id });
-    } catch (createError) {
-      setError(createError instanceof Error ? createError.message : 'Failed to create bounty');
-    } finally {
-      setCreating(false);
+      onNavigate(bountyDetailPath(bounty.id) as AppRoute);
+    } catch {
+      // Error state is set inside the hook.
     }
   }
 
@@ -90,8 +75,8 @@ export function BountiesPage({ onNavigate }: BountiesPageProps) {
             />
           </label>
           <p className="bounties-page__payment-note">
-            {smartPay.walletAddress
-              ? `Wallet ${smartPay.walletAddress.slice(0, 6)}…${smartPay.walletAddress.slice(-4)} ready for x402 escrow funding.`
+            {walletAddress
+              ? `Wallet ${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)} ready for x402 escrow funding.`
               : 'Sign in and connect MetaMask to fund bounties with USDC escrow in production.'}
           </p>
           {error ? <p className="form-error">{error}</p> : null}
@@ -102,13 +87,25 @@ export function BountiesPage({ onNavigate }: BountiesPageProps) {
 
         <div className="bounties-page__board">
           <p className="eyebrow">open bounties</p>
+          {board.isLoading ? <p className="lede">loading open bounties…</p> : null}
+          {board.error ? (
+            <p className="form-error">
+              {board.error instanceof Error ? board.error.message : 'Failed to load bounties.'}
+            </p>
+          ) : null}
+          {!board.isLoading && !board.error && (board.data?.bounties.length ?? 0) === 0 ? (
+            <EmptyState
+              title="no open bounties"
+              body="Post the first bounty to invite agent bids."
+            />
+          ) : null}
           <ul className="bounties-list">
             {(board.data?.bounties ?? []).map((bounty) => (
               <li key={bounty.id}>
                 <button
                   className="bounties-card"
                   type="button"
-                  onClick={() => onNavigate('/bounties', { bountyId: bounty.id })}
+                  onClick={() => onNavigate(bountyDetailPath(bounty.id) as AppRoute)}
                 >
                   <span className="bounties-card__title">{bounty.title}</span>
                   <span className="bounties-card__reward">

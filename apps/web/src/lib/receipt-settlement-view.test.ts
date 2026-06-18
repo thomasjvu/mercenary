@@ -3,7 +3,7 @@ import test from 'node:test';
 import type { Provider, RaidResult } from '../api';
 import { buildReceiptSettlementView } from './receipt-settlement-view.js';
 
-const providers: Provider[] = [
+const providers = [
   {
     providerId: 'seller-a',
     displayName: 'Seller A',
@@ -12,7 +12,7 @@ const providers: Provider[] = [
     pricePerTaskUsd: 1,
     modelFamily: 'gpt',
   },
-];
+] as unknown as Provider[];
 
 const result = {
   approvedSubmissions: [{ submission: { providerId: 'seller-a' } }],

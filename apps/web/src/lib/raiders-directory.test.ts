@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { Provider } from '../api/index.js';
+import type { Provider } from '../api/client.js';
 import { buildRaiderRecord } from './raiders.js';
 import {
   filterAndSortRaiders,
@@ -20,7 +20,7 @@ function buildFixture(overrides: Partial<Provider> = {}): ReturnType<typeof buil
       reputation: { globalScore: 0.8, totalSuccessfulRaids: 3, totalRaids: 4 },
       specializations: ['inference'],
       ...overrides,
-    } as Provider,
+    } as unknown as Provider,
     { providerId: 'seller-a', ready: true, reachable: true }
   );
 }
@@ -35,7 +35,7 @@ test('matchesRaiderStatusFilter respects activity tones', () => {
       pricePerTaskUsd: 0.5,
       reputation: { globalScore: 0.2, totalSuccessfulRaids: 0, totalRaids: 0 },
       specializations: [],
-    } as Provider,
+    } as unknown as Provider,
     { providerId: 'seller-b', ready: false, reachable: false }
   );
 
@@ -51,7 +51,11 @@ test('filterAndSortRaiders applies query and sort', () => {
     providerId: 'seller-b',
     displayName: 'Beta Core',
     modelFamily: 'core-beta',
-    reputation: { globalScore: 0.95, totalSuccessfulRaids: 8, totalRaids: 8 },
+    reputation: {
+      globalScore: 0.95,
+      totalSuccessfulRaids: 8,
+      totalRaids: 8,
+    } as unknown as Provider['reputation'],
   });
 
   const filtered = filterAndSortRaiders([alpha, beta], {

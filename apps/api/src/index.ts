@@ -11,7 +11,8 @@ import {
 import { NETWORK } from '@bossraid/constants';
 import logger from '@bossraid/logger';
 import { mapContractErrorCode } from './lib/contract-errors.js';
-import { applyX402Headers, isX402ProtocolError } from './x402.js';
+import { isX402ProtocolError } from './x402.js';
+import { sendX402Required } from './lib/x402-route-response.js';
 import { createApiContext } from './api-context.js';
 import { createApiHandlers } from './handlers/index.js';
 import { registerHealthRoutes } from './routes/health.js';
@@ -60,20 +61,7 @@ export function buildApiServer(
   app.setErrorHandler((error, _request, reply) => {
     if (isX402ProtocolError(error)) {
       apiMetrics.increment('x402.payment_required');
-      const reservationId = error.paymentRequired.accepts[0]?.extra?.reservationId;
-      if (typeof reservationId === 'string') {
-        reply.header('X-BOSSRAID-LAUNCH-RESERVATION', reservationId);
-      }
-      applyX402Headers(reply, {
-        paymentRequired: error.paymentRequired,
-        settlement: error.settlement,
-      });
-      reply.code(error.statusCode).send({
-        error: 'payment_required',
-        message: error.message,
-        x402: error.paymentRequired,
-        settlement: error.settlement,
-      });
+      sendX402Required(reply, error);
       return;
     }
 

@@ -1,10 +1,15 @@
 import { createHash } from 'node:crypto';
 import { decodePaymentResponseHeader } from '@x402/fetch';
-import { x402Client, x402HTTPClient } from '@x402/fetch';
-import { ExactEvmScheme } from '@x402/evm';
-import { ExactEvmSchemeV1 } from '@x402/evm/v1';
 import { createPublicClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
+import {
+  buildApiUrl,
+  decodeBase64Json,
+  formatBody,
+  normalizeHexPrivateKey,
+  readBody,
+} from './http-e2e.mjs';
+import { runMockPayment, runWalletPayment } from './x402-e2e-payment.mjs';
 
 export async function runBountyEscrowE2e(input) {
   const posterAccount = privateKeyToAccount(normalizeHexPrivateKey(input.posterPrivateKey));
@@ -173,8 +178,19 @@ async function fundBounty(base, cookie, bountyId, paymentMode, posterAccount) {
   const paymentRequired = decodeBase64Json(paymentRequiredHeader);
   const paid =
     paymentMode === 'wallet'
-      ? await runWalletPayment(url, payload, paymentRequired, cookie, posterAccount)
-      : await runMockPayment(url, payload, cookie, posterAccount);
+      ? await runWalletPayment({
+          url,
+          payload,
+          paymentRequired,
+          headers: { cookie },
+          account: posterAccount,
+        })
+      : await runMockPayment({
+          url,
+          payload,
+          headers: { cookie },
+          payer: posterAccount.address,
+        });
   const settlementHeader = paid.headers.get('payment-response');
   const settlement = settlementHeader ? decodePaymentResponseHeader(settlementHeader) : undefined;
   const body = await readBody(paid);
@@ -309,73 +325,4 @@ async function verifyOnchainAwardIfConfigured(onchainAwardId, onchainVerify) {
     throw new Error(`Expected onchain award status Paid (3), got ${status}.`);
   }
   console.log(JSON.stringify({ step: 'onchain_award_paid', onchainAwardId, status }, null, 2));
-}
-
-async function runMockPayment(url, payload, cookie, posterAccount) {
-  return fetch(url, {
-    method: 'POST',
-    headers: {
-      cookie,
-      'content-type': 'application/json',
-      'payment-signature': encodeBase64Json({
-        proof: 'facilitator-signed-payment',
-        payer: posterAccount.address,
-      }),
-    },
-    body: JSON.stringify(payload),
-  });
-}
-
-async function runWalletPayment(url, payload, paymentRequired, cookie, posterAccount) {
-  const client = x402Client.fromConfig({
-    schemes: [
-      ...['base-sepolia', 'base', 'sepolia', 'ethereum'].map((network) => ({
-        x402Version: 1,
-        network,
-        client: new ExactEvmSchemeV1(posterAccount),
-      })),
-      { network: 'eip155:*', client: new ExactEvmScheme(posterAccount) },
-    ],
-  });
-  const httpClient = new x402HTTPClient(client);
-  const paymentPayload = await client.createPaymentPayload(paymentRequired);
-  return fetch(url, {
-    method: 'POST',
-    headers: {
-      cookie,
-      'content-type': 'application/json',
-      ...httpClient.encodePaymentSignatureHeader(paymentPayload),
-    },
-    body: JSON.stringify(payload),
-  });
-}
-
-function buildApiUrl(base, path) {
-  return new URL(path.replace(/^\/+/, ''), base.endsWith('/') ? base : `${base}/`).toString();
-}
-
-function decodeBase64Json(value) {
-  return JSON.parse(Buffer.from(value, 'base64').toString('utf8'));
-}
-
-function encodeBase64Json(value) {
-  return Buffer.from(JSON.stringify(value)).toString('base64');
-}
-
-async function readBody(response) {
-  const text = await response.text();
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
-}
-
-function formatBody(body) {
-  return typeof body === 'string' ? body : JSON.stringify(body);
-}
-
-function normalizeHexPrivateKey(value) {
-  return value.startsWith('0x') ? value : `0x${value}`;
 }

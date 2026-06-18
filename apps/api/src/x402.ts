@@ -16,6 +16,7 @@ import { isVerificationSuccessful, settlePayment, verifyPayment } from './x402-v
 export type {
   X402PaymentRequirement,
   X402PaymentRequired,
+  X402RouteName,
   X402SettlementResponse,
   X402VerificationResponse,
 };
@@ -23,7 +24,7 @@ export type {
 export { applyX402Headers, readX402ReservationId } from './x402-verify.js';
 export { buildPaymentRequiredForRoute, buildX402PaymentRequired, readX402Config };
 
-class X402ProtocolError extends Error {
+export class X402ProtocolError extends Error {
   readonly statusCode: number;
   readonly paymentRequired: X402PaymentRequired;
   readonly settlement?: X402SettlementResponse;

@@ -17,6 +17,8 @@ import type { ProviderHealthStatus, ProviderProfile } from '@bossraid/shared-typ
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import { buildApiServer } from '../index.js';
+import { BountyService, readBountyServiceConfig } from '../lib/bounty-service.js';
+import { BountyStore } from '../lib/bounty-store.js';
 
 export const TEST_MNEMONIC = 'test test test test test test test test test test test junk';
 
@@ -268,6 +270,18 @@ export function createTestApiServer(
   return wrapMercenaryTestInject(
     buildApiServer(createTestOrchestrator(providers, timing), testEnv)
   );
+}
+
+export async function createTestBountyService(options?: {
+  prefix?: string;
+  env?: NodeJS.ProcessEnv;
+  dbFileName?: string;
+}): Promise<{ service: BountyService; store: BountyStore; dir: string }> {
+  const prefix = options?.prefix ?? 'bossraid-bounty-test-';
+  const dir = await mkdtemp(join(tmpdir(), prefix));
+  const store = new BountyStore(join(dir, options?.dbFileName ?? 'bounties.sqlite'));
+  const service = new BountyService(store, readBountyServiceConfig(options?.env ?? process.env));
+  return { service, store, dir };
 }
 
 export { buildApiServer, mkdtemp, readFile, rm, join, tmpdir };

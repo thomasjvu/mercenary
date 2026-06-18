@@ -17,7 +17,7 @@ const hostedOffer = {
   source: { type: 'inference_hosted', targetType: 'redpill' },
   modelProvider: 'redpill',
   modelId: 'claude-sonnet',
-} as Provider;
+} as unknown as Provider;
 
 test('isHostedInferenceOffer detects hosted source types', () => {
   assert.equal(isHostedInferenceOffer({ source: { type: 'inference_hosted' } }), true);
@@ -42,7 +42,7 @@ test('filterHostedInferenceOffers keeps only hosted sellers', () => {
       ...hostedOffer,
       providerId: 'seller-2',
       source: { type: 'http_worker' },
-    } as Provider,
+    } as unknown as Provider,
   ]);
 
   assert.equal(offers.length, 1);

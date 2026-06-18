@@ -26,7 +26,7 @@ test('resolveMarketBenchmarkTaskUsd uses catalog benchmark for known models', ()
       referenceOutputTokens: 1024,
     },
     sellers: [],
-  } as InferenceMarket;
+  } as unknown as InferenceMarket;
 
   const benchmark = resolveMarketBenchmarkTaskUsd(market);
   assert.ok(benchmark != null && benchmark > 0);

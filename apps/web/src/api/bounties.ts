@@ -1,4 +1,4 @@
-import type { BountyDetailView, BountyRecord } from '@bossraid/shared-types';
+import type { BountyDetailView, BountyRecord, CreateBountyInput } from '@bossraid/shared-types';
 import { buildApiUrl, fetchJson, requestJsonDetailedWeb } from './client.js';
 
 export type BountyBoardResponse = {
@@ -15,16 +15,14 @@ export function getBounty(bountyId: string): Promise<BountyDetailView> {
   return fetchJson(`/v1/bounties/${encodeURIComponent(bountyId)}`);
 }
 
-export async function createBounty(
-  body: Record<string, unknown>
-): Promise<{ bounty: BountyRecord }> {
+export async function createBounty(body: CreateBountyInput): Promise<{ bounty: BountyRecord }> {
   const response = await requestJsonDetailedWeb<{ bounty: BountyRecord }>('/v1/bounties', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   });
   if (!response.ok || !response.data) {
-    throw new Error(response.error?.message ?? 'Failed to create bounty');
+    throw new Error(response.error ?? 'Failed to create bounty');
   }
   return response.data;
 }

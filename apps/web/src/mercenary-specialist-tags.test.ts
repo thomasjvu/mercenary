@@ -17,7 +17,7 @@ test('buildProviderNote prefers specializations', () => {
     specializations: ['patch', 'text', 'promo'],
     pricePerTaskUsd: 1,
     modelFamily: 'gpt',
-  } as Provider;
+  } as unknown as Provider;
 
   assert.match(buildProviderNote(provider, undefined), /patch/);
 });
@@ -32,7 +32,7 @@ test('buildProviderProofTags includes tee and verification tags', () => {
     modelFamily: 'gpt',
     privacy: { teeAttested: true, signedOutputs: true },
     erc8004: { verification: { status: 'verified' } },
-  } as Provider;
+  } as unknown as Provider;
 
   const tags = buildProviderProofTags(provider, {
     providerId: 'seller-a',
@@ -43,6 +43,7 @@ test('buildProviderProofTags includes tee and verification tags', () => {
     phase: 'primary',
     reasons: [],
     matchedSpecializations: [],
+    trustScore: 0,
   });
 
   assert.ok(tags.includes('TEE'));

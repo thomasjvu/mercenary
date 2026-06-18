@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { Provider } from '../api/index.js';
+import type { Provider } from '../api/client.js';
 import {
   buildRaiderRecord,
   compareRaiders,
@@ -19,7 +19,7 @@ test('buildRaiderRecord indexes provider fields for search', () => {
       pricePerTaskUsd: 0.5,
       reputation: { globalScore: 0.8, totalSuccessfulRaids: 2, totalRaids: 3 },
       specializations: ['inference'],
-    } as Provider,
+    } as unknown as Provider,
     { providerId: 'seller-a', ready: true, reachable: true }
   );
 
@@ -41,7 +41,7 @@ test('compareRaiders sorts by reputation and wins', () => {
       reputation: { globalScore: 0.4, totalSuccessfulRaids: 1, totalRaids: 2 },
       specializations: [],
       scores: { reputationScore: 40, privacyScore: 0 },
-    } as Provider,
+    } as unknown as Provider,
     { providerId: 'low', ready: false, reachable: true }
   );
   const high = buildRaiderRecord(
@@ -53,7 +53,7 @@ test('compareRaiders sorts by reputation and wins', () => {
       reputation: { globalScore: 0.9, totalSuccessfulRaids: 9, totalRaids: 10 },
       specializations: [],
       scores: { reputationScore: 90, privacyScore: 0 },
-    } as Provider,
+    } as unknown as Provider,
     { providerId: 'high', ready: true, reachable: true }
   );
 
@@ -74,7 +74,7 @@ test('summarizeRaiderDirectory counts ready, private, and verified raiders', () 
       erc8004: { verification: { status: 'verified' } },
       privacy: { teeAttested: true, e2ee: true },
       scores: { reputationScore: 80, privacyScore: 80 },
-    } as Provider,
+    } as unknown as Provider,
     { providerId: 'ready', ready: true, reachable: true }
   );
   const offline = buildRaiderRecord(
@@ -86,7 +86,7 @@ test('summarizeRaiderDirectory counts ready, private, and verified raiders', () 
       reputation: { globalScore: 0.2, totalSuccessfulRaids: 0, totalRaids: 0 },
       specializations: [],
       scores: { reputationScore: 20, privacyScore: 10 },
-    } as Provider,
+    } as unknown as Provider,
     { providerId: 'offline', ready: false, reachable: false }
   );
 

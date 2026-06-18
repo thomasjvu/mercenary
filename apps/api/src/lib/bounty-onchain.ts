@@ -12,7 +12,6 @@ import {
   type Hex,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { readSettlementMode } from '@bossraid/constants';
 import { resolveApiSettlementMode } from './settlement-mode.js';
 
 export const USDC_ATOMIC_MULTIPLIER = 1_000_000n;
@@ -497,10 +496,6 @@ function extractUintEventArg(
   }
 
   return value;
-}
-
-export function bountySettlementModeLabel(env: NodeJS.ProcessEnv = process.env): string {
-  return readSettlementMode(env);
 }
 
 export function mapBountyOnchainError(error: unknown): BountyOnchainError {

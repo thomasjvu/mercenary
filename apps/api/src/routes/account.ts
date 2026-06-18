@@ -1,4 +1,3 @@
-import { readBooleanEnv } from '@bossraid/constants';
 import { type FastifyInstance } from 'fastify';
 import { parseProviderRegistrationInput } from '@bossraid/api-contracts';
 import { buildSelfServeProviderRegistrationInput } from '../lib/account.js';
@@ -11,7 +10,11 @@ import { computeSellerModelDemand } from '../marketplace-stats.js';
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../handlers/index.js';
 import { readX402ConfigForContext } from '../lib/x402-runtime.js';
-import { applyX402Headers, requireX402Payment } from '../x402.js';
+import {
+  allowUnverifiedFundInDev,
+  applyVerifiedFundSettlementHeaders,
+  collectVerifiedFundPayment,
+} from '../lib/verified-fund-payment.js';
 
 export function registerAccountRoutes(
   app: FastifyInstance,
@@ -215,10 +218,11 @@ export function registerAccountRoutes(
       return { error: 'invalid_amount', message: 'amountUsd must be a positive number.' };
     }
 
-    const x402Config = readX402ConfigForContext(ctx);
     const isProduction = ctx.env.NODE_ENV === 'production';
-    const allowUnverifiedBalanceFund =
-      !isProduction && readBooleanEnv(ctx.env.BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND);
+    const allowUnverifiedBalanceFund = allowUnverifiedFundInDev(
+      ctx.env,
+      'BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND'
+    );
     let creditedUsd = amountUsd;
     let settlement:
       | {
@@ -228,16 +232,16 @@ export function registerAccountRoutes(
         }
       | undefined;
 
-    if (x402Config.enabled) {
-      const payment = await requireX402Payment({
+    if (readX402ConfigForContext(ctx).enabled) {
+      const payment = await collectVerifiedFundPayment({
+        ctx,
         route: 'balance',
-        headers: request.headers,
-        config: x402Config,
         budgetUsd: amountUsd,
+        headers: request.headers,
       });
       creditedUsd = payment.escrowFundingUsd;
       settlement = payment.settlement;
-      applyX402Headers(reply, { settlement: payment.settlement });
+      applyVerifiedFundSettlementHeaders(reply, payment.settlement);
     } else if (allowUnverifiedBalanceFund) {
       creditedUsd = amountUsd;
     } else {

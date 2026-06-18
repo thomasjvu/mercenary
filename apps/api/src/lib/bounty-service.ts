@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto';
-import type { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type {
   AwardBountyBidsInput,
   BountyAwardRecord,
@@ -11,6 +10,7 @@ import type {
   ProviderProfile,
 } from '@bossraid/shared-types';
 import type { Address } from 'viem';
+import { readPositiveInteger } from './env.js';
 import { BountyStore } from './bounty-store.js';
 import {
   mapBountyOnchainError,
@@ -30,11 +30,11 @@ export type BountyServiceConfig = {
 
 export function readBountyServiceConfig(env: NodeJS.ProcessEnv = process.env): BountyServiceConfig {
   return {
-    defaultBiddingDays: readPositiveInt(env.BOSSRAID_BOUNTY_DEFAULT_BIDDING_DAYS, 7),
-    defaultAwardDays: readPositiveInt(env.BOSSRAID_BOUNTY_DEFAULT_AWARD_DAYS, 3),
-    defaultDeliveryDays: readPositiveInt(env.BOSSRAID_BOUNTY_DEFAULT_DELIVERY_DAYS, 14),
-    defaultAcceptDays: readPositiveInt(env.BOSSRAID_BOUNTY_DEFAULT_ACCEPT_DAYS, 7),
-    autoAwardMax: readPositiveInt(env.BOSSRAID_BOUNTY_AUTO_AWARD_MAX, 3),
+    defaultBiddingDays: readPositiveInteger(env.BOSSRAID_BOUNTY_DEFAULT_BIDDING_DAYS, 7),
+    defaultAwardDays: readPositiveInteger(env.BOSSRAID_BOUNTY_DEFAULT_AWARD_DAYS, 3),
+    defaultDeliveryDays: readPositiveInteger(env.BOSSRAID_BOUNTY_DEFAULT_DELIVERY_DAYS, 14),
+    defaultAcceptDays: readPositiveInteger(env.BOSSRAID_BOUNTY_DEFAULT_ACCEPT_DAYS, 7),
+    autoAwardMax: readPositiveInteger(env.BOSSRAID_BOUNTY_AUTO_AWARD_MAX, 3),
   };
 }
 
@@ -47,7 +47,6 @@ export class BountyService {
   constructor(
     private readonly store: BountyStore,
     private readonly config: BountyServiceConfig,
-    private readonly orchestrator?: BossRaidOrchestrator,
     private readonly onchain?: BountyOnchainContext
   ) {}
 
@@ -538,12 +537,4 @@ function splitEvenly(total: number, parts: number): number[] {
       Math.round((amounts[amounts.length - 1]! + remainder) * 100) / 100;
   }
   return amounts;
-}
-
-function readPositiveInt(value: string | undefined, fallback: number): number {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return fallback;
-  }
-  return Math.round(parsed);
 }

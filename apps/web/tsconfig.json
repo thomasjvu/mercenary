@@ -8,7 +8,27 @@
     "types": ["node", "vite/client"],
     "outDir": "dist",
     "paths": {
-      "@assets/*": ["../../assets/*"]
+      "@assets/*": ["assets/*"],
+      "@bossraid/shared-types": ["packages/shared-types/src/index.ts"],
+      "@bossraid/api-contracts": ["packages/api-contracts/src/index.ts"],
+      "@bossraid/persistence": ["packages/persistence/src/index.ts"],
+      "@bossraid/persistence-sqlite": ["packages/persistence-sqlite/src/index.ts"],
+      "@bossraid/evaluation": ["packages/evaluation/src/index.ts"],
+      "@bossraid/provider-registry": ["packages/provider-registry/src/index.ts"],
+      "@bossraid/raid-core": ["packages/raid-core/src/index.ts"],
+      "@bossraid/sandbox-runner": ["packages/sandbox-runner/src/index.ts"],
+      "@bossraid/scoring": ["packages/scoring/src/index.ts"],
+      "@bossraid/provider-sdk": ["packages/provider-sdk/src/index.ts"],
+      "@bossraid/orchestrator": ["apps/orchestrator/src/index.ts"],
+      "@bossraid/privacy-engine": ["packages/privacy-engine/src/index.ts"],
+      "@bossraid/ui": ["packages/ui/src/index.tsx"],
+      "@bossraid/constants": ["packages/constants/src/index.ts"],
+      "@bossraid/http-client": ["packages/http-client/src/index.ts"],
+      "@bossraid/proof-ui": ["packages/proof-ui/src/index.ts"],
+      "@bossraid/test-fixtures": ["packages/test-fixtures/src/index.ts"],
+      "@bossraid/smart-pay": ["packages/smart-pay/src/index.ts"],
+      "@bossraid/oneshot-relayer": ["packages/oneshot-relayer/src/index.ts"],
+      "@bossraid/venice-client": ["packages/venice-client/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "functions/**/*.ts", "vite.config.ts"]

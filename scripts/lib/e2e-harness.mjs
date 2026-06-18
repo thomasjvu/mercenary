@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadLocalEnv } from '../env.mjs';
+import { runCommand, sleep, stopChild } from './process-harness.mjs';
 
 const defaultRootDir = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -170,44 +171,3 @@ export async function readFixture(rootDir, relativePath) {
   return readFile(resolve(rootDir, relativePath), 'utf8');
 }
 
-async function runCommand(rootDir, env, command, args) {
-  await new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
-      cwd: rootDir,
-      stdio: 'inherit',
-      env,
-    });
-
-    child.on('error', reject);
-    child.on('close', (code, signal) => {
-      if (signal) {
-        reject(new Error(`${command} ${args.join(' ')} exited via signal ${signal}`));
-        return;
-      }
-      if (code !== 0) {
-        reject(new Error(`${command} ${args.join(' ')} exited with code ${code ?? 0}`));
-        return;
-      }
-      resolve(undefined);
-    });
-  });
-}
-
-async function stopChild(child) {
-  if (!child || child.killed || child.exitCode !== null || child.signalCode !== null) {
-    return;
-  }
-  await new Promise((resolve) => {
-    child.once('close', () => resolve(undefined));
-    child.kill('SIGTERM');
-    setTimeout(() => {
-      if (!child.killed) {
-        child.kill('SIGKILL');
-      }
-    }, 2_000);
-  });
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}

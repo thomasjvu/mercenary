@@ -1,13 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-export function loadLocalEnv(rootDir) {
-  const envPath = resolve(rootDir, ".env");
-  if (!existsSync(envPath)) {
-    return;
-  }
-
-  const raw = readFileSync(envPath, "utf8");
+function applyEnvLines(target, raw) {
   for (const line of raw.split(/\r?\n/)) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) {
@@ -28,8 +22,21 @@ export function loadLocalEnv(rootDir) {
       value = value.slice(1, -1);
     }
 
-    if (!(key in process.env)) {
-      process.env[key] = value;
+    if (!(key in target)) {
+      target[key] = value;
     }
   }
+}
+
+export function loadEnvFile(filePath, options = {}) {
+  if (!existsSync(filePath)) {
+    return;
+  }
+
+  const target = options.into ?? process.env;
+  applyEnvLines(target, readFileSync(filePath, "utf8"));
+}
+
+export function loadLocalEnv(rootDir) {
+  loadEnvFile(resolve(rootDir, ".env"));
 }

@@ -63,10 +63,9 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
                   onChange={(event) => state.selectSavedApiKey(event.target.value)}
                   options={[
                     ['', 'select a saved key'],
-                    ...state.savedApiKeys.map((entry) => [
-                      entry.id,
-                      `${entry.name} (${entry.prefix})`,
-                    ]),
+                    ...state.savedApiKeys.map(
+                      (entry) => [entry.id, `${entry.name} (${entry.prefix})`] as const
+                    ),
                   ]}
                   value={state.selectedApiKeyId}
                 />

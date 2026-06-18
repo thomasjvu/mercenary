@@ -2,7 +2,7 @@ type FilterSelectProps = {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  options: Array<[string, string]>;
+  options: ReadonlyArray<readonly [string, string]>;
   compact?: boolean;
   className?: string;
   disabled?: boolean;

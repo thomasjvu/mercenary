@@ -10,7 +10,13 @@ import { findWorkspaceRoot, resolveWorkspacePath } from '@bossraid/constants/wor
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../handlers/index.js';
 import { requireMercenaryAccess } from '../handlers/auth/mercenary-access.js';
-import { readBooleanEnv } from '../lib/env.js';
+import {
+  assertBountyFundEscrowReady,
+  parseBountyFundBody,
+  paymentsDisabledForBountyFund,
+  preflightBountyFundOnchain,
+  prepareBountyFundPayment,
+} from '../lib/bounty-fund.js';
 import {
   BountyService,
   BountyServiceError,
@@ -22,18 +28,12 @@ import logger from '@bossraid/logger';
 import {
   BountyOnchainError,
   createBountyOnchainExecutor,
-  isBountyOnchainConfigured,
   mapBountyOnchainError,
   parseProviderAddressMap,
-  requiresProductionBountyEscrow,
 } from '../lib/bounty-onchain.js';
+import { sendX402Required } from '../lib/x402-route-response.js';
 import { readX402ConfigForContext } from '../lib/x402-runtime.js';
-import {
-  applyX402Headers,
-  buildPaymentRequiredForRoute,
-  isX402ProtocolError,
-  requireX402Payment,
-} from '../x402.js';
+import { isX402ProtocolError } from '../x402.js';
 
 function bountyStoreForEnv(env: NodeJS.ProcessEnv): BountyStore {
   const workspaceRoot = findWorkspaceRoot(process.cwd());
@@ -53,12 +53,11 @@ export function registerBountyRoutes(
   handlers: ApiHandlerGroups
 ): void {
   const store = bountyStoreForEnv(ctx.env);
-  const onchainExecutor = createBountyOnchainExecutor(ctx.env);
+  const onchainExecutor = createBountyOnchainExecutor(ctx.env) ?? undefined;
   const providerAddresses = parseProviderAddressMap(ctx.env);
   const service = new BountyService(
     store,
     readBountyServiceConfig(ctx.env),
-    ctx.orchestrator,
     onchainExecutor ? { executor: onchainExecutor, providerAddresses } : undefined
   );
   const { providerIsAuthorized } = handlers.auth;
@@ -113,12 +112,7 @@ export function registerBountyRoutes(
       return { error: 'unauthorized' };
     }
     const params = request.params as { bountyId: string };
-    const body = (request.body ?? {}) as Record<string, unknown>;
-    const isProduction = ctx.env.NODE_ENV === 'production';
-    const allowUnverifiedFund =
-      !isProduction &&
-      (readBooleanEnv(ctx.env.BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND) ||
-        readBooleanEnv(ctx.env.BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND));
+    const fundBody = parseBountyFundBody((request.body ?? {}) as Record<string, unknown>);
 
     try {
       const draft = store.getBounty(params.bountyId);
@@ -131,131 +125,54 @@ export function registerBountyRoutes(
         return { error: 'forbidden', message: 'Only the bounty poster can fund this bounty.' };
       }
 
-      const x402Config = readX402ConfigForContext(ctx);
-      let escrowReceiptJson =
-        typeof body.escrowReceiptJson === 'string'
-          ? body.escrowReceiptJson
-          : typeof body.escrow_receipt_json === 'string'
-            ? body.escrow_receipt_json
-            : undefined;
-      let escrowJobId =
-        typeof body.escrowJobId === 'string'
-          ? body.escrowJobId
-          : typeof body.escrow_job_id === 'string'
-            ? body.escrow_job_id
-            : undefined;
-
-      const mustEscrowOnchain =
-        requiresProductionBountyEscrow(ctx.env) || isBountyOnchainConfigured(ctx.env);
-
-      if (mustEscrowOnchain && !onchainExecutor) {
-        reply.code(503);
-        return {
-          error: 'bounty_escrow_unconfigured',
-          message:
-            'Onchain bounty escrow is required but BOSSRAID_BOUNTY_ESCROW_ADDRESS, token, RPC, and client signer are not fully configured.',
-        };
+      const escrowReady = assertBountyFundEscrowReady(ctx.env, onchainExecutor);
+      if (!escrowReady.ok) {
+        reply.code(escrowReady.statusCode);
+        return escrowReady.body;
       }
 
-      if (onchainExecutor) {
-        try {
-          await onchainExecutor.preflightFundBounty(draft);
-        } catch (error) {
-          return mapOnchainRouteError(reply, error);
-        }
+      const preflight = await preflightBountyFundOnchain(onchainExecutor, draft);
+      if (!preflight.ok) {
+        reply.code(preflight.statusCode);
+        return preflight.body;
       }
 
-      if (x402Config.enabled) {
-        const paymentRequired = buildPaymentRequiredForRoute(
-          x402Config,
-          'bounty',
-          draft.rewardAmountUsd,
-          { extra: { bountyId: params.bountyId } }
-        );
-        const payment = await requireX402Payment({
-          route: 'bounty',
+      const paymentsGate = paymentsDisabledForBountyFund(ctx);
+      if (!paymentsGate.ok) {
+        reply.code(paymentsGate.statusCode);
+        return paymentsGate.body;
+      }
+
+      let escrowReceiptJson = fundBody.escrowReceiptJson;
+      let escrowJobId = fundBody.escrowJobId;
+      if (readX402ConfigForContext(ctx).enabled) {
+        const paymentResult = await prepareBountyFundPayment({
+          ctx,
+          bountyId: params.bountyId,
+          posterWallet: access.wallet,
+          draft,
           headers: request.headers,
-          config: x402Config,
-          budgetUsd: draft.rewardAmountUsd,
-          paymentRequired,
+          onchainExecutor,
+          reply,
         });
-        applyX402Headers(reply, { settlement: payment.settlement });
-        if (payment.settlement?.payer && payment.settlement.payer.toLowerCase() !== access.wallet) {
-          reply.code(403);
-          return {
-            error: 'payer_mismatch',
-            message: 'x402 payer must match the bounty poster wallet.',
-          };
+        if (!paymentResult.ok) {
+          reply.code(paymentResult.statusCode);
+          return paymentResult.body;
         }
-        escrowReceiptJson = JSON.stringify({
-          route: 'bounty',
-          paidAmountUsd: payment.paidAmountUsd,
-          escrowFundingUsd: payment.escrowFundingUsd,
-          platformMarkupUsd: payment.platformMarkupUsd,
-          settlement: payment.settlement,
-        });
-
-        if (onchainExecutor) {
-          try {
-            const onchain = await onchainExecutor.createAndFundBounty({
-              posterWallet: access.wallet,
-              bounty: draft,
-            });
-            escrowJobId = onchain.onchainBountyId;
-            const receipt = JSON.parse(escrowReceiptJson) as Record<string, unknown>;
-            receipt.onchain = {
-              bountyId: onchain.onchainBountyId,
-              fundTxHash: onchain.fundTxHash,
-            };
-            escrowReceiptJson = JSON.stringify(receipt);
-          } catch (error) {
-            logger.error(
-              {
-                bountyId: params.bountyId,
-                settlement: payment.settlement,
-                error: error instanceof Error ? error.message : String(error),
-              },
-              'bounty onchain fund failed after x402 settlement'
-            );
-            reply.code(502);
-            return {
-              error: 'escrow_fund_failed',
-              message:
-                'Payment settled but onchain bounty escrow funding failed. Contact support with your payment transaction for a manual refund.',
-              settlement: payment.settlement,
-            };
-          }
-        } else if (requiresProductionBountyEscrow(ctx.env)) {
-          reply.code(503);
-          return {
-            error: 'bounty_escrow_unconfigured',
-            message: 'Production bounty funding requires onchain escrow.',
-          };
-        }
-      } else if (!allowUnverifiedFund) {
-        reply.code(503);
-        return {
-          error: 'payments_disabled',
-          message: isProduction
-            ? 'Bounty funding requires x402 USDC payments in production.'
-            : 'Enable BOSSRAID_X402_ENABLED or BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND for local development.',
-        };
+        escrowReceiptJson = paymentResult.prepared.escrowReceiptJson ?? escrowReceiptJson;
+        escrowJobId = paymentResult.prepared.escrowJobId ?? escrowJobId;
       }
 
       const bounty = service.fundBounty(params.bountyId, access.wallet, {
         escrowReceiptJson,
         escrowJobId,
-        openNow: body.openNow !== false && body.open_now !== false,
+        openNow: fundBody.openNow,
       });
       return { bounty, onchainEscrow: Boolean(escrowJobId) };
     } catch (error) {
       if (isX402ProtocolError(error)) {
-        applyX402Headers(reply, {
-          paymentRequired: error.paymentRequired,
-          settlement: error.settlement,
-        });
-        reply.code(error.statusCode);
-        return error.paymentRequired;
+        sendX402Required(reply, error);
+        return;
       }
       return mapBountyError(reply, error);
     }
