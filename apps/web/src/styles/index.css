@@ -13,6 +13,7 @@
 @import './base/_utilities.css';
 @import './features/_marketplace.css';
 @import './features/_sell.css';
+@import './features/_bounties.css';
 @import './base/_filter-controls.css';
 @import './themes/_dark.css';
 @import './features/_legal.css';

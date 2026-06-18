@@ -6,16 +6,18 @@ import react from '@vitejs/plugin-react';
 import { NETWORK } from '@bossraid/constants';
 
 const repoAssetsDir = fileURLToPath(new URL('../../assets', import.meta.url));
+const repoSkillPath = fileURLToPath(new URL('../../content/skill.md', import.meta.url));
 const webPublicDir = fileURLToPath(new URL('./public', import.meta.url));
 
-function syncBossRaidFavicon(): Plugin {
+function syncBossRaidPublicAssets(): Plugin {
   return {
-    name: 'sync-boss-raid-favicon',
+    name: 'sync-boss-raid-public-assets',
     buildStart() {
       copyFileSync(
         resolve(repoAssetsDir, 'boss-raid-pfp.png'),
         resolve(webPublicDir, 'boss-raid-pfp.png')
       );
+      copyFileSync(repoSkillPath, resolve(webPublicDir, 'skill.md'));
     },
   };
 }
@@ -33,7 +35,7 @@ export default defineConfig(({ mode }) => {
     `http://${NETWORK.LOCALHOST}:${NETWORK.LOCAL_API_PORT}`;
 
   return {
-    plugins: [syncBossRaidFavicon(), react()],
+    plugins: [syncBossRaidPublicAssets(), react()],
     resolve: {
       alias: {
         '@assets': fileURLToPath(new URL('../../assets', import.meta.url)),

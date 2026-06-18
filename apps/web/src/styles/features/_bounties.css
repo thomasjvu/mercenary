@@ -1,0 +1,77 @@
+.bounties-page__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.bounties-page__grid,
+.bounties-page__detail-grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 960px) {
+  .bounties-page__grid,
+  .bounties-page__detail-grid {
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  }
+}
+
+.bounties-page__composer label {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.bounties-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.bounties-card {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0.85rem 1rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.bounties-card--static {
+  cursor: default;
+}
+
+.bounties-card__title {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+}
+
+.bounties-card__reward {
+  color: var(--rx-red);
+  font-family: var(--font-mono);
+}
+
+.bounties-card__meta {
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.bounties-deadlines {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.code-block--compact {
+  font-size: 0.75rem;
+  margin-top: 0.5rem;
+}

@@ -119,5 +119,19 @@ export function parseProviderDiscoveryQuery(value: unknown): ProviderDiscoveryQu
             Number(input.maxHeartbeatAgeMs ?? input.max_heartbeat_age_ms),
             'provider_discovery_query.max_heartbeat_age_ms'
           ),
+    sourceType:
+      input.sourceType == null && input.source_type == null
+        ? undefined
+        : ensureOptionalString(
+            input.sourceType ?? input.source_type,
+            'provider_discovery_query.source_type'
+          ),
+    supportedFramework:
+      input.supportedFramework == null && input.supported_framework == null
+        ? undefined
+        : ensureOptionalString(
+            input.supportedFramework ?? input.supported_framework,
+            'provider_discovery_query.supported_framework'
+          ),
   };
 }

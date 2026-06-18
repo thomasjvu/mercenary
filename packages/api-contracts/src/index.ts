@@ -16,6 +16,13 @@ export {
 export { buildBossRaidRequestFromDelegateInput, parseBossRaidRequest } from './parsers/raid.js';
 
 export {
+  parseAwardBountyBidsInput,
+  parseCreateBountyBidInput,
+  parseCreateBountyInput,
+  parseDeliverBountyAwardInput,
+} from './parsers/bounty.js';
+
+export {
   parseAgentHeartbeatInput,
   parseProviderDiscoveryQuery,
   parseProviderFailure,

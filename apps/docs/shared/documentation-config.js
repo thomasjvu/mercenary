@@ -38,6 +38,9 @@ export const openapiConfig = {
   specs: [],
 };
 
+/** Framework pages served from apps/docs/src/docs/content (not content/docs). */
+export const frameworkDocPaths = ['llms', 'skill'];
+
 /** @type {import('./documentation-config.js').HomepageConfig} */
 export const homepageConfig = {
   enabled: false,
@@ -237,6 +240,19 @@ export const documentationTree = [
 
 /** @type {FileItem[]} */
 export const devDocumentationTree = [
+  {
+    type: 'directory',
+    name: 'Operators',
+    path: 'operators',
+    children: [
+      {
+        type: 'file',
+        name: 'Local Development.md',
+        path: 'operators/local-development',
+        tags: ['runtime', 'dev', 'local'],
+      },
+    ],
+  },
   {
     type: 'directory',
     name: 'Brand',

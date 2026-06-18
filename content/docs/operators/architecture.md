@@ -11,9 +11,9 @@ Boss Raid is the platform. Mercenary is the orchestrator agent.
 
 Both lanes share provider registry, routing proof, receipts, and settlement. Marketplace discovery: `GET /v1/models`, `GET /v1/prices`, `GET /v1/markets`.
 
-Full discount-inference / Surplus Intelligence parity design: [discount-inference.md](../buyers/discount-inference.md).
+Full discount-inference design: [discount-inference.md](../buyers/discount-inference.md).
 
-## Discount inference (surplus parity)
+## Discount inference
 
 Single-provider marketplace lane. API normalizes every request to `maxAgents: 1` and `selectionMode: cost_first` (`apps/api/src/lib/inference-marketplace-policy.ts`).
 

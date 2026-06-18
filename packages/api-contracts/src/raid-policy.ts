@@ -53,6 +53,7 @@ export interface RaidPolicyFields {
   maxOutputTokens: unknown;
   allowedModelFamilies: unknown;
   allowedAgentFrameworks: unknown;
+  requiredProviderIds: unknown;
   allowedModelProviders: unknown;
   allowedModelIds: unknown;
   allowedOutputTypes: unknown;
@@ -72,6 +73,7 @@ export interface RaidConstraintsFields {
   forbidPaths: unknown;
   allowedModelFamilies: unknown;
   allowedAgentFrameworks: unknown;
+  requiredProviderIds: unknown;
   allowedModelProviders: unknown;
   allowedModelIds: unknown;
   allowedOutputTypes: unknown;
@@ -100,6 +102,7 @@ export interface RaidConstraintsFieldLabels {
   forbidPaths: string;
   allowedModelFamilies: string;
   allowedAgentFrameworks: string;
+  requiredProviderIds: string;
   allowedModelProviders: string;
   allowedModelIds: string;
   allowedOutputTypes: string;
@@ -122,6 +125,7 @@ export function raidConstraintsFieldLabels(
     forbidPaths: `${prefix}.forbid_paths`,
     allowedModelFamilies: `${prefix}.allowed_model_families`,
     allowedAgentFrameworks: `${prefix}.allowed_agent_frameworks`,
+    requiredProviderIds: `${prefix}.required_provider_ids`,
     allowedModelProviders: `${prefix}.allowed_model_providers`,
     allowedModelIds: `${prefix}.allowed_model_ids`,
     allowedOutputTypes: `${prefix}.allowed_output_types`,
@@ -146,6 +150,7 @@ export function readRaidConstraintsFields(source: Record<string, unknown>): Raid
     forbidPaths: read('forbidPaths', 'forbid_paths'),
     allowedModelFamilies: read('allowedModelFamilies', 'allowed_model_families'),
     allowedAgentFrameworks: read('allowedAgentFrameworks', 'allowed_agent_frameworks'),
+    requiredProviderIds: read('requiredProviderIds', 'required_provider_ids'),
     allowedModelProviders: read('allowedModelProviders', 'allowed_model_providers'),
     allowedModelIds: read('allowedModelIds', 'allowed_model_ids'),
     allowedOutputTypes: read('allowedOutputTypes', 'allowed_output_types'),
@@ -169,6 +174,7 @@ export function raidPolicyFieldsToConstraintFields(
     forbidPaths: undefined,
     allowedModelFamilies: fields.allowedModelFamilies,
     allowedAgentFrameworks: fields.allowedAgentFrameworks,
+    requiredProviderIds: fields.requiredProviderIds,
     allowedModelProviders: fields.allowedModelProviders,
     allowedModelIds: fields.allowedModelIds,
     allowedOutputTypes: fields.allowedOutputTypes,
@@ -235,6 +241,10 @@ export function buildRaidConstraintsFromFields(
       fields.allowedAgentFrameworks == null
         ? undefined
         : ensureAgentFrameworkArray(fields.allowedAgentFrameworks, labels.allowedAgentFrameworks),
+    requiredProviderIds:
+      fields.requiredProviderIds == null
+        ? undefined
+        : ensureStringArray(fields.requiredProviderIds, labels.requiredProviderIds),
     allowedModelProviders:
       fields.allowedModelProviders == null
         ? undefined
@@ -285,6 +295,7 @@ export function readRaidPolicyFields(source: Record<string, unknown>): RaidPolic
     maxOutputTokens: read('maxOutputTokens', 'max_output_tokens'),
     allowedModelFamilies: read('allowedModelFamilies', 'allowed_model_families'),
     allowedAgentFrameworks: read('allowedAgentFrameworks', 'allowed_agent_frameworks'),
+    requiredProviderIds: read('requiredProviderIds', 'required_provider_ids'),
     allowedModelProviders: read('allowedModelProviders', 'allowed_model_providers'),
     allowedModelIds: read('allowedModelIds', 'allowed_model_ids'),
     allowedOutputTypes: read('allowedOutputTypes', 'allowed_output_types'),
@@ -386,6 +397,10 @@ export function buildNormalizedDelegateRaidPolicy(
             fields.allowedAgentFrameworks,
             'raidPolicy.allowedAgentFrameworks'
           ),
+    requiredProviderIds:
+      fields.requiredProviderIds == null
+        ? undefined
+        : ensureStringArray(fields.requiredProviderIds, 'raidPolicy.requiredProviderIds'),
     allowedModelProviders:
       fields.allowedModelProviders == null
         ? undefined

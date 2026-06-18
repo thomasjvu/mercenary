@@ -1,6 +1,6 @@
 # Discount inference
 
-Boss Raid's **discount inference** lane is the single-model marketplace path: one OpenAI-compatible call, cheapest eligible seller, instant settlement. Internal parity work against the Surplus Intelligence reference UX ships under this route — prepaid balance, API-key billing, purchase history, seller earnings, and `savings_usd` metadata.
+Boss Raid's **discount inference** lane is the single-model marketplace path: one OpenAI-compatible call, cheapest eligible seller, instant settlement. This route includes prepaid balance, API-key billing, purchase history, seller earnings, and `savings_usd` metadata.
 
 **Route:** `POST /v1/inference/chat/completions`
 
@@ -109,18 +109,6 @@ pnpm sync:inference-catalog
 ```
 
 Benchmark prices in `packages/constants/src/marketplace-benchmark.ts` drive `savings_usd` and marketplace discount displays. Catalog-only rows fill discovery when no seller is live.
-
-## Local parity smoke
-
-End-to-end check for marketplace stats, wallet session, balance fund, API key, inference call, purchases, and seller ledger:
-
-```bash
-pnpm dev:providers   # terminal 1
-pnpm dev:api         # terminal 2 — memory storage, x402 off
-BOSSRAID_API_BASE=http://127.0.0.1:8787 pnpm test:surplus-parity:smoke
-```
-
-See [operators/runtime.md](../operators/runtime.md) for env details.
 
 ## Related docs
 

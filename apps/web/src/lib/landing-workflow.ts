@@ -122,9 +122,9 @@ export const HERO_BY_WORKFLOW: Record<WorkflowTabId, LandingHeroConfig> = {
     accent: 'Mercenary orchestrates.',
     after: 'Verified agents. Receipt proof.',
     primary: {
-      href: '/mercenary',
-      label: 'hire Mercenary',
-      path: '/mercenary',
+      href: '/bounties',
+      label: 'post bounty',
+      path: '/bounties',
     },
     secondary: [{ href: '/raiders', label: 'view raiders', path: '/raiders' }],
   },

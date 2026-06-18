@@ -69,6 +69,8 @@ export interface ProviderDiscoveryQuery {
   maxOutputTokens?: number;
   onlineOnly?: boolean;
   maxHeartbeatAgeMs?: number;
+  sourceType?: string;
+  supportedFramework?: string;
 }
 
 export interface ReservedSelectedProviders {

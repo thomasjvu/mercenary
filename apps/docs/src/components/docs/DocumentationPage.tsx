@@ -12,6 +12,7 @@ import safeLocalStorage from '../../utils/storage';
 import type { DocumentContentFormat } from '../../lib/content';
 
 import ContentRenderer from '../ContentRenderer';
+import DocsLogoMark from '../DocsLogoMark';
 import DocsVariantSelector from '../DocsVariantSelector';
 import DocumentationGraph from '../DocumentationGraph/OptimizedDocumentationGraph';
 import FileTree from '../FileTree';
@@ -375,17 +376,7 @@ const DocumentationPage = React.memo(
                     className="group inline-flex min-w-0 items-center gap-3"
                     style={{ color: 'var(--text-color)' }}
                   >
-                    <span
-                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-sm font-black"
-                      style={{
-                        borderColor: 'var(--border-unified)',
-                        backgroundColor: 'var(--card-color)',
-                        color: 'var(--text-color)',
-                        fontFamily: 'var(--mono-font)',
-                      }}
-                    >
-                      P
-                    </span>
+                    <DocsLogoMark size="lg" />
                     <span className="min-w-0">
                       <span
                         className="block truncate text-sm uppercase tracking-[0.28em]"
@@ -459,6 +450,18 @@ const DocumentationPage = React.memo(
                   <span className="flex items-center gap-2">
                     <Icon icon="mingcute:file-info-line" className="h-4 w-4" />
                     <span>LLMs.txt</span>
+                  </span>
+                  <Icon icon="mingcute:arrow-right-line" className="h-4 w-4" />
+                </Link>
+
+                <Link
+                  to="/skill"
+                  className="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-opacity hover:opacity-80"
+                  style={utilityButtonStyle}
+                >
+                  <span className="flex items-center gap-2">
+                    <Icon icon="mingcute:magic-2-line" className="h-4 w-4" />
+                    <span>Agent Skill</span>
                   </span>
                   <Icon icon="mingcute:arrow-right-line" className="h-4 w-4" />
                 </Link>

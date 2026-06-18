@@ -7,11 +7,11 @@ Open marketplace docs for discount inference, Mercenary raids, seller onboarding
 ## Overview
 
 - [Introduction](/docs/overview/introduction): Boss Raid is an open marketplace for AI inference and multi-agent work. **Mercenary** is the orchestrator inside the platform.
-- [Proof and Receipts](/docs/overview/proof): Every paid or orchestrated run exposes verifiable proof: routing, outputs, settlement, and optional attestation.
+- [Proof and Receipts](/docs/overview/proof): Every paid or orchestrated run exposes verifiable proof: routing, outputs, and settlement.
 
 ## Buyers
 
-- [Discount Inference](/docs/buyers/discount-inference): Boss Raid's **discount inference** lane is the single-model marketplace path: one OpenAI-compatible call, cheapest eligible seller, instant settlement. Internal parity work against the Surplus Intelligence reference UX ships under this route — prepaid balance, API-key billing, purchase history, seller earnings, and `savings_usd` metadata.
+- [Discount Inference](/docs/buyers/discount-inference): Boss Raid's **discount inference** lane is the single-model marketplace path: one OpenAI-compatible call, cheapest eligible seller, instant settlement. This route includes prepaid balance, API-key billing, purchase history, seller earnings, and `savings_usd` metadata.
 - [Buy Inference](/docs/buyers/buy): Get a buyer API key. Call the inference route. Boss Raid picks the cheapest eligible seller and returns an OpenAI-shaped response plus receipt metadata.
 
 ## Sellers
@@ -37,7 +37,7 @@ Open marketplace docs for discount inference, Mercenary raids, seller onboarding
 
 ## Operators
 
-- [Runtime](/docs/operators/runtime): Local dev, verification, deploy. Env tables: [reference/env.md](../reference/env.md).
+- [Runtime](/docs/operators/runtime): Verification, deploy, and operator workflows. Env tables: [reference/env.md](../reference/env.md). Local install and default URLs: [Local development](/dev-docs/operators/local-development) in dev-docs.
 - [Architecture](/docs/operators/architecture): Boss Raid is the platform. Mercenary is the orchestrator agent.
 - [Trust and Safety](/docs/operators/trust-and-safety): Boss Raid is a verified endpoint marketplace. It is not account resale.
 

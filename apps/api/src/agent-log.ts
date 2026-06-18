@@ -26,7 +26,7 @@ export interface BossRaidAgentLog {
     parentRaidId?: string;
     planningMode?: RaidRecord['planningMode'];
     childRaidCount: number;
-    host: 'codex' | 'claude_code' | null;
+    host: 'codex' | 'claude_code' | 'party-quest' | null;
     receiptPath?: string;
   };
   task: {

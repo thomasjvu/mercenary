@@ -446,10 +446,16 @@ a:focus-visible {
 
 /* Logo styling */
 .logo-image {
-  height: 1.5rem;
-  width: 1.5rem;
-  object-fit: contain;
+  height: 2rem;
+  width: 2rem;
+  object-fit: cover;
+  border: 1px solid var(--border-unified);
   border-radius: calc(var(--space-2) - 2px);
+}
+
+.logo-image--lg {
+  height: 2.5rem;
+  width: 2.5rem;
 }
 
 /* Custom animations */
@@ -1170,6 +1176,89 @@ code {
   margin: 0 0 var(--space-2);
   font-weight: 700;
   color: var(--text-color);
+}
+
+.doc-content .role-lane-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: var(--space-6) 0 var(--space-8);
+}
+
+.doc-content .role-lane-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-unified);
+  border-radius: var(--radius-md);
+  background: var(--card-color);
+  text-decoration: none !important;
+  transition:
+    transform var(--transition-slow),
+    border-color var(--transition-slow);
+}
+
+.doc-content .role-lane-card:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+}
+
+.doc-content .role-lane-card__media {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--background-color);
+}
+
+.doc-content .role-lane-card__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  filter: saturate(0.88) contrast(1.06);
+  transition: filter var(--transition-slow);
+}
+
+.doc-content .role-lane-card:hover .role-lane-card__media img {
+  filter: saturate(1) contrast(1.08) brightness(1.03);
+}
+
+.doc-content .role-lane-card__body {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+
+.doc-content .role-lane-card__eyebrow {
+  display: block;
+  color: var(--muted-color);
+  font-family: var(--mono-font);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.doc-content .role-lane-card__title {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--text-color);
+  font-family: var(--title-font);
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.doc-content .role-lane-card__meta {
+  display: block;
+  margin-top: var(--space-2);
+  color: var(--muted-color);
+  font-family: var(--mono-font);
+  font-size: var(--text-2xs);
+  line-height: 1.45;
+}
+
+@media (max-width: 960px) {
+  .doc-content .role-lane-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .openapi-reference-shell {

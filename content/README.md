@@ -7,17 +7,22 @@ Markdown source for the papers docs app (`apps/docs`). Framework code and UI liv
 | Directory                | Route         | Audience                                                                                  |
 | ------------------------ | ------------- | ----------------------------------------------------------------------------------------- |
 | [`docs/`](docs/)         | `/docs/*`     | Product docs — `overview/`, `buyers/`, `sellers/`, `raiders/`, `reference/`, `operators/` |
-| [`dev-docs/`](dev-docs/) | `/dev-docs/*` | Brand, art pipelines, internal references                                                 |
+| [`dev-docs/`](dev-docs/) | `/dev-docs/*` | Local development, brand, art pipelines, internal references                              |
 
 Navigation trees: [`apps/docs/shared/documentation-config.js`](../apps/docs/shared/documentation-config.js)
 
 Collection registry: [`apps/docs/shared/content-collections.js`](../apps/docs/shared/content-collections.js)
+
+## Agent skill
+
+Canonical agent skill: [`skill.md`](skill.md) — synced to `apps/docs/public/skill.md` and `apps/web/public/skill.md` via `pnpm generate:skill`. Docs install page: `/skill`.
 
 ## Commands
 
 ```bash
 pnpm dev:docs          # local preview (port 3333)
 pnpm build:docs        # production static build
+pnpm generate:skill    # sync content/skill.md to docs + web public/
 pnpm sync:docs-routes  # regenerate API route table in content/docs/reference/routes.md
 ```
 

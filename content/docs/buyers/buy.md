@@ -2,7 +2,7 @@
 
 Get a buyer API key. Call the inference route. Boss Raid picks the cheapest eligible seller and returns an OpenAI-shaped response plus receipt metadata.
 
-Architecture and Surplus Intelligence parity details: [discount-inference.md](discount-inference.md).
+Architecture and billing details: [discount-inference.md](discount-inference.md).
 
 ## Browse the market
 

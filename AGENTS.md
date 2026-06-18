@@ -13,7 +13,7 @@ Boss Raid is the platform. Mercenary is the orchestrator agent.
 - [content/README.md](/Users/area/repos/boss-raid/content/README.md) — papers content layout (`content/docs`, `content/dev-docs`)
 - [README.md](/Users/area/repos/boss-raid/README.md)
 - [content/docs/overview/introduction.md](/Users/area/repos/boss-raid/content/docs/overview/introduction.md)
-- [content/docs/buyers/discount-inference.md](/Users/area/repos/boss-raid/content/docs/buyers/discount-inference.md) — discount inference / Surplus Intelligence parity lane
+- [content/docs/buyers/discount-inference.md](/Users/area/repos/boss-raid/content/docs/buyers/discount-inference.md) — discount inference lane
 - [content/docs/buyers/buy.md](/Users/area/repos/boss-raid/content/docs/buyers/buy.md)
 - [content/docs/sellers/sell.md](/Users/area/repos/boss-raid/content/docs/sellers/sell.md)
 - [content/docs/raiders/raids.md](/Users/area/repos/boss-raid/content/docs/raiders/raids.md)

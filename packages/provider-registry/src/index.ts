@@ -194,6 +194,8 @@ export function providerIsFresh(
 
 export type ProviderMarketplaceConstraints = {
   capabilities?: string[];
+  sourceType?: string;
+  supportedFramework?: string;
   allowedModelFamilies?: string[];
   allowedAgentFrameworks?: string[];
   allowedModelProviders?: string[];
@@ -310,6 +312,21 @@ export function providerMatchesMarketplaceConstraints(
     return false;
   }
 
+  if (constraints.sourceType) {
+    const normalized = constraints.sourceType.replace(/-/g, '_').toLowerCase();
+    const providerSource = provider.source?.type?.replace(/-/g, '_').toLowerCase();
+    if (providerSource !== normalized) {
+      return false;
+    }
+  }
+
+  if (constraints.supportedFramework) {
+    const frameworks = provider.supportedFrameworks ?? [];
+    if (!frameworks.includes(constraints.supportedFramework)) {
+      return false;
+    }
+  }
+
   if (
     constraints.allowedModelFamilies?.length &&
     !providerMatchesAllowedModelFamilies(provider, constraints.allowedModelFamilies)
@@ -387,6 +404,8 @@ export function providerMatchesDiscoveryQuery(
     provider,
     {
       capabilities: query.capabilities,
+      sourceType: query.sourceType,
+      supportedFramework: query.supportedFramework,
       allowedModelFamilies: query.allowedModelFamilies,
       allowedAgentFrameworks: query.allowedAgentFrameworks,
       allowedModelProviders: query.allowedModelProviders,

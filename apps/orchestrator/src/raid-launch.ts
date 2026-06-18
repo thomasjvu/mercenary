@@ -118,8 +118,9 @@ async function assignProvidersToGraph(
     return prepared;
   }
 
-  const discoverableProviders = await discoverProvidersForRaid(
-    buildDiscoveryQueryFromTask(node.task)
+  const discoverableProviders = filterRequiredProviders(
+    await discoverProvidersForRaid(buildDiscoveryQueryFromTask(node.task)),
+    node.task.constraints.requiredProviderIds
   );
   const selectedProviders = selectProvidersForTask(
     node.task,
@@ -220,8 +221,9 @@ export async function prepareRaid(
     }
   }
 
-  const discoverableProviders = await deps.discoverProvidersForRaid(
-    buildDiscoveryQueryFromTask(sanitized)
+  const discoverableProviders = filterRequiredProviders(
+    await deps.discoverProvidersForRaid(buildDiscoveryQueryFromTask(sanitized)),
+    sanitized.constraints.requiredProviderIds
   );
   const selectedProviders = deps.selectProvidersForTask(sanitized, discoverableProviders);
   if (selectedProviders.primaries.length === 0) {
@@ -233,6 +235,17 @@ export async function prepareRaid(
     sanitized,
     selectedProviders,
   };
+}
+
+function filterRequiredProviders(
+  providers: ProviderProfile[],
+  requiredProviderIds: string[] | undefined
+): ProviderProfile[] {
+  if (!requiredProviderIds?.length) {
+    return providers;
+  }
+  const required = new Set(requiredProviderIds);
+  return providers.filter((provider) => required.has(provider.providerId));
 }
 
 export function computeRootDeadlineUnix(task: SanitizedTaskSpec, raidAbsoluteMs: number): number {

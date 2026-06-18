@@ -93,6 +93,10 @@ function resolveInternalHref(
     return '/llms.txt';
   }
 
+  if (href === '/skill' || href === '/skill.md') {
+    return '/skill.md';
+  }
+
   if (href.startsWith('/')) {
     const parsed = new URL(href, 'https://docs.local');
     const docPath = parsed.pathname.replace(/^\/+/, '');

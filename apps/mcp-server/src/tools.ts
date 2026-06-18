@@ -109,6 +109,11 @@ export const tools = [
           description:
             'How experts are ranked and selected. `best_match` scores fit, `privacy_first` prioritizes privacy-verified providers, `cost_first` minimizes spend, `diverse_mix` spreads model families, and `round_robin` rotates providers across launches (matches raid playground presets).',
         },
+        partyQuestProviderId: {
+          type: 'string',
+          description:
+            'Pin a Party Quest squad provider id (pqf_…). Sets requiredProviderIds and hostContext.host=party-quest.',
+        },
       },
       required: ['prompt'],
       additionalProperties: true,
@@ -358,6 +363,19 @@ export function registerTools(server: Server): void {
 
 async function delegateRaid(args: Record<string, unknown>) {
   const request = buildBossRaidRequestFromDelegateInput(args);
+  const partyQuestProviderId = optionalString(
+    args.partyQuestProviderId ?? args.party_quest_provider_id
+  );
+  if (partyQuestProviderId) {
+    request.raidPolicy = {
+      ...request.raidPolicy,
+      requiredProviderIds: [partyQuestProviderId],
+    };
+    request.hostContext = {
+      host: 'party-quest',
+      ...request.hostContext,
+    };
+  }
   const spawn = (await paidApiRequest('/v1/raid', {
     method: 'POST',
     body: JSON.stringify(request),

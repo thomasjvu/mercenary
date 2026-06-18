@@ -121,8 +121,8 @@ test('buildProviderProfileFromRegistration canonicalizes providerId to the regis
 
 test('buildProviderProfileFromRegistration normalizes token-metered rate cards', () => {
   const profile = buildProviderProfileFromRegistration({
-    agentId: 'gemma-surplus-seller',
-    name: 'Gemma Surplus Seller',
+    agentId: 'gemma-discount-seller',
+    name: 'Gemma Discount Seller',
     endpoint: 'https://provider.example.com',
     modelProvider: 'google',
     modelId: 'gemma-4-31b-it',

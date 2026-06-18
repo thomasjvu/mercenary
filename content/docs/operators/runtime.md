@@ -1,28 +1,6 @@
 # Runtime & Commands
 
-Local dev, verification, deploy. Env tables: [reference/env.md](../reference/env.md).
-
-## Local development
-
-```bash
-pnpm install
-cp .env.example .env
-pnpm check
-pnpm build
-pnpm dev
-```
-
-`pnpm dev` starts evaluator, API, web, ops, and local providers.
-
-| Service   | Default URL                                                   |
-| --------- | ------------------------------------------------------------- |
-| web       | `http://127.0.0.1:4173`                                       |
-| ops       | `http://127.0.0.1:4174` (control plane; see **Ops UI** below) |
-| API       | `http://127.0.0.1:8787`                                       |
-| evaluator | `http://127.0.0.1:8790` or `/tmp/bossraid-evaluator.sock`     |
-| providers | `9001`, `9002`, `9003`                                        |
-
-Manual start: `pnpm dev:providers`, `pnpm dev:api`, `pnpm dev:web`, `pnpm dev:ops`, `pnpm dev:evaluator`, `pnpm dev:mcp`.
+Verification, deploy, and operator workflows. Env tables: [reference/env.md](../reference/env.md). Local install and default URLs: [Local development](/dev-docs/operators/local-development) in dev-docs.
 
 Refresh inference catalog + reference pricing JSON:
 
@@ -96,7 +74,6 @@ pnpm --filter @bossraid/web test src/lib/*.test.ts
 pnpm mercenary:rehearse
 pnpm export:proof-bundle -- --raid-id <raidId>
 pnpm verify:attestation
-pnpm test:surplus-parity:smoke
 pnpm deploy:web:cloudflare
 ```
 
@@ -109,19 +86,6 @@ pnpm deploy:web:cloudflare
 ```
 
 Set the Cloudflare Pages secret `BOSSRAID_API_ORIGIN` to your public API host (Phala CVM), not a self-referential `pages.dev/api` loop. The API host must have `BOSSRAID_X402_ENABLED=true` before wallet top-ups work.
-
-## Discount inference parity smoke
-
-End-to-end Surplus Intelligence parity check: marketplace stats, wallet session, balance fund, API key, inference call, purchases, seller ledger.
-
-```bash
-pnpm dev:providers
-BOSSRAID_STORAGE_BACKEND=memory BOSSRAID_X402_ENABLED=false \
-  BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND=true pnpm dev:api
-BOSSRAID_API_BASE=http://127.0.0.1:8787 pnpm test:surplus-parity:smoke
-```
-
-Optional: `BOSSRAID_SMOKE_MODEL`, `BOSSRAID_SMOKE_TIMEOUT_MS`, `BOSSRAID_SMOKE_MNEMONIC`. See [discount-inference.md](../buyers/discount-inference.md).
 
 Full command list (settlement, docker, Phala, contracts):
 

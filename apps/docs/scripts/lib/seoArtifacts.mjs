@@ -210,6 +210,26 @@ export function createSeoRouteEntries(docsIndex, documentsByPath, options = {}) 
       continue;
     }
 
+    if (docPath === 'skill') {
+      const document = getDocumentForRoute(docPath, '/skill', documentsByPath, routeOptions);
+
+      if (!document) {
+        continue;
+      }
+
+      registerRoute({
+        routePath: '/skill',
+        canonicalPath: '/skill',
+        title: `Agent Skill | ${siteName}`,
+        description:
+          getDocumentDescription(document) ||
+          'Agent skill file for integrating with Boss Raid APIs, Mercenary raids, and MCP tools.',
+        type: 'article',
+        includeInSitemap: true,
+      });
+      continue;
+    }
+
     registerDocsRouteVariants(registerRoute, docPath, docPath, documentsByPath, {
       ...routeOptions,
       includeInSitemap: true,

@@ -10,6 +10,14 @@
       "purpose": "Mercenary chat and raid launcher"
     },
     {
+      "path": "/bounties",
+      "purpose": "Paid bounty marketplace"
+    },
+    {
+      "path": "/party-quest",
+      "purpose": "Party Quest provider bridge"
+    },
+    {
       "path": "/marketplace",
       "purpose": "Model marketplace"
     },

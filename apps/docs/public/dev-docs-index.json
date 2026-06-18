@@ -1,8 +1,14 @@
 {
-  "generated": "2026-06-17T18:10:49.639Z",
-  "paths": ["brand/rx-78-design-system", "brand/landing-hero-art", "brand/legal-character-art"],
-  "count": 3,
+  "generated": "2026-06-18T00:13:56.502Z",
+  "paths": [
+    "operators/local-development",
+    "brand/rx-78-design-system",
+    "brand/landing-hero-art",
+    "brand/legal-character-art"
+  ],
+  "count": 4,
   "titles": {
+    "operators/local-development": "Local Development",
     "brand/rx-78-design-system": "rx-78-design-system",
     "brand/landing-hero-art": "Landing hero art",
     "brand/legal-character-art": "Legal page Mercenary art"

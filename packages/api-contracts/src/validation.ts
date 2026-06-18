@@ -66,7 +66,7 @@ export const PRIVACY_FEATURES = new Set<PrivacyFeatureKey>([
   'provenance_attested',
   'operator_verified',
 ]);
-const HOSTS = new Set<HostContext['host']>(['codex', 'claude_code']);
+const HOSTS = new Set<HostContext['host']>(['codex', 'claude_code', 'party-quest']);
 const PROVIDER_AUTH_TYPES = new Set<ProviderAuthConfig['type']>(['bearer', 'hmac', 'none']);
 const PROVIDER_STATUSES = new Set<ProviderStatus>(['available', 'degraded', 'offline']);
 const PROVIDER_PRICING_MODES = new Set<ProviderPricingMode>(['token_metered', 'task']);

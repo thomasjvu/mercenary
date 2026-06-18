@@ -1,5 +1,6 @@
 export * from './domain/provider.js';
 export * from './domain/marketplace.js';
+export * from './domain/bounty.js';
 export * from './domain/raid.js';
 export * from './domain/settlement.js';
 export * from './domain/delegation.js';

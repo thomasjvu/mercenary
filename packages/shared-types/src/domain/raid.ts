@@ -92,6 +92,7 @@ export interface RaidConstraints {
   forbidPaths?: string[];
   allowedModelFamilies?: string[];
   allowedAgentFrameworks?: AgentFramework[];
+  requiredProviderIds?: string[];
   allowedModelProviders?: string[];
   allowedModelIds?: string[];
   allowedOutputTypes?: OutputType[];
@@ -112,7 +113,7 @@ export interface PrivacyMode {
 }
 
 export interface HostContext {
-  host: 'codex' | 'claude_code';
+  host: 'codex' | 'claude_code' | 'party-quest';
   sessionId?: string;
   repoRootHint?: string;
   branchName?: string;
@@ -539,6 +540,7 @@ export interface BossRaidRequest {
     requiredCapabilities?: string[];
     allowedModelFamilies?: string[];
     allowedAgentFrameworks?: AgentFramework[];
+    requiredProviderIds?: string[];
     allowedModelProviders?: string[];
     allowedModelIds?: string[];
     minReputationScore?: number;

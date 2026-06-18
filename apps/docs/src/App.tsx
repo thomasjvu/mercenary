@@ -4,6 +4,7 @@ import { CommandPaletteProvider } from './providers/CommandPaletteProvider';
 import HomePage from './pages/HomePage';
 import CollectionDocsPage from './pages/CollectionDocsPage';
 import LLMSPage from './pages/LLMSPage';
+import SkillPage from './pages/SkillPage';
 import NotFoundPage from './pages/NotFoundPage';
 import { contentCollections, getContentCollection } from './data/collections';
 import type { ContentCollection } from '../shared/docsRouting.js';
@@ -51,6 +52,7 @@ export default function App() {
           <Route path="/docs/*" element={<CollectionDocsPage collectionId="docs" />} />
           <Route path="/dev-docs/*" element={<CollectionDocsPage collectionId="dev-docs" />} />
           <Route path="/llms" element={<LLMSPage />} />
+          <Route path="/skill" element={<SkillPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </CommandPaletteProvider>

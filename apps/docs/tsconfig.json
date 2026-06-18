@@ -22,7 +22,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@app-shared/*": ["./shared/*"]
+      "@app-shared/*": ["./shared/*"],
+      "@assets/*": ["../../assets/*"]
     },
     "typeRoots": ["./node_modules/@types", "./types"],
     "types": ["vite/client"]

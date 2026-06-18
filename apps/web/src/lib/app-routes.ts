@@ -3,6 +3,8 @@ import { BOSSRAID_DOCS_URL } from '@bossraid/ui';
 export type AppRoute =
   | '/'
   | '/mercenary'
+  | '/bounties'
+  | '/party-quest'
   | '/marketplace'
   | '/playground'
   | '/onboarding/buyer'
@@ -40,6 +42,8 @@ export function isExternalSidebarNavItem(item: SidebarNavItem): item is SidebarE
 export const SIDEBAR_NAV_LINKS: SidebarNavItem[] = [
   { path: '/', label: 'home', icon: 'pixel:home-solid' },
   { path: '/mercenary', label: 'Mercenary', icon: 'pixel:message-dots-solid' },
+  { path: '/bounties', label: 'bounties', icon: 'pixel:treasure-map-solid' },
+  { path: '/party-quest', label: 'Party Quest', icon: 'pixel:users-solid' },
   {
     path: '/marketplace',
     label: 'marketplace',
@@ -68,6 +72,7 @@ export const SIDEBAR_NAV_LINKS: SidebarNavItem[] = [
     ],
   },
   { href: BOSSRAID_DOCS_URL, label: 'docs', icon: 'pixel:notebook-solid' },
+  { href: '/skill.md', label: 'agent skill', icon: 'pixel:book-solid' },
 ];
 
 const MARKETPLACE_CHILD_PATHS = new Set<AppRoute>([

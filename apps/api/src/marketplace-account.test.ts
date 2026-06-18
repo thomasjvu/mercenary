@@ -309,7 +309,7 @@ test('buyer API keys enforce per-key rate limits before paid execution', async (
   }
 });
 
-test('surplus parity: API key skips x402, funds balance, records purchases and seller ledger', async () => {
+test('discount inference: API key skips x402, funds balance, records purchases and seller ledger', async () => {
   const receivedProviders: string[] = [];
   const cheapProvider: RaidProvider = {
     profile: createProviderProfile('provider-parity-cheap', {

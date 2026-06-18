@@ -2,6 +2,7 @@ import { mkdir, readFile, rm, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
 
 import { contentCollections } from '../shared/content-collections.js';
+import { frameworkDocPaths } from '../shared/documentation-config.js';
 import { resolveCollectionContentRoot } from './lib/collectionContentRoot.mjs';
 import { buildDocsContentPath, getDocsVariantContexts } from '../shared/docsRouting.js';
 
@@ -61,8 +62,17 @@ async function loadMarkdownContent(docPath, fileInfo) {
   }
 }
 
-async function buildVariantDocuments(docPaths, collection) {
-  const contentRoot = resolveCollectionContentRoot(collection);
+function resolveFrameworkContentRoot(collection, rootDir = process.cwd()) {
+  if (collection.id !== 'docs') {
+    return null;
+  }
+
+  return join(rootDir, 'src', 'docs', 'content');
+}
+
+async function buildVariantDocuments(docPaths, collection, frameworkPaths = []) {
+  const collectionContentRoot = resolveCollectionContentRoot(collection);
+  const frameworkContentRoot = resolveFrameworkContentRoot(collection);
   const contexts = getDocsVariantContexts();
   const documents = {};
   const defaultDocsByPath = {};
@@ -73,6 +83,9 @@ async function buildVariantDocuments(docPaths, collection) {
     console.log(`Processing ${collection.id} variant: ${label}`);
 
     for (const docPath of docPaths) {
+      const contentRoot = frameworkPaths.includes(docPath)
+        ? frameworkContentRoot
+        : collectionContentRoot;
       const fileInfo = resolveDocFileInfo(docPath, {
         version: context.version,
         locale: context.locale,
@@ -116,10 +129,12 @@ async function writeDocumentFiles(contentDir, documents) {
 async function generateCollectionDocs(collection) {
   console.log(`\nGenerating collection: ${collection.id}`);
 
-  const docPaths = collectDocumentPaths(collection.tree);
+  const frameworkPaths = collection.id === 'docs' ? frameworkDocPaths : [];
+  const docPaths = [...collectDocumentPaths(collection.tree), ...frameworkPaths];
   const { documents, defaultDocsByPath, defaultSourcePathsByPath } = await buildVariantDocuments(
     docPaths,
-    collection
+    collection,
+    frameworkPaths
   );
   const generatedAt = new Date().toISOString();
   const { index: nextIndex } = createDocsArtifacts(

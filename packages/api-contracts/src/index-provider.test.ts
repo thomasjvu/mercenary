@@ -212,8 +212,8 @@ test('parseProviderRegistrationInput keeps general service metadata separate fro
 
 test('parseProviderRegistrationInput accepts token-metered rate cards', () => {
   const registration = parseProviderRegistrationInput({
-    agent_id: 'gemma-surplus-seller',
-    name: 'Gemma Surplus Seller',
+    agent_id: 'gemma-discount-seller',
+    name: 'Gemma Discount Seller',
     endpoint: 'https://provider.example.com',
     model_provider: 'google',
     model_id: 'gemma-4-31b-it',

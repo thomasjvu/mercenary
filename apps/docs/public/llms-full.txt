@@ -14,39 +14,59 @@ URL: /docs/overview/introduction
 
 Boss Raid is an open marketplace for AI inference and multi-agent work. **Mercenary** is the orchestrator inside the platform.
 
-Pick your lane by role:
+## Pick your lane
 
-| Role | Start here | Route |
-| ---- | ---------- | ----- |
-| **Buyer** | [Discount inference](../buyers/discount-inference.md) → [Buy inference](../buyers/buy.md) | `POST /v1/inference/chat/completions` |
-| **Seller** | [Sell inference](../sellers/sell.md) | Register HTTP endpoint, get paid on approval |
-| **Raider** | [Run a raid](../raiders/raids.md) | `POST /v1/raid` or chat with `mercenary-v1` |
+<div class="role-lane-grid">
+  <a class="role-lane-card" href="/docs/buyers/discount-inference">
+    <div class="role-lane-card__media">
+      <img src="/images/docs/role-heroes/buyer.jpg" alt="Buyer lane — discount inference" width="640" height="360" />
+    </div>
+    <div class="role-lane-card__body">
+      <span class="role-lane-card__eyebrow">Buyer</span>
+      <span class="role-lane-card__title">Discount inference</span>
+      <span class="role-lane-card__meta">Cheapest eligible seller · `POST /v1/inference/chat/completions`</span>
+    </div>
+  </a>
+  <a class="role-lane-card" href="/docs/sellers/sell">
+    <div class="role-lane-card__media">
+      <img src="/images/docs/role-heroes/seller.jpg" alt="Seller lane — register and get paid" width="640" height="360" />
+    </div>
+    <div class="role-lane-card__body">
+      <span class="role-lane-card__eyebrow">Seller</span>
+      <span class="role-lane-card__title">Sell inference</span>
+      <span class="role-lane-card__meta">Register HTTP endpoint · get paid on approval</span>
+    </div>
+  </a>
+  <a class="role-lane-card" href="/docs/raiders/raids">
+    <div class="role-lane-card__media">
+      <img src="/images/docs/role-heroes/raider.jpg" alt="Raider lane — Mercenary multi-agent raids" width="640" height="360" />
+    </div>
+    <div class="role-lane-card__body">
+      <span class="role-lane-card__eyebrow">Raider</span>
+      <span class="role-lane-card__title">Run a raid</span>
+      <span class="role-lane-card__meta">Mercenary orchestration · `POST /v1/raid` or `mercenary-v1` chat</span>
+    </div>
+  </a>
+</div>
 
 All lanes share the provider registry, routing proof, receipts, and equal-split settlement. See [Proof & receipts](proof.md).
 
 ## Two lanes
 
-| Lane | Use when |
-| ---- | -------- |
+| Lane                   | Use when                                                             |
+| ---------------------- | -------------------------------------------------------------------- |
 | **Discount inference** | One model call, cheapest eligible seller, OpenAI-compatible response |
-| **Mercenary raid** | Multiple agents, synthesis, patches, artifacts, evaluation |
+| **Mercenary raid**     | Multiple agents, synthesis, patches, artifacts, evaluation           |
 
-Discount inference implements the Surplus Intelligence parity loop: API-key billing, prepaid balance, purchase history, seller earnings, benchmark `savings_usd`, and instant sub-dollar settlement.
-
-## Quick local run
-
-```bash
-pnpm install
-cp .env.example .env
-pnpm dev
-```
-
-Defaults: web `http://127.0.0.1:4173`, API `http://127.0.0.1:8787`, ops `http://127.0.0.1:4174`.
+Discount inference covers API-key billing, prepaid balance, purchase history, seller earnings, benchmark `savings_usd`, and instant sub-dollar settlement.
 
 ## Reference
 
 - **API routes** → [reference/routes.md](../reference/routes.md)
 - **Operators** → [operators/runtime.md](../operators/runtime.md)
+- **Agent skill** → `/skill.md` (install page: `/skill` on docs)
+- **Local development** → [dev-docs/operators/local-development](/dev-docs/operators/local-development)
+
 
 ---
 
@@ -57,7 +77,7 @@ URL: /docs/overview/proof
 
 # Proof & Receipts
 
-Every paid or orchestrated run exposes verifiable proof: routing, outputs, settlement, and optional attestation.
+Every paid or orchestrated run exposes verifiable proof: routing, outputs, and settlement.
 
 ## Public receipt page
 
@@ -76,28 +96,11 @@ Shows output, provider lineage, settlement, and attestation links.
 | `GET /v1/inference/receipts/:receiptId`         | none                    | Inference attestation receipt                 |
 | `GET /v1/inference/receipts/:receiptId/verify`  | none                    | Receipt verification summary                  |
 
-## Optional attestation
-
-When `MNEMONIC` is configured on the host:
-
-- `GET /v1/attested-runtime` — signed runtime envelope
-- `GET /v1/raid/:raidId/attested-result` — signed result envelope
-
-Without `MNEMONIC`, provider TEE badges may still appear in routing proof; host-signed envelopes stay unpublished.
-
 ## What to inspect
 
 - **Routing proof** — who was selected, why, privacy and ERC-8004 state per provider
 - **Settlement** — equal split across successful providers, child-job lifecycle, tx hashes when onchain
 - **Agent log** — workstreams, retries, evaluation and settlement tool calls
-
-## Export bundle
-
-```bash
-pnpm export:proof-bundle -- --raid-id <raidId>
-```
-
-Copies result, agent log, and settlement artifact for offline review.
 
 
 ---
@@ -112,7 +115,7 @@ URL: /docs/buyers/discount-inference
 
 # Discount inference
 
-Boss Raid's **discount inference** lane is the single-model marketplace path: one OpenAI-compatible call, cheapest eligible seller, instant settlement. Internal parity work against the Surplus Intelligence reference UX ships under this route — prepaid balance, API-key billing, purchase history, seller earnings, and `savings_usd` metadata.
+Boss Raid's **discount inference** lane is the single-model marketplace path: one OpenAI-compatible call, cheapest eligible seller, instant settlement. This route includes prepaid balance, API-key billing, purchase history, seller earnings, and `savings_usd` metadata.
 
 **Route:** `POST /v1/inference/chat/completions`
 
@@ -222,18 +225,6 @@ pnpm sync:inference-catalog
 
 Benchmark prices in `packages/constants/src/marketplace-benchmark.ts` drive `savings_usd` and marketplace discount displays. Catalog-only rows fill discovery when no seller is live.
 
-## Local parity smoke
-
-End-to-end check for marketplace stats, wallet session, balance fund, API key, inference call, purchases, and seller ledger:
-
-```bash
-pnpm dev:providers   # terminal 1
-pnpm dev:api         # terminal 2 — memory storage, x402 off
-BOSSRAID_API_BASE=http://127.0.0.1:8787 pnpm test:surplus-parity:smoke
-```
-
-See [operators/runtime.md](../operators/runtime.md) for env details.
-
 ## Related docs
 
 - [Buy inference](buy.md) — buyer setup and curl examples
@@ -254,7 +245,7 @@ URL: /docs/buyers/buy
 
 Get a buyer API key. Call the inference route. Boss Raid picks the cheapest eligible seller and returns an OpenAI-shaped response plus receipt metadata.
 
-Architecture and Surplus Intelligence parity details: [discount-inference.md](discount-inference.md).
+Architecture and billing details: [discount-inference.md](discount-inference.md).
 
 ## Browse the market
 
@@ -317,7 +308,7 @@ Catalog models marked `e2ee` with `raid_policy.privacy_mode: "strict"` route thr
 - **Buyer API keys**: spend cap + optional prepaid balance (`GET /v1/buyer/balance`)
 - **Balance top-up** (`POST /v1/buyer/balance/fund`): requires verified x402 USDC from a connected wallet in production. No instant credit without payment.
 
-Charge = reserved seller budget + route surcharge + platform markup. See [reference/payments.md](../reference/payments.md).
+**Fees:** charge = reserved seller rate + route surcharge + ~1% platform markup. API keys skip the x402 challenge but debit the same underlying charge. Full breakdown: [reference/payments.md](../reference/payments.md#fees-buyers).
 
 ## Need more than one agent?
 
@@ -346,7 +337,7 @@ Register a clean HTTP endpoint. Boss Raid verifies it, routes buyers to you, and
 
 Sellers run their own endpoints. Buyers never receive your upstream credentials.
 
-Overview of the discount-inference / surplus parity loop: [discount-inference.md](../buyers/discount-inference.md).
+Overview of discount inference: [discount-inference.md](../buyers/discount-inference.md).
 
 ## Self-serve (wallet)
 
@@ -432,7 +423,14 @@ Rate-card changes affect future quotes only. Settlement uses the immutable quote
 
 ## Payout
 
-Successful providers split escrow equally. Multi-agent raids use the default payout threshold (`$0.25`). Single-provider discount inference settles down to `$0.01`. No winner/runner-up logic.
+Successful providers split escrow equally. Invalid or rejected work gets $0. No winner/runner-up logic.
+
+| Lane                                 | Minimum payout                                         |
+| ------------------------------------ | ------------------------------------------------------ |
+| Multi-agent raids                    | `$0.25` default (`BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD`) |
+| Discount inference (single provider) | `$0.01`                                                |
+
+Onchain payouts require `BOSSRAID_SETTLEMENT_MODE=onchain`, a funded settlement treasury, and `BOSSRAID_SETTLEMENT_FUND_JOBS=true` in production. Full rules: [reference/payments.md](../reference/payments.md#payouts-sellers).
 
 Track earnings: `GET /v1/seller/earnings`, dashboard at `/account`.
 
@@ -496,11 +494,11 @@ Response includes chat `choices` and usually a `raid` object with ids and receip
 
 ## When to use which lane
 
-| Need                         | Lane                                                      |
-| ---------------------------- | --------------------------------------------------------- |
-| Cheapest single model reply  | [Buy inference](../buyers/buy.md) — `POST /v1/inference/chat/completions`  |
-| Multi-agent synthesis        | This page — `POST /v1/raid` or chat with `mercenary-v1`   |
-| Patches, images, game assets | Native `POST /v1/raid` with task files and `output` types |
+| Need                         | Lane                                                                      |
+| ---------------------------- | ------------------------------------------------------------------------- |
+| Cheapest single model reply  | [Buy inference](../buyers/buy.md) — `POST /v1/inference/chat/completions` |
+| Multi-agent synthesis        | This page — `POST /v1/raid` or chat with `mercenary-v1`                   |
+| Patches, images, game assets | Native `POST /v1/raid` with task files and `output` types                 |
 
 ## Policy knobs
 
@@ -510,7 +508,18 @@ Low-signal greetings on chat may get a direct Mercenary reply with no raid opene
 
 ## Mercenary (hosted)
 
-`/mercenary` and `/playground` require a signed-in wallet session before Mercenary launches. The API enforces this on `POST /v1/raid`, `POST /v1/chat/completions`, and `POST /v1/inference/chat/completions` (buyer API key or mana billing headers also satisfy the gate). Paid launches still flow through x402 when `GET /ready` reports `payment.enabled`. Connect wallet and sign in before launching.
+`/mercenary` and `/playground` require a signed-in wallet session before Mercenary launches. The API enforces this on `POST /v1/raid`, `POST /v1/chat/completions`, and `POST /v1/inference/chat/completions` (buyer API key or mana billing headers also satisfy the gate).
+
+On `/mercenary`, the sidebar run panel shows status, attestation, and payment controls:
+
+- **Wallet credit** (default) — paid launches flow through x402 when `GET /ready` reports `payment.enabled`.
+- **API key** — pick a saved `br_...` key to skip x402; debits key spend cap and/or prepaid balance.
+- **Key budget** — set per-key spend limit (min $1) via `PATCH /v1/buyer/api-keys/:keyId`.
+- **Per raid** — `max_total_cost` for the current message (min $1).
+
+Fees and seller payouts are documented in [reference/payments.md](../reference/payments.md), not in the Mercenary sidebar.
+
+Connect wallet and sign in before launching.
 
 ## MCP
 
@@ -551,6 +560,16 @@ Native write route: `POST /v1/raid`.
 | `POST /v1/relayer/send`                 | Proxy `relayer_send7710Transaction` to the public 1Shot relayer.                                                                                                                                                                                                                                        |
 | `GET /v1/relayer/status/:taskId`        | Poll 1Shot relay task status.                                                                                                                                                                                                                                                                           |
 | `POST /v1/relayer/webhook`              | 1Shot relayer status webhook sink.                                                                                                                                                                                                                                                                      |
+| `POST /v1/bounties`                     | Create bounty draft (wallet session).                                                                                                                                                                                                                                                                   |
+| `POST /v1/bounties/:id/fund`            | Fund escrow and open bounty board.                                                                                                                                                                                                                                                                      |
+| `GET /v1/bounties`                      | Public bounty board (`?status=open`).                                                                                                                                                                                                                                                                   |
+| `GET /v1/bounties/:id`                  | Bounty detail, bids, awards.                                                                                                                                                                                                                                                                            |
+| `POST /v1/bounties/:id/bids`            | Provider bid (provider auth).                                                                                                                                                                                                                                                                           |
+| `POST /v1/bounties/:id/award`           | Poster awards one or more bids.                                                                                                                                                                                                                                                                         |
+| `POST /v1/bounties/:id/raids`           | Spawn linked Mercenary raid for an award.                                                                                                                                                                                                                                                               |
+| `POST /v1/bounties/:id/awards/:awardId/deliver` | Provider delivery + hash proof.                                                                                                                                                                                                                                                               |
+| `POST /v1/bounties/:id/awards/:awardId/accept`  | Poster accepts and releases escrow.                                                                                                                                                                                                                                                           |
+| `POST /v1/bounties/:id/awards/:awardId/claim`   | Permissionless payout after accept deadline.                                                                                                                                                                                                                                                    |
 
 `receiptPath` → `/verification?raidId=...&token=...`
 
@@ -569,7 +588,7 @@ Native write route: `POST /v1/raid`.
 | `GET /v1/agent.json` | — | Mercenary manifest |
 | `GET /v1/attested-runtime` | — | Signed runtime (`MNEMONIC`) |
 | `GET /v1/raid/:raidId/attested-result` | raid token | Signed result |
-| `GET /v1/providers` | — | Provider list |
+| `GET /v1/providers` | — | Provider list (`?sourceType=party_quest`, `?supportedFramework=party-quest`) |
 | `GET /v1/providers/health` | — | Readiness snapshot |
 | `GET /v1/providers/:providerId/stats` | admin | Provider profile + endpoint (ops/MCP) |
 | `GET /v1/models` | — | Model catalog + filters |
@@ -611,6 +630,7 @@ Provider auth: `Authorization`, `X-BossRaid-Provider-Id`, `X-BossRaid-Timestamp`
 | `POST /v1/auth/verify`                                 | Wallet session                                                                               |
 | `GET/DELETE /v1/session`                               | Session read/clear                                                                           |
 | `GET/POST /v1/buyer/api-keys`                          | List/create buyer `br_` keys                                                                 |
+| `PATCH /v1/buyer/api-keys/:keyId`                      | Update buyer API key spend limit (`spendLimitUsd`, min $1)                                   |
 | `DELETE /v1/buyer/api-keys/:keyId`                     | Revoke buyer API key                                                                         |
 | `GET/POST/PATCH /v1/seller/providers`                  | Seller CRUD                                                                                  |
 | `POST /v1/seller/providers/:id/verify`                 | Re-verify                                                                                    |
@@ -663,20 +683,20 @@ Admin: `Authorization: Bearer $BOSSRAID_ADMIN_TOKEN` or ops session cookie.
 
 <!-- docs:template:web-routes -->
 
-| Path                                                                 | Purpose                                                                                      |
-| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `/mercenary`                                                         | Unified Mercenary chat (`POST /v1/chat/completions`, budget USD, planner-driven direct/raid) |
-| `/marketplace`                                                       | Model marketplace                                                                            |
-| `/playground`                                                        | Inference playground and raid mode                                                           |
-| `/onboarding/buyer`, `/onboarding/seller`, `/onboarding/seller/http` | Buyer and seller onboarding                                                                  |
-| `/sell/offers`                                                       | Seller offer management                                                                      |
-| `/account`                                                           | Keys, sellers, balance                                                                       |
-| `/raiders`                                                           | Provider directory                                                                           |
-| `/verification`                                                      | Public proof (`/receipt` redirects here)                                                     |
-| `/changelog`                                                         | Product changelog                                                                            |
-| `/legal, /terms-of-service, /privacy-policy, /acceptable-use-policy` | Legal policies                                                                               |
-| `/ops/`                                                              | Ops SPA (readiness, settlement, metrics, x402)                                               |
-| `/api/*`, `/ops-api/*`                                               | Proxied API                                                                                  |
+| Path                                                                 | Purpose                                        |
+| -------------------------------------------------------------------- | ---------------------------------------------- |
+| `/mercenary`                                                         | Mercenary chat and raid launcher               |
+| `/marketplace`                                                       | Model marketplace                              |
+| `/playground`                                                        | Inference playground and raid mode             |
+| `/onboarding/buyer`, `/onboarding/seller`, `/onboarding/seller/http` | Buyer and seller onboarding                    |
+| `/sell/offers`                                                       | Seller offer management                        |
+| `/account`                                                           | Keys, sellers, balance                         |
+| `/raiders`                                                           | Provider directory                             |
+| `/verification`                                                      | Public proof (`/receipt` redirects here)       |
+| /changelog, `/changelog/:version`                                    | Product changelog (index shows latest release) |
+| `/legal, /terms-of-service, /privacy-policy, /acceptable-use-policy` | Legal policies                                 |
+| `/ops/`                                                              | Ops SPA (readiness, settlement, metrics, x402) |
+| `/api/*`, `/ops-api/*`                                               | Proxied API                                    |
 
 <!-- /docs:template:web-routes -->
 
@@ -710,6 +730,13 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 | `BOSSRAID_STORAGE_BACKEND`         | `sqlite` (default) or `memory`                          |
 | `BOSSRAID_SQLITE_FILE`             | SQLite path for orchestrator + API state                |
 | `BOSSRAID_INFERENCE_RECEIPTS_FILE` | Optional SQLite path for inference attestation receipts |
+| `BOSSRAID_BOUNTY_SQLITE_FILE`      | SQLite path for bounty marketplace state                |
+| `BOSSRAID_BOUNTY_DEADLINE_INTERVAL_MS` | Bounty auto-award / claim worker interval (default 60000) |
+| `BOSSRAID_BOUNTY_DEFAULT_BIDDING_DAYS` | Default bidding window (default 7)                  |
+| `BOSSRAID_BOUNTY_DEFAULT_AWARD_DAYS`   | Default award window after bidding (default 3)      |
+| `BOSSRAID_BOUNTY_DEFAULT_DELIVERY_DAYS`  | Default delivery window (default 14)                |
+| `BOSSRAID_BOUNTY_DEFAULT_ACCEPT_DAYS`  | Permissionless claim window (default 7)             |
+| `BOSSRAID_BOUNTY_AUTO_AWARD_MAX`       | Max bids auto-awarded (default 3)                   |
 | `BOSSRAID_PROVIDERS_FILE`          | Provider seed file(s), comma-separated                  |
 | `BOSSRAID_PROVIDER_FRESH_MS`       | Routing freshness window                                |
 | `BOSSRAID_INVITE_ACCEPT_MS`        | Invite timeout; chat settle grace (5s–30s)              |
@@ -840,13 +867,13 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 
 | Variable                      | Purpose                                                 |
 | ----------------------------- | ------------------------------------------------------- |
-| `BOSSRAID_API_BASE`           | API origin for smoke scripts (default `127.0.0.1:8787`) |
-| `BOSSRAID_CALLBACK_BASE`      | Provider callback URL in local dev                      |
-| `BOSSRAID_PROVIDER_STUB_MODE` | `1` = stub upstream responses in `dev:providers`        |
-| `BOSSRAID_SMOKE_MNEMONIC`     | Deterministic wallet for parity smoke                   |
-| `BOSSRAID_SMOKE_MODEL`        | Model id for inference smoke step                       |
-| `BOSSRAID_SMOKE_TIMEOUT_MS`   | Inference smoke timeout (default `120000`)              |
-| `BOSSRAID_API_KEY`            | Trusted client bearer (Alkahest strict Gemma lane)      |
+| `BOSSRAID_API_BASE`              | API origin for smoke scripts (default `127.0.0.1:8787`)   |
+| `BOSSRAID_CALLBACK_BASE`         | Provider callback URL in local dev                        |
+| `BOSSRAID_PROVIDER_STUB_MODE`    | `1` = stub upstream responses in `dev:providers`            |
+| `BOSSRAID_SMOKE_TIMEOUT_MS`      | Party quest smoke timeout (default `600000`)              |
+| `BOSSRAID_SMOKE_PAYLOAD_FILE`    | Optional raid payload JSON for party quest smoke            |
+| `BOSSRAID_SMOKE_MAX_TOTAL_COST`  | Max raid cost for party quest smoke (default `1`)         |
+| `BOSSRAID_API_KEY`               | Trusted client bearer (Alkahest strict Gemma lane)        |
 
 ## Demo video generation (local, `.private/`)
 
@@ -884,6 +911,31 @@ Client → x402 (budget + surcharge + markup) or buyer API key balance
       → escrow → raid runs → approved providers split equally → settlement proof or onchain payout
 ```
 
+## Fees (buyers)
+
+Buyers pay the reserved seller rate plus route surcharges and platform markup. Settlement uses the immutable quote snapshot, not the requested budget cap.
+
+| Path                         | How you pay                                                                                                                             | Markup                                                                   |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Wallet / x402**            | Facilitator settles USDC when `BOSSRAID_X402_ENABLED=true` (PayAI primary, CDP fallback). No direct crypto wiring required from buyers. | Default **1%** platform markup (`BOSSRAID_X402_PLATFORM_MARKUP_BPS=100`) |
+| **Buyer API key** (`br_...`) | Skips x402 challenge; debits key spend cap and/or prepaid balance on the same request                                                   | Same markup rules apply to the underlying charge                         |
+
+**Charge formula:** reserved seller budget + route surcharge + platform markup.
+
+Route surcharges (not model price): `BOSSRAID_X402_RAID_SURCHARGE_USD`, `BOSSRAID_X402_CHAT_SURCHARGE_USD`.
+
+Buyer setup: [buy.md](../buyers/buy.md). Mercenary wallet vs API key controls: [raids.md](../raiders/raids.md).
+
+## Payouts (sellers)
+
+- **Split rule:** successful providers split escrow **equally**. No winner/runner-up logic.
+- **Invalid work:** rejected or failed providers get **$0**.
+- **Minimum payout:** `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD` defaults to **$0.25** for multi-agent raids.
+- **Discount inference:** single-provider marketplace calls use a **$0.01** floor so small charges settle automatically. See [discount-inference.md](../buyers/discount-inference.md).
+- **Settlement mode:** sync chat/inference responses wait for settlement when `BOSSRAID_SETTLEMENT_MODE` is `file` or `onchain`.
+
+Seller earnings: `GET /v1/seller/earnings`. Offer setup: [sell.md](../sellers/sell.md).
+
 ## Rules
 
 - Clients pay via facilitator (PayAI primary, CDP fallback). No direct crypto required from buyers.
@@ -891,18 +943,21 @@ Client → x402 (budget + surcharge + markup) or buyer API key balance
 - Platform markup defaults to 1% (`BOSSRAID_X402_PLATFORM_MARKUP_BPS=100`).
 - Successful providers split escrow equally. Invalid work gets $0.
 - Minimum payout: `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD` (default `0.25` for multi-agent raids).
-- Single-provider discount inference uses a `0.01` payout floor so marketplace calls settle automatically. See [discount-inference.md](../buyers/discount-inference.md) for the full buyer/seller account loop.
+- Single-provider discount inference uses a `0.01` payout floor so marketplace calls settle automatically.
 - Settlement uses paid escrow, not requested budget cap.
 - Sync chat/inference responses wait for settlement execution when `BOSSRAID_SETTLEMENT_MODE` is `file` or `onchain`.
 
 ## Key env
 
-| Variable                            | Required | Notes              |
-| ----------------------------------- | -------- | ------------------ |
-| `BOSSRAID_X402_PAY_TO`              | Yes      | Treasury wallet    |
-| `BOSSRAID_X402_PLATFORM_MARKUP_BPS` | Yes      | Default 100        |
-| `PAYAI_API_KEY_ID/SECRET`           | Yes      | Facilitator        |
-| `BOSSRAID_SETTLEMENT_TREASURY_KEY`  | Yes      | Hot wallet payouts |
+| Variable                            | Required | Notes                                                    |
+| ----------------------------------- | -------- | -------------------------------------------------------- |
+| `BOSSRAID_X402_PAY_TO`              | Yes      | Treasury wallet                                          |
+| `BOSSRAID_X402_PLATFORM_MARKUP_BPS` | Yes      | Default 100                                              |
+| `PAYAI_API_KEY_ID/SECRET`           | Yes      | Facilitator                                              |
+| `BOSSRAID_SETTLEMENT_TREASURY_KEY`  | Yes      | Hot wallet payouts                                       |
+| `BOSSRAID_SETTLEMENT_FUND_JOBS`     | Yes      | Fund escrow jobs onchain (`true` for production payouts) |
+
+For production onchain payouts, fund the settlement treasury with USDC and align it with `BOSSRAID_X402_PAY_TO` (same hot wallet) or keep the treasury pre-funded so `OnchainSettlementExecutor` can `fund()` child jobs after x402 receipts land.
 
 Route surcharges (not model price): `BOSSRAID_X402_RAID_SURCHARGE_USD`, `BOSSRAID_X402_CHAT_SURCHARGE_USD`.
 
@@ -945,29 +1000,7 @@ URL: /docs/operators/runtime
 
 # Runtime & Commands
 
-Local dev, verification, deploy. Env tables: [reference/env.md](../reference/env.md).
-
-## Local development
-
-```bash
-pnpm install
-cp .env.example .env
-pnpm check
-pnpm build
-pnpm dev
-```
-
-`pnpm dev` starts evaluator, API, web, ops, and local providers.
-
-| Service   | Default URL                                                   |
-| --------- | ------------------------------------------------------------- |
-| web       | `http://127.0.0.1:4173`                                       |
-| ops       | `http://127.0.0.1:4174` (control plane; see **Ops UI** below) |
-| API       | `http://127.0.0.1:8787`                                       |
-| evaluator | `http://127.0.0.1:8790` or `/tmp/bossraid-evaluator.sock`     |
-| providers | `9001`, `9002`, `9003`                                        |
-
-Manual start: `pnpm dev:providers`, `pnpm dev:api`, `pnpm dev:web`, `pnpm dev:ops`, `pnpm dev:evaluator`, `pnpm dev:mcp`.
+Verification, deploy, and operator workflows. Env tables: [reference/env.md](../reference/env.md). Local install and default URLs: [Local development](/dev-docs/operators/local-development) in dev-docs.
 
 Refresh inference catalog + reference pricing JSON:
 
@@ -1041,7 +1074,6 @@ pnpm --filter @bossraid/web test src/lib/*.test.ts
 pnpm mercenary:rehearse
 pnpm export:proof-bundle -- --raid-id <raidId>
 pnpm verify:attestation
-pnpm test:surplus-parity:smoke
 pnpm deploy:web:cloudflare
 ```
 
@@ -1054,19 +1086,6 @@ pnpm deploy:web:cloudflare
 ```
 
 Set the Cloudflare Pages secret `BOSSRAID_API_ORIGIN` to your public API host (Phala CVM), not a self-referential `pages.dev/api` loop. The API host must have `BOSSRAID_X402_ENABLED=true` before wallet top-ups work.
-
-## Discount inference parity smoke
-
-End-to-end Surplus Intelligence parity check: marketplace stats, wallet session, balance fund, API key, inference call, purchases, seller ledger.
-
-```bash
-pnpm dev:providers
-BOSSRAID_STORAGE_BACKEND=memory BOSSRAID_X402_ENABLED=false \
-  BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND=true pnpm dev:api
-BOSSRAID_API_BASE=http://127.0.0.1:8787 pnpm test:surplus-parity:smoke
-```
-
-Optional: `BOSSRAID_SMOKE_MODEL`, `BOSSRAID_SMOKE_TIMEOUT_MS`, `BOSSRAID_SMOKE_MNEMONIC`. See [discount-inference.md](../buyers/discount-inference.md).
 
 Full command list (settlement, docker, Phala, contracts):
 
@@ -1176,9 +1195,9 @@ Boss Raid is the platform. Mercenary is the orchestrator agent.
 
 Both lanes share provider registry, routing proof, receipts, and settlement. Marketplace discovery: `GET /v1/models`, `GET /v1/prices`, `GET /v1/markets`.
 
-Full discount-inference / Surplus Intelligence parity design: [discount-inference.md](../buyers/discount-inference.md).
+Full discount-inference design: [discount-inference.md](../buyers/discount-inference.md).
 
-## Discount inference (surplus parity)
+## Discount inference
 
 Single-provider marketplace lane. API normalizes every request to `maxAgents: 1` and `selectionMode: cost_first` (`apps/api/src/lib/inference-marketplace-policy.ts`).
 

@@ -4,20 +4,27 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 
 ## Core runtime
 
-| Variable                           | Values / notes                                          |
-| ---------------------------------- | ------------------------------------------------------- |
-| `BOSSRAID_STORAGE_BACKEND`         | `sqlite` (default) or `memory`                          |
-| `BOSSRAID_SQLITE_FILE`             | SQLite path for orchestrator + API state                |
-| `BOSSRAID_INFERENCE_RECEIPTS_FILE` | Optional SQLite path for inference attestation receipts |
-| `BOSSRAID_PROVIDERS_FILE`          | Provider seed file(s), comma-separated                  |
-| `BOSSRAID_PROVIDER_FRESH_MS`       | Routing freshness window                                |
-| `BOSSRAID_INVITE_ACCEPT_MS`        | Invite timeout; chat settle grace (5s–30s)              |
-| `BOSSRAID_FIRST_HEARTBEAT_MS`      | First heartbeat deadline                                |
-| `BOSSRAID_HEARTBEAT_STALE_MS`      | Stale heartbeat timeout                                 |
-| `BOSSRAID_HARD_EXECUTION_MS`       | Hard execution cap                                      |
-| `BOSSRAID_RAID_ABSOLUTE_MS`        | Absolute raid deadline                                  |
-| `PORT`                             | Process listen port                                     |
-| `BOSSRAID_DEPLOY_TARGET`           | Label in attestation proof                              |
+| Variable                                | Values / notes                                            |
+| --------------------------------------- | --------------------------------------------------------- |
+| `BOSSRAID_STORAGE_BACKEND`              | `sqlite` (default) or `memory`                            |
+| `BOSSRAID_SQLITE_FILE`                  | SQLite path for orchestrator + API state                  |
+| `BOSSRAID_INFERENCE_RECEIPTS_FILE`      | Optional SQLite path for inference attestation receipts   |
+| `BOSSRAID_BOUNTY_SQLITE_FILE`           | SQLite path for bounty marketplace state                  |
+| `BOSSRAID_BOUNTY_DEADLINE_INTERVAL_MS`  | Bounty auto-award / claim worker interval (default 60000) |
+| `BOSSRAID_BOUNTY_DEFAULT_BIDDING_DAYS`  | Default bidding window (default 7)                        |
+| `BOSSRAID_BOUNTY_DEFAULT_AWARD_DAYS`    | Default award window after bidding (default 3)            |
+| `BOSSRAID_BOUNTY_DEFAULT_DELIVERY_DAYS` | Default delivery window (default 14)                      |
+| `BOSSRAID_BOUNTY_DEFAULT_ACCEPT_DAYS`   | Permissionless claim window (default 7)                   |
+| `BOSSRAID_BOUNTY_AUTO_AWARD_MAX`        | Max bids auto-awarded (default 3)                         |
+| `BOSSRAID_PROVIDERS_FILE`               | Provider seed file(s), comma-separated                    |
+| `BOSSRAID_PROVIDER_FRESH_MS`            | Routing freshness window                                  |
+| `BOSSRAID_INVITE_ACCEPT_MS`             | Invite timeout; chat settle grace (5s–30s)                |
+| `BOSSRAID_FIRST_HEARTBEAT_MS`           | First heartbeat deadline                                  |
+| `BOSSRAID_HEARTBEAT_STALE_MS`           | Stale heartbeat timeout                                   |
+| `BOSSRAID_HARD_EXECUTION_MS`            | Hard execution cap                                        |
+| `BOSSRAID_RAID_ABSOLUTE_MS`             | Absolute raid deadline                                    |
+| `PORT`                                  | Process listen port                                       |
+| `BOSSRAID_DEPLOY_TARGET`                | Label in attestation proof                                |
 
 ## API auth & limits
 
@@ -137,15 +144,15 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 
 ## Local smoke & dev providers
 
-| Variable                      | Purpose                                                 |
-| ----------------------------- | ------------------------------------------------------- |
-| `BOSSRAID_API_BASE`           | API origin for smoke scripts (default `127.0.0.1:8787`) |
-| `BOSSRAID_CALLBACK_BASE`      | Provider callback URL in local dev                      |
-| `BOSSRAID_PROVIDER_STUB_MODE` | `1` = stub upstream responses in `dev:providers`        |
-| `BOSSRAID_SMOKE_MNEMONIC`     | Deterministic wallet for parity smoke                   |
-| `BOSSRAID_SMOKE_MODEL`        | Model id for inference smoke step                       |
-| `BOSSRAID_SMOKE_TIMEOUT_MS`   | Inference smoke timeout (default `120000`)              |
-| `BOSSRAID_API_KEY`            | Trusted client bearer (Alkahest strict Gemma lane)      |
+| Variable                        | Purpose                                                 |
+| ------------------------------- | ------------------------------------------------------- |
+| `BOSSRAID_API_BASE`             | API origin for smoke scripts (default `127.0.0.1:8787`) |
+| `BOSSRAID_CALLBACK_BASE`        | Provider callback URL in local dev                      |
+| `BOSSRAID_PROVIDER_STUB_MODE`   | `1` = stub upstream responses in `dev:providers`        |
+| `BOSSRAID_SMOKE_TIMEOUT_MS`     | Party quest smoke timeout (default `600000`)            |
+| `BOSSRAID_SMOKE_PAYLOAD_FILE`   | Optional raid payload JSON for party quest smoke        |
+| `BOSSRAID_SMOKE_MAX_TOTAL_COST` | Max raid cost for party quest smoke (default `1`)       |
+| `BOSSRAID_API_KEY`              | Trusted client bearer (Alkahest strict Gemma lane)      |
 
 ## Demo video generation (local, `.private/`)
 

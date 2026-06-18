@@ -26,6 +26,15 @@ import { buildPlaygroundUrl, readPlaygroundMode } from './lib/playground-routing
 import { useLocationKey, useLocationPathname } from './lib/use-location.js';
 import { ReceiptPage } from './pages/ReceiptPage';
 import { RaidersPage } from './pages/RaidersPage';
+import { BountiesPage } from './pages/BountiesPage';
+import { BountyDetailPage } from './pages/BountyDetailPage';
+import { PartyQuestPage } from './pages/PartyQuestPage';
+import {
+  bountyDetailPath,
+  isBountiesListPath,
+  isBountyDetailPath,
+  readBountyId,
+} from './lib/bounty-routing.js';
 import { SellerOnboardingPage } from './pages/SellerOnboardingPage';
 import { HttpSellerWizardPage } from './pages/HttpSellerWizardPage';
 import { ManageOffersPage } from './pages/ManageOffersPage';
@@ -63,6 +72,10 @@ export function App() {
   const isManageOffersRoute = pathname === '/sell/offers';
   const isAccountRoute = pathname === '/account';
   const isRaidersRoute = pathname === '/raiders';
+  const isBountiesListRoute = isBountiesListPath(pathname);
+  const bountyId = readBountyId(pathname);
+  const isBountyDetailRoute = isBountyDetailPath(pathname);
+  const isPartyQuestRoute = pathname === '/party-quest';
   const isLegacyReceiptRoute = pathname === '/receipt';
   const isVerificationRoute = pathname === '/verification';
   const changelogVersion = readChangelogVersion(pathname);
@@ -81,6 +94,7 @@ export function App() {
     isMercenaryRoute ||
     isPlaygroundRoute ||
     isRaidersRoute ||
+    isPartyQuestRoute ||
     isMarketplaceListRoute ||
     isMarketplaceDetailRoute;
   const providers = useSWR<Provider[]>(
@@ -137,10 +151,17 @@ export function App() {
 
   function navigate(
     path: AppRoute,
-    options?: { modelId?: string; marketplaceModelId?: string; mode?: 'inference' | 'raid' }
+    options?: {
+      modelId?: string;
+      marketplaceModelId?: string;
+      bountyId?: string;
+      mode?: 'inference' | 'raid';
+    }
   ) {
     let nextUrl: string = path;
-    if (path === '/marketplace' && options?.marketplaceModelId) {
+    if (path === '/bounties' && options?.bountyId) {
+      nextUrl = bountyDetailPath(options.bountyId);
+    } else if (path === '/marketplace' && options?.marketplaceModelId) {
       nextUrl = marketplaceModelPath(options.marketplaceModelId);
     } else if (path === '/playground') {
       nextUrl = buildPlaygroundUrl({
@@ -182,7 +203,13 @@ export function App() {
             className={`app-shell ${isLandingRoute ? 'app-shell--landing' : ''} ${usesDirectoryLayout ? 'app-shell--directory' : ''} ${isMercenaryRoute || (isPlaygroundRoute && playgroundMode === 'raid') ? 'app-shell--mercenary-route' : ''} ${isVerificationRoute || isLegacyReceiptRoute ? 'app-shell--receipt-route' : ''}`}
             ref={appShellRef}
           >
-            {isRaidersRoute ? (
+            {isBountiesListRoute ? (
+              <BountiesPage onNavigate={navigate} />
+            ) : isBountyDetailRoute && bountyId ? (
+              <BountyDetailPage bountyId={bountyId} onBack={() => navigate('/bounties')} />
+            ) : isPartyQuestRoute ? (
+              <PartyQuestPage onNavigate={navigate} />
+            ) : isRaidersRoute ? (
               <RaidersPage
                 providers={providers.data ?? []}
                 providerHealth={providerHealth.data ?? []}

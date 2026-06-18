@@ -1,6 +1,6 @@
 # Proof & Receipts
 
-Every paid or orchestrated run exposes verifiable proof: routing, outputs, settlement, and optional attestation.
+Every paid or orchestrated run exposes verifiable proof: routing, outputs, and settlement.
 
 ## Public receipt page
 
@@ -19,25 +19,8 @@ Shows output, provider lineage, settlement, and attestation links.
 | `GET /v1/inference/receipts/:receiptId`         | none                    | Inference attestation receipt                 |
 | `GET /v1/inference/receipts/:receiptId/verify`  | none                    | Receipt verification summary                  |
 
-## Optional attestation
-
-When `MNEMONIC` is configured on the host:
-
-- `GET /v1/attested-runtime` — signed runtime envelope
-- `GET /v1/raid/:raidId/attested-result` — signed result envelope
-
-Without `MNEMONIC`, provider TEE badges may still appear in routing proof; host-signed envelopes stay unpublished.
-
 ## What to inspect
 
 - **Routing proof** — who was selected, why, privacy and ERC-8004 state per provider
 - **Settlement** — equal split across successful providers, child-job lifecycle, tx hashes when onchain
 - **Agent log** — workstreams, retries, evaluation and settlement tool calls
-
-## Export bundle
-
-```bash
-pnpm export:proof-bundle -- --raid-id <raidId>
-```
-
-Copies result, agent log, and settlement artifact for offline review.

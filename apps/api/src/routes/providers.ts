@@ -1,9 +1,11 @@
 import { type FastifyInstance } from 'fastify';
 import {
+  parseProviderDiscoveryQuery,
   parseProviderFailure,
   parseProviderHeartbeat,
   parseProviderSubmission,
 } from '@bossraid/api-contracts';
+import { providerMatchesDiscoveryQuery } from '@bossraid/provider-registry';
 import { probeAllProviderHealth } from '../lib/provider-health.js';
 import { serializeProviderHealth, serializeProviderProfile } from '../lib/serializers.js';
 import { type ApiContext } from '../api-context.js';
@@ -100,8 +102,11 @@ export function registerProviderRoutes(
     return orchestrator.recordProviderFailure(failure.raidId, params.providerId, failure);
   });
 
-  app.get('/v1/providers', async () => {
-    const providers = orchestrator.listProviders();
+  app.get('/v1/providers', async (request) => {
+    const query = parseProviderDiscoveryQuery(request.query);
+    const providers = orchestrator
+      .listProviders()
+      .filter((provider) => providerMatchesDiscoveryQuery(provider, query));
     await ensureErc8004ProofState({ includeMercenary: false, providers });
     return providers.map((provider) => serializeProviderProfile(provider));
   });
