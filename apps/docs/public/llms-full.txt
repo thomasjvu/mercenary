@@ -546,30 +546,31 @@ Native write route: `POST /v1/raid`.
 
 ## Public write
 
-| Route                                   | Purpose                                                                                                                                                                                                                                                                                                 |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POST /v1/raid`                         | Native raid (`raid_request` shape). Returns `raidId`, `raidAccessToken`, `receiptPath`. Requires wallet session cookie, buyer API key (`Authorization: Bearer br_…`), or mana billing headers unless admin bearer bypasses payment. x402 when enabled.                                                  |
-| `POST /v1/chat/completions`             | OpenAI-compatible Mercenary entry (`model: mercenary-v1`). Planner decides direct reply vs specialist raid. Optional `stream`, `raid_policy.max_total_cost`, `raid_request`. Same session/API-key/mana gate as `POST /v1/raid`. x402 when enabled; admin bearer bypasses payment for internal launches. |
-| `POST /v1/inference/chat/completions`   | Discount inference. One seller, `cost_first`, rate-card snapshot. Same session/API-key/mana gate as Mercenary routes. Strict E2EE catalog models use the server Venice relay when `raid_policy.privacy_mode` is `strict`; pass `X-BossRaid-Upstream-Api-Key` or configure `BOSSRAID_VENICE_API_KEY`.    |
-| `POST /v1/auth/agent-session`           | Store ERC-7715 permission context for MCP redelegated x402 payments. Requires wallet session cookie.                                                                                                                                                                                                    |
-| `GET /v1/auth/agent-session`            | Read stored agent payment session for the signed-in wallet.                                                                                                                                                                                                                                             |
-| `DELETE /v1/auth/agent-session`         | Clear stored agent payment session.                                                                                                                                                                                                                                                                     |
-| `GET /v1/relayer/capabilities/:chainId` | 1Shot relayer chain capabilities.                                                                                                                                                                                                                                                                       |
-| `POST /v1/relayer/fee-data`             | Gas/fee quote for ERC-7710 relay (`chainId`, `token`).                                                                                                                                                                                                                                                  |
-| `POST /v1/relayer/estimate`             | Estimate ERC-7710 relay bundle before send.                                                                                                                                                                                                                                                             |
-| `POST /v1/relayer/send`                 | Proxy `relayer_send7710Transaction` to the public 1Shot relayer.                                                                                                                                                                                                                                        |
-| `GET /v1/relayer/status/:taskId`        | Poll 1Shot relay task status.                                                                                                                                                                                                                                                                           |
-| `POST /v1/relayer/webhook`              | 1Shot relayer status webhook sink.                                                                                                                                                                                                                                                                      |
-| `POST /v1/bounties`                     | Create bounty draft (wallet session).                                                                                                                                                                                                                                                                   |
-| `POST /v1/bounties/:id/fund`            | Fund escrow and open bounty board.                                                                                                                                                                                                                                                                      |
-| `GET /v1/bounties`                      | Public bounty board (`?status=open`).                                                                                                                                                                                                                                                                   |
-| `GET /v1/bounties/:id`                  | Bounty detail, bids, awards.                                                                                                                                                                                                                                                                            |
-| `POST /v1/bounties/:id/bids`            | Provider bid (provider auth).                                                                                                                                                                                                                                                                           |
-| `POST /v1/bounties/:id/award`           | Poster awards one or more bids.                                                                                                                                                                                                                                                                         |
-| `POST /v1/bounties/:id/raids`           | Spawn linked Mercenary raid for an award.                                                                                                                                                                                                                                                               |
-| `POST /v1/bounties/:id/awards/:awardId/deliver` | Provider delivery + hash proof.                                                                                                                                                                                                                                                               |
-| `POST /v1/bounties/:id/awards/:awardId/accept`  | Poster accepts and releases escrow.                                                                                                                                                                                                                                                           |
-| `POST /v1/bounties/:id/awards/:awardId/claim`   | Permissionless payout after accept deadline.                                                                                                                                                                                                                                                    |
+| Route                                           | Purpose                                                                                                                                                                                                                                                                                                 |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/raid`                                 | Native raid (`raid_request` shape). Returns `raidId`, `raidAccessToken`, `receiptPath`. Requires wallet session cookie, buyer API key (`Authorization: Bearer br_…`), or mana billing headers unless admin bearer bypasses payment. x402 when enabled.                                                  |
+| `POST /v1/chat/completions`                     | OpenAI-compatible Mercenary entry (`model: mercenary-v1`). Planner decides direct reply vs specialist raid. Optional `stream`, `raid_policy.max_total_cost`, `raid_request`. Same session/API-key/mana gate as `POST /v1/raid`. x402 when enabled; admin bearer bypasses payment for internal launches. |
+| `POST /v1/inference/chat/completions`           | Discount inference. One seller, `cost_first`, rate-card snapshot. Same session/API-key/mana gate as Mercenary routes. Strict E2EE catalog models use the server Venice relay when `raid_policy.privacy_mode` is `strict`; pass `X-BossRaid-Upstream-Api-Key` or configure `BOSSRAID_VENICE_API_KEY`.    |
+| `POST /v1/auth/agent-session`                   | Store ERC-7715 permission context for MCP redelegated x402 payments. Requires wallet session cookie.                                                                                                                                                                                                    |
+| `GET /v1/auth/agent-session`                    | Read stored agent payment session for the signed-in wallet.                                                                                                                                                                                                                                             |
+| `DELETE /v1/auth/agent-session`                 | Clear stored agent payment session.                                                                                                                                                                                                                                                                     |
+| `GET /v1/relayer/capabilities/:chainId`         | 1Shot relayer chain capabilities.                                                                                                                                                                                                                                                                       |
+| `POST /v1/relayer/fee-data`                     | Gas/fee quote for ERC-7710 relay (`chainId`, `token`).                                                                                                                                                                                                                                                  |
+| `POST /v1/relayer/estimate`                     | Estimate ERC-7710 relay bundle before send.                                                                                                                                                                                                                                                             |
+| `POST /v1/relayer/send`                         | Proxy `relayer_send7710Transaction` to the public 1Shot relayer.                                                                                                                                                                                                                                        |
+| `GET /v1/relayer/status/:taskId`                | Poll 1Shot relay task status.                                                                                                                                                                                                                                                                           |
+| `POST /v1/relayer/webhook`                      | 1Shot relayer status webhook sink.                                                                                                                                                                                                                                                                      |
+| `POST /v1/bounties`                             | Create bounty draft (wallet session).                                                                                                                                                                                                                                                                   |
+| `POST /v1/bounties/:id/fund`                    | Fund escrow and open bounty board (x402 USDC in production; onchain `BossBountyEscrow` when `BOSSRAID_SETTLEMENT_MODE=onchain`).                                                                                                                                                                        |
+| `POST /v1/bounties/:id/refund`                  | Poster refunds unawarded escrow after bidding deadline (wallet session).                                                                                                                                                                                                                                |
+| `GET /v1/bounties`                              | Public bounty board (`?status=open`).                                                                                                                                                                                                                                                                   |
+| `GET /v1/bounties/:id`                          | Bounty detail, bids, awards.                                                                                                                                                                                                                                                                            |
+| `POST /v1/bounties/:id/bids`                    | Provider bid (provider auth).                                                                                                                                                                                                                                                                           |
+| `POST /v1/bounties/:id/award`                   | Poster awards one or more bids.                                                                                                                                                                                                                                                                         |
+| `POST /v1/bounties/:id/raids`                   | Spawn linked Mercenary raid for an award.                                                                                                                                                                                                                                                               |
+| `POST /v1/bounties/:id/awards/:awardId/deliver` | Provider delivery + hash proof.                                                                                                                                                                                                                                                                         |
+| `POST /v1/bounties/:id/awards/:awardId/accept`  | Poster accepts and releases escrow.                                                                                                                                                                                                                                                                     |
+| `POST /v1/bounties/:id/awards/:awardId/claim`   | Permissionless payout after accept deadline.                                                                                                                                                                                                                                                            |
 
 `receiptPath` → `/verification?raidId=...&token=...`
 
@@ -725,27 +726,33 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 
 ## Core runtime
 
-| Variable                           | Values / notes                                          |
-| ---------------------------------- | ------------------------------------------------------- |
-| `BOSSRAID_STORAGE_BACKEND`         | `sqlite` (default) or `memory`                          |
-| `BOSSRAID_SQLITE_FILE`             | SQLite path for orchestrator + API state                |
-| `BOSSRAID_INFERENCE_RECEIPTS_FILE` | Optional SQLite path for inference attestation receipts |
-| `BOSSRAID_BOUNTY_SQLITE_FILE`      | SQLite path for bounty marketplace state                |
-| `BOSSRAID_BOUNTY_DEADLINE_INTERVAL_MS` | Bounty auto-award / claim worker interval (default 60000) |
-| `BOSSRAID_BOUNTY_DEFAULT_BIDDING_DAYS` | Default bidding window (default 7)                  |
-| `BOSSRAID_BOUNTY_DEFAULT_AWARD_DAYS`   | Default award window after bidding (default 3)      |
-| `BOSSRAID_BOUNTY_DEFAULT_DELIVERY_DAYS`  | Default delivery window (default 14)                |
-| `BOSSRAID_BOUNTY_DEFAULT_ACCEPT_DAYS`  | Permissionless claim window (default 7)             |
-| `BOSSRAID_BOUNTY_AUTO_AWARD_MAX`       | Max bids auto-awarded (default 3)                   |
-| `BOSSRAID_PROVIDERS_FILE`          | Provider seed file(s), comma-separated                  |
-| `BOSSRAID_PROVIDER_FRESH_MS`       | Routing freshness window                                |
-| `BOSSRAID_INVITE_ACCEPT_MS`        | Invite timeout; chat settle grace (5s–30s)              |
-| `BOSSRAID_FIRST_HEARTBEAT_MS`      | First heartbeat deadline                                |
-| `BOSSRAID_HEARTBEAT_STALE_MS`      | Stale heartbeat timeout                                 |
-| `BOSSRAID_HARD_EXECUTION_MS`       | Hard execution cap                                      |
-| `BOSSRAID_RAID_ABSOLUTE_MS`        | Absolute raid deadline                                  |
-| `PORT`                             | Process listen port                                     |
-| `BOSSRAID_DEPLOY_TARGET`           | Label in attestation proof                              |
+| Variable                                 | Values / notes                                            |
+| ---------------------------------------- | --------------------------------------------------------- |
+| `BOSSRAID_STORAGE_BACKEND`               | `sqlite` (default) or `memory`                            |
+| `BOSSRAID_SQLITE_FILE`                   | SQLite path for orchestrator + API state                  |
+| `BOSSRAID_INFERENCE_RECEIPTS_FILE`       | Optional SQLite path for inference attestation receipts   |
+| `BOSSRAID_BOUNTY_SQLITE_FILE`            | SQLite path for bounty marketplace state                  |
+| `BOSSRAID_BOUNTY_DEADLINE_INTERVAL_MS`   | Bounty auto-award / claim worker interval (default 60000) |
+| `BOSSRAID_BOUNTY_DEFAULT_BIDDING_DAYS`   | Default bidding window (default 7)                        |
+| `BOSSRAID_BOUNTY_DEFAULT_AWARD_DAYS`     | Default award window after bidding (default 3)            |
+| `BOSSRAID_BOUNTY_DEFAULT_DELIVERY_DAYS`  | Default delivery window (default 14)                      |
+| `BOSSRAID_BOUNTY_DEFAULT_ACCEPT_DAYS`    | Permissionless claim window (default 7)                   |
+| `BOSSRAID_BOUNTY_AUTO_AWARD_MAX`         | Max bids auto-awarded (default 3)                         |
+| `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND`  | Dev-only: fund bounties without x402 (default off)        |
+| `BOSSRAID_BOUNTY_E2E_PROVIDER_ID`        | Bounty smoke provider override (default `dottie`)         |
+| `BOSSRAID_BOUNTY_E2E_PROVIDER_TOKEN`     | Bounty smoke bearer token (default `bossraid-provider-a`) |
+| `BOSSRAID_BOUNTY_E2E_REWARD_USD`         | Bounty smoke reward amount (default `0.5`)                |
+| `BOSSRAID_BOUNTY_E2E_MODE`               | `mock`, `wallet`, or `unverified` for bounty smoke        |
+| `BOSSRAID_BOUNTY_E2E_POSTER_PRIVATE_KEY` | Poster wallet for bounty smoke (`wallet` mode)            |
+| `BOSSRAID_PROVIDERS_FILE`                | Provider seed file(s), comma-separated                    |
+| `BOSSRAID_PROVIDER_FRESH_MS`             | Routing freshness window                                  |
+| `BOSSRAID_INVITE_ACCEPT_MS`              | Invite timeout; chat settle grace (5s–30s)                |
+| `BOSSRAID_FIRST_HEARTBEAT_MS`            | First heartbeat deadline                                  |
+| `BOSSRAID_HEARTBEAT_STALE_MS`            | Stale heartbeat timeout                                   |
+| `BOSSRAID_HARD_EXECUTION_MS`             | Hard execution cap                                        |
+| `BOSSRAID_RAID_ABSOLUTE_MS`              | Absolute raid deadline                                    |
+| `PORT`                                   | Process listen port                                       |
+| `BOSSRAID_DEPLOY_TARGET`                 | Label in attestation proof                                |
 
 ## API auth & limits
 
@@ -807,15 +814,15 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 
 ## Settlement
 
-| Variable                                                                         | Purpose                                 |
-| -------------------------------------------------------------------------------- | --------------------------------------- |
-| `BOSSRAID_SETTLEMENT_MODE`                                                       | `off`, `file` (safe default), `onchain` |
-| `BOSSRAID_SETTLEMENT_DIR`                                                        | Artifact output dir                     |
-| `BOSSRAID_RPC_URL`, `BOSSRAID_CHAIN_ID`                                          | Chain config                            |
-| `BOSSRAID_REGISTRY_ADDRESS`, `BOSSRAID_ESCROW_ADDRESS`, `BOSSRAID_TOKEN_ADDRESS` | Contracts                               |
-| `BOSSRAID_CLIENT_PRIVATE_KEY`                                                    | Client signer                           |
-| `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD`                                             | Dust threshold (default `0.25`)         |
-| `BOSSRAID_PROVIDER_ADDRESS_MAP_JSON`                                             | Provider payout overrides               |
+| Variable                                                                                                           | Purpose                                 |
+| ------------------------------------------------------------------------------------------------------------------ | --------------------------------------- |
+| `BOSSRAID_SETTLEMENT_MODE`                                                                                         | `off`, `file` (safe default), `onchain` |
+| `BOSSRAID_SETTLEMENT_DIR`                                                                                          | Artifact output dir                     |
+| `BOSSRAID_RPC_URL`, `BOSSRAID_CHAIN_ID`                                                                            | Chain config                            |
+| `BOSSRAID_REGISTRY_ADDRESS`, `BOSSRAID_ESCROW_ADDRESS`, `BOSSRAID_BOUNTY_ESCROW_ADDRESS`, `BOSSRAID_TOKEN_ADDRESS` | Contracts                               |
+| `BOSSRAID_CLIENT_PRIVATE_KEY`                                                                                      | Client signer (raid + bounty relayer)   |
+| `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD`                                                                               | Dust threshold (default `0.25`)         |
+| `BOSSRAID_PROVIDER_ADDRESS_MAP_JSON`                                                                               | Provider payout overrides               |
 
 ## ERC-8004 & attestation
 
@@ -865,15 +872,15 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 
 ## Local smoke & dev providers
 
-| Variable                      | Purpose                                                 |
-| ----------------------------- | ------------------------------------------------------- |
-| `BOSSRAID_API_BASE`              | API origin for smoke scripts (default `127.0.0.1:8787`)   |
-| `BOSSRAID_CALLBACK_BASE`         | Provider callback URL in local dev                        |
-| `BOSSRAID_PROVIDER_STUB_MODE`    | `1` = stub upstream responses in `dev:providers`            |
-| `BOSSRAID_SMOKE_TIMEOUT_MS`      | Party quest smoke timeout (default `600000`)              |
-| `BOSSRAID_SMOKE_PAYLOAD_FILE`    | Optional raid payload JSON for party quest smoke            |
-| `BOSSRAID_SMOKE_MAX_TOTAL_COST`  | Max raid cost for party quest smoke (default `1`)         |
-| `BOSSRAID_API_KEY`               | Trusted client bearer (Alkahest strict Gemma lane)        |
+| Variable                        | Purpose                                                 |
+| ------------------------------- | ------------------------------------------------------- |
+| `BOSSRAID_API_BASE`             | API origin for smoke scripts (default `127.0.0.1:8787`) |
+| `BOSSRAID_CALLBACK_BASE`        | Provider callback URL in local dev                      |
+| `BOSSRAID_PROVIDER_STUB_MODE`   | `1` = stub upstream responses in `dev:providers`        |
+| `BOSSRAID_SMOKE_TIMEOUT_MS`     | Party quest smoke timeout (default `600000`)            |
+| `BOSSRAID_SMOKE_PAYLOAD_FILE`   | Optional raid payload JSON for party quest smoke        |
+| `BOSSRAID_SMOKE_MAX_TOTAL_COST` | Max raid cost for party quest smoke (default `1`)       |
+| `BOSSRAID_API_KEY`              | Trusted client bearer (Alkahest strict Gemma lane)      |
 
 ## Demo video generation (local, `.private/`)
 
@@ -1094,6 +1101,9 @@ pnpm test:game-raid:e2e
 pnpm test:strict-private:e2e
 pnpm test:mcp:e2e
 pnpm test:x402:e2e
+pnpm test:bounty-escrow:local
+pnpm test:bounty-escrow:e2e
+pnpm test:bounty-escrow:production
 pnpm settle:raid -- --raid-id <raidId>
 pnpm generate:settlement-keys
 pnpm bootstrap:settlement
@@ -1123,6 +1133,34 @@ pnpm bootstrap:settlement
 ```
 
 Fund client wallet (USDC for escrow), provider wallets (~0.01 ETH gas each).
+
+### 2b. Bounty escrow (onchain)
+
+`pnpm bootstrap:settlement` writes `BOSSRAID_BOUNTY_ESCROW_ADDRESS` alongside raid escrow addresses. Production onchain mode requires it; `GET /v1/ops/production-readiness` reports `bounty_escrow_configured`.
+
+Operator wallet (`BOSSRAID_CLIENT_PRIVATE_KEY`) must hold:
+
+- USDC on Base for raid escrow, bounty escrow funding, and gas
+- An ERC-20 allowance to `BossBountyEscrow` (the API calls `approve` before each fund when allowance is low)
+
+Buyer flow:
+
+1. Poster signs in with wallet session (`POST /v1/bounties`)
+2. `POST /v1/bounties/:id/fund` returns x402 `402` with `payment-required`
+3. Poster pays USDC via x402; settlement payer must match the poster wallet
+4. API relayer calls `createBountyOnBehalf` + `fundBountyOnBehalf` on `BossBountyEscrow`
+
+`BOSSRAID_X402_PAY_TO` is the platform receive wallet for raid/inference charges. Bounty poster USDC is settled through x402, then moved into onchain escrow by the client signer — not left in `payTo`.
+
+Dev-only bypass: `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND=true` (forbidden in production audit). Smoke tests:
+
+```bash
+pnpm test:bounty-escrow:local          # zero-config; auto onchain when temp/settlement-bootstrap.env exists
+pnpm test:bounty-escrow:e2e            # against running API; defaults to dottie + bossraid-provider-a
+pnpm test:bounty-escrow:production     # wallet mode; caps reward via BOSSRAID_BOUNTY_E2E_REWARD_USD
+```
+
+`test:bounty-escrow:local` spins an ephemeral API, uses `dottie` / `bossraid-provider-a` from the provider seed file, and skips x402 unless bootstrap settlement env is present. Optional overrides: [`examples/bounty-e2e.env.example`](../../examples/bounty-e2e.env.example). Provider/agent curl flow: [sellers/bounties.md](../sellers/bounties.md).
 
 ### 3. Phala deploy
 
