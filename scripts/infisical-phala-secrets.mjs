@@ -1,6 +1,13 @@
-import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import {
+  ensureInfisicalSecretPath,
+  formatDotenv,
+  listInfisicalSecrets,
+  resolveInfisicalConfig,
+  upsertInfisicalSecret,
+} from './infisical-client.mjs';
 
 const command = process.argv[2] ?? 'help';
 const args = parseArgs(process.argv.slice(3));
@@ -10,17 +17,13 @@ const envFile = resolve(
   process.cwd(),
   args.file ?? process.env.BOSSRAID_PHALA_ENV_FILE ?? 'deploy/phala/.env'
 );
-const projectId = args.projectId ?? process.env.INFISICAL_PROJECT_ID;
-const token = args.token ?? process.env.INFISICAL_TOKEN;
-const domain =
-  args.domain ?? process.env.INFISICAL_API_URL ?? process.env.INFISICAL_DOMAIN ?? undefined;
 
 switch (command) {
   case 'pull':
-    pullSecrets();
+    await pullSecrets();
     break;
   case 'push':
-    pushSecrets();
+    await pushSecrets();
     break;
   case 'check':
     runPreflight(envFile);
@@ -36,38 +39,72 @@ switch (command) {
     process.exit(1);
 }
 
-function pullSecrets() {
+async function pullSecrets() {
+  const config = resolveInfisicalConfig({ projectId: args.projectId, domain: args.domain });
+  const secrets = await listInfisicalSecrets({
+    ...config,
+    envName,
+    secretPath,
+  });
+  if (secrets.length === 0) {
+    console.error(
+      `No secrets found at ${envName}:${secretPath} in project ${config.projectId}. Run push after bootstrapping deploy/phala/.env.`
+    );
+    process.exit(1);
+  }
+
   mkdirSync(dirname(envFile), { recursive: true });
-  runInfisical(
-    [
-      'export',
-      '--env',
-      envName,
-      '--path',
-      secretPath,
-      '--format',
-      'dotenv',
-      '--output-file',
-      envFile,
-    ],
-    {
-      successMessage: `Pulled Infisical ${envName}:${secretPath} into ${envFile}.`,
-    }
+  writeFileSync(envFile, formatDotenv(secrets), 'utf8');
+  console.log(
+    `Pulled Infisical ${envName}:${secretPath} into ${envFile} (${secrets.length} secrets).`
   );
   runPreflight(envFile);
 }
 
-function pushSecrets() {
+async function pushSecrets() {
   if (!existsSync(envFile)) {
     console.error(`Env file not found: ${envFile}`);
-    console.error('Create it from deploy/phala/production.env.example and fill real values first.');
+    console.error('Run: node scripts/bootstrap-phala-deploy-env.mjs');
     process.exit(1);
   }
 
   runPreflight(envFile);
-  runInfisical(['secrets', 'set', '--env', envName, '--path', secretPath, '--file', envFile], {
-    successMessage: `Pushed ${envFile} into Infisical ${envName}:${secretPath}.`,
+  const config = resolveInfisicalConfig({ projectId: args.projectId, domain: args.domain });
+  await ensureInfisicalSecretPath({
+    ...config,
+    envName,
+    secretPath,
   });
+  const existingSecrets = await listInfisicalSecrets({
+    ...config,
+    envName,
+    secretPath,
+  });
+  const existingKeys = new Set(existingSecrets.map((secret) => secret.secretKey));
+  const entries = parseDotenv(readFileSync(envFile, 'utf8'));
+
+  let created = 0;
+  let updated = 0;
+  for (const [key, value] of entries) {
+    const exists = existingKeys.has(key);
+    await upsertInfisicalSecret({
+      ...config,
+      envName,
+      secretPath,
+      key,
+      value,
+      exists,
+    });
+    if (exists) {
+      updated += 1;
+    } else {
+      created += 1;
+    }
+  }
+
+  console.log(
+    `Pushed ${entries.length} secrets into Infisical ${envName}:${secretPath} (${created} created, ${updated} updated).`
+  );
 }
 
 function runPreflight(file) {
@@ -89,33 +126,24 @@ function runPreflight(file) {
   console.log(`Preflight passed for ${file}.`);
 }
 
-function runInfisical(commandArgs, options) {
-  const fullArgs = [...commandArgs];
-  if (projectId) {
-    fullArgs.push('--projectId', projectId);
-  }
-  if (token) {
-    fullArgs.push('--token', token);
-  }
-  if (domain) {
-    fullArgs.push('--domain', domain);
-  }
-  fullArgs.push('--silent');
-
-  const result = spawnSync('infisical', fullArgs, {
-    cwd: process.cwd(),
-    encoding: 'utf8',
-  });
-
-  if (result.status !== 0) {
-    console.error(`Infisical command failed: infisical ${redactArgs(fullArgs).join(' ')}`);
-    if (result.stderr.trim()) {
-      console.error(result.stderr.trim());
+function parseDotenv(text) {
+  const entries = [];
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) {
+      continue;
     }
-    process.exit(result.status ?? 1);
+    const separatorIndex = line.indexOf('=');
+    if (separatorIndex === -1) {
+      continue;
+    }
+    const key = line.slice(0, separatorIndex).trim();
+    const value = line.slice(separatorIndex + 1);
+    if (key) {
+      entries.push([key, value]);
+    }
   }
-
-  console.log(options.successMessage);
+  return entries;
 }
 
 function parseArgs(rawArgs) {
@@ -144,19 +172,6 @@ function parseArgs(rawArgs) {
   return parsed;
 }
 
-function redactArgs(args) {
-  const redacted = [];
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    redacted.push(arg);
-    if (arg === '--token') {
-      index += 1;
-      redacted.push('<redacted>');
-    }
-  }
-  return redacted;
-}
-
 function printHelp() {
   console.log(
     [
@@ -165,8 +180,13 @@ function printHelp() {
       '  node scripts/infisical-phala-secrets.mjs push [--env prod] [--path /bossraid/phala] [--file deploy/phala/.env]',
       '  node scripts/infisical-phala-secrets.mjs check [--file deploy/phala/.env]',
       '',
+      'Bootstrap:',
+      '  node scripts/bootstrap-phala-deploy-env.mjs',
+      '',
       'Environment overrides:',
-      '  INFISICAL_ENV, INFISICAL_PATH, INFISICAL_PROJECT_ID, INFISICAL_TOKEN, INFISICAL_API_URL',
+      '  INFISICAL_ENV, INFISICAL_PATH, INFISICAL_PROJECT_ID, INFISICAL_API_URL',
+      '  INFISICAL_ACCESS_TOKEN, INFISICAL_EMAIL/PASSWORD, INFISICAL_ORGANIZATION_ID, or machine identity',
+      '  CF_ACCESS_CLIENT_ID, CF_ACCESS_CLIENT_SECRET (or cloudflared access login)',
       '  BOSSRAID_PHALA_ENV_FILE',
     ].join('\n')
   );
