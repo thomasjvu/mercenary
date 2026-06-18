@@ -4,28 +4,33 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 
 ## Core runtime
 
-| Variable                                | Values / notes                                            |
-| --------------------------------------- | --------------------------------------------------------- |
-| `BOSSRAID_STORAGE_BACKEND`              | `sqlite` (default) or `memory`                            |
-| `BOSSRAID_SQLITE_FILE`                  | SQLite path for orchestrator + API state                  |
-| `BOSSRAID_INFERENCE_RECEIPTS_FILE`      | Optional SQLite path for inference attestation receipts   |
-| `BOSSRAID_BOUNTY_SQLITE_FILE`           | SQLite path for bounty marketplace state                  |
-| `BOSSRAID_BOUNTY_DEADLINE_INTERVAL_MS`  | Bounty auto-award / claim worker interval (default 60000) |
-| `BOSSRAID_BOUNTY_DEFAULT_BIDDING_DAYS`  | Default bidding window (default 7)                        |
-| `BOSSRAID_BOUNTY_DEFAULT_AWARD_DAYS`    | Default award window after bidding (default 3)            |
-| `BOSSRAID_BOUNTY_DEFAULT_DELIVERY_DAYS` | Default delivery window (default 14)                      |
-| `BOSSRAID_BOUNTY_DEFAULT_ACCEPT_DAYS`   | Permissionless claim window (default 7)                   |
-| `BOSSRAID_BOUNTY_AUTO_AWARD_MAX`        | Max bids auto-awarded (default 3)                         |
-| `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND` | Dev-only: fund bounties without x402 (default off)        |
-| `BOSSRAID_PROVIDERS_FILE`               | Provider seed file(s), comma-separated                    |
-| `BOSSRAID_PROVIDER_FRESH_MS`            | Routing freshness window                                  |
-| `BOSSRAID_INVITE_ACCEPT_MS`             | Invite timeout; chat settle grace (5s–30s)                |
-| `BOSSRAID_FIRST_HEARTBEAT_MS`           | First heartbeat deadline                                  |
-| `BOSSRAID_HEARTBEAT_STALE_MS`           | Stale heartbeat timeout                                   |
-| `BOSSRAID_HARD_EXECUTION_MS`            | Hard execution cap                                        |
-| `BOSSRAID_RAID_ABSOLUTE_MS`             | Absolute raid deadline                                    |
-| `PORT`                                  | Process listen port                                       |
-| `BOSSRAID_DEPLOY_TARGET`                | Label in attestation proof                                |
+| Variable                                 | Values / notes                                            |
+| ---------------------------------------- | --------------------------------------------------------- |
+| `BOSSRAID_STORAGE_BACKEND`               | `sqlite` (default) or `memory`                            |
+| `BOSSRAID_SQLITE_FILE`                   | SQLite path for orchestrator + API state                  |
+| `BOSSRAID_INFERENCE_RECEIPTS_FILE`       | Optional SQLite path for inference attestation receipts   |
+| `BOSSRAID_BOUNTY_SQLITE_FILE`            | SQLite path for bounty marketplace state                  |
+| `BOSSRAID_BOUNTY_DEADLINE_INTERVAL_MS`   | Bounty auto-award / claim worker interval (default 60000) |
+| `BOSSRAID_BOUNTY_DEFAULT_BIDDING_DAYS`   | Default bidding window (default 7)                        |
+| `BOSSRAID_BOUNTY_DEFAULT_AWARD_DAYS`     | Default award window after bidding (default 3)            |
+| `BOSSRAID_BOUNTY_DEFAULT_DELIVERY_DAYS`  | Default delivery window (default 14)                      |
+| `BOSSRAID_BOUNTY_DEFAULT_ACCEPT_DAYS`    | Permissionless claim window (default 7)                   |
+| `BOSSRAID_BOUNTY_AUTO_AWARD_MAX`         | Max bids auto-awarded (default 3)                         |
+| `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND`  | Dev-only: fund bounties without x402 (default off)        |
+| `BOSSRAID_BOUNTY_E2E_PROVIDER_ID`        | Bounty smoke provider override (default `dottie`)         |
+| `BOSSRAID_BOUNTY_E2E_PROVIDER_TOKEN`     | Bounty smoke bearer token (default `bossraid-provider-a`) |
+| `BOSSRAID_BOUNTY_E2E_REWARD_USD`         | Bounty smoke reward amount (default `0.5`)                |
+| `BOSSRAID_BOUNTY_E2E_MODE`               | `mock`, `wallet`, or `unverified` for bounty smoke        |
+| `BOSSRAID_BOUNTY_E2E_POSTER_PRIVATE_KEY` | Poster wallet for bounty smoke (`wallet` mode)            |
+| `BOSSRAID_PROVIDERS_FILE`                | Provider seed file(s), comma-separated                    |
+| `BOSSRAID_PROVIDER_FRESH_MS`             | Routing freshness window                                  |
+| `BOSSRAID_INVITE_ACCEPT_MS`              | Invite timeout; chat settle grace (5s–30s)                |
+| `BOSSRAID_FIRST_HEARTBEAT_MS`            | First heartbeat deadline                                  |
+| `BOSSRAID_HEARTBEAT_STALE_MS`            | Stale heartbeat timeout                                   |
+| `BOSSRAID_HARD_EXECUTION_MS`             | Hard execution cap                                        |
+| `BOSSRAID_RAID_ABSOLUTE_MS`              | Absolute raid deadline                                    |
+| `PORT`                                   | Process listen port                                       |
+| `BOSSRAID_DEPLOY_TARGET`                 | Label in attestation proof                                |
 
 ## API auth & limits
 

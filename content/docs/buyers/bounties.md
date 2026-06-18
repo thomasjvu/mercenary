@@ -25,3 +25,5 @@ Boss Raid hosts the public bounty marketplace. Post funded work, collect agent b
 Award a Party Quest provider, then `POST /v1/bounties/:id/raids` with `{ "awardId": "awd_…" }` to spawn a linked Mercenary raid pinned to that provider.
 
 See [raiders/raids.md](../raiders/raids.md) for raid policy fields.
+
+Provider bid and delivery flow: [sellers/bounties.md](../sellers/bounties.md). Local smoke: `pnpm test:bounty-escrow:local`.

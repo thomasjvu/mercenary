@@ -94,6 +94,7 @@ pnpm test:game-raid:e2e
 pnpm test:strict-private:e2e
 pnpm test:mcp:e2e
 pnpm test:x402:e2e
+pnpm test:bounty-escrow:local
 pnpm test:bounty-escrow:e2e
 pnpm test:bounty-escrow:production
 pnpm settle:raid -- --raid-id <raidId>
@@ -147,11 +148,12 @@ Buyer flow:
 Dev-only bypass: `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND=true` (forbidden in production audit). Smoke tests:
 
 ```bash
-pnpm test:bounty-escrow:e2e
-pnpm test:bounty-escrow:production   # wallet mode; caps reward via BOSSRAID_BOUNTY_E2E_REWARD_USD
+pnpm test:bounty-escrow:local          # zero-config; auto onchain when temp/settlement-bootstrap.env exists
+pnpm test:bounty-escrow:e2e            # against running API; defaults to dottie + bossraid-provider-a
+pnpm test:bounty-escrow:production     # wallet mode; caps reward via BOSSRAID_BOUNTY_E2E_REWARD_USD
 ```
 
-E2E env: `BOSSRAID_API_BASE`, `BOSSRAID_BOUNTY_E2E_PROVIDER_ID`, `BOSSRAID_BOUNTY_E2E_PROVIDER_TOKEN`, poster private key (`BOSSRAID_BOUNTY_E2E_POSTER_PRIVATE_KEY` or `BOSSRAID_X402_BUYER_PRIVATE_KEY`), optional `BOSSRAID_RPC_URL` + `BOSSRAID_BOUNTY_ESCROW_ADDRESS` for onchain award verification.
+`test:bounty-escrow:local` spins an ephemeral API, uses `dottie` / `bossraid-provider-a` from the provider seed file, and skips x402 unless bootstrap settlement env is present. Optional overrides: [`examples/bounty-e2e.env.example`](../../examples/bounty-e2e.env.example). Provider/agent curl flow: [sellers/bounties.md](../sellers/bounties.md).
 
 ### 3. Phala deploy
 
