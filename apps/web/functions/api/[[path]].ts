@@ -49,12 +49,20 @@ export async function onRequest(context: PagesContext): Promise<Response> {
     );
   }
 
-  const upstreamResponse = await fetch(upstreamUrl, {
-    method: context.request.method,
-    headers,
-    body: requestAllowsBody(context.request.method) ? context.request.body : undefined,
-    redirect: 'manual',
-  });
+  let upstreamResponse: Response;
+  try {
+    upstreamResponse = await fetch(upstreamUrl, {
+      method: context.request.method,
+      headers,
+      body: requestAllowsBody(context.request.method) ? context.request.body : undefined,
+      redirect: 'manual',
+    });
+  } catch (error) {
+    return jsonResponse(502, {
+      error: 'api_upstream_unreachable',
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
 
   return rewriteX402PaymentRequiredResponse(upstreamResponse, requestUrl);
 }
