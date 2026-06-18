@@ -75,11 +75,40 @@ const veniceApiKey = [
 ].find((value) => isRealValue(value));
 const providerModel = merged.VENICE_MODEL ?? merged.BOSSRAID_VENICE_MODEL ?? 'minimax-m27';
 const providerModelBase = merged.VENICE_API_BASE ?? 'https://api.venice.ai/api/v1';
+function imageDigestRef(envKey, repository) {
+  const digest = process.env[envKey] ?? merged[envKey];
+  if (!isRealValue(digest)) {
+    return `${repository}:latest`;
+  }
+  const normalized = digest.trim().startsWith('sha256:') ? digest.trim() : `sha256:${digest.trim()}`;
+  return `${repository}@${normalized}`;
+}
+
+const defaultBossraidImage = imageDigestRef('BOSSRAID_IMAGE_DIGEST', 'ghcr.io/thomasjvu/boss-raid');
+const defaultEvaluatorImage = imageDigestRef(
+  'BOSSRAID_EVALUATOR_IMAGE_DIGEST',
+  'ghcr.io/thomasjvu/boss-raid-evaluator'
+);
+const defaultEvaluatorJobImage = imageDigestRef(
+  'BOSSRAID_EVAL_JOB_IMAGE_DIGEST',
+  'ghcr.io/thomasjvu/boss-raid-evaluator-job'
+);
+
+function resolveProviderModel(mergedValue) {
+  if (isRealValue(mergedValue) && mergedValue.trim() !== 'gpt-5.5') {
+    return mergedValue.trim();
+  }
+  return providerModel;
+}
 
 const values = {
-  BOSSRAID_IMAGE: 'ghcr.io/thomasjvu/boss-raid:latest',
-  BOSSRAID_EVALUATOR_IMAGE: 'ghcr.io/thomasjvu/boss-raid-evaluator:latest',
-  BOSSRAID_EVAL_JOB_CONTAINER_IMAGE: 'ghcr.io/thomasjvu/boss-raid-evaluator-job:latest',
+  BOSSRAID_IMAGE: isRealValue(merged.BOSSRAID_IMAGE) ? merged.BOSSRAID_IMAGE.trim() : defaultBossraidImage,
+  BOSSRAID_EVALUATOR_IMAGE: isRealValue(merged.BOSSRAID_EVALUATOR_IMAGE)
+    ? merged.BOSSRAID_EVALUATOR_IMAGE.trim()
+    : defaultEvaluatorImage,
+  BOSSRAID_EVAL_JOB_CONTAINER_IMAGE: isRealValue(merged.BOSSRAID_EVAL_JOB_CONTAINER_IMAGE)
+    ? merged.BOSSRAID_EVAL_JOB_CONTAINER_IMAGE.trim()
+    : defaultEvaluatorJobImage,
   BOSSRAID_PROVIDERS_FILE: '/app/examples/game-raid/providers.compose.json',
   BOSSRAID_TEE_SOCKET_PATH: '/var/run/tappd.sock',
   BOSSRAID_SECRET_ENCRYPTION_KEY_ID: 'phala-2026-05',
@@ -168,9 +197,7 @@ const values = {
       : veniceApiKey,
   BOSSRAID_PROVIDER_A_MODEL_API_BASE:
     merged.BOSSRAID_PROVIDER_A_MODEL_API_BASE ?? providerModelBase,
-  BOSSRAID_PROVIDER_A_MODEL: isRealValue(merged.BOSSRAID_PROVIDER_A_MODEL)
-    ? merged.BOSSRAID_PROVIDER_A_MODEL
-    : providerModel,
+  BOSSRAID_PROVIDER_A_MODEL: resolveProviderModel(merged.BOSSRAID_PROVIDER_A_MODEL),
   BOSSRAID_PROVIDER_B_MODEL_API_KEY: isRealValue(merged.BOSSRAID_PROVIDER_B_MODEL_API_KEY)
     ? merged.BOSSRAID_PROVIDER_B_MODEL_API_KEY
     : isRealValue(merged.VENICE_API_KEY_RIKO)
@@ -178,9 +205,7 @@ const values = {
       : veniceApiKey,
   BOSSRAID_PROVIDER_B_MODEL_API_BASE:
     merged.BOSSRAID_PROVIDER_B_MODEL_API_BASE ?? providerModelBase,
-  BOSSRAID_PROVIDER_B_MODEL: isRealValue(merged.BOSSRAID_PROVIDER_B_MODEL)
-    ? merged.BOSSRAID_PROVIDER_B_MODEL
-    : providerModel,
+  BOSSRAID_PROVIDER_B_MODEL: resolveProviderModel(merged.BOSSRAID_PROVIDER_B_MODEL),
   BOSSRAID_PROVIDER_C_MODEL_API_KEY: isRealValue(merged.BOSSRAID_PROVIDER_C_MODEL_API_KEY)
     ? merged.BOSSRAID_PROVIDER_C_MODEL_API_KEY
     : isRealValue(merged.VENICE_API_KEY_GAMMA)
@@ -188,9 +213,7 @@ const values = {
       : veniceApiKey,
   BOSSRAID_PROVIDER_C_MODEL_API_BASE:
     merged.BOSSRAID_PROVIDER_C_MODEL_API_BASE ?? providerModelBase,
-  BOSSRAID_PROVIDER_C_MODEL: isRealValue(merged.BOSSRAID_PROVIDER_C_MODEL)
-    ? merged.BOSSRAID_PROVIDER_C_MODEL
-    : providerModel,
+  BOSSRAID_PROVIDER_C_MODEL: resolveProviderModel(merged.BOSSRAID_PROVIDER_C_MODEL),
 };
 
 for (const key of [

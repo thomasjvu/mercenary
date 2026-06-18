@@ -1,6 +1,7 @@
 services:
   gateway:
     image: ${BOSSRAID_IMAGE}
+    pull_policy: always
     restart: unless-stopped
     init: true
     stop_grace_period: 15s
@@ -38,6 +39,7 @@ services:
 
   api:
     image: ${BOSSRAID_IMAGE}
+    pull_policy: always
     restart: unless-stopped
     init: true
     stop_grace_period: 15s
@@ -162,6 +164,7 @@ services:
 
   evaluator:
     image: ${BOSSRAID_EVALUATOR_IMAGE}
+    pull_policy: always
     restart: unless-stopped
     init: true
     stop_grace_period: 15s
@@ -216,6 +219,7 @@ services:
 
   provider-a:
     image: ${BOSSRAID_IMAGE}
+    pull_policy: always
     restart: unless-stopped
     init: true
     stop_grace_period: 15s
@@ -258,6 +262,7 @@ services:
 
   provider-b:
     image: ${BOSSRAID_IMAGE}
+    pull_policy: always
     restart: unless-stopped
     init: true
     stop_grace_period: 15s
@@ -300,6 +305,7 @@ services:
 
   provider-c:
     image: ${BOSSRAID_IMAGE}
+    pull_policy: always
     restart: unless-stopped
     init: true
     stop_grace_period: 15s
