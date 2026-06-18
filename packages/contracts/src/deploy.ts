@@ -22,6 +22,7 @@ type CompiledContract = {
 type ContractsOutput = {
   raidRegistry: CompiledContract;
   bossJobEscrow: CompiledContract;
+  bossBountyEscrow: CompiledContract;
 };
 
 function requireEnv(value: string | undefined, name: string): string {
@@ -37,9 +38,10 @@ function normalizePrivateKey(value: string): Hex {
 }
 
 async function compileContracts(projectRoot: string): Promise<ContractsOutput> {
-  const [raidRegistrySource, bossJobEscrowSource] = await Promise.all([
+  const [raidRegistrySource, bossJobEscrowSource, bossBountyEscrowSource] = await Promise.all([
     readFile(resolve(projectRoot, 'src/RaidRegistry.sol'), 'utf8'),
     readFile(resolve(projectRoot, 'src/BossJobEscrow.sol'), 'utf8'),
+    readFile(resolve(projectRoot, 'src/BossBountyEscrow.sol'), 'utf8'),
   ]);
 
   const input = {
@@ -47,6 +49,7 @@ async function compileContracts(projectRoot: string): Promise<ContractsOutput> {
     sources: {
       'RaidRegistry.sol': { content: raidRegistrySource },
       'BossJobEscrow.sol': { content: bossJobEscrowSource },
+      'BossBountyEscrow.sol': { content: bossBountyEscrowSource },
     },
     settings: {
       outputSelection: {
@@ -73,6 +76,7 @@ async function compileContracts(projectRoot: string): Promise<ContractsOutput> {
   return {
     raidRegistry: extractCompiledContract(output, 'RaidRegistry.sol', 'RaidRegistry'),
     bossJobEscrow: extractCompiledContract(output, 'BossJobEscrow.sol', 'BossJobEscrow'),
+    bossBountyEscrow: extractCompiledContract(output, 'BossBountyEscrow.sol', 'BossBountyEscrow'),
   };
 }
 
@@ -143,6 +147,19 @@ export async function deployContracts(options: DeployContractsOptions): Promise<
     throw new Error('BossJobEscrow deployment failed.');
   }
 
+  const bountyEscrowDeployHash = await walletClient.deployContract({
+    abi: compiled.bossBountyEscrow.abi,
+    bytecode: compiled.bossBountyEscrow.bytecode,
+    args: [tokenAddress, account.address],
+    account,
+  });
+  const bountyEscrowReceipt = await publicClient.waitForTransactionReceipt({
+    hash: bountyEscrowDeployHash,
+  });
+  if (bountyEscrowReceipt.status !== 'success' || !bountyEscrowReceipt.contractAddress) {
+    throw new Error('BossBountyEscrow deployment failed.');
+  }
+
   const deployment: BossRaidDeployment = {
     chainId: options.chainId,
     rpcUrl: options.rpcUrl,
@@ -150,9 +167,11 @@ export async function deployContracts(options: DeployContractsOptions): Promise<
     tokenAddress,
     registryAddress: registryReceipt.contractAddress,
     escrowAddress: escrowReceipt.contractAddress,
+    bountyEscrowAddress: bountyEscrowReceipt.contractAddress,
     transactionHashes: {
       registryDeploy: registryDeployHash,
       escrowDeploy: escrowDeployHash,
+      bountyEscrowDeploy: bountyEscrowDeployHash,
     },
     deployedAt: new Date().toISOString(),
   };
@@ -165,6 +184,7 @@ export async function deployContracts(options: DeployContractsOptions): Promise<
     options.chainId ? `BOSSRAID_CHAIN_ID=${options.chainId}` : null,
     `BOSSRAID_REGISTRY_ADDRESS=${deployment.registryAddress}`,
     `BOSSRAID_ESCROW_ADDRESS=${deployment.escrowAddress}`,
+    `BOSSRAID_BOUNTY_ESCROW_ADDRESS=${deployment.bountyEscrowAddress}`,
     `BOSSRAID_TOKEN_ADDRESS=${deployment.tokenAddress}`,
   ].filter((value): value is string => Boolean(value));
 

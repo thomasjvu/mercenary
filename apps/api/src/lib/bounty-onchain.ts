@@ -1,0 +1,352 @@
+import type { BountyRecord } from '@bossraid/shared-types';
+import {
+  createPublicClient,
+  createWalletClient,
+  defineChain,
+  getAddress,
+  http,
+  parseEventLogs,
+  type Address,
+  type Hash,
+  type Hex,
+} from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { readSettlementMode } from '@bossraid/constants';
+import { resolveApiSettlementMode } from './settlement-mode.js';
+
+const USDC_ATOMIC_MULTIPLIER = 1_000_000n;
+
+export const bountyEscrowAbi = [
+  {
+    type: 'function',
+    name: 'createBountyOnBehalf',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'poster', type: 'address' },
+      { name: 'totalBudget', type: 'uint256' },
+      { name: 'biddingDeadline', type: 'uint256' },
+      { name: 'awardDeadline', type: 'uint256' },
+      { name: 'deliveryDeadline', type: 'uint256' },
+      { name: 'acceptDeadline', type: 'uint256' },
+      { name: 'metadataUri', type: 'string' },
+    ],
+    outputs: [{ name: 'bountyId', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'fundBountyOnBehalf',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'bountyId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'createAwardOnBehalf',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'bountyId', type: 'uint256' },
+      { name: 'provider', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: 'awardId', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'submitDeliveryOnBehalf',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'awardId', type: 'uint256' },
+      { name: 'deliveryHash', type: 'bytes32' },
+    ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'acceptAwardOnBehalf',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'awardId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'claimPayout',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'awardId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    type: 'event',
+    name: 'BountyCreated',
+    inputs: [
+      { name: 'bountyId', type: 'uint256', indexed: true },
+      { name: 'poster', type: 'address', indexed: true },
+      { name: 'totalBudget', type: 'uint256', indexed: false },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'AwardCreated',
+    inputs: [
+      { name: 'bountyId', type: 'uint256', indexed: true },
+      { name: 'awardId', type: 'uint256', indexed: true },
+      { name: 'provider', type: 'address', indexed: true },
+      { name: 'amount', type: 'uint256', indexed: false },
+    ],
+  },
+] as const;
+
+export type BountyOnchainConfig = {
+  rpcUrl: string;
+  chainId: string;
+  bountyEscrowAddress: Address;
+  operatorPrivateKey: Hex;
+};
+
+export function isBountyOnchainConfigured(env: NodeJS.ProcessEnv = process.env): boolean {
+  const mode = resolveApiSettlementMode(env);
+  if (mode !== 'onchain') {
+    return false;
+  }
+
+  return Boolean(
+    env.BOSSRAID_RPC_URL &&
+    env.BOSSRAID_CHAIN_ID &&
+    env.BOSSRAID_BOUNTY_ESCROW_ADDRESS &&
+    env.BOSSRAID_CLIENT_PRIVATE_KEY
+  );
+}
+
+export function readBountyOnchainConfig(env: NodeJS.ProcessEnv = process.env): BountyOnchainConfig {
+  const rpcUrl = env.BOSSRAID_RPC_URL;
+  const chainId = env.BOSSRAID_CHAIN_ID;
+  const bountyEscrowAddress = env.BOSSRAID_BOUNTY_ESCROW_ADDRESS;
+  const operatorPrivateKey = env.BOSSRAID_CLIENT_PRIVATE_KEY;
+
+  if (!rpcUrl || !chainId || !bountyEscrowAddress || !operatorPrivateKey) {
+    throw new Error('Bounty onchain settlement is not fully configured.');
+  }
+
+  return {
+    rpcUrl,
+    chainId,
+    bountyEscrowAddress: getAddress(bountyEscrowAddress),
+    operatorPrivateKey: normalizePrivateKey(operatorPrivateKey),
+  };
+}
+
+export class BountyOnchainExecutor {
+  private readonly publicClient;
+  private readonly operatorClient;
+  private readonly operatorAccount;
+  private readonly chain;
+
+  constructor(private readonly config: BountyOnchainConfig) {
+    this.chain = defineChain({
+      id: Number(config.chainId),
+      name: 'bossraid',
+      nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+      rpcUrls: { default: { http: [config.rpcUrl] } },
+    });
+    this.publicClient = createPublicClient({
+      chain: this.chain,
+      transport: http(config.rpcUrl),
+    });
+    this.operatorAccount = privateKeyToAccount(config.operatorPrivateKey);
+    this.operatorClient = createWalletClient({
+      account: this.operatorAccount,
+      chain: this.chain,
+      transport: http(config.rpcUrl),
+    });
+  }
+
+  async createAndFundBounty(input: {
+    posterWallet: string;
+    bounty: BountyRecord;
+  }): Promise<{ onchainBountyId: string; fundTxHash: Hash }> {
+    const poster = getAddress(input.posterWallet);
+    const totalBudget = usdToAtomic(input.bounty.rewardAmountUsd);
+    const deadlines = deadlineUnix(input.bounty);
+
+    const createHash = await this.operatorClient.writeContract({
+      chain: this.chain,
+      address: this.config.bountyEscrowAddress,
+      abi: bountyEscrowAbi,
+      functionName: 'createBountyOnBehalf',
+      args: [
+        poster,
+        totalBudget,
+        deadlines.bidding,
+        deadlines.award,
+        deadlines.delivery,
+        deadlines.accept,
+        `bossraid:${input.bounty.id}`,
+      ],
+      account: this.operatorAccount,
+    });
+    const createReceipt = await this.publicClient.waitForTransactionReceipt({ hash: createHash });
+    const onchainBountyId = extractUintEventArg(
+      parseEventLogs({
+        abi: bountyEscrowAbi,
+        logs: createReceipt.logs,
+        eventName: 'BountyCreated',
+      }),
+      'bountyId',
+      'BountyCreated'
+    );
+
+    const fundHash = await this.operatorClient.writeContract({
+      chain: this.chain,
+      address: this.config.bountyEscrowAddress,
+      abi: bountyEscrowAbi,
+      functionName: 'fundBountyOnBehalf',
+      args: [onchainBountyId],
+      account: this.operatorAccount,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash: fundHash });
+
+    return {
+      onchainBountyId: onchainBountyId.toString(),
+      fundTxHash: fundHash,
+    };
+  }
+
+  async createAward(input: {
+    onchainBountyId: string;
+    providerAddress: Address;
+    amountUsd: number;
+  }): Promise<{ onchainAwardId: string; txHash: Hash }> {
+    const txHash = await this.operatorClient.writeContract({
+      chain: this.chain,
+      address: this.config.bountyEscrowAddress,
+      abi: bountyEscrowAbi,
+      functionName: 'createAwardOnBehalf',
+      args: [BigInt(input.onchainBountyId), input.providerAddress, usdToAtomic(input.amountUsd)],
+      account: this.operatorAccount,
+    });
+    const receipt = await this.publicClient.waitForTransactionReceipt({ hash: txHash });
+    const onchainAwardId = extractUintEventArg(
+      parseEventLogs({
+        abi: bountyEscrowAbi,
+        logs: receipt.logs,
+        eventName: 'AwardCreated',
+      }),
+      'awardId',
+      'AwardCreated'
+    );
+    return { onchainAwardId: onchainAwardId.toString(), txHash };
+  }
+
+  async submitDelivery(input: { onchainAwardId: string; deliveryHashHex: string }): Promise<Hash> {
+    const txHash = await this.operatorClient.writeContract({
+      chain: this.chain,
+      address: this.config.bountyEscrowAddress,
+      abi: bountyEscrowAbi,
+      functionName: 'submitDeliveryOnBehalf',
+      args: [BigInt(input.onchainAwardId), hexToBytes32(input.deliveryHashHex)],
+      account: this.operatorAccount,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash: txHash });
+    return txHash;
+  }
+
+  async acceptAward(onchainAwardId: string): Promise<Hash> {
+    const txHash = await this.operatorClient.writeContract({
+      chain: this.chain,
+      address: this.config.bountyEscrowAddress,
+      abi: bountyEscrowAbi,
+      functionName: 'acceptAwardOnBehalf',
+      args: [BigInt(onchainAwardId)],
+      account: this.operatorAccount,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash: txHash });
+    return txHash;
+  }
+
+  async claimPayout(onchainAwardId: string): Promise<Hash> {
+    const txHash = await this.operatorClient.writeContract({
+      chain: this.chain,
+      address: this.config.bountyEscrowAddress,
+      abi: bountyEscrowAbi,
+      functionName: 'claimPayout',
+      args: [BigInt(onchainAwardId)],
+      account: this.operatorAccount,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash: txHash });
+    return txHash;
+  }
+}
+
+export function createBountyOnchainExecutor(
+  env: NodeJS.ProcessEnv = process.env
+): BountyOnchainExecutor | null {
+  if (!isBountyOnchainConfigured(env)) {
+    return null;
+  }
+
+  return new BountyOnchainExecutor(readBountyOnchainConfig(env));
+}
+
+export function parseProviderAddressMap(
+  env: NodeJS.ProcessEnv = process.env
+): Record<string, Address> {
+  const raw = env.BOSSRAID_PROVIDER_ADDRESS_MAP_JSON;
+  if (!raw?.trim()) {
+    return {};
+  }
+
+  const parsed = JSON.parse(raw) as Record<string, string>;
+  return Object.fromEntries(
+    Object.entries(parsed).map(([providerId, address]) => [providerId, getAddress(address)])
+  );
+}
+
+export function resolveProviderAddress(
+  providerId: string,
+  map: Record<string, Address>
+): Address | null {
+  return map[providerId] ?? null;
+}
+
+function usdToAtomic(amountUsd: number): bigint {
+  return BigInt(Math.max(1, Math.round(amountUsd * Number(USDC_ATOMIC_MULTIPLIER))));
+}
+
+function deadlineUnix(bounty: BountyRecord): {
+  bidding: bigint;
+  award: bigint;
+  delivery: bigint;
+  accept: bigint;
+} {
+  return {
+    bidding: BigInt(Math.floor(Date.parse(bounty.deadlines.biddingDeadlineAt) / 1000)),
+    award: BigInt(Math.floor(Date.parse(bounty.deadlines.awardDeadlineAt) / 1000)),
+    delivery: BigInt(Math.floor(Date.parse(bounty.deadlines.deliveryDeadlineAt) / 1000)),
+    accept: BigInt(Math.floor(Date.parse(bounty.deadlines.acceptDeadlineAt) / 1000)),
+  };
+}
+
+function hexToBytes32(hex: string): Hex {
+  const normalized = hex.startsWith('0x') ? hex.slice(2) : hex;
+  return `0x${normalized.padStart(64, '0')}` as Hex;
+}
+
+function normalizePrivateKey(value: string): Hex {
+  return (value.startsWith('0x') ? value : `0x${value}`) as Hex;
+}
+
+function extractUintEventArg(
+  events: Array<{ args?: Record<string, unknown> }>,
+  field: 'bountyId' | 'awardId',
+  eventName: string
+): bigint {
+  const value = events[0]?.args?.[field];
+  if (typeof value !== 'bigint') {
+    throw new Error(`Missing ${field} in ${eventName} event.`);
+  }
+
+  return value;
+}
+
+export function bountySettlementModeLabel(env: NodeJS.ProcessEnv = process.env): string {
+  return readSettlementMode(env);
+}

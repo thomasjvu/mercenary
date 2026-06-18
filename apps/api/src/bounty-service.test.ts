@@ -44,18 +44,18 @@ test('bounty lifecycle: create, fund, bid, award, deliver, accept', async () => 
     provider
   );
 
-  const awarded = service.awardBids(bounty.id, bounty.posterWallet, { bidIds: [bid.id] });
+  const awarded = await service.awardBids(bounty.id, bounty.posterWallet, { bidIds: [bid.id] });
   assert.equal(awarded.awards.length, 1);
 
   const artifactsJson = JSON.stringify({ answer: 'done' });
-  const delivered = service.deliverAward(awarded.awards[0]!.id, 'pqf_test', {
+  const delivered = await service.deliverAward(awarded.awards[0]!.id, 'pqf_test', {
     artifactSummary: 'Docs shipped',
     artifactsJson,
     deliveryHash: createHash('sha256').update(artifactsJson).digest('hex'),
   });
   assert.equal(delivered.status, 'delivered');
 
-  const paid = service.acceptAward(delivered.id, bounty.posterWallet);
+  const paid = await service.acceptAward(delivered.id, bounty.posterWallet);
   assert.equal(paid.status, 'paid');
 });
 
@@ -97,6 +97,6 @@ test('auto-awards top bid after award deadline', async () => {
     },
   });
 
-  const messages = service.processDeadlines(new Date());
+  const messages = await service.processDeadlines(new Date());
   assert.ok(messages.some((entry) => entry.startsWith('auto_awarded:')));
 });

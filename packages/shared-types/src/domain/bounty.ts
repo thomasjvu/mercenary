@@ -69,6 +69,7 @@ export interface BountyAwardRecord {
   bidId: string;
   providerId: string;
   amountUsd: number;
+  onchainAwardId?: string;
   status: BountyAwardStatus;
   deliveryHash?: string;
   artifactSummary?: string;

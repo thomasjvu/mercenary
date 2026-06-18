@@ -12,6 +12,7 @@ export function isFullOnchainSettlementConfigured(env: NodeJS.ProcessEnv = proce
     env.BOSSRAID_CHAIN_ID &&
     env.BOSSRAID_REGISTRY_ADDRESS &&
     env.BOSSRAID_ESCROW_ADDRESS &&
+    env.BOSSRAID_BOUNTY_ESCROW_ADDRESS &&
     env.BOSSRAID_TOKEN_ADDRESS &&
     env.BOSSRAID_CLIENT_PRIVATE_KEY &&
     env.BOSSRAID_EVALUATOR_ADDRESS

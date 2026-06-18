@@ -57,6 +57,7 @@ export interface X402Config {
     chat: number;
     inference: number;
     balance: number;
+    bounty: number;
   };
   cdpApiKeyId?: string;
   cdpApiKeySecret?: string;
@@ -68,7 +69,7 @@ export interface X402Config {
   assetTransferMethod: X402AssetTransferMethod;
 }
 
-export type X402RouteName = 'raid' | 'chat' | 'inference' | 'balance';
+export type X402RouteName = 'raid' | 'chat' | 'inference' | 'balance' | 'bounty';
 
 export const METAMASK_X402_FACILITATORS = {
   base_mainnet: 'https://tx-sentinel-base-mainnet.dev-api.cx.metamask.io/platform/v2/x402',
@@ -200,6 +201,7 @@ export function readX402Config(env: NodeJS.ProcessEnv = process.env): X402Config
       chat: chatSurchargeUsd,
       inference: chatSurchargeUsd,
       balance: 0,
+      bounty: 0,
     },
     cdpApiKeyId: env.CDP_API_KEY_ID,
     cdpApiKeySecret: env.CDP_API_KEY_SECRET,
@@ -325,6 +327,7 @@ function buildPaymentRequired(
     maxTimeoutSeconds?: number;
   } = {}
 ): X402PaymentRequired {
+  const bountyId = typeof options.extra?.bountyId === 'string' ? options.extra.bountyId : undefined;
   const resourcePath =
     route === 'chat'
       ? '/v1/chat/completions'
@@ -332,7 +335,11 @@ function buildPaymentRequired(
         ? '/v1/inference/chat/completions'
         : route === 'balance'
           ? '/v1/buyer/balance/fund'
-          : '/v1/raid';
+          : route === 'bounty'
+            ? bountyId
+              ? `/v1/bounties/${bountyId}/fund`
+              : '/v1/bounties/fund'
+            : '/v1/raid';
   const price = computeChargeUsd(config, route, budgetUsd);
   const assetConfig = resolveAssetConfig(config);
   const transferExtra =
@@ -356,7 +363,9 @@ function buildPaymentRequired(
               ? 'Boss Raid discount inference request'
               : route === 'balance'
                 ? 'Boss Raid prepaid balance top-up'
-                : 'Boss Raid native raid request',
+                : route === 'bounty'
+                  ? 'Boss Raid bounty escrow funding'
+                  : 'Boss Raid native raid request',
         mimeType: 'application/json',
         payTo: config.payTo,
         maxTimeoutSeconds: options.maxTimeoutSeconds ?? config.maxTimeoutSeconds,

@@ -16,6 +16,7 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 | `BOSSRAID_BOUNTY_DEFAULT_DELIVERY_DAYS` | Default delivery window (default 14)                      |
 | `BOSSRAID_BOUNTY_DEFAULT_ACCEPT_DAYS`   | Permissionless claim window (default 7)                   |
 | `BOSSRAID_BOUNTY_AUTO_AWARD_MAX`        | Max bids auto-awarded (default 3)                         |
+| `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND` | Dev-only: fund bounties without x402 (default off)        |
 | `BOSSRAID_PROVIDERS_FILE`               | Provider seed file(s), comma-separated                    |
 | `BOSSRAID_PROVIDER_FRESH_MS`            | Routing freshness window                                  |
 | `BOSSRAID_INVITE_ACCEPT_MS`             | Invite timeout; chat settle grace (5s–30s)                |
@@ -86,15 +87,15 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 
 ## Settlement
 
-| Variable                                                                         | Purpose                                 |
-| -------------------------------------------------------------------------------- | --------------------------------------- |
-| `BOSSRAID_SETTLEMENT_MODE`                                                       | `off`, `file` (safe default), `onchain` |
-| `BOSSRAID_SETTLEMENT_DIR`                                                        | Artifact output dir                     |
-| `BOSSRAID_RPC_URL`, `BOSSRAID_CHAIN_ID`                                          | Chain config                            |
-| `BOSSRAID_REGISTRY_ADDRESS`, `BOSSRAID_ESCROW_ADDRESS`, `BOSSRAID_TOKEN_ADDRESS` | Contracts                               |
-| `BOSSRAID_CLIENT_PRIVATE_KEY`                                                    | Client signer                           |
-| `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD`                                             | Dust threshold (default `0.25`)         |
-| `BOSSRAID_PROVIDER_ADDRESS_MAP_JSON`                                             | Provider payout overrides               |
+| Variable                                                                                                           | Purpose                                 |
+| ------------------------------------------------------------------------------------------------------------------ | --------------------------------------- |
+| `BOSSRAID_SETTLEMENT_MODE`                                                                                         | `off`, `file` (safe default), `onchain` |
+| `BOSSRAID_SETTLEMENT_DIR`                                                                                          | Artifact output dir                     |
+| `BOSSRAID_RPC_URL`, `BOSSRAID_CHAIN_ID`                                                                            | Chain config                            |
+| `BOSSRAID_REGISTRY_ADDRESS`, `BOSSRAID_ESCROW_ADDRESS`, `BOSSRAID_BOUNTY_ESCROW_ADDRESS`, `BOSSRAID_TOKEN_ADDRESS` | Contracts                               |
+| `BOSSRAID_CLIENT_PRIVATE_KEY`                                                                                      | Client signer                           |
+| `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD`                                                                               | Dust threshold (default `0.25`)         |
+| `BOSSRAID_PROVIDER_ADDRESS_MAP_JSON`                                                                               | Provider payout overrides               |
 
 ## ERC-8004 & attestation
 

@@ -5,9 +5,11 @@ export type BossRaidDeployment = {
   tokenAddress: string;
   registryAddress: string;
   escrowAddress: string;
+  bountyEscrowAddress: string;
   transactionHashes: {
     registryDeploy: string;
     escrowDeploy: string;
+    bountyEscrowDeploy: string;
   };
   deployedAt: string;
 };

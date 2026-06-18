@@ -10,7 +10,9 @@ import type {
   DeliverBountyAwardInput,
   ProviderProfile,
 } from '@bossraid/shared-types';
+import type { Address } from 'viem';
 import { BountyStore } from './bounty-store.js';
+import { resolveProviderAddress, type BountyOnchainExecutor } from './bounty-onchain.js';
 
 const DAY_MS = 86_400_000;
 
@@ -32,11 +34,17 @@ export function readBountyServiceConfig(env: NodeJS.ProcessEnv = process.env): B
   };
 }
 
+export type BountyOnchainContext = {
+  executor: BountyOnchainExecutor;
+  providerAddresses: Record<string, Address>;
+};
+
 export class BountyService {
   constructor(
     private readonly store: BountyStore,
     private readonly config: BountyServiceConfig,
-    private readonly orchestrator?: BossRaidOrchestrator
+    private readonly orchestrator?: BossRaidOrchestrator,
+    private readonly onchain?: BountyOnchainContext
   ) {}
 
   createBounty(posterWallet: string, input: CreateBountyInput): BountyRecord {
@@ -140,11 +148,11 @@ export class BountyService {
     return bid;
   }
 
-  awardBids(
+  async awardBids(
     bountyId: string,
     posterWallet: string,
     input: AwardBountyBidsInput
-  ): { bounty: BountyRecord; awards: BountyAwardRecord[] } {
+  ): Promise<{ bounty: BountyRecord; awards: BountyAwardRecord[] }> {
     const bounty = this.requireBounty(bountyId);
     this.requirePoster(bounty, posterWallet);
     if (!['open', 'funded', 'awarded'].includes(bounty.status)) {
@@ -194,6 +202,30 @@ export class BountyService {
       awards.push(award);
     }
 
+    if (this.onchain && bounty.escrowJobId) {
+      for (let index = 0; index < awards.length; index += 1) {
+        const award = awards[index]!;
+        const bid = bids[index]!;
+        const providerAddress = resolveProviderAddress(
+          bid.providerId,
+          this.onchain.providerAddresses
+        );
+        if (!providerAddress) {
+          throw new BountyServiceError(
+            `Provider ${bid.providerId} has no payout address configured for onchain bounty awards.`,
+            503
+          );
+        }
+        const onchainAward = await this.onchain.executor.createAward({
+          onchainBountyId: bounty.escrowJobId,
+          providerAddress,
+          amountUsd: award.amountUsd,
+        });
+        award.onchainAwardId = onchainAward.onchainAwardId;
+        this.store.saveAward(award);
+      }
+    }
+
     const updatedBounty: BountyRecord = {
       ...bounty,
       status: 'awarded',
@@ -204,11 +236,11 @@ export class BountyService {
     return { bounty: updatedBounty, awards };
   }
 
-  deliverAward(
+  async deliverAward(
     awardId: string,
     providerId: string,
     input: DeliverBountyAwardInput
-  ): BountyAwardRecord {
+  ): Promise<BountyAwardRecord> {
     const award = this.requireAward(awardId);
     if (award.providerId !== providerId) {
       throw new BountyServiceError('Only the awarded provider can deliver.', 403);
@@ -230,6 +262,13 @@ export class BountyService {
       deliveredAt: nowIso,
       updatedAt: nowIso,
     };
+    if (this.onchain && award.onchainAwardId && input.deliveryHash) {
+      await this.onchain.executor.submitDelivery({
+        onchainAwardId: award.onchainAwardId,
+        deliveryHashHex: input.deliveryHash,
+      });
+    }
+
     this.store.saveAward(updated);
     this.store.saveBounty({
       ...bounty,
@@ -240,14 +279,14 @@ export class BountyService {
     return updated;
   }
 
-  acceptAward(awardId: string, posterWallet: string): BountyAwardRecord {
+  async acceptAward(awardId: string, posterWallet: string): Promise<BountyAwardRecord> {
     const award = this.requireAward(awardId);
     const bounty = this.requireBounty(award.bountyId);
     this.requirePoster(bounty, posterWallet);
     return this.markPaid(award, bounty, 'award.accepted');
   }
 
-  claimAward(awardId: string): BountyAwardRecord {
+  async claimAward(awardId: string): Promise<BountyAwardRecord> {
     const award = this.requireAward(awardId);
     if (award.status !== 'delivered') {
       throw new BountyServiceError('Only delivered awards can be claimed.', 409);
@@ -259,7 +298,7 @@ export class BountyService {
     return this.markPaid(award, bounty, 'award.claimed');
   }
 
-  processDeadlines(now = new Date()): string[] {
+  async processDeadlines(now = new Date()): Promise<string[]> {
     const messages: string[] = [];
     const nowIso = now.toISOString();
 
@@ -295,28 +334,37 @@ export class BountyService {
           })
           .slice(0, bounty.maxAwards)
           .map((bid) => bid.id);
-        this.awardBids(bounty.id, bounty.posterWallet, { bidIds: topBids });
+        await this.awardBids(bounty.id, bounty.posterWallet, { bidIds: topBids });
         this.appendEvent(bounty.id, 'bounty.auto_awarded', `Auto-awarded ${topBids.length} bid(s)`);
         messages.push(`auto_awarded:${bounty.id}`);
       }
     }
 
     for (const award of this.store.listDeliveredAwardsPastAcceptDeadline(nowIso)) {
-      this.claimAward(award.id);
+      await this.claimAward(award.id);
       messages.push(`auto_claimed:${award.id}`);
     }
 
     return messages;
   }
 
-  private markPaid(
+  private async markPaid(
     award: BountyAwardRecord,
     bounty: BountyRecord,
     eventType: string
-  ): BountyAwardRecord {
+  ): Promise<BountyAwardRecord> {
     if (award.status !== 'delivered') {
       throw new BountyServiceError('Only delivered awards can be paid.', 409);
     }
+
+    if (this.onchain && award.onchainAwardId) {
+      if (eventType === 'award.claimed') {
+        await this.onchain.executor.claimPayout(award.onchainAwardId);
+      } else {
+        await this.onchain.executor.acceptAward(award.onchainAwardId);
+      }
+    }
+
     const nowIso = new Date().toISOString();
     const updated: BountyAwardRecord = {
       ...award,
