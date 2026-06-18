@@ -214,6 +214,7 @@ test('settlement execution receives registered provider operator wallets', async
         settlementCalls.push({ raid, options });
         return undefined;
       },
+      resume: async () => undefined,
     },
     async (profile) => readyHealth(profile.providerId)
   );

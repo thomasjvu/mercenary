@@ -4,15 +4,27 @@ import type {
   RaidRecord,
   SettlementExecutionRecord,
 } from '@bossraid/shared-types';
-import { buildPrivacyFailureSettlementRecord } from './settlement-artifacts.js';
+import {
+  artifactFileExists,
+  buildArtifactPath,
+  buildPrivacyFailureSettlementRecord,
+  readArtifactFile,
+  settlementRecordFromArtifact,
+} from './settlement-artifacts.js';
 import type { SettlementExecuteOptions } from './settlement-executor.js';
 
 export type OrchestratorSettlementRunnerDeps = {
   requireRaid: (raidId: string) => RaidRecord;
   providers: Map<string, ProviderProfile>;
+  settlementOutputDir?: string;
   settlementExecutor: {
     execute(
       raid: RaidRecord,
+      options?: SettlementExecuteOptions
+    ): Promise<SettlementExecutionRecord | undefined>;
+    resume(
+      raid: RaidRecord,
+      existing: SettlementExecutionRecord,
       options?: SettlementExecuteOptions
     ): Promise<SettlementExecutionRecord | undefined>;
   };
@@ -34,12 +46,29 @@ export function buildSettlementExecuteOptions(
   return { providerAddressMap };
 }
 
+export function shouldRunSettlement(raid: RaidRecord): boolean {
+  if (raid.parentRaidId || raid.status !== 'final') {
+    return false;
+  }
+
+  const existing = raid.settlementExecution;
+  if (!existing) {
+    return true;
+  }
+
+  if (existing.lifecycleStatus === 'partial' && existing.mode === 'onchain') {
+    return true;
+  }
+
+  return false;
+}
+
 export async function executeSettlement(
   raidId: string,
   deps: OrchestratorSettlementRunnerDeps
 ): Promise<void> {
   const raid = deps.requireRaid(raidId);
-  if (raid.parentRaidId || raid.settlementExecution || raid.status !== 'final') {
+  if (!shouldRunSettlement(raid)) {
     return;
   }
 
@@ -56,18 +85,40 @@ export async function executeSettlement(
         )
       : undefined;
 
-  if (privacyCompliance && !privacyCompliance.overallPassed) {
+  if (!raid.settlementExecution && privacyCompliance && !privacyCompliance.overallPassed) {
     raid.settlementExecution = buildPrivacyFailureSettlementRecord(raid, privacyCompliance);
     raid.updatedAt = new Date().toISOString();
     await deps.queuePersist();
     return;
   }
 
-  const record = await deps.settlementExecutor.execute(
-    raid,
-    buildSettlementExecuteOptions(raid, deps)
-  );
+  const options = buildSettlementExecuteOptions(raid, deps);
+  let record: SettlementExecutionRecord | undefined;
+
+  try {
+    if (raid.settlementExecution?.lifecycleStatus === 'partial') {
+      record = await deps.settlementExecutor.resume(raid, raid.settlementExecution, options);
+    } else {
+      record = await deps.settlementExecutor.execute(raid, options);
+    }
+  } catch (error) {
+    const recovered = await recoverPartialSettlementRecord(raid, deps);
+    if (recovered) {
+      raid.settlementExecution = recovered;
+      raid.updatedAt = new Date().toISOString();
+      await deps.queuePersist();
+    }
+
+    throw error;
+  }
+
   if (!record) {
+    const recovered = await recoverPartialSettlementRecord(raid, deps);
+    if (recovered) {
+      raid.settlementExecution = recovered;
+      raid.updatedAt = new Date().toISOString();
+      await deps.queuePersist();
+    }
     return;
   }
 
@@ -77,4 +128,25 @@ export async function executeSettlement(
   }
   raid.updatedAt = new Date().toISOString();
   await deps.queuePersist();
+}
+
+async function recoverPartialSettlementRecord(
+  raid: RaidRecord,
+  deps: OrchestratorSettlementRunnerDeps
+): Promise<SettlementExecutionRecord | undefined> {
+  if (!deps.settlementOutputDir) {
+    return undefined;
+  }
+
+  const artifactPath = buildArtifactPath(deps.settlementOutputDir, raid.id);
+  if (!(await artifactFileExists(artifactPath))) {
+    return undefined;
+  }
+
+  const artifact = await readArtifactFile(artifactPath);
+  if (!artifact || artifact.lifecycleStatus === 'terminal') {
+    return undefined;
+  }
+
+  return settlementRecordFromArtifact(artifact, artifactPath);
 }

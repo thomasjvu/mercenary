@@ -40,6 +40,7 @@ import {
 } from './orchestrator-finalization.js';
 import {
   executeSettlement as executeRaidSettlement,
+  shouldRunSettlement,
   type OrchestratorSettlementRunnerDeps,
 } from './orchestrator-settlement-runner.js';
 import {
@@ -93,9 +94,15 @@ export type RaidLifecycleCoordinatorDeps = {
   queuePersist: () => Promise<void>;
   queuePersistBestEffort: () => void;
   providerRegistry: ProviderRegistryCoordinator;
+  settlementOutputDir?: string;
   settlementExecutor: {
     execute(
       raid: RaidRecord,
+      options?: SettlementExecuteOptions
+    ): Promise<SettlementExecutionRecord | undefined>;
+    resume(
+      raid: RaidRecord,
+      existing: SettlementExecutionRecord,
       options?: SettlementExecuteOptions
     ): Promise<SettlementExecutionRecord | undefined>;
   };
@@ -263,6 +270,14 @@ export class RaidLifecycleCoordinator {
 
     for (const raid of activeRootRaids) {
       await this.resumeRaid(raid.id);
+    }
+
+    const pendingSettlements = this.listAllRaids()
+      .filter((raid) => shouldRunSettlement(raid))
+      .sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt));
+
+    for (const raid of pendingSettlements) {
+      await this.executeSettlement(raid.id);
     }
   }
 
@@ -455,6 +470,7 @@ export class RaidLifecycleCoordinator {
     return {
       requireRaid: (raidId) => this.requireRaid(raidId),
       providers: this.deps.providerRegistry.providers,
+      settlementOutputDir: this.deps.settlementOutputDir,
       settlementExecutor: this.deps.settlementExecutor,
       queuePersist: () => this.deps.queuePersist(),
     };

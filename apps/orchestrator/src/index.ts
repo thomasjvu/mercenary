@@ -31,7 +31,12 @@ import type {
   AgentHeartbeatInput,
 } from '@bossraid/shared-types';
 import { readRuntimeOptionsFromEnv, type RuntimeOptions } from './runtime.js';
-import { createSettlementExecutor, type SettlementExecuteOptions } from './settlement-executor.js';
+import {
+  createSettlementExecutor,
+  resolveSettlementOutputDir,
+  type SettlementExecuteOptions,
+  type SettlementExecutor,
+} from './settlement-executor.js';
 import { type ProviderHealthProbe } from './provider-health-cache.js';
 import { createPersistenceBackend } from './persistence-backend.js';
 import { PersistenceQueue, PersistenceUnavailableError } from './persistence-queue.js';
@@ -62,12 +67,7 @@ export class BossRaidOrchestrator {
   private readonly options: RuntimeOptions;
   private readonly persistence: BossRaidPersistence;
   private readonly secretCipher: SecretCipher;
-  private readonly settlementExecutor: {
-    execute(
-      raid: RaidRecord,
-      options?: SettlementExecuteOptions
-    ): Promise<SettlementExecutionRecord | undefined>;
-  };
+  private readonly settlementExecutor: SettlementExecutor;
   private readonly persistenceQueue = new PersistenceQueue();
   private readonly raidRetentionTtlMs = readRaidRetentionTtlMs();
   private readonly providerRegistry: ProviderRegistryCoordinator;
@@ -77,12 +77,10 @@ export class BossRaidOrchestrator {
     seedProviders: RaidProvider[] = [],
     options: Partial<RuntimeOptions> = {},
     persistence: BossRaidPersistence = new InMemoryBossRaidPersistence(),
-    settlementExecutor: {
-      execute(
-        raid: RaidRecord,
-        options?: SettlementExecuteOptions
-      ): Promise<SettlementExecutionRecord | undefined>;
-    } = { execute: async () => undefined },
+    settlementExecutor: SettlementExecutor = {
+      execute: async () => undefined,
+      resume: async () => undefined,
+    },
     providerHealthProbe: ProviderHealthProbe = probeProviderHealth
   ) {
     this.options = { ...DEFAULT_TIMEOUTS, ...options };
@@ -308,11 +306,16 @@ export class BossRaidOrchestrator {
   }
 
   private raidLifecycleDeps(): RaidLifecycleCoordinatorDeps {
+    const workspaceRoot = findWorkspaceRoot(process.env.INIT_CWD ?? process.cwd());
     return {
       assertPersistenceWritable: () => this.assertPersistenceWritable(),
       queuePersist: () => this.queuePersist(),
       queuePersistBestEffort: () => this.queuePersistBestEffort(),
       providerRegistry: this.providerRegistry,
+      settlementOutputDir: resolveSettlementOutputDir(
+        workspaceRoot,
+        process.env.BOSSRAID_SETTLEMENT_DIR
+      ),
       settlementExecutor: this.settlementExecutor,
     };
   }

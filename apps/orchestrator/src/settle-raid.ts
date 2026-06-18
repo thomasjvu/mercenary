@@ -100,7 +100,13 @@ async function main(): Promise<void> {
   }
 
   const executor = createSettlementExecutor(process.env, workspaceRoot);
-  const settlementExecution = await executor.execute(raid);
+  const existing = raid.settlementExecution;
+  const settlementExecution =
+    existing?.lifecycleStatus === 'terminal'
+      ? existing
+      : existing?.lifecycleStatus === 'partial' && existing.mode === 'onchain'
+        ? await executor.resume(raid, existing)
+        : await executor.execute(raid);
   if (!settlementExecution) {
     throw new Error(`No settlement record produced for raid ${raidId}.`);
   }

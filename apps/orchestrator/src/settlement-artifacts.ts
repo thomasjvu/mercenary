@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { sha256 } from '@bossraid/raid-core';
 import type {
@@ -134,6 +134,48 @@ export async function writeArtifactFile(
 ): Promise<void> {
   await mkdir(dirname(artifactPath), { recursive: true });
   await writeFile(artifactPath, JSON.stringify(artifact, null, 2), 'utf8');
+}
+
+export async function artifactFileExists(artifactPath: string): Promise<boolean> {
+  try {
+    await access(artifactPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function readArtifactFile(
+  artifactPath: string
+): Promise<SettlementArtifact | undefined> {
+  if (!(await artifactFileExists(artifactPath))) {
+    return undefined;
+  }
+
+  const raw = await readFile(artifactPath, 'utf8');
+  return JSON.parse(raw) as SettlementArtifact;
+}
+
+export function settlementRecordFromArtifact(
+  artifact: SettlementArtifact,
+  artifactPath: string
+): SettlementExecutionRecord {
+  return buildSettlementExecutionRecord({
+    mode: artifact.mode,
+    lifecycleStatus: artifact.lifecycleStatus,
+    executedAt: artifact.executedAt,
+    artifactPath,
+    registryRaidRef: artifact.registryRaidRef,
+    taskHash: artifact.taskHash,
+    evaluationHash: artifact.evaluationHash,
+    allocations: artifact.allocations,
+    artifact,
+    extras: {
+      finalizeTxHash: artifact.finalizeTxHash,
+      transactionHashes: artifact.transactionHashes,
+      jobIds: artifact.jobIds,
+    },
+  });
 }
 
 export function buildFileArtifact(

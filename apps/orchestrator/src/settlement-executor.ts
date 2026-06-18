@@ -18,15 +18,24 @@ import {
 
 export type { SettlementExecuteOptions };
 
-interface SettlementExecutor {
+export interface SettlementExecutor {
   execute(
     raid: RaidRecord,
+    options?: SettlementExecuteOptions
+  ): Promise<SettlementExecutionRecord | undefined>;
+  resume(
+    raid: RaidRecord,
+    existing: SettlementExecutionRecord,
     options?: SettlementExecuteOptions
   ): Promise<SettlementExecutionRecord | undefined>;
 }
 
 class NoopSettlementExecutor implements SettlementExecutor {
   async execute(): Promise<SettlementExecutionRecord | undefined> {
+    return undefined;
+  }
+
+  async resume(): Promise<SettlementExecutionRecord | undefined> {
     return undefined;
   }
 }
@@ -74,6 +83,13 @@ class FileSettlementExecutor implements SettlementExecutor {
       allocations: payload.allocations,
       artifact,
     });
+  }
+
+  async resume(
+    _raid: RaidRecord,
+    existing: SettlementExecutionRecord
+  ): Promise<SettlementExecutionRecord | undefined> {
+    return existing.lifecycleStatus === 'terminal' ? existing : undefined;
   }
 }
 
@@ -124,7 +140,7 @@ export function createSettlementExecutor(
   });
 }
 
-function resolveSettlementOutputDir(
+export function resolveSettlementOutputDir(
   workspaceRoot: string,
   configuredDir: string | undefined
 ): string {

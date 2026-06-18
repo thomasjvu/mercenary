@@ -25,7 +25,7 @@ test('reconciliation worker completes pending refunds when facilitator succeeds'
       BOSSRAID_X402_FACILITATOR_URL: 'https://facilitator.test/x402',
       BOSSRAID_X402_PAY_TO: '0xabc',
     },
-  } as ApiContext;
+  } as unknown as ApiContext;
 
   try {
     controlState.upsertX402Reconciliation({
