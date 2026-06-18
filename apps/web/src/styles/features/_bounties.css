@@ -19,6 +19,12 @@
   }
 }
 
+.bounties-page__payment-note {
+  color: var(--rx-steel);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
 .bounties-page__composer label {
   display: grid;
   gap: 0.35rem;

@@ -310,6 +310,7 @@ export function registerOpsRoutes(
     const chainId = env.BOSSRAID_CHAIN_ID;
     const registryAddress = env.BOSSRAID_REGISTRY_ADDRESS;
     const escrowAddress = env.BOSSRAID_ESCROW_ADDRESS;
+    const bountyEscrowAddress = env.BOSSRAID_BOUNTY_ESCROW_ADDRESS;
     const tokenAddress = env.BOSSRAID_TOKEN_ADDRESS;
 
     return {
@@ -319,6 +320,7 @@ export function registerOpsRoutes(
       contracts: {
         registry: registryAddress ?? null,
         escrow: escrowAddress ?? null,
+        bountyEscrow: bountyEscrowAddress ?? null,
         token: tokenAddress ?? null,
       },
       rpcUrl: rpcUrl ? new URL(rpcUrl).host : null,

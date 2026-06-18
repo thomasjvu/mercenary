@@ -5,6 +5,7 @@ import {
   defineChain,
   getAddress,
   http,
+  maxUint256,
   parseEventLogs,
   type Address,
   type Hash,
@@ -14,7 +15,37 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { readSettlementMode } from '@bossraid/constants';
 import { resolveApiSettlementMode } from './settlement-mode.js';
 
-const USDC_ATOMIC_MULTIPLIER = 1_000_000n;
+export const USDC_ATOMIC_MULTIPLIER = 1_000_000n;
+
+export const erc20MinimalAbi = [
+  {
+    type: 'function',
+    name: 'balanceOf',
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: 'balance', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'allowance',
+    stateMutability: 'view',
+    inputs: [
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
+    ],
+    outputs: [{ name: 'remaining', type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'approve',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: 'ok', type: 'bool' }],
+  },
+] as const;
 
 export const bountyEscrowAbi = [
   {
@@ -75,6 +106,26 @@ export const bountyEscrowAbi = [
     outputs: [],
   },
   {
+    type: 'function',
+    name: 'refundUnawarded',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'bountyId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'awards',
+    stateMutability: 'view',
+    inputs: [{ name: 'awardId', type: 'uint256' }],
+    outputs: [
+      { name: 'provider', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+      { name: 'deliveryHash', type: 'bytes32' },
+      { name: 'status', type: 'uint8' },
+      { name: 'deliveredAt', type: 'uint256' },
+    ],
+  },
+  {
     type: 'event',
     name: 'BountyCreated',
     inputs: [
@@ -99,8 +150,19 @@ export type BountyOnchainConfig = {
   rpcUrl: string;
   chainId: string;
   bountyEscrowAddress: Address;
+  tokenAddress: Address;
   operatorPrivateKey: Hex;
 };
+
+export class BountyOnchainError extends Error {
+  constructor(
+    message: string,
+    readonly code: string
+  ) {
+    super(message);
+    this.name = 'BountyOnchainError';
+  }
+}
 
 export function isBountyOnchainConfigured(env: NodeJS.ProcessEnv = process.env): boolean {
   const mode = resolveApiSettlementMode(env);
@@ -112,17 +174,23 @@ export function isBountyOnchainConfigured(env: NodeJS.ProcessEnv = process.env):
     env.BOSSRAID_RPC_URL &&
     env.BOSSRAID_CHAIN_ID &&
     env.BOSSRAID_BOUNTY_ESCROW_ADDRESS &&
+    env.BOSSRAID_TOKEN_ADDRESS &&
     env.BOSSRAID_CLIENT_PRIVATE_KEY
   );
+}
+
+export function requiresProductionBountyEscrow(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.NODE_ENV === 'production' && resolveApiSettlementMode(env) === 'onchain';
 }
 
 export function readBountyOnchainConfig(env: NodeJS.ProcessEnv = process.env): BountyOnchainConfig {
   const rpcUrl = env.BOSSRAID_RPC_URL;
   const chainId = env.BOSSRAID_CHAIN_ID;
   const bountyEscrowAddress = env.BOSSRAID_BOUNTY_ESCROW_ADDRESS;
+  const tokenAddress = env.BOSSRAID_TOKEN_ADDRESS;
   const operatorPrivateKey = env.BOSSRAID_CLIENT_PRIVATE_KEY;
 
-  if (!rpcUrl || !chainId || !bountyEscrowAddress || !operatorPrivateKey) {
+  if (!rpcUrl || !chainId || !bountyEscrowAddress || !tokenAddress || !operatorPrivateKey) {
     throw new Error('Bounty onchain settlement is not fully configured.');
   }
 
@@ -130,6 +198,7 @@ export function readBountyOnchainConfig(env: NodeJS.ProcessEnv = process.env): B
     rpcUrl,
     chainId,
     bountyEscrowAddress: getAddress(bountyEscrowAddress),
+    tokenAddress: getAddress(tokenAddress),
     operatorPrivateKey: normalizePrivateKey(operatorPrivateKey),
   };
 }
@@ -159,12 +228,63 @@ export class BountyOnchainExecutor {
     });
   }
 
+  get operatorAddress(): Address {
+    return this.operatorAccount.address;
+  }
+
+  async preflightFundBounty(bounty: BountyRecord): Promise<void> {
+    const deadlines = deadlineUnix(bounty);
+    const nowSec = BigInt(Math.floor(Date.now() / 1000));
+    if (deadlines.bidding <= nowSec) {
+      throw new BountyOnchainError('Bidding deadline must be in the future.', 'deadline_passed');
+    }
+
+    const required = usdToAtomic(bounty.rewardAmountUsd);
+    const balance = await this.publicClient.readContract({
+      address: this.config.tokenAddress,
+      abi: erc20MinimalAbi,
+      functionName: 'balanceOf',
+      args: [this.operatorAccount.address],
+    });
+    if (balance < required) {
+      throw new BountyOnchainError(
+        'Operator wallet does not hold enough USDC to fund bounty escrow.',
+        'insufficient_operator_balance'
+      );
+    }
+  }
+
+  async ensureTokenAllowance(requiredAmount: bigint): Promise<void> {
+    const allowance = await this.publicClient.readContract({
+      address: this.config.tokenAddress,
+      abi: erc20MinimalAbi,
+      functionName: 'allowance',
+      args: [this.operatorAccount.address, this.config.bountyEscrowAddress],
+    });
+    if (allowance >= requiredAmount) {
+      return;
+    }
+
+    const approveHash = await this.operatorClient.writeContract({
+      chain: this.chain,
+      address: this.config.tokenAddress,
+      abi: erc20MinimalAbi,
+      functionName: 'approve',
+      args: [this.config.bountyEscrowAddress, maxUint256],
+      account: this.operatorAccount,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash: approveHash });
+  }
+
   async createAndFundBounty(input: {
     posterWallet: string;
     bounty: BountyRecord;
   }): Promise<{ onchainBountyId: string; fundTxHash: Hash }> {
-    const poster = getAddress(input.posterWallet);
+    await this.preflightFundBounty(input.bounty);
     const totalBudget = usdToAtomic(input.bounty.rewardAmountUsd);
+    await this.ensureTokenAllowance(totalBudget);
+
+    const poster = getAddress(input.posterWallet);
     const deadlines = deadlineUnix(input.bounty);
 
     const createHash = await this.operatorClient.writeContract({
@@ -274,6 +394,38 @@ export class BountyOnchainExecutor {
     await this.publicClient.waitForTransactionReceipt({ hash: txHash });
     return txHash;
   }
+
+  async refundUnawarded(onchainBountyId: string): Promise<Hash> {
+    const txHash = await this.operatorClient.writeContract({
+      chain: this.chain,
+      address: this.config.bountyEscrowAddress,
+      abi: bountyEscrowAbi,
+      functionName: 'refundUnawarded',
+      args: [BigInt(onchainBountyId)],
+      account: this.operatorAccount,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash: txHash });
+    return txHash;
+  }
+
+  async readTokenBalance(address: Address): Promise<bigint> {
+    return this.publicClient.readContract({
+      address: this.config.tokenAddress,
+      abi: erc20MinimalAbi,
+      functionName: 'balanceOf',
+      args: [address],
+    });
+  }
+
+  async readAwardStatus(onchainAwardId: string): Promise<number> {
+    const award = await this.publicClient.readContract({
+      address: this.config.bountyEscrowAddress,
+      abi: bountyEscrowAbi,
+      functionName: 'awards',
+      args: [BigInt(onchainAwardId)],
+    });
+    return Number(award[3]);
+  }
 }
 
 export function createBountyOnchainExecutor(
@@ -307,11 +459,11 @@ export function resolveProviderAddress(
   return map[providerId] ?? null;
 }
 
-function usdToAtomic(amountUsd: number): bigint {
+export function usdToAtomic(amountUsd: number): bigint {
   return BigInt(Math.max(1, Math.round(amountUsd * Number(USDC_ATOMIC_MULTIPLIER))));
 }
 
-function deadlineUnix(bounty: BountyRecord): {
+export function deadlineUnix(bounty: BountyRecord): {
   bidding: bigint;
   award: bigint;
   delivery: bigint;
@@ -325,7 +477,7 @@ function deadlineUnix(bounty: BountyRecord): {
   };
 }
 
-function hexToBytes32(hex: string): Hex {
+export function hexToBytes32(hex: string): Hex {
   const normalized = hex.startsWith('0x') ? hex.slice(2) : hex;
   return `0x${normalized.padStart(64, '0')}` as Hex;
 }
@@ -349,4 +501,12 @@ function extractUintEventArg(
 
 export function bountySettlementModeLabel(env: NodeJS.ProcessEnv = process.env): string {
   return readSettlementMode(env);
+}
+
+export function mapBountyOnchainError(error: unknown): BountyOnchainError {
+  if (error instanceof BountyOnchainError) {
+    return error;
+  }
+  const message = error instanceof Error ? error.message : String(error);
+  return new BountyOnchainError(message, 'onchain_execution_failed');
 }

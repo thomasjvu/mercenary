@@ -74,7 +74,8 @@ export function createX402PaidTestEnv(
   };
 }
 
-export function installMockX402Facilitator() {
+export function installMockX402Facilitator(options?: { payer?: string }) {
+  const payer = options?.payer ?? '0xbuyer';
   const originalFetch = globalThis.fetch;
   const requests: Array<{ url: string; body: unknown }> = [];
   globalThis.fetch = async (input, init) => {
@@ -86,8 +87,8 @@ export function installMockX402Facilitator() {
     const body = JSON.parse(String(init?.body ?? '{}')) as unknown;
     requests.push({ url, body });
     const payload = url.endsWith('/verify')
-      ? { isValid: true, payer: '0xbuyer' }
-      : { success: true, transaction: '0xsettled', network: 'eip155:84532', payer: '0xbuyer' };
+      ? { isValid: true, payer }
+      : { success: true, transaction: '0xsettled', network: 'eip155:84532', payer };
     return new Response(JSON.stringify(payload), {
       status: 200,
       headers: {

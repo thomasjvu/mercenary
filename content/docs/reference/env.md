@@ -93,7 +93,7 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 | `BOSSRAID_SETTLEMENT_DIR`                                                                                          | Artifact output dir                     |
 | `BOSSRAID_RPC_URL`, `BOSSRAID_CHAIN_ID`                                                                            | Chain config                            |
 | `BOSSRAID_REGISTRY_ADDRESS`, `BOSSRAID_ESCROW_ADDRESS`, `BOSSRAID_BOUNTY_ESCROW_ADDRESS`, `BOSSRAID_TOKEN_ADDRESS` | Contracts                               |
-| `BOSSRAID_CLIENT_PRIVATE_KEY`                                                                                      | Client signer                           |
+| `BOSSRAID_CLIENT_PRIVATE_KEY`                                                                                      | Client signer (raid + bounty relayer)   |
 | `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD`                                                                               | Dust threshold (default `0.25`)         |
 | `BOSSRAID_PROVIDER_ADDRESS_MAP_JSON`                                                                               | Provider payout overrides               |
 

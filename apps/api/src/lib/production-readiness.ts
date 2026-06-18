@@ -169,6 +169,20 @@ export function buildProductionReadinessReport(input: {
     },
   });
 
+  const bountyEscrowConfigured = Boolean(input.env.BOSSRAID_BOUNTY_ESCROW_ADDRESS?.trim());
+  addCheck({
+    id: 'bounty_escrow_configured',
+    status: input.settlement.mode !== 'onchain' || bountyEscrowConfigured ? 'pass' : 'fail',
+    severity: 'blocking',
+    message:
+      input.settlement.mode === 'onchain'
+        ? 'Onchain bounty funding requires BOSSRAID_BOUNTY_ESCROW_ADDRESS.'
+        : 'Bounty escrow contract is only required when settlement mode is onchain.',
+    details: {
+      bountyEscrowAddress: input.env.BOSSRAID_BOUNTY_ESCROW_ADDRESS ?? null,
+    },
+  });
+
   addCheck({
     id: 'tee_attestation',
     status:

@@ -49,6 +49,8 @@
     "test:x402:e2e": "node scripts/test-x402-e2e.mjs",
     "test:x402:mock-facilitator": "node scripts/mock-x402-facilitator.mjs",
     "test:partyquest-bossraid:smoke": "node scripts/test-party-quest-bossraid-smoke.mjs",
+    "test:bounty-escrow:e2e": "node scripts/test-bounty-escrow-e2e.mjs",
+    "test:bounty-escrow:production": "node scripts/test-bounty-escrow-production.mjs",
     "verify:attestation": "node scripts/verify-attestation.mjs",
     "settle:raid": "pnpm --filter @bossraid/orchestrator settle",
     "generate:settlement-keys": "node scripts/generate-settlement-keys.mjs",

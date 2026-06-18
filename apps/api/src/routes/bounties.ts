@@ -18,10 +18,14 @@ import {
   readBountyServiceConfig,
 } from '../lib/bounty-service.js';
 import { BountyStore } from '../lib/bounty-store.js';
+import logger from '@bossraid/logger';
 import {
+  BountyOnchainError,
   createBountyOnchainExecutor,
   isBountyOnchainConfigured,
+  mapBountyOnchainError,
   parseProviderAddressMap,
+  requiresProductionBountyEscrow,
 } from '../lib/bounty-onchain.js';
 import { readX402ConfigForContext } from '../lib/x402-runtime.js';
 import {
@@ -62,8 +66,11 @@ export function registerBountyRoutes(
   const deadlineIntervalMs = Number(ctx.env.BOSSRAID_BOUNTY_DEADLINE_INTERVAL_MS ?? '60000');
   if (Number.isFinite(deadlineIntervalMs) && deadlineIntervalMs > 0) {
     setInterval(() => {
-      void service.processDeadlines().catch(() => {
-        // Deadline processing is best-effort.
+      void service.processDeadlines().catch((error: unknown) => {
+        logger.warn(
+          { error: error instanceof Error ? error.message : String(error) },
+          'bounty deadline worker failed'
+        );
       });
     }, deadlineIntervalMs).unref?.();
   }
@@ -138,6 +145,26 @@ export function registerBountyRoutes(
             ? body.escrow_job_id
             : undefined;
 
+      const mustEscrowOnchain =
+        requiresProductionBountyEscrow(ctx.env) || isBountyOnchainConfigured(ctx.env);
+
+      if (mustEscrowOnchain && !onchainExecutor) {
+        reply.code(503);
+        return {
+          error: 'bounty_escrow_unconfigured',
+          message:
+            'Onchain bounty escrow is required but BOSSRAID_BOUNTY_ESCROW_ADDRESS, token, RPC, and client signer are not fully configured.',
+        };
+      }
+
+      if (onchainExecutor) {
+        try {
+          await onchainExecutor.preflightFundBounty(draft);
+        } catch (error) {
+          return mapOnchainRouteError(reply, error);
+        }
+      }
+
       if (x402Config.enabled) {
         const paymentRequired = buildPaymentRequiredForRoute(
           x402Config,
@@ -164,21 +191,46 @@ export function registerBountyRoutes(
           route: 'bounty',
           paidAmountUsd: payment.paidAmountUsd,
           escrowFundingUsd: payment.escrowFundingUsd,
+          platformMarkupUsd: payment.platformMarkupUsd,
           settlement: payment.settlement,
         });
 
-        if (isBountyOnchainConfigured(ctx.env) && onchainExecutor) {
-          const onchain = await onchainExecutor.createAndFundBounty({
-            posterWallet: access.wallet,
-            bounty: draft,
-          });
-          escrowJobId = onchain.onchainBountyId;
-          const receipt = JSON.parse(escrowReceiptJson) as Record<string, unknown>;
-          receipt.onchain = {
-            bountyId: onchain.onchainBountyId,
-            fundTxHash: onchain.fundTxHash,
+        if (onchainExecutor) {
+          try {
+            const onchain = await onchainExecutor.createAndFundBounty({
+              posterWallet: access.wallet,
+              bounty: draft,
+            });
+            escrowJobId = onchain.onchainBountyId;
+            const receipt = JSON.parse(escrowReceiptJson) as Record<string, unknown>;
+            receipt.onchain = {
+              bountyId: onchain.onchainBountyId,
+              fundTxHash: onchain.fundTxHash,
+            };
+            escrowReceiptJson = JSON.stringify(receipt);
+          } catch (error) {
+            logger.error(
+              {
+                bountyId: params.bountyId,
+                settlement: payment.settlement,
+                error: error instanceof Error ? error.message : String(error),
+              },
+              'bounty onchain fund failed after x402 settlement'
+            );
+            reply.code(502);
+            return {
+              error: 'escrow_fund_failed',
+              message:
+                'Payment settled but onchain bounty escrow funding failed. Contact support with your payment transaction for a manual refund.',
+              settlement: payment.settlement,
+            };
+          }
+        } else if (requiresProductionBountyEscrow(ctx.env)) {
+          reply.code(503);
+          return {
+            error: 'bounty_escrow_unconfigured',
+            message: 'Production bounty funding requires onchain escrow.',
           };
-          escrowReceiptJson = JSON.stringify(receipt);
         }
       } else if (!allowUnverifiedFund) {
         reply.code(503);
@@ -198,6 +250,10 @@ export function registerBountyRoutes(
       return { bounty, onchainEscrow: Boolean(escrowJobId) };
     } catch (error) {
       if (isX402ProtocolError(error)) {
+        applyX402Headers(reply, {
+          paymentRequired: error.paymentRequired,
+          settlement: error.settlement,
+        });
         reply.code(error.statusCode);
         return error.paymentRequired;
       }
@@ -349,6 +405,29 @@ export function registerBountyRoutes(
     }
   });
 
+  app.post('/v1/bounties/:bountyId/refund', async (request, reply) => {
+    const access = requireMercenaryAccess(
+      reply,
+      request.headers,
+      handlers.auth,
+      handlers.manaBilling
+    );
+    if ('error' in access) {
+      return access.error;
+    }
+    if (!access.wallet) {
+      reply.code(401);
+      return { error: 'unauthorized' };
+    }
+    const params = request.params as { bountyId: string };
+    try {
+      const bounty = await service.refundBounty(params.bountyId, access.wallet);
+      return { bounty };
+    } catch (error) {
+      return mapBountyError(reply, error);
+    }
+  });
+
   app.post('/v1/bounties/:bountyId/raids', async (request, reply) => {
     const params = request.params as { bountyId: string };
     const body = (request.body ?? {}) as Record<string, unknown>;
@@ -389,5 +468,14 @@ function mapBountyError(reply: FastifyReply, error: unknown) {
     reply.code(error.statusCode);
     return { error: 'bounty_error', message: error.message };
   }
+  if (error instanceof BountyOnchainError) {
+    return mapOnchainRouteError(reply, error);
+  }
   throw error;
+}
+
+function mapOnchainRouteError(reply: FastifyReply, error: unknown) {
+  const mapped = mapBountyOnchainError(error);
+  reply.code(mapped.code === 'insufficient_operator_balance' ? 503 : 502);
+  return { error: mapped.code, message: mapped.message };
 }

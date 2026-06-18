@@ -45,6 +45,7 @@ async function main() {
     deployment.chainId ? `BOSSRAID_CHAIN_ID=${deployment.chainId}` : null,
     `BOSSRAID_REGISTRY_ADDRESS=${deployment.registryAddress}`,
     `BOSSRAID_ESCROW_ADDRESS=${deployment.escrowAddress}`,
+    `BOSSRAID_BOUNTY_ESCROW_ADDRESS=${deployment.bountyEscrowAddress}`,
     `BOSSRAID_TOKEN_ADDRESS=${deployment.tokenAddress}`,
     `BOSSRAID_EVALUATOR_ADDRESS=${keysData.addresses.evaluator}`,
     `BOSSRAID_SETTLEMENT_JOB_EXPIRY_SEC=86400`,
@@ -70,6 +71,7 @@ async function main() {
       dottie: keysData.addresses.dottie,
       registry: deployment.registryAddress,
       escrow: deployment.escrowAddress,
+      bountyEscrow: deployment.bountyEscrowAddress,
       token: deployment.tokenAddress,
     },
     yourTasks: [

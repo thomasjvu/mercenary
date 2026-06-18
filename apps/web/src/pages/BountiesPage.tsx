@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import useSWR from 'swr';
 import { listBounties, createBounty, fundBounty } from '../api/bounties.js';
+import { fetchReady } from '../api/health.js';
+import { useSmartAccountPay } from '../hooks/useSmartAccountPay.js';
 import type { AppRoute } from '../lib/app-routes.js';
 
 type BountiesPageProps = {
@@ -9,6 +11,7 @@ type BountiesPageProps = {
 
 export function BountiesPage({ onNavigate }: BountiesPageProps) {
   const board = useSWR('bounties-open', () => listBounties('open'));
+  const smartPay = useSmartAccountPay();
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -24,7 +27,17 @@ export function BountiesPage({ onNavigate }: BountiesPageProps) {
         requirements: String(form.get('requirements') ?? ''),
         rewardAmountUsd: Number(form.get('rewardAmountUsd') ?? 0),
       });
-      await fundBounty(created.bounty.id, { openNow: true });
+
+      const ready = await fetchReady();
+      if (ready.payment.enabled) {
+        if (!smartPay.walletAddress) {
+          throw new Error('Connect MetaMask before funding bounty escrow.');
+        }
+        const paidFetch = await smartPay.createFetchWithPayment();
+        await fundBounty(created.bounty.id, { openNow: true }, paidFetch);
+      } else {
+        await fundBounty(created.bounty.id, { openNow: true });
+      }
       await board.mutate();
       onNavigate('/bounties', { bountyId: created.bounty.id });
     } catch (createError) {
@@ -76,6 +89,11 @@ export function BountiesPage({ onNavigate }: BountiesPageProps) {
               className="input"
             />
           </label>
+          <p className="bounties-page__payment-note">
+            {smartPay.walletAddress
+              ? `Wallet ${smartPay.walletAddress.slice(0, 6)}…${smartPay.walletAddress.slice(-4)} ready for x402 escrow funding.`
+              : 'Sign in and connect MetaMask to fund bounties with USDC escrow in production.'}
+          </p>
           {error ? <p className="form-error">{error}</p> : null}
           <button className="btn btn--red" type="submit" disabled={creating}>
             {creating ? 'creating…' : 'create + fund'}

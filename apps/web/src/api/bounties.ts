@@ -1,5 +1,5 @@
 import type { BountyDetailView, BountyRecord } from '@bossraid/shared-types';
-import { fetchJson, requestJsonDetailedWeb } from './client.js';
+import { buildApiUrl, fetchJson, requestJsonDetailedWeb } from './client.js';
 
 export type BountyBoardResponse = {
   cloudEnabled: boolean;
@@ -31,18 +31,28 @@ export async function createBounty(
 
 export async function fundBounty(
   bountyId: string,
-  body: Record<string, unknown> = {}
-): Promise<{ bounty: BountyRecord }> {
-  const response = await requestJsonDetailedWeb<{ bounty: BountyRecord }>(
-    `/v1/bounties/${encodeURIComponent(bountyId)}/fund`,
+  body: Record<string, unknown> = {},
+  fetchImpl: typeof fetch = fetch
+): Promise<{ bounty: BountyRecord; onchainEscrow?: boolean }> {
+  const response = await fetchImpl(
+    buildApiUrl(`/v1/bounties/${encodeURIComponent(bountyId)}/fund`),
     {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(body),
     }
   );
-  if (!response.ok || !response.data) {
-    throw new Error(response.error?.message ?? 'Failed to fund bounty');
+  const payload = (await response.json().catch(() => null)) as {
+    bounty?: BountyRecord;
+    onchainEscrow?: boolean;
+    message?: string;
+    error?: string;
+  } | null;
+  if (!response.ok || !payload?.bounty) {
+    throw new Error(
+      payload?.message ?? payload?.error ?? `Failed to fund bounty (${response.status}).`
+    );
   }
-  return response.data;
+  return { bounty: payload.bounty, onchainEscrow: payload.onchainEscrow };
 }

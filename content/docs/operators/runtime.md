@@ -94,6 +94,8 @@ pnpm test:game-raid:e2e
 pnpm test:strict-private:e2e
 pnpm test:mcp:e2e
 pnpm test:x402:e2e
+pnpm test:bounty-escrow:e2e
+pnpm test:bounty-escrow:production
 pnpm settle:raid -- --raid-id <raidId>
 pnpm generate:settlement-keys
 pnpm bootstrap:settlement
@@ -123,6 +125,33 @@ pnpm bootstrap:settlement
 ```
 
 Fund client wallet (USDC for escrow), provider wallets (~0.01 ETH gas each).
+
+### 2b. Bounty escrow (onchain)
+
+`pnpm bootstrap:settlement` writes `BOSSRAID_BOUNTY_ESCROW_ADDRESS` alongside raid escrow addresses. Production onchain mode requires it; `GET /v1/ops/production-readiness` reports `bounty_escrow_configured`.
+
+Operator wallet (`BOSSRAID_CLIENT_PRIVATE_KEY`) must hold:
+
+- USDC on Base for raid escrow, bounty escrow funding, and gas
+- An ERC-20 allowance to `BossBountyEscrow` (the API calls `approve` before each fund when allowance is low)
+
+Buyer flow:
+
+1. Poster signs in with wallet session (`POST /v1/bounties`)
+2. `POST /v1/bounties/:id/fund` returns x402 `402` with `payment-required`
+3. Poster pays USDC via x402; settlement payer must match the poster wallet
+4. API relayer calls `createBountyOnBehalf` + `fundBountyOnBehalf` on `BossBountyEscrow`
+
+`BOSSRAID_X402_PAY_TO` is the platform receive wallet for raid/inference charges. Bounty poster USDC is settled through x402, then moved into onchain escrow by the client signer — not left in `payTo`.
+
+Dev-only bypass: `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND=true` (forbidden in production audit). Smoke tests:
+
+```bash
+pnpm test:bounty-escrow:e2e
+pnpm test:bounty-escrow:production   # wallet mode; caps reward via BOSSRAID_BOUNTY_E2E_REWARD_USD
+```
+
+E2E env: `BOSSRAID_API_BASE`, `BOSSRAID_BOUNTY_E2E_PROVIDER_ID`, `BOSSRAID_BOUNTY_E2E_PROVIDER_TOKEN`, poster private key (`BOSSRAID_BOUNTY_E2E_POSTER_PRIVATE_KEY` or `BOSSRAID_X402_BUYER_PRIVATE_KEY`), optional `BOSSRAID_RPC_URL` + `BOSSRAID_BOUNTY_ESCROW_ADDRESS` for onchain award verification.
 
 ### 3. Phala deploy
 

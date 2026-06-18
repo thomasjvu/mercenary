@@ -100,3 +100,62 @@ test('auto-awards top bid after award deadline', async () => {
   const messages = await service.processDeadlines(new Date());
   assert.ok(messages.some((entry) => entry.startsWith('auto_awarded:')));
 });
+
+test('rejects double fund when escrow is already recorded', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'bossraid-bounty-double-fund-'));
+  const store = new BountyStore(join(dir, 'bounties.sqlite'));
+  const service = new BountyService(store, {
+    defaultBiddingDays: 7,
+    defaultAwardDays: 3,
+    defaultDeliveryDays: 14,
+    defaultAcceptDays: 7,
+    autoAwardMax: 3,
+  });
+  const bounty = service.createBounty('0xPoster00000000000000000000000000000003', {
+    title: 'Double fund',
+    description: 'Test',
+    requirements: 'Test',
+    rewardAmountUsd: 3,
+  });
+  service.fundBounty(bounty.id, bounty.posterWallet, {
+    openNow: true,
+    escrowJobId: '1',
+  });
+  assert.throws(
+    () => service.fundBounty(bounty.id, bounty.posterWallet, { openNow: true }),
+    /already funded/
+  );
+});
+
+test('claim is blocked before accept deadline', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'bossraid-bounty-claim-'));
+  const store = new BountyStore(join(dir, 'bounties.sqlite'));
+  const service = new BountyService(store, {
+    defaultBiddingDays: 7,
+    defaultAwardDays: 3,
+    defaultDeliveryDays: 14,
+    defaultAcceptDays: 7,
+    autoAwardMax: 1,
+  });
+  const bounty = service.createBounty('0xPoster00000000000000000000000000000004', {
+    title: 'Claim gate',
+    description: 'Test',
+    requirements: 'Test',
+    rewardAmountUsd: 2,
+  });
+  service.fundBounty(bounty.id, bounty.posterWallet, { openNow: true });
+  const provider = { providerId: 'pqf_claim', scores: { reputationScore: 1 } } as ProviderProfile;
+  const bid = service.submitBid(
+    bounty.id,
+    { providerId: 'pqf_claim', priceUsd: 2, etaHours: 1, pitch: 'fast' },
+    provider
+  );
+  const awarded = await service.awardBids(bounty.id, bounty.posterWallet, { bidIds: [bid.id] });
+  const artifactsJson = JSON.stringify({ ok: true });
+  const delivered = await service.deliverAward(awarded.awards[0]!.id, 'pqf_claim', {
+    artifactSummary: 'done',
+    artifactsJson,
+    deliveryHash: createHash('sha256').update(artifactsJson).digest('hex'),
+  });
+  await assert.rejects(() => service.claimAward(delivered.id), /Accept deadline has not passed/);
+});
