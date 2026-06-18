@@ -5,6 +5,7 @@ import {
   applyX402Headers,
   buildPaymentRequiredForRoute,
   requireX402Payment,
+  type X402PaymentRequired,
   type X402RouteName,
   type X402SettlementResponse,
 } from '../x402.js';
@@ -16,6 +17,7 @@ export type VerifiedFundPaymentResult = {
   escrowFundingUsd: number;
   platformMarkupUsd: number;
   settlement?: X402SettlementResponse;
+  paymentRequired?: X402PaymentRequired;
 };
 
 export function allowUnverifiedFundInDev(
@@ -51,6 +53,7 @@ export async function collectVerifiedFundPayment(input: {
     escrowFundingUsd: payment.escrowFundingUsd,
     platformMarkupUsd: payment.platformMarkupUsd,
     settlement: payment.settlement,
+    paymentRequired,
   };
 }
 

@@ -30,6 +30,7 @@ import { registerMarketplaceTeeRoutes } from './routes/marketplace-tee.js';
 import { registerInferenceReceiptRoutes } from './routes/inference-receipts.js';
 import { registerRelayerRoutes } from './routes/relayer.js';
 import { registerBountyRoutes } from './routes/bounties.js';
+import { startX402ReconciliationWorker } from './lib/x402-reconciliation.js';
 
 export { resolveChatTerminalSettleGraceMs } from './lib/env.js';
 
@@ -131,6 +132,7 @@ export function buildApiServer(
   registerInferenceReceiptRoutes(app, ctx);
   registerRelayerRoutes(app, ctx);
   registerBountyRoutes(app, ctx, handlers);
+  startX402ReconciliationWorker(ctx);
 
   return app;
 }

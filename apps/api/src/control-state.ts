@@ -6,6 +6,7 @@ import * as sellerLedger from './control-state/seller-ledger.js';
 import * as sellerUpstream from './control-state/seller-upstream.js';
 import * as agentSessions from './control-state/agent-sessions.js';
 import * as relayerTasks from './control-state/relayer-tasks.js';
+import * as x402Reconciliations from './control-state/x402-reconciliations.js';
 import * as sessions from './control-state/sessions.js';
 import { ControlStateContext } from './control-state/state-context.js';
 import { createApiControlStateStore } from './control-state/store.js';
@@ -20,6 +21,7 @@ import type {
   PublicAuthNonceEntry,
   PublicSessionEntry,
   RelayerTaskEntry,
+  X402ReconciliationEntry,
   SellerPayoutEntry,
   SellerUpstreamConfigEntry,
 } from './control-state/types.js';
@@ -275,6 +277,18 @@ export function createApiControlStateFromStore(store: ApiControlStateStore) {
 
     getRelayerTask(taskId: string): RelayerTaskEntry | undefined {
       return relayerTasks.getRelayerTask(ctx, taskId);
+    },
+
+    upsertX402Reconciliation(entry: X402ReconciliationEntry): X402ReconciliationEntry {
+      return x402Reconciliations.upsertX402Reconciliation(ctx, entry);
+    },
+
+    listPendingX402Reconciliations(limit = 25): X402ReconciliationEntry[] {
+      return x402Reconciliations.listPendingX402Reconciliations(ctx, limit);
+    },
+
+    getX402Reconciliation(id: string): X402ReconciliationEntry | undefined {
+      return x402Reconciliations.getX402Reconciliation(ctx, id);
     },
   };
 }

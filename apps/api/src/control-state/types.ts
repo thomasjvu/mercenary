@@ -14,6 +14,24 @@ export type RelayerTaskEntry = {
   memo?: string;
 };
 
+export type X402ReconciliationEntry = {
+  id: string;
+  kind: 'spawn_refund' | 'bounty_fund_refund';
+  status: 'pending' | 'completed' | 'failed';
+  reason: string;
+  route: 'raid' | 'chat' | 'inference' | 'balance' | 'bounty';
+  paymentSignature: string;
+  paymentRequiredJson: string;
+  bountyId?: string;
+  raidId?: string;
+  reservationId?: string;
+  settlementTx?: string;
+  attempts: number;
+  lastError?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type AgentPaymentSessionEntry = {
   wallet: string;
   sessionAccount: string;
@@ -118,6 +136,7 @@ export type ApiControlStateSnapshot = {
   sellerUpstreamConfigs: SellerUpstreamConfigEntry[];
   rateLimits: ApiRateLimitEntry[];
   relayerTasks: RelayerTaskEntry[];
+  x402Reconciliations: X402ReconciliationEntry[];
   agentPaymentSessions: AgentPaymentSessionEntry[];
   settings: ApiRuntimeSettings;
 };

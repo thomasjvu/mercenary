@@ -206,10 +206,9 @@ export class BountyService {
       });
     }
 
-    for (const pending of pendingAwards) {
-      let onchainAwardId: string | undefined;
-      const escrowJobId = bounty.escrowJobId;
-      if (this.onchain && escrowJobId) {
+    const escrowJobId = bounty.escrowJobId;
+    if (this.onchain && escrowJobId) {
+      for (const pending of pendingAwards) {
         const providerAddress = resolveProviderAddress(
           pending.bid.providerId,
           this.onchain.providerAddresses
@@ -220,6 +219,16 @@ export class BountyService {
             503
           );
         }
+      }
+    }
+
+    const onchainAwardIds = new Map<string, string | undefined>();
+    if (this.onchain && escrowJobId) {
+      for (const pending of pendingAwards) {
+        const providerAddress = resolveProviderAddress(
+          pending.bid.providerId,
+          this.onchain!.providerAddresses
+        )!;
         const onchainAward = await this.runOnchain(() =>
           this.onchain!.executor.createAward({
             onchainBountyId: escrowJobId,
@@ -227,16 +236,18 @@ export class BountyService {
             amountUsd: pending.amountUsd,
           })
         );
-        onchainAwardId = onchainAward.onchainAwardId;
+        onchainAwardIds.set(pending.awardId, onchainAward.onchainAwardId);
       }
+    }
 
+    for (const pending of pendingAwards) {
       const award: BountyAwardRecord = {
         id: pending.awardId,
         bountyId,
         bidId: pending.bid.id,
         providerId: pending.bid.providerId,
         amountUsd: pending.amountUsd,
-        onchainAwardId,
+        onchainAwardId: onchainAwardIds.get(pending.awardId),
         status: 'in_progress',
         createdAt: nowIso,
         updatedAt: nowIso,

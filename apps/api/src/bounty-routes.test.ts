@@ -163,6 +163,44 @@ test('off-chain bounty lifecycle works over HTTP with unverified fund bypass', a
   }
 });
 
+test('bounty fund rejects client-supplied escrow proof when x402 is enabled', async () => {
+  const app = createTestApiServer([bountyProvider()], {
+    ...createX402PaidTestEnv(),
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+  });
+
+  try {
+    const session = await createPublicSessionCookie(app, 6);
+    const created = await app.inject({
+      method: 'POST',
+      url: '/v1/bounties',
+      headers: { cookie: session.cookie },
+      payload: {
+        title: 'Escrow proof gate',
+        description: 'Test',
+        requirements: 'Test',
+        rewardAmountUsd: 2,
+      },
+    });
+    assert.equal(created.statusCode, 201);
+    const bountyId = created.json().bounty.id as string;
+
+    const rejected = await app.inject({
+      method: 'POST',
+      url: `/v1/bounties/${bountyId}/fund`,
+      headers: { cookie: session.cookie },
+      payload: {
+        openNow: true,
+        escrowJobId: 'forged-escrow',
+      },
+    });
+    assert.equal(rejected.statusCode, 400);
+    assert.equal(rejected.json().error, 'client_escrow_proof_rejected');
+  } finally {
+    await app.close();
+  }
+});
+
 test('bounty fund returns x402 challenge when payments are enabled', async () => {
   const app = createTestApiServer([bountyProvider()], {
     ...createX402PaidTestEnv(),

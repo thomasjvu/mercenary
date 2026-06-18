@@ -49,6 +49,27 @@ function main() {
     process.exit(1);
   }
 
+  if (!isTruthy(process.env.BOSSRAID_SETTLEMENT_FUND_JOBS)) {
+    console.error(
+      'Production deploy env audit failed: BOSSRAID_SETTLEMENT_FUND_JOBS must be true.'
+    );
+    process.exit(1);
+  }
+
+  if (!isTruthy(process.env.BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS)) {
+    console.error(
+      'Production deploy env audit failed: BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS must be true.'
+    );
+    process.exit(1);
+  }
+
+  if (!process.env.BOSSRAID_BOUNTY_ESCROW_ADDRESS?.trim()) {
+    console.error(
+      'Production deploy env audit failed: BOSSRAID_BOUNTY_ESCROW_ADDRESS must be configured.'
+    );
+    process.exit(1);
+  }
+
   console.log('audit-production-deploy-env: pass');
 }
 

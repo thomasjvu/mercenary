@@ -17,6 +17,7 @@ import {
   preflightBountyFundOnchain,
   prepareBountyFundPayment,
 } from '../lib/bounty-fund.js';
+import { rejectClientSuppliedEscrowProof } from '../lib/bounty-fund-security.js';
 import {
   BountyService,
   BountyServiceError,
@@ -113,6 +114,15 @@ export function registerBountyRoutes(
     }
     const params = request.params as { bountyId: string };
     const fundBody = parseBountyFundBody((request.body ?? {}) as Record<string, unknown>);
+    const escrowProofGate = rejectClientSuppliedEscrowProof({
+      env: ctx.env,
+      x402Enabled: readX402ConfigForContext(ctx).enabled,
+      fundBody,
+    });
+    if (!escrowProofGate.ok) {
+      reply.code(escrowProofGate.statusCode);
+      return escrowProofGate.body;
+    }
 
     try {
       const draft = store.getBounty(params.bountyId);

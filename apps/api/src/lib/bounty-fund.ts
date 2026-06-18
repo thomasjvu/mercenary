@@ -13,6 +13,8 @@ import {
   collectVerifiedFundPayment,
 } from './verified-fund-payment.js';
 import { readX402ConfigForContext } from './x402-runtime.js';
+import { attemptX402Refund, readPaymentSignature } from './x402-reconciliation.js';
+import { buildPaymentRequiredForRoute } from '../x402.js';
 
 export type BountyFundBody = {
   escrowReceiptJson?: string;
@@ -173,14 +175,43 @@ export async function prepareBountyFundPayment(input: {
         },
         'bounty onchain fund failed after x402 settlement'
       );
+
+      const paymentSignature = readPaymentSignature(input.headers);
+      const paymentRequired =
+        payment.paymentRequired ??
+        buildPaymentRequiredForRoute(x402Config, 'bounty', input.draft.rewardAmountUsd, {
+          extra: { bountyId: input.bountyId },
+        });
+      let refundStatus: { refunded: boolean; reconciliationId?: string; error?: string } = {
+        refunded: false,
+        error: 'missing_payment_signature',
+      };
+      if (paymentSignature && payment.settlement?.success) {
+        refundStatus = await attemptX402Refund(input.ctx, {
+          kind: 'bounty_fund_refund',
+          route: 'bounty',
+          reason: 'bounty_onchain_escrow_failed',
+          paymentSignature,
+          paymentRequired,
+          bountyId: input.bountyId,
+          settlementTx: payment.settlement.transaction,
+        });
+      }
+
       return {
         ok: false,
-        statusCode: 502,
+        statusCode: refundStatus.refunded ? 502 : 503,
         body: {
           error: 'escrow_fund_failed',
-          message:
-            'Payment settled but onchain bounty escrow funding failed. Contact support with your payment transaction for a manual refund.',
+          message: refundStatus.refunded
+            ? 'Onchain bounty escrow funding failed after payment. Your x402 payment was refunded automatically.'
+            : 'Onchain bounty escrow funding failed after payment. A refund has been queued for automatic retry.',
           settlement: payment.settlement,
+          refund: {
+            refunded: refundStatus.refunded,
+            reconciliationId: refundStatus.reconciliationId,
+            error: refundStatus.error,
+          },
         },
       };
     }

@@ -59,6 +59,24 @@ export function registerHealthRoutes(
     const productionMocksReady = !isProduction || upstreamMocksDisabled;
     const productionBalanceFundReady =
       !isProduction || !readBooleanEnv(env.BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND);
+    const productionBountyFundReady =
+      !isProduction || !readBooleanEnv(env.BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND);
+    const settlementFundJobsReady =
+      !isProduction ||
+      settlementMode !== 'onchain' ||
+      readBooleanEnv(env.BOSSRAID_SETTLEMENT_FUND_JOBS);
+    const settlementTerminalJobsReady =
+      !isProduction ||
+      settlementMode !== 'onchain' ||
+      readBooleanEnv(env.BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS);
+    const bountyEscrowReady =
+      settlementMode !== 'onchain' || Boolean(env.BOSSRAID_BOUNTY_ESCROW_ADDRESS?.trim());
+    const teeProductionReady =
+      !isProduction ||
+      (Boolean(env.MNEMONIC) &&
+        env.BOSSRAID_TEE_PLATFORM === 'phala' &&
+        tee.pathExists &&
+        tee.socketMounted);
     const gates = {
       api: true,
       storage: persistence.healthy,
@@ -66,8 +84,13 @@ export function registerHealthRoutes(
       providers: providerHealth.length > 0 && providerHealth.some((provider) => provider.ready),
       x402: x402Configured,
       settlement: settlementConfigured && productionSettlementReady,
+      settlementFundJobs: settlementFundJobsReady,
+      settlementTerminalJobs: settlementTerminalJobsReady,
+      bountyEscrow: bountyEscrowReady,
       upstreamMocksDisabled: productionMocksReady,
       unverifiedBalanceFundDisabled: productionBalanceFundReady,
+      unverifiedBountyFundDisabled: productionBountyFundReady,
+      teeProductionReady,
       tee: {
         configured: Boolean(env.MNEMONIC),
         platform: env.BOSSRAID_TEE_PLATFORM ?? null,
@@ -83,8 +106,13 @@ export function registerHealthRoutes(
         gates.providers &&
         gates.x402 &&
         gates.settlement &&
+        gates.settlementFundJobs &&
+        gates.settlementTerminalJobs &&
+        gates.bountyEscrow &&
         gates.upstreamMocksDisabled &&
-        gates.unverifiedBalanceFundDisabled,
+        gates.unverifiedBalanceFundDisabled &&
+        gates.unverifiedBountyFundDisabled &&
+        gates.teeProductionReady,
       gates,
       providers: orchestrator.listProviders().length,
       readyProviders: providerHealth.filter((provider) => provider.ready).length,

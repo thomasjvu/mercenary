@@ -146,6 +146,20 @@ export function buildProductionReadinessReport(input: {
     },
   });
 
+  addCheck({
+    id: 'unverified_bounty_fund',
+    status:
+      !productionEnv || !readBooleanEnv(input.env.BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND)
+        ? 'pass'
+        : 'fail',
+    severity: 'blocking',
+    message:
+      'BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND must stay disabled in production. Bounty funding requires verified x402 payments.',
+    details: {
+      allowUnverifiedBountyFund: readBooleanEnv(input.env.BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND),
+    },
+  });
+
   const enabledMocks = readEnabledUpstreamMocks(input.env);
   addCheck({
     id: 'upstream_mocks_disabled',
@@ -166,6 +180,38 @@ export function buildProductionReadinessReport(input: {
     details: {
       mode: input.settlement.mode,
       configured: input.settlement.configured,
+    },
+  });
+
+  const settlementFundJobsEnabled = readBooleanEnv(input.env.BOSSRAID_SETTLEMENT_FUND_JOBS);
+  addCheck({
+    id: 'settlement_fund_jobs',
+    status:
+      !productionEnv || input.settlement.mode !== 'onchain' || settlementFundJobsEnabled
+        ? 'pass'
+        : 'fail',
+    severity: 'blocking',
+    message:
+      'BOSSRAID_SETTLEMENT_FUND_JOBS must be true in production onchain mode so successful child jobs receive escrow funding.',
+    details: {
+      settlementFundJobs: settlementFundJobsEnabled,
+      settlementMode: input.settlement.mode,
+    },
+  });
+
+  const requireTerminalJobs = readBooleanEnv(input.env.BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS);
+  addCheck({
+    id: 'settlement_terminal_jobs',
+    status:
+      !productionEnv || input.settlement.mode !== 'onchain' || requireTerminalJobs
+        ? 'pass'
+        : 'fail',
+    severity: 'blocking',
+    message:
+      'BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS must be true in production onchain mode before parent finalize.',
+    details: {
+      requireTerminalJobs,
+      settlementMode: input.settlement.mode,
     },
   });
 

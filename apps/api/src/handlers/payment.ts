@@ -12,7 +12,7 @@ import {
 import { readX402ConfigForContext } from '../lib/x402-runtime.js';
 import { buildLaunchRequestKey } from '../lib/http.js';
 import { computeSavingsUsd, estimateBenchmarkPriceUsd } from '@bossraid/constants';
-import { refundPayment } from '../x402-verify.js';
+import { attemptX402Refund, readPaymentSignature } from '../lib/x402-reconciliation.js';
 import { type ApiContext } from '../api-context.js';
 import { createManaBillingHandlers, type ManaBillingContext } from './billing-mana.js';
 import { createAuthHandlers } from './auth.js';
@@ -168,7 +168,7 @@ export function createPaymentHandlers(
     }
 
     ctx.apiMetrics.increment('x402.spawn_reconciliation');
-    const signatureHeader = asSingleHeader(input.request.headers['payment-signature']);
+    const signatureHeader = readPaymentSignature(input.request.headers);
     if (!signatureHeader || !input.launchPayment.reservationId || !input.launchPayment.requestKey) {
       ctx.apiMetrics.increment('x402.spawn_reconciliation_failed');
       logger.error(
@@ -212,12 +212,18 @@ export function createPaymentHandlers(
       }
     );
 
-    try {
-      await refundPayment(x402Config, signatureHeader, paymentRequired, input.reason);
-      ctx.apiMetrics.increment('x402.spawn_refunded');
-    } catch (error) {
+    const refundResult = await attemptX402Refund(ctx, {
+      kind: 'spawn_refund',
+      route: input.route,
+      reason: input.reason,
+      paymentSignature: signatureHeader,
+      paymentRequired,
+      raidId: input.raidId,
+      reservationId: reservation.id,
+      settlementTx: input.launchPayment.settlement?.transaction,
+    });
+    if (!refundResult.refunded) {
       ctx.apiMetrics.increment('x402.spawn_reconciliation_failed');
-      logger.error(error, 'x402 spawn failure refund failed');
     }
   }
 
