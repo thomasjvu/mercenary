@@ -13,6 +13,7 @@ import {
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import type { BossRaidDeployment } from './index.js';
+import { resolveBountyOperatorAddress } from './resolve-bounty-operator.js';
 
 type CompiledContract = {
   abi: unknown[];
@@ -86,6 +87,8 @@ export type DeployContractsOptions = {
   tokenAddress: string;
   chainId?: number;
   outPath: string;
+  operatorAddress?: string;
+  clientPrivateKey?: string;
 };
 
 export async function deployContracts(options: DeployContractsOptions): Promise<{
@@ -96,6 +99,11 @@ export async function deployContracts(options: DeployContractsOptions): Promise<
   const packageRoot = resolve(import.meta.dirname, '..');
   const compiled = await compileContracts(packageRoot);
   const account = privateKeyToAccount(normalizePrivateKey(options.privateKey));
+  const bountyOperatorAddress = resolveBountyOperatorAddress({
+    deployerAddress: account.address,
+    operatorAddress: options.operatorAddress,
+    clientPrivateKey: options.clientPrivateKey,
+  });
   const chain = options.chainId
     ? defineChain({
         id: options.chainId,
@@ -150,7 +158,7 @@ export async function deployContracts(options: DeployContractsOptions): Promise<
   const bountyEscrowDeployHash = await walletClient.deployContract({
     abi: compiled.bossBountyEscrow.abi,
     bytecode: compiled.bossBountyEscrow.bytecode,
-    args: [tokenAddress, account.address],
+    args: [tokenAddress, bountyOperatorAddress],
     account,
   });
   const bountyEscrowReceipt = await publicClient.waitForTransactionReceipt({
@@ -164,6 +172,7 @@ export async function deployContracts(options: DeployContractsOptions): Promise<
     chainId: options.chainId,
     rpcUrl: options.rpcUrl,
     deployerAddress: account.address,
+    bountyOperatorAddress,
     tokenAddress,
     registryAddress: registryReceipt.contractAddress,
     escrowAddress: escrowReceipt.contractAddress,
@@ -235,6 +244,8 @@ async function main(): Promise<void> {
     tokenAddress,
     chainId,
     outPath,
+    operatorAddress: process.env.BOSSRAID_BOUNTY_OPERATOR_ADDRESS,
+    clientPrivateKey: process.env.BOSSRAID_CLIENT_PRIVATE_KEY,
   });
 
   process.stdout.write(

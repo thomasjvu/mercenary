@@ -30,6 +30,8 @@ async function main(): Promise<void> {
     tokenAddress: requireEnv(process.env.BOSSRAID_TOKEN_ADDRESS, 'BOSSRAID_TOKEN_ADDRESS'),
     chainId: process.env.BOSSRAID_CHAIN_ID ? Number(process.env.BOSSRAID_CHAIN_ID) : undefined,
     outPath: manifestPath,
+    operatorAddress: process.env.BOSSRAID_BOUNTY_OPERATOR_ADDRESS,
+    clientPrivateKey: process.env.BOSSRAID_CLIENT_PRIVATE_KEY,
   });
 
   const bootstrapResult = await writeSettlementEnv({

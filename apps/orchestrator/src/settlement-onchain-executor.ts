@@ -8,6 +8,7 @@ import {
   parseEventLogs,
   createPublicClient,
   createWalletClient,
+  maxUint256,
   zeroAddress,
   type Address,
   type Hash,
@@ -27,7 +28,7 @@ import {
   type SettlementArtifact,
   type SettlementPayload,
 } from './settlement-artifacts.js';
-import { escrowAbi, registryAbi } from './settlement-onchain-abi.js';
+import { erc20MinimalAbi, escrowAbi, registryAbi } from './settlement-onchain-abi.js';
 
 export const DEFAULT_JOB_EXPIRY_SEC = DEFAULTS.SETTLEMENT_JOB_EXPIRY_SEC;
 
@@ -64,6 +65,7 @@ export class OnchainSettlementExecutor {
   private readonly requireTerminalJobs: boolean;
   private readonly providerAddressMap: Record<string, Address>;
   private readonly clientAddress: Address;
+  private readonly tokenAddress?: Address;
 
   constructor(
     private readonly outputDir: string,
@@ -110,6 +112,9 @@ export class OnchainSettlementExecutor {
       rpcUrl: config.rpcUrl,
     });
     this.clientAddress = this.clientActor.address;
+    this.tokenAddress = config.tokenAddress?.trim()
+      ? getAddress(config.tokenAddress.trim())
+      : undefined;
     this.jobExpirySec = Number(config.jobExpirySec ?? String(DEFAULT_JOB_EXPIRY_SEC));
     this.atomicMultiplier = parseAtomicMultiplier(config.atomicMultiplier);
     this.fundJobs = parseBoolean(config.fundJobs);
@@ -440,6 +445,7 @@ export class OnchainSettlementExecutor {
       }
 
       if (this.fundJobs && providerAddress !== zeroAddress && !childJob.fundTxHash) {
+        await this.ensureTokenAllowance(budgetAtomic);
         const fundTxHash = await this.clientActor.client.writeContract({
           chain: this.chain,
           address: this.config.escrowAddress,
@@ -572,6 +578,39 @@ export class OnchainSettlementExecutor {
     }
 
     return childJob;
+  }
+
+  private async ensureTokenAllowance(requiredAmount: bigint): Promise<void> {
+    if (!this.fundJobs) {
+      return;
+    }
+
+    const tokenAddress = this.tokenAddress;
+    if (!tokenAddress) {
+      throw new Error(
+        'BOSSRAID_TOKEN_ADDRESS is required when BOSSRAID_SETTLEMENT_FUND_JOBS=true.'
+      );
+    }
+
+    const allowance = await this.publicClient.readContract({
+      address: tokenAddress,
+      abi: erc20MinimalAbi,
+      functionName: 'allowance',
+      args: [this.clientAddress, this.config.escrowAddress],
+    });
+    if (allowance >= requiredAmount) {
+      return;
+    }
+
+    const approveHash = await this.clientActor.client.writeContract({
+      chain: this.chain,
+      address: tokenAddress,
+      abi: erc20MinimalAbi,
+      functionName: 'approve',
+      args: [this.config.escrowAddress, maxUint256],
+      account: this.clientActor.account,
+    });
+    await this.waitForReceipt(approveHash);
   }
 
   private async waitForReceipt(hash: Hash) {

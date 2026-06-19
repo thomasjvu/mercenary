@@ -10,7 +10,8 @@
     "check": "tsc -p tsconfig.json --noEmit",
     "deploy": "node dist/deploy.js",
     "bootstrap:settlement-env": "node dist/bootstrap-settlement-env.js",
-    "bootstrap:onchain": "node dist/bootstrap-onchain.js"
+    "bootstrap:onchain": "node dist/bootstrap-onchain.js",
+    "test": "node --import tsx --test src/**/*.test.ts"
   },
   "dependencies": {
     "solc": "^0.8.30",

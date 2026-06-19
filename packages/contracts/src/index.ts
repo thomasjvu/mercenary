@@ -1,7 +1,10 @@
+export { resolveBountyOperatorAddress } from './resolve-bounty-operator.js';
+
 export type BossRaidDeployment = {
   chainId?: number;
   rpcUrl: string;
   deployerAddress: string;
+  bountyOperatorAddress: string;
   tokenAddress: string;
   registryAddress: string;
   escrowAddress: string;

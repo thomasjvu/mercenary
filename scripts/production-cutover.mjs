@@ -62,9 +62,16 @@ function main() {
       );
     }
 
+    const onchainSecrets = existsSync(onchainPath)
+      ? parseDotenv(readFileSync(onchainPath, 'utf8'))
+      : {};
+    const clientKey =
+      onchainSecrets.BOSSRAID_CLIENT_PRIVATE_KEY ?? process.env.BOSSRAID_CLIENT_PRIVATE_KEY;
+
     const deployEnv = {
       ...process.env,
       BOSSRAID_DEPLOYER_PRIVATE_KEY: deployerKey.trim(),
+      BOSSRAID_CLIENT_PRIVATE_KEY: clientKey?.trim(),
       BOSSRAID_RPC_URL: process.env.BOSSRAID_RPC_URL ?? 'https://mainnet.base.org',
       BOSSRAID_CHAIN_ID: process.env.BOSSRAID_CHAIN_ID ?? '8453',
       BOSSRAID_TOKEN_ADDRESS:
