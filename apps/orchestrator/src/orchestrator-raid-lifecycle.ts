@@ -272,12 +272,23 @@ export class RaidLifecycleCoordinator {
       await this.resumeRaid(raid.id);
     }
 
+    await this.retryPendingSettlements();
+  }
+
+  async retryPendingSettlements(): Promise<void> {
     const pendingSettlements = this.listAllRaids()
       .filter((raid) => shouldRunSettlement(raid))
       .sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt));
 
     for (const raid of pendingSettlements) {
-      await this.executeSettlement(raid.id);
+      try {
+        await this.executeSettlement(raid.id);
+      } catch (error) {
+        console.error('Mercenary settlement retry failed', {
+          raidId: raid.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
   }
 
@@ -367,7 +378,12 @@ export class RaidLifecycleCoordinator {
   }
 
   private finalizeRaid(raid: RaidRecord): void {
-    void finalizeRaidState(raid, this.finalizationDeps());
+    void finalizeRaidState(raid, this.finalizationDeps()).catch((error: unknown) => {
+      console.error('Mercenary raid finalization failed', {
+        raidId: raid.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
   }
 
   private async waitForFinalization(raidId: string): Promise<void> {

@@ -7,6 +7,7 @@ import * as sellerUpstream from './control-state/seller-upstream.js';
 import * as agentSessions from './control-state/agent-sessions.js';
 import * as relayerTasks from './control-state/relayer-tasks.js';
 import * as x402Reconciliations from './control-state/x402-reconciliations.js';
+import * as x402SettledPayments from './control-state/x402-settled-payments.js';
 import * as sessions from './control-state/sessions.js';
 import { ControlStateContext } from './control-state/state-context.js';
 import { createApiControlStateStore } from './control-state/store.js';
@@ -127,6 +128,30 @@ export function createApiControlStateFromStore(store: ApiControlStateStore) {
       buyerLedger.recordBuyerApiKeyUsage(ctx, keyId, costUsd, nowMs);
     },
 
+    reserveBuyerApiKeyLaunch(
+      apiKeyId: string,
+      wallet: string,
+      amountUsd: number,
+      nowMs = Date.now()
+    ): buyerLedger.BuyerApiKeyLaunchReservation | undefined {
+      return buyerLedger.reserveBuyerApiKeyLaunch(ctx, apiKeyId, wallet, amountUsd, nowMs);
+    },
+
+    releaseBuyerApiKeyReservation(
+      reservation: buyerLedger.BuyerApiKeyLaunchReservation,
+      nowMs = Date.now()
+    ): void {
+      buyerLedger.releaseBuyerApiKeyReservation(ctx, reservation, nowMs);
+    },
+
+    finalizeBuyerApiKeyBilling(
+      reservation: buyerLedger.BuyerApiKeyLaunchReservation,
+      actualCostUsd: number,
+      nowMs = Date.now()
+    ): boolean {
+      return buyerLedger.finalizeBuyerApiKeyBilling(ctx, reservation, actualCostUsd, nowMs);
+    },
+
     linkSellerProvider(wallet: string, providerId: string, nowMs = Date.now()): PublicAccountEntry {
       return sellerLedger.linkSellerProvider(ctx, wallet, providerId, nowMs);
     },
@@ -219,7 +244,13 @@ export function createApiControlStateFromStore(store: ApiControlStateStore) {
     ): SellerUpstreamConfigEntry {
       return sellerUpstream.upsertSellerUpstreamConfig(
         ctx,
-        { wallet, provider, apiKey, cipher: createSecretCipher(env) },
+        {
+          wallet,
+          provider,
+          apiKey,
+          cipher: createSecretCipher(env),
+          requireEncryption: env.NODE_ENV === 'production',
+        },
         nowMs
       );
     },
@@ -289,6 +320,16 @@ export function createApiControlStateFromStore(store: ApiControlStateStore) {
 
     getX402Reconciliation(id: string): X402ReconciliationEntry | undefined {
       return x402Reconciliations.getX402Reconciliation(ctx, id);
+    },
+
+    hasX402SettledPayment(fingerprint: string): boolean {
+      return x402SettledPayments.hasX402SettledPayment(ctx, fingerprint);
+    },
+
+    recordX402SettledPayment(
+      entry: x402SettledPayments.X402SettledPaymentEntry
+    ): x402SettledPayments.X402SettledPaymentEntry {
+      return x402SettledPayments.recordX402SettledPayment(ctx, entry);
     },
   };
 }

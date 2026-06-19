@@ -30,6 +30,7 @@ import { type ApiContext } from '../api-context.js';
 import { type createAuthHandlers } from '../handlers/auth.js';
 import { type createManaBillingHandlers } from '../handlers/billing-mana.js';
 import { type createPaymentHandlers } from '../handlers/payment.js';
+import { resolveApiKeyCaptureCostUsd } from './launch-payment-billing.js';
 import { type createRaidHandlers } from '../handlers/raid.js';
 
 type AuthHandlers = ReturnType<typeof createAuthHandlers>;
@@ -247,12 +248,7 @@ export async function deliverStreamingChatCompletion(
   deps: ChatCompletionPipelineDeps
 ) {
   const { captureManaBilling, buildBossRaidBillingMetadata } = deps.manaBilling;
-  if (input.publicAuth?.type === 'api_key') {
-    deps.ctx.controlState.recordBuyerApiKeyUsage(
-      input.publicAuth.apiKeyId,
-      input.launchPayment.escrowFundingUsd ?? input.raidRequest.constraints.maxBudgetUsd
-    );
-  }
+  const { captureApiKeyBilling, recordMarketplaceLedgersFromRaid } = deps.payment;
 
   applyX402Headers(input.reply, {
     settlement: input.launchPayment.settlement,
@@ -265,24 +261,63 @@ export async function deliverStreamingChatCompletion(
     created: input.created,
     settleGraceMs: deps.ctx.chatTerminalSettleGraceMs,
     settlementMode: deps.ctx.settlementMode,
-    bossraidBilling: input.launchPayment.manaBilling
-      ? {
-          capture: async (usage, selectedSeller) => {
-            const settlement = await captureManaBilling({
-              manaBilling: input.launchPayment.manaBilling,
-              usage,
-              raidId: input.spawn.raidId,
-              receiptPath: input.spawn.receiptPath,
-            });
-            return buildBossRaidBillingMetadata({
-              manaBilling: input.launchPayment.manaBilling,
-              settlement,
-              selectedSeller,
-              receiptPath: input.spawn.receiptPath,
-            });
-          },
-        }
-      : undefined,
+    bossraidBilling:
+      input.launchPayment.manaBilling || input.launchPayment.apiKeyBilling
+        ? {
+            capture: async (usage, selectedSeller) => {
+              if (input.launchPayment.manaBilling) {
+                const settlement = await captureManaBilling({
+                  manaBilling: input.launchPayment.manaBilling,
+                  usage,
+                  raidId: input.spawn.raidId,
+                  receiptPath: input.spawn.receiptPath,
+                });
+                return buildBossRaidBillingMetadata({
+                  manaBilling: input.launchPayment.manaBilling,
+                  settlement,
+                  selectedSeller,
+                  receiptPath: input.spawn.receiptPath,
+                });
+              }
+
+              const result = deps.ctx.orchestrator.getResult(input.spawn.raidId);
+              const capturedCostUsd = resolveApiKeyCaptureCostUsd({
+                apiKeyBilling: input.launchPayment.apiKeyBilling,
+                escrowFundingUsd: input.launchPayment.escrowFundingUsd,
+                successfulProvidersPaid: result.settlement?.successfulProvidersPaid,
+                maxBudgetUsd: input.raidRequest.constraints.maxBudgetUsd,
+              });
+              const resolvedSeller =
+                selectedSeller ??
+                result.synthesizedOutput?.baseSubmissionProviderId ??
+                result.approvedSubmissions?.[0]?.submission.providerId;
+              captureApiKeyBilling({
+                apiKeyBilling: input.launchPayment.apiKeyBilling,
+                actualCostUsd: capturedCostUsd,
+                route: 'chat',
+                raidId: input.spawn.raidId,
+                modelId: input.chatRequest.model,
+                sellerId: resolvedSeller,
+              });
+              recordMarketplaceLedgersFromRaid({
+                raidId: input.spawn.raidId,
+                route: 'chat',
+                buyerWallet: input.publicAuth?.wallet,
+                apiKeyId:
+                  input.publicAuth?.type === 'api_key' ? input.publicAuth.apiKeyId : undefined,
+                modelId: input.chatRequest.model,
+                costUsd: capturedCostUsd,
+                skipBuyerPurchase: true,
+              });
+              return buildBossRaidBillingMetadata({
+                selectedSeller: resolvedSeller,
+                receiptPath: input.spawn.receiptPath,
+                modelId: input.chatRequest.model,
+                paidPriceUsd: capturedCostUsd,
+              });
+            },
+          }
+        : undefined,
   });
 }
 
@@ -301,7 +336,8 @@ export async function deliverBufferedChatCompletion(
   deps: ChatCompletionPipelineDeps
 ) {
   const { captureManaBilling, refundManaBilling, buildBossRaidBillingMetadata } = deps.manaBilling;
-  const { captureApiKeyBilling, recordMarketplaceLedgersFromRaid } = deps.payment;
+  const { captureApiKeyBilling, recordMarketplaceLedgersFromRaid, reconcileLaunchPayment } =
+    deps.payment;
 
   let outcome;
   try {
@@ -315,6 +351,14 @@ export async function deliverBufferedChatCompletion(
   } catch (error) {
     await refundManaBilling({
       manaBilling: input.launchPayment.manaBilling,
+      reason: 'terminal_output_failed',
+      raidId: input.spawn.raidId,
+    });
+    await reconcileLaunchPayment({
+      route: input.paymentRoute,
+      request: input.request,
+      raidRequest: input.raidRequest,
+      launchPayment: input.launchPayment,
       reason: 'terminal_output_failed',
       raidId: input.spawn.raidId,
     });
@@ -336,10 +380,12 @@ export async function deliverBufferedChatCompletion(
   const selectedSeller =
     outcome.result.synthesizedOutput?.baseSubmissionProviderId ??
     outcome.result.approvedSubmissions?.[0]?.submission.providerId;
-  const capturedCostUsd =
-    input.launchPayment.escrowFundingUsd ??
-    outcome.result.settlement?.successfulProvidersPaid ??
-    input.raidRequest.constraints.maxBudgetUsd;
+  const capturedCostUsd = resolveApiKeyCaptureCostUsd({
+    apiKeyBilling: input.launchPayment.apiKeyBilling,
+    escrowFundingUsd: input.launchPayment.escrowFundingUsd,
+    successfulProvidersPaid: outcome.result.settlement?.successfulProvidersPaid,
+    maxBudgetUsd: input.raidRequest.constraints.maxBudgetUsd,
+  });
   const bossraid = buildBossRaidBillingMetadata({
     manaBilling: input.launchPayment.manaBilling,
     settlement: manaSettlement,
@@ -360,9 +406,6 @@ export async function deliverBufferedChatCompletion(
     modelId: input.chatRequest.model,
     sellerId: selectedSeller,
   });
-  if (!input.launchPayment.apiKeyBilling && input.publicAuth?.type === 'api_key') {
-    deps.ctx.controlState.recordBuyerApiKeyUsage(input.publicAuth.apiKeyId, capturedCostUsd);
-  }
   recordMarketplaceLedgersFromRaid({
     raidId: input.spawn.raidId,
     route: input.paymentRoute,

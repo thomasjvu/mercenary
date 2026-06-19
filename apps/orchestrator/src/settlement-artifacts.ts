@@ -4,6 +4,7 @@ import { sha256 } from '@bossraid/raid-core';
 import type {
   PrivacyComplianceRecord,
   RaidRecord,
+  SettlementChildJobProof,
   SettlementExecutionRecord,
 } from '@bossraid/shared-types';
 import { getAddress, type Address, type Hex } from 'viem';
@@ -42,36 +43,7 @@ export type SettlementArtifact = {
     method: 'finalizeRaid';
     args: [string, string];
   };
-  childJobs: Array<{
-    jobRef: string;
-    providerId: string;
-    providerAddress?: string | null;
-    role: string;
-    status: string;
-    requestedAction: 'complete' | 'reject';
-    lifecycleStatus:
-      | 'synthetic'
-      | 'open'
-      | 'funded'
-      | 'submitted'
-      | 'completed'
-      | 'rejected'
-      | 'expired';
-    budgetUsd: number;
-    budgetAtomic?: string;
-    submitResultHash: string | null;
-    completionPolicy: string;
-    nextAction?: string | null;
-    syntheticJobId?: string;
-    jobId?: string;
-    createTxHash?: string;
-    linkTxHash?: string;
-    budgetTxHash?: string;
-    fundTxHash?: string;
-    submitTxHash?: string;
-    completeTxHash?: string;
-    rejectTxHash?: string;
-  }>;
+  childJobs: SettlementChildJobProof[];
   finalizeTxHash?: string;
   transactionHashes?: string[];
   jobIds?: string[];

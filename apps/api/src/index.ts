@@ -130,7 +130,7 @@ export function buildApiServer(
   registerSellerUpstreamRoutes(app, ctx, handlers);
   registerMarketplaceTeeRoutes(app, ctx, handlers);
   registerInferenceReceiptRoutes(app, ctx);
-  registerRelayerRoutes(app, ctx);
+  registerRelayerRoutes(app, ctx, handlers);
   registerBountyRoutes(app, ctx, handlers);
   startX402ReconciliationWorker(ctx);
 

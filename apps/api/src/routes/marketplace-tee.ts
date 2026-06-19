@@ -27,7 +27,7 @@ export function registerMarketplaceTeeRoutes(
   handlers: ApiHandlerGroups
 ): void {
   const { orchestrator, controlState, env } = ctx;
-  const { requirePublicSession, readPublicSession } = handlers.auth;
+  const { requirePublicSession, readPublicSession, requireRateLimit } = handlers.auth;
 
   app.post('/v1/marketplace/tee/attestation', async (request, reply) => {
     const body = ensureRecordInput(request.body, 'marketplace_tee_attestation');
@@ -182,6 +182,21 @@ export function registerMarketplaceTeeRoutes(
   });
 
   app.post('/v1/marketplace/tee/attestation/preflight', async (request, reply) => {
+    const session = requirePublicSession(reply, request.headers);
+    if ('error' in session) {
+      return session;
+    }
+    const rateLimitError = requireRateLimit(
+      request,
+      reply,
+      'tee_preflight',
+      ctx.publicRateLimitMax,
+      ctx.publicRateLimitWindowMs
+    );
+    if (rateLimitError) {
+      return rateLimitError;
+    }
+
     const body = ensureRecordInput(request.body, 'marketplace_tee_preflight');
     const provider = ensureStringInput(body.provider, 'marketplace_tee_preflight.provider');
     const modelId = ensureStringInput(

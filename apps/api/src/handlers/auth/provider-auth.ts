@@ -1,5 +1,6 @@
 import { verifyProviderAuth } from '@bossraid/provider-sdk';
 import { asSingleHeader } from '@bossraid/shared-types';
+import { safeEqualString } from '../../lib/http.js';
 import { type ApiContext } from '../../api-context.js';
 
 export function createProviderAuth(ctx: ApiContext) {
@@ -39,7 +40,8 @@ export function createProviderAuth(ctx: ApiContext) {
       return false;
     }
 
-    return asSingleHeader(headers.authorization) === `Bearer ${ctx.registryToken}`;
+    const token = asSingleHeader(headers.authorization)?.replace(/^Bearer\s+/i, '');
+    return Boolean(token && safeEqualString(token, ctx.registryToken));
   }
 
   return {

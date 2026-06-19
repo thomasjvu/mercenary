@@ -81,14 +81,15 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 
 ## MetaMask cookoff / agent payments
 
-| Variable                        | Purpose                                                                                           |
-| ------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `BOSSRAID_ONESHOT_RELAYER_URL`  | 1Shot relayer JSON-RPC base (`/v1/relayer/*` proxies this)                                        |
-| `BOSSRAID_AGENT_WALLET_KEY`     | Funded agent wallet for MCP paid raids and redelegation                                           |
-| `BOSSRAID_VENICE_API_KEY`       | Shared Venice upstream key (Phala providers + Mercenary planner/synthesis)                        |
-| `BOSSRAID_MERCENARY_BASE_MODEL` | Mercenary chat planner base model (default `e2ee-gemma-4-31b`; E2EE first, plain Venice fallback) |
-| `BOSSRAID_VENICE_MODEL`         | Venice model id (default `minimax-m27`)                                                           |
-| `BOSSRAID_VENICE_WALLET_KEY`    | Venice x402 wallet for provider upstream calls                                                    |
+| Variable                                  | Purpose                                                                                           |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `BOSSRAID_ONESHOT_RELAYER_URL`            | 1Shot relayer JSON-RPC base (`/v1/relayer/*` proxies this)                                        |
+| `BOSSRAID_ONESHOT_RELAYER_WEBHOOK_SECRET` | Shared secret for `POST /v1/relayer/webhook` (`X-BossRaid-Relayer-Webhook-Secret` header)         |
+| `BOSSRAID_AGENT_WALLET_KEY`               | Funded agent wallet for MCP paid raids and redelegation                                           |
+| `BOSSRAID_VENICE_API_KEY`                 | Shared Venice upstream key (Phala providers + Mercenary planner/synthesis)                        |
+| `BOSSRAID_MERCENARY_BASE_MODEL`           | Mercenary chat planner base model (default `e2ee-gemma-4-31b`; E2EE first, plain Venice fallback) |
+| `BOSSRAID_VENICE_MODEL`                   | Venice model id (default `minimax-m27`)                                                           |
+| `BOSSRAID_VENICE_WALLET_KEY`              | Venice x402 wallet for provider upstream calls                                                    |
 
 ## Phala Infisical tiers
 

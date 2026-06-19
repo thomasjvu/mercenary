@@ -47,7 +47,8 @@ export interface SettlementChildJobProof {
     | 'submitted'
     | 'completed'
     | 'rejected'
-    | 'expired';
+    | 'expired'
+    | 'unknown';
   budgetUsd: number;
   budgetAtomic?: string;
   submitResultHash: string | null;

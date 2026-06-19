@@ -107,8 +107,8 @@ export async function processX402ReconciliationQueue(ctx: ApiContext): Promise<n
       continue;
     }
 
-    const paymentRequired = JSON.parse(entry.paymentRequiredJson) as X402PaymentRequired;
     try {
+      const paymentRequired = JSON.parse(entry.paymentRequiredJson) as X402PaymentRequired;
       await refundPayment(x402Config, entry.paymentSignature, paymentRequired, entry.reason);
       ctx.controlState.upsertX402Reconciliation({
         ...entry,

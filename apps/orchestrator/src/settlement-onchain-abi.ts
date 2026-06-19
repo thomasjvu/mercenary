@@ -1,25 +1,6 @@
-export const erc20MinimalAbi = [
-  {
-    type: 'function',
-    name: 'allowance',
-    stateMutability: 'view',
-    inputs: [
-      { name: 'owner', type: 'address' },
-      { name: 'spender', type: 'address' },
-    ],
-    outputs: [{ name: 'remaining', type: 'uint256' }],
-  },
-  {
-    type: 'function',
-    name: 'approve',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    outputs: [{ name: 'ok', type: 'bool' }],
-  },
-] as const;
+import { ERC20_MINIMAL_ABI } from '@bossraid/raid-core';
+
+export const erc20MinimalAbi = ERC20_MINIMAL_ABI;
 
 export const registryAbi = [
   {

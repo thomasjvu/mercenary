@@ -148,10 +148,30 @@ export function queueOrchestratorPersist(
   return persistenceQueue.enqueue(() => persistence.saveState(snapshot()));
 }
 
+const debouncedBestEffortPersist = new WeakMap<
+  PersistenceQueue,
+  { timer?: ReturnType<typeof setTimeout>; delayMs: number }
+>();
+
 export function queueOrchestratorPersistBestEffort(
   persistenceQueue: PersistenceQueue,
   persistence: BossRaidPersistence,
-  snapshot: () => BossRaidPersistenceSnapshot
+  snapshot: () => BossRaidPersistenceSnapshot,
+  debounceMs = 1_000
 ): void {
-  persistenceQueue.enqueueBestEffort(() => persistence.saveState(snapshot()));
+  let state = debouncedBestEffortPersist.get(persistenceQueue);
+  if (!state) {
+    state = { delayMs: debounceMs };
+    debouncedBestEffortPersist.set(persistenceQueue, state);
+  }
+
+  if (state.timer) {
+    clearTimeout(state.timer);
+  }
+
+  state.timer = setTimeout(() => {
+    state!.timer = undefined;
+    persistenceQueue.enqueueBestEffort(() => persistence.saveState(snapshot()));
+  }, state.delayMs);
+  state.timer.unref?.();
 }

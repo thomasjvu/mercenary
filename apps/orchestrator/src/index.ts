@@ -120,6 +120,20 @@ export class BossRaidOrchestrator {
     return this.raidLifecycle.listProviders();
   }
 
+  async getCachedProviderHealth(): Promise<
+    import('@bossraid/shared-types').ProviderHealthStatus[]
+  > {
+    return Promise.all(
+      this.listProviders().map((provider) =>
+        this.providerRegistry.providerHealthCache.read(provider)
+      )
+    );
+  }
+
+  async retryPendingSettlements(): Promise<void> {
+    await this.raidLifecycle.retryPendingSettlements();
+  }
+
   getProviderProfile(providerId: string): ProviderProfile | undefined {
     return this.raidLifecycle.getProviderProfile(providerId);
   }
@@ -368,6 +382,14 @@ export async function createDefaultOrchestrator(
     await orchestrator.persistState();
   }
   await orchestrator.resumeActiveRaids();
+  const settlementRetryMs = Number(process.env.BOSSRAID_SETTLEMENT_RETRY_INTERVAL_MS ?? '60000');
+  if (Number.isFinite(settlementRetryMs) && settlementRetryMs > 0) {
+    setInterval(() => {
+      void orchestrator.retryPendingSettlements().catch((error: unknown) => {
+        console.error('Mercenary settlement retry worker failed', error);
+      });
+    }, settlementRetryMs).unref?.();
+  }
   return orchestrator;
 }
 

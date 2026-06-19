@@ -14,6 +14,7 @@ import {
 } from './verified-fund-payment.js';
 import { readX402ConfigForContext } from './x402-runtime.js';
 import { attemptX402Refund, readPaymentSignature } from './x402-reconciliation.js';
+import { buildX402SettlementFingerprint } from '../control-state/x402-settled-payments.js';
 import { buildPaymentRequiredForRoute } from '../x402.js';
 
 export type BountyFundBody = {
@@ -124,6 +125,17 @@ export async function prepareBountyFundPayment(input: {
     return { ok: true, prepared: {} };
   }
 
+  if (input.draft.escrowJobId) {
+    return {
+      ok: false,
+      statusCode: 409,
+      body: {
+        error: 'already_funded',
+        message: 'Bounty escrow is already funded.',
+      },
+    };
+  }
+
   const payment = await collectVerifiedFundPayment({
     ctx: input.ctx,
     route: 'bounty',
@@ -132,6 +144,21 @@ export async function prepareBountyFundPayment(input: {
     paymentRequiredExtra: { bountyId: input.bountyId },
   });
   applyVerifiedFundSettlementHeaders(input.reply, payment.settlement);
+
+  const fingerprint = buildX402SettlementFingerprint({
+    settlementTx: payment.settlement?.transaction,
+    paymentSignature: readPaymentSignature(input.headers),
+  });
+  if (fingerprint && input.ctx.controlState.hasX402SettledPayment(fingerprint)) {
+    return {
+      ok: false,
+      statusCode: 409,
+      body: {
+        error: 'duplicate_payment',
+        message: 'This x402 payment was already applied to a bounty fund.',
+      },
+    };
+  }
 
   if (payment.settlement?.payer && payment.settlement.payer.toLowerCase() !== input.posterWallet) {
     return {
@@ -224,6 +251,16 @@ export async function prepareBountyFundPayment(input: {
         message: 'Production bounty funding requires onchain escrow.',
       },
     };
+  }
+
+  if (fingerprint && payment.settlement?.success) {
+    input.ctx.controlState.recordX402SettledPayment({
+      fingerprint,
+      wallet: input.posterWallet.toLowerCase(),
+      route: 'bounty',
+      amountUsd: payment.escrowFundingUsd,
+      createdAt: new Date().toISOString(),
+    });
   }
 
   return {

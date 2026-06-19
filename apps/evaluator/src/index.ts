@@ -35,10 +35,17 @@ function readRuntimeProbeLimits(env: NodeJS.ProcessEnv): RuntimeProbeLimits {
   };
 }
 
-function requireEvaluatorAuth(env: NodeJS.ProcessEnv, authorization: unknown): boolean {
-  const token = env.BOSSRAID_EVAL_SANDBOX_TOKEN;
-  if (!token) {
+function evaluatorAuthRequired(env: NodeJS.ProcessEnv): boolean {
+  if (env.BOSSRAID_EVAL_SANDBOX_TOKEN?.trim()) {
     return true;
+  }
+  return env.NODE_ENV === 'production';
+}
+
+function requireEvaluatorAuth(env: NodeJS.ProcessEnv, authorization: unknown): boolean {
+  const token = env.BOSSRAID_EVAL_SANDBOX_TOKEN?.trim();
+  if (!token) {
+    return !evaluatorAuthRequired(env);
   }
 
   return authorization === `Bearer ${token}`;
@@ -105,19 +112,19 @@ export function buildEvaluatorServer(env: NodeJS.ProcessEnv = process.env): Fast
   }));
 
   app.post('/v1/runtime-probes', async (request, reply) => {
+    if (evaluatorAuthRequired(env) && !env.BOSSRAID_EVAL_SANDBOX_TOKEN?.trim()) {
+      reply.code(503);
+      return {
+        error: 'auth_unconfigured',
+        message: 'BOSSRAID_EVAL_SANDBOX_TOKEN is required before accepting runtime probes.',
+      };
+    }
     if (!requireEvaluatorAuth(env, request.headers.authorization)) {
       reply.code(401);
       return {
         error: 'unauthorized',
       };
     }
-    if (activeJobs >= maxConcurrentJobs) {
-      reply.code(503);
-      return {
-        error: 'evaluator_capacity_exhausted',
-      };
-    }
-
     const input = request.body as RuntimeProbeInput;
     try {
       assertRuntimeProbeInput(input, limits);
@@ -130,6 +137,13 @@ export function buildEvaluatorServer(env: NodeJS.ProcessEnv = process.env): Fast
     }
 
     activeJobs += 1;
+    if (activeJobs > maxConcurrentJobs) {
+      activeJobs -= 1;
+      reply.code(503);
+      return {
+        error: 'evaluator_capacity_exhausted',
+      };
+    }
     try {
       return await executeRuntimeProbeIsolated(input, readJobTimeoutMs(env), env);
     } catch (error) {

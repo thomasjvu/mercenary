@@ -31,23 +31,17 @@ jobs:
       - name: Typecheck
         run: pnpm check
 
+      - name: Format check
+        run: pnpm format:check
+
       - name: Build
         run: pnpm build
 
       - name: Docs build
         run: pnpm build:docs
 
-      - name: API Tests
-        run: pnpm --filter @bossraid/api test
-
-      - name: Orchestrator Tests
-        run: pnpm --filter @bossraid/orchestrator test
-
-      - name: Smart Pay Tests
-        run: pnpm --filter @bossraid/smart-pay test
-
-      - name: Web Tests
-        run: pnpm --filter @bossraid/web test
+      - name: Unit tests
+        run: pnpm test:unit
 
       - name: Production deploy env audit
         run: NODE_ENV=production BOSSRAID_SETTLEMENT_MODE=onchain BOSSRAID_X402_ENABLED=true BOSSRAID_SETTLEMENT_FUND_JOBS=true BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS=true BOSSRAID_BOUNTY_ESCROW_ADDRESS=0x0000000000000000000000000000000000000201 node scripts/audit-production-deploy-env.mjs

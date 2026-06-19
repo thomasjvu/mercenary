@@ -67,9 +67,7 @@ test('GET /ready reports public beta readiness gates', async () => {
     });
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().ok, true);
-    assert.equal(response.json().gates.storage, true);
-    assert.equal(response.json().gates.providers, true);
-    assert.equal(response.json().payment.enabled, false);
+    assert.equal(Object.keys(response.json()).join(','), 'ok');
   } finally {
     globalThis.fetch = originalFetch;
     await app.close();
@@ -122,7 +120,7 @@ test('ops settings expose and toggle the runtime x402 gate', async () => {
       url: '/ready',
     });
     assert.equal(ready.statusCode, 200);
-    assert.equal(ready.json().payment.enabled, true);
+    assert.equal(typeof ready.json().ok, 'boolean');
   } finally {
     await app.close();
   }

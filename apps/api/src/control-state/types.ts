@@ -123,6 +123,14 @@ export type SellerUpstreamConfigEntry = {
   updatedAt: string;
 };
 
+export type X402SettledPaymentEntry = {
+  fingerprint: string;
+  wallet: string;
+  route: 'balance' | 'bounty';
+  amountUsd: number;
+  createdAt: string;
+};
+
 export type ApiControlStateSnapshot = {
   version: 1;
   savedAt: string;
@@ -137,6 +145,7 @@ export type ApiControlStateSnapshot = {
   rateLimits: ApiRateLimitEntry[];
   relayerTasks: RelayerTaskEntry[];
   x402Reconciliations: X402ReconciliationEntry[];
+  x402SettledPayments: X402SettledPaymentEntry[];
   agentPaymentSessions: AgentPaymentSessionEntry[];
   settings: ApiRuntimeSettings;
 };

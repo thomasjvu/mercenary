@@ -62,8 +62,15 @@ export function createRouteAccessAuth(
       return undefined;
     }
 
+    const headerToken = asSingleHeader(headers[RAID_ACCESS_TOKEN_HEADER]);
+    if (queryAccessToken && !headerToken) {
+      ctx.apiMetrics.increment('auth.raid_token_query_deprecated');
+      reply.header('deprecation', 'true');
+      reply.header('sunset', 'Sat, 19 Sep 2026 00:00:00 GMT');
+    }
+
     const raid = ctx.orchestrator.getRaid(raidId);
-    const raidAccessToken = asSingleHeader(headers[RAID_ACCESS_TOKEN_HEADER]) ?? queryAccessToken;
+    const raidAccessToken = headerToken ?? queryAccessToken;
     const expectedHash = raid?.raidAccessTokenHash;
     if (
       !raidAccessToken ||

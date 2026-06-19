@@ -49,6 +49,22 @@ export default defineConfig(({ mode }) => {
       },
     },
     envDir: resolve(repoRoot),
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('@bossraid/smart-pay') || id.includes('viem')) {
+                return 'wallet';
+              }
+              if (id.includes('@iconify')) {
+                return 'icons';
+              }
+            }
+          },
+        },
+      },
+    },
     server: {
       port: NETWORK.LOCAL_WEB_PORT,
       host: NETWORK.LOCALHOST,

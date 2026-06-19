@@ -1,6 +1,7 @@
 import { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import { parseProviderRegistrationInput } from '@bossraid/api-contracts';
 import { UPSTREAM_PROVIDER_CONFIG, type UpstreamProviderId } from '@bossraid/constants';
+import * as sellerUpstream from '../control-state/seller-upstream.js';
 import { sanitizeSellerUpstreamConfig } from '../control-state/seller-upstream.js';
 import {
   buildSelfServeProviderRegistrationInput,
@@ -121,11 +122,22 @@ export function registerSellerUpstreamRoutes(
       }
     }
 
-    const config = controlState.upsertSellerUpstreamConfig(session.wallet, provider, apiKey, env);
-    return {
-      object: `seller.${provider}.config`,
-      config: sanitizeSellerUpstreamConfig(config),
-    };
+    try {
+      const config = controlState.upsertSellerUpstreamConfig(session.wallet, provider, apiKey, env);
+      return {
+        object: `seller.${provider}.config`,
+        config: sanitizeSellerUpstreamConfig(config),
+      };
+    } catch (error) {
+      if (error instanceof sellerUpstream.SellerUpstreamEncryptionRequiredError) {
+        reply.code(503);
+        return {
+          error: 'encryption_required',
+          message: error.message,
+        };
+      }
+      throw error;
+    }
   }
 
   async function handleCatalogModels(providerParam: string, reply: FastifyReply) {
@@ -245,12 +257,23 @@ export function registerSellerUpstreamRoutes(
       };
     }
 
-    const payoutWallet =
+    const requestedPayoutWallet =
       typeof body.payoutWallet === 'string'
         ? body.payoutWallet
         : typeof body.payout_wallet === 'string'
           ? body.payout_wallet
-          : session.wallet;
+          : undefined;
+    if (
+      requestedPayoutWallet &&
+      requestedPayoutWallet.toLowerCase() !== session.wallet.toLowerCase()
+    ) {
+      reply.code(400);
+      return {
+        error: 'payout_wallet_mismatch',
+        message: 'payoutWallet must match your signed-in wallet.',
+      };
+    }
+    const payoutWallet = session.wallet;
 
     const published: Array<{
       modelId: string;

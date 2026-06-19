@@ -128,9 +128,12 @@ export function createPaymentHandlers(
     if (!input.apiKeyBilling || input.actualCostUsd <= 0) {
       return;
     }
-    ctx.controlState.recordBuyerApiKeyUsage(input.apiKeyBilling.apiKeyId, input.actualCostUsd);
-    if (input.apiKeyBilling.useBalance) {
-      ctx.controlState.debitBuyerBalance(input.apiKeyBilling.wallet, input.actualCostUsd);
+    const finalized = ctx.controlState.finalizeBuyerApiKeyBilling(
+      input.apiKeyBilling,
+      input.actualCostUsd
+    );
+    if (!finalized) {
+      throw new ApiContractError('API key billing finalization failed.', 500);
     }
     const benchmarkPriceUsd = estimateBenchmarkPriceUsd({
       modelId: input.modelId,
@@ -162,6 +165,10 @@ export function createPaymentHandlers(
       reason: input.reason,
       raidId: input.raidId,
     });
+
+    if (input.launchPayment.apiKeyBilling) {
+      ctx.controlState.releaseBuyerApiKeyReservation(input.launchPayment.apiKeyBilling);
+    }
 
     if (!input.launchPayment.settlement?.success) {
       return;
@@ -265,11 +272,12 @@ export function createPaymentHandlers(
         holdUntilUnix: Math.floor(Date.now() / 1_000) + 60,
       });
       const amountUsd = reservation.sanitized.constraints.maxBudgetUsd;
-      const account = ctx.controlState.readPublicAccount(apiKey.wallet);
-      const spendCapOk =
-        apiKey.spendLimitUsd == null || apiKey.spentUsd + amountUsd <= apiKey.spendLimitUsd;
-      const balanceOk = (account?.balanceUsd ?? 0) >= amountUsd;
-      if (!spendCapOk && !balanceOk) {
+      const apiKeyReservation = ctx.controlState.reserveBuyerApiKeyLaunch(
+        apiKey.id,
+        apiKey.wallet,
+        amountUsd
+      );
+      if (!apiKeyReservation) {
         throw new ApiContractError(
           'Insufficient API key spend limit or prepaid balance for this request.',
           402
@@ -279,12 +287,7 @@ export function createPaymentHandlers(
         reservationId: reservation.id,
         requestKey,
         escrowFundingUsd: amountUsd,
-        apiKeyBilling: {
-          apiKeyId: apiKey.id,
-          wallet: apiKey.wallet,
-          reservedUsd: amountUsd,
-          useBalance: balanceOk,
-        },
+        apiKeyBilling: apiKeyReservation,
       };
     }
 

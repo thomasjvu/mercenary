@@ -22,6 +22,13 @@ export function buildUpstreamKeyPrefix(provider: UpstreamProviderId, apiKey: str
   return `${tag}_${trimmed.slice(0, 4)}...${trimmed.slice(-4)}`;
 }
 
+export class SellerUpstreamEncryptionRequiredError extends Error {
+  constructor() {
+    super('BOSSRAID_SECRET_ENCRYPTION_KEY is required before storing seller upstream API keys.');
+    this.name = 'SellerUpstreamEncryptionRequiredError';
+  }
+}
+
 export function upsertSellerUpstreamConfig(
   ctx: ControlStateContext,
   input: {
@@ -30,9 +37,13 @@ export function upsertSellerUpstreamConfig(
     apiKey: string;
     cipher: SecretCipher;
     upstreamBase?: string;
+    requireEncryption?: boolean;
   },
   nowMs = Date.now()
 ): SellerUpstreamConfigEntry {
+  if (input.requireEncryption && !input.cipher.enabled) {
+    throw new SellerUpstreamEncryptionRequiredError();
+  }
   const wallet = input.wallet.toLowerCase();
   const now = new Date(nowMs).toISOString();
   const { snapshot } = ctx.readPrunedState(nowMs);

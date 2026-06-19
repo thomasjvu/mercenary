@@ -58,7 +58,7 @@ export function mapJobLifecycleStatus(status: number): SettlementChildJobLifecyc
     case 5:
       return 'expired';
     default:
-      return 'open';
+      return 'unknown';
   }
 }
 
@@ -86,6 +86,8 @@ export function buildChildJobNextAction(
       return 'Provider submit is still required from the provider wallet.';
     case 'submitted':
       return 'Evaluator completion is still required from the configured evaluator wallet.';
+    case 'unknown':
+      return 'Unrecognized onchain job status; verify contract state manually.';
     default:
       return null;
   }

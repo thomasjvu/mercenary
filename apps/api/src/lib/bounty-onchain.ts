@@ -12,39 +12,12 @@ import {
   type Hex,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
+import { ERC20_MINIMAL_ABI } from '@bossraid/raid-core';
 import { resolveApiSettlementMode } from './settlement-mode.js';
 
 export const USDC_ATOMIC_MULTIPLIER = 1_000_000n;
 
-export const erc20MinimalAbi = [
-  {
-    type: 'function',
-    name: 'balanceOf',
-    stateMutability: 'view',
-    inputs: [{ name: 'account', type: 'address' }],
-    outputs: [{ name: 'balance', type: 'uint256' }],
-  },
-  {
-    type: 'function',
-    name: 'allowance',
-    stateMutability: 'view',
-    inputs: [
-      { name: 'owner', type: 'address' },
-      { name: 'spender', type: 'address' },
-    ],
-    outputs: [{ name: 'remaining', type: 'uint256' }],
-  },
-  {
-    type: 'function',
-    name: 'approve',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    outputs: [{ name: 'ok', type: 'bool' }],
-  },
-] as const;
+export const erc20MinimalAbi = ERC20_MINIMAL_ABI;
 
 export const bountyEscrowAbi = [
   {

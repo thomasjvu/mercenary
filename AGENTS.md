@@ -84,12 +84,13 @@ All code in this repository must follow these standards:
 
 - `pnpm format`: Format all code with Prettier
 - `pnpm lint`: Check code quality with ESLint
-- `pnpm check`: Run both format check and lint
+- `pnpm check`: Typecheck all packages (`tsc --noEmit`)
+- `pnpm format:check`: Verify Prettier formatting
 - `pnpm build`: Build all packages
 - `pnpm dev`: Start development servers
 
 These standards are enforced by:
 
-- Pre-commit hooks (husky + lint-staged) that run Prettier and ESLint
+- Pre-commit hooks (husky + lint-staged) that run Prettier
 - Commit message validation (commitlint)
 - CI checks that verify formatting and linting pass

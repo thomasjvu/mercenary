@@ -60,6 +60,7 @@
     "bootstrap:settlement-env": "pnpm build && pnpm --filter @bossraid/contracts run bootstrap:settlement-env",
     "bootstrap:onchain": "pnpm build && pnpm --filter @bossraid/contracts run bootstrap:onchain",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "infisical:phala:check": "node scripts/infisical-phala-secrets.mjs check",
     "infisical:phala:pull": "node scripts/infisical-phala-secrets.mjs pull",
     "infisical:phala:push": "node scripts/infisical-phala-secrets.mjs push",

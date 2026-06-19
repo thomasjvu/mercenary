@@ -153,6 +153,11 @@ export function registerBountyRoutes(
         return paymentsGate.body;
       }
 
+      if (draft.escrowJobId) {
+        reply.code(409);
+        return { error: 'already_funded', message: 'Bounty escrow is already funded.' };
+      }
+
       let escrowReceiptJson = fundBody.escrowReceiptJson;
       let escrowJobId = fundBody.escrowJobId;
       if (readX402ConfigForContext(ctx).enabled) {

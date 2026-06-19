@@ -167,8 +167,16 @@ export class BountyService {
     if (input.bidIds.length === 0) {
       throw new BountyServiceError('At least one bid id is required.', 400);
     }
-    if (input.bidIds.length > bounty.maxAwards) {
-      throw new BountyServiceError(`This bounty allows at most ${bounty.maxAwards} awards.`, 409);
+    const existingAwards = this.store.listAwardsForBounty(bountyId).filter(isActiveBountyAward);
+    const remainingSlots = bounty.maxAwards - existingAwards.length;
+    if (remainingSlots <= 0) {
+      throw new BountyServiceError(`This bounty already has ${bounty.maxAwards} award(s).`, 409);
+    }
+    if (input.bidIds.length > remainingSlots) {
+      throw new BountyServiceError(
+        `This bounty allows ${remainingSlots} more award(s) (${existingAwards.length}/${bounty.maxAwards} used).`,
+        409
+      );
     }
 
     const bids = input.bidIds.map((bidId) => {
@@ -179,13 +187,32 @@ export class BountyService {
       return bid;
     });
 
-    const amounts = input.amountsUsd ?? splitEvenly(bounty.rewardAmountUsd, bids.length);
+    const remainingUsd = roundUsd(
+      bounty.rewardAmountUsd - existingAwards.reduce((sum, award) => sum + award.amountUsd, 0)
+    );
+    if (remainingUsd <= 0) {
+      throw new BountyServiceError('Bounty reward is fully allocated.', 409);
+    }
+
+    const slotAmounts = splitEvenly(remainingUsd, remainingSlots);
+    const amounts = input.amountsUsd ?? slotAmounts.slice(0, bids.length);
     if (amounts.length !== bids.length) {
       throw new BountyServiceError('amountsUsd length must match bidIds.', 400);
     }
-    const total = amounts.reduce((sum, value) => sum + value, 0);
-    if (Math.abs(total - bounty.rewardAmountUsd) > 0.01) {
-      throw new BountyServiceError('Award amounts must sum to the bounty reward.', 409);
+    const total = roundUsd(amounts.reduce((sum, value) => sum + value, 0));
+    if (total > remainingUsd + 0.01) {
+      throw new BountyServiceError(
+        `Award amounts exceed remaining bounty balance (${remainingUsd} USD left).`,
+        409
+      );
+    }
+    if (!input.amountsUsd) {
+      const expectedTotal = roundUsd(
+        slotAmounts.slice(0, bids.length).reduce((sum, value) => sum + value, 0)
+      );
+      if (Math.abs(total - expectedTotal) > 0.01) {
+        throw new BountyServiceError('Award amounts must match the remaining slot split.', 409);
+      }
     }
 
     const nowIso = new Date().toISOString();
@@ -222,12 +249,12 @@ export class BountyService {
       }
     }
 
-    const onchainAwardIds = new Map<string, string | undefined>();
-    if (this.onchain && escrowJobId) {
-      for (const pending of pendingAwards) {
+    for (const pending of pendingAwards) {
+      let onchainAwardId: string | undefined;
+      if (this.onchain && escrowJobId) {
         const providerAddress = resolveProviderAddress(
           pending.bid.providerId,
-          this.onchain!.providerAddresses
+          this.onchain.providerAddresses
         )!;
         const onchainAward = await this.runOnchain(() =>
           this.onchain!.executor.createAward({
@@ -236,18 +263,16 @@ export class BountyService {
             amountUsd: pending.amountUsd,
           })
         );
-        onchainAwardIds.set(pending.awardId, onchainAward.onchainAwardId);
+        onchainAwardId = onchainAward.onchainAwardId;
       }
-    }
 
-    for (const pending of pendingAwards) {
       const award: BountyAwardRecord = {
         id: pending.awardId,
         bountyId,
         bidId: pending.bid.id,
         providerId: pending.bid.providerId,
         amountUsd: pending.amountUsd,
-        onchainAwardId: onchainAwardIds.get(pending.awardId),
+        onchainAwardId,
         status: 'in_progress',
         createdAt: nowIso,
         updatedAt: nowIso,
@@ -293,19 +318,32 @@ export class BountyService {
       deliveredAt: nowIso,
       updatedAt: nowIso,
     };
-    if (this.onchain && award.onchainAwardId && input.deliveryHash) {
-      await this.runOnchain(() =>
-        this.onchain!.executor.submitDelivery({
-          onchainAwardId: award.onchainAwardId!,
-          deliveryHashHex: input.deliveryHash,
-        })
-      );
-    }
-
     this.store.saveAward(updated);
+    if (this.onchain && award.onchainAwardId && input.deliveryHash) {
+      try {
+        await this.runOnchain(() =>
+          this.onchain!.executor.submitDelivery({
+            onchainAwardId: award.onchainAwardId!,
+            deliveryHashHex: input.deliveryHash,
+          })
+        );
+      } catch (error) {
+        this.store.saveAward({
+          ...award,
+          status: 'in_progress',
+          artifactSummary: undefined,
+          artifactsJson: undefined,
+          deliveryHash: undefined,
+          deliveredAt: undefined,
+          updatedAt: new Date().toISOString(),
+        });
+        throw error;
+      }
+    }
+    const awards = this.store.listAwardsForBounty(bounty.id);
     this.store.saveBounty({
       ...bounty,
-      status: 'delivered',
+      status: resolveBountyStatusAfterDelivery(bounty, awards),
       updatedAt: nowIso,
     });
     this.appendEvent(award.bountyId, 'award.delivered', `Delivery submitted for ${awardId}`);
@@ -401,15 +439,31 @@ export class BountyService {
           })
           .slice(0, bounty.maxAwards)
           .map((bid) => bid.id);
-        await this.awardBids(bounty.id, bounty.posterWallet, { bidIds: topBids });
-        this.appendEvent(bounty.id, 'bounty.auto_awarded', `Auto-awarded ${topBids.length} bid(s)`);
-        messages.push(`auto_awarded:${bounty.id}`);
+        try {
+          await this.awardBids(bounty.id, bounty.posterWallet, { bidIds: topBids });
+          this.appendEvent(
+            bounty.id,
+            'bounty.auto_awarded',
+            `Auto-awarded ${topBids.length} bid(s)`
+          );
+          messages.push(`auto_awarded:${bounty.id}`);
+        } catch (error) {
+          messages.push(
+            `auto_award_failed:${bounty.id}:${error instanceof Error ? error.message : String(error)}`
+          );
+        }
       }
     }
 
     for (const award of this.store.listDeliveredAwardsPastAcceptDeadline(nowIso)) {
-      await this.claimAward(award.id);
-      messages.push(`auto_claimed:${award.id}`);
+      try {
+        await this.claimAward(award.id);
+        messages.push(`auto_claimed:${award.id}`);
+      } catch (error) {
+        messages.push(
+          `auto_claim_failed:${award.id}:${error instanceof Error ? error.message : String(error)}`
+        );
+      }
     }
 
     return messages;
@@ -424,14 +478,6 @@ export class BountyService {
       throw new BountyServiceError('Only delivered awards can be paid.', 409);
     }
 
-    if (this.onchain && award.onchainAwardId) {
-      if (eventType === 'award.claimed') {
-        await this.runOnchain(() => this.onchain!.executor.claimPayout(award.onchainAwardId!));
-      } else {
-        await this.runOnchain(() => this.onchain!.executor.acceptAward(award.onchainAwardId!));
-      }
-    }
-
     const nowIso = new Date().toISOString();
     const updated: BountyAwardRecord = {
       ...award,
@@ -440,6 +486,23 @@ export class BountyService {
       updatedAt: nowIso,
     };
     this.store.saveAward(updated);
+    if (this.onchain && award.onchainAwardId) {
+      try {
+        if (eventType === 'award.claimed') {
+          await this.runOnchain(() => this.onchain!.executor.claimPayout(award.onchainAwardId!));
+        } else {
+          await this.runOnchain(() => this.onchain!.executor.acceptAward(award.onchainAwardId!));
+        }
+      } catch (error) {
+        this.store.saveAward({
+          ...award,
+          status: 'delivered',
+          paidAt: undefined,
+          updatedAt: new Date().toISOString(),
+        });
+        throw error;
+      }
+    }
     const awards = this.store.listAwardsForBounty(bounty.id);
     const allPaid = awards.every((entry) => entry.id === award.id || entry.status === 'paid');
     this.store.saveBounty({
@@ -510,6 +573,17 @@ export class BountyServiceError extends Error {
   }
 }
 
+const DELIVERED_AWARD_STATUSES = new Set<BountyAwardRecord['status']>(['delivered', 'paid']);
+
+function resolveBountyStatusAfterDelivery(
+  bounty: BountyRecord,
+  awards: BountyAwardRecord[]
+): BountyRecord['status'] {
+  const allExistingDelivered = awards.every((entry) => DELIVERED_AWARD_STATUSES.has(entry.status));
+  const allSlotsFilled = awards.length >= bounty.maxAwards;
+  return allExistingDelivered && allSlotsFilled ? 'delivered' : 'awarded';
+}
+
 export function hashDeliveryPayload(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
@@ -537,6 +611,14 @@ function buildDeadlines(
     deliveryDeadlineAt: deliveryAt.toISOString(),
     acceptDeadlineAt: acceptAt.toISOString(),
   };
+}
+
+function isActiveBountyAward(award: BountyAwardRecord): boolean {
+  return !['refunded', 'forfeited'].includes(award.status);
+}
+
+function roundUsd(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 function splitEvenly(total: number, parts: number): number[] {

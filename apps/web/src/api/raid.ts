@@ -68,9 +68,9 @@ export async function fetchRaidAgentLog(
   raidId: string,
   raidAccessToken: string
 ): Promise<RaidAgentLog> {
-  return fetchJson<RaidAgentLog>(
-    `/v1/raid/${encodeURIComponent(raidId)}/agent_log.json?token=${encodeURIComponent(raidAccessToken)}`
-  );
+  return fetchJson<RaidAgentLog>(`/v1/raid/${encodeURIComponent(raidId)}/agent_log.json`, {
+    headers: raidTokenHeaders(raidAccessToken),
+  });
 }
 
 export async function fetchAttestedRuntime(): Promise<AttestedEnvelope<AttestedRuntimePayload>> {

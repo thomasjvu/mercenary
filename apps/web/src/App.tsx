@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useRef, useState } from 'react';
+import { lazy, startTransition, Suspense, useEffect, useRef, useState } from 'react';
 import { addCollection } from '@iconify/react';
 import { icons as pixelIcons } from '@iconify-json/pixel';
 import { icons as simpleIcons } from '@iconify-json/simple-icons';
@@ -8,13 +8,9 @@ import { fetchJson, type Provider, type ProviderHealth } from './api';
 import { AppSidebar } from './components/AppSidebar';
 import { AttestationInspectorProvider } from './contexts/AttestationInspectorContext.js';
 import type { AppRoute } from './lib/app-routes.js';
-import { AccountPage } from './pages/AccountPage';
-import { BuyerOnboardingPage } from './pages/BuyerOnboardingPage';
 import { LandingPage } from './pages/LandingPage';
 import { MarketplacePage } from './pages/MarketplacePage';
 import { ModelDetailPage } from './pages/ModelDetailPage';
-import { MercenaryPage } from './pages/MercenaryPage';
-import { PlaygroundPage } from './pages/PlaygroundPage';
 import {
   isMarketplaceDetailPath,
   isMarketplaceListPath,
@@ -24,24 +20,57 @@ import {
 } from './lib/routing.js';
 import { buildPlaygroundUrl, readPlaygroundMode } from './lib/playground-routing.js';
 import { useLocationKey, useLocationPathname } from './lib/use-location.js';
-import { ReceiptPage } from './pages/ReceiptPage';
 import { RaidersPage } from './pages/RaidersPage';
 import { BountiesPage } from './pages/BountiesPage';
 import { BountyDetailPage } from './pages/BountyDetailPage';
-import { PartyQuestPage } from './pages/PartyQuestPage';
 import {
   bountyDetailPath,
   isBountiesListPath,
   isBountyDetailPath,
   readBountyId,
 } from './lib/bounty-routing.js';
-import { SellerOnboardingPage } from './pages/SellerOnboardingPage';
-import { HttpSellerWizardPage } from './pages/HttpSellerWizardPage';
-import { ManageOffersPage } from './pages/ManageOffersPage';
-import { ChangelogPage } from './pages/ChangelogPage';
-import { ChangelogReleasePage } from './pages/ChangelogReleasePage';
 import { readChangelogVersion } from './lib/changelog.js';
 import { LegalPage, type LegalPageKind } from './pages/LegalPage';
+
+const AccountPage = lazy(() =>
+  import('./pages/AccountPage').then((module) => ({ default: module.AccountPage }))
+);
+const BuyerOnboardingPage = lazy(() =>
+  import('./pages/BuyerOnboardingPage').then((module) => ({ default: module.BuyerOnboardingPage }))
+);
+const MercenaryPage = lazy(() =>
+  import('./pages/MercenaryPage').then((module) => ({ default: module.MercenaryPage }))
+);
+const PlaygroundPage = lazy(() =>
+  import('./pages/PlaygroundPage').then((module) => ({ default: module.PlaygroundPage }))
+);
+const ReceiptPage = lazy(() =>
+  import('./pages/ReceiptPage').then((module) => ({ default: module.ReceiptPage }))
+);
+const PartyQuestPage = lazy(() =>
+  import('./pages/PartyQuestPage').then((module) => ({ default: module.PartyQuestPage }))
+);
+const SellerOnboardingPage = lazy(() =>
+  import('./pages/SellerOnboardingPage').then((module) => ({
+    default: module.SellerOnboardingPage,
+  }))
+);
+const HttpSellerWizardPage = lazy(() =>
+  import('./pages/HttpSellerWizardPage').then((module) => ({
+    default: module.HttpSellerWizardPage,
+  }))
+);
+const ManageOffersPage = lazy(() =>
+  import('./pages/ManageOffersPage').then((module) => ({ default: module.ManageOffersPage }))
+);
+const ChangelogPage = lazy(() =>
+  import('./pages/ChangelogPage').then((module) => ({ default: module.ChangelogPage }))
+);
+const ChangelogReleasePage = lazy(() =>
+  import('./pages/ChangelogReleasePage').then((module) => ({
+    default: module.ChangelogReleasePage,
+  }))
+);
 type AppTheme = 'light' | 'dark';
 
 const LANDING_THEME_STORAGE_KEY = 'bossraid.landing-theme';
@@ -203,65 +232,69 @@ export function App() {
             className={`app-shell ${isLandingRoute ? 'app-shell--landing' : ''} ${usesDirectoryLayout ? 'app-shell--directory' : ''} ${isMercenaryRoute || (isPlaygroundRoute && playgroundMode === 'raid') ? 'app-shell--mercenary-route' : ''} ${isVerificationRoute || isLegacyReceiptRoute ? 'app-shell--receipt-route' : ''}`}
             ref={appShellRef}
           >
-            {isBountiesListRoute ? (
-              <BountiesPage onNavigate={navigate} />
-            ) : isBountyDetailRoute && bountyId ? (
-              <BountyDetailPage bountyId={bountyId} onBack={() => navigate('/bounties')} />
-            ) : isPartyQuestRoute ? (
-              <PartyQuestPage onNavigate={navigate} />
-            ) : isRaidersRoute ? (
-              <RaidersPage
-                providers={providers.data ?? []}
-                providerHealth={providerHealth.data ?? []}
-                onNavigate={navigate}
-              />
-            ) : isMarketplaceDetailRoute && marketplaceModelId ? (
-              <ModelDetailPage
-                modelId={marketplaceModelId}
-                onBack={() => navigate('/marketplace')}
-                onTryModel={(modelId) => navigate('/playground', { modelId })}
-                providerHealth={providerHealth.data ?? []}
-              />
-            ) : isMarketplaceListRoute ? (
-              <MarketplacePage
-                onOpenModel={(modelId) => navigate('/marketplace', { marketplaceModelId: modelId })}
-              />
-            ) : isMercenaryRoute ? (
-              <MercenaryPage
-                apiError={providers.error ?? providerHealth.error}
-                providerHealth={providerHealth.data ?? []}
-                providers={providers.data ?? []}
-              />
-            ) : isPlaygroundRoute ? (
-              <PlaygroundPage
-                apiError={providers.error ?? providerHealth.error}
-                initialModelId={playgroundModelId}
-                mode={playgroundMode}
-                onModeChange={(mode) => navigate('/playground', { mode })}
-                providerHealth={providerHealth.data ?? []}
-                providers={providers.data ?? []}
-              />
-            ) : isBuyerOnboardingRoute ? (
-              <BuyerOnboardingPage />
-            ) : isSellerOnboardingRoute ? (
-              <SellerOnboardingPage onNavigate={navigate} />
-            ) : isHttpSellerOnboardingRoute ? (
-              <HttpSellerWizardPage onNavigate={navigate} />
-            ) : isManageOffersRoute ? (
-              <ManageOffersPage />
-            ) : isAccountRoute ? (
-              <AccountPage onNavigate={navigate} />
-            ) : isVerificationRoute || isLegacyReceiptRoute ? (
-              <ReceiptPage />
-            ) : isChangelogReleaseRoute && changelogVersion ? (
-              <ChangelogReleasePage version={changelogVersion} />
-            ) : isChangelogIndexRoute ? (
-              <ChangelogPage />
-            ) : legalPageKind ? (
-              <LegalPage kind={legalPageKind} onNavigate={navigate} />
-            ) : (
-              <LandingPage onNavigate={navigate} />
-            )}
+            <Suspense fallback={<div className="app-route-loading">Loading…</div>}>
+              {isBountiesListRoute ? (
+                <BountiesPage onNavigate={navigate} />
+              ) : isBountyDetailRoute && bountyId ? (
+                <BountyDetailPage bountyId={bountyId} onBack={() => navigate('/bounties')} />
+              ) : isPartyQuestRoute ? (
+                <PartyQuestPage onNavigate={navigate} />
+              ) : isRaidersRoute ? (
+                <RaidersPage
+                  providers={providers.data ?? []}
+                  providerHealth={providerHealth.data ?? []}
+                  onNavigate={navigate}
+                />
+              ) : isMarketplaceDetailRoute && marketplaceModelId ? (
+                <ModelDetailPage
+                  modelId={marketplaceModelId}
+                  onBack={() => navigate('/marketplace')}
+                  onTryModel={(modelId) => navigate('/playground', { modelId })}
+                  providerHealth={providerHealth.data ?? []}
+                />
+              ) : isMarketplaceListRoute ? (
+                <MarketplacePage
+                  onOpenModel={(modelId) =>
+                    navigate('/marketplace', { marketplaceModelId: modelId })
+                  }
+                />
+              ) : isMercenaryRoute ? (
+                <MercenaryPage
+                  apiError={providers.error ?? providerHealth.error}
+                  providerHealth={providerHealth.data ?? []}
+                  providers={providers.data ?? []}
+                />
+              ) : isPlaygroundRoute ? (
+                <PlaygroundPage
+                  apiError={providers.error ?? providerHealth.error}
+                  initialModelId={playgroundModelId}
+                  mode={playgroundMode}
+                  onModeChange={(mode) => navigate('/playground', { mode })}
+                  providerHealth={providerHealth.data ?? []}
+                  providers={providers.data ?? []}
+                />
+              ) : isBuyerOnboardingRoute ? (
+                <BuyerOnboardingPage />
+              ) : isSellerOnboardingRoute ? (
+                <SellerOnboardingPage onNavigate={navigate} />
+              ) : isHttpSellerOnboardingRoute ? (
+                <HttpSellerWizardPage onNavigate={navigate} />
+              ) : isManageOffersRoute ? (
+                <ManageOffersPage />
+              ) : isAccountRoute ? (
+                <AccountPage onNavigate={navigate} />
+              ) : isVerificationRoute || isLegacyReceiptRoute ? (
+                <ReceiptPage />
+              ) : isChangelogReleaseRoute && changelogVersion ? (
+                <ChangelogReleasePage version={changelogVersion} />
+              ) : isChangelogIndexRoute ? (
+                <ChangelogPage />
+              ) : legalPageKind ? (
+                <LegalPage kind={legalPageKind} onNavigate={navigate} />
+              ) : (
+                <LandingPage onNavigate={navigate} />
+              )}
+            </Suspense>
           </main>
         </div>
       </div>

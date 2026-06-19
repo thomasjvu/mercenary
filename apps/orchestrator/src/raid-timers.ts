@@ -4,6 +4,7 @@ import { TERMINAL_RAID_STATUSES } from './raid-state.js';
 export class RaidDeadlineTimerRegistry {
   private readonly raidDeadlineTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly expiringRaids = new Set<string>();
+  private readonly finalizingRaids = new Set<string>();
 
   schedule(raidId: string, raid: RaidRecord, onExpire: (raidId: string) => void): void {
     this.clear(raidId);
@@ -45,6 +46,18 @@ export class RaidDeadlineTimerRegistry {
 
   unmarkExpiring(raidId: string): void {
     this.expiringRaids.delete(raidId);
+  }
+
+  tryMarkFinalizing(raidId: string): boolean {
+    if (this.finalizingRaids.has(raidId)) {
+      return false;
+    }
+    this.finalizingRaids.add(raidId);
+    return true;
+  }
+
+  unmarkFinalizing(raidId: string): void {
+    this.finalizingRaids.delete(raidId);
   }
 
   static deadlineReached(raid: RaidRecord): boolean {

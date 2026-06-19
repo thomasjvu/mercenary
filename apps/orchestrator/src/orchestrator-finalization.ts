@@ -43,6 +43,24 @@ export async function finalizeRaid(
   raid: RaidRecord,
   deps: OrchestratorFinalizationDeps
 ): Promise<void> {
+  if (TERMINAL_RAID_STATUSES.has(raid.status)) {
+    return;
+  }
+  if (!deps.raidDeadlineTimers.tryMarkFinalizing(raid.id)) {
+    return;
+  }
+
+  try {
+    await runFinalizeRaid(raid, deps);
+  } finally {
+    deps.raidDeadlineTimers.unmarkFinalizing(raid.id);
+  }
+}
+
+async function runFinalizeRaid(
+  raid: RaidRecord,
+  deps: OrchestratorFinalizationDeps
+): Promise<void> {
   deps.clearRaidDeadlineTimer(raid.id);
   if (raid.childRaidIds?.length) {
     refreshParentRaidFromChildren(raid.id, (childRaidId) => deps.requireRaid(childRaidId));

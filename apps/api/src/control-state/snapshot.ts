@@ -27,6 +27,7 @@ export function createEmptyApiControlState(): ApiControlStateSnapshot {
     rateLimits: [],
     relayerTasks: [],
     x402Reconciliations: [],
+    x402SettledPayments: [],
     agentPaymentSessions: [],
     settings: {
       x402Enabled: false,
@@ -74,6 +75,9 @@ export function normalizeApiControlState(
     relayerTasks: Array.isArray(snapshot?.relayerTasks) ? snapshot.relayerTasks : [],
     x402Reconciliations: Array.isArray(snapshot?.x402Reconciliations)
       ? snapshot.x402Reconciliations
+      : [],
+    x402SettledPayments: Array.isArray(snapshot?.x402SettledPayments)
+      ? snapshot.x402SettledPayments
       : [],
     agentPaymentSessions: Array.isArray(snapshot?.agentPaymentSessions)
       ? snapshot.agentPaymentSessions

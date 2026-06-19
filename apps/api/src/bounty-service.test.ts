@@ -109,6 +109,103 @@ test('rejects double fund when escrow is already recorded', async () => {
   );
 });
 
+test('multi-award bounty stays awarded after first delivery', async () => {
+  const { service } = await createTestBountyService({
+    prefix: 'bossraid-bounty-multi-award-',
+    env: {
+      ...process.env,
+      BOSSRAID_BOUNTY_AUTO_AWARD_MAX: '3',
+    },
+  });
+
+  const bounty = service.createBounty('0xPoster00000000000000000000000000000005', {
+    title: 'Multi award',
+    description: 'Test',
+    requirements: 'Test',
+    rewardAmountUsd: 20,
+    maxAwards: 2,
+  });
+  service.fundBounty(bounty.id, bounty.posterWallet, { openNow: true });
+
+  const providerA = { providerId: 'pqf_a', scores: { reputationScore: 90 } } as ProviderProfile;
+  const providerB = { providerId: 'pqf_b', scores: { reputationScore: 80 } } as ProviderProfile;
+  const bidA = service.submitBid(
+    bounty.id,
+    { providerId: 'pqf_a', priceUsd: 10, etaHours: 2, pitch: 'a' },
+    providerA
+  );
+  service.submitBid(
+    bounty.id,
+    { providerId: 'pqf_b', priceUsd: 10, etaHours: 3, pitch: 'b' },
+    providerB
+  );
+
+  const firstAward = await service.awardBids(bounty.id, bounty.posterWallet, { bidIds: [bidA.id] });
+  assert.equal(firstAward.awards[0]!.amountUsd, 10);
+  const artifactsJson = JSON.stringify({ answer: 'first' });
+  await service.deliverAward(firstAward.awards[0]!.id, 'pqf_a', {
+    artifactSummary: 'first delivery',
+    artifactsJson,
+    deliveryHash: hashDeliveryPayload(artifactsJson),
+  });
+
+  const detail = service.getDetail(bounty.id);
+  assert.equal(detail.bounty.status, 'awarded');
+
+  const bidB = detail.bids.find((entry: { providerId: string }) => entry.providerId === 'pqf_b');
+  assert.ok(bidB);
+  const secondAward = await service.awardBids(bounty.id, bounty.posterWallet, {
+    bidIds: [bidB!.id],
+  });
+  assert.equal(secondAward.awards.length, 1);
+  assert.equal(secondAward.awards[0]!.amountUsd, 10);
+
+  const artifactsJsonB = JSON.stringify({ answer: 'second' });
+  await service.deliverAward(secondAward.awards[0]!.id, 'pqf_b', {
+    artifactSummary: 'second delivery',
+    artifactsJson: artifactsJsonB,
+    deliveryHash: hashDeliveryPayload(artifactsJsonB),
+  });
+
+  const finalDetail = service.getDetail(bounty.id);
+  assert.equal(finalDetail.bounty.status, 'delivered');
+});
+
+test('rejects awards that exceed maxAwards across batches', async () => {
+  const { service } = await createTestBountyService({
+    prefix: 'bossraid-bounty-max-awards-',
+    env: {
+      ...process.env,
+      BOSSRAID_BOUNTY_AUTO_AWARD_MAX: '2',
+    },
+  });
+  const bounty = service.createBounty('0xPoster00000000000000000000000000000006', {
+    title: 'Max awards',
+    description: 'Test',
+    requirements: 'Test',
+    rewardAmountUsd: 10,
+    maxAwards: 1,
+  });
+  service.fundBounty(bounty.id, bounty.posterWallet, { openNow: true });
+  const providerA = { providerId: 'pqf_cap_a', scores: { reputationScore: 1 } } as ProviderProfile;
+  const providerB = { providerId: 'pqf_cap_b', scores: { reputationScore: 1 } } as ProviderProfile;
+  const bidA = service.submitBid(
+    bounty.id,
+    { providerId: 'pqf_cap_a', priceUsd: 5, etaHours: 1, pitch: 'a' },
+    providerA
+  );
+  const bidB = service.submitBid(
+    bounty.id,
+    { providerId: 'pqf_cap_b', priceUsd: 5, etaHours: 1, pitch: 'b' },
+    providerB
+  );
+  await service.awardBids(bounty.id, bounty.posterWallet, { bidIds: [bidA.id] });
+  await assert.rejects(
+    () => service.awardBids(bounty.id, bounty.posterWallet, { bidIds: [bidB.id] }),
+    /already has 1 award/
+  );
+});
+
 test('claim is blocked before accept deadline', async () => {
   const { service } = await createTestBountyService({
     prefix: 'bossraid-bounty-claim-',

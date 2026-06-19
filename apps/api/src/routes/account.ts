@@ -15,6 +15,8 @@ import {
   applyVerifiedFundSettlementHeaders,
   collectVerifiedFundPayment,
 } from '../lib/verified-fund-payment.js';
+import { buildX402SettlementFingerprint } from '../control-state/x402-settled-payments.js';
+import { readPaymentSignature } from '../lib/x402-reconciliation.js';
 
 export function registerAccountRoutes(
   app: FastifyInstance,
@@ -242,6 +244,56 @@ export function registerAccountRoutes(
       creditedUsd = payment.escrowFundingUsd;
       settlement = payment.settlement;
       applyVerifiedFundSettlementHeaders(reply, payment.settlement);
+
+      const fingerprint = buildX402SettlementFingerprint({
+        settlementTx: payment.settlement?.transaction,
+        paymentSignature: readPaymentSignature(request.headers),
+      });
+      if (fingerprint && controlState.hasX402SettledPayment(fingerprint)) {
+        const account = controlState.ensurePublicAccount(session.wallet);
+        return {
+          wallet: account.wallet,
+          balanceUsd: account.balanceUsd,
+          creditedUsd: 0,
+          currency: 'USD',
+          duplicate: true,
+          ...(settlement?.transaction || settlement?.payer
+            ? {
+                payment: {
+                  transaction: settlement.transaction,
+                  payer: settlement.payer,
+                  network: settlement.network,
+                },
+              }
+            : {}),
+        };
+      }
+
+      const account = controlState.creditBuyerBalance(session.wallet, creditedUsd);
+      if (fingerprint && payment.settlement?.success) {
+        controlState.recordX402SettledPayment({
+          fingerprint,
+          wallet: session.wallet,
+          route: 'balance',
+          amountUsd: creditedUsd,
+          createdAt: new Date().toISOString(),
+        });
+      }
+      return {
+        wallet: account.wallet,
+        balanceUsd: account.balanceUsd,
+        creditedUsd,
+        currency: 'USD',
+        ...(settlement?.transaction || settlement?.payer
+          ? {
+              payment: {
+                transaction: settlement.transaction,
+                payer: settlement.payer,
+                network: settlement.network,
+              },
+            }
+          : {}),
+      };
     } else if (allowUnverifiedBalanceFund) {
       creditedUsd = amountUsd;
     } else {
@@ -260,15 +312,6 @@ export function registerAccountRoutes(
       balanceUsd: account.balanceUsd,
       creditedUsd,
       currency: 'USD',
-      ...(settlement?.transaction || settlement?.payer
-        ? {
-            payment: {
-              transaction: settlement.transaction,
-              payer: settlement.payer,
-              network: settlement.network,
-            },
-          }
-        : {}),
     };
   });
 }

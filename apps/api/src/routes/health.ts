@@ -109,24 +109,6 @@ export function registerHealthRoutes(
         gates.unverifiedBalanceFundDisabled &&
         gates.unverifiedBountyFundDisabled &&
         gates.teeProductionReady,
-      gates,
-      providers: orchestrator.listProviders().length,
-      readyProviders: providerHealth.filter((provider) => provider.ready).length,
-      storage: persistence,
-      encryption: {
-        enabled: secretsEncrypted,
-        keyId: env.BOSSRAID_SECRET_ENCRYPTION_KEY_ID ?? null,
-      },
-      payment: {
-        enabled: x402Config.enabled,
-        network: x402Config.network,
-        asset: x402Config.asset,
-        facilitatorConfigured: Boolean(x402Config.facilitatorUrl),
-      },
-      settlement: {
-        mode: settlementMode,
-        configured: settlementConfigured,
-      },
     };
   });
 
