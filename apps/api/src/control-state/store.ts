@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -14,20 +15,41 @@ import type { ApiControlStateSnapshot, ApiControlStateStore } from './types.js';
 
 const SNAPSHOT_KEY = 1;
 
+export class ApiControlStateVersionConflictError extends Error {
+  constructor() {
+    super('API control state version conflict.');
+    this.name = 'ApiControlStateVersionConflictError';
+  }
+}
+
+function snapshotPersistRevision(snapshot: ApiControlStateSnapshot): string {
+  const { savedAt: _savedAt, version: _version, ...rest } = snapshot;
+  return createHash('sha256').update(JSON.stringify(rest)).digest('hex');
+}
+
 class InMemoryApiControlStateStore implements ApiControlStateStore {
   private snapshot = createEmptyApiControlState();
+  private lastPersistedRevision?: string;
 
   loadState(): ApiControlStateSnapshot {
     return structuredClone(this.snapshot);
   }
 
   saveState(snapshot: ApiControlStateSnapshot): void {
+    const revision = snapshotPersistRevision(snapshot);
+    if (revision === this.lastPersistedRevision) {
+      return;
+    }
+    snapshot.version += 1;
+    snapshot.savedAt = new Date().toISOString();
     this.snapshot = structuredClone(snapshot);
+    this.lastPersistedRevision = revision;
   }
 }
 
 class SqliteApiControlStateStore implements ApiControlStateStore {
   private db: DatabaseSync;
+  private lastPersistedRevision?: string;
 
   constructor(
     path: string,
@@ -49,42 +71,65 @@ class SqliteApiControlStateStore implements ApiControlStateStore {
 
   loadState(): ApiControlStateSnapshot {
     const row = this.db
-      .prepare('select snapshot_json from bossraid_api_control_state where key = ?')
-      .get(SNAPSHOT_KEY) as { snapshot_json?: string } | undefined;
+      .prepare('select version, snapshot_json from bossraid_api_control_state where key = ?')
+      .get(SNAPSHOT_KEY) as { version?: number; snapshot_json?: string } | undefined;
 
     if (!row?.snapshot_json) {
       return createEmptyApiControlState();
     }
 
-    return normalizeApiControlState(
+    const snapshot = normalizeApiControlState(
       decryptApiControlStateSnapshot(
         JSON.parse(row.snapshot_json) as Partial<ApiControlStateSnapshot>,
         this.cipher
       )
     );
+    snapshot.version = row.version ?? snapshot.version;
+    return snapshot;
   }
 
   saveState(snapshot: ApiControlStateSnapshot): void {
+    const revision = snapshotPersistRevision(snapshot);
+    if (revision === this.lastPersistedRevision) {
+      return;
+    }
+
     this.db.exec('begin immediate');
 
     try {
-      this.db
-        .prepare(
-          [
-            'insert into bossraid_api_control_state (key, version, saved_at, snapshot_json)',
-            'values (?, ?, ?, ?)',
-            'on conflict(key) do update set',
-            '  version = excluded.version,',
-            '  saved_at = excluded.saved_at,',
-            '  snapshot_json = excluded.snapshot_json',
-          ].join(' ')
-        )
-        .run(
-          SNAPSHOT_KEY,
-          snapshot.version,
-          snapshot.savedAt,
-          JSON.stringify(encryptApiControlStateSnapshot(snapshot, this.cipher))
-        );
+      const row = this.db
+        .prepare('select version from bossraid_api_control_state where key = ?')
+        .get(SNAPSHOT_KEY) as { version?: number } | undefined;
+      const currentVersion = row?.version ?? 0;
+      if (snapshot.version !== currentVersion) {
+        throw new ApiControlStateVersionConflictError();
+      }
+
+      const nextVersion = currentVersion + 1;
+      snapshot.version = nextVersion;
+      snapshot.savedAt = new Date().toISOString();
+      const encryptedJson = JSON.stringify(encryptApiControlStateSnapshot(snapshot, this.cipher));
+      if (row) {
+        const updated = this.db
+          .prepare(
+            [
+              'update bossraid_api_control_state',
+              'set version = ?, saved_at = ?, snapshot_json = ?',
+              'where key = ? and version = ?',
+            ].join(' ')
+          )
+          .run(nextVersion, snapshot.savedAt, encryptedJson, SNAPSHOT_KEY, currentVersion);
+        if (updated.changes === 0) {
+          throw new ApiControlStateVersionConflictError();
+        }
+      } else {
+        this.db
+          .prepare(
+            'insert into bossraid_api_control_state (key, version, saved_at, snapshot_json) values (?, ?, ?, ?)'
+          )
+          .run(SNAPSHOT_KEY, nextVersion, snapshot.savedAt, encryptedJson);
+      }
+      this.lastPersistedRevision = revision;
       this.db.exec('commit');
     } catch (error) {
       this.db.exec('rollback');

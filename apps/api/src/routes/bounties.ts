@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { type FastifyInstance, type FastifyReply } from 'fastify';
 import {
   parseAwardBountyBidsInput,
@@ -64,14 +65,21 @@ export function registerBountyRoutes(
   const { providerIsAuthorized } = handlers.auth;
 
   const deadlineIntervalMs = Number(ctx.env.BOSSRAID_BOUNTY_DEADLINE_INTERVAL_MS ?? '60000');
+  const deadlineWorkerId = `bounty-deadline-${randomUUID()}`;
   if (Number.isFinite(deadlineIntervalMs) && deadlineIntervalMs > 0) {
     setInterval(() => {
-      void service.processDeadlines().catch((error: unknown) => {
-        logger.warn(
-          { error: error instanceof Error ? error.message : String(error) },
-          'bounty deadline worker failed'
-        );
-      });
+      if (!store.tryAcquireDeadlineWorkerLock(deadlineWorkerId, deadlineIntervalMs * 2)) {
+        return;
+      }
+      void service
+        .processDeadlines()
+        .catch((error: unknown) => {
+          logger.warn(
+            { error: error instanceof Error ? error.message : String(error) },
+            'bounty deadline worker failed'
+          );
+        })
+        .finally(() => store.releaseDeadlineWorkerLock(deadlineWorkerId));
     }, deadlineIntervalMs).unref?.();
   }
 

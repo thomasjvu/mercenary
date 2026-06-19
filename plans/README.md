@@ -126,6 +126,22 @@ Findings **060–078** implemented at `95fe1fe` base:
 | 076–077 | BOUNTY_ESCROW_ABI in raid-core; test-fixtures dev-only    | DONE   |
 | 078     | Production deploy env audit gaps                          | DONE   |
 
+## Fifth-pass reconcile (2026-06-19)
+
+Base commit: **`eb6bc8b`** (committed + synced to `development`, `main`, `staging`). Working tree clean.
+
+All plans **001–012** and findings **013–078** verified at `eb6bc8b`.
+
+## Fifth-pass execution (2026-06-19)
+
+Findings **079–100** implemented at `eb6bc8b` base:
+
+| ID      | Area                                                       | Status |
+| ------- | ---------------------------------------------------------- | ------ |
+| 079–088 | Spawn mutex, streaming billing, bounty locks, relayer IDOR | DONE   |
+| 089–095 | Settlement guard, control-state CAS, persist/index perf    | DONE   |
+| 096–100 | test-fixtures devDep, relayer tests, runtime/docs sync     | DONE   |
+
 ## Findings considered and rejected
 
 - **Committed deploy secrets** (`deploy/phala/secrets.*.env`): gitignored, never in git history.

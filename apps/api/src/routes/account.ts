@@ -249,33 +249,39 @@ export function registerAccountRoutes(
         settlementTx: payment.settlement?.transaction,
         paymentSignature: readPaymentSignature(request.headers),
       });
-      if (fingerprint && payment.settlement?.success) {
-        const claimed = controlState.tryClaimX402SettledPayment({
-          fingerprint,
-          wallet: session.wallet,
-          route: 'balance',
-          amountUsd: creditedUsd,
-          createdAt: new Date().toISOString(),
-        });
-        if (!claimed) {
-          const account = controlState.ensurePublicAccount(session.wallet);
-          return {
-            wallet: account.wallet,
-            balanceUsd: account.balanceUsd,
-            creditedUsd: 0,
-            currency: 'USD',
-            duplicate: true,
-            ...(settlement?.transaction || settlement?.payer
-              ? {
-                  payment: {
-                    transaction: settlement.transaction,
-                    payer: settlement.payer,
-                    network: settlement.network,
-                  },
-                }
-              : {}),
-          };
-        }
+      if (!fingerprint || !payment.settlement?.success) {
+        reply.code(402);
+        return {
+          error: 'payment_unverified',
+          message: 'Verified x402 settlement fingerprint is required before crediting balance.',
+        };
+      }
+
+      const claimed = controlState.tryClaimX402SettledPayment({
+        fingerprint,
+        wallet: session.wallet,
+        route: 'balance',
+        amountUsd: creditedUsd,
+        createdAt: new Date().toISOString(),
+      });
+      if (!claimed) {
+        const account = controlState.ensurePublicAccount(session.wallet);
+        return {
+          wallet: account.wallet,
+          balanceUsd: account.balanceUsd,
+          creditedUsd: 0,
+          currency: 'USD',
+          duplicate: true,
+          ...(settlement?.transaction || settlement?.payer
+            ? {
+                payment: {
+                  transaction: settlement.transaction,
+                  payer: settlement.payer,
+                  network: settlement.network,
+                },
+              }
+            : {}),
+        };
       }
 
       const account = controlState.creditBuyerBalance(session.wallet, creditedUsd);

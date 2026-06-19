@@ -249,8 +249,12 @@ export async function deliverStreamingChatCompletion(
   deps: ChatCompletionPipelineDeps
 ) {
   const { captureManaBilling, refundManaBilling, buildBossRaidBillingMetadata } = deps.manaBilling;
-  const { captureApiKeyBilling, recordMarketplaceLedgersFromRaid, reconcileLaunchPayment } =
-    deps.payment;
+  const {
+    captureApiKeyBilling,
+    recordMarketplaceLedgersFromRaid,
+    reconcileLaunchPayment,
+    releaseLaunchPaymentHold,
+  } = deps.payment;
 
   applyX402Headers(input.reply, {
     settlement: input.launchPayment.settlement,
@@ -320,7 +324,13 @@ export async function deliverStreamingChatCompletion(
             },
           }
         : undefined,
-    onFailure: async (error) => {
+    onFailure: async (error, outcome) => {
+      const billingCaptureFailed = Boolean(outcome) && !(error instanceof ChatTerminalWaitError);
+      if (billingCaptureFailed) {
+        await releaseLaunchPaymentHold({ launchPayment: input.launchPayment });
+        return;
+      }
+
       const reason =
         error instanceof ChatTerminalWaitError ? 'terminal_wait_timeout' : 'terminal_output_failed';
       await refundManaBilling({

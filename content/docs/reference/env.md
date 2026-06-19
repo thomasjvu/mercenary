@@ -112,15 +112,18 @@ Workflow: [operators/appendix/infisical.md](../operators/appendix/infisical.md).
 
 ## Settlement
 
-| Variable                                                                                                           | Purpose                                 |
-| ------------------------------------------------------------------------------------------------------------------ | --------------------------------------- |
-| `BOSSRAID_SETTLEMENT_MODE`                                                                                         | `off`, `file` (safe default), `onchain` |
-| `BOSSRAID_SETTLEMENT_DIR`                                                                                          | Artifact output dir                     |
-| `BOSSRAID_RPC_URL`, `BOSSRAID_CHAIN_ID`                                                                            | Chain config                            |
-| `BOSSRAID_REGISTRY_ADDRESS`, `BOSSRAID_ESCROW_ADDRESS`, `BOSSRAID_BOUNTY_ESCROW_ADDRESS`, `BOSSRAID_TOKEN_ADDRESS` | Contracts                               |
-| `BOSSRAID_CLIENT_PRIVATE_KEY`                                                                                      | Client signer (raid + bounty relayer)   |
-| `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD`                                                                               | Dust threshold (default `0.25`)         |
-| `BOSSRAID_PROVIDER_ADDRESS_MAP_JSON`                                                                               | Provider payout overrides               |
+| Variable                                                                                                           | Purpose                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `BOSSRAID_SETTLEMENT_MODE`                                                                                         | `off`, `file` (safe default), `onchain`                                                     |
+| `BOSSRAID_SETTLEMENT_DIR`                                                                                          | Artifact output dir                                                                         |
+| `BOSSRAID_RPC_URL`, `BOSSRAID_CHAIN_ID`                                                                            | Chain config                                                                                |
+| `BOSSRAID_REGISTRY_ADDRESS`, `BOSSRAID_ESCROW_ADDRESS`, `BOSSRAID_BOUNTY_ESCROW_ADDRESS`, `BOSSRAID_TOKEN_ADDRESS` | Contracts                                                                                   |
+| `BOSSRAID_CLIENT_PRIVATE_KEY`                                                                                      | Client signer (raid + bounty relayer)                                                       |
+| `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD`                                                                               | Dust threshold (default `0.25`)                                                             |
+| `BOSSRAID_SETTLEMENT_FUND_JOBS`                                                                                    | Fund successful child jobs onchain (`true` required in production onchain mode)             |
+| `BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS`                                                                        | Block parent settlement until child jobs are terminal (`true` required in production audit) |
+| `BOSSRAID_SETTLEMENT_RETRY_INTERVAL_MS`                                                                            | Orchestrator settlement retry worker interval (default `60000`; `0` disables)               |
+| `BOSSRAID_PROVIDER_ADDRESS_MAP_JSON`                                                                               | Provider payout overrides                                                                   |
 
 ## ERC-8004 & attestation
 

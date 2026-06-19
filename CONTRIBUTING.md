@@ -31,11 +31,12 @@ Read these first:
 pnpm install
 cp .env.example .env
 pnpm check
+pnpm format:check
+pnpm lint
 pnpm build
-pnpm --filter @bossraid/api test:all
-pnpm --filter @bossraid/orchestrator test
-pnpm --filter @bossraid/api test src/marketplace-inference.test.ts
-pnpm --filter @bossraid/web test src/lib/*.test.ts
+pnpm test:unit
+pnpm test:money-path
+pnpm test:smoke:e2e
 pnpm dev
 ```
 

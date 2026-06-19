@@ -112,6 +112,8 @@ export type RaidLifecycleCoordinatorDeps = {
 export class RaidLifecycleCoordinator {
   readonly raids = new Map<string, RaidRecord>();
   readonly launchReservations = new Map<string, RaidLaunchReservationRecord>();
+  readonly reservationSpawnInFlight = new Map<string, Promise<BossRaidSpawnOutput>>();
+  readonly pendingSettlementRaidIds = new Set<string>();
   readonly timers = new ProviderTimerRegistry();
   readonly raidDeadlineTimers = new RaidDeadlineTimerRegistry();
   private runnerContext?: RaidRunnerContext;
@@ -277,20 +279,43 @@ export class RaidLifecycleCoordinator {
   }
 
   async retryPendingSettlements(): Promise<void> {
-    const pendingSettlements = this.listAllRaids()
-      .filter((raid) => shouldRunSettlement(raid))
-      .sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt));
+    this.refreshPendingSettlementIndex();
+    const pendingRaidIds = [...this.pendingSettlementRaidIds].sort((left, right) => {
+      const leftRaid = this.raids.get(left);
+      const rightRaid = this.raids.get(right);
+      return Date.parse(leftRaid?.createdAt ?? '0') - Date.parse(rightRaid?.createdAt ?? '0');
+    });
 
-    for (const raid of pendingSettlements) {
+    for (const raidId of pendingRaidIds) {
       try {
-        await this.executeSettlement(raid.id);
+        await this.executeSettlement(raidId);
       } catch (error) {
         console.error('Mercenary settlement retry failed', {
-          raidId: raid.id,
+          raidId,
           error: error instanceof Error ? error.message : String(error),
         });
       }
     }
+  }
+
+  refreshPendingSettlementIndex(): void {
+    this.pendingSettlementRaidIds.clear();
+    for (const raid of this.listAllRaids()) {
+      if (shouldRunSettlement(raid)) {
+        this.pendingSettlementRaidIds.add(raid.id);
+      }
+    }
+  }
+
+  trackPendingSettlement(raidId: string): void {
+    const raid = this.raids.get(raidId);
+    if (raid && shouldRunSettlement(raid)) {
+      this.pendingSettlementRaidIds.add(raidId);
+    }
+  }
+
+  untrackPendingSettlement(raidId: string): void {
+    this.pendingSettlementRaidIds.delete(raidId);
   }
 
   requireRaid(raidId: string): RaidRecord {
@@ -313,6 +338,7 @@ export class RaidLifecycleCoordinator {
   private spawnContext(): RaidLifecycleSpawnContext {
     return {
       launchReservations: this.launchReservations,
+      reservationSpawnInFlight: this.reservationSpawnInFlight,
       options: this.options,
       assertPersistenceWritable: () => this.deps.assertPersistenceWritable(),
       queuePersist: () => this.deps.queuePersist(),
@@ -435,7 +461,21 @@ export class RaidLifecycleCoordinator {
   }
 
   private async executeSettlement(raidId: string): Promise<void> {
-    await executeRaidSettlement(raidId, this.settlementRunnerDeps());
+    if (!this.raidDeadlineTimers.tryMarkSettling(raidId)) {
+      return;
+    }
+
+    try {
+      await executeRaidSettlement(raidId, this.settlementRunnerDeps());
+      const raid = this.raids.get(raidId);
+      if (raid && shouldRunSettlement(raid)) {
+        this.trackPendingSettlement(raidId);
+      } else {
+        this.untrackPendingSettlement(raidId);
+      }
+    } finally {
+      this.raidDeadlineTimers.unmarkSettling(raidId);
+    }
   }
 
   private runner(): RaidRunnerContext {

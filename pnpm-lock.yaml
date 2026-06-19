@@ -129,9 +129,6 @@ importers:
       '@bossraid/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
-      '@bossraid/test-fixtures':
-        specifier: workspace:*
-        version: link:../../packages/test-fixtures
       '@bossraid/validator':
         specifier: workspace:*
         version: link:../../packages/validator
@@ -147,6 +144,10 @@ importers:
       viem:
         specifier: ^2.47.5
         version: 2.47.5(typescript@5.9.3)(zod@4.3.6)
+    devDependencies:
+      '@bossraid/test-fixtures':
+        specifier: workspace:*
+        version: link:../../packages/test-fixtures
 
   apps/docs:
     dependencies:
@@ -371,15 +372,16 @@ importers:
       '@bossraid/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
-      '@bossraid/test-fixtures':
-        specifier: workspace:*
-        version: link:../../packages/test-fixtures
       '@bossraid/venice-client':
         specifier: workspace:*
         version: link:../../packages/venice-client
       viem:
         specifier: ^2.47.5
         version: 2.47.5(typescript@5.9.3)(zod@4.3.6)
+    devDependencies:
+      '@bossraid/test-fixtures':
+        specifier: workspace:*
+        version: link:../../packages/test-fixtures
 
   apps/provider-agent:
     dependencies:

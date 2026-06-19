@@ -14,7 +14,7 @@ import type { ApiControlStateSnapshot, SellerUpstreamConfigEntry } from './types
 
 export function createEmptyApiControlState(): ApiControlStateSnapshot {
   return {
-    version: 1,
+    version: 0,
     savedAt: new Date().toISOString(),
     opsSessions: [],
     publicAuthNonces: [],
@@ -40,7 +40,7 @@ export function normalizeApiControlState(
   snapshot: Partial<ApiControlStateSnapshot> | undefined
 ): ApiControlStateSnapshot {
   return {
-    version: 1,
+    version: typeof snapshot?.version === 'number' ? snapshot.version : 0,
     savedAt:
       typeof snapshot?.savedAt === 'string' && snapshot.savedAt.length > 0
         ? snapshot.savedAt

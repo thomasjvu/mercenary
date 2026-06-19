@@ -49,6 +49,15 @@ export class BountyStore {
         '  bounty_id text primary key,',
         '  acquired_at text not null',
         ');',
+        'create table if not exists bounty_award_payment_claims (',
+        '  award_id text primary key,',
+        '  claimed_at text not null',
+        ');',
+        'create table if not exists bounty_worker_locks (',
+        '  lock_name text primary key,',
+        '  holder_id text not null,',
+        '  acquired_at text not null',
+        ');',
       ].join('\n')
     );
   }
@@ -73,6 +82,15 @@ export class BountyStore {
     if (!award || award.status !== 'delivered') {
       return undefined;
     }
+
+    try {
+      this.db
+        .prepare('insert into bounty_award_payment_claims (award_id, claimed_at) values (?, ?)')
+        .run(awardId, new Date().toISOString());
+    } catch {
+      return undefined;
+    }
+
     const paying: BountyAwardRecord = {
       ...award,
       status: 'paying',
@@ -87,12 +105,50 @@ export class BountyStore {
     if (!award || award.status !== 'paying') {
       return;
     }
+    this.db.prepare('delete from bounty_award_payment_claims where award_id = ?').run(awardId);
     this.saveAward({
       ...award,
       status: 'delivered',
       paidAt: undefined,
       updatedAt: new Date().toISOString(),
     });
+  }
+
+  tryAcquireDeadlineWorkerLock(holderId: string, staleAfterMs: number): boolean {
+    const nowIso = new Date().toISOString();
+    const staleBeforeIso = new Date(Date.now() - staleAfterMs).toISOString();
+    this.db.exec('begin immediate');
+    try {
+      const row = this.db
+        .prepare('select holder_id, acquired_at from bounty_worker_locks where lock_name = ?')
+        .get('deadline') as { holder_id?: string; acquired_at?: string } | undefined;
+      if (row?.acquired_at && row.acquired_at > staleBeforeIso) {
+        this.db.exec('rollback');
+        return false;
+      }
+      this.db
+        .prepare(
+          [
+            'insert into bounty_worker_locks (lock_name, holder_id, acquired_at)',
+            'values (?, ?, ?)',
+            'on conflict(lock_name) do update set',
+            '  holder_id = excluded.holder_id,',
+            '  acquired_at = excluded.acquired_at',
+          ].join(' ')
+        )
+        .run('deadline', holderId, nowIso);
+      this.db.exec('commit');
+      return true;
+    } catch {
+      this.db.exec('rollback');
+      return false;
+    }
+  }
+
+  releaseDeadlineWorkerLock(holderId: string): void {
+    this.db
+      .prepare('delete from bounty_worker_locks where lock_name = ? and holder_id = ?')
+      .run('deadline', holderId);
   }
 
   createId(prefix: string): string {
@@ -119,15 +175,18 @@ export class BountyStore {
   }
 
   listBounties(options: { status?: BountyRecord['status']; limit?: number } = {}): BountyRecord[] {
-    const rows = this.db
-      .prepare('select payload_json from bounty_records order by updated_at desc')
-      .all() as Row[];
-    const records = rows.map((row) => JSON.parse(row.payload_json) as BountyRecord);
-    const filtered = options.status
-      ? records.filter((record) => record.status === options.status)
-      : records;
     const limit = Math.min(Math.max(options.limit ?? 50, 1), 100);
-    return filtered.slice(0, limit);
+    const rows = this.db
+      .prepare(
+        [
+          'select payload_json from bounty_records',
+          "where (? is null or json_extract(payload_json, '$.status') = ?)",
+          'order by updated_at desc',
+          'limit ?',
+        ].join(' ')
+      )
+      .all(options.status ?? null, options.status ?? null, limit) as Row[];
+    return rows.map((row) => JSON.parse(row.payload_json) as BountyRecord);
   }
 
   saveBid(record: BountyBidRecord): BountyBidRecord {
@@ -208,39 +267,40 @@ export class BountyStore {
   }
 
   listOpenBountiesPastDeadline(nowIso: string): BountyRecord[] {
-    const now = Date.parse(nowIso);
-    return this.listBounties({ limit: 200 }).filter((bounty) => {
-      const biddingDeadline = Date.parse(bounty.deadlines.biddingDeadlineAt);
-      const awardDeadline = Date.parse(bounty.deadlines.awardDeadlineAt);
-      if (bounty.status === 'open' && Number.isFinite(biddingDeadline) && now >= biddingDeadline) {
-        return true;
-      }
-      if (
-        (bounty.status === 'open' || bounty.status === 'funded') &&
-        Number.isFinite(awardDeadline) &&
-        now >= awardDeadline
-      ) {
-        return true;
-      }
-      return false;
-    });
+    const rows = this.db
+      .prepare(
+        [
+          'select payload_json from bounty_records',
+          'where (',
+          "  json_extract(payload_json, '$.status') = 'open'",
+          "  and json_extract(payload_json, '$.deadlines.biddingDeadlineAt') <= ?",
+          ') or (',
+          "  json_extract(payload_json, '$.status') in ('open', 'funded')",
+          "  and json_extract(payload_json, '$.deadlines.awardDeadlineAt') <= ?",
+          ')',
+          'order by updated_at desc',
+          'limit 200',
+        ].join(' ')
+      )
+      .all(nowIso, nowIso) as Row[];
+    return rows.map((row) => JSON.parse(row.payload_json) as BountyRecord);
   }
 
   listDeliveredAwardsPastAcceptDeadline(nowIso: string): BountyAwardRecord[] {
-    const now = Date.parse(nowIso);
-    const awards: BountyAwardRecord[] = [];
-    for (const bounty of this.listBounties({ limit: 200 })) {
-      const acceptDeadline = Date.parse(bounty.deadlines.acceptDeadlineAt);
-      if (!Number.isFinite(acceptDeadline) || now < acceptDeadline) {
-        continue;
-      }
-      for (const award of this.listAwardsForBounty(bounty.id)) {
-        if (award.status === 'delivered') {
-          awards.push(award);
-        }
-      }
-    }
-    return awards;
+    const rows = this.db
+      .prepare(
+        [
+          'select award.payload_json as payload_json',
+          'from bounty_award_records award',
+          'inner join bounty_records bounty on bounty.bounty_id = award.bounty_id',
+          "where json_extract(award.payload_json, '$.status') = 'delivered'",
+          "and json_extract(bounty.payload_json, '$.deadlines.acceptDeadlineAt') <= ?",
+          'order by award.updated_at asc',
+          'limit 200',
+        ].join(' ')
+      )
+      .all(nowIso) as Row[];
+    return rows.map((row) => JSON.parse(row.payload_json) as BountyAwardRecord);
   }
 
   private readOne<T>(sql: string, id: string): T | undefined {

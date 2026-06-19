@@ -5,6 +5,7 @@ export class RaidDeadlineTimerRegistry {
   private readonly raidDeadlineTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly expiringRaids = new Set<string>();
   private readonly finalizingRaids = new Set<string>();
+  private readonly settlingRaids = new Set<string>();
 
   schedule(raidId: string, raid: RaidRecord, onExpire: (raidId: string) => void): void {
     this.clear(raidId);
@@ -58,6 +59,18 @@ export class RaidDeadlineTimerRegistry {
 
   unmarkFinalizing(raidId: string): void {
     this.finalizingRaids.delete(raidId);
+  }
+
+  tryMarkSettling(raidId: string): boolean {
+    if (this.settlingRaids.has(raidId)) {
+      return false;
+    }
+    this.settlingRaids.add(raidId);
+    return true;
+  }
+
+  unmarkSettling(raidId: string): void {
+    this.settlingRaids.delete(raidId);
   }
 
   static deadlineReached(raid: RaidRecord): boolean {

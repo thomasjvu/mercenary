@@ -413,14 +413,10 @@ export class BountyService {
         try {
           await this.refundBounty(bounty.id, bounty.posterWallet);
           messages.push(`refunded:${bounty.id}`);
-        } catch {
-          this.store.saveBounty({
-            ...bounty,
-            status: 'expired',
-            updatedAt: nowIso,
-          });
-          this.appendEvent(bounty.id, 'bounty.expired', 'No bids before bidding deadline');
-          messages.push(`expired:${bounty.id}`);
+        } catch (error) {
+          messages.push(
+            `refund_failed:${bounty.id}:${error instanceof Error ? error.message : String(error)}`
+          );
         }
         continue;
       }

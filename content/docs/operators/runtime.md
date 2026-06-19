@@ -188,7 +188,21 @@ curl -H "Authorization: Bearer $BOSSRAID_ADMIN_TOKEN" \
   https://<api>/v1/ops/production-readiness | jq
 ```
 
-Production gate: `ok: true` on `GET /v1/ops/production-readiness` before unrestricted paid traffic. `GET /ready` also enforces production-only checks when `NODE_ENV=production` (onchain settlement configured, upstream mocks disabled, unverified balance fund disabled). Static deploy audit: `NODE_ENV=production BOSSRAID_SETTLEMENT_MODE=onchain BOSSRAID_X402_ENABLED=true node scripts/audit-production-deploy-env.mjs`. Trust boundary: [trust-and-safety.md](trust-and-safety.md).
+Production gate: `ok: true` on `GET /v1/ops/production-readiness` before unrestricted paid traffic. `GET /ready` also enforces production-only checks when `NODE_ENV=production` (onchain settlement configured, upstream mocks disabled, unverified balance fund disabled). Static deploy audit (matches CI):
+
+```bash
+NODE_ENV=production \
+BOSSRAID_SETTLEMENT_MODE=onchain \
+BOSSRAID_X402_ENABLED=true \
+BOSSRAID_SETTLEMENT_FUND_JOBS=true \
+BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS=true \
+BOSSRAID_BOUNTY_ESCROW_ADDRESS=0x0000000000000000000000000000000000000201 \
+BOSSRAID_ONESHOT_RELAYER_WEBHOOK_SECRET=ci-audit-secret \
+BOSSRAID_SECRET_ENCRYPTION_KEY=ci-audit-encryption-key \
+node scripts/audit-production-deploy-env.mjs
+```
+
+Trust boundary: [trust-and-safety.md](trust-and-safety.md).
 
 Ops UI (`/ops/`) surfaces the same admin routes after login:
 

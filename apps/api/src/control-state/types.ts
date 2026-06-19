@@ -132,7 +132,7 @@ export type X402SettledPaymentEntry = {
 };
 
 export type ApiControlStateSnapshot = {
-  version: 1;
+  version: number;
   savedAt: string;
   opsSessions: ApiOpsSessionEntry[];
   publicAuthNonces: PublicAuthNonceEntry[];

@@ -164,6 +164,14 @@ export function createPaymentHandlers(
     });
   }
 
+  async function releaseLaunchPaymentHold(input: {
+    launchPayment: LaunchPaymentContext;
+  }): Promise<void> {
+    if (input.launchPayment.apiKeyBilling) {
+      ctx.controlState.releaseBuyerApiKeyReservation(input.launchPayment.apiKeyBilling);
+    }
+  }
+
   async function reconcileLaunchPayment(input: {
     route: 'raid' | 'chat' | 'inference';
     request: FastifyRequest;
@@ -171,6 +179,7 @@ export function createPaymentHandlers(
     launchPayment: LaunchPaymentContext;
     reason: string;
     raidId?: string;
+    refundX402?: boolean;
   }): Promise<void> {
     await refundManaBilling({
       manaBilling: input.launchPayment.manaBilling,
@@ -178,11 +187,9 @@ export function createPaymentHandlers(
       raidId: input.raidId,
     });
 
-    if (input.launchPayment.apiKeyBilling) {
-      ctx.controlState.releaseBuyerApiKeyReservation(input.launchPayment.apiKeyBilling);
-    }
+    await releaseLaunchPaymentHold({ launchPayment: input.launchPayment });
 
-    if (!input.launchPayment.settlement?.success) {
+    if (input.refundX402 === false || !input.launchPayment.settlement?.success) {
       return;
     }
 
@@ -401,6 +408,7 @@ export function createPaymentHandlers(
     recordMarketplaceLedgersFromRaid,
     captureApiKeyBilling,
     requireReservedLaunchPayment,
+    releaseLaunchPaymentHold,
     reconcileLaunchPayment,
   };
 }

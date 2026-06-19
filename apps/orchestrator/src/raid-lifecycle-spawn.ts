@@ -26,6 +26,7 @@ export type LaunchReservationOptions = {
 
 export type RaidLifecycleSpawnContext = {
   launchReservations: Map<string, RaidLaunchReservationRecord>;
+  reservationSpawnInFlight: Map<string, Promise<BossRaidSpawnOutput>>;
   options: RuntimeOptions;
   assertPersistenceWritable: () => void;
   queuePersist: () => Promise<void>;
@@ -103,6 +104,33 @@ export async function spawnReservedRaid(
   escrowFundingUsd?: number,
   platformMarkupUsd?: number
 ): Promise<BossRaidSpawnOutput> {
+  const inflight = ctx.reservationSpawnInFlight.get(reservationId);
+  if (inflight) {
+    return inflight;
+  }
+
+  const spawnPromise = spawnReservedRaidOnce(
+    ctx,
+    reservationId,
+    requestKey,
+    escrowFundingUsd,
+    platformMarkupUsd
+  );
+  ctx.reservationSpawnInFlight.set(reservationId, spawnPromise);
+  try {
+    return await spawnPromise;
+  } finally {
+    ctx.reservationSpawnInFlight.delete(reservationId);
+  }
+}
+
+async function spawnReservedRaidOnce(
+  ctx: RaidLifecycleSpawnContext,
+  reservationId: string,
+  requestKey: string,
+  escrowFundingUsd?: number,
+  platformMarkupUsd?: number
+): Promise<BossRaidSpawnOutput> {
   ctx.assertPersistenceWritable();
   const reservation = getRaidLaunchReservation(ctx, reservationId, requestKey);
   if (!reservation) {
@@ -146,6 +174,7 @@ export async function spawnRaid(
 ): Promise<BossRaidSpawnOutput> {
   ctx.assertPersistenceWritable();
   const prepared = await prepareRaid(input, ctx.prepareRaidDeps());
+  assertPreparedProvidersHaveCapacity(prepared, ctx.providerCapacityDeps());
   return spawnPreparedRaid(
     prepared,
     computeRootDeadlineUnix(prepared.sanitized, ctx.options.raidAbsoluteMs),

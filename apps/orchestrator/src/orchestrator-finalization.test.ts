@@ -9,3 +9,11 @@ test('RaidDeadlineTimerRegistry serializes finalization marks per raid', () => {
   registry.unmarkFinalizing('raid-1');
   assert.equal(registry.tryMarkFinalizing('raid-1'), true);
 });
+
+test('RaidDeadlineTimerRegistry serializes settlement marks per raid', () => {
+  const registry = new RaidDeadlineTimerRegistry();
+  assert.equal(registry.tryMarkSettling('raid-1'), true);
+  assert.equal(registry.tryMarkSettling('raid-1'), false);
+  registry.unmarkSettling('raid-1');
+  assert.equal(registry.tryMarkSettling('raid-1'), true);
+});

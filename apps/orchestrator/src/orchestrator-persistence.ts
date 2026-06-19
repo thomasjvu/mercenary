@@ -25,9 +25,27 @@ const encryptedProviderSnapshotCache = new WeakMap<
   Map<string, { revision: string; persisted: ProviderProfile }>
 >();
 
+const raidPersistSnapshotCache = new Map<string, { revision: string; persisted: RaidRecord }>();
+
 function providerPersistRevision(provider: ProviderProfile): string {
   const { lastSeenAt: _lastSeenAt, ...rest } = provider;
   return createHash('sha256').update(JSON.stringify(rest)).digest('hex');
+}
+
+function raidPersistRevision(raid: RaidRecord): string {
+  const { updatedAt: _updatedAt, ...rest } = raid;
+  return createHash('sha256').update(JSON.stringify(rest)).digest('hex');
+}
+
+function persistRaidRecord(raid: RaidRecord): RaidRecord {
+  const revision = raidPersistRevision(raid);
+  const cached = raidPersistSnapshotCache.get(raid.id);
+  if (cached?.revision === revision) {
+    return cached.persisted;
+  }
+  const persisted = structuredClone(raid);
+  raidPersistSnapshotCache.set(raid.id, { revision, persisted });
+  return persisted;
 }
 
 function persistProviderProfile(provider: ProviderProfile, cipher: SecretCipher): ProviderProfile {
@@ -94,7 +112,7 @@ export function buildOrchestratorSnapshot(input: {
   return {
     version: 1,
     savedAt: new Date().toISOString(),
-    raids,
+    raids: raids.map((raid) => persistRaidRecord(raid)),
     providers: input
       .listProviders()
       .map((provider) => persistProviderProfile(provider, input.secretCipher)),

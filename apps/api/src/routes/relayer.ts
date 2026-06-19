@@ -186,9 +186,12 @@ export function registerRelayerRoutes(
     const taskId = (request.params as { taskId: string }).taskId;
     const sessionWallet = accessError.wallet?.toLowerCase();
     const cached = ctx.controlState.getRelayerTask(taskId);
-    if (cached?.wallet && sessionWallet && cached.wallet !== sessionWallet) {
+    if (!cached?.wallet || !sessionWallet || cached.wallet !== sessionWallet) {
       reply.code(403);
-      return { error: 'forbidden', message: 'Task does not belong to the signed-in wallet.' };
+      return {
+        error: 'forbidden',
+        message: 'Task is unknown or does not belong to the signed-in wallet.',
+      };
     }
     const status = await getRelayerStatus(relayerUrl, taskId);
     const now = new Date().toISOString();
@@ -232,7 +235,7 @@ export function registerRelayerRoutes(
     const now = new Date().toISOString();
     ctx.controlState.upsertRelayerTask({
       taskId,
-      wallet: typeof body.wallet === 'string' ? body.wallet.toLowerCase() : cached?.wallet,
+      wallet: cached?.wallet,
       raidId: typeof body.raidId === 'string' ? body.raidId : cached?.raidId,
       status: typeof body.status === 'string' ? body.status : (cached?.status ?? 'Pending'),
       transactionHash:

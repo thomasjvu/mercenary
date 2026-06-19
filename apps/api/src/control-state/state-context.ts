@@ -1,3 +1,4 @@
+import { ApiControlStateVersionConflictError } from './store.js';
 import type { ApiControlStateSnapshot, ApiControlStateStore } from './types.js';
 
 export class ControlStateContext {
@@ -38,8 +39,14 @@ export class ControlStateContext {
   }
 
   writeState(snapshot: ApiControlStateSnapshot): void {
-    snapshot.savedAt = new Date().toISOString();
-    this.workingSnapshot = snapshot;
-    this.store.saveState(snapshot);
+    try {
+      this.store.saveState(snapshot);
+      this.workingSnapshot = structuredClone(snapshot);
+    } catch (error) {
+      if (error instanceof ApiControlStateVersionConflictError) {
+        this.workingSnapshot = null;
+      }
+      throw error;
+    }
   }
 }

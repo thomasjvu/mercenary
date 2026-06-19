@@ -110,6 +110,16 @@ export function registerInferenceGatewayRoutes(app: FastifyInstance, ctx: ApiCon
       return { error: 'provider_not_assigned', message: 'Provider is not assigned to this raid.' };
     }
 
+    const activeGatewayStatuses = new Set(['accepted', 'running', 'submitted']);
+    if (assignment.providerRunId && activeGatewayStatuses.has(assignment.status)) {
+      reply.code(409);
+      return {
+        error: 'job_already_active',
+        message: 'Provider already has an active inference job for this raid.',
+        providerRunId: assignment.providerRunId,
+      };
+    }
+
     const providerRunId = createProviderRunId();
 
     void runInferenceGatewayJob({
