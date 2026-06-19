@@ -6,26 +6,38 @@ environment secrets, while keeping the local deploy file untracked at
 
 Default mapping:
 
+- Infisical domain: `https://infisical.phantasy.bot`
+- Organization ID: `6cbdc8e5-c7d6-4677-809f-1e367ea06d16`
+- Project ID: `5d94a3f6-78e6-433e-b4f4-c0099a5f49de`
 - Infisical environment: `prod`
 - Infisical path: `/bossraid/phala`
 - Local file: `deploy/phala/.env`
 
+Repo binding lives in `.infisical.json`.
+
 ## One-Time Setup
 
-Initialize the repo against the correct Infisical project:
+Initialize the repo against the Boss Raid Infisical project:
 
 ```bash
-infisical login --domain <your-infisical-domain>
+cloudflared access login https://infisical.phantasy.bot
+infisical login --domain https://infisical.phantasy.bot/api
 infisical init
 ```
 
-If you use machine identity or CI, set:
+For machine identity or CI, set:
 
 ```bash
-export INFISICAL_TOKEN=<machine-identity-or-service-token>
-export INFISICAL_PROJECT_ID=<project-id>
-export INFISICAL_API_URL=<your-infisical-domain>
+export INFISICAL_API_URL=https://infisical.phantasy.bot
+export INFISICAL_PROJECT_ID=5d94a3f6-78e6-433e-b4f4-c0099a5f49de
+export INFISICAL_MACHINE_CLIENT_ID=<bossraid-phala-ci-client-id>
+export INFISICAL_MACHINE_CLIENT_SECRET=<bossraid-phala-ci-client-secret>
+export CF_ACCESS_CLIENT_ID=<cloudflare-access-client-id>
+export CF_ACCESS_CLIENT_SECRET=<cloudflare-access-client-secret>
 ```
+
+Do not set `INFISICAL_ORGANIZATION_ID` when using machine identity auth.
+Use it only for interactive user login across multiple organizations.
 
 Do not commit Infisical auth tokens, service tokens, or `deploy/phala/.env`.
 

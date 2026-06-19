@@ -20,6 +20,11 @@ export function resolveInfisicalConfig(options = {}) {
   return {
     domain,
     projectId: options.projectId ?? process.env.INFISICAL_PROJECT_ID ?? parsed.workspaceId,
+    organizationId:
+      options.organizationId ??
+      process.env.INFISICAL_ORGANIZATION_ID ??
+      parsed.organizationId ??
+      '',
     secretType: options.secretType ?? process.env.INFISICAL_SECRET_TYPE ?? 'shared',
   };
 }
@@ -96,7 +101,11 @@ export async function getInfisicalAccessToken(domain) {
     if (!data.accessToken) {
       throw new Error('Infisical email login response did not include an access token.');
     }
-    return selectOrganizationToken(domain, data.accessToken);
+    return selectOrganizationToken(
+      domain,
+      data.accessToken,
+      resolveInfisicalConfig().organizationId || undefined
+    );
   }
 
   const clientId =
@@ -131,6 +140,10 @@ export async function getInfisicalAccessToken(domain) {
   );
   const token = result.stdout.trim();
   if (result.status === 0 && token.length > 0) {
+    const organizationId = resolveInfisicalConfig().organizationId;
+    if (organizationId) {
+      return selectOrganizationToken(domain, token, organizationId);
+    }
     return token;
   }
 
