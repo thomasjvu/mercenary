@@ -234,5 +234,9 @@ function estimateTokenCount(value: string): number {
   return trimmed.split(/\s+/).length;
 }
 
-export { isTerminalChatOutcome, waitForTerminalRaidOutput } from './chat-terminal-wait.js';
+export {
+  ChatTerminalWaitError,
+  isTerminalChatOutcome,
+  waitForTerminalRaidOutput,
+} from './chat-terminal-wait.js';
 export { streamChatCompletionResponse, streamDirectChatCompletionResponse } from './chat-stream.js';

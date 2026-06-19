@@ -100,6 +100,15 @@ export async function resumeRaid(raidId: string, deps: RaidProviderDispatchDeps)
       continue;
     }
 
+    if (
+      assignment.status === 'invited' &&
+      assignment.invitedAt &&
+      !assignment.providerRunId &&
+      Date.now() - Date.parse(assignment.invitedAt) < deps.options.inviteAcceptMs
+    ) {
+      continue;
+    }
+
     dispatchedProvider = true;
     void dispatchProvider(raidId, assignment.providerId, deps);
   }
@@ -286,6 +295,15 @@ export async function dispatchProvider(
   });
 
   const assignment = raid.assignments[providerId];
+  if (
+    assignment?.status === 'invited' &&
+    assignment.invitedAt &&
+    !assignment.providerRunId &&
+    Date.now() - Date.parse(assignment.invitedAt) < deps.options.inviteAcceptMs
+  ) {
+    return;
+  }
+
   assignment.contributionRole =
     taskPackage.synthesis == null
       ? undefined

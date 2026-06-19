@@ -165,8 +165,15 @@ export function useMercenaryRaid({
     }
 
     const spawn = liveRaidRun.spawn;
+    let inFlight = false;
     const pollTimer = window.setInterval(() => {
-      void refreshLiveRaid(spawn);
+      if (inFlight || document.visibilityState === 'hidden') {
+        return;
+      }
+      inFlight = true;
+      void refreshLiveRaid(spawn).finally(() => {
+        inFlight = false;
+      });
     }, 2_000);
 
     return () => window.clearInterval(pollTimer);
@@ -202,8 +209,15 @@ export function useMercenaryRaid({
       return;
     }
 
-    lastPersistedThreadSignature.current = signature;
-    commitThreadSnapshot(buildThreadSnapshot());
+    const persistTimer = window.setTimeout(() => {
+      if (signature === lastPersistedThreadSignature.current) {
+        return;
+      }
+      lastPersistedThreadSignature.current = signature;
+      commitThreadSnapshot(buildThreadSnapshot());
+    }, 500);
+
+    return () => window.clearTimeout(persistTimer);
   }, [
     persistThreads,
     isLaunching,

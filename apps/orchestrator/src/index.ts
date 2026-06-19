@@ -311,20 +311,34 @@ export class BossRaidOrchestrator {
     };
   }
 
-  private providerRegistryDeps(): ProviderRegistryCoordinatorDeps {
+  private persistenceCoordinatorDeps(): {
+    assertPersistenceWritable: () => void;
+    queuePersist: () => Promise<void>;
+    queuePersistBestEffort: () => void;
+  } {
     return {
       assertPersistenceWritable: () => this.assertPersistenceWritable(),
       queuePersist: () => this.queuePersist(),
+      queuePersistBestEffort: () => this.queuePersistBestEffort(),
+    };
+  }
+
+  private providerRegistryDeps(): ProviderRegistryCoordinatorDeps {
+    const persistence = this.persistenceCoordinatorDeps();
+    return {
+      assertPersistenceWritable: persistence.assertPersistenceWritable,
+      queuePersist: persistence.queuePersist,
       getProviderCapacityDeps: () => this.providerCapacityDeps(),
     };
   }
 
   private raidLifecycleDeps(): RaidLifecycleCoordinatorDeps {
     const workspaceRoot = findWorkspaceRoot(process.env.INIT_CWD ?? process.cwd());
+    const persistence = this.persistenceCoordinatorDeps();
     return {
-      assertPersistenceWritable: () => this.assertPersistenceWritable(),
-      queuePersist: () => this.queuePersist(),
-      queuePersistBestEffort: () => this.queuePersistBestEffort(),
+      assertPersistenceWritable: persistence.assertPersistenceWritable,
+      queuePersist: persistence.queuePersist,
+      queuePersistBestEffort: persistence.queuePersistBestEffort,
       providerRegistry: this.providerRegistry,
       settlementOutputDir: resolveSettlementOutputDir(
         workspaceRoot,

@@ -83,6 +83,33 @@ export function registerInferenceGatewayRoutes(app: FastifyInstance, ctx: ApiCon
     }
 
     const body = request.body as GatewayAcceptBody;
+    if (
+      !body ||
+      typeof body.raidId !== 'string' ||
+      typeof body.providerId !== 'string' ||
+      body.providerId !== providerId ||
+      typeof body.deadlineUnix !== 'number' ||
+      !body.task
+    ) {
+      reply.code(400);
+      return {
+        error: 'invalid_request',
+        message: 'raidId, providerId, task, and deadlineUnix are required.',
+      };
+    }
+
+    const raid = orchestrator.getRaid(body.raidId);
+    if (!raid) {
+      reply.code(404);
+      return { error: 'raid_not_found' };
+    }
+
+    const assignment = raid.assignments[providerId];
+    if (!assignment || assignment.status === 'failed' || assignment.status === 'invalid') {
+      reply.code(403);
+      return { error: 'provider_not_assigned', message: 'Provider is not assigned to this raid.' };
+    }
+
     const providerRunId = createProviderRunId();
 
     void runInferenceGatewayJob({

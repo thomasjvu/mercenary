@@ -153,7 +153,8 @@ export async function facilitatorRequest<TResponse>(
       throw new Error(
         `x402 facilitator ${path} returned invalid JSON: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
+        { cause: error }
       );
     }
   }

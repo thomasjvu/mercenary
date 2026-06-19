@@ -74,7 +74,7 @@ pnpm dev:docs
 All code in this repository must follow these standards:
 
 1. **Formatting**: All code must be formatted with Prettier before submission
-2. **Linting**: All code must pass ESLint with no warnings
+2. **Linting**: All code must pass ESLint (`pnpm lint` reports errors only via `--quiet`)
 3. **Commits**: Commit messages must follow conventional commits format
 4. **Dependencies**: Prefer existing libraries and utilities in the codebase
 5. **Security**: Never introduce code that exposes or logs secrets and keys

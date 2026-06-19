@@ -74,6 +74,29 @@ User selection: **execute all fully now** for findings 013–037. Implemented di
 | 036 | Shared ERC20 ABI in raid-core                        | DONE                                          |
 | 037 | Shared launch-payment billing helper                 | DONE (minimal port)                           |
 
+## Third-pass reconcile (2026-06-19)
+
+Base commit: **`ebf126d`** (committed + synced to `development`, `main`, `staging`). Working tree clean.
+
+All plans **001–012** and second-pass findings **013–037** verified at `ebf126d`. Known partial gaps carried forward as new audit items:
+
+- **028** → reconcileLaunchPayment HTTP/handler tests still thin
+- **027** → OnchainSettlementExecutor behavioral tests still light
+- **031/032** → resolved at third-pass execution (`eslint.config.mjs`, CI lint, lint-staged)
+
+## Third-pass execution (2026-06-19)
+
+Findings **038–059** implemented at `ebf126d` base:
+
+| ID      | Area                                                                       | Status |
+| ------- | -------------------------------------------------------------------------- | ------ |
+| 038–048 | Security/correctness hot paths                                             | DONE   |
+| 039     | Chat terminal timeout billing                                              | DONE   |
+| 043–058 | Orchestrator/web retention & perf                                          | DONE   |
+| 049–050 | Root ESLint + CI/pre-commit lint                                           | DONE   |
+| 051–054 | Money-path tests + CI job                                                  | DONE   |
+| 055–059 | Capacity index, persist dirty flag, mercenary debounce, deps consolidation | DONE   |
+
 ## Findings considered and rejected
 
 - **Committed deploy secrets** (`deploy/phala/secrets.*.env`): gitignored, never in git history.

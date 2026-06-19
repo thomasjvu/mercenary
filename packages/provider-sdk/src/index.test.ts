@@ -192,6 +192,54 @@ test('resolveProviderEndpointPath preserves pathful Party Quest provider endpoin
   assert.equal(health.url, 'https://partyquest.example/boss-raid/providers/pqf-game-dev/health');
 });
 
+test('bearer provider auth uses timing-safe comparison', () => {
+  assert.equal(
+    verifyProviderAuth({
+      auth: { type: 'bearer', token: 'secret-token' },
+      providerId: 'provider-a',
+      method: 'POST',
+      path: '/v1/raid/accept',
+      body: '{}',
+      authorizationHeader: 'Bearer secret-token',
+    }),
+    true
+  );
+  assert.equal(
+    verifyProviderAuth({
+      auth: { type: 'bearer', token: 'secret-token' },
+      providerId: 'provider-a',
+      method: 'POST',
+      path: '/v1/raid/accept',
+      body: '{}',
+      authorizationHeader: 'Bearer secret-tokn',
+    }),
+    false
+  );
+});
+
+test('auth.type none fails closed in production', () => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  process.env.NODE_ENV = 'production';
+  try {
+    assert.equal(
+      verifyProviderAuth({
+        auth: { type: 'none' },
+        providerId: 'provider-a',
+        method: 'GET',
+        path: '/health',
+        body: '',
+      }),
+      false
+    );
+  } finally {
+    if (previousNodeEnv == null) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = previousNodeEnv;
+    }
+  }
+});
+
 test('HMAC provider auth signs and verifies the final provider endpoint path', () => {
   const body = JSON.stringify({ raidId: 'raid-pathful' });
   const headers = buildProviderAuthHeaders(

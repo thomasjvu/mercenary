@@ -138,7 +138,16 @@ export function registerRelayerRoutes(
     }
 
     const body = (request.body ?? {}) as Record<string, unknown>;
-    const result = await send7710Transaction(relayerUrl, body);
+    const sessionWallet = accessError.wallet?.toLowerCase();
+    if (!sessionWallet) {
+      reply.code(401);
+      return { error: 'unauthorized', message: 'Signed-in wallet required for relayer send.' };
+    }
+
+    const result = await send7710Transaction(relayerUrl, {
+      ...body,
+      wallet: sessionWallet,
+    });
     const taskId = readRelayerTaskId(result);
     if (!taskId) {
       reply.code(502);
@@ -148,7 +157,7 @@ export function registerRelayerRoutes(
     const now = new Date().toISOString();
     ctx.controlState.upsertRelayerTask({
       taskId,
-      wallet: typeof body.wallet === 'string' ? body.wallet.toLowerCase() : undefined,
+      wallet: sessionWallet,
       raidId: typeof body.raidId === 'string' ? body.raidId : undefined,
       status: 'Pending',
       createdAt: now,

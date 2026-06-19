@@ -27,7 +27,8 @@ export function decodeHeaderValue<T>(value: string | undefined, label: string): 
     return JSON.parse(json) as T;
   } catch (error) {
     throw new Error(
-      `${label} header did not contain valid base64 JSON: ${error instanceof Error ? error.message : String(error)}`
+      `${label} header did not contain valid base64 JSON: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     );
   }
 }

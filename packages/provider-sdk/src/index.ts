@@ -154,7 +154,7 @@ export function verifyProviderAuth(input: {
   const { auth } = input;
   const canonicalPath = normalizeRequestPath(input.path);
   if (!auth || auth.type === 'none') {
-    return true;
+    return !providerAuthRequiredInProduction();
   }
 
   if (auth.type === 'bearer' && auth.token) {
@@ -165,7 +165,7 @@ export function verifyProviderAuth(input: {
         : Array.isArray(input.headers?.[headerName])
           ? input.headers?.[headerName]?.[0]
           : input.headers?.[headerName];
-    return headerValue === `Bearer ${auth.token}`;
+    return safeEqualString(headerValue, `Bearer ${auth.token}`);
   }
 
   if (auth.type === 'hmac' && auth.secret) {
@@ -189,6 +189,24 @@ export function verifyProviderAuth(input: {
   }
 
   return false;
+}
+
+function safeEqualString(left: string | undefined, right: string): boolean {
+  if (!left) {
+    return false;
+  }
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+  return timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function providerAuthRequiredInProduction(): boolean {
+  return (
+    process.env.NODE_ENV === 'production' || process.env.BOSSRAID_REQUIRE_PROVIDER_AUTH === 'true'
+  );
 }
 
 function safeEqualHex(expected: string, actual: string): boolean {
@@ -259,7 +277,7 @@ async function postJson<TResponse>(
     console.error(
       `[provider-http] ${profile.providerId} POST ${path} failed elapsed_ms=${Date.now() - startedAt} error=${message}`
     );
-    throw new Error(message);
+    throw new Error(message, { cause: error });
   } finally {
     clearTimeout(timeout);
   }

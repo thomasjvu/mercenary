@@ -4,8 +4,12 @@ import {
   parseProviderDiscoveryQuery,
   parseProviderRegistrationInput,
 } from '@bossraid/api-contracts';
+import { buildProviderProfileFromRegistration } from '@bossraid/provider-sdk';
 import { serializeProviderHealth, serializeProviderProfile } from '../lib/serializers.js';
-import { verifyProviderByHealthProbe } from '../lib/provider-verification.js';
+import {
+  probeProviderHealthForRegistration,
+  verifyProviderByHealthProbe,
+} from '../lib/provider-verification.js';
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../handlers/index.js';
 
@@ -14,7 +18,7 @@ export function registerAgentRoutes(
   ctx: ApiContext,
   handlers: ApiHandlerGroups
 ): void {
-  const { orchestrator, registryToken } = ctx;
+  const { orchestrator, registryToken, controlState } = ctx;
   const { registryIsAuthorized } = handlers.auth;
   const { ensureErc8004ProofState } = handlers.raid;
   app.post('/agents/register', async (request, reply) => {
@@ -26,9 +30,22 @@ export function registerAgentRoutes(
       reply.code(401);
       return { error: 'unauthorized' };
     }
-    const provider = await orchestrator.upsertRegisteredProvider(
-      parseProviderRegistrationInput(request.body)
-    );
+    const registration = parseProviderRegistrationInput(request.body);
+    const candidate = buildProviderProfileFromRegistration(registration);
+    const health = await probeProviderHealthForRegistration(candidate, { controlState });
+    if (health.ready !== true) {
+      reply.code(503);
+      return {
+        error: 'provider_not_ready',
+        message: health.error ?? 'Provider health probe failed.',
+        health: serializeProviderHealth(health, {
+          includeDiagnostics: true,
+          includeEndpoint: true,
+        }),
+      };
+    }
+
+    const provider = await orchestrator.upsertRegisteredProvider(registration);
     await ensureErc8004ProofState({ includeMercenary: false, providers: [provider] });
     return serializeProviderProfile(provider, { includeEndpoint: true });
   });

@@ -27,9 +27,20 @@ export function registerMarketplaceTeeRoutes(
   handlers: ApiHandlerGroups
 ): void {
   const { orchestrator, controlState, env } = ctx;
-  const { requirePublicSession, readPublicSession, requireRateLimit } = handlers.auth;
+  const { requirePublicSession, requireRateLimit } = handlers.auth;
 
   app.post('/v1/marketplace/tee/attestation', async (request, reply) => {
+    const rateLimitError = requireRateLimit(
+      request,
+      reply,
+      'tee_attestation',
+      ctx.publicRateLimitMax,
+      ctx.publicRateLimitWindowMs
+    );
+    if (rateLimitError) {
+      return rateLimitError;
+    }
+
     const body = ensureRecordInput(request.body, 'marketplace_tee_attestation');
     const provider = ensureStringInput(
       body.provider ?? body.upstream_provider,
@@ -80,16 +91,11 @@ export function registerMarketplaceTeeRoutes(
         env,
         controlState,
       });
-      if (!platformKey) {
-        const session = requirePublicSession(reply, request.headers);
-        if ('error' in session) {
-          return session;
-        }
-        sessionWallet = session.wallet;
-      } else {
-        const session = readPublicSession(request.headers);
-        sessionWallet = session?.wallet;
+      const session = requirePublicSession(reply, request.headers);
+      if ('error' in session) {
+        return session;
       }
+      sessionWallet = session.wallet;
     }
 
     const apiKey = resolveMarketplaceTeeApiKey({

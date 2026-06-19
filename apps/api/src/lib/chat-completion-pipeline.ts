@@ -16,6 +16,7 @@ import {
   buildChatCompletionResponse,
   streamDirectChatCompletionResponse,
   streamChatCompletionResponse,
+  ChatTerminalWaitError,
   waitForTerminalRaidOutput,
 } from './chat-completion.js';
 import { enforceBuyerBudget } from './account.js';
@@ -349,9 +350,11 @@ export async function deliverBufferedChatCompletion(
       deps.ctx.settlementMode
     );
   } catch (error) {
+    const reason =
+      error instanceof ChatTerminalWaitError ? 'terminal_wait_timeout' : 'terminal_output_failed';
     await refundManaBilling({
       manaBilling: input.launchPayment.manaBilling,
-      reason: 'terminal_output_failed',
+      reason,
       raidId: input.spawn.raidId,
     });
     await reconcileLaunchPayment({
@@ -359,7 +362,7 @@ export async function deliverBufferedChatCompletion(
       request: input.request,
       raidRequest: input.raidRequest,
       launchPayment: input.launchPayment,
-      reason: 'terminal_output_failed',
+      reason,
       raidId: input.spawn.raidId,
     });
     throw error;

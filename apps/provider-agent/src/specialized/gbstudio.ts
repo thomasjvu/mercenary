@@ -545,7 +545,7 @@ export function buildGbStudioPatch(
 
   const projectFile = firstFile(task, (file) => file.path.endsWith('.gbsproj'));
   if (projectFile) {
-    let parsed: Record<string, unknown> = {};
+    let parsed: Record<string, unknown>;
     try {
       parsed = JSON.parse(projectFile.content) as Record<string, unknown>;
     } catch {

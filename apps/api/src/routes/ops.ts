@@ -73,7 +73,12 @@ export function registerOpsRoutes(
     });
   });
 
-  app.get('/v1/attested-runtime', async (_request, reply) => {
+  app.get('/v1/attested-runtime', async (request, reply) => {
+    const adminError = requireAdmin(reply, request.headers);
+    if (adminError) {
+      return adminError;
+    }
+
     if (!teeSigner.account) {
       reply.code(503);
       return {

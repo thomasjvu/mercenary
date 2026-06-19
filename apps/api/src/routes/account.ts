@@ -225,7 +225,7 @@ export function registerAccountRoutes(
       ctx.env,
       'BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND'
     );
-    let creditedUsd = amountUsd;
+    let creditedUsd: number;
     let settlement:
       | {
           transaction?: string;

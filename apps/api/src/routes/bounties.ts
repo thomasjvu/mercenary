@@ -361,6 +361,16 @@ export function registerBountyRoutes(
   });
 
   app.post('/v1/bounties/:bountyId/raids', async (request, reply) => {
+    const access = requireMercenaryAccess(
+      reply,
+      request.headers,
+      handlers.auth,
+      handlers.manaBilling
+    );
+    if ('error' in access) {
+      return access.error;
+    }
+
     const params = request.params as { bountyId: string };
     const body = (request.body ?? {}) as Record<string, unknown>;
     const awardId = typeof body.awardId === 'string' ? body.awardId : undefined;
@@ -368,6 +378,31 @@ export function registerBountyRoutes(
     if (!award || award.bountyId !== params.bountyId) {
       reply.code(404);
       return { error: 'not_found', message: 'Award not found for bounty.' };
+    }
+    if (award.status !== 'in_progress') {
+      reply.code(409);
+      return { error: 'award_not_active', message: 'Award is not active for raid execution.' };
+    }
+
+    const bounty = store.getBounty(params.bountyId);
+    if (!bounty) {
+      reply.code(404);
+      return { error: 'not_found', message: 'Bounty not found.' };
+    }
+
+    const isPoster = access.wallet != null && bounty.posterWallet === access.wallet.toLowerCase();
+    const isAwardedProvider = providerIsAuthorized(award.providerId, {
+      method: request.method,
+      path: request.url,
+      body: request.body,
+      headers: request.headers,
+    });
+    if (!isPoster && !isAwardedProvider) {
+      reply.code(403);
+      return {
+        error: 'forbidden',
+        message: 'Only the bounty poster or awarded provider can spawn execution raids.',
+      };
     }
     const raidBody = {
       agent: 'mercenary-v1',

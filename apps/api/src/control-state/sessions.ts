@@ -111,12 +111,15 @@ export function consumePublicAuthNonce(
 ): PublicAuthNonceEntry | undefined {
   const { snapshot } = ctx.readPrunedState(nowMs);
   const normalizedWallet = wallet?.toLowerCase();
-  const entry = snapshot.publicAuthNonces.find(
-    (item) =>
-      item.nonce === nonce &&
-      item.expiresAt > nowMs &&
-      (!item.wallet || !normalizedWallet || item.wallet === normalizedWallet)
-  );
+  const entry = snapshot.publicAuthNonces.find((item) => {
+    if (item.nonce !== nonce || item.expiresAt <= nowMs) {
+      return false;
+    }
+    if (item.wallet) {
+      return normalizedWallet != null && item.wallet === normalizedWallet;
+    }
+    return true;
+  });
   if (!entry) {
     return undefined;
   }

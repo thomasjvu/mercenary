@@ -517,7 +517,7 @@ export interface SelectedProviders {
   reserves: ProviderProfile[];
 }
 
-export interface BossRaidSpawnInput extends RaidTaskSpec {}
+export type BossRaidSpawnInput = RaidTaskSpec;
 
 export interface BossRaidRequest {
   agent: 'mercenary-v1';

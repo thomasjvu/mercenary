@@ -8,6 +8,18 @@ export type ChatRaidOutcome = {
   result: BossRaidResultOutput;
 };
 
+export class ChatTerminalWaitError extends Error {
+  readonly raidId: string;
+  readonly outcome: ChatRaidOutcome;
+
+  constructor(raidId: string, outcome: ChatRaidOutcome) {
+    super(`Raid ${raidId} did not reach a terminal state before the wait deadline.`);
+    this.name = 'ChatTerminalWaitError';
+    this.raidId = raidId;
+    this.outcome = outcome;
+  }
+}
+
 export function isTerminalChatOutcome(outcome: ChatRaidOutcome): boolean {
   return ['final', 'cancelled', 'expired'].includes(outcome.status.status);
 }
@@ -61,6 +73,13 @@ export async function pollForTerminalChatOutcome(
     }
 
     await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+
+  if (
+    !isTerminalChatOutcome(latest) ||
+    !isSettlementReady(orchestrator, raidId, options.settlementMode)
+  ) {
+    throw new ChatTerminalWaitError(raidId, latest);
   }
 
   return latest;

@@ -41,20 +41,56 @@ export function pruneTerminalRaidsForRetention(
 
   const nowMs = options.nowMs ?? Date.now();
   const cutoffMs = nowMs - options.ttlMs;
-  const prunedRaidIds: string[] = [];
-  const retainedRaids = raids.filter((raid) => {
+  const raidById = new Map(raids.map((raid) => [raid.id, raid]));
+  const pruneCandidates = new Set<string>();
+
+  for (const raid of raids) {
     if (!TERMINAL_RAID_STATUSES.has(raid.status)) {
-      return true;
+      continue;
     }
 
     const updatedAtMs = Date.parse(raid.updatedAt);
     if (!Number.isFinite(updatedAtMs) || updatedAtMs >= cutoffMs) {
-      return true;
+      continue;
     }
 
-    prunedRaidIds.push(raid.id);
-    return false;
-  });
+    pruneCandidates.add(raid.id);
+  }
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const raidId of [...pruneCandidates]) {
+      const raid = raidById.get(raidId);
+      if (!raid) {
+        pruneCandidates.delete(raidId);
+        changed = true;
+        continue;
+      }
+
+      for (const childRaidId of raid.childRaidIds ?? []) {
+        if (!pruneCandidates.has(childRaidId)) {
+          pruneCandidates.delete(raidId);
+          changed = true;
+          break;
+        }
+      }
+      if (!pruneCandidates.has(raidId)) {
+        continue;
+      }
+
+      if (raid.parentRaidId) {
+        const parent = raidById.get(raid.parentRaidId);
+        if (parent && !TERMINAL_RAID_STATUSES.has(parent.status)) {
+          pruneCandidates.delete(raidId);
+          changed = true;
+        }
+      }
+    }
+  }
+
+  const prunedRaidIds = [...pruneCandidates];
+  const retainedRaids = raids.filter((raid) => !pruneCandidates.has(raid.id));
 
   return {
     raids: retainedRaids,

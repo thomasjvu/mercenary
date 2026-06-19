@@ -58,7 +58,7 @@ export function resolveMarketplaceTeeApiKey(input: {
   }
 
   const provider = input.provider;
-  let apiKey = readPlatformUpstreamApiKey(provider, input.env);
+  const apiKey = readPlatformUpstreamApiKey(provider, input.env);
 
   if (input.sellerId && input.sellerWallet) {
     return (

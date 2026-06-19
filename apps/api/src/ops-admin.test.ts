@@ -41,6 +41,21 @@ test('admin control routes require the configured admin token', async () => {
     assert.equal(raidsAuthorized.statusCode, 200);
     assert.deepEqual(raidsAuthorized.json(), []);
 
+    const attestedUnauthorized = await app.inject({
+      method: 'GET',
+      url: '/v1/attested-runtime',
+    });
+    assert.equal(attestedUnauthorized.statusCode, 401);
+
+    const attestedAuthorized = await app.inject({
+      method: 'GET',
+      url: '/v1/attested-runtime',
+      headers: {
+        authorization: 'Bearer admin-secret',
+      },
+    });
+    assert.notEqual(attestedAuthorized.statusCode, 401);
+
     const abortUnauthorized = await app.inject({
       method: 'POST',
       url: '/v1/raid/raid_missing/abort',

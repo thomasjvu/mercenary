@@ -112,9 +112,9 @@ export async function runInferenceGatewayJob(input: {
   const wallet = input.provider.source?.externalRef;
   const upstream = resolveHostedProviderUpstream(input.provider);
   if (!wallet || !upstream) {
-    await input.orchestrator.recordProviderFailure(input.body.raidId, input.body.providerId, {
+    await input.orchestrator.recordProviderFailure(input.body.raidId, input.provider.providerId, {
       raidId: input.body.raidId,
-      providerId: input.body.providerId,
+      providerId: input.provider.providerId,
       providerRunId: input.providerRunId,
       message: 'inference_hosted seller wallet or upstream missing',
       failedAt: new Date().toISOString(),
@@ -206,7 +206,7 @@ export async function runInferenceGatewayJob(input: {
       });
 
       privacyAttestation = buildPrivacyAttestation({
-        providerId: input.body.providerId,
+        providerId: input.provider.providerId,
         raidId: input.body.raidId,
         featuresClaimed,
         featuresVerified,
@@ -219,7 +219,7 @@ export async function runInferenceGatewayJob(input: {
 
     await input.orchestrator.recordProviderSubmission(input.body.raidId, {
       raidId: input.body.raidId,
-      providerId: input.body.providerId,
+      providerId: input.provider.providerId,
       providerRunId: input.providerRunId,
       answerText: chatResult.content,
       explanation: `${upstream} hosted gateway completed ${upstreamModelId}.`,
@@ -229,9 +229,9 @@ export async function runInferenceGatewayJob(input: {
       privacyAttestation,
     });
   } catch (error) {
-    await input.orchestrator.recordProviderFailure(input.body.raidId, input.body.providerId, {
+    await input.orchestrator.recordProviderFailure(input.body.raidId, input.provider.providerId, {
       raidId: input.body.raidId,
-      providerId: input.body.providerId,
+      providerId: input.provider.providerId,
       providerRunId: input.providerRunId,
       message: error instanceof Error ? error.message : String(error),
       failedAt: new Date().toISOString(),

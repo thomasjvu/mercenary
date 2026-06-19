@@ -90,14 +90,16 @@ export async function ensureWalletChain(
   } catch (error) {
     const code = (error as { code?: number }).code;
     if (code === 4001) {
-      throw new Error('Wallet chain switch cancelled.');
+      throw new Error('Wallet chain switch cancelled.', { cause: error });
     }
 
     if (code !== 4902) {
       throw error instanceof Error ? error : new Error('Wallet chain switch failed.');
     }
 
-    throw new Error('Add Base network in MetaMask to use Smart Accounts payments.');
+    throw new Error('Add Base network in MetaMask to use Smart Accounts payments.', {
+      cause: error,
+    });
   }
 }
 
