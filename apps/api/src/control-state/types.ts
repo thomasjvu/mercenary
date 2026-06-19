@@ -28,6 +28,8 @@ export type X402ReconciliationEntry = {
   settlementTx?: string;
   attempts: number;
   lastError?: string;
+  processingHolder?: string;
+  processingExpiresAt?: string;
   createdAt: string;
   updatedAt: string;
 };

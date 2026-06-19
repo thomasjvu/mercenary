@@ -361,12 +361,22 @@ export async function dispatchProvider(
     });
     deps.queuePersistBestEffort();
 
-    deps.timers.setFirstHeartbeatTimeout(raidId, providerId, deps.options.firstHeartbeatMs, () => {
-      const current = deps.requireRaid(raidId).assignments[providerId];
-      if (!current.firstHeartbeatAt && !TERMINAL_ASSIGNMENT_STATUSES.has(current.status)) {
-        markTimedOut(raidId, providerId, 'first heartbeat timeout', deps);
-      }
-    });
+    const hostedProvider =
+      provider.profile.source?.type === 'inference_hosted' ||
+      provider.profile.source?.type === 'venice_hosted';
+    if (!hostedProvider) {
+      deps.timers.setFirstHeartbeatTimeout(
+        raidId,
+        providerId,
+        deps.options.firstHeartbeatMs,
+        () => {
+          const current = deps.requireRaid(raidId).assignments[providerId];
+          if (!current.firstHeartbeatAt && !TERMINAL_ASSIGNMENT_STATUSES.has(current.status)) {
+            markTimedOut(raidId, providerId, 'first heartbeat timeout', deps);
+          }
+        }
+      );
+    }
 
     void Promise.resolve(
       provider.run(taskPackage, {
@@ -438,6 +448,12 @@ export async function submitResult(
     return;
   }
   const assignment = raid.assignments[submission.providerId];
+  if (!assignment?.providerRunId) {
+    return;
+  }
+  if (submission.providerRunId && submission.providerRunId !== assignment.providerRunId) {
+    return;
+  }
   const normalizedSubmission =
     submission.contributionRole == null && assignment?.contributionRole != null
       ? {

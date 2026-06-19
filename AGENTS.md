@@ -86,6 +86,7 @@ All code in this repository must follow these standards:
 - `pnpm lint`: Check code quality with ESLint (`--quiet`, errors only)
 - `pnpm lint:strict`: ESLint with warnings visible (local triage)
 - `pnpm test:smoke:e2e`: Raid stack smoke test (also runs in CI)
+- `pnpm test:money-path`: API billing, bounty escrow, x402 reconciliation, and relayer money-path tests
 - `pnpm check`: Typecheck all packages (`tsc --noEmit`)
 - `pnpm format:check`: Verify Prettier formatting
 - `pnpm build`: Build all packages

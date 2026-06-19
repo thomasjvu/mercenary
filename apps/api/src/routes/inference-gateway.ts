@@ -22,7 +22,7 @@ export function registerInferenceGatewayRoutes(app: FastifyInstance, ctx: ApiCon
 
   app.get('/gateway/:providerId/health', async (request, reply) => {
     const { providerId } = request.params as { providerId: string };
-    const provider = orchestrator.listProviders().find((item) => item.providerId === providerId);
+    const provider = orchestrator.getProviderProfile(providerId);
     if (!provider || !isHostedInferenceProvider(provider)) {
       reply.code(404);
       return { error: 'not_found' };
@@ -46,7 +46,7 @@ export function registerInferenceGatewayRoutes(app: FastifyInstance, ctx: ApiCon
 
   app.post('/gateway/:providerId/v1/raid/accept', async (request, reply) => {
     const { providerId } = request.params as { providerId: string };
-    const provider = orchestrator.listProviders().find((item) => item.providerId === providerId);
+    const provider = orchestrator.getProviderProfile(providerId);
     if (!provider || !isHostedInferenceProvider(provider)) {
       reply.code(404);
       return { error: 'not_found' };

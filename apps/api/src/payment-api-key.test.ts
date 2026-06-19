@@ -26,6 +26,32 @@ test('reserveBuyerApiKeyLaunch rejects second reservation beyond spend cap', () 
   }
 });
 
+test('reserveBuyerApiKeyLaunch rejects spend-cap bypass via prepaid balance', () => {
+  const controlState = createApiControlState({
+    ...process.env,
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+  });
+  const account = controlState.ensurePublicAccount('0xBuyer00000000000000000000000000000003');
+  controlState.creditBuyerBalance(account.wallet, 20);
+  const apiKey = controlState.createBuyerApiKey({
+    wallet: account.wallet,
+    name: 'capped',
+    keyHash: 'hash_capped',
+    prefix: 'br_cap',
+    spendLimitUsd: 5,
+  });
+
+  const first = controlState.reserveBuyerApiKeyLaunch(apiKey.id, account.wallet, 3);
+  assert.ok(first);
+  const second = controlState.reserveBuyerApiKeyLaunch(apiKey.id, account.wallet, 3);
+  assert.equal(second, undefined);
+  assert.equal(controlState.readPublicAccount(account.wallet)?.balanceUsd, 17);
+
+  if (first) {
+    controlState.releaseBuyerApiKeyReservation(first);
+  }
+});
+
 test('finalizeBuyerApiKeyBilling refunds unused reservation to balance', () => {
   const controlState = createApiControlState({
     ...process.env,

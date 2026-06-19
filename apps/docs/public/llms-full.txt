@@ -559,7 +559,7 @@ Native write route: `POST /v1/raid`.
 | `POST /v1/relayer/estimate`                     | Estimate ERC-7710 relay bundle before send.                                                                                                                                                                                                                                                             |
 | `POST /v1/relayer/send`                         | Proxy `relayer_send7710Transaction` to the public 1Shot relayer.                                                                                                                                                                                                                                        |
 | `GET /v1/relayer/status/:taskId`                | Poll 1Shot relay task status.                                                                                                                                                                                                                                                                           |
-| `POST /v1/relayer/webhook`                      | 1Shot relayer status webhook sink.                                                                                                                                                                                                                                                                      |
+| `POST /v1/relayer/webhook`                      | 1Shot relayer status webhook sink. Requires `X-BossRaid-Relayer-Webhook-Secret` (or `Authorization: Bearer`) matching `BOSSRAID_ONESHOT_RELAYER_WEBHOOK_SECRET` in production.                                                                                                                          |
 | `POST /v1/bounties`                             | Create bounty draft (wallet session).                                                                                                                                                                                                                                                                   |
 | `POST /v1/bounties/:id/fund`                    | Fund escrow and open bounty board (x402 USDC in production; onchain `BossBountyEscrow` when `BOSSRAID_SETTLEMENT_MODE=onchain`).                                                                                                                                                                        |
 | `POST /v1/bounties/:id/refund`                  | Poster refunds unawarded escrow after bidding deadline (wallet session).                                                                                                                                                                                                                                |
@@ -579,7 +579,7 @@ Native write route: `POST /v1/raid`.
 | Route                                      | Auth                          | Purpose                                        |
 | ------------------------------------------ | ----------------------------- | ---------------------------------------------- |
 | `GET /health`                              | —                             | Health + ready providers                       |
-| `GET /ready`                               | —                             | Beta readiness gates                           |
+| `GET /ready`                               | —                             | Public beta readiness (`{ ok: boolean }` only) |
 | `GET /metrics`                             | admin\*                       | Prometheus metrics                             |
 | `GET /v1/raid/:raidId`                     | raid token / admin            | Status                                         |
 | `GET /v1/raid/:raidId/result`              | raid token / admin            | Result + routing + settlement                  |
@@ -587,7 +587,7 @@ Native write route: `POST /v1/raid`.
 | `GET /v1/raid/:raidId/agent_log.json`      | query `token`                 | Run log                                        |
 
 | `GET /v1/agent.json` | — | Mercenary manifest |
-| `GET /v1/attested-runtime` | — | Signed runtime (`MNEMONIC`) |
+| `GET /v1/attested-runtime` | admin | Signed runtime attestation (`MNEMONIC`) |
 | `GET /v1/raid/:raidId/attested-result` | raid token | Signed result |
 | `GET /v1/providers` | — | Provider list (`?sourceType=party_quest`, `?supportedFramework=party-quest`) |
 | `GET /v1/providers/health` | — | Readiness snapshot |
@@ -803,20 +803,22 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 
 ## MetaMask cookoff / agent payments
 
-| Variable                        | Purpose                                                                                           |
-| ------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `BOSSRAID_ONESHOT_RELAYER_URL`  | 1Shot relayer JSON-RPC base (`/v1/relayer/*` proxies this)                                        |
-| `BOSSRAID_AGENT_WALLET_KEY`     | Funded agent wallet for MCP paid raids and redelegation                                           |
-| `BOSSRAID_VENICE_API_KEY`       | Shared Venice upstream key (Phala providers + Mercenary planner/synthesis)                        |
-| `BOSSRAID_MERCENARY_BASE_MODEL` | Mercenary chat planner base model (default `e2ee-gemma-4-31b`; E2EE first, plain Venice fallback) |
-| `BOSSRAID_VENICE_MODEL`         | Venice model id (default `minimax-m27`)                                                           |
-| `BOSSRAID_VENICE_WALLET_KEY`    | Venice x402 wallet for provider upstream calls                                                    |
+| Variable                                  | Purpose                                                                                           |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `BOSSRAID_ONESHOT_RELAYER_URL`            | 1Shot relayer JSON-RPC base (`/v1/relayer/*` proxies this)                                        |
+| `BOSSRAID_ONESHOT_RELAYER_WEBHOOK_SECRET` | Shared secret for `POST /v1/relayer/webhook` (`X-BossRaid-Relayer-Webhook-Secret` header)         |
+| `BOSSRAID_AGENT_WALLET_KEY`               | Funded agent wallet for MCP paid raids and redelegation                                           |
+| `BOSSRAID_VENICE_API_KEY`                 | Shared Venice upstream key (Phala providers + Mercenary planner/synthesis)                        |
+| `BOSSRAID_MERCENARY_BASE_MODEL`           | Mercenary chat planner base model (default `e2ee-gemma-4-31b`; E2EE first, plain Venice fallback) |
+| `BOSSRAID_VENICE_MODEL`                   | Venice model id (default `minimax-m27`)                                                           |
+| `BOSSRAID_VENICE_WALLET_KEY`              | Venice x402 wallet for provider upstream calls                                                    |
 
 ## Phala Infisical tiers
 
 Boss Raid stores **14 core secrets** at `prod:/bossraid/phala/core` and an optional
-onchain overlay at `prod:/bossraid/phala/onchain`. Bootstrap assembles
-`deploy/phala/.env` with compose defaults that are not stored in Infisical.
+onchain overlay at `prod:/bossraid/phala/onchain`. Templates:
+`deploy/phala/secrets.core.env.example` and `deploy/phala/secrets.onchain.env.example`.
+Bootstrap assembles `deploy/phala/.env` with compose defaults that are not stored in Infisical.
 
 Core tier keys:
 
@@ -832,15 +834,18 @@ Workflow: [operators/appendix/infisical.md](../operators/appendix/infisical.md).
 
 ## Settlement
 
-| Variable                                                                                                           | Purpose                                 |
-| ------------------------------------------------------------------------------------------------------------------ | --------------------------------------- |
-| `BOSSRAID_SETTLEMENT_MODE`                                                                                         | `off`, `file` (safe default), `onchain` |
-| `BOSSRAID_SETTLEMENT_DIR`                                                                                          | Artifact output dir                     |
-| `BOSSRAID_RPC_URL`, `BOSSRAID_CHAIN_ID`                                                                            | Chain config                            |
-| `BOSSRAID_REGISTRY_ADDRESS`, `BOSSRAID_ESCROW_ADDRESS`, `BOSSRAID_BOUNTY_ESCROW_ADDRESS`, `BOSSRAID_TOKEN_ADDRESS` | Contracts                               |
-| `BOSSRAID_CLIENT_PRIVATE_KEY`                                                                                      | Client signer (raid + bounty relayer)   |
-| `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD`                                                                               | Dust threshold (default `0.25`)         |
-| `BOSSRAID_PROVIDER_ADDRESS_MAP_JSON`                                                                               | Provider payout overrides               |
+| Variable                                                                                                           | Purpose                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `BOSSRAID_SETTLEMENT_MODE`                                                                                         | `off`, `file` (safe default), `onchain`                                                     |
+| `BOSSRAID_SETTLEMENT_DIR`                                                                                          | Artifact output dir                                                                         |
+| `BOSSRAID_RPC_URL`, `BOSSRAID_CHAIN_ID`                                                                            | Chain config                                                                                |
+| `BOSSRAID_REGISTRY_ADDRESS`, `BOSSRAID_ESCROW_ADDRESS`, `BOSSRAID_BOUNTY_ESCROW_ADDRESS`, `BOSSRAID_TOKEN_ADDRESS` | Contracts                                                                                   |
+| `BOSSRAID_CLIENT_PRIVATE_KEY`                                                                                      | Client signer (raid + bounty relayer)                                                       |
+| `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD`                                                                               | Dust threshold (default `0.25`)                                                             |
+| `BOSSRAID_SETTLEMENT_FUND_JOBS`                                                                                    | Fund successful child jobs onchain (`true` required in production onchain mode)             |
+| `BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS`                                                                        | Block parent settlement until child jobs are terminal (`true` required in production audit) |
+| `BOSSRAID_SETTLEMENT_RETRY_INTERVAL_MS`                                                                            | Orchestrator settlement retry worker interval (default `60000`; `0` disables)               |
+| `BOSSRAID_PROVIDER_ADDRESS_MAP_JSON`                                                                               | Provider payout overrides                                                                   |
 
 ## ERC-8004 & attestation
 
@@ -1093,6 +1098,7 @@ pnpm build
 pnpm dev
 pnpm serve:gateway
 pnpm test:unit
+pnpm test:money-path
 pnpm --filter @bossraid/api test src/marketplace-inference.test.ts
 pnpm --filter @bossraid/api test:all
 pnpm --filter @bossraid/web test src/lib/*.test.ts
@@ -1127,10 +1133,13 @@ pnpm generate:settlement-keys
 pnpm bootstrap:settlement
 pnpm docker:up
 pnpm bootstrap:phala:env
+pnpm production:cutover
 pnpm infisical:phala:pull
 pnpm infisical:phala:push
 pnpm infisical:phala:prune-legacy
 ```
+
+`production:cutover` normalizes provider settlement IDs (`dottie` / `riko` / `gamma`), deploys Base contracts when `BOSSRAID_DEPLOYER_PRIVATE_KEY` is funded, merges addresses into `deploy/phala/secrets.onchain.env`, and reassembles `deploy/phala/.env`. Use `--skip-deploy` when contract addresses are already in `temp/contracts/deployment.json`.
 
 Active hosted stack: Phala CVM. EigenCompute stays in-repo for optional judging/attestation lanes.
 
@@ -1210,7 +1219,21 @@ curl -H "Authorization: Bearer $BOSSRAID_ADMIN_TOKEN" \
   https://<api>/v1/ops/production-readiness | jq
 ```
 
-Production gate: `ok: true` on `GET /v1/ops/production-readiness` before unrestricted paid traffic. `GET /ready` also enforces production-only checks when `NODE_ENV=production` (onchain settlement configured, upstream mocks disabled, unverified balance fund disabled). Static deploy audit: `NODE_ENV=production BOSSRAID_SETTLEMENT_MODE=onchain BOSSRAID_X402_ENABLED=true node scripts/audit-production-deploy-env.mjs`. Trust boundary: [trust-and-safety.md](trust-and-safety.md).
+Production gate: `ok: true` on `GET /v1/ops/production-readiness` before unrestricted paid traffic. `GET /ready` also enforces production-only checks when `NODE_ENV=production` (onchain settlement configured, upstream mocks disabled, unverified balance fund disabled). Static deploy audit (matches CI):
+
+```bash
+NODE_ENV=production \
+BOSSRAID_SETTLEMENT_MODE=onchain \
+BOSSRAID_X402_ENABLED=true \
+BOSSRAID_SETTLEMENT_FUND_JOBS=true \
+BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS=true \
+BOSSRAID_BOUNTY_ESCROW_ADDRESS=0x0000000000000000000000000000000000000201 \
+BOSSRAID_ONESHOT_RELAYER_WEBHOOK_SECRET=ci-audit-secret \
+BOSSRAID_SECRET_ENCRYPTION_KEY=ci-audit-encryption-key \
+node scripts/audit-production-deploy-env.mjs
+```
+
+Trust boundary: [trust-and-safety.md](trust-and-safety.md).
 
 Ops UI (`/ops/`) surfaces the same admin routes after login:
 

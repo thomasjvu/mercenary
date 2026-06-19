@@ -68,6 +68,7 @@ pnpm build
 pnpm dev
 pnpm serve:gateway
 pnpm test:unit
+pnpm test:money-path
 pnpm --filter @bossraid/api test src/marketplace-inference.test.ts
 pnpm --filter @bossraid/api test:all
 pnpm --filter @bossraid/web test src/lib/*.test.ts

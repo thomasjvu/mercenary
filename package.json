@@ -41,7 +41,7 @@
     "game-raid:build-payload": "node scripts/build-game-raid-payload.mjs",
     "serve:gateway": "node scripts/serve-gateway.mjs",
     "test:unit": "turbo run test",
-    "test:money-path": "pnpm --filter @bossraid/api exec node --import tsx --test src/bounty-service.test.ts src/bounty-onchain.test.ts src/bounty-onchain-chain.test.ts src/lib/bounty-store.test.ts src/lib/x402-reconciliation.test.ts src/launch-payment-billing.test.ts src/x402-settled-payments.test.ts src/lib/chat-terminal-wait.test.ts src/lib/streaming-chat-reconcile.test.ts src/handlers/payment-reconcile.test.ts src/relayer.test.ts",
+    "test:money-path": "pnpm --filter @bossraid/api exec node --import tsx --test src/bounty-service.test.ts src/bounty-onchain.test.ts src/bounty-onchain-chain.test.ts src/lib/bounty-store.test.ts src/lib/x402-reconciliation.test.ts src/launch-payment-billing.test.ts src/x402-settled-payments.test.ts src/lib/chat-terminal-wait.test.ts src/lib/streaming-chat-reconcile.test.ts src/handlers/payment-reconcile.test.ts src/payment-api-key.test.ts src/relayer.test.ts",
     "test:evaluator:e2e": "node scripts/test-evaluator-e2e.mjs",
     "test:game-raid:e2e": "node scripts/test-game-raid-e2e.mjs",
     "test:private-game-raid:e2e": "node scripts/test-private-game-raid-e2e.mjs",
@@ -77,7 +77,6 @@
   "devDependencies": {
     "@bossraid/constants": "workspace:^0.1.0",
     "@bossraid/logger": "workspace:^0.1.0",
-    "@bossraid/validator": "workspace:^0.1.0",
     "@commitlint/cli": "^20.5.2",
     "@commitlint/config-conventional": "^20.5.0",
     "@eslint/js": "^10.0.1",

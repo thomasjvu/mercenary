@@ -1,8 +1,6 @@
 import { lazy, startTransition, Suspense, useEffect, useRef, useState } from 'react';
-import { addCollection } from '@iconify/react';
-import { icons as pixelIcons } from '@iconify-json/pixel';
-import { icons as simpleIcons } from '@iconify-json/simple-icons';
 import useSWR from 'swr';
+import { ensureIconCollections } from './lib/iconify-collections.js';
 import { bindAsciiRipple } from './ascii-ripple';
 import { fetchJson, type Provider, type ProviderHealth } from './api';
 import { AppSidebar } from './components/AppSidebar';
@@ -76,10 +74,11 @@ type AppTheme = 'light' | 'dark';
 const LANDING_THEME_STORAGE_KEY = 'bossraid.landing-theme';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'bossraid.sidebar-collapsed';
 
-addCollection(pixelIcons);
-addCollection(simpleIcons);
-
 export function App() {
+  useEffect(() => {
+    void ensureIconCollections();
+  }, []);
+
   const appShellRef = useRef<HTMLElement | null>(null);
   const pathname = useLocationPathname();
   const locationKey = useLocationKey();

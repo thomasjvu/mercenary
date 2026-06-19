@@ -118,38 +118,40 @@ export function reserveBuyerApiKeyLaunch(
   amountUsd: number,
   nowMs = Date.now()
 ): BuyerApiKeyLaunchReservation | undefined {
-  const { snapshot } = ctx.readPrunedState(nowMs);
-  const key = snapshot.buyerApiKeys.find(
-    (item) => item.id === apiKeyId && item.status === 'active'
-  );
-  if (!key) {
-    return undefined;
-  }
+  let reservation: BuyerApiKeyLaunchReservation | undefined;
+  ctx.mutateState((snapshot) => {
+    const key = snapshot.buyerApiKeys.find(
+      (item) => item.id === apiKeyId && item.status === 'active'
+    );
+    if (!key) {
+      return;
+    }
 
-  const normalizedWallet = wallet.toLowerCase();
-  const account = ensurePublicAccountInSnapshot(snapshot, normalizedWallet);
-  const charge = Math.max(0, amountUsd);
-  const spendCapOk = key.spendLimitUsd == null || key.spentUsd + charge <= key.spendLimitUsd;
-  const balanceOk = account.balanceUsd >= charge;
-  if (!spendCapOk && !balanceOk) {
-    return undefined;
-  }
+    const normalizedWallet = wallet.toLowerCase();
+    const account = ensurePublicAccountInSnapshot(snapshot, normalizedWallet);
+    const charge = Math.max(0, amountUsd);
+    const spendCapOk = key.spendLimitUsd == null || key.spentUsd + charge <= key.spendLimitUsd;
+    if (!spendCapOk) {
+      return;
+    }
 
-  key.spentUsd += charge;
-  key.lastUsedAt = new Date(nowMs).toISOString();
-  let useBalance = false;
-  if (balanceOk) {
-    account.balanceUsd -= charge;
-    account.updatedAt = new Date(nowMs).toISOString();
-    useBalance = true;
-  }
-  ctx.writeState(snapshot);
-  return {
-    apiKeyId,
-    wallet: normalizedWallet,
-    reservedUsd: charge,
-    useBalance,
-  };
+    const balanceOk = account.balanceUsd >= charge;
+    key.spentUsd += charge;
+    key.lastUsedAt = new Date(nowMs).toISOString();
+    let useBalance = false;
+    if (balanceOk) {
+      account.balanceUsd -= charge;
+      account.updatedAt = new Date(nowMs).toISOString();
+      useBalance = true;
+    }
+    reservation = {
+      apiKeyId,
+      wallet: normalizedWallet,
+      reservedUsd: charge,
+      useBalance,
+    };
+  }, nowMs);
+  return reservation;
 }
 
 export function releaseBuyerApiKeyReservation(
@@ -157,17 +159,17 @@ export function releaseBuyerApiKeyReservation(
   reservation: BuyerApiKeyLaunchReservation,
   nowMs = Date.now()
 ): void {
-  const { snapshot } = ctx.readPrunedState(nowMs);
-  const key = snapshot.buyerApiKeys.find((item) => item.id === reservation.apiKeyId);
-  if (key) {
-    key.spentUsd = Math.max(0, key.spentUsd - reservation.reservedUsd);
-  }
-  if (reservation.useBalance) {
-    const account = ensurePublicAccountInSnapshot(snapshot, reservation.wallet);
-    account.balanceUsd += reservation.reservedUsd;
-    account.updatedAt = new Date(nowMs).toISOString();
-  }
-  ctx.writeState(snapshot);
+  ctx.mutateState((snapshot) => {
+    const key = snapshot.buyerApiKeys.find((item) => item.id === reservation.apiKeyId);
+    if (key) {
+      key.spentUsd = Math.max(0, key.spentUsd - reservation.reservedUsd);
+    }
+    if (reservation.useBalance) {
+      const account = ensurePublicAccountInSnapshot(snapshot, reservation.wallet);
+      account.balanceUsd += reservation.reservedUsd;
+      account.updatedAt = new Date(nowMs).toISOString();
+    }
+  }, nowMs);
 }
 
 export function finalizeBuyerApiKeyBilling(
@@ -176,39 +178,44 @@ export function finalizeBuyerApiKeyBilling(
   actualCostUsd: number,
   nowMs = Date.now()
 ): boolean {
-  const { snapshot } = ctx.readPrunedState(nowMs);
-  const key = snapshot.buyerApiKeys.find((item) => item.id === reservation.apiKeyId);
-  if (!key) {
+  let finalized = false;
+  try {
+    ctx.mutateState((snapshot) => {
+      const key = snapshot.buyerApiKeys.find((item) => item.id === reservation.apiKeyId);
+      if (!key) {
+        throw new Error('buyer_api_key_missing');
+      }
+
+      const actual = Math.max(0, actualCostUsd);
+      const delta = reservation.reservedUsd - actual;
+      if (delta > 0) {
+        key.spentUsd = Math.max(0, key.spentUsd - delta);
+        if (reservation.useBalance) {
+          const account = ensurePublicAccountInSnapshot(snapshot, reservation.wallet);
+          account.balanceUsd += delta;
+          account.updatedAt = new Date(nowMs).toISOString();
+        }
+      } else if (delta < 0) {
+        const extra = -delta;
+        if (key.spendLimitUsd != null && key.spentUsd + extra > key.spendLimitUsd) {
+          throw new Error('buyer_api_key_spend_cap_exceeded');
+        }
+        key.spentUsd += extra;
+        if (reservation.useBalance) {
+          const account = ensurePublicAccountInSnapshot(snapshot, reservation.wallet);
+          if (account.balanceUsd < extra) {
+            throw new Error('buyer_balance_insufficient');
+          }
+          account.balanceUsd -= extra;
+          account.updatedAt = new Date(nowMs).toISOString();
+        }
+      }
+      finalized = true;
+    }, nowMs);
+  } catch {
     return false;
   }
-
-  const actual = Math.max(0, actualCostUsd);
-  const delta = reservation.reservedUsd - actual;
-  if (delta > 0) {
-    key.spentUsd = Math.max(0, key.spentUsd - delta);
-    if (reservation.useBalance) {
-      const account = ensurePublicAccountInSnapshot(snapshot, reservation.wallet);
-      account.balanceUsd += delta;
-      account.updatedAt = new Date(nowMs).toISOString();
-    }
-  } else if (delta < 0) {
-    const extra = -delta;
-    if (key.spendLimitUsd != null && key.spentUsd + extra > key.spendLimitUsd) {
-      return false;
-    }
-    key.spentUsd += extra;
-    if (reservation.useBalance) {
-      const account = ensurePublicAccountInSnapshot(snapshot, reservation.wallet);
-      if (account.balanceUsd < extra) {
-        return false;
-      }
-      account.balanceUsd -= extra;
-      account.updatedAt = new Date(nowMs).toISOString();
-    }
-  }
-
-  ctx.writeState(snapshot);
-  return true;
+  return finalized;
 }
 
 export function recordBuyerApiKeyUsage(

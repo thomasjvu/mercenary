@@ -322,6 +322,15 @@ export function createApiControlStateFromStore(store: ApiControlStateStore) {
       return x402Reconciliations.getX402Reconciliation(ctx, id);
     },
 
+    tryClaimX402Reconciliation(
+      entryId: string,
+      holderId: string,
+      leaseMs?: number,
+      nowMs = Date.now()
+    ): X402ReconciliationEntry | undefined {
+      return x402Reconciliations.tryClaimX402Reconciliation(ctx, entryId, holderId, leaseMs, nowMs);
+    },
+
     hasX402SettledPayment(fingerprint: string): boolean {
       return x402SettledPayments.hasX402SettledPayment(ctx, fingerprint);
     },

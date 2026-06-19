@@ -54,7 +54,7 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('@bossraid/smart-pay') || id.includes('viem')) {
+              if (id.includes('smart-pay') || id.includes('viem')) {
                 return 'wallet';
               }
               if (id.includes('@iconify')) {

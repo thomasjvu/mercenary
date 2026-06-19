@@ -102,10 +102,7 @@ export class BountyService {
   }
 
   listOpenBounties(limit = 50): BountyRecord[] {
-    return this.store
-      .listBounties({ limit: 200 })
-      .filter((bounty) => bounty.status === 'open')
-      .slice(0, limit);
+    return this.store.listBounties({ status: 'open', limit });
   }
 
   getDetail(bountyId: string): {
@@ -206,6 +203,12 @@ export class BountyService {
         409
       );
     }
+    if (input.bidIds.length === remainingSlots && Math.abs(total - remainingUsd) > 0.01) {
+      throw new BountyServiceError(
+        `Award amounts must allocate the full remaining bounty balance (${remainingUsd} USD).`,
+        409
+      );
+    }
     if (!input.amountsUsd) {
       const expectedTotal = roundUsd(
         slotAmounts.slice(0, bids.length).reduce((sum, value) => sum + value, 0)
@@ -249,9 +252,9 @@ export class BountyService {
       }
     }
 
-    for (const pending of pendingAwards) {
-      let onchainAwardId: string | undefined;
-      if (this.onchain && escrowJobId) {
+    const onchainAwardIds = new Map<string, string>();
+    if (this.onchain && escrowJobId) {
+      for (const pending of pendingAwards) {
         const providerAddress = resolveProviderAddress(
           pending.bid.providerId,
           this.onchain.providerAddresses
@@ -263,16 +266,18 @@ export class BountyService {
             amountUsd: pending.amountUsd,
           })
         );
-        onchainAwardId = onchainAward.onchainAwardId;
+        onchainAwardIds.set(pending.awardId, onchainAward.onchainAwardId);
       }
+    }
 
+    for (const pending of pendingAwards) {
       const award: BountyAwardRecord = {
         id: pending.awardId,
         bountyId,
         bidId: pending.bid.id,
         providerId: pending.bid.providerId,
         amountUsd: pending.amountUsd,
-        onchainAwardId,
+        onchainAwardId: onchainAwardIds.get(pending.awardId),
         status: 'in_progress',
         createdAt: nowIso,
         updatedAt: nowIso,

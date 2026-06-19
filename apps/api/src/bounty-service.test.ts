@@ -206,6 +206,34 @@ test('rejects awards that exceed maxAwards across batches', async () => {
   );
 });
 
+test('rejects partial allocation on final award slot', async () => {
+  const { service } = await createTestBountyService({
+    prefix: 'bossraid-bounty-partial-final-slot-',
+  });
+  const bounty = service.createBounty('0xPoster00000000000000000000000000000007', {
+    title: 'Partial final slot',
+    description: 'Test',
+    requirements: 'Test',
+    rewardAmountUsd: 10,
+    maxAwards: 1,
+  });
+  service.fundBounty(bounty.id, bounty.posterWallet, { openNow: true });
+  const provider = { providerId: 'pqf_partial', scores: { reputationScore: 1 } } as ProviderProfile;
+  const bid = service.submitBid(
+    bounty.id,
+    { providerId: 'pqf_partial', priceUsd: 5, etaHours: 1, pitch: 'partial' },
+    provider
+  );
+  await assert.rejects(
+    () =>
+      service.awardBids(bounty.id, bounty.posterWallet, {
+        bidIds: [bid.id],
+        amountsUsd: [5],
+      }),
+    /full remaining bounty balance/
+  );
+});
+
 test('claim is blocked before accept deadline', async () => {
   const { service } = await createTestBountyService({
     prefix: 'bossraid-bounty-claim-',

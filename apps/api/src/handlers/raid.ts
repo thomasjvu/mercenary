@@ -11,6 +11,7 @@ import {
 import { readX402ConfigForContext } from '../lib/x402-runtime.js';
 import { buildRaidPaymentProof } from '../lib/payment-proof.js';
 import { type ApiContext } from '../api-context.js';
+import { scheduleRaidLaunchBillingCapture } from '../lib/raid-launch-billing.js';
 import { requireMercenaryAccess } from './auth/mercenary-access.js';
 import { createAuthHandlers } from './auth.js';
 import { type createManaBillingHandlers } from './billing-mana.js';
@@ -222,6 +223,14 @@ export function createRaidHandlers(
     if (paymentProof) {
       ctx.orchestrator.attachRaidPaymentProof(response.raidId, paymentProof);
     }
+
+    scheduleRaidLaunchBillingCapture({
+      deps: { ctx, auth, payment },
+      request,
+      raidRequest: input,
+      raidId: response.raidId,
+      launchPayment,
+    });
 
     applyX402Headers(reply, {
       settlement: launchPayment.settlement,

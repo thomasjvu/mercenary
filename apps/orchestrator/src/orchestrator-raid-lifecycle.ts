@@ -275,11 +275,11 @@ export class RaidLifecycleCoordinator {
       await this.resumeRaid(raid.id);
     }
 
+    this.refreshPendingSettlementIndex();
     await this.retryPendingSettlements();
   }
 
   async retryPendingSettlements(): Promise<void> {
-    this.refreshPendingSettlementIndex();
     const pendingRaidIds = [...this.pendingSettlementRaidIds].sort((left, right) => {
       const leftRaid = this.raids.get(left);
       const rightRaid = this.raids.get(right);

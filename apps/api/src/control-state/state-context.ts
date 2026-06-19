@@ -49,4 +49,24 @@ export class ControlStateContext {
       throw error;
     }
   }
+
+  mutateState(
+    mutator: (snapshot: ApiControlStateSnapshot) => void,
+    nowMs = Date.now(),
+    maxAttempts = 5
+  ): void {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const { snapshot } = this.readPrunedState(nowMs);
+      mutator(snapshot);
+      try {
+        this.writeState(snapshot);
+        return;
+      } catch (error) {
+        if (error instanceof ApiControlStateVersionConflictError && attempt < maxAttempts - 1) {
+          continue;
+        }
+        throw error;
+      }
+    }
+  }
 }

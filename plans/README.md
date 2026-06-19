@@ -142,6 +142,17 @@ Findings **079–100** implemented at `eb6bc8b` base:
 | 089–095 | Settlement guard, control-state CAS, persist/index perf    | DONE   |
 | 096–100 | test-fixtures devDep, relayer tests, runtime/docs sync     | DONE   |
 
+## Sixth-pass execution (2026-06-19)
+
+Findings **101–129** implemented at `0532d4e` base:
+
+| ID      | Area                                                       | Status |
+| ------- | ---------------------------------------------------------- | ------ |
+| 101–109 | API-key billing, hosted gateway, bounty escrow, x402 claim | DONE   |
+| 110–117 | Bounty SQL, settlement index, rate limits, persist perf    | DONE   |
+| 118–125 | Money-path tests, runtime/AGENTS sync, CI bounty smoke     | DONE   |
+| 126–129 | Remove unused validator, CI `pnpm audit`, dead flags       | DONE   |
+
 ## Findings considered and rejected
 
 - **Committed deploy secrets** (`deploy/phala/secrets.*.env`): gitignored, never in git history.

@@ -9,7 +9,7 @@ export function consumeRateLimit(
   windowMs: number,
   nowMs = Date.now()
 ): { allowed: true } | { allowed: false; retryAfterSec: number } {
-  const { snapshot, changed } = ctx.readPrunedState(nowMs);
+  const { snapshot } = ctx.readPrunedState(nowMs);
   const entryKey = `${bucket}:${key}`;
   const current = snapshot.rateLimits.find((entry) => entry.key === entryKey);
 
@@ -27,9 +27,6 @@ export function consumeRateLimit(
   }
 
   if (current.count >= maxRequests) {
-    if (changed) {
-      ctx.writeState(snapshot);
-    }
     return {
       allowed: false,
       retryAfterSec: Math.max(1, Math.ceil((current.resetAt - nowMs) / 1_000)),

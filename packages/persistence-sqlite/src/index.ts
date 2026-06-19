@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -6,9 +7,15 @@ import type { BossRaidPersistenceSnapshot } from '@bossraid/shared-types';
 
 const META_KEY = 1;
 
+function raidPersistRevision(raid: BossRaidPersistenceSnapshot['raids'][number]): string {
+  const { updatedAt: _updatedAt, ...rest } = raid;
+  return createHash('sha256').update(JSON.stringify(rest)).digest('hex');
+}
+
 export class SqliteBossRaidPersistence implements BossRaidPersistence {
   private db?: DatabaseSync;
   private initPromise?: Promise<DatabaseSync>;
+  private readonly raidRevisionCache = new Map<string, string>();
 
   constructor(private readonly path: string) {}
 
@@ -100,7 +107,12 @@ export class SqliteBossRaidPersistence implements BossRaidPersistence {
       );
 
       for (const raid of snapshot.raids) {
+        const revision = raidPersistRevision(raid);
+        if (this.raidRevisionCache.get(raid.id) === revision) {
+          continue;
+        }
         upsertRaid.run(raid.id, snapshot.savedAt, JSON.stringify(raid));
+        this.raidRevisionCache.set(raid.id, revision);
       }
       for (const provider of snapshot.providers) {
         upsertProvider.run(provider.providerId, snapshot.savedAt, JSON.stringify(provider));

@@ -42,6 +42,7 @@ export type ProviderRegistryCoordinatorDeps = {
 export class ProviderRegistryCoordinator {
   readonly providers = new Map<string, ProviderProfile>();
   readonly providerRuntimes = new Map<string, RaidProvider>();
+  readonly providerIdsByAgentId = new Map<string, string>();
   readonly seededProviderIds = new Set<string>();
   readonly providerHealthCache: ProviderHealthCache;
   private roundRobinCursor = 0;
@@ -63,16 +64,25 @@ export class ProviderRegistryCoordinator {
     refreshProviderScores(provider.profile);
     this.providers.set(provider.profile.providerId, provider.profile);
     this.providerRuntimes.set(provider.profile.providerId, provider);
+    const agentId = provider.profile.agentId ?? provider.profile.providerId;
+    this.providerIdsByAgentId.set(agentId, provider.profile.providerId);
     this.providerHealthCache.delete(provider.profile.providerId);
+  }
+
+  private resolveProviderByAgentId(agentId: string): ProviderProfile | undefined {
+    const providerId = this.providerIdsByAgentId.get(agentId);
+    if (providerId) {
+      return this.providers.get(providerId);
+    }
+    return this.providers.get(agentId);
   }
 
   async upsertRegisteredProvider(input: ProviderRegistrationInput): Promise<ProviderProfile> {
     this.deps.assertPersistenceWritable();
     const existing =
-      this.providers.get(input.agentId) ??
+      this.resolveProviderByAgentId(input.agentId) ??
       [...this.providers.values()].find(
         (provider) =>
-          provider.agentId === input.agentId ||
           normalizeProviderEndpoint(provider.endpoint) === normalizeProviderEndpoint(input.endpoint)
       );
     const profile = buildProviderProfileFromRegistration(input, existing);
@@ -88,9 +98,7 @@ export class ProviderRegistryCoordinator {
   async recordAgentHeartbeat(input: AgentHeartbeatInput): Promise<ProviderProfile | undefined> {
     this.deps.assertPersistenceWritable();
     this.refreshProviderLiveness();
-    const provider =
-      this.providers.get(input.agentId) ??
-      [...this.providers.values()].find((profile) => profile.agentId === input.agentId);
+    const provider = this.resolveProviderByAgentId(input.agentId);
 
     if (!provider) {
       return undefined;

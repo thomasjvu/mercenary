@@ -145,7 +145,8 @@ export function createPaymentHandlers(
       input.actualCostUsd
     );
     if (!finalized) {
-      throw new ApiContractError('API key billing finalization failed.', 500);
+      ctx.controlState.releaseBuyerApiKeyReservation(input.apiKeyBilling);
+      throw new ApiContractError('API key billing finalization failed; launch hold released.', 402);
     }
     const benchmarkPriceUsd = estimateBenchmarkPriceUsd({
       modelId: input.modelId,

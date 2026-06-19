@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { asSingleHeader } from '@bossraid/shared-types';
 import logger from '@bossraid/logger';
 import type { ApiContext } from '../api-context.js';
+import { createX402ReconciliationHolderId } from '../control-state/x402-reconciliations.js';
 import type { X402ReconciliationEntry } from '../control-state/types.js';
 import { readX402ConfigForContext } from './x402-runtime.js';
 import { refundPayment } from '../x402-verify.js';
@@ -95,12 +96,20 @@ export async function processX402ReconciliationQueue(ctx: ApiContext): Promise<n
     return 0;
   }
 
+  const holderId = createX402ReconciliationHolderId();
   let completed = 0;
   for (const entry of pending) {
-    if (entry.attempts >= MAX_ATTEMPTS) {
+    const claimed = ctx.controlState.tryClaimX402Reconciliation(entry.id, holderId);
+    if (!claimed) {
+      continue;
+    }
+
+    if (claimed.attempts >= MAX_ATTEMPTS) {
       ctx.controlState.upsertX402Reconciliation({
-        ...entry,
+        ...claimed,
         status: 'failed',
+        processingHolder: undefined,
+        processingExpiresAt: undefined,
         updatedAt: new Date().toISOString(),
       });
       ctx.apiMetrics.increment('x402.reconciliation_exhausted');
@@ -108,13 +117,15 @@ export async function processX402ReconciliationQueue(ctx: ApiContext): Promise<n
     }
 
     try {
-      const paymentRequired = JSON.parse(entry.paymentRequiredJson) as X402PaymentRequired;
-      await refundPayment(x402Config, entry.paymentSignature, paymentRequired, entry.reason);
+      const paymentRequired = JSON.parse(claimed.paymentRequiredJson) as X402PaymentRequired;
+      await refundPayment(x402Config, claimed.paymentSignature, paymentRequired, claimed.reason);
       ctx.controlState.upsertX402Reconciliation({
-        ...entry,
+        ...claimed,
         status: 'completed',
-        attempts: entry.attempts + 1,
+        attempts: claimed.attempts + 1,
         lastError: undefined,
+        processingHolder: undefined,
+        processingExpiresAt: undefined,
         updatedAt: new Date().toISOString(),
       });
       ctx.apiMetrics.increment('x402.reconciliation_completed');
@@ -122,9 +133,11 @@ export async function processX402ReconciliationQueue(ctx: ApiContext): Promise<n
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       ctx.controlState.upsertX402Reconciliation({
-        ...entry,
-        attempts: entry.attempts + 1,
+        ...claimed,
+        attempts: claimed.attempts + 1,
         lastError: message,
+        processingHolder: undefined,
+        processingExpiresAt: undefined,
         updatedAt: new Date().toISOString(),
       });
       ctx.apiMetrics.increment('x402.reconciliation_retry_failed');

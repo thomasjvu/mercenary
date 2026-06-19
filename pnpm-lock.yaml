@@ -18,9 +18,6 @@ importers:
       '@bossraid/logger':
         specifier: workspace:^0.1.0
         version: link:packages/logger
-      '@bossraid/validator':
-        specifier: workspace:^0.1.0
-        version: link:packages/validator
       '@commitlint/cli':
         specifier: ^20.5.2
         version: 20.5.2(@types/node@22.19.15)(conventional-commits-parser@6.4.0)(typescript@5.9.3)
@@ -129,9 +126,6 @@ importers:
       '@bossraid/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
-      '@bossraid/validator':
-        specifier: workspace:*
-        version: link:../../packages/validator
       '@bossraid/venice-client':
         specifier: workspace:*
         version: link:../../packages/venice-client
@@ -684,19 +678,6 @@ importers:
       swr:
         specifier: ^2.3.6
         version: 2.4.1(react@19.2.4)
-
-  packages/validator:
-    dependencies:
-      zod:
-        specifier: ^3.23.8
-        version: 3.25.76
-    devDependencies:
-      '@types/node':
-        specifier: ^22.13.10
-        version: 22.19.15
-      typescript:
-        specifier: ^5.8.2
-        version: 5.9.3
 
   packages/venice-client: {}
 

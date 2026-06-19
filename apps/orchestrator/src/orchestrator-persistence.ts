@@ -95,7 +95,6 @@ export function buildOrchestratorSnapshot(input: {
   raidRetentionTtlMs?: number;
   dropRaids?: (raidIds: string[]) => void;
 }): BossRaidPersistenceSnapshot {
-  input.refreshProviderLiveness();
   input.pruneLaunchReservations(false);
 
   let raids = input.listAllRaids();
