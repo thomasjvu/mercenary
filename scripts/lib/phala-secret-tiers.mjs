@@ -28,11 +28,56 @@ export const PHALA_ONCHAIN_KEYS = [
   'BOSSRAID_REGISTRY_ADDRESS',
   'BOSSRAID_ESCROW_ADDRESS',
   'BOSSRAID_BOUNTY_ESCROW_ADDRESS',
+  'BOSSRAID_RPC_URL',
+  'BOSSRAID_CHAIN_ID',
+  'BOSSRAID_TOKEN_ADDRESS',
   'BOSSRAID_ERC8004_AGENT_ID',
   'BOSSRAID_ERC8004_OPERATOR_WALLET',
   'BOSSRAID_ERC8004_REGISTRATION_TX',
   'BOSSRAID_ERC8004_IDENTITY_REGISTRY',
 ];
+
+const LEGACY_PROVIDER_ID_MAP = {
+  'unity-specialist-a': 'dottie',
+  'minimal-diff-hunter': 'riko',
+  'regression-averse-maintainer': 'gamma',
+};
+
+export function normalizeProviderSettlementIds(entries = {}) {
+  const normalized = { ...entries };
+
+  for (const key of [
+    'BOSSRAID_PROVIDER_ADDRESS_MAP_JSON',
+    'BOSSRAID_SETTLEMENT_PROVIDER_PRIVATE_KEYS_JSON',
+  ]) {
+    const raw = normalized[key];
+    if (!raw?.trim()) {
+      continue;
+    }
+
+    try {
+      const parsed = JSON.parse(raw);
+      const remapped = {};
+      let changed = false;
+
+      for (const [providerId, value] of Object.entries(parsed)) {
+        const nextId = LEGACY_PROVIDER_ID_MAP[providerId] ?? providerId;
+        if (nextId !== providerId) {
+          changed = true;
+        }
+        remapped[nextId] = value;
+      }
+
+      if (changed) {
+        normalized[key] = JSON.stringify(remapped);
+      }
+    } catch {
+      // Keep invalid JSON untouched so preflight can surface it.
+    }
+  }
+
+  return normalized;
+}
 
 const PROVIDER_SUFFIXES = ['A', 'B', 'C'];
 const PROVIDER_MODEL_API_KEY_KEYS = PROVIDER_SUFFIXES.map(
@@ -108,7 +153,7 @@ export function pickTierEntries(entries, keys) {
 }
 
 export function splitDeployEnv(entries) {
-  const normalized = { ...entries };
+  const normalized = normalizeProviderSettlementIds(entries);
   const veniceApiKey = resolveVeniceApiKey(normalized);
   if (veniceApiKey) {
     normalized.BOSSRAID_VENICE_API_KEY = veniceApiKey;
@@ -186,8 +231,9 @@ function resolveProviderModel(value, fallback) {
 }
 
 export function assembleDeployEnv(core = {}, onchain = {}, options = {}) {
-  const defaults = buildDeployDefaults({ ...core, ...onchain, ...options });
-  const merged = { ...defaults, ...onchain, ...core };
+  const normalizedOnchain = normalizeProviderSettlementIds(onchain);
+  const defaults = buildDeployDefaults({ ...core, ...normalizedOnchain, ...options });
+  const merged = normalizeProviderSettlementIds({ ...defaults, ...normalizedOnchain, ...core });
 
   merged.BOSSRAID_SETTLEMENT_MODE = isRealValue(onchain.BOSSRAID_REGISTRY_ADDRESS)
     ? 'onchain'

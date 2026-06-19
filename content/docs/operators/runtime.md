@@ -102,10 +102,13 @@ pnpm generate:settlement-keys
 pnpm bootstrap:settlement
 pnpm docker:up
 pnpm bootstrap:phala:env
+pnpm production:cutover
 pnpm infisical:phala:pull
 pnpm infisical:phala:push
 pnpm infisical:phala:prune-legacy
 ```
+
+`production:cutover` normalizes provider settlement IDs (`dottie` / `riko` / `gamma`), deploys Base contracts when `BOSSRAID_DEPLOYER_PRIVATE_KEY` is funded, merges addresses into `deploy/phala/secrets.onchain.env`, and reassembles `deploy/phala/.env`. Use `--skip-deploy` when contract addresses are already in `temp/contracts/deployment.json`.
 
 Active hosted stack: Phala CVM. EigenCompute stays in-repo for optional judging/attestation lanes.
 

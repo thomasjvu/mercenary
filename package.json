@@ -65,6 +65,7 @@
     "infisical:phala:push": "node scripts/infisical-phala-secrets.mjs push",
     "infisical:phala:prune-legacy": "node scripts/infisical-phala-secrets.mjs prune-legacy",
     "bootstrap:phala:env": "node scripts/bootstrap-phala-deploy-env.mjs",
+    "production:cutover": "node scripts/production-cutover.mjs",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint \"**/*.{ts,tsx}\" --max-warnings=0",
     "phala:secrets:check": "node scripts/phala-secrets-preflight.mjs",
     "prepare": "husky install"

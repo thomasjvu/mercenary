@@ -6,7 +6,7 @@ import {
   isFullOnchainSettlementConfigured,
   isSettlementGateConfigured,
 } from '../lib/settlement-mode.js';
-import { readTeeSocketState } from '../lib/tee.js';
+import { isTeeProductionConfigured, readTeeSocketState } from '../lib/tee.js';
 import { readX402ConfigForContext } from '../lib/x402-runtime.js';
 
 import { type ApiContext } from '../api-context.js';
@@ -71,12 +71,7 @@ export function registerHealthRoutes(
       readBooleanEnv(env.BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS);
     const bountyEscrowReady =
       settlementMode !== 'onchain' || Boolean(env.BOSSRAID_BOUNTY_ESCROW_ADDRESS?.trim());
-    const teeProductionReady =
-      !isProduction ||
-      (Boolean(env.MNEMONIC) &&
-        env.BOSSRAID_TEE_PLATFORM === 'phala' &&
-        tee.pathExists &&
-        tee.socketMounted);
+    const teeProductionReady = !isProduction || isTeeProductionConfigured(env, tee);
     const gates = {
       api: true,
       storage: persistence.healthy,
@@ -92,7 +87,8 @@ export function registerHealthRoutes(
       unverifiedBountyFundDisabled: productionBountyFundReady,
       teeProductionReady,
       tee: {
-        configured: Boolean(env.MNEMONIC),
+        configured: isTeeProductionConfigured(env, tee),
+        mnemonicConfigured: Boolean(env.MNEMONIC),
         platform: env.BOSSRAID_TEE_PLATFORM ?? null,
         ...tee,
       },

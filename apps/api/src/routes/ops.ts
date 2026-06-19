@@ -23,7 +23,7 @@ import {
 } from '../lib/attestation.js';
 import { buildAgentManifest } from '../agent-manifest.js';
 import { buildEvaluatorSmokeTask } from '../lib/evaluator-smoke.js';
-import { readTeeSocketState } from '../lib/tee.js';
+import { isTeeProductionConfigured, readTeeSocketState } from '../lib/tee.js';
 import { buildX402SettingsView, readX402ConfigForContext } from '../lib/x402-runtime.js';
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../handlers/index.js';
@@ -366,7 +366,7 @@ export function registerOpsRoutes(
         configured: isFullOnchainSettlementConfigured(env),
       },
       tee: {
-        configured: Boolean(env.MNEMONIC),
+        configured: isTeeProductionConfigured(env, tee),
         platform: env.BOSSRAID_TEE_PLATFORM ?? null,
         ...tee,
       },

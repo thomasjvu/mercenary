@@ -232,14 +232,11 @@ export function buildProductionReadinessReport(input: {
   addCheck({
     id: 'tee_attestation',
     status:
-      input.tee.configured &&
-      input.tee.platform === 'phala' &&
-      input.tee.pathExists &&
-      input.tee.socketMounted
+      input.tee.platform === 'phala' && input.tee.pathExists && input.tee.socketMounted
         ? 'pass'
         : 'fail',
     severity: 'blocking',
-    message: 'Phala TEE signer and tappd socket must be available for strict-private production.',
+    message: 'Phala production requires BOSSRAID_TEE_PLATFORM=phala with a mounted tappd socket.',
     details: input.tee,
   });
 

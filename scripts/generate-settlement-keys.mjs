@@ -25,15 +25,15 @@ function main() {
       privateKey: evaluatorPrivateKey,
     },
     providers: {
-      "regression-averse-maintainer": {
+      gamma: {
         address: gamma.address,
         privateKey: gammaPrivateKey,
       },
-      "minimal-diff-hunter": {
+      riko: {
         address: riko.address,
         privateKey: rikoPrivateKey,
       },
-      "unity-specialist-a": {
+      dottie: {
         address: dottie.address,
         privateKey: dottiePrivateKey,
       },
@@ -50,14 +50,14 @@ function main() {
     `BOSSRAID_EVALUATOR_ADDRESS=${evaluator.address}`,
     `BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY=${evaluatorPrivateKey}`,
     `BOSSRAID_PROVIDER_ADDRESS_MAP_JSON=${JSON.stringify({
-      "regression-averse-maintainer": gamma.address,
-      "minimal-diff-hunter": riko.address,
-      "unity-specialist-a": dottie.address,
+      gamma: gamma.address,
+      riko: riko.address,
+      dottie: dottie.address,
     })}`,
     `BOSSRAID_SETTLEMENT_PROVIDER_PRIVATE_KEYS_JSON=${JSON.stringify({
-      "regression-averse-maintainer": gammaPrivateKey,
-      "minimal-diff-hunter": rikoPrivateKey,
-      "unity-specialist-a": dottiePrivateKey,
+      gamma: gammaPrivateKey,
+      riko: rikoPrivateKey,
+      dottie: dottiePrivateKey,
     })}`,
   ];
 

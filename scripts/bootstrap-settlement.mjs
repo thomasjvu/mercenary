@@ -50,7 +50,8 @@ async function main() {
     `BOSSRAID_EVALUATOR_ADDRESS=${keysData.addresses.evaluator}`,
     `BOSSRAID_SETTLEMENT_JOB_EXPIRY_SEC=86400`,
     `BOSSRAID_SETTLEMENT_ATOMIC_MULTIPLIER=1000000`,
-    `BOSSRAID_SETTLEMENT_FUND_JOBS=false`,
+    `BOSSRAID_SETTLEMENT_FUND_JOBS=true`,
+    `BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS=true`,
   ].filter(Boolean);
 
   const outPath = resolve(workspaceRoot, "temp/settlement-bootstrap.env");

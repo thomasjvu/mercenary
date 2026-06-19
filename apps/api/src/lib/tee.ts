@@ -49,6 +49,17 @@ export function readTeeSigner(env: NodeJS.ProcessEnv): {
   }
 }
 
+export function isTeeProductionConfigured(
+  env: NodeJS.ProcessEnv,
+  tee: { pathExists: boolean; socketMounted: boolean }
+): boolean {
+  if (env.BOSSRAID_TEE_PLATFORM === 'phala') {
+    return tee.pathExists && tee.socketMounted;
+  }
+
+  return Boolean(env.MNEMONIC?.trim());
+}
+
 export async function readTeeSocketState(
   path: string
 ): Promise<{ pathExists: boolean; socketMounted: boolean }> {
