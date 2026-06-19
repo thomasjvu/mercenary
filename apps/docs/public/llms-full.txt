@@ -807,10 +807,28 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 | ------------------------------- | ------------------------------------------------------------------------------------------------- |
 | `BOSSRAID_ONESHOT_RELAYER_URL`  | 1Shot relayer JSON-RPC base (`/v1/relayer/*` proxies this)                                        |
 | `BOSSRAID_AGENT_WALLET_KEY`     | Funded agent wallet for MCP paid raids and redelegation                                           |
-| `BOSSRAID_VENICE_API_KEY`       | Mercenary direct Venice planner/synthesis                                                         |
+| `BOSSRAID_VENICE_API_KEY`       | Shared Venice upstream key (Phala providers + Mercenary planner/synthesis)                        |
 | `BOSSRAID_MERCENARY_BASE_MODEL` | Mercenary chat planner base model (default `e2ee-gemma-4-31b`; E2EE first, plain Venice fallback) |
 | `BOSSRAID_VENICE_MODEL`         | Venice model id (default `minimax-m27`)                                                           |
 | `BOSSRAID_VENICE_WALLET_KEY`    | Venice x402 wallet for provider upstream calls                                                    |
+
+## Phala Infisical tiers
+
+Boss Raid stores **14 core secrets** at `prod:/bossraid/phala/core` and an optional
+onchain overlay at `prod:/bossraid/phala/onchain`. Bootstrap assembles
+`deploy/phala/.env` with compose defaults that are not stored in Infisical.
+
+Core tier keys:
+
+| Variable                                                                                                           | Purpose                                                 |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| `BOSSRAID_IMAGE`, `BOSSRAID_EVALUATOR_IMAGE`, `BOSSRAID_EVAL_JOB_CONTAINER_IMAGE`                                  | Deploy image refs                                       |
+| `BOSSRAID_ADMIN_TOKEN`, `BOSSRAID_REGISTRY_TOKEN`, `BOSSRAID_SECRET_ENCRYPTION_KEY`, `BOSSRAID_EVAL_SANDBOX_TOKEN` | Platform auth                                           |
+| `BOSSRAID_PROVIDER_A/B/C_TOKEN`                                                                                    | In-CVM provider ingress tokens                          |
+| `BOSSRAID_VENICE_API_KEY`                                                                                          | Shared upstream inference key for all 3 Phala providers |
+| `BOSSRAID_X402_PAY_TO`, `PAYAI_API_KEY_ID`, `PAYAI_API_KEY_SECRET`                                                 | Paid traffic                                            |
+
+Workflow: [operators/appendix/infisical.md](../operators/appendix/infisical.md).
 
 ## Settlement
 
@@ -1108,8 +1126,10 @@ pnpm settle:raid -- --raid-id <raidId>
 pnpm generate:settlement-keys
 pnpm bootstrap:settlement
 pnpm docker:up
+pnpm bootstrap:phala:env
 pnpm infisical:phala:pull
 pnpm infisical:phala:push
+pnpm infisical:phala:prune-legacy
 ```
 
 Active hosted stack: Phala CVM. EigenCompute stays in-repo for optional judging/attestation lanes.
@@ -1120,7 +1140,7 @@ Active hosted stack: Phala CVM. EigenCompute stays in-repo for optional judging/
 
 1. Register Mercenary + providers at `https://acpx.virtuals.io`
 2. Fill `examples/virtuals-acp-capture-sheet.md`
-3. Map to `deploy/phala/production.env.example`
+3. Map ERC-8004 fields into `deploy/phala/secrets.onchain.env` (see `secrets.onchain.env.example`)
 
 See [appendix/synthesis-registration.md](appendix/synthesis-registration.md).
 
@@ -1165,7 +1185,9 @@ pnpm test:bounty-escrow:production     # wallet mode; caps reward via BOSSRAID_B
 ### 3. Phala deploy
 
 ```bash
-cp deploy/phala/production.env.example deploy/phala/.env
+cp deploy/phala/secrets.core.env.example deploy/phala/secrets.core.env
+# optional: deploy/phala/secrets.onchain.env after pnpm bootstrap:settlement
+pnpm bootstrap:phala:env
 pnpm phala:secrets:check deploy/phala/.env
 pnpm infisical:phala:push
 ```
@@ -1469,79 +1491,141 @@ URL: /docs/operators/appendix/infisical
 
 # Infisical Secret Workflow
 
-Boss Raid uses Infisical as the backup/source-of-truth for production Phala
-environment secrets, while keeping the local deploy file untracked at
-`deploy/phala/.env`.
+Boss Raid stores **tiered Phala secrets** in Infisical and assembles the full
+compose env locally at `deploy/phala/.env`.
 
-Default mapping:
+Infisical is not a flat 60-key dump. It holds:
 
-- Infisical environment: `prod`
-- Infisical path: `/bossraid/phala`
-- Local file: `deploy/phala/.env`
+- **Core tier** — runtime secrets required for the current Phala stack
+- **Onchain overlay** — settlement keys loaded only when flipping to onchain mode
 
-## One-Time Setup
+Compose defaults (rate limits, provider metadata, x402 network constants) live in
+[`deploy/phala/docker-compose.yml`](../../../deploy/phala/docker-compose.yml) and
+[`scripts/lib/phala-secret-tiers.mjs`](../../../scripts/lib/phala-secret-tiers.mjs),
+not in Infisical.
 
-Initialize the repo against the correct Infisical project:
+## Mapping
+
+| Item                  | Value                                  |
+| --------------------- | -------------------------------------- |
+| Domain                | `https://infisical.phantasy.bot`       |
+| Organization ID       | `6cbdc8e5-c7d6-4677-809f-1e367ea06d16` |
+| Project ID            | `5d94a3f6-78e6-433e-b4f4-c0099a5f49de` |
+| Environment           | `prod`                                 |
+| Core path             | `/bossraid/phala/core`                 |
+| Onchain path          | `/bossraid/phala/onchain`              |
+| Local core file       | `deploy/phala/secrets.core.env`        |
+| Local onchain file    | `deploy/phala/secrets.onchain.env`     |
+| Assembled deploy file | `deploy/phala/.env`                    |
+
+Repo binding: [`.infisical.json`](../../../.infisical.json)
+
+## Secret tiers
+
+### Core tier (14 Infisical secrets)
+
+Stored at `prod:/bossraid/phala/core`:
+
+| Key                                 | Purpose                                           |
+| ----------------------------------- | ------------------------------------------------- |
+| `BOSSRAID_IMAGE`                    | Main app image digest/ref                         |
+| `BOSSRAID_EVALUATOR_IMAGE`          | Evaluator image digest/ref                        |
+| `BOSSRAID_EVAL_JOB_CONTAINER_IMAGE` | Evaluator job image digest/ref                    |
+| `BOSSRAID_ADMIN_TOKEN`              | Admin / ops auth                                  |
+| `BOSSRAID_REGISTRY_TOKEN`           | Provider registry auth                            |
+| `BOSSRAID_SECRET_ENCRYPTION_KEY`    | SQLite secret encryption                          |
+| `BOSSRAID_EVAL_SANDBOX_TOKEN`       | API ↔ evaluator sandbox auth                      |
+| `BOSSRAID_PROVIDER_A/B/C_TOKEN`     | In-CVM provider ingress tokens                    |
+| `BOSSRAID_VENICE_API_KEY`           | Shared upstream inference key for all 3 providers |
+| `BOSSRAID_X402_PAY_TO`              | Treasury receive wallet                           |
+| `PAYAI_API_KEY_ID`                  | x402 facilitator                                  |
+| `PAYAI_API_KEY_SECRET`              | x402 facilitator                                  |
+
+### Onchain overlay (optional until launch)
+
+Stored at `prod:/bossraid/phala/onchain` when settlement is being staged:
+
+- `BOSSRAID_CLIENT_PRIVATE_KEY`
+- `BOSSRAID_EVALUATOR_ADDRESS`
+- `BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY`
+- `BOSSRAID_PROVIDER_ADDRESS_MAP_JSON`
+- `BOSSRAID_SETTLEMENT_PROVIDER_PRIVATE_KEYS_JSON`
+- `BOSSRAID_REGISTRY_ADDRESS`, `BOSSRAID_ESCROW_ADDRESS`, `BOSSRAID_BOUNTY_ESCROW_ADDRESS`
+- `BOSSRAID_ERC8004_*` identity fields
+
+While `BOSSRAID_SETTLEMENT_MODE=file`, these are not required at runtime. Bootstrap
+only enables onchain mode when `BOSSRAID_REGISTRY_ADDRESS` is present in the overlay.
+
+### Assembled deploy defaults (not in Infisical)
+
+Written into `deploy/phala/.env` by bootstrap/pull:
+
+- Provider id/name/mode/instructions for `dottie`, `riko`, `gamma`
+- x402 network/asset/facilitator defaults
+- Public and buyer rate limits
+- Operator launch ack flags
+- `BOSSRAID_PROVIDERS_FILE`, `BOSSRAID_TEE_SOCKET_PATH`
+
+## One-time setup
 
 ```bash
-infisical login --domain <your-infisical-domain>
+cloudflared access login https://infisical.phantasy.bot
+infisical login --domain https://infisical.phantasy.bot/api
 infisical init
 ```
 
-If you use machine identity or CI, set:
+Machine identity / CI:
 
 ```bash
-export INFISICAL_TOKEN=<machine-identity-or-service-token>
-export INFISICAL_PROJECT_ID=<project-id>
-export INFISICAL_API_URL=<your-infisical-domain>
+export INFISICAL_API_URL=https://infisical.phantasy.bot
+export INFISICAL_PROJECT_ID=5d94a3f6-78e6-433e-b4f4-c0099a5f49de
+export INFISICAL_MACHINE_CLIENT_ID=<bossraid-phala-ci-client-id>
+export INFISICAL_MACHINE_CLIENT_SECRET=<bossraid-phala-ci-client-secret>
+export CF_ACCESS_CLIENT_ID=<cloudflare-access-client-id>
+export CF_ACCESS_CLIENT_SECRET=<cloudflare-access-client-secret>
 ```
 
-Do not commit Infisical auth tokens, service tokens, or `deploy/phala/.env`.
+Do not set `INFISICAL_ORGANIZATION_ID` when using machine identity auth.
 
-## Push Local Secrets To Infisical
+Do not commit Infisical auth tokens or `deploy/phala/*.env` files.
 
-Create and fill the local env file first:
+## Bootstrap local deploy env
 
 ```bash
-cp deploy/phala/production.env.example deploy/phala/.env
+cp deploy/phala/secrets.core.env.example deploy/phala/secrets.core.env
+# fill secrets.core.env; optionally cp secrets.onchain.env.example → secrets.onchain.env
+pnpm bootstrap:phala:env
 pnpm phala:secrets:check deploy/phala/.env
 ```
 
-Then back it up to Infisical:
+`bootstrap:phala:env` writes:
+
+- `deploy/phala/secrets.core.env`
+- `deploy/phala/secrets.onchain.env` (when settlement keys exist)
+- `deploy/phala/.env` (assembled compose env)
+
+## Push / pull
 
 ```bash
 pnpm infisical:phala:push
-```
-
-The push script runs the Phala secret preflight before writing to Infisical.
-
-## Pull Infisical Secrets Locally
-
-To recreate the untracked deploy env from Infisical:
-
-```bash
 pnpm infisical:phala:pull
 ```
 
-This exports the Infisical `prod:/bossraid/phala` secrets into
-`deploy/phala/.env`, then runs `pnpm phala:secrets:check`.
+Push uploads tier files (or splits `deploy/phala/.env`) into:
 
-Use overrides when needed:
+- `prod:/bossraid/phala/core`
+- `prod:/bossraid/phala/onchain`
 
-```bash
-INFISICAL_ENV=staging INFISICAL_PATH=/bossraid/phala/staging pnpm infisical:phala:pull
-pnpm infisical:phala:push -- --env prod --path /bossraid/phala --file deploy/phala/.env
-```
+Pull downloads both tiers, writes local tier files, and assembles `deploy/phala/.env`.
 
-## Deploy To Phala
-
-After pulling and checking:
+Migrate off the legacy flat path:
 
 ```bash
-phala envs update bossraid-main -e deploy/phala/.env
+pnpm infisical:phala:push
+pnpm infisical:phala:prune-legacy
 ```
 
-or for a full compose update:
+## Deploy to Phala
 
 ```bash
 phala deploy --cvm-id bossraid-main \
@@ -1549,6 +1633,8 @@ phala deploy --cvm-id bossraid-main \
   -e deploy/phala/.env \
   --wait
 ```
+
+Secret rotation: `phala envs update bossraid-main -e deploy/phala/.env`.
 
 
 ---
@@ -1680,7 +1766,7 @@ BOSSRAID_CLIENT_PRIVATE_KEY=<client-wallet-with-usdc>
 
 ### Step 4: Composer
 
-Add all env vars to `deploy/phala/docker-compose.yml` via `deploy/phala/production.env.example`. The compose forwards ERC-8004, settlement, and x402 env vars into the API container.
+Map settlement and ERC-8004 fields into `deploy/phala/secrets.onchain.env` (see `secrets.onchain.env.example`). `deploy/phala/docker-compose.yml` forwards those vars into the API container after bootstrap assembles `deploy/phala/.env`.
 
 ## Final-Lane Rule
 

@@ -93,8 +93,9 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 ## Phala Infisical tiers
 
 Boss Raid stores **14 core secrets** at `prod:/bossraid/phala/core` and an optional
-onchain overlay at `prod:/bossraid/phala/onchain`. Bootstrap assembles
-`deploy/phala/.env` with compose defaults that are not stored in Infisical.
+onchain overlay at `prod:/bossraid/phala/onchain`. Templates:
+`deploy/phala/secrets.core.env.example` and `deploy/phala/secrets.onchain.env.example`.
+Bootstrap assembles `deploy/phala/.env` with compose defaults that are not stored in Infisical.
 
 Core tier keys:
 

@@ -45,7 +45,7 @@ function imageDigestRef(envKey, repository, merged) {
 
 const merged = {
   ...parseDotenv(
-    readFileSync(resolve(workspaceRoot, 'deploy/phala/production.env.example'), 'utf8')
+    readFileSync(resolve(workspaceRoot, 'deploy/phala/secrets.core.env.example'), 'utf8')
   ),
   ...readOptionalEnv(resolve(workspaceRoot, 'deploy/phala/secrets.core.env')),
   ...readOptionalEnv(resolve(workspaceRoot, 'deploy/phala/secrets.onchain.env')),

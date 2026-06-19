@@ -8,6 +8,7 @@ build
 .env.*
 !.env.example
 deploy/phala/.env
+deploy/phala/providers-only.env
 deploy/phala/secrets.core.env
 deploy/phala/secrets.onchain.env
 apps/web/.wrangler/

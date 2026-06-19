@@ -101,8 +101,8 @@ Do not commit Infisical auth tokens or `deploy/phala/*.env` files.
 ## Bootstrap local deploy env
 
 ```bash
-cp deploy/phala/production.env.example deploy/phala/secrets.core.env
-# fill secrets.core.env, optionally secrets.onchain.env
+cp deploy/phala/secrets.core.env.example deploy/phala/secrets.core.env
+# fill secrets.core.env; optionally cp secrets.onchain.env.example → secrets.onchain.env
 pnpm bootstrap:phala:env
 pnpm phala:secrets:check deploy/phala/.env
 ```

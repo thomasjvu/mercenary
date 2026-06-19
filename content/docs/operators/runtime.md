@@ -115,7 +115,7 @@ Active hosted stack: Phala CVM. EigenCompute stays in-repo for optional judging/
 
 1. Register Mercenary + providers at `https://acpx.virtuals.io`
 2. Fill `examples/virtuals-acp-capture-sheet.md`
-3. Map to `deploy/phala/production.env.example`
+3. Map ERC-8004 fields into `deploy/phala/secrets.onchain.env` (see `secrets.onchain.env.example`)
 
 See [appendix/synthesis-registration.md](appendix/synthesis-registration.md).
 
@@ -160,7 +160,7 @@ pnpm test:bounty-escrow:production     # wallet mode; caps reward via BOSSRAID_B
 ### 3. Phala deploy
 
 ```bash
-cp deploy/phala/production.env.example deploy/phala/secrets.core.env
+cp deploy/phala/secrets.core.env.example deploy/phala/secrets.core.env
 # optional: deploy/phala/secrets.onchain.env after pnpm bootstrap:settlement
 pnpm bootstrap:phala:env
 pnpm phala:secrets:check deploy/phala/.env

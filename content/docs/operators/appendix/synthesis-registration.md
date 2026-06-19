@@ -120,7 +120,7 @@ BOSSRAID_CLIENT_PRIVATE_KEY=<client-wallet-with-usdc>
 
 ### Step 4: Composer
 
-Add all env vars to `deploy/phala/docker-compose.yml` via `deploy/phala/production.env.example`. The compose forwards ERC-8004, settlement, and x402 env vars into the API container.
+Map settlement and ERC-8004 fields into `deploy/phala/secrets.onchain.env` (see `secrets.onchain.env.example`). `deploy/phala/docker-compose.yml` forwards those vars into the API container after bootstrap assembles `deploy/phala/.env`.
 
 ## Final-Lane Rule
 

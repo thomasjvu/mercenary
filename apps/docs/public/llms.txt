@@ -32,7 +32,7 @@ Open marketplace docs for discount inference, Mercenary raids, seller onboarding
 
 - [Overview](/docs/operators/appendix/README): Operator-only reference. Not required for buy/sell quickstarts.
 - [Hackathon](/docs/operators/appendix/hackathon): Boss Raid is the Synthesis demo surface for Mercenary.
-- [Infisical](/docs/operators/appendix/infisical): Boss Raid uses Infisical as the backup/source-of-truth for production Phala
+- [Infisical](/docs/operators/appendix/infisical): Boss Raid stores **tiered Phala secrets** in Infisical and assembles the full
 - [Synthesis Registration](/docs/operators/appendix/synthesis-registration): This repo can surface registration proof. It does not create ERC-8004 registrations onchain by itself.
 
 ## Operators
