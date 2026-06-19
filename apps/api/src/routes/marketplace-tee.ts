@@ -78,12 +78,24 @@ export function registerMarketplaceTeeRoutes(
     let sessionWallet: string | undefined;
 
     if (sellerId) {
+      const session = requirePublicSession(reply, request.headers);
+      if ('error' in session) {
+        return session;
+      }
+      if (!controlState.sellerOwnsProvider(session.wallet, sellerId)) {
+        reply.code(403);
+        return {
+          error: 'forbidden',
+          message: 'Signed-in wallet does not own this seller provider.',
+        };
+      }
       const seller = orchestrator.listProviders().find((item) => item.providerId === sellerId);
       sellerWallet = seller?.source?.externalRef;
       if (!sellerWallet) {
         reply.code(404);
         return { error: 'seller_not_found', message: 'Seller provider not found.' };
       }
+      sessionWallet = session.wallet;
       providerId = sellerId;
     } else {
       const platformKey = resolveMarketplaceTeeApiKey({

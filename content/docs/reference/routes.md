@@ -17,7 +17,7 @@ Native write route: `POST /v1/raid`.
 | `POST /v1/relayer/estimate`                     | Estimate ERC-7710 relay bundle before send.                                                                                                                                                                                                                                                             |
 | `POST /v1/relayer/send`                         | Proxy `relayer_send7710Transaction` to the public 1Shot relayer.                                                                                                                                                                                                                                        |
 | `GET /v1/relayer/status/:taskId`                | Poll 1Shot relay task status.                                                                                                                                                                                                                                                                           |
-| `POST /v1/relayer/webhook`                      | 1Shot relayer status webhook sink.                                                                                                                                                                                                                                                                      |
+| `POST /v1/relayer/webhook`                      | 1Shot relayer status webhook sink. Requires `X-BossRaid-Relayer-Webhook-Secret` (or `Authorization: Bearer`) matching `BOSSRAID_ONESHOT_RELAYER_WEBHOOK_SECRET` in production.                                                                                                                          |
 | `POST /v1/bounties`                             | Create bounty draft (wallet session).                                                                                                                                                                                                                                                                   |
 | `POST /v1/bounties/:id/fund`                    | Fund escrow and open bounty board (x402 USDC in production; onchain `BossBountyEscrow` when `BOSSRAID_SETTLEMENT_MODE=onchain`).                                                                                                                                                                        |
 | `POST /v1/bounties/:id/refund`                  | Poster refunds unawarded escrow after bidding deadline (wallet session).                                                                                                                                                                                                                                |
@@ -37,7 +37,7 @@ Native write route: `POST /v1/raid`.
 | Route                                      | Auth                          | Purpose                                        |
 | ------------------------------------------ | ----------------------------- | ---------------------------------------------- |
 | `GET /health`                              | —                             | Health + ready providers                       |
-| `GET /ready`                               | —                             | Beta readiness gates                           |
+| `GET /ready`                               | —                             | Public beta readiness (`{ ok: boolean }` only) |
 | `GET /metrics`                             | admin\*                       | Prometheus metrics                             |
 | `GET /v1/raid/:raidId`                     | raid token / admin            | Status                                         |
 | `GET /v1/raid/:raidId/result`              | raid token / admin            | Result + routing + settlement                  |
@@ -45,7 +45,7 @@ Native write route: `POST /v1/raid`.
 | `GET /v1/raid/:raidId/agent_log.json`      | query `token`                 | Run log                                        |
 
 | `GET /v1/agent.json` | — | Mercenary manifest |
-| `GET /v1/attested-runtime` | — | Signed runtime (`MNEMONIC`) |
+| `GET /v1/attested-runtime` | admin | Signed runtime attestation (`MNEMONIC`) |
 | `GET /v1/raid/:raidId/attested-result` | raid token | Signed result |
 | `GET /v1/providers` | — | Provider list (`?sourceType=party_quest`, `?supportedFramework=party-quest`) |
 | `GET /v1/providers/health` | — | Readiness snapshot |

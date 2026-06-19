@@ -478,31 +478,31 @@ export class BountyService {
       throw new BountyServiceError('Only delivered awards can be paid.', 409);
     }
 
+    const claimed = this.store.claimDeliveredAwardForPayment(award.id);
+    if (!claimed) {
+      throw new BountyServiceError('Award payout is already in progress or completed.', 409);
+    }
+
     const nowIso = new Date().toISOString();
     const updated: BountyAwardRecord = {
-      ...award,
+      ...claimed,
       status: 'paid',
       paidAt: nowIso,
       updatedAt: nowIso,
     };
-    this.store.saveAward(updated);
-    if (this.onchain && award.onchainAwardId) {
+    if (this.onchain && claimed.onchainAwardId) {
       try {
         if (eventType === 'award.claimed') {
-          await this.runOnchain(() => this.onchain!.executor.claimPayout(award.onchainAwardId!));
+          await this.runOnchain(() => this.onchain!.executor.claimPayout(claimed.onchainAwardId!));
         } else {
-          await this.runOnchain(() => this.onchain!.executor.acceptAward(award.onchainAwardId!));
+          await this.runOnchain(() => this.onchain!.executor.acceptAward(claimed.onchainAwardId!));
         }
       } catch (error) {
-        this.store.saveAward({
-          ...award,
-          status: 'delivered',
-          paidAt: undefined,
-          updatedAt: new Date().toISOString(),
-        });
+        this.store.releasePayingAward(award.id);
         throw error;
       }
     }
+    this.store.saveAward(updated);
     const awards = this.store.listAwardsForBounty(bounty.id);
     const allPaid = awards.every((entry) => entry.id === award.id || entry.status === 'paid');
     this.store.saveBounty({
@@ -573,7 +573,11 @@ export class BountyServiceError extends Error {
   }
 }
 
-const DELIVERED_AWARD_STATUSES = new Set<BountyAwardRecord['status']>(['delivered', 'paid']);
+const DELIVERED_AWARD_STATUSES = new Set<BountyAwardRecord['status']>([
+  'delivered',
+  'paying',
+  'paid',
+]);
 
 function resolveBountyStatusAfterDelivery(
   bounty: BountyRecord,

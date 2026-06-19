@@ -94,6 +94,7 @@ export type RaidLifecycleCoordinatorDeps = {
   queuePersist: () => Promise<void>;
   queuePersistBestEffort: () => void;
   providerRegistry: ProviderRegistryCoordinator;
+  getProviderCapacityDeps: () => import('./orchestrator-provider-capacity.js').OrchestratorProviderCapacityDeps;
   settlementOutputDir?: string;
   settlementExecutor: {
     execute(
@@ -319,6 +320,7 @@ export class RaidLifecycleCoordinator {
       providerRegistry: this.deps.providerRegistry,
       prepareRaidDeps: () => createPrepareRaidDeps(this.runner()),
       spawnPreparedRaidDeps: () => createSpawnPreparedRaidDeps(this.runner()),
+      providerCapacityDeps: () => this.deps.getProviderCapacityDeps(),
     };
   }
 

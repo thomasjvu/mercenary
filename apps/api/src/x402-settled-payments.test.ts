@@ -22,3 +22,23 @@ test('x402 settled payment fingerprints deduplicate balance credits', () => {
   });
   assert.equal(controlState.hasX402SettledPayment(fingerprint!), true);
 });
+
+test('tryClaimX402SettledPayment rejects duplicate fingerprints atomically', () => {
+  const controlState = createApiControlState({
+    ...process.env,
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+  });
+  const fingerprint = buildX402SettlementFingerprint({
+    settlementTx: '0xdef456',
+  });
+  assert.ok(fingerprint);
+  const entry = {
+    fingerprint: fingerprint!,
+    wallet: '0xposter',
+    route: 'balance' as const,
+    amountUsd: 3,
+    createdAt: new Date().toISOString(),
+  };
+  assert.equal(controlState.tryClaimX402SettledPayment(entry), true);
+  assert.equal(controlState.tryClaimX402SettledPayment(entry), false);
+});

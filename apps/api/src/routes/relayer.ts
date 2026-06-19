@@ -184,7 +184,12 @@ export function registerRelayerRoutes(
     }
 
     const taskId = (request.params as { taskId: string }).taskId;
+    const sessionWallet = accessError.wallet?.toLowerCase();
     const cached = ctx.controlState.getRelayerTask(taskId);
+    if (cached?.wallet && sessionWallet && cached.wallet !== sessionWallet) {
+      reply.code(403);
+      return { error: 'forbidden', message: 'Task does not belong to the signed-in wallet.' };
+    }
     const status = await getRelayerStatus(relayerUrl, taskId);
     const now = new Date().toISOString();
 

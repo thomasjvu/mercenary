@@ -16,6 +16,7 @@ export type BountyAwardStatus =
   | 'pending'
   | 'in_progress'
   | 'delivered'
+  | 'paying'
   | 'paid'
   | 'forfeited'
   | 'refunded';

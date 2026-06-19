@@ -70,6 +70,20 @@ function main() {
     process.exit(1);
   }
 
+  if (!process.env.BOSSRAID_ONESHOT_RELAYER_WEBHOOK_SECRET?.trim()) {
+    console.error(
+      'Production deploy env audit failed: BOSSRAID_ONESHOT_RELAYER_WEBHOOK_SECRET must be configured.'
+    );
+    process.exit(1);
+  }
+
+  if (!process.env.BOSSRAID_SECRET_ENCRYPTION_KEY?.trim() && !process.env.BOSSRAID_ENCRYPTION_KEY?.trim()) {
+    console.error(
+      'Production deploy env audit failed: BOSSRAID_SECRET_ENCRYPTION_KEY or BOSSRAID_ENCRYPTION_KEY must be configured.'
+    );
+    process.exit(1);
+  }
+
   console.log('audit-production-deploy-env: pass');
 }
 

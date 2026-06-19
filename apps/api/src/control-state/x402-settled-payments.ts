@@ -45,3 +45,25 @@ export function recordX402SettledPayment(
   context.writeState(snapshot);
   return entry;
 }
+
+export function tryClaimX402SettledPayment(
+  context: ControlStateContext,
+  entry: X402SettledPaymentEntry
+): boolean {
+  const snapshot = context.loadWorkingSnapshot();
+  if (snapshot.x402SettledPayments.some((item) => item.fingerprint === entry.fingerprint)) {
+    return false;
+  }
+  recordX402SettledPayment(context, entry);
+  return true;
+}
+
+export function releaseX402SettledPayment(context: ControlStateContext, fingerprint: string): void {
+  const snapshot = context.loadWorkingSnapshot();
+  const next = snapshot.x402SettledPayments.filter((item) => item.fingerprint !== fingerprint);
+  if (next.length === snapshot.x402SettledPayments.length) {
+    return;
+  }
+  snapshot.x402SettledPayments = next;
+  context.writeState(snapshot);
+}

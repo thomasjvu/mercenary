@@ -14,6 +14,7 @@ import {
   spawnPreparedRaid,
   InvalidRaidLaunchReservationError,
 } from './raid-launch.js';
+import { assertPreparedProvidersHaveCapacity } from './orchestrator-provider-capacity.js';
 import type { ProviderRegistryCoordinator } from './orchestrator-provider-registry.js';
 import type { RuntimeOptions } from './runtime.js';
 
@@ -32,6 +33,7 @@ export type RaidLifecycleSpawnContext = {
   providerRegistry: ProviderRegistryCoordinator;
   prepareRaidDeps: () => Parameters<typeof prepareRaid>[1];
   spawnPreparedRaidDeps: () => Parameters<typeof spawnPreparedRaid>[4];
+  providerCapacityDeps: () => Parameters<typeof assertPreparedProvidersHaveCapacity>[1];
 };
 
 export async function preflightRaid(
@@ -59,6 +61,7 @@ export async function reserveRaidLaunch(
   }
 
   const prepared = await prepareRaid(input, ctx.prepareRaidDeps());
+  assertPreparedProvidersHaveCapacity(prepared, ctx.providerCapacityDeps());
   const deadlineUnix = computeRootDeadlineUnix(prepared.sanitized, ctx.options.raidAbsoluteMs);
   const holdUntilUnix = Math.min(options.holdUntilUnix ?? deadlineUnix, deadlineUnix);
   const record = createLaunchReservationRecord(prepared, {

@@ -149,17 +149,6 @@ export async function prepareBountyFundPayment(input: {
     settlementTx: payment.settlement?.transaction,
     paymentSignature: readPaymentSignature(input.headers),
   });
-  if (fingerprint && input.ctx.controlState.hasX402SettledPayment(fingerprint)) {
-    return {
-      ok: false,
-      statusCode: 409,
-      body: {
-        error: 'duplicate_payment',
-        message: 'This x402 payment was already applied to a bounty fund.',
-      },
-    };
-  }
-
   if (payment.settlement?.payer && payment.settlement.payer.toLowerCase() !== input.posterWallet) {
     return {
       ok: false,
@@ -169,6 +158,26 @@ export async function prepareBountyFundPayment(input: {
         message: 'x402 payer must match the bounty poster wallet.',
       },
     };
+  }
+
+  if (fingerprint && payment.settlement?.success) {
+    const claimed = input.ctx.controlState.tryClaimX402SettledPayment({
+      fingerprint,
+      wallet: input.posterWallet.toLowerCase(),
+      route: 'bounty',
+      amountUsd: payment.escrowFundingUsd,
+      createdAt: new Date().toISOString(),
+    });
+    if (!claimed) {
+      return {
+        ok: false,
+        statusCode: 409,
+        body: {
+          error: 'duplicate_payment',
+          message: 'This x402 payment was already applied to a bounty fund.',
+        },
+      };
+    }
   }
 
   let escrowReceiptJson = JSON.stringify({
@@ -202,6 +211,10 @@ export async function prepareBountyFundPayment(input: {
         },
         'bounty onchain fund failed after x402 settlement'
       );
+
+      if (fingerprint) {
+        input.ctx.controlState.releaseX402SettledPayment(fingerprint);
+      }
 
       const paymentSignature = readPaymentSignature(input.headers);
       const paymentRequired =
@@ -251,16 +264,6 @@ export async function prepareBountyFundPayment(input: {
         message: 'Production bounty funding requires onchain escrow.',
       },
     };
-  }
-
-  if (fingerprint && payment.settlement?.success) {
-    input.ctx.controlState.recordX402SettledPayment({
-      fingerprint,
-      wallet: input.posterWallet.toLowerCase(),
-      route: 'bounty',
-      amountUsd: payment.escrowFundingUsd,
-      createdAt: new Date().toISOString(),
-    });
   }
 
   return {

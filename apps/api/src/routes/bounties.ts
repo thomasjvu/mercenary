@@ -124,6 +124,7 @@ export function registerBountyRoutes(
       return escrowProofGate.body;
     }
 
+    let fundingLockHeld = false;
     try {
       const draft = store.getBounty(params.bountyId);
       if (!draft) {
@@ -134,6 +135,15 @@ export function registerBountyRoutes(
         reply.code(403);
         return { error: 'forbidden', message: 'Only the bounty poster can fund this bounty.' };
       }
+
+      if (!store.tryAcquireFundingLock(params.bountyId)) {
+        reply.code(409);
+        return {
+          error: 'funding_in_progress',
+          message: 'Bounty funding is already in progress.',
+        };
+      }
+      fundingLockHeld = true;
 
       const escrowReady = assertBountyFundEscrowReady(ctx.env, onchainExecutor);
       if (!escrowReady.ok) {
@@ -190,6 +200,10 @@ export function registerBountyRoutes(
         return;
       }
       return mapBountyError(reply, error);
+    } finally {
+      if (fundingLockHeld) {
+        store.releaseFundingLock(params.bountyId);
+      }
     }
   });
 

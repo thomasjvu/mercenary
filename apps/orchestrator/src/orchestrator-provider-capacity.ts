@@ -5,7 +5,9 @@ import type {
   RaidRecord,
 } from '@bossraid/shared-types';
 import { filterReadyProvidersForRaid } from './orchestrator-provider-lifecycle.js';
-import { launchReservationExpired } from './raid-launch.js';
+import { launchReservationExpired, NoEligibleProvidersError } from './raid-launch.js';
+import type { PreparedHierarchicalRaid, PreparedLeafRaid } from './raid-launch.js';
+import { collectPreparedProviderIds } from './raid-launch-reservations.js';
 import { TERMINAL_ASSIGNMENT_STATUSES, TERMINAL_RAID_STATUSES } from './raid-state.js';
 import type { RuntimeOptions } from './runtime.js';
 
@@ -76,6 +78,26 @@ export function providerHasCapacity(
   }
 
   return getActiveAssignmentCount(providerId, deps, counts) < Math.max(profile.maxConcurrency, 1);
+}
+
+export function assertPreparedProvidersHaveCapacity(
+  prepared: PreparedLeafRaid | PreparedHierarchicalRaid,
+  deps: OrchestratorProviderCapacityDeps
+): void {
+  const counts = buildActiveAssignmentCounts(deps);
+  const providerIds =
+    prepared.mode === 'hierarchical'
+      ? [...collectPreparedProviderIds(prepared.graph), ...prepared.adaptiveProviderIds]
+      : [
+          ...prepared.selectedProviders.primaries.map((provider) => provider.providerId),
+          ...prepared.selectedProviders.reserves.map((provider) => provider.providerId),
+        ];
+
+  for (const providerId of new Set(providerIds)) {
+    if (!providerHasCapacity(providerId, deps, counts)) {
+      throw new NoEligibleProvidersError();
+    }
+  }
 }
 
 export async function discoverProvidersForRaid(

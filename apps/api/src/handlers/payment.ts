@@ -34,6 +34,18 @@ export interface LaunchPaymentContext {
   apiKeyBilling?: ApiKeyBillingContext;
 }
 
+function reservationLaunchPaymentSettled(reservation: {
+  spawnOutput?: unknown;
+  x402PaidAmountUsd?: number;
+  escrowFundingUsd?: number;
+}): boolean {
+  return (
+    reservation.spawnOutput != null ||
+    reservation.x402PaidAmountUsd != null ||
+    reservation.escrowFundingUsd != null
+  );
+}
+
 function getLaunchReservationPaymentTimeoutSeconds(reservation: {
   createdAt: string;
   expiresAt: string;
@@ -250,6 +262,12 @@ export function createPaymentHandlers(
       const amount =
         reservation.quoteSnapshot?.manaQuote.maxChargeMana ??
         Math.ceil(reservation.sanitized.constraints.maxBudgetUsd * 1_000);
+      if (reservation.spawnOutput) {
+        return {
+          reservationId: reservation.id,
+          requestKey,
+        };
+      }
       const reservedManaBilling = await reserveManaBilling({
         route,
         manaAccountId: manaBillingHeaders.manaAccountId,
@@ -272,6 +290,13 @@ export function createPaymentHandlers(
         holdUntilUnix: Math.floor(Date.now() / 1_000) + 60,
       });
       const amountUsd = reservation.sanitized.constraints.maxBudgetUsd;
+      if (reservation.spawnOutput) {
+        return {
+          reservationId: reservation.id,
+          requestKey,
+          escrowFundingUsd: amountUsd,
+        };
+      }
       const apiKeyReservation = ctx.controlState.reserveBuyerApiKeyLaunch(
         apiKey.id,
         apiKey.wallet,
@@ -328,6 +353,15 @@ export function createPaymentHandlers(
       throw new InvalidRaidLaunchReservationError(
         `Raid launch reservation ${reservation.id} was created for /v1/${reservation.route}, not ${route}.`
       );
+    }
+
+    if (reservationLaunchPaymentSettled(reservation)) {
+      return {
+        reservationId: reservation.id,
+        requestKey,
+        escrowFundingUsd: reservation.escrowFundingUsd,
+        platformMarkupUsd: reservation.platformMarkupUsd,
+      };
     }
 
     const paymentRequired = buildPaymentRequiredForRoute(

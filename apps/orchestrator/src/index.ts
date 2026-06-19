@@ -340,6 +340,7 @@ export class BossRaidOrchestrator {
       queuePersist: persistence.queuePersist,
       queuePersistBestEffort: persistence.queuePersistBestEffort,
       providerRegistry: this.providerRegistry,
+      getProviderCapacityDeps: () => this.providerCapacityDeps(),
       settlementOutputDir: resolveSettlementOutputDir(
         workspaceRoot,
         process.env.BOSSRAID_SETTLEMENT_DIR

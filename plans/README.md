@@ -97,6 +97,35 @@ Findings **038–059** implemented at `ebf126d` base:
 | 051–054 | Money-path tests + CI job                                                  | DONE   |
 | 055–059 | Capacity index, persist dirty flag, mercenary debounce, deps consolidation | DONE   |
 
+## Fourth-pass reconcile (2026-06-19)
+
+Base commit: **`95fe1fe`** (committed + synced to `development`, `main`, `staging`). Working tree clean.
+
+All plans **001–012** and findings **013–059** verified at `95fe1fe`. Third-pass items marked DONE in source.
+
+Carry-forward partial gaps (not re-opened as duplicate findings):
+
+- **027** — OnchainSettlementExecutor behavioral tests still light beyond constructor smoke
+- **028** — reconcileLaunchPayment has unit test; HTTP/integration coverage still thin
+
+## Fourth-pass execution (2026-06-19)
+
+Findings **060–078** implemented at `95fe1fe` base:
+
+| ID      | Area                                                      | Status |
+| ------- | --------------------------------------------------------- | ------ |
+| 060–061 | Streaming chat timeout refund + capture failure reconcile | DONE   |
+| 062–063 | Atomic x402 claim + bounty funding lock                   | DONE   |
+| 064     | Bounty award paying-state payout mutex                    | DONE   |
+| 065–066 | Skip re-settle when reservation already paid/spawned      | DONE   |
+| 067–068 | Relayer status wallet gate + TEE seller ownership         | DONE   |
+| 069–070 | CI e2e smoke + streaming timeout money-path tests         | DONE   |
+| 071     | Provider capacity re-check at reservation                 | DONE   |
+| 072     | Provider encrypt snapshot cache on persist                | DONE   |
+| 073–075 | lint:strict, AGENTS.md, routes.md                         | DONE   |
+| 076–077 | BOUNTY_ESCROW_ABI in raid-core; test-fixtures dev-only    | DONE   |
+| 078     | Production deploy env audit gaps                          | DONE   |
+
 ## Findings considered and rejected
 
 - **Committed deploy secrets** (`deploy/phala/secrets.*.env`): gitignored, never in git history.

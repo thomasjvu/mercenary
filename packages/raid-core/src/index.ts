@@ -27,7 +27,7 @@ export {
   normalizeLatency,
 } from './utils.js';
 
-export { ERC20_MINIMAL_ABI } from './contract-abis.js';
+export { BOUNTY_ESCROW_ABI, ERC20_MINIMAL_ABI } from './contract-abis.js';
 
 export {
   normalizePrice,

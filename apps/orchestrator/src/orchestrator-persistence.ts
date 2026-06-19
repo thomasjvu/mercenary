@@ -18,6 +18,33 @@ import { launchReservationExpired } from './raid-launch.js';
 import { refreshParentRaidFromChildren } from './raid-hierarchy.js';
 import type { PersistenceQueue } from './persistence-queue.js';
 import { pruneTerminalRaidsForRetention } from './raid-retention.js';
+import { createHash } from 'node:crypto';
+
+const encryptedProviderSnapshotCache = new WeakMap<
+  SecretCipher,
+  Map<string, { revision: string; persisted: ProviderProfile }>
+>();
+
+function providerPersistRevision(provider: ProviderProfile): string {
+  const { lastSeenAt: _lastSeenAt, ...rest } = provider;
+  return createHash('sha256').update(JSON.stringify(rest)).digest('hex');
+}
+
+function persistProviderProfile(provider: ProviderProfile, cipher: SecretCipher): ProviderProfile {
+  const revision = providerPersistRevision(provider);
+  let cache = encryptedProviderSnapshotCache.get(cipher);
+  if (!cache) {
+    cache = new Map();
+    encryptedProviderSnapshotCache.set(cipher, cache);
+  }
+  const cached = cache.get(provider.providerId);
+  if (cached?.revision === revision) {
+    return cached.persisted;
+  }
+  const persisted = encryptProviderProfileSecrets(provider, cipher);
+  cache.set(provider.providerId, { revision, persisted });
+  return persisted;
+}
 
 export type ProviderRegistryMaps = {
   providers: Map<string, ProviderProfile>;
@@ -70,7 +97,7 @@ export function buildOrchestratorSnapshot(input: {
     raids,
     providers: input
       .listProviders()
-      .map((provider) => encryptProviderProfileSecrets(provider, input.secretCipher)),
+      .map((provider) => persistProviderProfile(provider, input.secretCipher)),
     launchReservations: [...input.launchReservations.values()],
   };
 }

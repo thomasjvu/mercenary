@@ -45,8 +45,54 @@ export class BountyStore {
         'create index if not exists bounty_bids_by_bounty on bounty_bid_records (bounty_id);',
         'create index if not exists bounty_awards_by_bounty on bounty_award_records (bounty_id);',
         'create index if not exists bounty_events_by_bounty on bounty_event_records (bounty_id);',
+        'create table if not exists bounty_funding_locks (',
+        '  bounty_id text primary key,',
+        '  acquired_at text not null',
+        ');',
       ].join('\n')
     );
+  }
+
+  tryAcquireFundingLock(bountyId: string): boolean {
+    try {
+      this.db
+        .prepare('insert into bounty_funding_locks (bounty_id, acquired_at) values (?, ?)')
+        .run(bountyId, new Date().toISOString());
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  releaseFundingLock(bountyId: string): void {
+    this.db.prepare('delete from bounty_funding_locks where bounty_id = ?').run(bountyId);
+  }
+
+  claimDeliveredAwardForPayment(awardId: string): BountyAwardRecord | undefined {
+    const award = this.getAward(awardId);
+    if (!award || award.status !== 'delivered') {
+      return undefined;
+    }
+    const paying: BountyAwardRecord = {
+      ...award,
+      status: 'paying',
+      updatedAt: new Date().toISOString(),
+    };
+    this.saveAward(paying);
+    return paying;
+  }
+
+  releasePayingAward(awardId: string): void {
+    const award = this.getAward(awardId);
+    if (!award || award.status !== 'paying') {
+      return;
+    }
+    this.saveAward({
+      ...award,
+      status: 'delivered',
+      paidAt: undefined,
+      updatedAt: new Date().toISOString(),
+    });
   }
 
   createId(prefix: string): string {

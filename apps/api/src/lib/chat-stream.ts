@@ -11,7 +11,11 @@ import {
   normalizeChatCompletionModel,
   type BuildDirectChatCompletionResponse,
 } from './chat-completion.js';
-import { pollForTerminalChatOutcome } from './chat-terminal-wait.js';
+import {
+  ChatTerminalWaitError,
+  pollForTerminalChatOutcome,
+  type ChatRaidOutcome,
+} from './chat-terminal-wait.js';
 import type { SettlementMode } from './settlement-mode.js';
 
 function writeSseData(stream: PassThrough, payload: unknown): void {
@@ -108,6 +112,7 @@ export async function streamChatCompletionResponse(
         selectedSeller?: string
       ) => Promise<unknown>;
     };
+    onFailure?: (error: Error, outcome?: ChatRaidOutcome) => Promise<void>;
   }
 ) {
   const stream = new PassThrough();
@@ -117,6 +122,7 @@ export async function streamChatCompletionResponse(
   reply.header('connection', 'keep-alive');
   reply.header('x-accel-buffering', 'no');
   void (async () => {
+    let finalOutcome: ChatRaidOutcome | undefined;
     try {
       writeSseData(stream, {
         id: `chatcmpl_${input.spawn.raidId}`,
@@ -136,7 +142,7 @@ export async function streamChatCompletionResponse(
         raid: buildChatRaidMetadata(input.spawn),
       });
 
-      const finalOutcome = await pollForTerminalChatOutcome(orchestrator, input.spawn.raidId, {
+      finalOutcome = await pollForTerminalChatOutcome(orchestrator, input.spawn.raidId, {
         timeoutMs: input.raidRequest.constraints.maxLatencySec * 1000,
         settleGraceMs: input.settleGraceMs,
         settlementMode: input.settlementMode,
@@ -158,7 +164,12 @@ export async function streamChatCompletionResponse(
       try {
         bossraid = await input.bossraidBilling?.capture(usage, selectedSeller);
       } catch (error) {
-        logger.error({ error, raidId: input.spawn.raidId }, 'Mana billing capture failed.');
+        logger.error({ error, raidId: input.spawn.raidId }, 'Streaming billing capture failed.');
+        await input.onFailure?.(
+          error instanceof Error ? error : new Error(String(error)),
+          finalOutcome
+        );
+        return;
       }
 
       if (content.length > 0) {
@@ -200,6 +211,17 @@ export async function streamChatCompletionResponse(
         usage,
       });
       stream.write('data: [DONE]\n\n');
+    } catch (error) {
+      const failure = error instanceof Error ? error : new Error(String(error));
+      if (error instanceof ChatTerminalWaitError) {
+        await input.onFailure?.(error, error.outcome);
+      } else {
+        await input.onFailure?.(failure, finalOutcome);
+      }
+      logger.error(
+        { error: failure, raidId: input.spawn.raidId },
+        'Streaming chat completion failed.'
+      );
     } finally {
       stream.end();
     }

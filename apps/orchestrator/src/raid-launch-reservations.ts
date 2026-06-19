@@ -44,7 +44,6 @@ export function findReusableLaunchReservation(
     (reservation) =>
       reservation.route === route &&
       reservation.requestKey === requestKey &&
-      reservation.spawnOutput == null &&
       !launchReservationExpired(reservation)
   );
 }

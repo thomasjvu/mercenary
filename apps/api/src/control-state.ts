@@ -331,6 +331,14 @@ export function createApiControlStateFromStore(store: ApiControlStateStore) {
     ): x402SettledPayments.X402SettledPaymentEntry {
       return x402SettledPayments.recordX402SettledPayment(ctx, entry);
     },
+
+    tryClaimX402SettledPayment(entry: x402SettledPayments.X402SettledPaymentEntry): boolean {
+      return x402SettledPayments.tryClaimX402SettledPayment(ctx, entry);
+    },
+
+    releaseX402SettledPayment(fingerprint: string): void {
+      x402SettledPayments.releaseX402SettledPayment(ctx, fingerprint);
+    },
   };
 }
 
