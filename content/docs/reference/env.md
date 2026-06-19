@@ -85,10 +85,28 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 | ------------------------------- | ------------------------------------------------------------------------------------------------- |
 | `BOSSRAID_ONESHOT_RELAYER_URL`  | 1Shot relayer JSON-RPC base (`/v1/relayer/*` proxies this)                                        |
 | `BOSSRAID_AGENT_WALLET_KEY`     | Funded agent wallet for MCP paid raids and redelegation                                           |
-| `BOSSRAID_VENICE_API_KEY`       | Mercenary direct Venice planner/synthesis                                                         |
+| `BOSSRAID_VENICE_API_KEY`       | Shared Venice upstream key (Phala providers + Mercenary planner/synthesis)                        |
 | `BOSSRAID_MERCENARY_BASE_MODEL` | Mercenary chat planner base model (default `e2ee-gemma-4-31b`; E2EE first, plain Venice fallback) |
 | `BOSSRAID_VENICE_MODEL`         | Venice model id (default `minimax-m27`)                                                           |
 | `BOSSRAID_VENICE_WALLET_KEY`    | Venice x402 wallet for provider upstream calls                                                    |
+
+## Phala Infisical tiers
+
+Boss Raid stores **14 core secrets** at `prod:/bossraid/phala/core` and an optional
+onchain overlay at `prod:/bossraid/phala/onchain`. Bootstrap assembles
+`deploy/phala/.env` with compose defaults that are not stored in Infisical.
+
+Core tier keys:
+
+| Variable                                                                                                           | Purpose                                                 |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| `BOSSRAID_IMAGE`, `BOSSRAID_EVALUATOR_IMAGE`, `BOSSRAID_EVAL_JOB_CONTAINER_IMAGE`                                  | Deploy image refs                                       |
+| `BOSSRAID_ADMIN_TOKEN`, `BOSSRAID_REGISTRY_TOKEN`, `BOSSRAID_SECRET_ENCRYPTION_KEY`, `BOSSRAID_EVAL_SANDBOX_TOKEN` | Platform auth                                           |
+| `BOSSRAID_PROVIDER_A/B/C_TOKEN`                                                                                    | In-CVM provider ingress tokens                          |
+| `BOSSRAID_VENICE_API_KEY`                                                                                          | Shared upstream inference key for all 3 Phala providers |
+| `BOSSRAID_X402_PAY_TO`, `PAYAI_API_KEY_ID`, `PAYAI_API_KEY_SECRET`                                                 | Paid traffic                                            |
+
+Workflow: [operators/appendix/infisical.md](../operators/appendix/infisical.md).
 
 ## Settlement
 

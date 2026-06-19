@@ -209,6 +209,39 @@ export async function ensureInfisicalSecretPath({ domain, projectId, envName, se
   }
 }
 
+export async function deleteInfisicalSecret({
+  domain,
+  projectId,
+  envName,
+  secretPath,
+  secretType,
+  key,
+}) {
+  const token = await getInfisicalAccessToken(domain);
+  const response = await fetch(`${domain}/api/v3/secrets/raw/${encodeURIComponent(key)}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      ...infisicalRequestHeaders(domain, token),
+    },
+    body: JSON.stringify({
+      workspaceId: projectId,
+      environment: envName,
+      secretPath,
+      type: secretType,
+    }),
+  });
+  if (response.status === 404) {
+    return false;
+  }
+  if (!response.ok) {
+    throw new Error(
+      `Infisical delete failed for ${key}: ${response.status} ${await response.text()}`
+    );
+  }
+  return true;
+}
+
 export async function upsertInfisicalSecret({
   domain,
   projectId,

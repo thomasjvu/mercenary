@@ -101,8 +101,10 @@ pnpm settle:raid -- --raid-id <raidId>
 pnpm generate:settlement-keys
 pnpm bootstrap:settlement
 pnpm docker:up
+pnpm bootstrap:phala:env
 pnpm infisical:phala:pull
 pnpm infisical:phala:push
+pnpm infisical:phala:prune-legacy
 ```
 
 Active hosted stack: Phala CVM. EigenCompute stays in-repo for optional judging/attestation lanes.
@@ -158,7 +160,9 @@ pnpm test:bounty-escrow:production     # wallet mode; caps reward via BOSSRAID_B
 ### 3. Phala deploy
 
 ```bash
-cp deploy/phala/production.env.example deploy/phala/.env
+cp deploy/phala/production.env.example deploy/phala/secrets.core.env
+# optional: deploy/phala/secrets.onchain.env after pnpm bootstrap:settlement
+pnpm bootstrap:phala:env
 pnpm phala:secrets:check deploy/phala/.env
 pnpm infisical:phala:push
 ```
