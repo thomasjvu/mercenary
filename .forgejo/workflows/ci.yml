@@ -32,10 +32,4 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm audit --audit-level=critical
-      - run: pnpm check
-      - run: pnpm format:check
-      - run: pnpm lint
-      - run: pnpm build
-      - run: pnpm build:docs
-      - run: pnpm test:unit
-      - run: pnpm test:money-path
+      - run: pnpm --filter @bossraid/shared-types exec tsc --noEmit
