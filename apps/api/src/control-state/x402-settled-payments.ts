@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { ensurePublicAccountInSnapshot } from './sessions.js';
 import type { ControlStateContext } from './state-context.js';
 
 export type X402SettledPaymentEntry = {
@@ -56,6 +57,41 @@ export function tryClaimX402SettledPayment(
   }
   recordX402SettledPayment(context, entry);
   return true;
+}
+
+export function tryClaimX402SettledPaymentAndCredit(
+  context: ControlStateContext,
+  entry: X402SettledPaymentEntry,
+  nowMs = Date.now()
+): { claimed: true; balanceUsd: number } | { claimed: false; balanceUsd: number } {
+  let result: { claimed: true; balanceUsd: number } | { claimed: false; balanceUsd: number } = {
+    claimed: false,
+    balanceUsd: 0,
+  };
+  try {
+    context.mutateState((snapshot) => {
+      if (snapshot.x402SettledPayments.some((item) => item.fingerprint === entry.fingerprint)) {
+        const account = ensurePublicAccountInSnapshot(snapshot, entry.wallet);
+        result = { claimed: false, balanceUsd: account.balanceUsd };
+        return;
+      }
+      const next = snapshot.x402SettledPayments.filter(
+        (item) => item.fingerprint !== entry.fingerprint
+      );
+      next.push(entry);
+      snapshot.x402SettledPayments = next.slice(-MAX_STORED_ENTRIES);
+      const account = ensurePublicAccountInSnapshot(snapshot, entry.wallet);
+      account.balanceUsd += Math.max(0, entry.amountUsd);
+      account.updatedAt = new Date(nowMs).toISOString();
+      result = { claimed: true, balanceUsd: account.balanceUsd };
+    }, nowMs);
+  } catch {
+    const account = context
+      .loadWorkingSnapshot()
+      .publicAccounts.find((item) => item.wallet === entry.wallet.toLowerCase());
+    result = { claimed: false, balanceUsd: account?.balanceUsd ?? 0 };
+  }
+  return result;
 }
 
 export function releaseX402SettledPayment(context: ControlStateContext, fingerprint: string): void {

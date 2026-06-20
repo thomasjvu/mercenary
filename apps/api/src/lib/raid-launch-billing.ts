@@ -1,4 +1,5 @@
 import { type FastifyRequest } from 'fastify';
+import { ApiContractError } from '@bossraid/api-contracts';
 import logger from '@bossraid/logger';
 import { TIMEOUTS } from '@bossraid/constants';
 import type { BossRaidSpawnInput } from '@bossraid/shared-types';
@@ -36,7 +37,7 @@ export function scheduleRaidLaunchBillingCapture(input: {
   });
 }
 
-async function captureRaidLaunchBilling(input: {
+export async function captureRaidLaunchBilling(input: {
   deps: RaidLaunchBillingDeps;
   request: FastifyRequest;
   raidRequest: BossRaidSpawnInput;
@@ -44,12 +45,8 @@ async function captureRaidLaunchBilling(input: {
   launchPayment: LaunchPaymentContext;
 }): Promise<void> {
   const { ctx, auth, payment } = input.deps;
-  const {
-    captureApiKeyBilling,
-    recordMarketplaceLedgersFromRaid,
-    reconcileLaunchPayment,
-    releaseLaunchPaymentHold,
-  } = payment;
+  const { captureApiKeyBilling, recordMarketplaceLedgersFromRaid, reconcileLaunchPayment } =
+    payment;
 
   try {
     const outcome = await waitForTerminalRaidOutput(
@@ -98,7 +95,17 @@ async function captureRaidLaunchBilling(input: {
       return;
     }
 
-    await releaseLaunchPaymentHold({ launchPayment: input.launchPayment });
+    const billingHoldReleased =
+      error instanceof ApiContractError && error.message.includes('launch hold released');
+    if (!billingHoldReleased) {
+      logger.error(
+        {
+          raidId: input.raidId,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'raid launch API-key billing capture failed after finalize'
+      );
+    }
     throw error;
   }
 }

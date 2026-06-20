@@ -153,6 +153,20 @@ Findings **101–129** implemented at `0532d4e` base:
 | 118–125 | Money-path tests, runtime/AGENTS sync, CI bounty smoke     | DONE   |
 | 126–129 | Remove unused validator, CI `pnpm audit`, dead flags       | DONE   |
 
+## Seventh-pass execution (2026-06-19)
+
+Findings **130–148** implemented at `5f85ab1` base:
+
+| ID      | Area                                                        | Status |
+| ------- | ----------------------------------------------------------- | ------ |
+| 130–134 | Billing hold safety, bounty partial awards, providerRunId   | DONE   |
+| 132–133 | Atomic x402 claim+credit, buyer-ledger CAS retry            | DONE   |
+| 135–141 | GB Studio routing, CI bounty escrow, rate limits, persist   | DONE   |
+| 137–138 | Ephemeral rate limits, session/account read persist removal | DONE   |
+| 139–140 | Iconify subset bundle, high-traffic route lazy-loading      | DONE   |
+| 142–147 | Raid billing, gateway, reconcile, settlement, scoring tests | DONE   |
+| 148     | pnpm overrides for high audit advisories                    | DONE   |
+
 ## Findings considered and rejected
 
 - **Committed deploy secrets** (`deploy/phala/secrets.*.env`): gitignored, never in git history.

@@ -96,6 +96,13 @@ export function applyHeartbeatToRaid(
   if (TERMINAL_ASSIGNMENT_STATUSES.has(assignment.status)) {
     return false;
   }
+  if (
+    heartbeat.providerRunId &&
+    assignment.providerRunId &&
+    heartbeat.providerRunId !== assignment.providerRunId
+  ) {
+    return false;
+  }
 
   const now = heartbeat.timestamp;
   assignment.status = 'running';

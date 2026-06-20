@@ -10,10 +10,7 @@ export function listBuyerApiKeys(
   nowMs = Date.now()
 ): BuyerApiKeyEntry[] {
   const normalizedWallet = wallet.toLowerCase();
-  const { snapshot, changed } = ctx.readPrunedState(nowMs);
-  if (changed) {
-    ctx.writeState(snapshot);
-  }
+  const { snapshot } = ctx.readPrunedState(nowMs);
   return snapshot.buyerApiKeys
     .filter((key) => key.wallet === normalizedWallet)
     .map((key) => structuredClone(key));
@@ -94,13 +91,10 @@ export function readActiveBuyerApiKeyByHash(
   keyHash: string,
   nowMs = Date.now()
 ): BuyerApiKeyEntry | undefined {
-  const { snapshot, changed } = ctx.readPrunedState(nowMs);
+  const { snapshot } = ctx.readPrunedState(nowMs);
   const key = snapshot.buyerApiKeys.find(
     (item) => item.keyHash === keyHash && item.status === 'active'
   );
-  if (changed) {
-    ctx.writeState(snapshot);
-  }
   return key ? structuredClone(key) : undefined;
 }
 
@@ -172,6 +166,74 @@ export function releaseBuyerApiKeyReservation(
   }, nowMs);
 }
 
+export function captureBuyerApiKeyBillingWithPurchase(
+  ctx: ControlStateContext,
+  reservation: BuyerApiKeyLaunchReservation,
+  input: {
+    actualCostUsd: number;
+    raidId: string;
+    modelId?: string;
+    sellerId?: string;
+    route: BuyerPurchaseEntry['route'];
+    benchmarkPriceUsd?: number;
+    savingsUsd?: number;
+  },
+  nowMs = Date.now()
+): boolean {
+  try {
+    ctx.mutateState((snapshot) => {
+      const key = snapshot.buyerApiKeys.find((item) => item.id === reservation.apiKeyId);
+      if (!key) {
+        throw new Error('buyer_api_key_missing');
+      }
+
+      const actual = Math.max(0, input.actualCostUsd);
+      const delta = reservation.reservedUsd - actual;
+      if (delta > 0) {
+        key.spentUsd = Math.max(0, key.spentUsd - delta);
+        if (reservation.useBalance) {
+          const account = ensurePublicAccountInSnapshot(snapshot, reservation.wallet);
+          account.balanceUsd += delta;
+          account.updatedAt = new Date(nowMs).toISOString();
+        }
+      } else if (delta < 0) {
+        const extra = -delta;
+        if (key.spendLimitUsd != null && key.spentUsd + extra > key.spendLimitUsd) {
+          throw new Error('buyer_api_key_spend_cap_exceeded');
+        }
+        key.spentUsd += extra;
+        if (reservation.useBalance) {
+          const account = ensurePublicAccountInSnapshot(snapshot, reservation.wallet);
+          if (account.balanceUsd < extra) {
+            throw new Error('buyer_balance_insufficient');
+          }
+          account.balanceUsd -= extra;
+          account.updatedAt = new Date(nowMs).toISOString();
+        }
+      }
+
+      const entry: BuyerPurchaseEntry = {
+        id: `purchase_${randomUUID()}`,
+        wallet: reservation.wallet,
+        apiKeyId: reservation.apiKeyId,
+        raidId: input.raidId,
+        modelId: input.modelId,
+        sellerId: input.sellerId,
+        costUsd: actual,
+        benchmarkPriceUsd: input.benchmarkPriceUsd,
+        savingsUsd: input.savingsUsd,
+        route: input.route,
+        createdAt: new Date(nowMs).toISOString(),
+      };
+      snapshot.buyerPurchases.unshift(entry);
+      snapshot.buyerPurchases = snapshot.buyerPurchases.slice(0, 5_000);
+    }, nowMs);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function finalizeBuyerApiKeyBilling(
   ctx: ControlStateContext,
   reservation: BuyerApiKeyLaunchReservation,
@@ -241,12 +303,14 @@ export function creditBuyerBalance(
   nowMs = Date.now()
 ): PublicAccountEntry {
   const normalizedWallet = wallet.toLowerCase();
-  const { snapshot } = ctx.readPrunedState(nowMs);
-  const account = ensurePublicAccountInSnapshot(snapshot, normalizedWallet);
-  account.balanceUsd += Math.max(0, amountUsd);
-  account.updatedAt = new Date(nowMs).toISOString();
-  ctx.writeState(snapshot);
-  return structuredClone(account);
+  let account: PublicAccountEntry | undefined;
+  ctx.mutateState((snapshot) => {
+    const entry = ensurePublicAccountInSnapshot(snapshot, normalizedWallet);
+    entry.balanceUsd += Math.max(0, amountUsd);
+    entry.updatedAt = new Date(nowMs).toISOString();
+    account = structuredClone(entry);
+  }, nowMs);
+  return account!;
 }
 
 export function debitBuyerBalance(
@@ -256,40 +320,49 @@ export function debitBuyerBalance(
   nowMs = Date.now()
 ): boolean {
   const normalizedWallet = wallet.toLowerCase();
-  const { snapshot } = ctx.readPrunedState(nowMs);
-  const account = ensurePublicAccountInSnapshot(snapshot, normalizedWallet);
   const charge = Math.max(0, amountUsd);
-  if (account.balanceUsd < charge) {
+  let debited = false;
+  try {
+    ctx.mutateState((snapshot) => {
+      const account = ensurePublicAccountInSnapshot(snapshot, normalizedWallet);
+      if (account.balanceUsd < charge) {
+        throw new Error('buyer_balance_insufficient');
+      }
+      account.balanceUsd -= charge;
+      account.updatedAt = new Date(nowMs).toISOString();
+      debited = true;
+    }, nowMs);
+  } catch {
     return false;
   }
-  account.balanceUsd -= charge;
-  account.updatedAt = new Date(nowMs).toISOString();
-  ctx.writeState(snapshot);
-  return true;
+  return debited;
 }
 
 export function recordBuyerPurchase(
   ctx: ControlStateContext,
   input: Omit<BuyerPurchaseEntry, 'id' | 'createdAt'> & { id?: string; createdAt?: string }
 ): BuyerPurchaseEntry {
-  const { snapshot } = ctx.readPrunedState(Date.now());
-  const entry: BuyerPurchaseEntry = {
-    id: input.id ?? `purchase_${randomUUID()}`,
-    wallet: input.wallet.toLowerCase(),
-    apiKeyId: input.apiKeyId,
-    raidId: input.raidId,
-    modelId: input.modelId,
-    sellerId: input.sellerId,
-    costUsd: Math.max(0, input.costUsd),
-    benchmarkPriceUsd: input.benchmarkPriceUsd,
-    savingsUsd: input.savingsUsd,
-    route: input.route,
-    createdAt: input.createdAt ?? new Date().toISOString(),
-  };
-  snapshot.buyerPurchases.unshift(entry);
-  snapshot.buyerPurchases = snapshot.buyerPurchases.slice(0, 5_000);
-  ctx.writeState(snapshot);
-  return structuredClone(entry);
+  const nowMs = Date.now();
+  let recorded: BuyerPurchaseEntry | undefined;
+  ctx.mutateState((snapshot) => {
+    const entry: BuyerPurchaseEntry = {
+      id: input.id ?? `purchase_${randomUUID()}`,
+      wallet: input.wallet.toLowerCase(),
+      apiKeyId: input.apiKeyId,
+      raidId: input.raidId,
+      modelId: input.modelId,
+      sellerId: input.sellerId,
+      costUsd: Math.max(0, input.costUsd),
+      benchmarkPriceUsd: input.benchmarkPriceUsd,
+      savingsUsd: input.savingsUsd,
+      route: input.route,
+      createdAt: input.createdAt ?? new Date(nowMs).toISOString(),
+    };
+    snapshot.buyerPurchases.unshift(entry);
+    snapshot.buyerPurchases = snapshot.buyerPurchases.slice(0, 5_000);
+    recorded = structuredClone(entry);
+  }, nowMs);
+  return recorded!;
 }
 
 export function listBuyerPurchases(
@@ -299,10 +372,7 @@ export function listBuyerPurchases(
   nowMs = Date.now()
 ): BuyerPurchaseEntry[] {
   const normalizedWallet = wallet.toLowerCase();
-  const { snapshot, changed } = ctx.readPrunedState(nowMs);
-  if (changed) {
-    ctx.writeState(snapshot);
-  }
+  const { snapshot } = ctx.readPrunedState(nowMs);
   return snapshot.buyerPurchases
     .filter((entry) => entry.wallet === normalizedWallet)
     .slice(0, Math.max(1, limit))

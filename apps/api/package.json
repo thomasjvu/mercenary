@@ -33,7 +33,7 @@
     "@bossraid/shared-types": "workspace:*",
     "@bossraid/venice-client": "workspace:*",
     "@payai/facilitator": "^2.3.4",
-    "fastify": "^5.2.1",
+    "fastify": "^5.8.5",
     "viem": "^2.47.5"
   },
   "devDependencies": {

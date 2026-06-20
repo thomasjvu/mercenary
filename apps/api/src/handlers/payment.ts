@@ -140,29 +140,23 @@ export function createPaymentHandlers(
     if (!input.apiKeyBilling || input.actualCostUsd <= 0) {
       return;
     }
-    const finalized = ctx.controlState.finalizeBuyerApiKeyBilling(
-      input.apiKeyBilling,
-      input.actualCostUsd
-    );
-    if (!finalized) {
-      ctx.controlState.releaseBuyerApiKeyReservation(input.apiKeyBilling);
-      throw new ApiContractError('API key billing finalization failed; launch hold released.', 402);
-    }
     const benchmarkPriceUsd = estimateBenchmarkPriceUsd({
       modelId: input.modelId,
       flatTaskUsd: input.actualCostUsd,
     });
-    ctx.controlState.recordBuyerPurchase({
-      wallet: input.apiKeyBilling.wallet,
-      apiKeyId: input.apiKeyBilling.apiKeyId,
+    const captured = ctx.controlState.captureBuyerApiKeyBillingWithPurchase(input.apiKeyBilling, {
+      actualCostUsd: input.actualCostUsd,
       raidId: input.raidId,
       modelId: input.modelId,
       sellerId: input.sellerId,
-      costUsd: input.actualCostUsd,
+      route: input.route,
       benchmarkPriceUsd,
       savingsUsd: computeSavingsUsd(benchmarkPriceUsd, input.actualCostUsd),
-      route: input.route,
     });
+    if (!captured) {
+      ctx.controlState.releaseBuyerApiKeyReservation(input.apiKeyBilling);
+      throw new ApiContractError('API key billing finalization failed; launch hold released.', 402);
+    }
   }
 
   async function releaseLaunchPaymentHold(input: {

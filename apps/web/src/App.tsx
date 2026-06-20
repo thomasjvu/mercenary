@@ -6,9 +6,6 @@ import { fetchJson, type Provider, type ProviderHealth } from './api';
 import { AppSidebar } from './components/AppSidebar';
 import { AttestationInspectorProvider } from './contexts/AttestationInspectorContext.js';
 import type { AppRoute } from './lib/app-routes.js';
-import { LandingPage } from './pages/LandingPage';
-import { MarketplacePage } from './pages/MarketplacePage';
-import { ModelDetailPage } from './pages/ModelDetailPage';
 import {
   isMarketplaceDetailPath,
   isMarketplaceListPath,
@@ -18,9 +15,6 @@ import {
 } from './lib/routing.js';
 import { buildPlaygroundUrl, readPlaygroundMode } from './lib/playground-routing.js';
 import { useLocationKey, useLocationPathname } from './lib/use-location.js';
-import { RaidersPage } from './pages/RaidersPage';
-import { BountiesPage } from './pages/BountiesPage';
-import { BountyDetailPage } from './pages/BountyDetailPage';
 import {
   bountyDetailPath,
   isBountiesListPath,
@@ -28,8 +22,29 @@ import {
   readBountyId,
 } from './lib/bounty-routing.js';
 import { readChangelogVersion } from './lib/changelog.js';
-import { LegalPage, type LegalPageKind } from './pages/LegalPage';
+import type { LegalPageKind } from './pages/LegalPage';
 
+const LandingPage = lazy(() =>
+  import('./pages/LandingPage').then((module) => ({ default: module.LandingPage }))
+);
+const MarketplacePage = lazy(() =>
+  import('./pages/MarketplacePage').then((module) => ({ default: module.MarketplacePage }))
+);
+const ModelDetailPage = lazy(() =>
+  import('./pages/ModelDetailPage').then((module) => ({ default: module.ModelDetailPage }))
+);
+const RaidersPage = lazy(() =>
+  import('./pages/RaidersPage').then((module) => ({ default: module.RaidersPage }))
+);
+const BountiesPage = lazy(() =>
+  import('./pages/BountiesPage').then((module) => ({ default: module.BountiesPage }))
+);
+const BountyDetailPage = lazy(() =>
+  import('./pages/BountyDetailPage').then((module) => ({ default: module.BountyDetailPage }))
+);
+const LegalPage = lazy(() =>
+  import('./pages/LegalPage').then((module) => ({ default: module.LegalPage }))
+);
 const AccountPage = lazy(() =>
   import('./pages/AccountPage').then((module) => ({ default: module.AccountPage }))
 );

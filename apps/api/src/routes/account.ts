@@ -257,18 +257,17 @@ export function registerAccountRoutes(
         };
       }
 
-      const claimed = controlState.tryClaimX402SettledPayment({
+      const claimResult = controlState.tryClaimX402SettledPaymentAndCredit({
         fingerprint,
         wallet: session.wallet,
         route: 'balance',
         amountUsd: creditedUsd,
         createdAt: new Date().toISOString(),
       });
-      if (!claimed) {
-        const account = controlState.ensurePublicAccount(session.wallet);
+      if (!claimResult.claimed) {
         return {
-          wallet: account.wallet,
-          balanceUsd: account.balanceUsd,
+          wallet: session.wallet,
+          balanceUsd: claimResult.balanceUsd,
           creditedUsd: 0,
           currency: 'USD',
           duplicate: true,
@@ -284,10 +283,9 @@ export function registerAccountRoutes(
         };
       }
 
-      const account = controlState.creditBuyerBalance(session.wallet, creditedUsd);
       return {
-        wallet: account.wallet,
-        balanceUsd: account.balanceUsd,
+        wallet: session.wallet,
+        balanceUsd: claimResult.balanceUsd,
         creditedUsd,
         currency: 'USD',
         ...(settlement?.transaction || settlement?.payer

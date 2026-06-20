@@ -452,6 +452,12 @@ export async function submitResult(
     return;
   }
   if (submission.providerRunId && submission.providerRunId !== assignment.providerRunId) {
+    markAssignmentFailed(
+      raidId,
+      submission.providerId,
+      `provider run ${submission.providerRunId} does not match active assignment`,
+      deps
+    );
     return;
   }
   const normalizedSubmission =

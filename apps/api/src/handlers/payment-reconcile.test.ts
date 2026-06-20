@@ -55,6 +55,51 @@ test('reconcileLaunchPayment releases api-key reservation without settled paymen
   assert.equal(accountAfter?.balanceUsd, 2);
 });
 
+test('reconcileLaunchPayment releases api-key reservation for raid route failures', async () => {
+  const controlState = createApiControlState({
+    ...process.env,
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+  });
+  const orchestrator = {
+    getRaidLaunchReservation: () => undefined,
+  } as unknown as BossRaidOrchestrator;
+
+  const ctx = {
+    controlState,
+    orchestrator,
+    apiMetrics: createApiMetrics(),
+    env: process.env,
+  } as unknown as ApiContext;
+
+  const auth = createAuthHandlers(ctx);
+  const manaBilling = createManaBillingHandlers(ctx);
+  const payment = createPaymentHandlers(ctx, auth, manaBilling);
+
+  const account = controlState.ensurePublicAccount('0xBuyer00000000000000000000000000000004');
+  controlState.creditBuyerBalance(account.wallet, 3);
+  const apiKey = controlState.createBuyerApiKey({
+    wallet: account.wallet,
+    name: 'raid-reconcile',
+    keyHash: 'hash_raid_reconcile',
+    prefix: 'br_rr',
+  });
+  const reservation = controlState.reserveBuyerApiKeyLaunch(apiKey.id, account.wallet, 2);
+  assert.ok(reservation);
+
+  await payment.reconcileLaunchPayment({
+    route: 'raid',
+    request: { headers: {} } as never,
+    raidRequest: createSpawnInput(),
+    launchPayment: {
+      apiKeyBilling: reservation!,
+    },
+    reason: 'terminal_wait_timeout',
+    raidId: 'raid-reconcile-1',
+  });
+
+  assert.equal(controlState.readPublicAccount(account.wallet)?.balanceUsd, 3);
+});
+
 test('reconcileLaunchPayment skips x402 refund when refundX402 is false', async () => {
   const controlState = createApiControlState({
     ...process.env,

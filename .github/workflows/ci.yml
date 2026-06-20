@@ -52,6 +52,10 @@ jobs:
       - name: Money-path tests
         run: pnpm test:money-path
 
+      - name: Bounty escrow smoke
+        run: pnpm test:bounty-escrow:local
+        timeout-minutes: 15
+
       - name: E2E smoke
         run: pnpm test:smoke:e2e
         timeout-minutes: 15

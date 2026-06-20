@@ -12,10 +12,18 @@ function raidPersistRevision(raid: BossRaidPersistenceSnapshot['raids'][number])
   return createHash('sha256').update(JSON.stringify(rest)).digest('hex');
 }
 
+function providerPersistRevision(
+  provider: BossRaidPersistenceSnapshot['providers'][number]
+): string {
+  const { lastSeenAt: _lastSeenAt, ...rest } = provider;
+  return createHash('sha256').update(JSON.stringify(rest)).digest('hex');
+}
+
 export class SqliteBossRaidPersistence implements BossRaidPersistence {
   private db?: DatabaseSync;
   private initPromise?: Promise<DatabaseSync>;
   private readonly raidRevisionCache = new Map<string, string>();
+  private readonly providerRevisionCache = new Map<string, string>();
 
   constructor(private readonly path: string) {}
 
@@ -115,7 +123,12 @@ export class SqliteBossRaidPersistence implements BossRaidPersistence {
         this.raidRevisionCache.set(raid.id, revision);
       }
       for (const provider of snapshot.providers) {
+        const revision = providerPersistRevision(provider);
+        if (this.providerRevisionCache.get(provider.providerId) === revision) {
+          continue;
+        }
         upsertProvider.run(provider.providerId, snapshot.savedAt, JSON.stringify(provider));
+        this.providerRevisionCache.set(provider.providerId, revision);
       }
       for (const reservation of snapshot.launchReservations ?? []) {
         upsertReservation.run(reservation.id, snapshot.savedAt, JSON.stringify(reservation));

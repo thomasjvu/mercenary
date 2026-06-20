@@ -254,19 +254,54 @@ export class BountyService {
 
     const onchainAwardIds = new Map<string, string>();
     if (this.onchain && escrowJobId) {
-      for (const pending of pendingAwards) {
-        const providerAddress = resolveProviderAddress(
-          pending.bid.providerId,
-          this.onchain.providerAddresses
-        )!;
-        const onchainAward = await this.runOnchain(() =>
-          this.onchain!.executor.createAward({
-            onchainBountyId: escrowJobId,
-            providerAddress,
+      try {
+        for (const pending of pendingAwards) {
+          const providerAddress = resolveProviderAddress(
+            pending.bid.providerId,
+            this.onchain.providerAddresses
+          )!;
+          const onchainAward = await this.runOnchain(() =>
+            this.onchain!.executor.createAward({
+              onchainBountyId: escrowJobId,
+              providerAddress,
+              amountUsd: pending.amountUsd,
+            })
+          );
+          onchainAwardIds.set(pending.awardId, onchainAward.onchainAwardId);
+        }
+      } catch (error) {
+        for (const pending of pendingAwards) {
+          const onchainAwardId = onchainAwardIds.get(pending.awardId);
+          if (!onchainAwardId) {
+            continue;
+          }
+          const partialAward: BountyAwardRecord = {
+            id: pending.awardId,
+            bountyId,
+            bidId: pending.bid.id,
+            providerId: pending.bid.providerId,
             amountUsd: pending.amountUsd,
-          })
-        );
-        onchainAwardIds.set(pending.awardId, onchainAward.onchainAwardId);
+            onchainAwardId,
+            status: 'in_progress',
+            createdAt: nowIso,
+            updatedAt: nowIso,
+          };
+          this.store.saveAward(partialAward);
+          this.store.saveBid({ ...pending.bid, status: 'awarded', updatedAt: nowIso });
+        }
+        if (onchainAwardIds.size > 0) {
+          this.store.saveBounty({
+            ...bounty,
+            status: 'awarded',
+            updatedAt: nowIso,
+          });
+          this.appendEvent(
+            bountyId,
+            'bounty.award_partial',
+            `Partial onchain award persisted (${onchainAwardIds.size}/${pendingAwards.length})`
+          );
+        }
+        throw error;
       }
     }
 

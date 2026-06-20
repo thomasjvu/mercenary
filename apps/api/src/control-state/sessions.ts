@@ -42,11 +42,8 @@ export function readOpsSession(
     return undefined;
   }
 
-  const { snapshot, changed } = ctx.readPrunedState(nowMs);
+  const { snapshot } = ctx.readPrunedState(nowMs);
   const session = snapshot.opsSessions.find((entry) => entry.token === token);
-  if (changed) {
-    ctx.writeState(snapshot);
-  }
   if (!session || session.expiresAt <= nowMs) {
     return undefined;
   }
@@ -155,11 +152,8 @@ export function readPublicSession(
   if (!token) {
     return undefined;
   }
-  const { snapshot, changed } = ctx.readPrunedState(nowMs);
+  const { snapshot } = ctx.readPrunedState(nowMs);
   const session = snapshot.publicSessions.find((entry) => entry.token === token);
-  if (changed) {
-    ctx.writeState(snapshot);
-  }
   if (!session || session.expiresAt <= nowMs) {
     return undefined;
   }

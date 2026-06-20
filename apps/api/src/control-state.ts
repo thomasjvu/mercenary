@@ -152,6 +152,14 @@ export function createApiControlStateFromStore(store: ApiControlStateStore) {
       return buyerLedger.finalizeBuyerApiKeyBilling(ctx, reservation, actualCostUsd, nowMs);
     },
 
+    captureBuyerApiKeyBillingWithPurchase(
+      reservation: buyerLedger.BuyerApiKeyLaunchReservation,
+      input: Parameters<typeof buyerLedger.captureBuyerApiKeyBillingWithPurchase>[2],
+      nowMs = Date.now()
+    ): boolean {
+      return buyerLedger.captureBuyerApiKeyBillingWithPurchase(ctx, reservation, input, nowMs);
+    },
+
     linkSellerProvider(wallet: string, providerId: string, nowMs = Date.now()): PublicAccountEntry {
       return sellerLedger.linkSellerProvider(ctx, wallet, providerId, nowMs);
     },
@@ -343,6 +351,13 @@ export function createApiControlStateFromStore(store: ApiControlStateStore) {
 
     tryClaimX402SettledPayment(entry: x402SettledPayments.X402SettledPaymentEntry): boolean {
       return x402SettledPayments.tryClaimX402SettledPayment(ctx, entry);
+    },
+
+    tryClaimX402SettledPaymentAndCredit(
+      entry: x402SettledPayments.X402SettledPaymentEntry,
+      nowMs = Date.now()
+    ): ReturnType<typeof x402SettledPayments.tryClaimX402SettledPaymentAndCredit> {
+      return x402SettledPayments.tryClaimX402SettledPaymentAndCredit(ctx, entry, nowMs);
     },
 
     releaseX402SettledPayment(fingerprint: string): void {
