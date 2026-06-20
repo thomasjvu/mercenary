@@ -93,6 +93,9 @@ export function AttestationInspectorProvider({ children }: { children: ReactNode
   }, [lastContext]);
 
   const closeInspector = useCallback(() => {
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     setIsOpen(false);
   }, []);
 

@@ -143,7 +143,7 @@ export function App() {
     isMarketplaceListRoute ||
     isMarketplaceDetailRoute;
   const providers = useSWR<Provider[]>(
-    shouldLoadProviderData ? '/v1/providers' : null,
+    shouldLoadProviderData ? '/v1/providers?onlineOnly=false' : null,
     (path: string) => fetchJson(path),
     {
       refreshInterval: 10_000,

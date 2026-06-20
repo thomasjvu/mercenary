@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { fetchAttestedRuntime } from '../../api/raid.js';
+import { fetchAttestedRuntimeOptional } from '../../api/raid.js';
 import { fetchReady } from '../../api/health.js';
 import { useAttestationInspector } from '../../contexts/AttestationInspectorContext.js';
 import { buildRuntimeAttestationLabel } from '../../mercenary-result.js';
@@ -11,7 +11,7 @@ type HostTeeTrustStripProps = {
 export function HostTeeTrustStrip({ variant = 'strip' }: HostTeeTrustStripProps) {
   const { openInspector } = useAttestationInspector();
   const ready = useSWR('host-ready', fetchReady, { refreshInterval: 30_000 });
-  const attestedRuntime = useSWR('host-attested-runtime', fetchAttestedRuntime, {
+  const attestedRuntime = useSWR('host-attested-runtime', fetchAttestedRuntimeOptional, {
     refreshInterval: 30_000,
     shouldRetryOnError: false,
   });

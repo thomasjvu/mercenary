@@ -12,7 +12,7 @@ export function PartyQuestPage({ onNavigate }: PartyQuestPageProps) {
   const phantasyCmsUrl = resolvePhantasyCmsUrl();
   const phantasyMapUrl = resolvePhantasyMapUrl();
   const connectedAgents = useSWR<Provider[]>(
-    '/v1/providers?sourceType=party_quest',
+    '/v1/providers?sourceType=party_quest&onlineOnly=false',
     (path: string) => fetchJson<Provider[]>(path)
   );
 

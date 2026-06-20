@@ -83,7 +83,10 @@ export async function fetchAttestedRuntimeOptional(): Promise<
   try {
     return await fetchAttestedRuntime();
   } catch (error) {
-    if (error instanceof Error && /503|not published|not configured/i.test(error.message)) {
+    if (
+      error instanceof Error &&
+      /401|403|503|unauthorized|not published|not configured/i.test(error.message)
+    ) {
       return undefined;
     }
 

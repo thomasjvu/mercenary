@@ -78,23 +78,23 @@ export function AttestationInspectorSidebar({
   return (
     <>
       <button
-        aria-hidden={!isOpen}
         className={`attestation-inspector__backdrop${isOpen ? ' attestation-inspector__backdrop--open' : ''}`}
+        hidden={!isOpen}
         onClick={onClose}
         tabIndex={isOpen ? 0 : -1}
         type="button"
       />
       <aside
-        aria-hidden={!isOpen}
         aria-label="Attestation inspector"
         className={`attestation-inspector${isOpen ? ' attestation-inspector--open' : ''}`}
+        inert={!isOpen ? true : undefined}
       >
         <div className="attestation-inspector__head">
           <div>
             <p className="eyebrow">proof</p>
             <h2>Attestation</h2>
           </div>
-          <button className="button" onClick={onClose} type="button">
+          <button className="button" onClick={onClose} tabIndex={isOpen ? 0 : -1} type="button">
             close
           </button>
         </div>

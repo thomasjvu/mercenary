@@ -30,7 +30,7 @@ export async function fetchAgentSession(): Promise<{ grant: AgentSessionGrant } 
   const response = await requestJsonDetailed<{ grant: AgentSessionGrant }>(
     '/v1/auth/agent-session'
   );
-  if (response.status === 404) {
+  if (response.status === 404 || response.status === 401) {
     return null;
   }
   if (!response.ok || !response.data) {
