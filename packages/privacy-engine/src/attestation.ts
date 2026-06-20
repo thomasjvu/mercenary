@@ -221,10 +221,19 @@ function phalaRpc<T>(
   timeoutMs = 30_000
 ): Promise<T> {
   const payload = JSON.stringify(body);
-  if (/^https?:\/\//i.test(endpoint)) {
-    return phalaHttpRpc<T>(endpoint, path, payload, timeoutMs);
-  }
-  return phalaUnixRpc<T>(endpoint, path, payload, timeoutMs);
+  const request = /^https?:\/\//i.test(endpoint)
+    ? phalaHttpRpc<T>(endpoint, path, payload, timeoutMs)
+    : phalaUnixRpc<T>(endpoint, path, payload, timeoutMs);
+
+  return Promise.race([
+    request,
+    new Promise<T>((_, reject) => {
+      setTimeout(
+        () => reject(new Error(`Phala dstack ${path} timed out after ${timeoutMs}ms`)),
+        timeoutMs
+      );
+    }),
+  ]);
 }
 
 function phalaHttpRpc<T>(

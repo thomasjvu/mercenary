@@ -11,29 +11,9 @@ import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../handlers/index.js';
 
 const HOST_ATTESTATION_CACHE_TTL_MS = 10 * 60 * 1000;
-const HOST_TEE_VERIFY_TIMEOUT_MS = 70_000;
 const HOST_TEE_INFO_TIMEOUT_MS = 10_000;
-const HOST_TEE_GET_QUOTE_TIMEOUT_MS = 55_000;
+const HOST_TEE_GET_QUOTE_TIMEOUT_MS = 90_000;
 const hostAttestationCache = new Map<string, { expiresAt: number; result: TeeAttestationResult }>();
-
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
-  let timer: NodeJS.Timeout | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<T>((_, reject) => {
-        timer = setTimeout(
-          () => reject(new Error(`${label} timed out after ${timeoutMs}ms`)),
-          timeoutMs
-        );
-      }),
-    ]);
-  } finally {
-    if (timer) {
-      clearTimeout(timer);
-    }
-  }
-}
 
 export type HostAttestationSignedRuntime = {
   signer: string;
@@ -128,30 +108,20 @@ export function registerHostAttestationRoutes(
     const teeSocket = await readTeeSocketState(teeSocketPath);
 
     let teeAttestation: TeeAttestationResult | undefined;
-    let teeVerifyError: string | undefined;
     if (teePlatform === 'phala' && teeSocket.pathExists && teeSocket.socketMounted) {
-      try {
-        teeAttestation = await withTimeout(
-          verifyPhalaTeeAttestation(
-            'bossraid-host',
-            teeSocketPath,
-            hostAttestationCache,
-            HOST_ATTESTATION_CACHE_TTL_MS,
-            {
-              reportData: 'bossraid-host',
-              runtimeMode: env.BOSSRAID_TEE_RUNTIME_MODE ?? 'phala-cvm',
-              rpcTimeoutMs: HOST_TEE_INFO_TIMEOUT_MS,
-              getQuoteTimeoutMs: HOST_TEE_GET_QUOTE_TIMEOUT_MS,
-              skipCloudVerify: true,
-            }
-          ),
-          HOST_TEE_VERIFY_TIMEOUT_MS,
-          'Phala host TEE verification'
-        );
-      } catch (error) {
-        teeVerifyError =
-          error instanceof Error ? error.message : 'Phala host TEE verification failed.';
-      }
+      teeAttestation = await verifyPhalaTeeAttestation(
+        'bossraid-host',
+        teeSocketPath,
+        hostAttestationCache,
+        HOST_ATTESTATION_CACHE_TTL_MS,
+        {
+          reportData: 'bossraid-host',
+          runtimeMode: env.BOSSRAID_TEE_RUNTIME_MODE ?? 'phala-cvm',
+          rpcTimeoutMs: HOST_TEE_INFO_TIMEOUT_MS,
+          getQuoteTimeoutMs: HOST_TEE_GET_QUOTE_TIMEOUT_MS,
+          skipCloudVerify: true,
+        }
+      );
     } else if (teePlatform === 'phala') {
       reply.code(503);
       return {
@@ -185,7 +155,6 @@ export function registerHostAttestationRoutes(
       return {
         error: 'tee_unavailable',
         message:
-          teeVerifyError ??
           teeSigner.error ??
           'Host TEE attestation is unavailable. Configure Phala tappd or MNEMONIC for signed proofs.',
       };
