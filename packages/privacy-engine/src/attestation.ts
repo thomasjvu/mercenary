@@ -297,7 +297,7 @@ function phalaUnixRpc<T>(
     socket.setTimeout(timeoutMs, () => fail(new Error('Phala dstack request timed out.')));
     socket.on('connect', () => {
       socket.write(`POST ${path} HTTP/1.1\r\n`);
-      socket.write('Host: localhost\r\n');
+      socket.write('Host: dstack\r\n');
       socket.write('Content-Type: application/json\r\n');
       socket.write(`Content-Length: ${Buffer.byteLength(payload)}\r\n`);
       socket.write('\r\n');

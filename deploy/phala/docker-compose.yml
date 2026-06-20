@@ -95,7 +95,7 @@ services:
       BOSSRAID_EVAL_ALLOW_UNSAFE_HOST_EXECUTION: '${BOSSRAID_EVAL_ALLOW_UNSAFE_HOST_EXECUTION:-false}'
       BOSSRAID_TRUST_PROXY: 'true'
       BOSSRAID_TEE_PLATFORM: 'phala'
-      BOSSRAID_TEE_SOCKET_PATH: '${BOSSRAID_TEE_SOCKET_PATH:-/var/run/tappd.sock}'
+      BOSSRAID_TEE_SOCKET_PATH: '${BOSSRAID_TEE_SOCKET_PATH:-/var/run/dstack.sock}'
       BOSSRAID_ERC8004_AGENT_ID: '${BOSSRAID_ERC8004_AGENT_ID:-}'
       BOSSRAID_ERC8004_OPERATOR_WALLET: '${BOSSRAID_ERC8004_OPERATOR_WALLET:-}'
       BOSSRAID_ERC8004_REGISTRATION_TX: '${BOSSRAID_ERC8004_REGISTRATION_TX:-}'
@@ -138,7 +138,7 @@ services:
     volumes:
       - bossraid-data:/data
       - bossraid-evaluator-socket:/socket
-      - ${BOSSRAID_TEE_SOCKET_PATH:-/var/run/tappd.sock}:${BOSSRAID_TEE_SOCKET_PATH:-/var/run/tappd.sock}
+      - ${BOSSRAID_TEE_SOCKET_PATH:-/var/run/dstack.sock}:${BOSSRAID_TEE_SOCKET_PATH:-/var/run/dstack.sock}
     depends_on:
       evaluator:
         condition: service_healthy
