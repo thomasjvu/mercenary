@@ -1,5 +1,11 @@
 .git
 .github
+.private
+apps/docs
+examples
+evidence
+plans
+skills
 .turbo
 node_modules
 temp

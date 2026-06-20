@@ -6,6 +6,9 @@ ENV PATH=$PNPM_HOME:$PATH
 RUN corepack enable
 WORKDIR /app
 
+ENV CI=1
+ENV TURBO_CACHE_DIR=/tmp/turbo-cache
+
 COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm turbo run build --filter=@bossraid/api... --filter=@bossraid/evaluator... --filter=@bossraid/provider-agent... --filter=@bossraid/web... --filter=@bossraid/ops...
