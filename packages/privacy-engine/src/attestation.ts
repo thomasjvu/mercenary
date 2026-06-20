@@ -36,6 +36,7 @@ export interface PrivacyAttestationOptions {
 export interface PhalaTeeAttestationOptions {
   reportData?: string;
   runtimeMode?: string;
+  rpcTimeoutMs?: number;
 }
 
 type PhalaInfoResponse = {
@@ -89,11 +90,17 @@ async function callPhalaAttestationApi(
 ): Promise<TeeAttestationResult> {
   try {
     const endpoint = resolvePhalaEndpoint(socketPath);
-    const info = await phalaRpc<PhalaInfoResponse>(endpoint, '/Info', {});
+    const rpcTimeoutMs = opts.rpcTimeoutMs ?? 30_000;
+    const info = await phalaRpc<PhalaInfoResponse>(endpoint, '/Info', {}, rpcTimeoutMs);
     const reportData = buildReportData(opts.reportData);
-    const quote = await phalaRpc<PhalaQuoteResponse>(endpoint, '/GetQuote', {
-      report_data: reportData.hex,
-    });
+    const quote = await phalaRpc<PhalaQuoteResponse>(
+      endpoint,
+      '/GetQuote',
+      {
+        report_data: reportData.hex,
+      },
+      rpcTimeoutMs
+    );
     if (quote.error) {
       throw new Error(quote.error);
     }
@@ -181,15 +188,25 @@ function redactEndpoint(endpoint: string): string {
   return /^https?:\/\//i.test(endpoint) ? new URL(endpoint).origin : endpoint;
 }
 
-function phalaRpc<T>(endpoint: string, path: string, body: unknown): Promise<T> {
+function phalaRpc<T>(
+  endpoint: string,
+  path: string,
+  body: unknown,
+  timeoutMs = 30_000
+): Promise<T> {
   const payload = JSON.stringify(body);
   if (/^https?:\/\//i.test(endpoint)) {
-    return phalaHttpRpc<T>(endpoint, path, payload);
+    return phalaHttpRpc<T>(endpoint, path, payload, timeoutMs);
   }
-  return phalaUnixRpc<T>(endpoint, path, payload);
+  return phalaUnixRpc<T>(endpoint, path, payload, timeoutMs);
 }
 
-function phalaHttpRpc<T>(endpoint: string, path: string, payload: string): Promise<T> {
+function phalaHttpRpc<T>(
+  endpoint: string,
+  path: string,
+  payload: string,
+  timeoutMs: number
+): Promise<T> {
   return new Promise((resolve, reject) => {
     const url = new URL(path, endpoint);
     const request = (url.protocol === 'https:' ? https : http).request(
@@ -216,7 +233,7 @@ function phalaHttpRpc<T>(endpoint: string, path: string, payload: string): Promi
         });
       }
     );
-    request.setTimeout(30_000, () => {
+    request.setTimeout(timeoutMs, () => {
       request.destroy(new Error('Phala dstack request timed out.'));
     });
     request.on('error', reject);
@@ -225,7 +242,12 @@ function phalaHttpRpc<T>(endpoint: string, path: string, payload: string): Promi
   });
 }
 
-function phalaUnixRpc<T>(socketPath: string, path: string, payload: string): Promise<T> {
+function phalaUnixRpc<T>(
+  socketPath: string,
+  path: string,
+  payload: string,
+  timeoutMs: number
+): Promise<T> {
   return new Promise((resolve, reject) => {
     const socket = net.createConnection({ path: socketPath });
     let buffer = '';
@@ -237,7 +259,7 @@ function phalaUnixRpc<T>(socketPath: string, path: string, payload: string): Pro
         reject(error);
       }
     };
-    socket.setTimeout(30_000, () => fail(new Error('Phala dstack request timed out.')));
+    socket.setTimeout(timeoutMs, () => fail(new Error('Phala dstack request timed out.')));
     socket.on('connect', () => {
       socket.write(`POST ${path} HTTP/1.1\r\n`);
       socket.write('Host: localhost\r\n');

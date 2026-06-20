@@ -11,7 +11,8 @@ import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../handlers/index.js';
 
 const HOST_ATTESTATION_CACHE_TTL_MS = 10 * 60 * 1000;
-const HOST_TEE_VERIFY_TIMEOUT_MS = 45_000;
+const HOST_TEE_VERIFY_TIMEOUT_MS = 75_000;
+const HOST_TEE_RPC_TIMEOUT_MS = 20_000;
 const hostAttestationCache = new Map<string, { expiresAt: number; result: TeeAttestationResult }>();
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
@@ -110,6 +111,7 @@ export function registerHostAttestationRoutes(
             {
               reportData: 'bossraid-host',
               runtimeMode: env.BOSSRAID_TEE_RUNTIME_MODE ?? 'phala-cvm',
+              rpcTimeoutMs: HOST_TEE_RPC_TIMEOUT_MS,
             }
           ),
           HOST_TEE_VERIFY_TIMEOUT_MS,
