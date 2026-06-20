@@ -179,26 +179,31 @@ function buildReportData(value: string): { hex: string } {
   return { hex: createHash('sha256').update(raw).digest('hex') };
 }
 
+function isReachablePhalaEndpoint(candidate: string): boolean {
+  if (/^https?:\/\//i.test(candidate)) {
+    return true;
+  }
+  return existsSync(candidate);
+}
+
 function resolvePhalaEndpoint(socketPath: string): string {
+  if (socketPath && isReachablePhalaEndpoint(socketPath)) {
+    return socketPath;
+  }
+
   const candidates = [
     process.env.DSTACK_SIMULATOR_ENDPOINT,
     process.env.TAPPD_SIMULATOR_ENDPOINT,
     process.env.DSTACK_ENDPOINT,
     process.env.TAPPD_ENDPOINT,
-    process.env.DSTACK_SOCKET_PATH,
     process.env.TAPPD_SOCKET_PATH,
-    socketPath,
     process.env.BOSSRAID_TEE_SOCKET_PATH,
-    DSTACK_SOCKET_PATH,
+    process.env.DSTACK_SOCKET_PATH,
     DEFAULT_TEE_SOCKET_PATH,
+    DSTACK_SOCKET_PATH,
   ].filter((value): value is string => typeof value === 'string' && value.length > 0);
 
-  const endpoint = candidates.find((candidate) => {
-    if (/^https?:\/\//i.test(candidate)) {
-      return true;
-    }
-    return existsSync(candidate);
-  });
+  const endpoint = candidates.find((candidate) => isReachablePhalaEndpoint(candidate));
   if (!endpoint) {
     throw new Error('No reachable Phala dstack or tappd endpoint was found.');
   }
