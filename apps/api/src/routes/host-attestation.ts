@@ -11,7 +11,27 @@ import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../handlers/index.js';
 
 const HOST_ATTESTATION_CACHE_TTL_MS = 10 * 60 * 1000;
+const HOST_TEE_VERIFY_TIMEOUT_MS = 45_000;
 const hostAttestationCache = new Map<string, { expiresAt: number; result: TeeAttestationResult }>();
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`${label} timed out after ${timeoutMs}ms`)),
+          timeoutMs
+        );
+      }),
+    ]);
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
+}
 
 export type HostAttestationSignedRuntime = {
   signer: string;
@@ -76,20 +96,29 @@ export function registerHostAttestationRoutes(
     const deploymentTarget = env.BOSSRAID_DEPLOY_TARGET ?? null;
     const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/tappd.sock';
     const teeSocket = await readTeeSocketState(teeSocketPath);
-    const providerHealth = await collectProviderHealth();
 
     let teeAttestation: TeeAttestationResult | undefined;
+    let teeVerifyError: string | undefined;
     if (teePlatform === 'phala' && teeSocket.pathExists && teeSocket.socketMounted) {
-      teeAttestation = await verifyPhalaTeeAttestation(
-        'bossraid-host',
-        teeSocketPath,
-        hostAttestationCache,
-        HOST_ATTESTATION_CACHE_TTL_MS,
-        {
-          reportData: 'bossraid-host',
-          runtimeMode: env.BOSSRAID_TEE_RUNTIME_MODE ?? 'phala-cvm',
-        }
-      );
+      try {
+        teeAttestation = await withTimeout(
+          verifyPhalaTeeAttestation(
+            'bossraid-host',
+            teeSocketPath,
+            hostAttestationCache,
+            HOST_ATTESTATION_CACHE_TTL_MS,
+            {
+              reportData: 'bossraid-host',
+              runtimeMode: env.BOSSRAID_TEE_RUNTIME_MODE ?? 'phala-cvm',
+            }
+          ),
+          HOST_TEE_VERIFY_TIMEOUT_MS,
+          'Phala host TEE verification'
+        );
+      } catch (error) {
+        teeVerifyError =
+          error instanceof Error ? error.message : 'Phala host TEE verification failed.';
+      }
     } else if (teePlatform === 'phala') {
       reply.code(503);
       return {
@@ -100,6 +129,7 @@ export function registerHostAttestationRoutes(
 
     let signedRuntime: HostAttestationSignedRuntime | undefined;
     if (teeSigner.account) {
+      const providerHealth = await collectProviderHealth();
       const payload = buildAttestedRuntimePayload(
         env,
         orchestrator,
@@ -122,6 +152,7 @@ export function registerHostAttestationRoutes(
       return {
         error: 'tee_unavailable',
         message:
+          teeVerifyError ??
           teeSigner.error ??
           'Host TEE attestation is unavailable. Configure Phala tappd or MNEMONIC for signed proofs.',
       };

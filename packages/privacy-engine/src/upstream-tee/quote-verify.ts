@@ -124,6 +124,7 @@ export async function verifyQuoteWithPhalaCloud(
         'content-type': 'application/json',
       },
       body: JSON.stringify({ quote }),
+      signal: AbortSignal.timeout(20_000),
     });
     const payload = response.headers.get('content-type')?.includes('application/json')
       ? ((await response.json()) as PhalaVerifyResponse)
