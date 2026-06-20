@@ -1,12 +1,9 @@
-import type { AttestedEnvelope, AttestedRuntimePayload } from '../api';
-import {
-  buildRuntimeAttestationLabel,
-  isAttestationSignerUnavailable,
-} from '../mercenary-result.js';
+import type { HostAttestationResponse } from '../api/host-attestation.js';
+import { buildRuntimeAttestationLabel } from '../mercenary-result.js';
 import type { SpecialistTone } from '../components/mercenary/mercenary-ui';
 
-export function deriveRuntimeAttestationStatus(input: {
-  data: AttestedEnvelope<AttestedRuntimePayload> | null | undefined;
+export function deriveHostAttestationStatus(input: {
+  data: HostAttestationResponse | null | undefined;
   error: string | null | undefined;
 }): {
   signerDisabled: boolean;
@@ -16,29 +13,43 @@ export function deriveRuntimeAttestationStatus(input: {
   target: string;
   tee: string;
 } {
-  const signerDisabled = isAttestationSignerUnavailable(input.error);
-  const status = input.data
+  const teeAttestation = input.data?.teeAttestation;
+  const signedRuntime = input.data?.signedRuntime;
+  const verified = Boolean(input.data?.verified && (teeAttestation?.valid || signedRuntime));
+  const signerDisabled = Boolean(signedRuntime) === false && Boolean(teeAttestation?.valid);
+
+  const status = verified
     ? 'live'
-    : signerDisabled
-      ? 'proof unpublished'
+    : teeAttestation && !teeAttestation.valid
+      ? 'unverified'
       : input.error
         ? 'unavailable'
-        : 'loading';
+        : input.data
+          ? 'pending'
+          : 'loading';
+
   const target =
-    input.data?.payload.deploymentTarget ?? (signerDisabled ? 'not published' : 'pending');
-  const tee = input.data?.payload.teePlatform ?? (signerDisabled ? 'provider TEE live' : 'pending');
-  const label = input.data
+    input.data?.deploymentTarget ??
+    teeAttestation?.runtimeMode ??
+    (signerDisabled ? 'phala host' : 'pending');
+  const tee =
+    input.data?.teePlatform ?? teeAttestation?.vendor ?? (signerDisabled ? 'phala' : 'pending');
+
+  const label = verified
     ? buildRuntimeAttestationLabel(target, tee)
-    : signerDisabled
-      ? 'Provider TEE live'
+    : teeAttestation?.valid === false
+      ? 'TEE quote unverified'
       : buildRuntimeAttestationLabel(target, tee);
-  const tone: SpecialistTone = input.data
+
+  const tone: SpecialistTone = verified
     ? 'ready'
-    : signerDisabled
-      ? 'available'
+    : teeAttestation?.valid === false
+      ? 'offline'
       : input.error
         ? 'offline'
-        : 'working';
+        : input.data
+          ? 'available'
+          : 'working';
 
   return {
     signerDisabled,

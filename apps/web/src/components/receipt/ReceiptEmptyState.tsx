@@ -13,7 +13,7 @@ type ReceiptEmptyStateProps = {
 };
 
 export function ReceiptEmptyState({ state, onNavigate }: ReceiptEmptyStateProps) {
-  const { attestedRuntime, runtimeSignerDisabledForEmpty } = state;
+  const { hostAttestation, runtimeSignerDisabledForEmpty } = state;
 
   return (
     <article className="receipt-empty receipt-empty--viewport">
@@ -46,18 +46,18 @@ export function ReceiptEmptyState({ state, onNavigate }: ReceiptEmptyStateProps)
         </a>
       </div>
       <details className="receipt-empty__details">
-        <summary>runtime attestation notes</summary>
+        <summary>host attestation notes</summary>
         <p>
-          {attestedRuntime.data
+          {hostAttestation.data
             ? `${buildAttestationSurfaceLabel(
-                attestedRuntime.data.payload.deploymentTarget ?? 'unknown',
-                attestedRuntime.data.payload.teePlatform ?? 'unknown'
-              )} runtime proof is live.`
+                hostAttestation.data.deploymentTarget ?? 'unknown',
+                hostAttestation.data.teePlatform ?? 'unknown'
+              )} host proof is live.`
             : runtimeSignerDisabledForEmpty
-              ? 'Runtime envelope signing is disabled on this host.'
-              : attestedRuntime.error
-                ? readQueryErrorMessage(attestedRuntime.error)
-                : 'Loading runtime attestation.'}
+              ? 'Host TEE quote is live; signed runtime envelope is not configured.'
+              : hostAttestation.error
+                ? readQueryErrorMessage(hostAttestation.error)
+                : 'Loading host attestation.'}
         </p>
         {PINNED_PROOF_RECEIPT_URL ? null : (
           <p>Set VITE_BOSSRAID_PROOF_RECEIPT_URL to pin a proof URL.</p>

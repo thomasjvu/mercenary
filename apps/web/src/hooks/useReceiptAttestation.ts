@@ -1,33 +1,46 @@
-import type { AttestedEnvelope, AttestedRaidResultPayload, AttestedRuntimePayload } from '../api';
+import type { AttestedEnvelope, AttestedRaidResultPayload } from '../api';
+import type { HostAttestationResponse } from '../api/host-attestation.js';
 import {
   buildAttestationSurfaceLabel,
   isAttestationSignerUnavailable,
   type ReceiptQuery,
 } from '../lib/receipt-url';
 
-type AttestationSource = {
-  data?: AttestedEnvelope<AttestedRuntimePayload | AttestedRaidResultPayload>;
+type HostAttestationSource = {
+  data?: HostAttestationResponse;
+  error?: { message?: string };
+};
+
+type ResultAttestationSource = {
+  data?: AttestedEnvelope<AttestedRaidResultPayload>;
   error?: { message?: string };
 };
 
 export function useReceiptAttestation({
-  attestedRuntime,
+  hostAttestation,
   attestedResult,
   activeQuery,
 }: {
-  attestedRuntime: AttestationSource;
-  attestedResult: AttestationSource;
+  hostAttestation: HostAttestationSource;
+  attestedResult: ResultAttestationSource;
   activeQuery: ReceiptQuery | null;
 }) {
-  const runtimeSignerDisabled = isAttestationSignerUnavailable(attestedRuntime.error?.message);
+  const tee = hostAttestation.data?.teeAttestation;
+  const signedRuntime = hostAttestation.data?.signedRuntime;
+  const hostVerified = Boolean(hostAttestation.data?.verified && (tee?.valid || signedRuntime));
+  const runtimeSignerDisabled = Boolean(tee?.valid) && !signedRuntime;
   const resultSignerDisabled = isAttestationSignerUnavailable(attestedResult.error?.message);
-  const runtimeAttestationStatus = attestedRuntime.data
+
+  const runtimeAttestationStatus = hostVerified
     ? 'live'
     : runtimeSignerDisabled
-      ? 'proof unpublished'
-      : attestedRuntime.error
+      ? 'tee quote live'
+      : hostAttestation.error
         ? 'unavailable'
-        : 'loading';
+        : hostAttestation.data
+          ? 'pending'
+          : 'loading';
+
   const resultAttestationStatus = attestedResult.data
     ? 'live'
     : resultSignerDisabled
@@ -37,19 +50,25 @@ export function useReceiptAttestation({
         : activeQuery
           ? 'loading'
           : 'pending';
+
   const attestationTarget =
+    hostAttestation.data?.deploymentTarget ??
+    signedRuntime?.payload.deploymentTarget ??
     attestedResult.data?.payload.deploymentTarget ??
-    attestedRuntime.data?.payload.deploymentTarget ??
     (runtimeSignerDisabled || resultSignerDisabled ? 'not published' : 'pending');
+
   const attestationTee =
+    hostAttestation.data?.teePlatform ??
+    tee?.vendor ??
+    signedRuntime?.payload.teePlatform ??
     attestedResult.data?.payload.teePlatform ??
-    attestedRuntime.data?.payload.teePlatform ??
     (runtimeSignerDisabled || resultSignerDisabled ? 'provider TEE live' : 'pending');
+
   const attestationSurfaceLabel =
-    attestedResult.data || attestedRuntime.data
+    hostVerified || attestedResult.data
       ? buildAttestationSurfaceLabel(attestationTarget, attestationTee)
       : runtimeSignerDisabled || resultSignerDisabled
-        ? 'Host proof unpublished'
+        ? 'Host proof via TEE quote'
         : buildAttestationSurfaceLabel(attestationTarget, attestationTee);
 
   return {

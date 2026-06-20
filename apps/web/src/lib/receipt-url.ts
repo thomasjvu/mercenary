@@ -65,8 +65,20 @@ export function buildAgentManifestUrl(): string {
   return `${API_BASE}/v1/agent.json`;
 }
 
+export function buildHostAttestationUrl(): string {
+  return `${API_BASE}/v1/host/attestation`;
+}
+
 export function buildAttestedRuntimeUrl(): string {
   return `${API_BASE}/v1/attested-runtime`;
+}
+
+export function buildInferenceReceiptUrl(receiptId: string): string {
+  return `${API_BASE}/v1/inference/receipts/${encodeURIComponent(receiptId)}`;
+}
+
+export function buildInferenceReceiptVerifyUrl(receiptId: string): string {
+  return `${API_BASE}/v1/inference/receipts/${encodeURIComponent(receiptId)}/verify`;
 }
 
 export function buildAttestedResultUrl(query: ReceiptQuery): string {

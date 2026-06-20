@@ -43,7 +43,7 @@ export function ReceiptLoadedDashboard({ state }: ReceiptLoadedDashboardProps) {
             <ReceiptAttestationSection
               activeQuery={activeQuery}
               attestedResult={state.attestedResult.data}
-              attestedRuntime={state.attestedRuntime.data}
+              hostAttestation={state.hostAttestation.data}
               attestationSurfaceLabel={state.attestationSurfaceLabel}
               attestationTarget={state.attestationTarget}
               attestationTee={state.attestationTee}

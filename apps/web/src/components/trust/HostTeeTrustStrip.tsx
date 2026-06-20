@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { fetchAttestedRuntimeOptional } from '../../api/raid.js';
+import { fetchHostAttestationOptional } from '../../api/host-attestation.js';
 import { fetchReady } from '../../api/health.js';
 import { useAttestationInspector } from '../../contexts/AttestationInspectorContext.js';
 import { buildRuntimeAttestationLabel } from '../../mercenary-result.js';
@@ -11,19 +11,20 @@ type HostTeeTrustStripProps = {
 export function HostTeeTrustStrip({ variant = 'strip' }: HostTeeTrustStripProps) {
   const { openInspector } = useAttestationInspector();
   const ready = useSWR('host-ready', fetchReady, { refreshInterval: 30_000 });
-  const attestedRuntime = useSWR('host-attested-runtime', fetchAttestedRuntimeOptional, {
+  const hostAttestation = useSWR('host-attestation', fetchHostAttestationOptional, {
     refreshInterval: 30_000,
     shouldRetryOnError: false,
   });
 
+  const tee = hostAttestation.data?.teeAttestation;
+  const signedRuntime = hostAttestation.data?.signedRuntime;
   const deploymentTarget =
-    attestedRuntime.data?.payload.deploymentTarget ?? ready.data?.gates.tee.platform ?? null;
-  const teePlatform =
-    attestedRuntime.data?.payload.teePlatform ?? ready.data?.gates.tee.platform ?? null;
+    hostAttestation.data?.deploymentTarget ?? ready.data?.gates?.tee.platform ?? null;
+  const teePlatform = hostAttestation.data?.teePlatform ?? ready.data?.gates?.tee.platform ?? null;
   const teeSocketLive =
-    ready.data?.gates.tee.socketMounted === true || ready.data?.gates.tee.pathExists === true;
-  const runtimeSigned = Boolean(attestedRuntime.data?.signature);
-  const signerPending = attestedRuntime.error != null && !runtimeSigned;
+    ready.data?.gates?.tee.socketMounted === true || ready.data?.gates?.tee.pathExists === true;
+  const hostVerified = Boolean(hostAttestation.data?.verified && (tee?.valid || signedRuntime));
+  const proofPending = !hostVerified && !hostAttestation.isLoading && !hostAttestation.data;
 
   const label = buildRuntimeAttestationLabel(
     deploymentTarget ?? (teeSocketLive ? 'tee host' : 'pending'),
@@ -41,16 +42,16 @@ export function HostTeeTrustStrip({ variant = 'strip' }: HostTeeTrustStripProps)
     <section aria-label="Host TEE verification" className={className}>
       <div className="host-tee-trust__chips">
         <span
-          className={`host-tee-trust__chip${runtimeSigned ? ' host-tee-trust__chip--ready' : ''}`}
+          className={`host-tee-trust__chip${hostVerified ? ' host-tee-trust__chip--ready' : ''}`}
         >
           {label}
         </span>
         {teeSocketLive ? (
           <span className="host-tee-trust__chip host-tee-trust__chip--ready">TEE socket live</span>
         ) : null}
-        {signerPending ? (
+        {proofPending ? (
           <span className="host-tee-trust__chip host-tee-trust__chip--pending">
-            runtime proof pending
+            host proof pending
           </span>
         ) : null}
       </div>

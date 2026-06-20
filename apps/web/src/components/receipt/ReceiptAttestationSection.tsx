@@ -1,16 +1,12 @@
 import { ReceiptProofPanel } from '@bossraid/ui';
-import type {
-  AttestedEnvelope,
-  AttestedRaidResultPayload,
-  AttestedRuntimePayload,
-  RaidResult,
-} from '../../api';
+import type { AttestedEnvelope, AttestedRaidResultPayload, RaidResult } from '../../api';
+import type { HostAttestationResponse } from '../../api/host-attestation.js';
 import type { ReceiptUpstreamAttestationRow } from '../../lib/receipt-attestation-view';
 import {
   buildAgentLogUrl,
   buildAgentManifestUrl,
   buildAttestedResultUrl,
-  buildAttestedRuntimeUrl,
+  buildHostAttestationUrl,
   type ReceiptQuery,
 } from '../../lib/receipt-url';
 import { useAttestationInspector } from '../../contexts/AttestationInspectorContext.js';
@@ -25,7 +21,7 @@ type ReceiptAttestationSectionProps = {
   resultAttestationStatus: string;
   runtimeSignerDisabled: boolean;
   resultSignerDisabled: boolean;
-  attestedRuntime: AttestedEnvelope<AttestedRuntimePayload> | undefined;
+  hostAttestation: HostAttestationResponse | undefined;
   attestedResult: AttestedEnvelope<AttestedRaidResultPayload> | undefined;
   routedProviderCount: number;
   signedProviderCount: number;
@@ -44,7 +40,7 @@ export function ReceiptAttestationSection({
   resultAttestationStatus,
   runtimeSignerDisabled,
   resultSignerDisabled,
-  attestedRuntime,
+  hostAttestation,
   attestedResult,
   routedProviderCount,
   signedProviderCount,
@@ -70,9 +66,9 @@ export function ReceiptAttestationSection({
         attestationTee={attestationTee}
         links={[
           {
-            href: buildAttestedRuntimeUrl(),
-            label: 'runtime attestation',
-            note: `${attestationSurfaceLabel} runtime proof`,
+            href: buildHostAttestationUrl(),
+            label: 'host attestation',
+            note: `${attestationSurfaceLabel} host proof`,
           },
           {
             href: buildAttestedResultUrl(activeQuery),
@@ -95,14 +91,14 @@ export function ReceiptAttestationSection({
           <>
             <strong>TEE proof:</strong>{' '}
             {runtimeSignerDisabled || resultSignerDisabled
-              ? 'Provider TEE and signed-output counts still reflect routed provider proofs, but this host is not publishing signed runtime/result envelopes because MNEMONIC is not configured.'
-              : `${attestationSurfaceLabel} runtime proof and signed raid result proof are exposed here when the host signer is configured.`}
+              ? 'Provider TEE and signed-output counts still reflect routed provider proofs. Host TEE quote is public; signed runtime/result envelopes require MNEMONIC.'
+              : `${attestationSurfaceLabel} host proof and signed raid result proof are exposed here when the host signer is configured.`}
           </>
         }
         resultHash={attestedResult?.payload.resultHash ?? settlementExecution?.evaluationHash}
         resultStatus={resultAttestationStatus}
         routedProviderCount={routedProviderCount}
-        runtimeSigner={attestedRuntime?.signer}
+        runtimeSigner={hostAttestation?.signedRuntime?.signer}
         runtimeStatus={runtimeAttestationStatus}
         signedProviderCount={signedProviderCount}
         teeProviderCount={teeProviderCount}

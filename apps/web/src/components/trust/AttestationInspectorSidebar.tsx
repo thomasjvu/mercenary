@@ -1,8 +1,8 @@
 import type { MarketplaceModelTeeSummaryView } from '@bossraid/shared-types';
-import type { AttestedEnvelope, AttestedRuntimePayload } from '../../api/raid.js';
+import type { HostAttestationResponse } from '../../api/host-attestation.js';
 import type { ReadyResponse } from '../../api/health.js';
 import { buildRuntimeAttestationLabel } from '../../mercenary-result.js';
-import { buildAttestedRuntimeUrl, buildAgentManifestUrl } from '../../lib/receipt-url.js';
+import { buildAgentManifestUrl, buildHostAttestationUrl } from '../../lib/receipt-url.js';
 import type { AttestationInspectorContextInput } from '../../contexts/AttestationInspectorContext.js';
 import type { ReceiptUpstreamAttestationRow } from '../../lib/receipt-attestation-view.js';
 import { ReceiptUpstreamAttestationPanel } from '../receipt/ReceiptUpstreamAttestationPanel.js';
@@ -14,8 +14,8 @@ type AttestationInspectorSidebarProps = {
   context: AttestationInspectorContextInput;
   ready: ReadyResponse | undefined;
   readyError: unknown;
-  runtime: AttestedEnvelope<AttestedRuntimePayload> | undefined;
-  runtimeError: unknown;
+  hostAttestation: HostAttestationResponse | undefined;
+  hostAttestationError: unknown;
   modelTee: MarketplaceModelTeeSummaryView | undefined;
   modelTeeError: unknown;
   modelTeeLoading: boolean;
@@ -60,18 +60,20 @@ export function AttestationInspectorSidebar({
   context,
   ready,
   readyError,
-  runtime,
-  runtimeError,
+  hostAttestation,
+  hostAttestationError,
   modelTee,
   modelTeeError,
   modelTeeLoading,
 }: AttestationInspectorSidebarProps) {
+  const tee = hostAttestation?.teeAttestation;
+  const signedRuntime = hostAttestation?.signedRuntime;
   const deploymentTarget =
-    runtime?.payload.deploymentTarget ?? ready?.gates.tee.platform ?? 'pending';
-  const teePlatform = runtime?.payload.teePlatform ?? ready?.gates.tee.platform ?? 'pending';
+    hostAttestation?.deploymentTarget ?? ready?.gates?.tee.platform ?? 'pending';
+  const teePlatform = hostAttestation?.teePlatform ?? ready?.gates?.tee.platform ?? 'pending';
   const teeSocketLive =
-    ready?.gates.tee.socketMounted === true || ready?.gates.tee.pathExists === true;
-  const runtimeSigned = Boolean(runtime?.signature);
+    ready?.gates?.tee.socketMounted === true || ready?.gates?.tee.pathExists === true;
+  const hostVerified = Boolean(hostAttestation?.verified && (tee?.valid || signedRuntime));
   const runtimeLabel = buildRuntimeAttestationLabel(deploymentTarget, teePlatform);
   const upstreamRows = context.upstreamAttestations ?? [];
 
@@ -106,20 +108,70 @@ export function AttestationInspectorSidebar({
           <div className="attestation-inspector__summary">
             <strong>{runtimeLabel}</strong>
             <span>
-              {runtimeSigned ? 'signed' : 'unsigned'} · tee {teeSocketLive ? 'live' : 'offline'} ·{' '}
-              {runtime
-                ? `${runtime.payload.readyProviders}/${runtime.payload.providers} ready`
-                : 'loading'}
+              {hostVerified ? 'verified' : 'pending'} · tee {teeSocketLive ? 'live' : 'offline'}
+              {signedRuntime
+                ? ` · ${signedRuntime.payload.readyProviders}/${signedRuntime.payload.providers} ready`
+                : ''}
             </span>
           </div>
-          {runtime?.signer ? (
-            <CopyableAddress label="runtime signer" value={runtime.signer} />
+
+          {tee ? (
+            <>
+              <div className="attestation-inspector__signal-strip">
+                <SignalRow label="quote" value={tee.valid ? 'verified' : 'failed'} />
+                {tee.vendor ? <SignalRow label="vendor" value={tee.vendor} /> : null}
+                {tee.runtimeMode ? <SignalRow label="runtime" value={tee.runtimeMode} /> : null}
+              </div>
+              {tee.signingAddress ? (
+                <CopyableAddress label="quote signing address" value={tee.signingAddress} />
+              ) : null}
+              {tee.checks && tee.checks.length > 0 ? (
+                <ul className="upstream-tee-panel__checks">
+                  {tee.checks.map((check) => (
+                    <li
+                      className={
+                        check.passed
+                          ? 'upstream-tee-panel__check--pass'
+                          : 'upstream-tee-panel__check--fail'
+                      }
+                      key={check.id}
+                    >
+                      {check.passed ? '✓' : '✗'} {check.detail ?? check.id}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {tee.explorerUrl ? (
+                <a
+                  className="upstream-tee-panel__link"
+                  href={tee.explorerUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  open Phala quote explorer
+                </a>
+              ) : null}
+            </>
           ) : null}
-          {runtimeError && !runtime ? (
+
+          {signedRuntime ? (
+            <section className="attestation-inspector__panel attestation-inspector__panel--nested">
+              <p className="attestation-inspector__section-label">signed runtime envelope</p>
+              <CopyableAddress label="runtime signer" value={signedRuntime.signer} />
+              <div className="attestation-inspector__signal-strip">
+                <SignalRow
+                  label="providers"
+                  value={`${signedRuntime.payload.readyProviders}/${signedRuntime.payload.providers}`}
+                />
+              </div>
+            </section>
+          ) : null}
+
+          {hostAttestationError && !hostAttestation ? (
             <p className="attestation-inspector__note">
-              {runtimeError instanceof Error
-                ? runtimeError.message
-                : 'Runtime attestation is not published yet.'}
+              {hostAttestationError instanceof Error
+                ? hostAttestationError.message
+                : 'Host TEE attestation is not available on this deployment.'}
             </p>
           ) : null}
           {readyError && !ready ? (
@@ -128,8 +180,8 @@ export function AttestationInspectorSidebar({
             </p>
           ) : null}
           <div className="attestation-inspector__links">
-            <a href={buildAttestedRuntimeUrl()} rel="noreferrer" target="_blank">
-              runtime json
+            <a href={buildHostAttestationUrl()} rel="noreferrer" target="_blank">
+              host attestation json
             </a>
             <a href={buildAgentManifestUrl()} rel="noreferrer" target="_blank">
               mercenary manifest

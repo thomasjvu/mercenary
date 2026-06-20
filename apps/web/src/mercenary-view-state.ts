@@ -1,7 +1,8 @@
-import type { AttestedEnvelope, AttestedRuntimePayload, Provider, ProviderHealth } from './api';
+import type { Provider, ProviderHealth } from './api';
+import type { HostAttestationResponse } from './api/host-attestation.js';
 import { formatElapsedMs, humanizeStatus, isTerminalRaidStatus } from './mercenary-format';
 import { MERCENARY_PROMPTS, type LiveRaidRun } from './mercenary-result';
-import { deriveRuntimeAttestationStatus } from './lib/runtime-attestation-status.js';
+import { deriveHostAttestationStatus } from './lib/runtime-attestation-status.js';
 import {
   buildConversationSpecialistRecords,
   buildHostedSpecialistRecords,
@@ -24,7 +25,7 @@ type MercenaryRaidViewStateInput = {
   liveRaidRun: LiveRaidRun | null;
   providers: Provider[];
   providerHealth: ProviderHealth[];
-  runtimeAttestation: AttestedEnvelope<AttestedRuntimePayload> | null;
+  runtimeAttestation: HostAttestationResponse | null;
   runtimeAttestationError: string | null;
   paymentEnabled: boolean;
   paymentMode?: 'wallet' | 'api_key';
@@ -88,7 +89,7 @@ export function buildMercenaryRaidViewState({
     conversationSpecialists.length > 0
       ? conversationSpecialists
       : buildHostedSpecialistRecords(providers, providerHealth, healthByProviderId);
-  const runtimeAttestationView = deriveRuntimeAttestationStatus({
+  const runtimeAttestationView = deriveHostAttestationStatus({
     data: runtimeAttestation,
     error: runtimeAttestationError,
   });

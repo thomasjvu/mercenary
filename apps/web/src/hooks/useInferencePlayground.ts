@@ -54,6 +54,7 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<'curl' | 'response'>('curl');
   const [teeStatus, setTeeStatus] = useState<string | null>(null);
+  const [inferenceReceiptId, setInferenceReceiptId] = useState<string | null>(null);
 
   const providerChoices = useMemo(() => {
     const counts = new Map<string, number>();
@@ -237,6 +238,7 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
     setResponseText(null);
     setRawResponse(null);
     setTeeStatus(null);
+    setInferenceReceiptId(null);
 
     try {
       if (apiKey.trim()) {
@@ -272,7 +274,8 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
       setRawResponse(result.raw);
       const receiptId = (result.raw as { privacy?: { receiptId?: string } })?.privacy?.receiptId;
       if (receiptId) {
-        setTeeStatus(`TEE verified · receipt ${receiptId}`);
+        setInferenceReceiptId(receiptId);
+        setTeeStatus('TEE verified · inference receipt issued');
       }
       setActivePanel('response');
     } catch (runError) {
@@ -325,6 +328,7 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
     activePanel,
     setActivePanel,
     teeStatus,
+    inferenceReceiptId,
     strictE2ee,
     curlSnippet,
     responseSnippet,

@@ -45,6 +45,7 @@ Native write route: `POST /v1/raid`.
 | `GET /v1/raid/:raidId/agent_log.json`      | query `token`                 | Run log                                        |
 
 | `GET /v1/agent.json` | — | Mercenary manifest |
+| `GET /v1/host/attestation` | — | Public host TEE proof (Phala quote when `BOSSRAID_TEE_PLATFORM=phala`; optional `signedRuntime` when `MNEMONIC` is set) |
 | `GET /v1/attested-runtime` | admin | Signed runtime attestation (`MNEMONIC`) |
 | `GET /v1/raid/:raidId/attested-result` | raid token | Signed result |
 | `GET /v1/providers` | — | Provider list (`?sourceType=party_quest`, `?supportedFramework=party-quest`) |

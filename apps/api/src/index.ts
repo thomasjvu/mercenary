@@ -16,6 +16,7 @@ import { sendX402Required } from './lib/x402-route-response.js';
 import { createApiContext } from './api-context.js';
 import { createApiHandlers } from './handlers/index.js';
 import { registerHealthRoutes } from './routes/health.js';
+import { registerHostAttestationRoutes } from './routes/host-attestation.js';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerAccountRoutes } from './routes/account.js';
 import { registerMarketplaceRoutes } from './routes/marketplace.js';
@@ -118,6 +119,7 @@ export function buildApiServer(
   });
 
   registerHealthRoutes(app, ctx, handlers);
+  registerHostAttestationRoutes(app, ctx, handlers);
   registerAuthRoutes(app, ctx, handlers);
   registerAccountRoutes(app, ctx, handlers);
   registerMarketplaceRoutes(app, ctx, handlers);

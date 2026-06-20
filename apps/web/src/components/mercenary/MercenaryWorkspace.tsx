@@ -1,6 +1,8 @@
 import useSWR from 'swr';
 import type { Provider, ProviderHealth } from '../../api';
 import { fetchReady } from '../../api/health.js';
+import { useAttestationInspector } from '../../contexts/AttestationInspectorContext.js';
+import { buildReceiptUpstreamAttestations } from '../../lib/receipt-attestation-view.js';
 import { useSmartAccountPay } from '../../hooks/useSmartAccountPay.js';
 import { useWalletAuth } from '../../hooks/useWalletAuth.js';
 import { useMercenaryPayment } from '../../hooks/useMercenaryPayment.js';
@@ -33,6 +35,7 @@ export function MercenaryWorkspace({
   const paymentEnabled = ready.data?.payment.enabled === true;
   const isSignedIn = walletAuth.isAuthenticated;
 
+  const { openInspector } = useAttestationInspector();
   const mercenary = useMercenaryRaid({
     providers,
     providerHealth,
@@ -141,6 +144,16 @@ export function MercenaryWorkspace({
         onSelectThread={mercenary.selectThread}
         raidIsTerminal={mercenary.raidIsTerminal}
         receiptCopied={mercenary.receiptCopied}
+        onOpenAttestationProof={() => {
+          const upstreamAttestations = buildReceiptUpstreamAttestations({
+            result: mercenary.liveRaidRun?.result,
+            providers,
+          });
+          openInspector({
+            raidId: mercenary.liveRaidRun?.spawn.raidId,
+            upstreamAttestations,
+          });
+        }}
         runtimeAttestationStatus={mercenary.runtimeAttestationStatus}
         runtimeAttestationTone={mercenary.runtimeAttestationTone}
         showReceiptLinks={mercenary.showReceiptLinks}

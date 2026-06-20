@@ -1,14 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useCopyFeedback } from './useCopyFeedback.js';
 import type { SubmissionArtifact } from '@bossraid/shared-types';
+import type { Provider, ProviderHealth, RaidSpawnOutput } from '../api';
 import {
-  fetchAttestedRuntimeOptional,
-  type AttestedEnvelope,
-  type AttestedRuntimePayload,
-  type Provider,
-  type ProviderHealth,
-  type RaidSpawnOutput,
-} from '../api';
+  fetchHostAttestationOptional,
+  type HostAttestationResponse,
+} from '../api/host-attestation.js';
 import { isTerminalRaidStatus, readErrorMessage } from '../mercenary-format';
 import { buildAbsolutePath, type LiveRaidRun } from '../mercenary-result';
 import { buildMercenaryRaidViewState } from '../mercenary-specialists';
@@ -65,8 +62,9 @@ export function useMercenaryRaid({
   const [launchError, setLaunchError] = useState<string | null>(initial.thread.launchError);
   const { copied: receiptCopied, copyText: copyReceiptText } = useCopyFeedback();
   const [expandedArtifact, setExpandedArtifact] = useState<SubmissionArtifact | null>(null);
-  const [runtimeAttestation, setRuntimeAttestation] =
-    useState<AttestedEnvelope<AttestedRuntimePayload> | null>(null);
+  const [runtimeAttestation, setRuntimeAttestation] = useState<HostAttestationResponse | null>(
+    null
+  );
   const [runtimeAttestationError, setRuntimeAttestationError] = useState<string | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
   const liveRaidRunRef = useRef(liveRaidRun);
@@ -138,13 +136,15 @@ export function useMercenaryRaid({
   useEffect(() => {
     let cancelled = false;
 
-    void fetchAttestedRuntimeOptional()
+    void fetchHostAttestationOptional()
       .then((response) => {
         if (cancelled) {
           return;
         }
         setRuntimeAttestation(response ?? null);
-        setRuntimeAttestationError(response ? null : 'Runtime attestation is not published yet.');
+        setRuntimeAttestationError(
+          response ? null : 'Host TEE attestation is not available on this deployment.'
+        );
       })
       .catch((error) => {
         if (cancelled) {

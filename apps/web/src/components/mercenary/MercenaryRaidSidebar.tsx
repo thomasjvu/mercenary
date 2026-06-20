@@ -25,6 +25,7 @@ type MercenaryRaidSidebarProps = {
   onCopyReceiptLink: () => void;
   runtimeAttestationTone: 'ready' | 'available' | 'offline' | 'working';
   runtimeAttestationStatus: string;
+  onOpenAttestationProof?: () => void;
   highlightedSidebarSpecialists: ConversationSpecialistRecord[];
   showTracePanel: boolean;
   traceEventCount: number;
@@ -64,6 +65,7 @@ export function MercenaryRaidSidebar({
   onCopyReceiptLink,
   runtimeAttestationTone,
   runtimeAttestationStatus,
+  onOpenAttestationProof,
   highlightedSidebarSpecialists,
   showTracePanel,
   traceEventCount,
@@ -147,7 +149,17 @@ export function MercenaryRaidSidebar({
         </div>
         <div className="mercenary-run-panel__proof">
           <span>attestation</span>
-          <StatusPill tone={runtimeAttestationTone}>{runtimeAttestationStatus}</StatusPill>
+          {onOpenAttestationProof ? (
+            <button
+              className="mercenary-run-panel__proof-button"
+              onClick={onOpenAttestationProof}
+              type="button"
+            >
+              <StatusPill tone={runtimeAttestationTone}>{runtimeAttestationStatus}</StatusPill>
+            </button>
+          ) : (
+            <StatusPill tone={runtimeAttestationTone}>{runtimeAttestationStatus}</StatusPill>
+          )}
         </div>
         {onSelectApiKey &&
         onMaxBudgetUsdChange &&
@@ -207,6 +219,24 @@ export function MercenaryRaidSidebar({
                   </div>
                   <div className="mercenary-roster__side">
                     <span>{specialist.statusLabel}</span>
+                    {specialist.proofTags.length > 0 ? (
+                      <span className="mercenary-roster__proof-tags">
+                        {specialist.proofTags.map((tag) => (
+                          <span className="mercenary-roster__proof-tag" key={tag}>
+                            {tag}
+                          </span>
+                        ))}
+                      </span>
+                    ) : null}
+                    {specialist.proofTags.includes('TEE') && onOpenAttestationProof ? (
+                      <button
+                        className="mercenary-roster__proof-link"
+                        onClick={onOpenAttestationProof}
+                        type="button"
+                      >
+                        view proof
+                      </button>
+                    ) : null}
                     {specialist.progressValue != null ? (
                       <SpecialistProgressMeter
                         progressValue={specialist.progressValue}

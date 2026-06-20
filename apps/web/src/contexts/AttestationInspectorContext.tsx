@@ -11,10 +11,9 @@ import useSWR from 'swr';
 import type { UpstreamProviderId } from '@bossraid/constants';
 import { fetchReady } from '../api/health.js';
 import {
-  fetchAttestedRuntimeOptional,
-  type AttestedEnvelope,
-  type AttestedRuntimePayload,
-} from '../api/raid.js';
+  fetchHostAttestationOptional,
+  type HostAttestationResponse,
+} from '../api/host-attestation.js';
 import { fetchModelTeeSummary } from '../api/marketplace-tee.js';
 import type { ReceiptUpstreamAttestationRow } from '../lib/receipt-attestation-view.js';
 import { AttestationInspectorSidebar } from '../components/trust/AttestationInspectorSidebar.js';
@@ -32,8 +31,8 @@ type AttestationInspectorValue = {
   lastContext: AttestationInspectorContextInput;
   ready: ReturnType<typeof useSWR>['data'];
   readyError: unknown;
-  attestedRuntime: AttestedEnvelope<AttestedRuntimePayload> | undefined;
-  attestedRuntimeError: unknown;
+  hostAttestation: HostAttestationResponse | undefined;
+  hostAttestationError: unknown;
   openInspector: (context?: AttestationInspectorContextInput) => void;
   openProofInspector: () => void;
   closeInspector: () => void;
@@ -65,9 +64,9 @@ export function AttestationInspectorProvider({ children }: { children: ReactNode
     revalidateOnFocus: false,
     shouldRetryOnError: false,
   });
-  const attestedRuntime = useSWR(
-    isOpen ? 'attestation-inspector-runtime' : null,
-    fetchAttestedRuntimeOptional,
+  const hostAttestation = useSWR(
+    isOpen ? 'attestation-inspector-host' : null,
+    fetchHostAttestationOptional,
     {
       revalidateOnFocus: false,
       shouldRetryOnError: false,
@@ -121,17 +120,17 @@ export function AttestationInspectorProvider({ children }: { children: ReactNode
       lastContext,
       ready: ready.data,
       readyError: ready.error,
-      attestedRuntime: attestedRuntime.data,
-      attestedRuntimeError: attestedRuntime.error,
+      hostAttestation: hostAttestation.data,
+      hostAttestationError: hostAttestation.error,
       openInspector,
       openProofInspector,
       closeInspector,
     }),
     [
-      attestedRuntime.data,
-      attestedRuntime.error,
       closeInspector,
       context,
+      hostAttestation.data,
+      hostAttestation.error,
       isOpen,
       lastContext,
       openInspector,
@@ -146,6 +145,8 @@ export function AttestationInspectorProvider({ children }: { children: ReactNode
       {children}
       <AttestationInspectorSidebar
         context={context}
+        hostAttestation={hostAttestation.data}
+        hostAttestationError={hostAttestation.error}
         isOpen={isOpen}
         modelTee={modelTee.data}
         modelTeeError={modelTee.error}
@@ -153,8 +154,6 @@ export function AttestationInspectorProvider({ children }: { children: ReactNode
         onClose={closeInspector}
         ready={ready.data}
         readyError={ready.error}
-        runtime={attestedRuntime.data}
-        runtimeError={attestedRuntime.error}
       />
     </AttestationInspectorContext.Provider>
   );

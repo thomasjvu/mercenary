@@ -4,20 +4,21 @@ import { raidPollingRefreshInterval } from '@bossraid/proof-ui';
 import { useRaidPolling } from '@bossraid/ui';
 import {
   fetchAttestedRaidResult,
-  fetchAttestedRuntimeOptional,
   fetchJson,
   fetchRaidResult,
   fetchRaidStatus,
   type AttestedEnvelope,
   type AttestedRaidResultPayload,
-  type AttestedRuntimePayload,
   type Provider,
 } from '../api';
+import {
+  fetchHostAttestationOptional,
+  type HostAttestationResponse,
+} from '../api/host-attestation.js';
 import { buildReceiptUpstreamAttestations } from '../lib/receipt-attestation-view.js';
 import { buildReceiptProviderRows } from '../lib/receipt-helpers.js';
 import { buildReceiptSettlementView } from '../lib/receipt-settlement-view.js';
 import { applyDocumentMeta } from '../lib/document-meta.js';
-import { isAttestationSignerUnavailable } from '../lib/receipt-url.js';
 import { useReceiptAttestation } from './useReceiptAttestation.js';
 import { useReceiptQuery } from './useReceiptQuery.js';
 
@@ -37,9 +38,9 @@ export function useReceiptPage() {
       revalidateOnFocus: false,
     }
   );
-  const attestedRuntime = useSWR<AttestedEnvelope<AttestedRuntimePayload> | undefined>(
-    activeQuery ? 'receipt-attested-runtime' : null,
-    () => fetchAttestedRuntimeOptional(),
+  const hostAttestation = useSWR<HostAttestationResponse | undefined>(
+    activeQuery ? 'receipt-host-attestation' : null,
+    () => fetchHostAttestationOptional(),
     {
       revalidateOnFocus: false,
       shouldRetryOnError: false,
@@ -62,7 +63,7 @@ export function useReceiptPage() {
   );
 
   const attestation = useReceiptAttestation({
-    attestedRuntime,
+    hostAttestation,
     attestedResult,
     activeQuery,
   });
@@ -126,15 +127,14 @@ export function useReceiptPage() {
     result: result.data,
     providers: providers.data,
   });
-  const runtimeSignerDisabledForEmpty = isAttestationSignerUnavailable(
-    attestedRuntime.error?.message
-  );
+  const runtimeSignerDisabledForEmpty =
+    Boolean(hostAttestation.data?.teeAttestation?.valid) && !hostAttestation.data?.signedRuntime;
 
   return {
     ...query,
     status,
     result,
-    attestedRuntime,
+    hostAttestation,
     attestedResult,
     ...attestation,
     settlementExecution,

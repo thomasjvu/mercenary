@@ -1,3 +1,4 @@
+import { buildInferenceReceiptUrl, buildInferenceReceiptVerifyUrl } from '../../lib/receipt-url.js';
 import { FormField, FormInput, FormSelect } from '../system/FormField.js';
 import { UserErrorNote } from '../system/UserErrorNote.js';
 import { TerminalCodePanel } from '../terminal/TerminalCodePanel.js';
@@ -125,6 +126,24 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
             </button>
             {state.teeStatus ? (
               <span className="inference-playground__status">{state.teeStatus}</span>
+            ) : null}
+            {state.inferenceReceiptId ? (
+              <div className="inference-playground__receipt-links">
+                <a
+                  href={buildInferenceReceiptUrl(state.inferenceReceiptId)}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  inference receipt
+                </a>
+                <a
+                  href={buildInferenceReceiptVerifyUrl(state.inferenceReceiptId)}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  verify receipt
+                </a>
+              </div>
             ) : null}
           </div>
 
