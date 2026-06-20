@@ -5,28 +5,26 @@ export type ReadyTeeGate = {
   platform: string | null;
   pathExists?: boolean;
   socketMounted?: boolean;
+  mnemonicConfigured?: boolean;
 };
 
 export type ReadyResponse = {
   ok: boolean;
-  gates: {
+  gates?: {
     api: boolean;
     storage: boolean;
     secretsEncrypted: boolean;
     providers: boolean;
     x402: boolean;
     settlement: boolean;
+    settlementFundJobs?: boolean;
+    settlementTerminalJobs?: boolean;
+    bountyEscrow?: boolean;
+    upstreamMocksDisabled?: boolean;
+    unverifiedBalanceFundDisabled?: boolean;
+    unverifiedBountyFundDisabled?: boolean;
+    teeProductionReady?: boolean;
     tee: ReadyTeeGate;
-  };
-  payment: {
-    enabled: boolean;
-    network: string;
-    asset: string;
-    facilitatorConfigured: boolean;
-  };
-  settlement: {
-    mode: string;
-    configured: boolean;
   };
 };
 

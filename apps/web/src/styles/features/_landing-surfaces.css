@@ -356,8 +356,19 @@
 }
 
 .app-shell--landing .hero h1 {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22em;
   font-size: clamp(2.35rem, min(4.5vw, 7vh), 3.65rem);
   line-height: 1.05;
+}
+
+.app-shell--landing .hero__actions .button:not(.button--primary) {
+  border: none;
+}
+
+.app-shell--landing .hero__actions .button:not(.button--primary):hover {
+  border: none;
 }
 
 .app-shell--landing .lede {

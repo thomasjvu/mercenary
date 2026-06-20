@@ -55,7 +55,11 @@ export function registerHealthRoutes(
     const upstreamMocksDisabled = readEnabledUpstreamMocks(env).length === 0;
     const onchainSettlementReady =
       settlementMode === 'onchain' && isFullOnchainSettlementConfigured(env);
-    const productionSettlementReady = !isProduction || onchainSettlementReady;
+    const productionSettlementReady =
+      !isProduction ||
+      settlementMode === 'file' ||
+      settlementMode === 'off' ||
+      onchainSettlementReady;
     const productionMocksReady = !isProduction || upstreamMocksDisabled;
     const productionBalanceFundReady =
       !isProduction || !readBooleanEnv(env.BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND);
@@ -94,21 +98,37 @@ export function registerHealthRoutes(
       },
     };
 
+    const ok =
+      gates.api &&
+      gates.storage &&
+      gates.secretsEncrypted &&
+      gates.providers &&
+      gates.x402 &&
+      gates.settlement &&
+      gates.settlementFundJobs &&
+      gates.settlementTerminalJobs &&
+      gates.bountyEscrow &&
+      gates.upstreamMocksDisabled &&
+      gates.unverifiedBalanceFundDisabled &&
+      gates.unverifiedBountyFundDisabled &&
+      gates.teeProductionReady;
+
     return {
-      ok:
-        gates.api &&
-        gates.storage &&
-        gates.secretsEncrypted &&
-        gates.providers &&
-        gates.x402 &&
-        gates.settlement &&
-        gates.settlementFundJobs &&
-        gates.settlementTerminalJobs &&
-        gates.bountyEscrow &&
-        gates.upstreamMocksDisabled &&
-        gates.unverifiedBalanceFundDisabled &&
-        gates.unverifiedBountyFundDisabled &&
-        gates.teeProductionReady,
+      ok,
+      gates,
+      providers: orchestrator.listProviders().length,
+      readyProviders: providerHealth.filter((provider) => provider.ready).length,
+      storage: persistence,
+      payment: {
+        enabled: x402Config.enabled,
+        network: x402Config.network,
+        asset: x402Config.asset,
+        facilitatorConfigured: Boolean(x402Config.facilitatorUrl),
+      },
+      settlement: {
+        mode: settlementMode,
+        configured: settlementConfigured,
+      },
     };
   });
 

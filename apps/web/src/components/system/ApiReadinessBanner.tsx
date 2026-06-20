@@ -2,37 +2,57 @@ import useSWR from 'swr';
 import { fetchReady } from '../../api/health.js';
 import {
   buildApiReadinessHint,
+  buildProductionOfflineHint,
+  buildReadyNotOkMessage,
   isLocalDevHost,
   readApiErrorMessage,
 } from '../../lib/api-readiness.js';
 
 type ApiReadinessBannerProps = {
   error?: unknown;
-  label?: string;
 };
 
-export function ApiReadinessBanner({ error, label = 'API unavailable' }: ApiReadinessBannerProps) {
+export function ApiReadinessBanner({ error }: ApiReadinessBannerProps) {
   const ready = useSWR('api-ready-banner', fetchReady, {
     refreshInterval: 15_000,
     shouldRetryOnError: false,
   });
 
-  if (!error && ready.data?.ok) {
+  const readyData = ready.data;
+  const readyFetchFailed = Boolean(ready.error);
+  const readyNotOk = readyData?.ok === false;
+  const hasPageError = Boolean(error);
+  const isLoading = !hasPageError && !readyFetchFailed && readyData === undefined && !ready.error;
+
+  if (isLoading) {
     return null;
   }
 
-  const message = error ? readApiErrorMessage(error) : readApiErrorMessage(ready.error);
-  const hint = error
-    ? buildApiReadinessHint(error)
+  if (!hasPageError && !readyFetchFailed && readyData?.ok) {
+    return null;
+  }
+
+  const isOffline = hasPageError || readyFetchFailed;
+  const message = isOffline
+    ? readApiErrorMessage(error ?? ready.error)
+    : buildReadyNotOkMessage(readyData?.gates);
+  const hint = isOffline
+    ? isLocalDevHost()
+      ? buildApiReadinessHint(error ?? ready.error)
+      : buildProductionOfflineHint()
     : isLocalDevHost()
       ? 'Start the API with pnpm dev or pnpm dev:api, then reload.'
-      : buildApiReadinessHint(ready.error);
+      : buildProductionOfflineHint();
+
+  const headline = isOffline
+    ? 'Boss Raid API is currently offline'
+    : 'Boss Raid API is partially unavailable';
 
   return (
-    <aside className="api-readiness-banner" role="status">
-      <p className="eyebrow">{label}</p>
-      <p>{message}</p>
-      <p className="api-readiness-banner__hint">{hint}</p>
+    <aside className="api-status-bar" role="status" aria-live="polite">
+      <p className="api-status-bar__headline">{headline}</p>
+      <p className="api-status-bar__message">{message}</p>
+      <p className="api-status-bar__hint">{hint}</p>
     </aside>
   );
 }

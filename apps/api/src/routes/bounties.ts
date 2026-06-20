@@ -426,6 +426,10 @@ export function registerBountyRoutes(
         message: 'Only the bounty poster or awarded provider can spawn execution raids.',
       };
     }
+    const awardedProvider = ctx.orchestrator
+      .listProviders()
+      .find((provider) => provider.providerId === award.providerId);
+    const partyQuestProvider = awardedProvider?.source?.type === 'party_quest';
     const raidBody = {
       agent: 'mercenary-v1',
       taskType: 'bounty_execution',
@@ -444,7 +448,7 @@ export function registerBountyRoutes(
         maxTotalCost: award.amountUsd,
       },
       hostContext: {
-        host: 'party-quest',
+        ...(partyQuestProvider ? { host: 'party-quest' as const } : {}),
         ...(typeof body.hostContext === 'object' && body.hostContext ? body.hostContext : {}),
       },
     };

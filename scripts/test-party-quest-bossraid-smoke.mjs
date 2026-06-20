@@ -184,7 +184,7 @@ async function registerPartyQuestProvider(base) {
     supportedLanguages: readCsv('PARTY_QUEST_BOSSRAID_LANGUAGES', ['text']),
     supportedFrameworks: readCsv('PARTY_QUEST_BOSSRAID_FRAMEWORKS', ['party-quest']),
     outputTypes: readCsv('PARTY_QUEST_BOSSRAID_OUTPUT_TYPES', ['text']),
-    modelFamily: process.env.PARTY_QUEST_BOSSRAID_MODEL_FAMILY ?? 'party-quest-formation',
+    modelFamily: process.env.PARTY_QUEST_BOSSRAID_MODEL_FAMILY ?? 'party-quest-agent',
     maxConcurrency: Number(process.env.PARTY_QUEST_BOSSRAID_MAX_CONCURRENCY ?? '1'),
     pricing: {
       pricePerTaskUsd: Number(process.env.PARTY_QUEST_BOSSRAID_PRICE_USD ?? '1'),
@@ -192,10 +192,9 @@ async function registerPartyQuestProvider(base) {
     auth: providerAuth(),
     source: {
       type: 'party_quest',
-      targetType: process.env.PARTY_QUEST_BOSSRAID_TARGET_TYPE ?? 'formation',
+      targetType: process.env.PARTY_QUEST_BOSSRAID_TARGET_TYPE ?? 'agent',
       externalRef: process.env.PARTY_QUEST_BOSSRAID_EXTERNAL_REF ?? providerId,
       displayIcon: process.env.PARTY_QUEST_BOSSRAID_DISPLAY_ICON ?? 'fire-b-fill',
-      memberCount: Number(process.env.PARTY_QUEST_BOSSRAID_MEMBER_COUNT ?? '1'),
     },
   };
   const response = await fetch(buildApiUrl(base, '/agents/register'), {

@@ -1,4 +1,3 @@
-import { ApiReadinessBanner } from '../components/system/ApiReadinessBanner.js';
 import { FeaturedModels } from '../components/marketplace/FeaturedModels.js';
 import { MarketplaceCatalogPanel } from '../components/marketplace/MarketplaceCatalogPanel.js';
 import { MarketplaceFiltersPanel } from '../components/marketplace/MarketplaceFiltersPanel.js';
@@ -12,7 +11,6 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
 
   return (
     <section className="page-shell page-flat market-page">
-      <ApiReadinessBanner error={state.markets.error} label="Marketplace unavailable" />
       <MarketStatsRibbon isLoading={state.markets.isLoading} markets={state.markets.data} />
 
       <div className="market-page__spotlight">

@@ -43,7 +43,7 @@ export const SIDEBAR_NAV_LINKS: SidebarNavItem[] = [
   { path: '/', label: 'home', icon: 'pixel:home-solid' },
   { path: '/mercenary', label: 'Mercenary', icon: 'pixel:message-dots-solid' },
   { path: '/bounties', label: 'bounties', icon: 'pixel:treasure-map-solid' },
-  { path: '/party-quest', label: 'Party Quest', icon: 'pixel:users-solid' },
+  { path: '/party-quest', label: 'Phantasy', icon: 'pixel:users-solid' },
   {
     path: '/marketplace',
     label: 'marketplace',

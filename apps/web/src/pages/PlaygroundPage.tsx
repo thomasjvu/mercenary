@@ -1,6 +1,5 @@
 import type { Provider, ProviderHealth } from '../api.js';
 import { MercenaryWorkspace } from '../components/mercenary/MercenaryWorkspace.js';
-import { ApiReadinessBanner } from '../components/system/ApiReadinessBanner.js';
 import { PageIntro } from '../components/system/PageIntro.js';
 import { InferencePlayground } from '../components/marketplace/InferencePlayground.js';
 import type { PlaygroundMode } from '../lib/playground-routing.js';
@@ -10,7 +9,6 @@ type PlaygroundPageProps = {
   initialModelId?: string;
   providers: Provider[];
   providerHealth: ProviderHealth[];
-  apiError?: unknown;
   onModeChange: (mode: PlaygroundMode) => void;
 };
 
@@ -19,7 +17,6 @@ export function PlaygroundPage({
   initialModelId,
   providers,
   providerHealth,
-  apiError,
   onModeChange,
 }: PlaygroundPageProps) {
   return (
@@ -27,8 +24,6 @@ export function PlaygroundPage({
       className={`page-shell page-flat playground-page${mode === 'raid' ? ' playground-page--raid' : ''}`}
     >
       <PageIntro aside={<PlaygroundModeTabs mode={mode} onModeChange={onModeChange} />} />
-
-      <ApiReadinessBanner error={apiError} label="Playground API unavailable" />
 
       {mode === 'raid' ? (
         <MercenaryWorkspace embedded providerHealth={providerHealth} providers={providers} />

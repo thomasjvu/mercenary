@@ -3,7 +3,9 @@ import useSWR from 'swr';
 import { ensureIconCollections } from './lib/iconify-collections.js';
 import { bindAsciiRipple } from './ascii-ripple';
 import { fetchJson, type Provider, type ProviderHealth } from './api';
+import { fetchMarkets } from './api/marketplace.js';
 import { AppSidebar } from './components/AppSidebar';
+import { ApiReadinessBanner } from './components/system/ApiReadinessBanner.js';
 import { AttestationInspectorProvider } from './contexts/AttestationInspectorContext.js';
 import type { AppRoute } from './lib/app-routes.js';
 import {
@@ -152,6 +154,12 @@ export function App() {
     (path: string) => fetchJson(path),
     { refreshInterval: 10_000 }
   );
+  const markets = useSWR(
+    isMarketplaceListRoute || isMarketplaceDetailRoute ? 'markets-api-banner' : null,
+    () => fetchMarkets(),
+    { refreshInterval: 15_000 }
+  );
+  const apiError = providers.error ?? providerHealth.error ?? markets.error;
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -232,6 +240,8 @@ export function App() {
       >
         <div className="bg-grid" aria-hidden="true" />
 
+        <ApiReadinessBanner error={apiError} />
+
         <AppSidebar
           appTheme={appTheme}
           collapsed={sidebarCollapsed}
@@ -274,13 +284,11 @@ export function App() {
                 />
               ) : isMercenaryRoute ? (
                 <MercenaryPage
-                  apiError={providers.error ?? providerHealth.error}
                   providerHealth={providerHealth.data ?? []}
                   providers={providers.data ?? []}
                 />
               ) : isPlaygroundRoute ? (
                 <PlaygroundPage
-                  apiError={providers.error ?? providerHealth.error}
                   initialModelId={playgroundModelId}
                   mode={playgroundMode}
                   onModeChange={(mode) => navigate('/playground', { mode })}

@@ -67,9 +67,30 @@ test('GET /ready reports public beta readiness gates', async () => {
     });
     assert.equal(response.statusCode, 200);
     assert.equal(response.json().ok, true);
-    assert.equal(Object.keys(response.json()).join(','), 'ok');
+    assert.equal(response.json().gates?.providers, true);
   } finally {
     globalThis.fetch = originalFetch;
+    await app.close();
+  }
+});
+
+test('GET /ready passes settlement gate for production file settlement mode', async () => {
+  const app = createTestApiServer([], {
+    ...process.env,
+    NODE_ENV: 'production',
+    BOSSRAID_SETTLEMENT_MODE: 'file',
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+    BOSSRAID_X402_ENABLED: 'false',
+  });
+
+  try {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/ready',
+    });
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().gates?.settlement, true);
+  } finally {
     await app.close();
   }
 });

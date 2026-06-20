@@ -71,8 +71,46 @@ pre,
   position: relative;
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   min-height: 100dvh;
   width: 100%;
+}
+
+.api-status-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(251, 47, 56, 0.35);
+  background: rgba(251, 47, 56, 0.1);
+  color: var(--text);
+}
+
+.api-status-bar__headline {
+  margin: 0;
+  font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rx-red);
+}
+
+.api-status-bar__message,
+.api-status-bar__hint {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.api-status-bar__hint {
+  color: var(--muted);
+}
+
+.app-frame > .app-sidebar,
+.app-frame > .app-main {
+  grid-row: 2;
 }
 
 .app-frame--directory {

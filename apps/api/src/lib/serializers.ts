@@ -24,6 +24,22 @@ import type {
   TeeAttestationView,
 } from '@bossraid/shared-types';
 
+function serializeProviderSource(
+  source: ProviderProfile['source']
+): ProviderViewResponse['source'] | undefined {
+  if (!source) {
+    return undefined;
+  }
+
+  const targetType = source.targetType?.trim().toLowerCase();
+  const externalRef = source.externalRef?.trim();
+  return {
+    type: source.type,
+    partyQuestAgentId: targetType === 'formation' ? undefined : externalRef,
+    partyQuestFormationId: targetType === 'formation' ? externalRef : undefined,
+  };
+}
+
 export function serializeProviderProfile(
   provider: ProviderProfile,
   options: { includeEndpoint?: boolean } = {}
@@ -54,7 +70,7 @@ export function serializeProviderProfile(
     reputation: provider.reputation,
     scores: provider.scores,
     lastSeenAt: provider.lastSeenAt,
-    source: provider.source,
+    source: serializeProviderSource(provider.source),
     marketplaceOfferStatus: provider.marketplaceOfferStatus ?? 'active',
   };
 }

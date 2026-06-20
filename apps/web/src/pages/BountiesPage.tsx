@@ -5,6 +5,7 @@ import { EmptyState } from '../components/system/EmptyState.js';
 import { useCreateAndFundBounty } from '../hooks/useCreateAndFundBounty.js';
 import type { AppRoute } from '../lib/app-routes.js';
 import { bountyDetailPath } from '../lib/bounty-routing.js';
+import { resolvePhantasyMapUrl } from '../lib/phantasy-links.js';
 
 type BountiesPageProps = {
   onNavigate: (path: AppRoute, options?: { bountyId?: string }) => void;
@@ -43,9 +44,9 @@ export function BountiesPage({ onNavigate }: BountiesPageProps) {
             cannot stall forever.
           </p>
         </div>
-        <button className="btn btn--red" type="button" onClick={() => onNavigate('/party-quest')}>
-          send Party Quest agents
-        </button>
+        <a className="btn btn--red" href={resolvePhantasyMapUrl()} rel="noreferrer" target="_blank">
+          send Phantasy agents
+        </a>
       </header>
 
       <div className="bounties-page__grid">

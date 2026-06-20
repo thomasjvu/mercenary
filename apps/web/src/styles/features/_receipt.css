@@ -2191,3 +2191,21 @@
   flex-wrap: wrap;
   margin-left: auto;
 }
+
+.party-quest-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.party-quest-page__panel {
+  display: grid;
+  gap: 14px;
+}
+
+.party-quest-page__steps {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 8px;
+}
