@@ -78,4 +78,4 @@ process.stdout.write(match?.bootstrapToken || "");
   fi
 done
 
-echo "Done. Run: cd ~/party-quest && npx convex run seed:seedBoss RaidDevelopment"
+echo "Done. Run: cd ~/party-quest && npx convex run seed:seedBossraidDevelopment"

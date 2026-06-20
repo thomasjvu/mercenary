@@ -1,21 +1,21 @@
 #!/usr/bin/env node
 /**
- * Health preflight for Oblivion Party Quest agent registration on Spectre.
+ * Health preflight for Boss Raid Party Quest agent registration on Spectre.
  */
 
 const seedFile =
-  process.env.OBLIVION_RUNTIME_SEED_FILE?.trim() ||
-  `${process.env.HOME}/oblivion-ops/runtime-agent-seed.json`;
+  process.env.BOSSRAID_RUNTIME_SEED_FILE?.trim() ||
+  `${process.env.HOME}/bossraid-ops/runtime-agent-seed.json`;
 const partyQuestUrl =
   process.env.PARTY_QUEST_URL?.trim() || 'https://party-convex-site.phantasy.bot';
 const phantasyAgentRoot =
-  process.env.PHANTASY_AGENT_ROOT?.trim() || `${process.env.HOME}/oblivion-ops/phantasy-agent`;
+  process.env.PHANTASY_AGENT_ROOT?.trim() || `${process.env.HOME}/bossraid-ops/phantasy-agent`;
 
 const ports = [
-  { frameworkId: 'oblivion-phantasy-agent', port: 2100 },
-  { frameworkId: 'oblivion-hermes-agent', port: 2101 },
-  { frameworkId: 'oblivion-openclaw-agent', port: 2102 },
-  { frameworkId: 'oblivion-opencode-agent', port: 2103 },
+  { frameworkId: 'bossraid-phantasy-agent', port: 2200 },
+  { frameworkId: 'bossraid-hermes-agent', port: 2201 },
+  { frameworkId: 'bossraid-openclaw-agent', port: 2202 },
+  { frameworkId: 'bossraid-opencode-agent', port: 2203 },
 ];
 
 async function checkHealth(port) {
@@ -32,7 +32,7 @@ async function checkHealth(port) {
 }
 
 async function main() {
-  console.log('Oblivion Party Quest agent registration preflight');
+  console.log('Boss Raid Party Quest agent registration preflight');
   console.log(`  Party Quest URL: ${partyQuestUrl}`);
   console.log(`  Seed evidence:   ${seedFile}`);
   console.log(`  Phantasy root:   ${phantasyAgentRoot}`);
@@ -55,10 +55,10 @@ async function main() {
 
   console.log('\nRun on Spectre:');
   console.log(
-    `  bash ${process.env.HOME}/oblivion-ops/oblivion/examples/oblivion-development/spectre/register-all-bossraid-agents.sh`,
+    `  bash ${process.env.HOME}/bossraid-ops/mercenary/examples/bossraid-development/spectre/register-all-bossraid-agents.sh`,
   );
   console.log('\nThen re-seed:');
-  console.log('  cd ~/party-quest && npx convex run seed:seedOblivionDevelopment');
+  console.log('  cd ~/party-quest && npx convex run seed:seedBossraidDevelopment');
 }
 
 main().catch((error) => {

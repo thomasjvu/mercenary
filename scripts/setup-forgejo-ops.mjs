@@ -5,17 +5,17 @@
  * Environment:
  *   FORGEJO_TOKEN
  *   FORGEJO_BASE_URL — default https://forgejo.phantasy.bot
- *   FORGEJO_REPO     — default oblivion/oblivion
+ *   FORGEJO_REPO     — default bossraid/mercenary
  *   GITHUB_TOKEN
- *   GITHUB_REPO      — default thomasjvu/oblivion
+ *   GITHUB_REPO      — default thomasjvu/mercenary
  */
 
 const forgejoBase = (process.env.FORGEJO_BASE_URL || 'https://forgejo.phantasy.bot').replace(
   /\/$/,
   '',
 );
-const forgejoRepo = process.env.FORGEJO_REPO || 'oblivion/oblivion';
-const githubRepo = process.env.GITHUB_REPO || 'thomasjvu/oblivion';
+const forgejoRepo = process.env.FORGEJO_REPO || 'bossraid/mercenary';
+const githubRepo = process.env.GITHUB_REPO || 'thomasjvu/mercenary';
 const forgejoToken = process.env.FORGEJO_TOKEN?.trim();
 const githubToken = process.env.GITHUB_TOKEN?.trim();
 
@@ -71,8 +71,8 @@ async function ensureOrg(name) {
     method: 'POST',
     body: JSON.stringify({
       username: name,
-      full_name: 'Oblivion',
-      description: 'Oblivion privacy app — canonical Forgejo org',
+      full_name: 'Boss Raid',
+      description: 'Boss Raid — canonical Forgejo org',
       visibility: 'private',
     }),
   });
@@ -96,7 +96,7 @@ async function ensureRepo(owner, repo) {
       name: repo,
       private: true,
       auto_init: false,
-      default_branch: 'main',
+      default_branch: 'development',
     }),
   });
   return { repo: created, created: true };
