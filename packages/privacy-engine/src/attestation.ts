@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs';
 import http from 'node:http';
 import https from 'node:https';
 import net from 'node:net';
-import { verifyQuoteWithPhalaCloud } from './upstream-tee/quote-verify.js';
+import { verifyIntelQuote, verifyQuoteWithPhalaCloud } from './upstream-tee/quote-verify.js';
 import type {
   PrivacyAttestation,
   PrivacyFeatureKey,
@@ -37,7 +37,11 @@ export interface PhalaTeeAttestationOptions {
   reportData?: string;
   runtimeMode?: string;
   rpcTimeoutMs?: number;
+  getQuoteTimeoutMs?: number;
+  skipCloudVerify?: boolean;
 }
+
+const hostAttestationInFlight = new Map<string, Promise<TeeAttestationResult>>();
 
 type PhalaInfoResponse = {
   app_id?: string;
@@ -72,15 +76,23 @@ async function verifyPhalaTeeAttestation(
     return cached.result;
   }
 
-  const result = await callPhalaAttestationApi(providerId, socketPath, {
-    reportData,
-    runtimeMode: opts.runtimeMode,
-  });
-  if (result.valid) {
-    const expiresAt = now + cacheTtlMs;
-    cache.set(cacheKey, { result, expiresAt });
+  const inFlight = hostAttestationInFlight.get(cacheKey);
+  if (inFlight) {
+    return inFlight;
   }
-  return result;
+
+  const verification = callPhalaAttestationApi(providerId, socketPath, {
+    ...opts,
+    reportData,
+  }).then((result) => {
+    hostAttestationInFlight.delete(cacheKey);
+    if (result.signature) {
+      cache.set(cacheKey, { result, expiresAt: now + cacheTtlMs });
+    }
+    return result;
+  });
+  hostAttestationInFlight.set(cacheKey, verification);
+  return verification;
 }
 
 async function callPhalaAttestationApi(
@@ -90,8 +102,9 @@ async function callPhalaAttestationApi(
 ): Promise<TeeAttestationResult> {
   try {
     const endpoint = resolvePhalaEndpoint(socketPath);
-    const rpcTimeoutMs = opts.rpcTimeoutMs ?? 30_000;
-    const info = await phalaRpc<PhalaInfoResponse>(endpoint, '/Info', {}, rpcTimeoutMs);
+    const infoTimeoutMs = opts.rpcTimeoutMs ?? 30_000;
+    const quoteTimeoutMs = opts.getQuoteTimeoutMs ?? infoTimeoutMs;
+    const info = await phalaRpc<PhalaInfoResponse>(endpoint, '/Info', {}, infoTimeoutMs);
     const reportData = buildReportData(opts.reportData);
     const quote = await phalaRpc<PhalaQuoteResponse>(
       endpoint,
@@ -99,7 +112,7 @@ async function callPhalaAttestationApi(
       {
         report_data: reportData.hex,
       },
-      rpcTimeoutMs
+      quoteTimeoutMs
     );
     if (quote.error) {
       throw new Error(quote.error);
@@ -107,7 +120,9 @@ async function callPhalaAttestationApi(
     if (!quote.quote) {
       throw new Error('Phala dstack did not return a TDX quote.');
     }
-    const verification = await verifyQuoteWithPhalaCloud(quote.quote);
+    const verification = opts.skipCloudVerify
+      ? verifyIntelQuote(quote.quote)
+      : await verifyQuoteWithPhalaCloud(quote.quote);
     const verifiedAt = new Date().toISOString();
     const runtimeMode =
       opts.runtimeMode || process.env.BOSSRAID_TEE_RUNTIME_MODE || DEFAULT_RUNTIME_MODE;
@@ -124,7 +139,13 @@ async function callPhalaAttestationApi(
       signature: quote.quote,
       notes: [
         'phala-dstack-tdx-quote',
-        verification.passed ? 'phala-cloud-verified' : 'phala-cloud-unverified',
+        opts.skipCloudVerify
+          ? verification.passed
+            ? 'tdx-quote-structural-verified'
+            : 'tdx-quote-structural-unverified'
+          : verification.passed
+            ? 'phala-cloud-verified'
+            : 'phala-cloud-unverified',
         `endpoint:${redactEndpoint(endpoint)}`,
         ...(info.app_id ? [`app_id:${info.app_id}`] : []),
         ...(info.instance_id ? [`instance_id:${info.instance_id}`] : []),

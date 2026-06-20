@@ -11,8 +11,9 @@ import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../handlers/index.js';
 
 const HOST_ATTESTATION_CACHE_TTL_MS = 10 * 60 * 1000;
-const HOST_TEE_VERIFY_TIMEOUT_MS = 75_000;
-const HOST_TEE_RPC_TIMEOUT_MS = 20_000;
+const HOST_TEE_VERIFY_TIMEOUT_MS = 70_000;
+const HOST_TEE_INFO_TIMEOUT_MS = 10_000;
+const HOST_TEE_GET_QUOTE_TIMEOUT_MS = 55_000;
 const hostAttestationCache = new Map<string, { expiresAt: number; result: TeeAttestationResult }>();
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
@@ -72,6 +73,30 @@ function serializeTeeAttestation(tee: TeeAttestationResult): TeeAttestationView 
   };
 }
 
+function warmupHostTeeAttestation(
+  env: ApiContext['env'],
+  teeSocketPath: string,
+  teeSocket: { pathExists: boolean; socketMounted: boolean }
+): void {
+  if (env.BOSSRAID_TEE_PLATFORM !== 'phala' || !teeSocket.pathExists || !teeSocket.socketMounted) {
+    return;
+  }
+
+  void verifyPhalaTeeAttestation(
+    'bossraid-host',
+    teeSocketPath,
+    hostAttestationCache,
+    HOST_ATTESTATION_CACHE_TTL_MS,
+    {
+      reportData: 'bossraid-host',
+      runtimeMode: env.BOSSRAID_TEE_RUNTIME_MODE ?? 'phala-cvm',
+      rpcTimeoutMs: HOST_TEE_INFO_TIMEOUT_MS,
+      getQuoteTimeoutMs: HOST_TEE_GET_QUOTE_TIMEOUT_MS,
+      skipCloudVerify: true,
+    }
+  ).catch(() => undefined);
+}
+
 export function registerHostAttestationRoutes(
   app: FastifyInstance,
   ctx: ApiContext,
@@ -80,6 +105,11 @@ export function registerHostAttestationRoutes(
   const { env, orchestrator, teeSigner, workerIsolation } = ctx;
   const { collectProviderHealth } = handlers.raid;
   const { requireRateLimit } = handlers.auth;
+  const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/tappd.sock';
+
+  void readTeeSocketState(teeSocketPath).then((teeSocket) => {
+    warmupHostTeeAttestation(env, teeSocketPath, teeSocket);
+  });
 
   app.get('/v1/host/attestation', async (request, reply) => {
     const rateLimitError = requireRateLimit(
@@ -95,7 +125,6 @@ export function registerHostAttestationRoutes(
 
     const teePlatform = env.BOSSRAID_TEE_PLATFORM ?? null;
     const deploymentTarget = env.BOSSRAID_DEPLOY_TARGET ?? null;
-    const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/tappd.sock';
     const teeSocket = await readTeeSocketState(teeSocketPath);
 
     let teeAttestation: TeeAttestationResult | undefined;
@@ -111,7 +140,9 @@ export function registerHostAttestationRoutes(
             {
               reportData: 'bossraid-host',
               runtimeMode: env.BOSSRAID_TEE_RUNTIME_MODE ?? 'phala-cvm',
-              rpcTimeoutMs: HOST_TEE_RPC_TIMEOUT_MS,
+              rpcTimeoutMs: HOST_TEE_INFO_TIMEOUT_MS,
+              getQuoteTimeoutMs: HOST_TEE_GET_QUOTE_TIMEOUT_MS,
+              skipCloudVerify: true,
             }
           ),
           HOST_TEE_VERIFY_TIMEOUT_MS,
