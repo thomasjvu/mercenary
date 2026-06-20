@@ -1,0 +1,89 @@
+# Host-side Boss Raid agent runtimes for Spectre.
+# Copy to ~/bossraid-ops/docker-compose.agents.yml
+
+name: bossraid-agents
+
+services:
+  phantasy-marketing:
+    image: node:22-bookworm
+    restart: unless-stopped
+    working_dir: /opt/phantasy-agent
+    network_mode: host
+    volumes:
+      - ${PHANTASY_AGENT_ROOT:-~/bossraid-ops/phantasy-agent}:/opt/phantasy-agent:ro
+      - ${BOSSRAID_REPO:-~/bossraid-ops/mercenary}:/opt/mercenary:rw
+      - ${BOSSRAID_WORKSPACES:-~/bossraid-ops/workspaces}/phantasy:/opt/workspace:rw
+    env_file:
+      - ${BOSSRAID_WORKSPACES:-~/bossraid-ops/workspaces}/env/bossraid-marketing.env
+    environment:
+      PORT: "2200"
+      AGENT_ID: bossraid-marketing
+      AGENT_FRAMEWORK_URL: http://127.0.0.1:2200
+      PARTY_QUEST_URL: https://party-convex-site.phantasy.bot
+      PARTY_QUEST_ENABLE_ASSIGNMENTS: "true"
+      PARTY_QUEST_AUTO_RUN_WORKFLOWS: "true"
+      FORGEJO_BASE_URL: https://forgejo.phantasy.bot
+    command: ["npm", "run", "start"]
+
+  hermes-research:
+    image: node:22-bookworm
+    restart: unless-stopped
+    working_dir: /opt/phantasy-agent
+    network_mode: host
+    volumes:
+      - ${PHANTASY_AGENT_ROOT:-~/bossraid-ops/phantasy-agent}:/opt/phantasy-agent:ro
+      - ${BOSSRAID_REPO:-~/bossraid-ops/mercenary}:/opt/mercenary:rw
+      - ${BOSSRAID_WORKSPACES:-~/bossraid-ops/workspaces}/hermes:/opt/workspace:rw
+    env_file:
+      - ${BOSSRAID_WORKSPACES:-~/bossraid-ops/workspaces}/env/bossraid-research.env
+    environment:
+      PORT: "2201"
+      AGENT_ID: bossraid-research
+      AGENT_FRAMEWORK_URL: http://127.0.0.1:2201
+      PARTY_QUEST_URL: https://party-convex-site.phantasy.bot
+      PARTY_QUEST_ENABLE_ASSIGNMENTS: "true"
+      PARTY_QUEST_AUTO_RUN_WORKFLOWS: "true"
+      FORGEJO_BASE_URL: https://forgejo.phantasy.bot
+    command: ["npm", "run", "start"]
+
+  openclaw-debug:
+    image: node:22-bookworm
+    restart: unless-stopped
+    working_dir: /opt/phantasy-agent
+    network_mode: host
+    volumes:
+      - ${PHANTASY_AGENT_ROOT:-~/bossraid-ops/phantasy-agent}:/opt/phantasy-agent:ro
+      - ${BOSSRAID_REPO:-~/bossraid-ops/mercenary}:/opt/mercenary:rw
+      - ${BOSSRAID_WORKSPACES:-~/bossraid-ops/workspaces}/openclaw:/opt/workspace:rw
+    env_file:
+      - ${BOSSRAID_WORKSPACES:-~/bossraid-ops/workspaces}/env/bossraid-debug.env
+    environment:
+      PORT: "2202"
+      AGENT_ID: bossraid-debug
+      AGENT_FRAMEWORK_URL: http://127.0.0.1:2202
+      PARTY_QUEST_URL: https://party-convex-site.phantasy.bot
+      PARTY_QUEST_ENABLE_ASSIGNMENTS: "true"
+      PARTY_QUEST_AUTO_RUN_WORKFLOWS: "true"
+      FORGEJO_BASE_URL: https://forgejo.phantasy.bot
+    command: ["npm", "run", "start"]
+
+  opencode-code:
+    image: node:22-bookworm
+    restart: unless-stopped
+    working_dir: /opt/phantasy-agent
+    network_mode: host
+    volumes:
+      - ${PHANTASY_AGENT_ROOT:-~/bossraid-ops/phantasy-agent}:/opt/phantasy-agent:ro
+      - ${BOSSRAID_REPO:-~/bossraid-ops/mercenary}:/opt/mercenary:rw
+      - ${BOSSRAID_WORKSPACES:-~/bossraid-ops/workspaces}/opencode:/opt/workspace:rw
+    env_file:
+      - ${BOSSRAID_WORKSPACES:-~/bossraid-ops/workspaces}/env/bossraid-code.env
+    environment:
+      PORT: "2203"
+      AGENT_ID: bossraid-code
+      AGENT_FRAMEWORK_URL: http://127.0.0.1:2203
+      PARTY_QUEST_URL: https://party-convex-site.phantasy.bot
+      PARTY_QUEST_ENABLE_ASSIGNMENTS: "true"
+      PARTY_QUEST_AUTO_RUN_WORKFLOWS: "true"
+      FORGEJO_BASE_URL: https://forgejo.phantasy.bot
+    command: ["npm", "run", "start"]

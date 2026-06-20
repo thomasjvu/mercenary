@@ -1,0 +1,15 @@
+{
+  "id": "bossraid-code",
+  "name": "Boss Raid Code",
+  "frameworkType": "opencode",
+  "engineKind": "workspace-runtime",
+  "status": "experimental-live-adapter",
+  "capabilities": ["task-routing", "coding", "source-control"],
+  "transport": "callback",
+  "metadata": {
+    "campaign": "bossraid-development",
+    "squad": "code",
+    "repoPath": "~/bossraid-ops/mercenary",
+    "partyQuestAgentFrameworkId": "bossraid-opencode-agent"
+  }
+}
