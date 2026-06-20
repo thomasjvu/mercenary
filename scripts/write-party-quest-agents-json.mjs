@@ -16,10 +16,10 @@ const seedPath = readArg('--seed');
 const outPath = readArg('--out');
 
 const FRAMEWORK_TO_AGENT = {
-  'oblivion-phantasy-agent': 'oblivion-marketing',
-  'oblivion-hermes-agent': 'oblivion-research',
-  'oblivion-openclaw-agent': 'oblivion-debug',
-  'oblivion-opencode-agent': 'oblivion-code',
+  'bossraid-phantasy-agent': 'bossraid-marketing',
+  'bossraid-hermes-agent': 'bossraid-research',
+  'bossraid-openclaw-agent': 'bossraid-debug',
+  'bossraid-opencode-agent': 'bossraid-code',
 };
 
 function readArg(flag) {
