@@ -213,6 +213,7 @@ test('admin evaluator smoke route returns 503 when runtime execution is disabled
 
 test('attested runtime route returns 503 when no TEE mnemonic is configured', async () => {
   const app = createTestApiServer([], {
+    BOSSRAID_ADMIN_TOKEN: 'admin-secret',
     BOSSRAID_DEPLOY_TARGET: 'eigencompute',
     BOSSRAID_TEE_PLATFORM: 'eigencompute',
   });
@@ -221,6 +222,9 @@ test('attested runtime route returns 503 when no TEE mnemonic is configured', as
     const response = await app.inject({
       method: 'GET',
       url: '/v1/attested-runtime',
+      headers: {
+        authorization: 'Bearer admin-secret',
+      },
     });
 
     assert.equal(response.statusCode, 503);
@@ -235,6 +239,7 @@ test('attested runtime route returns 503 when no TEE mnemonic is configured', as
 
 test('attested runtime route signs runtime state with the TEE wallet', async () => {
   const app = createTestApiServer([], {
+    BOSSRAID_ADMIN_TOKEN: 'admin-secret',
     BOSSRAID_DEPLOY_TARGET: 'eigencompute',
     BOSSRAID_TEE_PLATFORM: 'eigencompute',
     BOSSRAID_EVAL_RUNTIME_EXECUTION: 'true',
@@ -247,6 +252,9 @@ test('attested runtime route signs runtime state with the TEE wallet', async () 
     const response = await app.inject({
       method: 'GET',
       url: '/v1/attested-runtime',
+      headers: {
+        authorization: 'Bearer admin-secret',
+      },
     });
 
     assert.equal(response.statusCode, 200);

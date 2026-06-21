@@ -331,6 +331,56 @@ Findings **033–037** implemented at `e204b19` base. Verified: `pnpm check`, `p
 | 181 | Prefer-mode privacy invalidation  | Needs product contract (was 04) |
 | 184 | Onchain executor behavioral depth | Carry-forward 027               |
 
+## Thirteenth-pass audit (2026-06-21)
+
+Base commit: **`783eadf`**. Prior plans **001–037** remain DONE.
+
+User selection: **default top 5 by leverage** (non-interactive `/improve`).
+
+| Plan | Title                                                    | Priority | Effort | Depends on | Status |
+| ---- | -------------------------------------------------------- | -------- | ------ | ---------- | ------ |
+| 038  | Align Forgejo CI with GitHub verification                | P1       | S      | —          | DONE   |
+| 039  | Track pending settlement after initial failure           | P1       | S      | —          | DONE   |
+| 040  | Extend tee claimed to seller and proof-ui                | P1       | S      | 037        | DONE   |
+| 041  | Route remaining API tests through settlement-off harness | P1       | S      | 023        | DONE   |
+| 042  | Unify mercenary session SWR cache key                    | P2       | S      | —          | DONE   |
+
+### Dependency notes (thirteenth pass)
+
+- **041** follows **023** — same `buildTestApiServer` pattern for remaining API tests.
+- **040** follows **037** — completes tee claimed rollout on seller/proof surfaces.
+- **039** is money-path correctness; independent of executor depth (184).
+
+### Thirteenth-pass execution (2026-06-21)
+
+Findings **038–042** implemented at `783eadf` base. Verified: `pnpm check`, `pnpm lint`,
+`pnpm --filter @bossraid/api test`, `pnpm --filter @bossraid/orchestrator test`,
+`pnpm --filter @bossraid/proof-ui test`, `pnpm --filter @bossraid/web test`.
+
+### Thirteenth-pass findings (vetted, prioritized)
+
+| #   | Finding                                               | Category    | Impact | Effort | Risk | Evidence confidence  |
+| --- | ----------------------------------------------------- | ----------- | ------ | ------ | ---- | -------------------- |
+| 185 | Forgejo CI weaker audit + missing smoke jobs          | dx          | MED    | S      | LOW  | HIGH → Plan 038      |
+| 186 | Settlement failure not queued for in-process retry    | correctness | HIGH   | S      | MED  | HIGH → Plan 039      |
+| 187 | ModelPicker + proof-ui still show implied tee verify  | security    | MED    | S      | LOW  | HIGH → Plan 040      |
+| 188 | API tests bypass settlement-off harness               | tests       | HIGH   | S      | LOW  | HIGH → Plan 041      |
+| 189 | Mercenary double-fetches session (SWR key mismatch)   | perf        | LOW    | S      | LOW  | HIGH → Plan 042      |
+| 178 | `useWalletAuth` statically pulls viem/smart-pay       | perf        | MED    | M      | MED  | HIGH — deferred      |
+| 181 | Prefer-mode privacy ranking uses profile scores       | correctness | MED    | M      | MED  | HIGH — deferred      |
+| 182 | Attestation inspector cached verify as live           | correctness | MED    | M      | MED  | HIGH — deferred      |
+| 183 | `test:money-path` allowlist omissions                 | tests       | MED    | S      | LOW  | HIGH — deferred      |
+| 184 | Onchain executor `execute()` still untested           | tests       | MED    | L      | MED  | HIGH — carry-forward |
+| 190 | proof-ui / docs stale MNEMONIC tier + /ready contract | docs        | MED    | S      | LOW  | HIGH — deferred      |
+| 191 | Docs architecture tests not wired to CI               | tests       | MED    | S      | LOW  | HIGH — deferred      |
+| 192 | `test:attestation` omits tee/serializer API tests     | tests       | LOW    | S      | LOW  | HIGH — deferred      |
+
+### Direction (thirteenth pass)
+
+- **DIR-02**: Extend `export:proof-bundle` with host/upstream attestation artifacts.
+- **DIR-03**: Attestation events in `agent_log.json` timeline.
+- **TECH-01**: Decouple proof-bundle script from `apps/api` internals.
+
 ## Tenth-pass audit (2026-06-21)
 
 Base commit: **`4ed256f`** (`feat(attestation): implement plans 013-021`). Prior plans **001–021** remain DONE.
@@ -388,6 +438,11 @@ User selection: **default top 5 by leverage** (non-interactive `/improve`).
 
 ## Findings considered and rejected
 
+- **Thirteenth-pass CORRECTNESS-06** (swallowed finalize errors): valid observability gap but lower leverage than 039 settlement retry queue; defer paired hardening.
+- **Thirteenth-pass SECURITY-04** (marketplace trust filters): product scope beyond plan 040 copy fix; needs filter UX design.
+- **Thirteenth-pass CORRECTNESS-03** (prefer docs vs scoring): overlaps deferred 181; requires product sign-off before code or doc change.
+- **Thirteenth-pass PERF-01/02** (duplicate CI tests, turbo `^test` dep): CI duration optimization; not auto-planned until CI time becomes blocking.
+- **Thirteenth-pass DOCS-01** (`/ready` slim vs full): still requires product choice (rejected prior passes).
 - **Twelfth-pass CORRECTNESS-01 / prefer-mode privacy**: same product question as rejected CORRECTNESS-04 — `prefer` may intentionally soft-fail at dispatch; no plan until product confirms strict invalidation for `requirePrivacyFeatures`.
 - **Twelfth-pass DOCS-01** (`/ready` slim vs full): still requires product choice; plan 007 marked DONE but full response retained for web mercenary gating.
 - **Twelfth-pass SECURITY-03** (web duplicate `HostAttestationResponse` types): valid consolidation, lower leverage than trust UX plans 033/037.

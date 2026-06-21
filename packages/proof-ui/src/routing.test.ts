@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildRoutingDecisionSummary } from './routing.js';
+import { buildProviderProofNote, buildRoutingDecisionSummary } from './routing.js';
 
 test('buildRoutingDecisionSummary includes phase, workstream, and privacy signals', () => {
   const summary = buildRoutingDecisionSummary({
@@ -20,6 +20,15 @@ test('buildRoutingDecisionSummary includes phase, workstream, and privacy signal
   assert.match(summary, /venice/);
   assert.match(summary, /trust 82/);
   assert.match(summary, /why venice private lane \/ specialization match/);
+});
+
+test('buildProviderProofNote labels profile tee flags as claimed', () => {
+  const note = buildProviderProofNote(undefined, {
+    privacy: { teeAttested: true },
+  });
+
+  assert.match(note, /tee claimed/);
+  assert.doesNotMatch(note, /tee attested/);
 });
 
 test('buildRoutingDecisionSummary falls back to root raid label', () => {

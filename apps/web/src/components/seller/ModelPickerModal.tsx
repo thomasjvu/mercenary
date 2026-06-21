@@ -1,6 +1,8 @@
 import type { UpstreamProviderId } from '@bossraid/constants';
 import { upstreamProviderLabel, type UpstreamCatalogModel } from '../../api/seller-upstream.js';
 import { useModelPickerModal } from '../../hooks/useModelPickerModal.js';
+import { resolveTeeTrustLevel } from '../../lib/tee-trust-badge.js';
+import { TeeTrustBadge } from '../trust/TeeTrustBadge.js';
 import { FormInput } from '../system/FormField.js';
 
 type ModelPickerModalProps = {
@@ -85,9 +87,9 @@ export function ModelPickerModal({
                 <span className="seller-model-card__title">{model.displayName}</span>
                 <span className="seller-model-card__meta">{model.modelId}</span>
                 <span className="seller-model-card__badges">
-                  {model.teeAttested ? (
-                    <span className="trust-badge trust-badge--tee">tee</span>
-                  ) : null}
+                  <TeeTrustBadge
+                    level={resolveTeeTrustLevel({ catalogTeeAttested: model.teeAttested })}
+                  />
                   {model.e2ee ? <span className="trust-badge trust-badge--e2ee">e2ee</span> : null}
                 </span>
                 <span className="seller-model-card__meta">

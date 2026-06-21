@@ -16,6 +16,7 @@ import {
 import type { ProviderHealthStatus, ProviderProfile } from '@bossraid/shared-types';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
+import { clearEphemeralRateLimitsForTests } from '../control-state/ephemeral-rate-limits.js';
 import { buildApiServer } from '../index.js';
 import { BountyService, readBountyServiceConfig } from '../lib/bounty-service.js';
 import { BountyStore } from '../lib/bounty-store.js';
@@ -296,4 +297,4 @@ export async function createTestBountyService(options?: {
   return { service, store, dir };
 }
 
-export { buildApiServer, mkdtemp, readFile, rm, join, tmpdir };
+export { buildApiServer, clearEphemeralRateLimitsForTests, mkdtemp, readFile, rm, join, tmpdir };

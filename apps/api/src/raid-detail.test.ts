@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-types';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
-import { buildApiServer } from './index.js';
+import { buildTestApiServer } from './test/helpers.js';
 import {
   createTestOrchestrator,
   createProviderProfile,
@@ -47,7 +47,7 @@ test('public manifest route describes Mercenary and the native raid flow', async
     undefined,
     async (profile) => readyHealth(profile.providerId)
   );
-  const app = buildApiServer(orchestrator, {
+  const app = buildTestApiServer(orchestrator, {
     BOSSRAID_ERC8004_AGENT_ID: 'mercenary-mainnet-8004',
     BOSSRAID_ERC8004_OPERATOR_WALLET: '0x00000000000000000000000000000000000000aa',
     BOSSRAID_ERC8004_REGISTRATION_TX: '0xregmercenary',
@@ -168,7 +168,7 @@ test('per-raid agent log route accepts the raid access token as a query paramete
       host: 'codex',
     },
   });
-  const app = buildApiServer(orchestrator, {});
+  const app = buildTestApiServer(orchestrator, {});
 
   try {
     const response = await app.inject({
@@ -305,7 +305,7 @@ test('raid result exposes ERC-8183-aligned settlement proof data', async () => {
     transactionHashes: ['0xsettlementtx'],
     jobIds: ['1'],
   };
-  const app = buildApiServer(orchestrator, {});
+  const app = buildTestApiServer(orchestrator, {});
 
   try {
     const response = await app.inject({

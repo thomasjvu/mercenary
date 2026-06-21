@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
-import { fetchSession, updateBuyerApiKey } from '../api/auth.js';
+import { fetchSession, SESSION_SWR_KEY, updateBuyerApiKey } from '../api/auth.js';
 import {
   getSavedBuyerApiKey,
   listSavedBuyerApiKeys,
@@ -22,7 +22,7 @@ export type MercenaryPaymentKeyOption = {
 };
 
 export function useMercenaryPayment() {
-  const session = useSWR('/v1/session', fetchSession);
+  const session = useSWR(SESSION_SWR_KEY, fetchSession);
   const [savedApiKeys, setSavedApiKeys] = useState<readonly SavedBuyerApiKey[]>([]);
   const [selectedApiKeyId, setSelectedApiKeyId] = useState('');
   const [spendLimitDraft, setSpendLimitDraft] = useState(String(MIN_KEY_BUDGET_USD));

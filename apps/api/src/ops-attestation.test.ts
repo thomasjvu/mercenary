@@ -5,7 +5,7 @@ import { mnemonicToAccount } from 'viem/accounts';
 import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-types';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
-import { buildApiServer } from './index.js';
+import { buildTestApiServer } from './test/helpers.js';
 import {
   createProviderProfile,
   hashText,
@@ -73,7 +73,7 @@ test('attested raid result route requires the raid token and a configured TEE si
       host: 'codex',
     },
   });
-  const app = buildApiServer(orchestrator, {
+  const app = buildTestApiServer(orchestrator, {
     BOSSRAID_DEPLOY_TARGET: 'eigencompute',
     BOSSRAID_TEE_PLATFORM: 'eigencompute',
   });
@@ -157,7 +157,7 @@ test('attested raid result route signs the raid result with the TEE wallet', asy
       host: 'codex',
     },
   });
-  const app = buildApiServer(orchestrator, {
+  const app = buildTestApiServer(orchestrator, {
     BOSSRAID_DEPLOY_TARGET: 'eigencompute',
     BOSSRAID_TEE_PLATFORM: 'eigencompute',
     BOSSRAID_EVAL_RUNTIME_EXECUTION: 'true',

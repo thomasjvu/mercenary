@@ -13,6 +13,10 @@ function pruneExpired(nowMs: number): void {
   }
 }
 
+export function clearEphemeralRateLimitsForTests(): void {
+  rateLimitEntries.clear();
+}
+
 export function consumeEphemeralRateLimit(
   bucket: string,
   key: string,

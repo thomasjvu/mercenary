@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-types';
 import {
+  clearEphemeralRateLimitsForTests,
   createTestApiServer,
   createProviderProfile,
   createRaidRequestBody,
@@ -10,6 +11,7 @@ import {
 } from './test/helpers.js';
 
 test('public raid spawn is rate limited before orchestration work runs', async () => {
+  clearEphemeralRateLimitsForTests();
   const app = createTestApiServer([], {
     BOSSRAID_PUBLIC_RATE_LIMIT_MAX: '1',
     BOSSRAID_PUBLIC_RATE_LIMIT_WINDOW_MS: '60000',
@@ -37,6 +39,7 @@ test('public raid spawn is rate limited before orchestration work runs', async (
 });
 
 test('public rate limiting ignores spoofed forwarded headers unless trustProxy is enabled', async () => {
+  clearEphemeralRateLimitsForTests();
   const app = createTestApiServer([], {
     BOSSRAID_PUBLIC_RATE_LIMIT_MAX: '1',
     BOSSRAID_PUBLIC_RATE_LIMIT_WINDOW_MS: '60000',

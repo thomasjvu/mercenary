@@ -68,7 +68,7 @@ test('seller self-serve registration verifies providers and adds them to marketp
     });
     assert.equal(registered.statusCode, 201);
     assert.equal(registered.json().provider.verification.status, 'verified');
-    assert.equal(registered.json().provider.source.externalRef, session.wallet.toLowerCase());
+    assert.equal(registered.json().provider.source.partyQuestAgentId, session.wallet.toLowerCase());
 
     const sellerProviders = await app.inject({
       method: 'GET',

@@ -3,8 +3,8 @@ import test from 'node:test';
 import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-types';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
-import { buildApiServer } from './index.js';
 import {
+  buildTestApiServer,
   createTestApiServer,
   createProviderProfile,
   createPublicSessionCookie,
@@ -13,7 +13,6 @@ import {
   encodeBase64Json,
   installMockX402Facilitator,
   readyHealth,
-  wrapMercenaryTestInject,
 } from './test/helpers.js';
 
 test('POST /v1/chat/completions records escrow funding on the raid when x402 is enabled', async () => {
@@ -46,14 +45,12 @@ test('POST /v1/chat/completions records escrow funding on the raid when x402 is 
     undefined,
     async (profile) => readyHealth(profile.providerId)
   );
-  const app = wrapMercenaryTestInject(
-    buildApiServer(orchestrator, {
-      ...process.env,
-      BOSSRAID_STORAGE_BACKEND: 'memory',
-      BOSSRAID_X402_ENABLED: 'true',
-      BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: '5',
-    })
-  );
+  const app = buildTestApiServer(orchestrator, {
+    ...process.env,
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+    BOSSRAID_X402_ENABLED: 'true',
+    BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: '5',
+  });
 
   try {
     const session = await createPublicSessionCookie(app, 9);
@@ -98,13 +95,11 @@ test('x402 returns a payment challenge before paid routes execute', async () => 
   };
 
   const facilitator = installMockX402Facilitator();
-  const app = wrapMercenaryTestInject(
-    buildApiServer(
-      new BossRaidOrchestrator([provider], {}, undefined, undefined, async (profile) =>
-        readyHealth(profile.providerId)
-      ),
-      createX402PaidTestEnv()
-    )
+  const app = buildTestApiServer(
+    new BossRaidOrchestrator([provider], {}, undefined, undefined, async (profile) =>
+      readyHealth(profile.providerId)
+    ),
+    createX402PaidTestEnv()
   );
 
   try {
@@ -171,13 +166,11 @@ test('x402 reservations hold provider capacity until payment completes', async (
   };
 
   const facilitator = installMockX402Facilitator();
-  const app = wrapMercenaryTestInject(
-    buildApiServer(
-      new BossRaidOrchestrator([provider], {}, undefined, undefined, async (profile) =>
-        readyHealth(profile.providerId)
-      ),
-      createX402PaidTestEnv()
-    )
+  const app = buildTestApiServer(
+    new BossRaidOrchestrator([provider], {}, undefined, undefined, async (profile) =>
+      readyHealth(profile.providerId)
+    ),
+    createX402PaidTestEnv()
   );
 
   try {
@@ -241,13 +234,11 @@ test('paid x402 requests require the launch reservation header or equivalent pay
     },
   };
 
-  const app = wrapMercenaryTestInject(
-    buildApiServer(
-      new BossRaidOrchestrator([provider], {}, undefined, undefined, async (profile) =>
-        readyHealth(profile.providerId)
-      ),
-      createX402PaidTestEnv()
-    )
+  const app = buildTestApiServer(
+    new BossRaidOrchestrator([provider], {}, undefined, undefined, async (profile) =>
+      readyHealth(profile.providerId)
+    ),
+    createX402PaidTestEnv()
   );
 
   try {
@@ -335,19 +326,17 @@ test('x402 inference routes to the cheapest seller after payment', async () => {
     },
   };
   const facilitator = installMockX402Facilitator();
-  const app = wrapMercenaryTestInject(
-    buildApiServer(
-      new BossRaidOrchestrator(
-        [expensiveProvider, cheapProvider],
-        undefined,
-        undefined,
-        undefined,
-        async (profile) => readyHealth(profile.providerId)
-      ),
-      createX402PaidTestEnv({
-        BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: '5',
-      })
-    )
+  const app = buildTestApiServer(
+    new BossRaidOrchestrator(
+      [expensiveProvider, cheapProvider],
+      undefined,
+      undefined,
+      undefined,
+      async (profile) => readyHealth(profile.providerId)
+    ),
+    createX402PaidTestEnv({
+      BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: '5',
+    })
   );
 
   try {
@@ -406,13 +395,11 @@ test('x402 native spawn route charges against the requested budget', async () =>
     },
   };
 
-  const app = wrapMercenaryTestInject(
-    buildApiServer(
-      new BossRaidOrchestrator([provider], {}, undefined, undefined, async (profile) =>
-        readyHealth(profile.providerId)
-      ),
-      createX402PaidTestEnv()
-    )
+  const app = buildTestApiServer(
+    new BossRaidOrchestrator([provider], {}, undefined, undefined, async (profile) =>
+      readyHealth(profile.providerId)
+    ),
+    createX402PaidTestEnv()
   );
 
   try {

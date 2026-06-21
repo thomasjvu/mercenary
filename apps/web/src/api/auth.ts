@@ -15,6 +15,8 @@ export type ApiKeyCreateResponse = ApiKeyCreateResponseView;
 export type SellerProviderCreateResponse = SellerProviderCreateResponseView;
 export type SellerEarnings = SellerEarningsView;
 
+export const SESSION_SWR_KEY = 'wallet-session' as const;
+
 export async function createAuthNonce(wallet: string): Promise<AuthNonceResponse> {
   return fetchJson<AuthNonceResponse>('/v1/auth/nonce', {
     method: 'POST',

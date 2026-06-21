@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-types';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
-import { buildApiServer } from './index.js';
+import { buildTestApiServer } from './test/helpers.js';
 import {
   createTestApiServer,
   createProviderProfile,
@@ -157,7 +157,7 @@ test('raid status and result require the issued raid access token', async () => 
       host: 'codex',
     },
   });
-  const app = buildApiServer(orchestrator, {
+  const app = buildTestApiServer(orchestrator, {
     BOSSRAID_ADMIN_TOKEN: 'admin-secret',
   });
 

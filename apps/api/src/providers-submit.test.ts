@@ -4,7 +4,7 @@ import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-t
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import { NETWORK } from '@bossraid/constants';
-import { buildApiServer } from './index.js';
+import { buildTestApiServer } from './test/helpers.js';
 import {
   createTestOrchestrator,
   createProviderProfile,
@@ -70,7 +70,7 @@ test('provider submit requires the active providerRunId', async () => {
       'run-alpha'
   );
 
-  const app = buildApiServer(orchestrator);
+  const app = buildTestApiServer(orchestrator);
 
   try {
     const missingRunId = await app.inject({
@@ -171,7 +171,7 @@ test('provider callbacks accept custom bearer header names', async () => {
       'run-custom'
   );
 
-  const app = buildApiServer(orchestrator);
+  const app = buildTestApiServer(orchestrator);
 
   try {
     const response = await app.inject({
@@ -256,7 +256,7 @@ test('provider submissions accept larger artifact callbacks than the public API 
       'run-large-submit'
   );
 
-  const app = buildApiServer(orchestrator, {
+  const app = buildTestApiServer(orchestrator, {
     BOSSRAID_API_BODY_LIMIT_BYTES: '512',
   });
 

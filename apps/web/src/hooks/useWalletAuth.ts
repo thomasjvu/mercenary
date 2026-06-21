@@ -5,12 +5,13 @@ import {
   deleteSession,
   fetchSession,
   verifyAuth,
+  SESSION_SWR_KEY,
   type PublicSession,
 } from '../api';
 import { connectWalletForAuth, formatWalletError } from '../lib/ethereum-provider.js';
 
 export function useWalletAuth(initialStatus: string) {
-  const session = useSWR('wallet-session', fetchSession, { revalidateOnFocus: true });
+  const session = useSWR(SESSION_SWR_KEY, fetchSession, { revalidateOnFocus: true });
   const [status, setStatus] = useState(initialStatus);
 
   useEffect(() => {

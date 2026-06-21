@@ -119,7 +119,7 @@ export function buildProviderProofNote(
     (decision?.veniceBacked ?? (provider ? isVeniceProvider(provider) : false)) ? 'venice' : null,
     privacyFeatures.has('no_data_retention') ? 'no-retention' : null,
     privacyFeatures.has('signed_outputs') ? 'signed outputs' : null,
-    privacyFeatures.has('tee_attested') ? 'tee attested' : null,
+    privacyFeatures.has('tee_attested') ? 'tee claimed' : null,
   ].filter((value): value is string => value != null);
 
   return parts.join(' · ');

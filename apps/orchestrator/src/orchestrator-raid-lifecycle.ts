@@ -473,6 +473,12 @@ export class RaidLifecycleCoordinator {
       } else {
         this.untrackPendingSettlement(raidId);
       }
+    } catch (error) {
+      const raid = this.raids.get(raidId);
+      if (raid && shouldRunSettlement(raid)) {
+        this.trackPendingSettlement(raidId);
+      }
+      throw error;
     } finally {
       this.raidDeadlineTimers.unmarkSettling(raidId);
     }

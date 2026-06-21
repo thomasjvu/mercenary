@@ -4,17 +4,32 @@ import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-t
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import { NETWORK } from '@bossraid/constants';
-import { buildApiServer } from './index.js';
+import { buildTestApiServer } from './test/helpers.js';
 import {
   createTestApiServer,
   createProviderProfile,
   createRaidRequestBody,
   readyHealth,
   waitFor,
-  wrapMercenaryTestInject,
 } from './test/helpers.js';
 
 test('registry write routes require the configured registry token', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        ready: true,
+        agentFramework: 'codex',
+        modelProvider: 'openai',
+        model: 'gpt-5.5',
+      }),
+      {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      }
+    );
   const app = createTestApiServer([], {
     BOSSRAID_REGISTRY_TOKEN: 'registry-secret',
   });
@@ -48,6 +63,7 @@ test('registry write routes require the configured registry token', async () => 
     assert.equal(authorized.statusCode, 200);
     assert.equal(authorized.json().providerId, 'secure-review-01');
   } finally {
+    globalThis.fetch = originalFetch;
     await app.close();
   }
 });
@@ -171,7 +187,7 @@ test('public provider routes strip auth material and private diagnostics', async
       error: 'missing model key',
     })
   );
-  const app = buildApiServer(orchestrator);
+  const app = buildTestApiServer(orchestrator);
 
   try {
     const providersResponse = await app.inject({
@@ -254,7 +270,7 @@ test('discover only returns providers that pass live readiness checks', async ()
             missing: ['BOSSRAID_MODEL'],
           }
   );
-  const app = buildApiServer(orchestrator);
+  const app = buildTestApiServer(orchestrator);
 
   try {
     const response = await app.inject({
@@ -321,7 +337,7 @@ test('provider-authenticated settlement route returns provider payout mirror dat
     undefined,
     async (profile) => readyHealth(profile.providerId)
   );
-  const app = wrapMercenaryTestInject(buildApiServer(orchestrator));
+  const app = buildTestApiServer(orchestrator);
 
   try {
     const spawn = await app.inject({

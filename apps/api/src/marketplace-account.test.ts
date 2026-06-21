@@ -8,7 +8,7 @@ import type { RaidProvider } from '@bossraid/provider-sdk';
 import { NETWORK } from '@bossraid/constants';
 import {
   createTestApiServer,
-  buildApiServer,
+  buildTestApiServer,
   createProviderProfile,
   createPublicSessionCookie,
   join,
@@ -372,7 +372,7 @@ test('discount inference: API key skips x402, funds balance, records purchases a
       }),
       { status: 200, headers: { 'content-type': 'application/json' } }
     );
-  const app = buildApiServer(orchestrator, {
+  const app = buildTestApiServer(orchestrator, {
     ...process.env,
     BOSSRAID_STORAGE_BACKEND: 'memory',
     BOSSRAID_X402_ENABLED: 'false',
@@ -469,7 +469,7 @@ test('discount inference: API key skips x402, funds balance, records purchases a
 });
 
 test('production balance fund rejects unverified credit when x402 is disabled', async () => {
-  const app = buildApiServer(new BossRaidOrchestrator([], undefined, undefined, undefined), {
+  const app = buildTestApiServer(new BossRaidOrchestrator([], undefined, undefined, undefined), {
     ...process.env,
     NODE_ENV: 'production',
     BOSSRAID_STORAGE_BACKEND: 'memory',

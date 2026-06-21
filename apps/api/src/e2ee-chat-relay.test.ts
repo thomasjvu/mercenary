@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildApiServer, readyHealth, wrapMercenaryTestInject } from './test/helpers.js';
+import { buildTestApiServer, readyHealth } from './test/helpers.js';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 
 test('POST /v1/inference/chat/completions runs server E2EE relay for strict catalog models', async () => {
@@ -11,14 +11,12 @@ test('POST /v1/inference/chat/completions runs server E2EE relay for strict cata
     undefined,
     async (profile) => readyHealth(profile.providerId)
   );
-  const app = wrapMercenaryTestInject(
-    buildApiServer(orchestrator, {
-      ...process.env,
-      BOSSRAID_UPSTREAM_TEE_MOCK: '1',
-      BOSSRAID_VENICE_MOCK: '1',
-      BOSSRAID_VENICE_API_KEY: 'vn_test_key',
-    })
-  );
+  const app = buildTestApiServer(orchestrator, {
+    ...process.env,
+    BOSSRAID_UPSTREAM_TEE_MOCK: '1',
+    BOSSRAID_VENICE_MOCK: '1',
+    BOSSRAID_VENICE_API_KEY: 'vn_test_key',
+  });
 
   try {
     const response = await app.inject({
@@ -53,14 +51,12 @@ test('POST /v1/inference/chat/completions streams strict E2EE with receipt metad
     undefined,
     async (profile) => readyHealth(profile.providerId)
   );
-  const app = wrapMercenaryTestInject(
-    buildApiServer(orchestrator, {
-      ...process.env,
-      BOSSRAID_UPSTREAM_TEE_MOCK: '1',
-      BOSSRAID_VENICE_MOCK: '1',
-      BOSSRAID_VENICE_API_KEY: 'vn_test_key',
-    })
-  );
+  const app = buildTestApiServer(orchestrator, {
+    ...process.env,
+    BOSSRAID_UPSTREAM_TEE_MOCK: '1',
+    BOSSRAID_VENICE_MOCK: '1',
+    BOSSRAID_VENICE_API_KEY: 'vn_test_key',
+  });
 
   try {
     const response = await app.inject({
@@ -96,13 +92,11 @@ test('POST /v1/inference/chat/completions requires upstream key for strict E2EE'
     undefined,
     async (profile) => readyHealth(profile.providerId)
   );
-  const app = wrapMercenaryTestInject(
-    buildApiServer(orchestrator, {
-      ...process.env,
-      BOSSRAID_UPSTREAM_TEE_MOCK: '1',
-      BOSSRAID_VENICE_API_KEY: undefined,
-    })
-  );
+  const app = buildTestApiServer(orchestrator, {
+    ...process.env,
+    BOSSRAID_UPSTREAM_TEE_MOCK: '1',
+    BOSSRAID_VENICE_API_KEY: undefined,
+  });
 
   try {
     const response = await app.inject({

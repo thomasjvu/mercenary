@@ -7,6 +7,7 @@ import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import { buildApiServer } from './index.js';
 import {
+  clearEphemeralRateLimitsForTests,
   createTestApiServer,
   createProviderProfile,
   hashText,
@@ -89,6 +90,7 @@ test('ops session can authenticate internal control routes without a browser-shi
 });
 
 test('ops session login is rate limited', async () => {
+  clearEphemeralRateLimitsForTests();
   const app = createTestApiServer([], {
     BOSSRAID_ADMIN_TOKEN: 'admin-secret',
     BOSSRAID_OPS_SESSION_RATE_LIMIT_MAX: '1',

@@ -5,8 +5,8 @@ import { mnemonicToAccount } from 'viem/accounts';
 import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-types';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
-import { buildApiServer } from './index.js';
 import {
+  buildTestApiServer,
   createTestApiServer,
   createProviderProfile,
   hashText,
@@ -49,7 +49,7 @@ test('GET /ready reports public beta readiness gates', async () => {
     },
     async run(): Promise<void> {},
   };
-  const app = buildApiServer(
+  const app = buildTestApiServer(
     new BossRaidOrchestrator([provider], undefined, undefined, undefined, async (profile) =>
       readyHealth(profile.providerId)
     ),
