@@ -81,7 +81,7 @@ export function RaiderRow({ raider, rank, onTry, onMarket }: RaiderRowProps) {
           ) : null}
           {erc8004Verified ? <RaiderBadge icon="pixel:badge-check-solid" label="ERC-8004" /> : null}
           {displaySignals.includes('tee') ? (
-            <RaiderBadge icon="pixel:cybersecurity" label="TEE attested" />
+            <RaiderBadge icon="pixel:cybersecurity" label="tee claimed" />
           ) : null}
           {venice ? <RaiderBadge icon="pixel:lock-solid" label="Venice private lane" /> : null}
           {displaySignals.includes('e2ee') ? (

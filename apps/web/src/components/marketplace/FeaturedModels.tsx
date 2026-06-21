@@ -12,6 +12,8 @@ import {
   resolveMarketBaseInputPer1mUsd,
   resolveMarketBaseOutputPer1mUsd,
 } from '../../lib/marketplace-pricing.js';
+import { resolveTeeTrustLevel } from '../../lib/tee-trust-badge.js';
+import { TeeTrustBadge } from '../trust/TeeTrustBadge.js';
 
 type FeaturedModelsProps = {
   markets: InferenceMarket[];
@@ -87,9 +89,12 @@ export function FeaturedModels({ markets, onOpenModel }: FeaturedModelsProps) {
               ) : null}
 
               <span className="featured-models__tags">
-                {catalog?.teeAttested || teeSellerCount > 0 ? (
-                  <span className="trust-badge trust-badge--tee">tee</span>
-                ) : null}
+                <TeeTrustBadge
+                  count={teeSellerCount > 0 ? teeSellerCount : undefined}
+                  level={resolveTeeTrustLevel({
+                    catalogTeeAttested: Boolean(catalog?.teeAttested || teeSellerCount > 0),
+                  })}
+                />
                 {catalog?.e2ee ? <span className="trust-badge trust-badge--e2ee">e2ee</span> : null}
               </span>
             </button>

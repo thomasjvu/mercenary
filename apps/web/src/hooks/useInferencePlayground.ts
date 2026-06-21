@@ -10,6 +10,10 @@ import {
   type SavedBuyerApiKey,
 } from '../lib/buyer-api-key-vault.js';
 import { buildInferenceCurlSnippet } from '../lib/inference-curl.js';
+import {
+  evaluateTeePreflight,
+  resolveTeeStatusAfterReceipt,
+} from '../lib/inference-playground-tee.js';
 import { buildPlaygroundModelOptions } from '../lib/playground-models.js';
 import { resolveProviderBrand } from '../lib/provider-brand.js';
 
@@ -248,18 +252,26 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
         window.sessionStorage.setItem(UPSTREAM_KEY_STORAGE_KEY, upstreamApiKey.trim());
       }
 
+      let teePreflightPassed = true;
+      let teeStatusAfterPreflight: string | null = null;
+
       if (selectedModel?.teeAttested || strictE2ee) {
         const attestation = await verifyMarketplaceTeeAttestation({
           provider: attestationProvider,
           modelId: model.trim(),
         });
-        setTeeStatus(
-          attestation.valid
-            ? strictE2ee
-              ? 'TEE verified · server E2EE relay'
-              : 'TEE verified'
-            : 'TEE verification failed'
-        );
+        const preflight = evaluateTeePreflight({
+          requiresTeeVerify: true,
+          strictE2ee: Boolean(strictE2ee),
+          attestation,
+        });
+        teeStatusAfterPreflight = preflight.status || null;
+        setTeeStatus(teeStatusAfterPreflight);
+        if (!preflight.ok) {
+          teePreflightPassed = false;
+          setError({ message: preflight.message, variant: 'error' });
+          return;
+        }
       }
 
       const result = await runInferenceChatCompletion({
@@ -275,8 +287,14 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
       const receiptId = (result.raw as { privacy?: { receiptId?: string } })?.privacy?.receiptId;
       if (receiptId) {
         setInferenceReceiptId(receiptId);
-        setTeeStatus('TEE verified · inference receipt issued');
       }
+      setTeeStatus(
+        resolveTeeStatusAfterReceipt({
+          preflightPassed: teePreflightPassed,
+          receiptId,
+          currentStatus: teeStatusAfterPreflight,
+        })
+      );
       setActivePanel('response');
     } catch (runError) {
       setError({

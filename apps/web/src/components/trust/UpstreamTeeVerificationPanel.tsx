@@ -5,7 +5,9 @@ import {
   type TeeAttestationResponse,
 } from '../../api/marketplace-tee.js';
 import { useAttestationInspector } from '../../contexts/AttestationInspectorContext.js';
+import { resolveTeeTrustLevel } from '../../lib/tee-trust-badge.js';
 import { FormStatus } from '../system/FormField.js';
+import { TeeTrustBadge } from './TeeTrustBadge.js';
 
 type UpstreamTeeVerificationPanelProps = {
   provider: UpstreamProviderId;
@@ -57,7 +59,12 @@ export function UpstreamTeeVerificationPanel({
   return (
     <section aria-label="Upstream TEE verification" className={className}>
       <div className="upstream-tee-panel__badges">
-        {teeAttested ? <span className="trust-badge trust-badge--tee">tee</span> : null}
+        <TeeTrustBadge
+          level={resolveTeeTrustLevel({
+            catalogTeeAttested: teeAttested,
+            liveVerifyValid: result?.valid ?? null,
+          })}
+        />
         {e2ee ? <span className="trust-badge trust-badge--e2ee">e2ee</span> : null}
         <span className="upstream-tee-panel__vendor">{provider}</span>
       </div>
@@ -87,7 +94,7 @@ export function UpstreamTeeVerificationPanel({
           <p
             className={`upstream-tee-panel__status${result.valid ? ' upstream-tee-panel__status--ok' : ''}`}
           >
-            {result.valid ? 'TEE attestation verified' : 'TEE attestation failed'}
+            {result.valid ? 'tee verified' : 'tee verification failed'}
           </p>
           {result.signingAddress ? (
             <p className="upstream-tee-panel__meta">signing address: {result.signingAddress}</p>

@@ -272,6 +272,65 @@ User selection: **execute fully** (deferred tenth-pass top 6).
 | 155 | Wallet chunk still ~1.2 MB (lazy partial)   | ethereum-provider split helps |
 | DIR | proof bundle, agent_log attestation, /ready | direction items               |
 
+## Twelfth-pass audit (2026-06-21)
+
+Base commit: **`e204b19`**. Prior plans **001–032** remain DONE.
+
+User selection: **default top 5 by leverage** (non-interactive `/improve`).
+
+| Plan | Title                                         | Priority | Effort | Depends on | Status |
+| ---- | --------------------------------------------- | -------- | ------ | ---------- | ------ |
+| 033  | Gate inference playground on TEE verification | P1       | S      | —          | DONE   |
+| 034  | Fix raid-core unit test discovery             | P1       | S      | —          | DONE   |
+| 035  | Consolidate TEE attestation API serializer    | P2       | S      | —          | DONE   |
+| 036  | Align /ready Phala TEE gate with MNEMONIC     | P1       | S      | —          | DONE   |
+| 037  | Unify marketplace TEE trust badges            | P1       | M      | —          | DONE   |
+
+### Dependency notes (twelfth pass)
+
+- **034** is a verification baseline — run before trusting raid-core CI signal.
+- **033** and **037** are complementary trust-surface fixes (live verify gate vs catalog copy).
+- **036** closes `/ready` vs production-readiness MNEMONIC split left after plan 030.
+
+### Twelfth-pass findings (vetted, prioritized)
+
+| #   | Finding                                              | Category    | Impact | Effort | Risk | Evidence confidence  |
+| --- | ---------------------------------------------------- | ----------- | ------ | ------ | ---- | -------------------- |
+| 173 | Inference playground runs after failed TEE verify    | security    | HIGH   | S      | LOW  | HIGH → Plan 033      |
+| 174 | raid-core `test` script runs zero tests in CI        | tests       | HIGH   | S      | LOW  | HIGH → Plan 034      |
+| 175 | Duplicate `serializeTeeAttestation` explorer drift   | tech-debt   | MED    | S      | LOW  | HIGH → Plan 035      |
+| 176 | `/ready` ok without MNEMONIC on Phala production     | correctness | MED    | S      | MED  | HIGH → Plan 036      |
+| 177 | Marketplace TEE badges still imply verification      | security    | HIGH   | M      | LOW  | HIGH → Plan 037      |
+| 178 | `useWalletAuth` statically pulls viem/smart-pay      | perf        | MED    | M      | MED  | HIGH — deferred      |
+| 179 | Forgejo CI missing bounty/e2e/deploy-env vs GitHub   | dx          | MED    | S      | LOW  | HIGH — deferred      |
+| 180 | Mercenary double-fetches session (SWR key mismatch)  | perf        | LOW    | S      | LOW  | HIGH — deferred      |
+| 181 | Prefer-mode privacy failures still rank as valid     | correctness | MED    | M      | MED  | HIGH — deferred      |
+| 182 | Attestation inspector shows cached verify as live    | correctness | MED    | M      | MED  | HIGH — deferred      |
+| 183 | `test:money-path` allowlist omits bounty/x402 suites | tests       | MED    | S      | LOW  | HIGH — deferred      |
+| 184 | Onchain executor `execute()` still untested          | tests       | MED    | L      | MED  | HIGH — carry-forward |
+| 169 | Privacy features beyond tee_attested self-asserted   | security    | HIGH   | M–L    | MED  | HIGH — deferred      |
+
+### Direction (twelfth pass)
+
+- **DIR-02**: Extend `export:proof-bundle` with host/upstream attestation artifacts.
+- **DIR-03**: Attestation events in `agent_log.json` timeline.
+- **DOCS-02**: Production-readiness attestation gate IDs in operator runbooks.
+- **DOCS-03**: Stale architecture/hackathon/skill.md attestation drift.
+
+### Twelfth-pass execution (2026-06-21)
+
+Findings **033–037** implemented at `e204b19` base. Verified: `pnpm check`, `pnpm lint`,
+`pnpm test:attestation`, `pnpm --filter @bossraid/web test`, `pnpm --filter @bossraid/raid-core test`.
+
+### Deferred (twelfth pass)
+
+| #   | Finding                           | Notes                           |
+| --- | --------------------------------- | ------------------------------- |
+| 178 | Wallet hook split (PERF-179)      | Extends eleventh-pass 155/156   |
+| 179 | Forgejo CI parity                 | Agent-primary CI surface        |
+| 181 | Prefer-mode privacy invalidation  | Needs product contract (was 04) |
+| 184 | Onchain executor behavioral depth | Carry-forward 027               |
+
 ## Tenth-pass audit (2026-06-21)
 
 Base commit: **`4ed256f`** (`feat(attestation): implement plans 013-021`). Prior plans **001–021** remain DONE.
@@ -329,6 +388,10 @@ User selection: **default top 5 by leverage** (non-interactive `/improve`).
 
 ## Findings considered and rejected
 
+- **Twelfth-pass CORRECTNESS-01 / prefer-mode privacy**: same product question as rejected CORRECTNESS-04 — `prefer` may intentionally soft-fail at dispatch; no plan until product confirms strict invalidation for `requirePrivacyFeatures`.
+- **Twelfth-pass DOCS-01** (`/ready` slim vs full): still requires product choice; plan 007 marked DONE but full response retained for web mercenary gating.
+- **Twelfth-pass SECURITY-03** (web duplicate `HostAttestationResponse` types): valid consolidation, lower leverage than trust UX plans 033/037.
+- **Twelfth-pass TESTS-177/180** (chat timer flake, attestation dedupe timer): MED confidence without empirical CI failure — investigate next pass.
 - **Eighth-pass items 149–153**: addressed by plans 013–016 (implemented, uncommitted at `d547ff6`).
 - **CORRECTNESS-02** (orchestrator re-verifies local socket quote, not provider-submitted bytes): deployment-model limitation; needs architecture decision before code change — deferred beyond plan 021.
 - **CORRECTNESS-04** (`prefer` privacy mode ignores server verify errors): may be intentional soft-ranking; no plan until product confirms strict-only enforcement.

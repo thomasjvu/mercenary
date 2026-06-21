@@ -1,12 +1,13 @@
 import { readTeeSocketPath } from '@bossraid/constants';
 import { type FastifyInstance } from 'fastify';
-import { verifyPhalaTeeAttestation, buildQuoteExplorerUrl } from '@bossraid/privacy-engine';
+import { verifyPhalaTeeAttestation } from '@bossraid/privacy-engine';
 import type { TeeAttestationResult, TeeAttestationView } from '@bossraid/shared-types';
 import {
   buildAttestedRuntimeMessage,
   buildAttestedRuntimePayload,
   hashAttestationText,
 } from '../lib/attestation.js';
+import { serializeTeeAttestation } from '../lib/serializers.js';
 import { readTeeSocketState } from '../lib/tee.js';
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../handlers/index.js';
@@ -38,26 +39,6 @@ export type HostAttestationResponse = {
 
 function hostSkipCloudVerify(): boolean {
   return process.env.BOSSRAID_HOST_TEE_SKIP_CLOUD_VERIFY === '1';
-}
-
-function serializeTeeAttestation(tee: TeeAttestationResult): TeeAttestationView {
-  const explorerUrl = tee.explorerUrl ?? buildQuoteExplorerUrl(tee.signature);
-  return {
-    valid: tee.valid,
-    providerId: tee.providerId,
-    verifiedAt: tee.verifiedAt,
-    expiresAt: tee.expiresAt,
-    vendor: tee.vendor,
-    enclaveHash: tee.enclaveHash,
-    signature: tee.signature,
-    runtimeMode: tee.runtimeMode,
-    notes: tee.notes,
-    upstreamVendor: tee.upstreamVendor,
-    signingAddress: tee.signingAddress,
-    e2eeReady: tee.e2eeReady,
-    explorerUrl,
-    checks: tee.checks,
-  };
 }
 
 function warmupHostTeeAttestation(

@@ -13,7 +13,9 @@ import {
   resolveMarketBaseOutputPer1mUsd,
 } from '../../lib/marketplace-pricing.js';
 import type { MarketplaceSortKey } from '../../lib/marketplace-filters.js';
+import { resolveTeeTrustLevel } from '../../lib/tee-trust-badge.js';
 import { ProviderBrandIcon } from '../ProviderBrandIcon.js';
+import { TeeTrustBadge } from '../trust/TeeTrustBadge.js';
 import { SegmentBar } from '../system/SegmentBar.js';
 
 type ModelCatalogProps = {
@@ -124,7 +126,10 @@ function ModelRow({ market, onOpen }: { market: InferenceMarket; onOpen: () => v
       <td>{formatLatency(market.p50LatencyMs)}</td>
       <td>
         {teeSellerCount > 0 ? (
-          <span className="trust-badge trust-badge--tee">{teeSellerCount} tee</span>
+          <TeeTrustBadge
+            count={teeSellerCount}
+            level={resolveTeeTrustLevel({ catalogTeeAttested: true })}
+          />
         ) : (
           '—'
         )}
@@ -186,7 +191,10 @@ function ModelCard({ market, onOpen }: { market: InferenceMarket; onOpen: () => 
           <dt>tee</dt>
           <dd>
             {teeSellerCount > 0 ? (
-              <span className="trust-badge trust-badge--tee">{teeSellerCount} tee</span>
+              <TeeTrustBadge
+                count={teeSellerCount}
+                level={resolveTeeTrustLevel({ catalogTeeAttested: true })}
+              />
             ) : (
               '—'
             )}

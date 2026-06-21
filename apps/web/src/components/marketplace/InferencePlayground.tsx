@@ -164,7 +164,7 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
             {state.selectedModel &&
             (state.selectedModel.teeAttested || state.selectedModel.e2ee) ? (
               <div className="inference-playground__trust-copy">
-                <strong>{state.selectedModel.teeAttested ? 'TEE attested' : 'E2EE lane'}</strong>
+                <strong>{state.selectedModel.teeAttested ? 'tee claimed' : 'E2EE lane'}</strong>
                 <p>
                   {state.attestationProvider} · {state.model || 'model pending'}
                 </p>

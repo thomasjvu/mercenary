@@ -2,6 +2,7 @@ import type { ProviderHealth } from '../../api/client.js';
 import type { InferenceMarket } from '../../api/marketplace.js';
 import { formatUsd } from '@bossraid/proof-ui';
 import { ProviderBrandIcon } from '../ProviderBrandIcon.js';
+import { TeeTrustBadge } from '../trust/TeeTrustBadge.js';
 import { SellerHealthBadge } from './SellerHealthBadge.js';
 
 export function SellerOrderBook({
@@ -115,9 +116,7 @@ function PrivacyBadges({ privacy }: { privacy: InferenceMarket['sellers'][number
 
   return (
     <span className="seller-order-book__privacy-badges">
-      {privacy.teeAttested ? (
-        <span className="trust-badge trust-badge--tee">tee claimed</span>
-      ) : null}
+      {privacy.teeAttested ? <TeeTrustBadge level="claimed" /> : null}
       {badges
         .filter((badge) => badge !== 'tee')
         .map((badge) => (

@@ -1,3 +1,4 @@
+import { buildQuoteExplorerUrl } from '@bossraid/privacy-engine';
 import type {
   BossRaidResultOutput,
   BossRaidStatusOutput,
@@ -113,7 +114,8 @@ function serializeSubmissionArtifact(artifact: SubmissionArtifact): SubmissionAr
   };
 }
 
-function serializeTeeAttestation(tee: TeeAttestationResult): TeeAttestationView {
+export function serializeTeeAttestation(tee: TeeAttestationResult): TeeAttestationView {
+  const explorerUrl = tee.explorerUrl ?? buildQuoteExplorerUrl(tee.signature);
   return {
     valid: tee.valid,
     providerId: tee.providerId,
@@ -127,7 +129,7 @@ function serializeTeeAttestation(tee: TeeAttestationResult): TeeAttestationView 
     upstreamVendor: tee.upstreamVendor,
     signingAddress: tee.signingAddress,
     e2eeReady: tee.e2eeReady,
-    explorerUrl: tee.explorerUrl,
+    explorerUrl,
     checks: tee.checks,
   };
 }

@@ -54,7 +54,11 @@ export function isTeeProductionConfigured(
   tee: { pathExists: boolean; socketMounted: boolean }
 ): boolean {
   if (env.BOSSRAID_TEE_PLATFORM === 'phala') {
-    return tee.pathExists && tee.socketMounted;
+    const socketReady = tee.pathExists && tee.socketMounted;
+    if (env.NODE_ENV !== 'production') {
+      return socketReady;
+    }
+    return socketReady && Boolean(env.MNEMONIC?.trim());
   }
 
   return Boolean(env.MNEMONIC?.trim());
