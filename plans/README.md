@@ -248,6 +248,61 @@ User selection: **default top 5 by leverage** (non-interactive `/improve`).
 - **DIR-02**: Extend `export:proof-bundle` with host/upstream attestation artifacts.
 - **DIR-03**: Attestation events in `agent_log.json` timeline (architecture.md gap).
 
+## Tenth-pass audit (2026-06-21)
+
+Base commit: **`4ed256f`** (`feat(attestation): implement plans 013-021`). Prior plans **001–021** remain DONE.
+
+User selection: **default top 5 by leverage** (non-interactive `/improve`).
+
+| Plan | Title                                        | Priority | Effort | Depends on | Status |
+| ---- | -------------------------------------------- | -------- | ------ | ---------- | ------ |
+| 022  | Fix unquoted package test globs              | P1       | S      | —          | TODO   |
+| 023  | Fix chat integration test settlement harness | P1       | S      | —          | TODO   |
+| 024  | Align receipt host verified with trust model | P1       | S      | 014        | TODO   |
+| 025  | Redact marketplace TEE signingKey from API   | P1       | S      | —          | TODO   |
+| 026  | Unify TEE socket path constant               | P2       | S      | 021        | TODO   |
+
+### Dependency notes (tenth pass)
+
+- **022** is a verification baseline — run before trusting orchestrator/privacy-engine CI signal.
+- **023** unblocks chat-budget/chat-completion flakes (independent of 022).
+- **024** follows **014** — receipt UI must match `teeVerified` / `runtimeSigned` split.
+- **026** follows **021** — centralizes dstack default after API route alignment.
+
+### Tenth-pass findings (vetted, prioritized)
+
+| #   | Finding                                             | Category    | Impact | Effort | Risk | Evidence confidence  |
+| --- | --------------------------------------------------- | ----------- | ------ | ------ | ---- | -------------------- |
+| 164 | Unquoted test globs skip nested package tests       | tests       | HIGH   | S      | LOW  | HIGH → Plan 022      |
+| 165 | Chat tests use file settlement + noop executor      | tests       | HIGH   | S      | LOW  | HIGH → Plan 023      |
+| 166 | Receipt UI gates host verified on legacy `verified` | correctness | HIGH   | S      | LOW  | HIGH → Plan 024      |
+| 167 | Marketplace TEE API returns upstream `signingKey`   | security    | HIGH   | S      | LOW  | HIGH → Plan 025      |
+| 168 | TEE socket defaults still disagree across services  | tech-debt   | MED    | S      | MED  | HIGH → Plan 026      |
+| 154 | Production TEE gate vs `/ready` MNEMONIC mismatch   | gap         | MED    | M      | MED  | HIGH — deferred      |
+| 169 | Privacy features beyond tee_attested self-asserted  | security    | HIGH   | M–L    | MED  | HIGH — deferred      |
+| 170 | Marketplace “tee verified” badge from profile only  | security    | MED    | M      | LOW  | HIGH — deferred      |
+| 155 | Icons chunk ~4.9 MB on every page                   | perf        | MED    | M      | MED  | HIGH — deferred      |
+| 156 | Wallet chunk preloaded on all routes                | perf        | MED    | M      | MED  | HIGH — deferred      |
+| 163 | Icon subset missing nav/provider glyphs             | perf        | MED    | S      | LOW  | HIGH — deferred      |
+| 027 | OnchainSettlementExecutor behavioral tests thin     | tests       | MED    | L      | MED  | HIGH — carry-forward |
+| 028 | reconcileLaunchPayment x402 refund path thin        | tests       | MED    | M      | LOW  | HIGH — carry-forward |
+| 171 | CI workflow_dispatch only (no push/PR triggers)     | dx          | MED    | S      | LOW  | HIGH — deferred      |
+| 172 | Attestation tests omitted from CI money-path        | dx          | MED    | S      | LOW  | HIGH — deferred      |
+
+### Direction (tenth pass)
+
+- **DIR-01**: Promote `MNEMONIC` to Phala core tier + production gate (finding 154).
+- **DIR-02**: Extend `export:proof-bundle` with attestation artifacts.
+- **DIR-03**: Attestation events in `agent_log.json` timeline.
+- **DIR-04**: Resolve `/ready` product contract — slim `{ ok }` vs documented full gates (DOCS-01).
+
+### Doc gaps (tenth pass, not auto-planned)
+
+- **DOCS-02**: Production-readiness attestation gate IDs missing from operator runbooks.
+- **DOCS-03**: Proof bundle scope undocumented; no attestation artifacts.
+- **DOCS-05**: Hackathon appendix still uses `/receipt` instead of `/verification`.
+- **DOCS-06**: `content/skill.md` omits post-016 attestation routes.
+
 ## Findings considered and rejected
 
 - **Eighth-pass items 149–153**: addressed by plans 013–016 (implemented, uncommitted at `d547ff6`).
