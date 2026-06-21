@@ -157,7 +157,6 @@ export function registerMarketplaceTeeRoutes(
       valid: result.valid,
       verifiedAt: result.verifiedAt,
       signingAddress: result.signingAddress,
-      signingKey: (result as { signingKey?: string }).signingKey,
       e2eeReady: result.e2eeReady,
       checks: result.checks,
       explorerUrl: result.explorerUrl,

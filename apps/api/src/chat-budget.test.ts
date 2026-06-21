@@ -1,15 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-types';
-import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
-import { buildApiServer, resolveChatTerminalSettleGraceMs } from './index.js';
-import {
-  createTestApiServer,
-  createProviderProfile,
-  readyHealth,
-  wrapMercenaryTestInject,
-} from './test/helpers.js';
+import { resolveChatTerminalSettleGraceMs } from './index.js';
+import { createTestApiServer, createProviderProfile } from './test/helpers.js';
 
 test('chat completion requests require an explicit payout budget', async () => {
   const app = createTestApiServer();
@@ -64,19 +58,10 @@ test('chat completion requests can use a server-side default payout budget', asy
       });
     },
   };
-  const orchestrator = new BossRaidOrchestrator(
-    [provider],
-    undefined,
-    undefined,
-    undefined,
-    async (profile) => readyHealth(profile.providerId)
-  );
-  const app = wrapMercenaryTestInject(
-    buildApiServer(orchestrator, {
-      ...process.env,
-      BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: '15',
-    })
-  );
+  const app = createTestApiServer([provider], {
+    ...process.env,
+    BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: '15',
+  });
 
   try {
     const response = await app.inject({

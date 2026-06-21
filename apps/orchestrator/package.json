@@ -20,7 +20,7 @@
     "check": "tsc -p tsconfig.json --noEmit",
     "dev": "tsx src/index.ts",
     "settle": "node dist/apps/orchestrator/src/settle-raid.js",
-    "test": "node --import tsx --test src/**/*.test.ts"
+    "test": "node --import tsx --test 'src/**/*.test.ts'"
   },
   "dependencies": {
     "@bossraid/constants": "workspace:*",

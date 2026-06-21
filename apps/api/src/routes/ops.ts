@@ -1,5 +1,10 @@
 import { type FastifyInstance } from 'fastify';
-import { DEFAULTS, readSettlementMode, readStorageBackend } from '@bossraid/constants';
+import {
+  DEFAULTS,
+  readSettlementMode,
+  readStorageBackend,
+  readTeeSocketPath,
+} from '@bossraid/constants';
 import { buildProductionReadinessReport } from '../lib/production-readiness.js';
 import {
   isFullOnchainSettlementConfigured,
@@ -109,7 +114,7 @@ export function registerOpsRoutes(
       return adminError;
     }
 
-    const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/dstack.sock';
+    const teeSocketPath = readTeeSocketPath(env);
     return {
       deploymentTarget: env.BOSSRAID_DEPLOY_TARGET ?? null,
       nodeEnv: env.NODE_ENV ?? null,
@@ -351,7 +356,7 @@ export function registerOpsRoutes(
     const persistence = orchestrator.getPersistenceStatus();
     const x402Config = readX402ConfigForContext(ctx);
     const settlementMode = readSettlementMode(env);
-    const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/dstack.sock';
+    const teeSocketPath = readTeeSocketPath(env);
     const tee = await readTeeSocketState(teeSocketPath);
     return buildProductionReadinessReport({
       env,

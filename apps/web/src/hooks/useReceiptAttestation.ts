@@ -5,6 +5,7 @@ import {
   isAttestationSignerUnavailable,
   type ReceiptQuery,
 } from '../lib/receipt-url';
+import { deriveHostAttestationStatus } from '../lib/runtime-attestation-status.js';
 
 type HostAttestationSource = {
   data?: HostAttestationResponse;
@@ -27,8 +28,12 @@ export function useReceiptAttestation({
 }) {
   const tee = hostAttestation.data?.teeAttestation;
   const signedRuntime = hostAttestation.data?.signedRuntime;
-  const hostVerified = Boolean(hostAttestation.data?.verified && (tee?.valid || signedRuntime));
-  const runtimeSignerDisabled = Boolean(tee?.valid) && !signedRuntime;
+  const hostStatus = deriveHostAttestationStatus({
+    data: hostAttestation.data,
+    error: hostAttestation.error?.message,
+  });
+  const hostVerified = hostStatus.status === 'live';
+  const runtimeSignerDisabled = hostStatus.signerDisabled;
   const resultSignerDisabled = isAttestationSignerUnavailable(attestedResult.error?.message);
 
   const runtimeAttestationStatus = hostVerified

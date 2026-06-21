@@ -195,10 +195,14 @@ export const X402 = {
 
 // TEE Constants
 export const TEE = {
-  DEFAULT_SOCKET_PATH: '/var/run/tappd.sock',
+  DEFAULT_SOCKET_PATH: '/var/run/dstack.sock',
   DEFAULT_VENDOR: 'phala',
   DEFAULT_RUNTIME_MODE: 'phala-cvm',
 };
+
+export function readTeeSocketPath(env: NodeJS.ProcessEnv = process.env): string {
+  return env.BOSSRAID_TEE_SOCKET_PATH?.trim() || TEE.DEFAULT_SOCKET_PATH;
+}
 
 // Miscellaneous Constants
 export const MISC = {

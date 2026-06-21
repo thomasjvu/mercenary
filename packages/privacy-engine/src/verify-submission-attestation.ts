@@ -1,3 +1,4 @@
+import { readTeeSocketPath } from '@bossraid/constants';
 import type {
   PrivacyAttestation,
   PrivacyFeatureKey,
@@ -72,8 +73,7 @@ export async function verifySubmissionPrivacyAttestation(
 
   const providerId = input.submission.providerId;
   const raidId = input.submission.raidId;
-  const socketPath =
-    input.teeSocketPath ?? process.env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/dstack.sock';
+  const socketPath = input.teeSocketPath ?? readTeeSocketPath(process.env);
   const verifyTee = input.verifyTeeFn ?? verifyPhalaTeeAttestation;
   const teeOptions: PhalaTeeAttestationOptions = {
     reportData: JSON.stringify({ providerId, raidId }),

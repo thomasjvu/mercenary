@@ -256,11 +256,11 @@ User selection: **default top 5 by leverage** (non-interactive `/improve`).
 
 | Plan | Title                                        | Priority | Effort | Depends on | Status |
 | ---- | -------------------------------------------- | -------- | ------ | ---------- | ------ |
-| 022  | Fix unquoted package test globs              | P1       | S      | —          | TODO   |
-| 023  | Fix chat integration test settlement harness | P1       | S      | —          | TODO   |
-| 024  | Align receipt host verified with trust model | P1       | S      | 014        | TODO   |
-| 025  | Redact marketplace TEE signingKey from API   | P1       | S      | —          | TODO   |
-| 026  | Unify TEE socket path constant               | P2       | S      | 021        | TODO   |
+| 022  | Fix unquoted package test globs              | P1       | S      | —          | DONE   |
+| 023  | Fix chat integration test settlement harness | P1       | S      | —          | DONE   |
+| 024  | Align receipt host verified with trust model | P1       | S      | 014        | DONE   |
+| 025  | Redact marketplace TEE signingKey from API   | P1       | S      | —          | DONE   |
+| 026  | Unify TEE socket path constant               | P2       | S      | 021        | DONE   |
 
 ### Dependency notes (tenth pass)
 

@@ -3,13 +3,13 @@ import test from 'node:test';
 import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-types';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
-import { buildApiServer, resolveChatTerminalSettleGraceMs } from './index.js';
+import { resolveChatTerminalSettleGraceMs } from './index.js';
 import {
+  buildTestApiServer,
   createTestOrchestrator,
   createProviderProfile,
   FAST_TEST_TIMING,
   readyHealth,
-  wrapMercenaryTestInject,
 } from './test/helpers.js';
 
 test('POST /v1/chat/completions synthesizes a text raid and returns a multi-provider answer', async () => {
@@ -69,7 +69,7 @@ test('POST /v1/chat/completions synthesizes a text raid and returns a multi-prov
   };
 
   const orchestrator = createTestOrchestrator([providerA, providerB]);
-  const app = wrapMercenaryTestInject(buildApiServer(orchestrator));
+  const app = buildTestApiServer(orchestrator);
 
   try {
     const response = await app.inject({
@@ -192,7 +192,7 @@ test('POST /v1/chat/completions can recurse into nested child raids for larger e
     undefined,
     async (profile) => readyHealth(profile.providerId)
   );
-  const app = wrapMercenaryTestInject(buildApiServer(orchestrator));
+  const app = buildTestApiServer(orchestrator);
 
   try {
     const response = await app.inject({
@@ -267,7 +267,7 @@ test('POST /v1/chat/completions supports streaming on the v1 route', async () =>
     undefined,
     async (profile) => readyHealth(profile.providerId)
   );
-  const app = wrapMercenaryTestInject(buildApiServer(orchestrator));
+  const app = buildTestApiServer(orchestrator);
 
   try {
     const response = await app.inject({
@@ -363,7 +363,7 @@ test('POST /v1/chat/completions waits for a terminal raid state instead of reply
     undefined,
     async (profile) => readyHealth(profile.providerId)
   );
-  const app = wrapMercenaryTestInject(buildApiServer(orchestrator));
+  const app = buildTestApiServer(orchestrator);
 
   try {
     const response = await app.inject({
@@ -428,13 +428,11 @@ test('POST /v1/chat/completions answers low-signal chat directly without opening
     undefined,
     async (profile) => readyHealth(profile.providerId)
   );
-  const app = wrapMercenaryTestInject(
-    buildApiServer(orchestrator, {
-      ...process.env,
-      BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: '8',
-      BOSSRAID_VENICE_MOCK: '1',
-    })
-  );
+  const app = buildTestApiServer(orchestrator, {
+    ...process.env,
+    BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: '8',
+    BOSSRAID_VENICE_MOCK: '1',
+  });
 
   try {
     const response = await app.inject({
@@ -503,13 +501,11 @@ test('POST /v1/chat/completions keeps follow-up joke prompts direct without open
     undefined,
     async (profile) => readyHealth(profile.providerId)
   );
-  const app = wrapMercenaryTestInject(
-    buildApiServer(orchestrator, {
-      ...process.env,
-      BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: '8',
-      BOSSRAID_VENICE_MOCK: '1',
-    })
-  );
+  const app = buildTestApiServer(orchestrator, {
+    ...process.env,
+    BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: '8',
+    BOSSRAID_VENICE_MOCK: '1',
+  });
 
   try {
     const response = await app.inject({

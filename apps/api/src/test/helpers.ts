@@ -272,6 +272,18 @@ export function createTestApiServer(
   );
 }
 
+export function buildTestApiServer(
+  orchestrator: BossRaidOrchestrator,
+  env: NodeJS.ProcessEnv = process.env
+) {
+  return wrapMercenaryTestInject(
+    buildApiServer(orchestrator, {
+      ...env,
+      BOSSRAID_SETTLEMENT_MODE: env.BOSSRAID_SETTLEMENT_MODE ?? 'off',
+    })
+  );
+}
+
 export async function createTestBountyService(options?: {
   prefix?: string;
   env?: NodeJS.ProcessEnv;

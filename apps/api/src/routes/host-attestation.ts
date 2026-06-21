@@ -1,3 +1,4 @@
+import { readTeeSocketPath } from '@bossraid/constants';
 import { type FastifyInstance } from 'fastify';
 import { verifyPhalaTeeAttestation, buildQuoteExplorerUrl } from '@bossraid/privacy-engine';
 import type { TeeAttestationResult, TeeAttestationView } from '@bossraid/shared-types';
@@ -91,7 +92,7 @@ export function registerHostAttestationRoutes(
   const { env, orchestrator, teeSigner, workerIsolation } = ctx;
   const { collectProviderHealth } = handlers.raid;
   const { requireRateLimit } = handlers.auth;
-  const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/dstack.sock';
+  const teeSocketPath = readTeeSocketPath(env);
 
   void readTeeSocketState(teeSocketPath).then((teeSocket) => {
     warmupHostTeeAttestation(env, teeSocketPath, teeSocket);

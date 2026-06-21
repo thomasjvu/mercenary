@@ -1,5 +1,5 @@
 import { type FastifyInstance } from 'fastify';
-import { readSettlementMode, readStorageBackend } from '@bossraid/constants';
+import { readSettlementMode, readStorageBackend, readTeeSocketPath } from '@bossraid/constants';
 import { readBooleanEnv } from '../lib/env.js';
 import { readEnabledUpstreamMocks } from '../lib/production-readiness.js';
 import {
@@ -42,7 +42,7 @@ export function registerHealthRoutes(
     const x402Config = readX402ConfigForContext(ctx);
     const settlementMode = readSettlementMode(env);
     const settlementConfigured = isSettlementGateConfigured(settlementMode, env);
-    const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/dstack.sock';
+    const teeSocketPath = readTeeSocketPath(env);
     const tee = await readTeeSocketState(teeSocketPath);
     const secretsEncrypted =
       readStorageBackend(env) === 'memory' ||

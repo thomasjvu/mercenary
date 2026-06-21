@@ -1,3 +1,4 @@
+import { readTeeSocketPath } from '@bossraid/constants';
 import type { PrivacyAttestation, PrivacyFeatureKey } from '@bossraid/shared-types';
 import { buildPrivacyAttestation, verifyPhalaTeeAttestation } from '@bossraid/privacy-engine';
 
@@ -19,8 +20,7 @@ export async function buildProviderPrivacyAttestation(
   raidId: string,
   config: PrivacyFeaturesConfig
 ): Promise<PrivacyAttestation | undefined> {
-  const socketPath =
-    config.teeSocketPath ?? process.env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/dstack.sock';
+  const socketPath = config.teeSocketPath ?? readTeeSocketPath(process.env);
   const teeResult = await verifyPhalaTeeAttestation(
     providerId,
     socketPath,

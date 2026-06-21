@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import http from 'node:http';
 import https from 'node:https';
 import net from 'node:net';
+import { readTeeSocketPath, TEE } from '@bossraid/constants';
 import { verifyIntelQuote, verifyQuoteWithPhalaCloud } from './upstream-tee/quote-verify.js';
 import type {
   PrivacyAttestation,
@@ -10,10 +11,9 @@ import type {
   TeeAttestationResult,
 } from '@bossraid/shared-types';
 
-const DSTACK_SOCKET_PATH = '/var/run/dstack.sock';
-const DEFAULT_TEE_SOCKET_PATH = '/var/run/tappd.sock';
-const DEFAULT_TEE_VENDOR = 'phala';
-const DEFAULT_RUNTIME_MODE = 'phala-cvm';
+const LEGACY_TAPPD_SOCKET_PATH = '/var/run/tappd.sock';
+const DEFAULT_TEE_VENDOR = TEE.DEFAULT_VENDOR;
+const DEFAULT_RUNTIME_MODE = TEE.DEFAULT_RUNTIME_MODE;
 const DEFAULT_CACHE_TTL_MS = 10 * 60 * 1000;
 
 export interface TeeAttestationOptions {
@@ -199,8 +199,8 @@ function resolvePhalaEndpoint(socketPath: string): string {
     process.env.TAPPD_SOCKET_PATH,
     process.env.BOSSRAID_TEE_SOCKET_PATH,
     process.env.DSTACK_SOCKET_PATH,
-    DEFAULT_TEE_SOCKET_PATH,
-    DSTACK_SOCKET_PATH,
+    readTeeSocketPath(process.env),
+    LEGACY_TAPPD_SOCKET_PATH,
   ].filter((value): value is string => typeof value === 'string' && value.length > 0);
 
   const endpoint = candidates.find((candidate) => isReachablePhalaEndpoint(candidate));

@@ -389,6 +389,9 @@ importers:
 
   apps/provider-agent:
     dependencies:
+      '@bossraid/constants':
+        specifier: workspace:*
+        version: link:../../packages/constants
       '@bossraid/privacy-engine':
         specifier: workspace:*
         version: link:../../packages/privacy-engine
@@ -559,6 +562,9 @@ importers:
 
   packages/privacy-engine:
     dependencies:
+      '@bossraid/constants':
+        specifier: workspace:*
+        version: link:../constants
       '@bossraid/shared-types':
         specifier: workspace:*
         version: link:../shared-types
