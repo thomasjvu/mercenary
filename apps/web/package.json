@@ -17,14 +17,14 @@
     "@bossraid/proof-ui": "workspace:*",
     "@bossraid/shared-types": "workspace:*",
     "@bossraid/ui": "workspace:*",
-    "@iconify-json/pixel": "^1.2.1",
-    "@iconify-json/simple-icons": "^1.2.86",
     "@iconify/react": "^6.0.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "swr": "^2.3.6"
   },
   "devDependencies": {
+    "@iconify-json/pixel": "^1.2.1",
+    "@iconify-json/simple-icons": "^1.2.86",
     "@vitejs/plugin-react": "^5.0.2",
     "tsx": "^4.19.3",
     "vite": "^7.3.5"

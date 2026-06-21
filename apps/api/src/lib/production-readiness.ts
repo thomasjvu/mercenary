@@ -252,16 +252,28 @@ export function buildProductionReadinessReport(input: {
     },
   });
 
+  const phalaTeeSocketReady =
+    input.tee.platform === 'phala' && input.tee.pathExists && input.tee.socketMounted;
+  const mnemonicConfigured = Boolean(input.env.MNEMONIC?.trim());
+
   addCheck({
     id: 'tee_attestation',
-    status:
-      input.tee.platform === 'phala' && input.tee.pathExists && input.tee.socketMounted
-        ? 'pass'
-        : 'fail',
+    status: phalaTeeSocketReady ? 'pass' : 'fail',
     severity: 'blocking',
     message:
       'Phala production requires BOSSRAID_TEE_PLATFORM=phala with a mounted dstack guest agent socket.',
     details: input.tee,
+  });
+
+  addCheck({
+    id: 'mnemonic_configured',
+    status: input.tee.platform === 'phala' && !mnemonicConfigured ? 'fail' : 'pass',
+    severity: 'blocking',
+    message: 'Phala production requires MNEMONIC for signed runtime and attested result envelopes.',
+    details: {
+      platform: input.tee.platform,
+      mnemonicConfigured,
+    },
   });
 
   addCheck({

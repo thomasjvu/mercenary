@@ -79,7 +79,7 @@ export function RaiderRow({ raider, rank, onTry, onMarket }: RaiderRowProps) {
           {raider.provider.verification?.status === 'verified' ? (
             <RaiderBadge icon="pixel:check-solid" label="verified agent" />
           ) : null}
-          {erc8004Verified ? <RaiderBadge icon="pixel:badge-solid" label="ERC-8004" /> : null}
+          {erc8004Verified ? <RaiderBadge icon="pixel:badge-check-solid" label="ERC-8004" /> : null}
           {displaySignals.includes('tee') ? (
             <RaiderBadge icon="pixel:cybersecurity" label="TEE attested" />
           ) : null}

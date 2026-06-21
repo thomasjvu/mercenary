@@ -1,6 +1,10 @@
 name: CI
 
 on:
+  push:
+    branches: [main, development, staging]
+  pull_request:
+    branches: [main, development, staging]
   workflow_dispatch:
 
 jobs:
@@ -47,6 +51,9 @@ jobs:
 
       - name: Money-path tests
         run: pnpm test:money-path
+
+      - name: Attestation tests
+        run: pnpm test:attestation
 
       - name: Bounty escrow smoke
         run: pnpm test:bounty-escrow:local

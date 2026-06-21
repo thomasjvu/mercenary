@@ -248,6 +248,30 @@ User selection: **default top 5 by leverage** (non-interactive `/improve`).
 - **DIR-02**: Extend `export:proof-bundle` with host/upstream attestation artifacts.
 - **DIR-03**: Attestation events in `agent_log.json` timeline (architecture.md gap).
 
+## Eleventh-pass audit (2026-06-21)
+
+Base commit: **`91c8021`**. Prior plans **001–026** remain DONE.
+
+User selection: **execute fully** (deferred tenth-pass top 6).
+
+| Plan | Title                                            | Priority | Effort | Depends on | Status |
+| ---- | ------------------------------------------------ | -------- | ------ | ---------- | ------ |
+| 027  | Enable CI push/PR triggers                       | P1       | S      | —          | DONE   |
+| 028  | Wire attestation tests into CI                   | P1       | S      | —          | DONE   |
+| 029  | Complete web icon subset and shrink icons chunk  | P1       | M      | —          | DONE   |
+| 030  | MNEMONIC production gate + Phala core tier       | P1       | M      | —          | DONE   |
+| 031  | Marketplace tee badge shows claimed not verified | P1       | M      | —          | DONE   |
+| 032  | reconcileLaunchPayment x402 refund test          | P1       | M      | —          | DONE   |
+
+### Deferred (eleventh pass)
+
+| #   | Finding                                     | Notes                         |
+| --- | ------------------------------------------- | ----------------------------- |
+| 169 | Self-asserted privacy features beyond TEE   | M–L, product scope            |
+| 027 | OnchainSettlementExecutor behavioral depth  | L, carry-forward              |
+| 155 | Wallet chunk still ~1.2 MB (lazy partial)   | ethereum-provider split helps |
+| DIR | proof bundle, agent_log attestation, /ready | direction items               |
+
 ## Tenth-pass audit (2026-06-21)
 
 Base commit: **`4ed256f`** (`feat(attestation): implement plans 013-021`). Prior plans **001–021** remain DONE.

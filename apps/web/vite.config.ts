@@ -57,7 +57,7 @@ export default defineConfig(({ mode }) => {
               if (id.includes('smart-pay') || id.includes('viem')) {
                 return 'wallet';
               }
-              if (id.includes('@iconify')) {
+              if (id.includes('@iconify/react')) {
                 return 'icons';
               }
             }

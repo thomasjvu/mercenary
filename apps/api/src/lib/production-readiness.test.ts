@@ -98,6 +98,19 @@ test('production readiness blocks host TEE cloud-verify skip in production', () 
   assert.equal(report.ok, false);
 });
 
+test('production readiness blocks Phala deploy without MNEMONIC', () => {
+  const report = buildProductionReadinessReport({
+    ...baseInput,
+    env: {
+      ...baseInput.env,
+      MNEMONIC: '',
+    },
+  });
+  const check = report.checks.find((entry) => entry.id === 'mnemonic_configured');
+  assert.equal(check?.status, 'fail');
+  assert.equal(report.ok, false);
+});
+
 test('production readiness allows attestation bypass flags outside production', () => {
   const report = buildProductionReadinessReport({
     ...baseInput,

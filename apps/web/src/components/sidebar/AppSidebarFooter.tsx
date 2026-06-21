@@ -1,8 +1,27 @@
 import { Icon } from '@iconify/react';
-import { AppHeaderWallet } from '../AppHeaderWallet.js';
+import { lazy, Suspense } from 'react';
 import type { AppRoute } from '../../lib/app-routes.js';
 
+const AppHeaderWallet = lazy(() =>
+  import('../AppHeaderWallet.js').then((module) => ({ default: module.AppHeaderWallet }))
+);
+
 type AppTheme = 'light' | 'dark';
+
+function WalletFallback({ compact = false }: { compact?: boolean }) {
+  if (compact) {
+    return (
+      <span
+        aria-busy="true"
+        className="app-header-wallet__compact app-header-wallet__compact--loading"
+      >
+        …
+      </span>
+    );
+  }
+
+  return <span aria-busy="true" className="app-header-wallet__loading" />;
+}
 
 type AppSidebarFooterProps = {
   appTheme: AppTheme;
@@ -32,7 +51,9 @@ export function AppSidebarFooter({
       </button>
 
       <div className="app-sidebar__wallet-expanded">
-        <AppHeaderWallet onNavigate={onNavigate} />
+        <Suspense fallback={<WalletFallback />}>
+          <AppHeaderWallet onNavigate={onNavigate} />
+        </Suspense>
       </div>
 
       <div aria-label="Account shortcuts" className="app-sidebar__wallet-collapsed">
@@ -48,7 +69,9 @@ export function AppSidebarFooter({
             icon="pixel:cybersecurity"
           />
         </button>
-        <AppHeaderWallet compact onNavigate={onNavigate} />
+        <Suspense fallback={<WalletFallback compact />}>
+          <AppHeaderWallet compact onNavigate={onNavigate} />
+        </Suspense>
       </div>
 
       <div className="app-sidebar__utility">

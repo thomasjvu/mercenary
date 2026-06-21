@@ -8,6 +8,7 @@ import { createPaymentHandlers } from './payment.js';
 import type { ApiContext } from '../api-context.js';
 import type { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import { createSpawnInput } from '@bossraid/test-fixtures';
+import { installMockX402Facilitator } from '../test/helpers.js';
 
 test('reconcileLaunchPayment releases api-key reservation without settled payment', async () => {
   const controlState = createApiControlState({
@@ -159,5 +160,61 @@ test('reconcileLaunchPayment skips x402 refund when refundX402 is false', async 
     assert.equal(refundAttempts, 0);
   } finally {
     globalThis.fetch = originalFetch;
+  }
+});
+
+test('reconcileLaunchPayment refunds x402 settlement when spawn fails', async () => {
+  const facilitator = installMockX402Facilitator();
+  const controlState = createApiControlState({
+    ...process.env,
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+    BOSSRAID_X402_ENABLED: 'true',
+    BOSSRAID_X402_FACILITATOR_URL: 'https://facilitator.test/x402',
+    BOSSRAID_X402_PAY_TO: '0xabc',
+  });
+  const orchestrator = {
+    getRaidLaunchReservation: () => ({
+      id: 'reservation-refund-1',
+      sanitized: createSpawnInput(),
+    }),
+  } as unknown as BossRaidOrchestrator;
+
+  const ctx = {
+    controlState,
+    orchestrator,
+    apiMetrics: createApiMetrics(),
+    env: {
+      ...process.env,
+      BOSSRAID_X402_ENABLED: 'true',
+      BOSSRAID_X402_FACILITATOR_URL: 'https://facilitator.test/x402',
+      BOSSRAID_X402_PAY_TO: '0xabc',
+    },
+  } as unknown as ApiContext;
+
+  try {
+    const auth = createAuthHandlers(ctx);
+    const manaBilling = createManaBillingHandlers(ctx);
+    const payment = createPaymentHandlers(ctx, auth, manaBilling);
+
+    await payment.reconcileLaunchPayment({
+      route: 'chat',
+      request: {
+        headers: {
+          'payment-signature': Buffer.from(JSON.stringify({ proof: 'sig' })).toString('base64'),
+        },
+      } as never,
+      raidRequest: createSpawnInput(),
+      launchPayment: {
+        settlement: { success: true, transaction: '0xsettled' },
+        reservationId: 'reservation-refund-1',
+        requestKey: 'request-key',
+      },
+      reason: 'spawn_failed',
+      raidId: 'raid-refund-1',
+    });
+
+    assert.ok(facilitator.requests.some((request) => request.url.endsWith('/refund')));
+  } finally {
+    facilitator.restore();
   }
 });

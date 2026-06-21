@@ -116,7 +116,7 @@ function PrivacyBadges({ privacy }: { privacy: InferenceMarket['sellers'][number
   return (
     <span className="seller-order-book__privacy-badges">
       {privacy.teeAttested ? (
-        <span className="trust-badge trust-badge--tee">tee verified</span>
+        <span className="trust-badge trust-badge--tee">tee claimed</span>
       ) : null}
       {badges
         .filter((badge) => badge !== 'tee')

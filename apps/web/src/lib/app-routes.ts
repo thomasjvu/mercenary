@@ -42,7 +42,7 @@ export function isExternalSidebarNavItem(item: SidebarNavItem): item is SidebarE
 export const SIDEBAR_NAV_LINKS: SidebarNavItem[] = [
   { path: '/', label: 'home', icon: 'pixel:home-solid' },
   { path: '/mercenary', label: 'Mercenary', icon: 'pixel:message-dots-solid' },
-  { path: '/bounties', label: 'bounties', icon: 'pixel:treasure-map-solid' },
+  { path: '/bounties', label: 'bounties', icon: 'pixel:trophy-solid' },
   { path: '/party-quest', label: 'Phantasy', icon: 'pixel:users-solid' },
   {
     path: '/marketplace',
@@ -71,8 +71,8 @@ export const SIDEBAR_NAV_LINKS: SidebarNavItem[] = [
       },
     ],
   },
-  { href: BOSSRAID_DOCS_URL, label: 'docs', icon: 'pixel:notebook-solid' },
-  { href: '/skill.md', label: 'agent skill', icon: 'pixel:book-solid' },
+  { href: BOSSRAID_DOCS_URL, label: 'docs', icon: 'pixel:bookmark-solid' },
+  { href: '/skill.md', label: 'agent skill', icon: 'pixel:bookmark-solid' },
 ];
 
 const MARKETPLACE_CHILD_PATHS = new Set<AppRoute>([

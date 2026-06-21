@@ -3,6 +3,7 @@ export const INFISICAL_PHALA_ONCHAIN_PATH = '/bossraid/phala/onchain';
 export const LEGACY_INFISICAL_PHALA_PATH = '/bossraid/phala';
 
 export const PHALA_CORE_KEYS = [
+  'MNEMONIC',
   'BOSSRAID_IMAGE',
   'BOSSRAID_EVALUATOR_IMAGE',
   'BOSSRAID_EVAL_JOB_CONTAINER_IMAGE',

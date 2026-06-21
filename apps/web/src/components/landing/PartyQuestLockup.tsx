@@ -9,7 +9,7 @@ export function PartyQuestLockup() {
       <div className="party-quest-lockup__copy">
         <p className="party-quest-lockup__title">Boss Raid</p>
         <p className="party-quest-lockup__join">
-          <Icon aria-hidden="true" className="icon icon--pixel" icon="pixel:cross-solid" />
+          <Icon aria-hidden="true" className="icon icon--pixel" icon="pixel:x" />
           <span>Party Quest</span>
         </p>
       </div>
