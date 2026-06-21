@@ -32,7 +32,7 @@ export function MercenaryWorkspace({
   const walletAuth = useWalletAuth(SIGN_IN_IDLE_STATUS);
   const smartPay = useSmartAccountPay();
   const payment = useMercenaryPayment();
-  const paymentEnabled = ready.data?.payment.enabled === true;
+  const paymentEnabled = ready.data?.payment?.enabled === true;
   const isSignedIn = walletAuth.isAuthenticated;
 
   const { openInspector } = useAttestationInspector();

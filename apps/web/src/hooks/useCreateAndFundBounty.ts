@@ -18,7 +18,7 @@ export function useCreateAndFundBounty() {
       try {
         const created = await createBounty(input);
         const ready = await fetchReady();
-        if (ready.payment.enabled) {
+        if (ready.payment?.enabled) {
           if (!smartPay.walletAddress) {
             throw new Error('Connect MetaMask before funding bounty escrow.');
           }

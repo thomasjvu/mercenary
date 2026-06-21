@@ -109,7 +109,7 @@ export function registerOpsRoutes(
       return adminError;
     }
 
-    const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/tappd.sock';
+    const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/dstack.sock';
     return {
       deploymentTarget: env.BOSSRAID_DEPLOY_TARGET ?? null,
       nodeEnv: env.NODE_ENV ?? null,
@@ -351,7 +351,7 @@ export function registerOpsRoutes(
     const persistence = orchestrator.getPersistenceStatus();
     const x402Config = readX402ConfigForContext(ctx);
     const settlementMode = readSettlementMode(env);
-    const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/tappd.sock';
+    const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/dstack.sock';
     const tee = await readTeeSocketState(teeSocketPath);
     return buildProductionReadinessReport({
       env,

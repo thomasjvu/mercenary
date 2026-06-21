@@ -84,7 +84,7 @@ export function useAccountPage({ onNavigate }: UseAccountPageOptions) {
     setFundStatus('Processing balance top-up...');
     try {
       const ready = await fetchReady();
-      if (!ready.payment.enabled) {
+      if (!ready.payment?.enabled) {
         setFundStatus('Payments are not configured on this API host. Top-ups require x402.');
         return;
       }

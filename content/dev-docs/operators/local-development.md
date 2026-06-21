@@ -32,9 +32,17 @@ Copies result, agent log, and settlement artifact for offline review.
 
 ## Optional host attestation
 
-When `MNEMONIC` is configured on the host:
+Public host proof (no admin token):
+
+```bash
+curl -sS http://127.0.0.1:8787/v1/host/attestation | jq .
+```
+
+On Phala CVM with dstack mounted, the response includes `teeAttestation` (TDX quote). When `MNEMONIC` is configured, the same route also returns `signedRuntime`; `runtimeSigned` is true but `teeVerified` stays false without a valid quote.
+
+Admin / raid envelopes when `MNEMONIC` is set:
 
 - `GET /v1/attested-runtime` — signed runtime envelope
 - `GET /v1/raid/:raidId/attested-result` — signed result envelope
 
-Without `MNEMONIC`, provider TEE badges may still appear in routing proof; host-signed envelopes stay unpublished.
+Without `MNEMONIC`, provider TEE badges may still appear in routing proof; host-signed envelopes stay unpublished. Local dev may set `BOSSRAID_PRIVACY_SERVER_VERIFY=0` when dstack is unavailable.

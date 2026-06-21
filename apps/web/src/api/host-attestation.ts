@@ -15,6 +15,8 @@ export type HostAttestationResponse = {
   deploymentTarget: string | null;
   teePlatform: string | null;
   verified: boolean;
+  teeVerified: boolean;
+  runtimeSigned: boolean;
   verifiedAt: string;
   teeAttestation?: TeeAttestationView;
   signedRuntime?: HostAttestationSignedRuntime;

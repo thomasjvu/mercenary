@@ -1,5 +1,8 @@
 import { evaluateSubmission } from '@bossraid/evaluation';
-import { validateSubmissionPrivacy } from '@bossraid/privacy-engine';
+import {
+  validateSubmissionPrivacy,
+  verifySubmissionPrivacyAttestation,
+} from '@bossraid/privacy-engine';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import type {
   AssignmentRecord,
@@ -474,9 +477,33 @@ export async function submitResult(
     privacyConstraints.privacyMode === 'strict' ||
     (privacyConstraints.privacyMode !== 'off' && requiredPrivacyFeatures.length > 0);
 
+  let submissionToStore = normalizedSubmission;
   if (shouldValidatePrivacy) {
+    let submissionForPrivacy = normalizedSubmission;
+    if (normalizedSubmission.privacyAttestation) {
+      const verifyResult = await verifySubmissionPrivacyAttestation({
+        submission: normalizedSubmission,
+      });
+      if (verifyResult.attestation) {
+        submissionForPrivacy = {
+          ...normalizedSubmission,
+          privacyAttestation: verifyResult.attestation,
+        };
+        submissionToStore = submissionForPrivacy;
+      }
+      if (verifyResult.errors.length > 0 && privacyConstraints.privacyMode === 'strict') {
+        breakdown.valid = false;
+        if (!breakdown.invalidReasons.includes('privacy_non_compliant')) {
+          breakdown.invalidReasons.push('privacy_non_compliant');
+        }
+        breakdown.summary = [breakdown.summary, 'Strict privacy attestation verification failed.']
+          .filter(Boolean)
+          .join(' ');
+      }
+    }
+
     const privacyResult = validateSubmissionPrivacy(
-      normalizedSubmission,
+      submissionForPrivacy,
       requiredPrivacyFeatures,
       raid.task.sanitizationReport
     );
@@ -495,7 +522,7 @@ export async function submitResult(
   }
 
   deps.clearProviderTimers(raidId, submission.providerId);
-  applySubmissionToRaid(raid, normalizedSubmission, breakdown);
+  applySubmissionToRaid(raid, submissionToStore, breakdown);
 
   deps.applyReputationEvent(
     submission.providerId,

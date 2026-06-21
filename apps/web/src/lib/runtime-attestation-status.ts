@@ -15,18 +15,23 @@ export function deriveHostAttestationStatus(input: {
 } {
   const teeAttestation = input.data?.teeAttestation;
   const signedRuntime = input.data?.signedRuntime;
-  const verified = Boolean(input.data?.verified && (teeAttestation?.valid || signedRuntime));
-  const signerDisabled = Boolean(signedRuntime) === false && Boolean(teeAttestation?.valid);
+  const teeVerified = Boolean(
+    input.data?.teeVerified ?? input.data?.verified ?? teeAttestation?.valid
+  );
+  const runtimeSigned = Boolean(input.data?.runtimeSigned ?? signedRuntime);
+  const signerDisabled = runtimeSigned === false && teeVerified;
 
-  const status = verified
+  const status = teeVerified
     ? 'live'
     : teeAttestation && !teeAttestation.valid
       ? 'unverified'
-      : input.error
-        ? 'unavailable'
-        : input.data
-          ? 'pending'
-          : 'loading';
+      : runtimeSigned
+        ? 'live'
+        : input.error
+          ? 'unavailable'
+          : input.data
+            ? 'pending'
+            : 'loading';
 
   const target =
     input.data?.deploymentTarget ??
@@ -35,21 +40,25 @@ export function deriveHostAttestationStatus(input: {
   const tee =
     input.data?.teePlatform ?? teeAttestation?.vendor ?? (signerDisabled ? 'phala' : 'pending');
 
-  const label = verified
+  const label = teeVerified
     ? buildRuntimeAttestationLabel(target, tee)
-    : teeAttestation?.valid === false
-      ? 'TEE quote unverified'
-      : buildRuntimeAttestationLabel(target, tee);
+    : runtimeSigned
+      ? 'Runtime signed'
+      : teeAttestation?.valid === false
+        ? 'TEE quote unverified'
+        : buildRuntimeAttestationLabel(target, tee);
 
-  const tone: SpecialistTone = verified
+  const tone: SpecialistTone = teeVerified
     ? 'ready'
-    : teeAttestation?.valid === false
-      ? 'offline'
-      : input.error
+    : runtimeSigned
+      ? 'available'
+      : teeAttestation?.valid === false
         ? 'offline'
-        : input.data
-          ? 'available'
-          : 'working';
+        : input.error
+          ? 'offline'
+          : input.data
+            ? 'available'
+            : 'working';
 
   return {
     signerDisabled,

@@ -31,7 +31,15 @@ function createStrictPrivacyRaid(): RaidRecord {
     },
   });
 
-  return createRaidRecord(sanitized, { primaries: [provider], reserves: [] });
+  const raid = createRaidRecord(sanitized, { primaries: [provider], reserves: [] });
+  for (const providerId of raid.selectedProviders) {
+    const assignment = raid.assignments[providerId];
+    if (assignment) {
+      assignment.providerRunId = 'run-strict-privacy';
+      assignment.status = 'running';
+    }
+  }
+  return raid;
 }
 
 function createDispatchDeps(raid: RaidRecord): RaidProviderDispatchDeps {
@@ -93,38 +101,102 @@ test('submitResult fails closed for strict privacy when submission is non-compli
   assert.equal(raid.assignments[raid.selectedProviders[0]!]?.status, 'invalid');
 });
 
-test('submitResult keeps compliant strict privacy submissions eligible for synthesis', async () => {
-  const raid = createStrictPrivacyRaid();
-  const deps = createDispatchDeps(raid);
-  const providerId = raid.selectedProviders[0]!;
+test('submitResult rejects self-asserted privacy attestation when server verify is enabled', async () => {
+  const previous = process.env.BOSSRAID_PRIVACY_SERVER_VERIFY;
+  process.env.BOSSRAID_PRIVACY_SERVER_VERIFY = '1';
 
-  await submitResult(
-    raid.id,
-    {
-      ...createSubmission(raid.id, providerId),
-      privacyAttestation: {
-        providerId,
-        raidId: raid.id,
-        submittedAt: new Date().toISOString(),
-        featuresClaimed: ['tee_attested', 'e2ee'],
-        featuresVerified: ['tee_attested', 'e2ee'],
-        externalApiCalls: [],
-        dataRetained: false,
-        signedDeclaration: 'PRIVACY_DECLARATION:test',
-        teeAttestation: {
-          valid: true,
+  try {
+    const raid = createStrictPrivacyRaid();
+    const deps = createDispatchDeps(raid);
+    const providerId = raid.selectedProviders[0]!;
+
+    await submitResult(
+      raid.id,
+      {
+        ...createSubmission(raid.id, providerId),
+        privacyAttestation: {
           providerId,
-          verifiedAt: new Date().toISOString(),
-          vendor: 'venice',
-          e2eeReady: true,
+          raidId: raid.id,
+          submittedAt: new Date().toISOString(),
+          featuresClaimed: ['tee_attested', 'e2ee'],
+          featuresVerified: ['tee_attested', 'e2ee'],
+          externalApiCalls: [],
+          dataRetained: false,
+          signedDeclaration: 'PRIVACY_DECLARATION:test',
+          teeAttestation: {
+            valid: true,
+            providerId,
+            verifiedAt: new Date().toISOString(),
+            vendor: 'venice',
+            e2eeReady: true,
+          },
         },
       },
-    },
-    deps
-  );
+      deps
+    );
 
-  const ranked = raid.rankedSubmissions[0];
-  assert.ok(ranked);
-  assert.equal(ranked.breakdown.privacyComplianceDetails?.passed, true);
-  assert.equal(ranked.breakdown.invalidReasons.includes('privacy_non_compliant'), false);
+    const ranked = raid.rankedSubmissions[0];
+    assert.ok(ranked);
+    assert.equal(ranked.breakdown.valid, false);
+    assert.ok(ranked.breakdown.invalidReasons.includes('privacy_non_compliant'));
+    assert.equal(ranked.breakdown.privacyComplianceDetails?.passed, false);
+    assert.deepEqual(ranked.submission.privacyAttestation?.featuresVerified, []);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.BOSSRAID_PRIVACY_SERVER_VERIFY;
+    } else {
+      process.env.BOSSRAID_PRIVACY_SERVER_VERIFY = previous;
+    }
+  }
+});
+
+test('submitResult keeps compliant strict privacy submissions eligible when server verify is disabled', async () => {
+  const previous = process.env.BOSSRAID_PRIVACY_SERVER_VERIFY;
+  process.env.BOSSRAID_PRIVACY_SERVER_VERIFY = '0';
+
+  try {
+    const raid = createStrictPrivacyRaid();
+    const deps = createDispatchDeps(raid);
+    const providerId = raid.selectedProviders[0]!;
+
+    await submitResult(
+      raid.id,
+      {
+        ...createSubmission(raid.id, providerId),
+        privacyAttestation: {
+          providerId,
+          raidId: raid.id,
+          submittedAt: new Date().toISOString(),
+          featuresClaimed: ['tee_attested', 'e2ee'],
+          featuresVerified: ['tee_attested', 'e2ee'],
+          externalApiCalls: [],
+          dataRetained: false,
+          signedDeclaration: 'PRIVACY_DECLARATION:test',
+          teeAttestation: {
+            valid: true,
+            providerId,
+            verifiedAt: new Date().toISOString(),
+            vendor: 'venice',
+            e2eeReady: true,
+          },
+        },
+      },
+      deps
+    );
+
+    const ranked = raid.rankedSubmissions[0];
+    assert.ok(ranked);
+    assert.equal(ranked.breakdown.privacyComplianceDetails?.passed, true);
+    assert.equal(ranked.breakdown.invalidReasons.includes('privacy_non_compliant'), false);
+    assert.deepEqual(ranked.submission.privacyAttestation?.featuresVerified, [
+      'tee_attested',
+      'e2ee',
+    ]);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.BOSSRAID_PRIVACY_SERVER_VERIFY;
+    } else {
+      process.env.BOSSRAID_PRIVACY_SERVER_VERIFY = previous;
+    }
+  }
 });

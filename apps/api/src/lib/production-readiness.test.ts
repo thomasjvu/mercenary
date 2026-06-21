@@ -71,3 +71,49 @@ test('production readiness blocks unverified bounty fund bypass', () => {
   assert.equal(check?.status, 'fail');
   assert.equal(report.ok, false);
 });
+
+test('production readiness blocks disabled privacy server verify in production', () => {
+  const report = buildProductionReadinessReport({
+    ...baseInput,
+    env: {
+      ...baseInput.env,
+      BOSSRAID_PRIVACY_SERVER_VERIFY: '0',
+    },
+  });
+  const check = report.checks.find((entry) => entry.id === 'privacy_server_verify_enabled');
+  assert.equal(check?.status, 'fail');
+  assert.equal(report.ok, false);
+});
+
+test('production readiness blocks host TEE cloud-verify skip in production', () => {
+  const report = buildProductionReadinessReport({
+    ...baseInput,
+    env: {
+      ...baseInput.env,
+      BOSSRAID_HOST_TEE_SKIP_CLOUD_VERIFY: '1',
+    },
+  });
+  const check = report.checks.find((entry) => entry.id === 'host_tee_cloud_verify_enabled');
+  assert.equal(check?.status, 'fail');
+  assert.equal(report.ok, false);
+});
+
+test('production readiness allows attestation bypass flags outside production', () => {
+  const report = buildProductionReadinessReport({
+    ...baseInput,
+    env: {
+      ...baseInput.env,
+      NODE_ENV: 'development',
+      BOSSRAID_PRIVACY_SERVER_VERIFY: '0',
+      BOSSRAID_HOST_TEE_SKIP_CLOUD_VERIFY: '1',
+    },
+  });
+  assert.equal(
+    report.checks.find((entry) => entry.id === 'privacy_server_verify_enabled')?.status,
+    'pass'
+  );
+  assert.equal(
+    report.checks.find((entry) => entry.id === 'host_tee_cloud_verify_enabled')?.status,
+    'pass'
+  );
+});

@@ -2,7 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { NETWORK } from '@bossraid/constants';
 import { createProviderProfile } from '@bossraid/test-fixtures';
+import { mkdtempSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import type { ProviderSubmission } from '@bossraid/shared-types';
 import { createApiControlState } from '../control-state.js';
+import { InferenceReceiptStore } from './inference-receipt-store.js';
 import {
   buildUpstreamSellerProviderId,
   createProviderRunId,
@@ -11,6 +16,7 @@ import {
   resolveHostedProviderUpstream,
   resolveInferenceGatewayBase,
   resolveInferenceGatewayProviderEndpoint,
+  runInferenceGatewayJob,
 } from './inference-gateway.js';
 
 test('resolveInferenceGatewayBase prefers configured base URL', () => {
@@ -87,4 +93,91 @@ test('createProviderRunId returns unique run ids', () => {
 test('resolveInferenceGatewayBase uses localhost default port when unset', () => {
   const base = resolveInferenceGatewayBase({});
   assert.equal(base, `http://${NETWORK.LOCALHOST}:${NETWORK.LOCAL_API_PORT}`);
+});
+
+test('runInferenceGatewayJob does not auto-verify behavioral privacy features from TEE validity', async () => {
+  const wallet = '0xSeller00000000000000000000000000000001';
+  const env = {
+    ...process.env,
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+    BOSSRAID_UPSTREAM_TEE_MOCK: '1',
+    BOSSRAID_VENICE_MOCK: '1',
+    BOSSRAID_VENICE_API_KEY: 'vn_test_key',
+    NODE_ENV: 'test',
+  };
+  const controlState = createApiControlState(env);
+  controlState.upsertSellerUpstreamConfig(wallet, 'venice', 'vn_test_key', env);
+
+  const provider = createProviderProfile('hosted-privacy', {
+    source: {
+      type: 'venice_hosted',
+      externalRef: wallet,
+    },
+    modelProvider: 'venice',
+    modelId: 'llama-3.3-70b',
+    privacy: {
+      teeAttested: true,
+      signedOutputs: true,
+      noDataRetention: true,
+      e2ee: false,
+    },
+  });
+
+  const receiptDir = mkdtempSync(join(tmpdir(), 'bossraid-receipt-'));
+  const inferenceReceiptStore = new InferenceReceiptStore(join(receiptDir, 'receipts.sqlite'));
+
+  let captured: ProviderSubmission | undefined;
+  const orchestrator = {
+    recordProviderSubmission: async (_raidId: string, submission: ProviderSubmission) => {
+      captured = submission;
+    },
+    recordProviderFailure: async () => undefined,
+  };
+
+  const taskPackage = {
+    raidId: 'raid-gateway-privacy',
+    submissionFormat: 'text_answer_plus_explanation' as const,
+    desiredOutput: {
+      primaryType: 'text' as const,
+      artifactTypes: ['text' as const],
+    },
+    task: {
+      title: 'Gateway privacy test',
+      description: 'user: Say ok.',
+      language: 'text' as const,
+    },
+    artifacts: {
+      files: [],
+      errors: [],
+      reproSteps: [],
+      tests: [],
+    },
+    constraints: {
+      maxChangedFiles: 4,
+      maxDiffLines: 250,
+      forbidPaths: [],
+      mustNot: [],
+    },
+    deadlineUnix: Math.floor(Date.now() / 1000) + 3600,
+  };
+
+  await runInferenceGatewayJob({
+    orchestrator: orchestrator as never,
+    controlState,
+    inferenceReceiptStore,
+    provider,
+    body: {
+      raidId: 'raid-gateway-privacy',
+      providerId: provider.providerId,
+      task: taskPackage,
+      deadlineUnix: taskPackage.deadlineUnix,
+    },
+    providerRunId: 'run-gateway',
+    env,
+  });
+
+  assert.ok(captured?.privacyAttestation);
+  assert.ok(captured.privacyAttestation.featuresVerified.includes('tee_attested'));
+  assert.equal(captured.privacyAttestation.featuresVerified.includes('signed_outputs'), false);
+  assert.equal(captured.privacyAttestation.featuresVerified.includes('no_data_retention'), false);
 });

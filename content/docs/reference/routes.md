@@ -34,27 +34,26 @@ Native write route: `POST /v1/raid`.
 
 ## Status, proof, discovery
 
-| Route                                      | Auth                          | Purpose                                        |
-| ------------------------------------------ | ----------------------------- | ---------------------------------------------- |
-| `GET /health`                              | —                             | Health + ready providers                       |
-| `GET /ready`                               | —                             | Public beta readiness (`{ ok: boolean }` only) |
-| `GET /metrics`                             | admin\*                       | Prometheus metrics                             |
-| `GET /v1/raid/:raidId`                     | raid token / admin            | Status                                         |
-| `GET /v1/raid/:raidId/result`              | raid token / admin            | Result + routing + settlement                  |
-| `GET /v1/raid/:raidId/provider-settlement` | raid token / provider / admin | Per-provider settlement slice (`?providerId=`) |
-| `GET /v1/raid/:raidId/agent_log.json`      | query `token`                 | Run log                                        |
-
-| `GET /v1/agent.json` | — | Mercenary manifest |
-| `GET /v1/host/attestation` | — | Public host TEE proof (Phala quote when `BOSSRAID_TEE_PLATFORM=phala`; optional `signedRuntime` when `MNEMONIC` is set) |
-| `GET /v1/attested-runtime` | admin | Signed runtime attestation (`MNEMONIC`) |
-| `GET /v1/raid/:raidId/attested-result` | raid token | Signed result |
-| `GET /v1/providers` | — | Provider list (`?sourceType=party_quest`, `?supportedFramework=party-quest`) |
-| `GET /v1/providers/health` | — | Readiness snapshot |
-| `GET /v1/providers/:providerId/stats` | admin | Provider profile + endpoint (ops/MCP) |
-| `GET /v1/models` | — | Model catalog + filters |
-| `GET /v1/prices` | — | Compact pricing |
-| `GET /v1/markets` | — | Order book by model |
-| `GET /agents/discover` | — | Provider discovery |
+| Route                                      | Auth                          | Purpose                                                                                                                                                                                  |
+| ------------------------------------------ | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /health`                              | —                             | Health + ready providers                                                                                                                                                                 |
+| `GET /ready`                               | —                             | Public beta readiness (`{ ok: boolean }` only)                                                                                                                                           |
+| `GET /metrics`                             | admin\*                       | Prometheus metrics                                                                                                                                                                       |
+| `GET /v1/raid/:raidId`                     | raid token / admin            | Status                                                                                                                                                                                   |
+| `GET /v1/raid/:raidId/result`              | raid token / admin            | Result + routing + settlement                                                                                                                                                            |
+| `GET /v1/raid/:raidId/provider-settlement` | raid token / provider / admin | Per-provider settlement slice (`?providerId=`)                                                                                                                                           |
+| `GET /v1/raid/:raidId/agent_log.json`      | query `token`                 | Run log                                                                                                                                                                                  |
+| `GET /v1/agent.json`                       | —                             | Mercenary manifest                                                                                                                                                                       |
+| `GET /v1/host/attestation`                 | — (rate-limited)              | Public host TEE proof: Phala TDX quote via dstack guest agent (`/var/run/dstack.sock`); optional `signedRuntime` when `MNEMONIC` is set; `verified`/`teeVerified` require TEE quote only |
+| `GET /v1/attested-runtime`                 | admin                         | Signed runtime attestation (`MNEMONIC`)                                                                                                                                                  |
+| `GET /v1/raid/:raidId/attested-result`     | raid token                    | Signed result                                                                                                                                                                            |
+| `GET /v1/providers`                        | —                             | Provider list (`?sourceType=party_quest`, `?supportedFramework=party-quest`)                                                                                                             |
+| `GET /v1/providers/health`                 | —                             | Readiness snapshot                                                                                                                                                                       |
+| `GET /v1/providers/:providerId/stats`      | admin                         | Provider profile + endpoint (ops/MCP)                                                                                                                                                    |
+| `GET /v1/models`                           | —                             | Model catalog + filters                                                                                                                                                                  |
+| `GET /v1/prices`                           | —                             | Compact pricing                                                                                                                                                                          |
+| `GET /v1/markets`                          | —                             | Order book by model                                                                                                                                                                      |
+| `GET /agents/discover`                     | —                             | Provider discovery                                                                                                                                                                       |
 
 \* `BOSSRAID_METRICS_PUBLIC=true` exposes `/metrics` without admin auth.
 

@@ -42,7 +42,7 @@ export function registerHealthRoutes(
     const x402Config = readX402ConfigForContext(ctx);
     const settlementMode = readSettlementMode(env);
     const settlementConfigured = isSettlementGateConfigured(settlementMode, env);
-    const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/tappd.sock';
+    const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/dstack.sock';
     const tee = await readTeeSocketState(teeSocketPath);
     const secretsEncrypted =
       readStorageBackend(env) === 'memory' ||

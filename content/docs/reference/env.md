@@ -127,12 +127,17 @@ Workflow: [operators/appendix/infisical.md](../operators/appendix/infisical.md).
 
 ## ERC-8004 & attestation
 
-| Variable                                            | Purpose                          |
-| --------------------------------------------------- | -------------------------------- |
-| `BOSSRAID_ERC8004_VERIFY`                           | Live onchain identity checks     |
-| `BOSSRAID_ERC8004_*`                                | Mercenary/provider identity refs |
-| `MNEMONIC`                                          | Host attestation signing         |
-| `BOSSRAID_TEE_PLATFORM`, `BOSSRAID_TEE_SOCKET_PATH` | Phala TEE (default `phala`)      |
+| Variable                              | Purpose                                                                                                                                                                      |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BOSSRAID_ERC8004_VERIFY`             | Live onchain identity checks                                                                                                                                                 |
+| `BOSSRAID_ERC8004_*`                  | Mercenary/provider identity refs                                                                                                                                             |
+| `MNEMONIC`                            | Signs host `signedRuntime` envelopes (`GET /v1/host/attestation`, admin `GET /v1/attested-runtime`, raid `GET /v1/raid/:raidId/attested-result`); does not set `teeVerified` |
+| `BOSSRAID_TEE_PLATFORM`               | Host TEE platform label (`phala`, `eigencompute`, etc.)                                                                                                                      |
+| `BOSSRAID_TEE_RUNTIME_MODE`           | Runtime mode recorded in TEE attestations (default `phala-cvm`)                                                                                                              |
+| `BOSSRAID_TEE_SOCKET_PATH`            | Phala dstack guest agent socket (default `/var/run/dstack.sock`)                                                                                                             |
+| `BOSSRAID_HOST_TEE_SKIP_CLOUD_VERIFY` | `1` = structural TDX verify only on host route; unset = Phala Cloud verify. **Blocked in production** (`NODE_ENV=production` + production-readiness)                         |
+| `BOSSRAID_UPSTREAM_TEE_CLOUD_VERIFY`  | `0` disables cloud verify for marketplace/upstream TEE paths                                                                                                                 |
+| `BOSSRAID_PRIVACY_SERVER_VERIFY`      | `0` = dev-only: skip server-side provider privacy attestation re-verify. **Blocked in production**                                                                           |
 
 ## Evaluator
 

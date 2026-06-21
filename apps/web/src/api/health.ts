@@ -8,8 +8,22 @@ export type ReadyTeeGate = {
   mnemonicConfigured?: boolean;
 };
 
+export type ReadyPayment = {
+  enabled: boolean;
+  network?: string;
+  asset?: string;
+  facilitatorConfigured?: boolean;
+};
+
+export type ReadySettlement = {
+  mode: string;
+  configured: boolean;
+};
+
 export type ReadyResponse = {
   ok: boolean;
+  payment?: ReadyPayment;
+  settlement?: ReadySettlement;
   gates?: {
     api: boolean;
     storage: boolean;

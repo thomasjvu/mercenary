@@ -86,7 +86,7 @@ async function verifyPhalaTeeAttestation(
     reportData,
   }).then((result) => {
     hostAttestationInFlight.delete(cacheKey);
-    if (result.signature) {
+    if (result.valid) {
       cache.set(cacheKey, { result, expiresAt: now + cacheTtlMs });
     }
     return result;

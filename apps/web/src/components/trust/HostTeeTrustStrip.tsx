@@ -23,8 +23,12 @@ export function HostTeeTrustStrip({ variant = 'strip' }: HostTeeTrustStripProps)
   const teePlatform = hostAttestation.data?.teePlatform ?? ready.data?.gates?.tee.platform ?? null;
   const teeSocketLive =
     ready.data?.gates?.tee.socketMounted === true || ready.data?.gates?.tee.pathExists === true;
-  const hostVerified = Boolean(hostAttestation.data?.verified && (tee?.valid || signedRuntime));
-  const proofPending = !hostVerified && !hostAttestation.isLoading && !hostAttestation.data;
+  const teeVerified = Boolean(
+    hostAttestation.data?.teeVerified ?? hostAttestation.data?.verified ?? tee?.valid
+  );
+  const runtimeSigned = Boolean(hostAttestation.data?.runtimeSigned ?? signedRuntime);
+  const proofPending =
+    !teeVerified && !runtimeSigned && !hostAttestation.isLoading && !hostAttestation.data;
 
   const label = buildRuntimeAttestationLabel(
     deploymentTarget ?? (teeSocketLive ? 'tee host' : 'pending'),
@@ -42,10 +46,13 @@ export function HostTeeTrustStrip({ variant = 'strip' }: HostTeeTrustStripProps)
     <section aria-label="Host TEE verification" className={className}>
       <div className="host-tee-trust__chips">
         <span
-          className={`host-tee-trust__chip${hostVerified ? ' host-tee-trust__chip--ready' : ''}`}
+          className={`host-tee-trust__chip${teeVerified ? ' host-tee-trust__chip--ready' : ''}`}
         >
           {label}
         </span>
+        {runtimeSigned ? (
+          <span className="host-tee-trust__chip host-tee-trust__chip--ready">Runtime signed</span>
+        ) : null}
         {teeSocketLive ? (
           <span className="host-tee-trust__chip host-tee-trust__chip--ready">TEE socket live</span>
         ) : null}

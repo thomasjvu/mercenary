@@ -167,8 +167,93 @@ Findings **130–148** implemented at `5f85ab1` base:
 | 142–147 | Raid billing, gateway, reconcile, settlement, scoring tests | DONE   |
 | 148     | pnpm overrides for high audit advisories                    | DONE   |
 
+## Eighth-pass audit (2026-06-20)
+
+Base commit: **`fcbeaf9`**. Scope: attestation/Phala deploy arc, privacy-engine,
+web proof UX, carry-forward gaps (027/028). Prior plans **001–012** remain DONE.
+
+User selection: **default top 4 by leverage** (non-interactive `/improve`).
+
+| Plan | Title                                      | Priority | Effort | Depends on | Status |
+| ---- | ------------------------------------------ | -------- | ------ | ---------- | ------ |
+| 013  | Add attestation characterization tests     | P1       | M      | —          | DONE   |
+| 014  | Fix host attestation trust model and cache | P1       | M      | 013        | DONE   |
+| 015  | Re-verify provider privacy attestations    | P1       | L      | 013, 014   | DONE   |
+| 016  | Sync attestation documentation             | P2       | S      | 014        | DONE   |
+
+### Dependency notes (eighth pass)
+
+- **014** follows **013** — tests lock current behavior before trust-model changes.
+- **015** follows **013**/**014** — reuses verify options and cache semantics.
+- **016** follows **014** — documents final response fields and env flags.
+
+### Eighth-pass findings (vetted, prioritized)
+
+| #   | Finding                                               | Category    | Impact | Effort | Risk | Evidence confidence |
+| --- | ----------------------------------------------------- | ----------- | ------ | ------ | ---- | ------------------- |
+| 149 | Provider privacy attestations trusted client-side     | security    | HIGH   | L      | MED  | HIGH → Plan 015     |
+| 150 | Host attestation skips cloud verify + weak `verified` | security    | HIGH   | M      | MED  | HIGH → Plan 014     |
+| 151 | Failed TEE quotes cached 10 min when signature set    | correctness | MED    | S      | LOW  | HIGH → Plan 014     |
+| 152 | Attestation hot path lacks characterization tests     | tests       | HIGH   | M      | LOW  | HIGH → Plan 013     |
+| 153 | `routes.md` broken table + proof.md `/receipt` drift  | docs        | MED    | S      | LOW  | HIGH → Plan 016     |
+| 154 | Production-readiness passes TEE without MNEMONIC      | gap         | MED    | M      | MED  | HIGH — deferred     |
+| 155 | Web icons chunk ~4.9 MB (incomplete subset)           | perf        | MED    | M      | MED  | HIGH — deferred     |
+| 156 | Wallet bundle modulepreloaded on all pages            | perf        | MED    | M      | MED  | HIGH — deferred     |
+
+Direction (not ranked as bugs): MNEMONIC in Phala secret tier + production gate;
+host/marketplace TEE verify parity; offline proof bundle includes attestation.
+
+## Ninth-pass audit (2026-06-21)
+
+Base commit: **`d547ff6`** (includes uncommitted eighth-pass execution:
+plans 013–016 implemented in working tree). Prior plans **001–016** remain DONE.
+
+User selection: **default top 5 by leverage** (non-interactive `/improve`).
+
+| Plan | Title                                          | Priority | Effort | Depends on | Status |
+| ---- | ---------------------------------------------- | -------- | ------ | ---------- | ------ |
+| 017  | Persist server-verified privacy attestation    | P1       | S      | 015        | DONE   |
+| 018  | Block unsafe attestation env in prod readiness | P1       | S      | 014, 015   | DONE   |
+| 019  | Align hosted gateway privacy features          | P1       | S      | 015        | DONE   |
+| 020  | Fix web ReadyResponse types and CI test glob   | P1       | S      | —          | DONE   |
+| 021  | Align API TEE socket default to dstack         | P2       | S      | 016        | DONE   |
+
+### Dependency notes (ninth pass)
+
+- **017** follows **015** — server verify must land before persisting its output.
+- **018** follows **014**/**015** — gates env flags those plans introduced.
+- **019** follows **015** — same `featuresVerified` trust model as provider-agent.
+- **021** follows **016** — docs already claim dstack default; API must match.
+
+### Ninth-pass findings (vetted, prioritized)
+
+| #   | Finding                                              | Category    | Impact | Effort | Risk | Evidence confidence  |
+| --- | ---------------------------------------------------- | ----------- | ------ | ------ | ---- | -------------------- |
+| 157 | Server attestation not persisted on raid submissions | correctness | HIGH   | S      | LOW  | HIGH → Plan 017      |
+| 158 | Prod readiness allows privacy/TEE bypass env flags   | security    | HIGH   | S      | LOW  | HIGH → Plan 018      |
+| 159 | Gateway auto-verifies behavioral privacy features    | security    | HIGH   | S      | LOW  | HIGH → Plan 019      |
+| 160 | Web `ReadyResponse` missing `payment`; check fails   | dx          | HIGH   | S      | LOW  | HIGH → Plan 020      |
+| 161 | Web unit tests skipped in `pnpm test:unit`           | tests       | HIGH   | S      | LOW  | HIGH → Plan 020      |
+| 162 | API TEE socket default still `tappd.sock`            | tech-debt   | MED    | S      | MED  | HIGH → Plan 021      |
+| 154 | Production TEE gate passes without MNEMONIC          | gap         | MED    | M      | MED  | HIGH — deferred      |
+| 155 | Icons chunk incomplete subset (~4.9 MB risk)         | perf        | MED    | M      | MED  | MED → deferred       |
+| 156 | Wallet chunk preloaded on all pages                  | perf        | MED    | M      | MED  | HIGH — deferred      |
+| 163 | Icon subset omits primary nav glyphs                 | perf        | MED    | S      | LOW  | HIGH — deferred      |
+| 027 | OnchainSettlementExecutor behavioral tests thin      | tests       | MED    | L      | MED  | HIGH — carry-forward |
+| 028 | reconcileLaunchPayment x402 paths thinly tested      | tests       | MED    | M      | LOW  | HIGH — carry-forward |
+
+### Direction (ninth pass)
+
+- **DIR-01**: Promote `MNEMONIC` to Phala core secrets tier + production gate (finding 154).
+- **DIR-02**: Extend `export:proof-bundle` with host/upstream attestation artifacts.
+- **DIR-03**: Attestation events in `agent_log.json` timeline (architecture.md gap).
+
 ## Findings considered and rejected
 
+- **Eighth-pass items 149–153**: addressed by plans 013–016 (implemented, uncommitted at `d547ff6`).
+- **CORRECTNESS-02** (orchestrator re-verifies local socket quote, not provider-submitted bytes): deployment-model limitation; needs architecture decision before code change — deferred beyond plan 021.
+- **CORRECTNESS-04** (`prefer` privacy mode ignores server verify errors): may be intentional soft-ranking; no plan until product confirms strict-only enforcement.
+- **DOCS-01** (`/ready` slim vs full response): Plan 007 marked DONE but API still returns full shape; requires product choice (document current vs migrate web) — not auto-planned.
 - **Committed deploy secrets** (`deploy/phala/secrets.*.env`): gitignored, never in git history.
 - **Onchain finalize before terminal children**: by-design when `BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS` is false.
 - **SEC-015 / inference receipt auth**: by-design — `content/docs/overview/proof.md` documents `GET /v1/inference/receipts/:id` as unauthenticated proof surface.

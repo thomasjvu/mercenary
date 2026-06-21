@@ -73,7 +73,10 @@ export function AttestationInspectorSidebar({
   const teePlatform = hostAttestation?.teePlatform ?? ready?.gates?.tee.platform ?? 'pending';
   const teeSocketLive =
     ready?.gates?.tee.socketMounted === true || ready?.gates?.tee.pathExists === true;
-  const hostVerified = Boolean(hostAttestation?.verified && (tee?.valid || signedRuntime));
+  const teeVerified = Boolean(
+    hostAttestation?.teeVerified ?? hostAttestation?.verified ?? tee?.valid
+  );
+  const runtimeSigned = Boolean(hostAttestation?.runtimeSigned ?? signedRuntime);
   const runtimeLabel = buildRuntimeAttestationLabel(deploymentTarget, teePlatform);
   const upstreamRows = context.upstreamAttestations ?? [];
 
@@ -108,7 +111,8 @@ export function AttestationInspectorSidebar({
           <div className="attestation-inspector__summary">
             <strong>{runtimeLabel}</strong>
             <span>
-              {hostVerified ? 'verified' : 'pending'} · tee {teeSocketLive ? 'live' : 'offline'}
+              {teeVerified ? 'tee verified' : runtimeSigned ? 'runtime signed' : 'pending'} · tee{' '}
+              {teeSocketLive ? 'live' : 'offline'}
               {signedRuntime
                 ? ` · ${signedRuntime.payload.readyProviders}/${signedRuntime.payload.providers} ready`
                 : ''}

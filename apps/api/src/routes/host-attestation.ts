@@ -28,10 +28,16 @@ export type HostAttestationResponse = {
   deploymentTarget: string | null;
   teePlatform: string | null;
   verified: boolean;
+  teeVerified: boolean;
+  runtimeSigned: boolean;
   verifiedAt: string;
   teeAttestation?: TeeAttestationView;
   signedRuntime?: HostAttestationSignedRuntime;
 };
+
+function hostSkipCloudVerify(): boolean {
+  return process.env.BOSSRAID_HOST_TEE_SKIP_CLOUD_VERIFY === '1';
+}
 
 function serializeTeeAttestation(tee: TeeAttestationResult): TeeAttestationView {
   const explorerUrl = tee.explorerUrl ?? buildQuoteExplorerUrl(tee.signature);
@@ -72,7 +78,7 @@ function warmupHostTeeAttestation(
       runtimeMode: env.BOSSRAID_TEE_RUNTIME_MODE ?? 'phala-cvm',
       rpcTimeoutMs: HOST_TEE_INFO_TIMEOUT_MS,
       getQuoteTimeoutMs: HOST_TEE_GET_QUOTE_TIMEOUT_MS,
-      skipCloudVerify: true,
+      skipCloudVerify: hostSkipCloudVerify(),
     }
   ).catch(() => undefined);
 }
@@ -85,7 +91,7 @@ export function registerHostAttestationRoutes(
   const { env, orchestrator, teeSigner, workerIsolation } = ctx;
   const { collectProviderHealth } = handlers.raid;
   const { requireRateLimit } = handlers.auth;
-  const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/tappd.sock';
+  const teeSocketPath = env.BOSSRAID_TEE_SOCKET_PATH ?? '/var/run/dstack.sock';
 
   void readTeeSocketState(teeSocketPath).then((teeSocket) => {
     warmupHostTeeAttestation(env, teeSocketPath, teeSocket);
@@ -119,7 +125,7 @@ export function registerHostAttestationRoutes(
           runtimeMode: env.BOSSRAID_TEE_RUNTIME_MODE ?? 'phala-cvm',
           rpcTimeoutMs: HOST_TEE_INFO_TIMEOUT_MS,
           getQuoteTimeoutMs: HOST_TEE_GET_QUOTE_TIMEOUT_MS,
-          skipCloudVerify: true,
+          skipCloudVerify: hostSkipCloudVerify(),
         }
       );
     } else if (teePlatform === 'phala') {
@@ -161,11 +167,15 @@ export function registerHostAttestationRoutes(
     }
 
     const verifiedAt = teeAttestation?.verifiedAt ?? new Date().toISOString();
+    const teeVerified = Boolean(teeAttestation?.valid);
+    const runtimeSigned = Boolean(signedRuntime);
     const response: HostAttestationResponse = {
       object: 'host_attestation',
       deploymentTarget,
       teePlatform,
-      verified: Boolean(teeAttestation?.valid || signedRuntime),
+      verified: teeVerified,
+      teeVerified,
+      runtimeSigned,
       verifiedAt,
       teeAttestation: teeAttestation ? serializeTeeAttestation(teeAttestation) : undefined,
       signedRuntime,

@@ -170,6 +170,29 @@ export function buildProductionReadinessReport(input: {
   });
 
   addCheck({
+    id: 'privacy_server_verify_enabled',
+    status: !productionEnv || input.env.BOSSRAID_PRIVACY_SERVER_VERIFY !== '0' ? 'pass' : 'fail',
+    severity: 'blocking',
+    message:
+      'BOSSRAID_PRIVACY_SERVER_VERIFY must not be disabled in production. Strict-private raids require server-side privacy attestation re-verification.',
+    details: {
+      privacyServerVerify: input.env.BOSSRAID_PRIVACY_SERVER_VERIFY ?? null,
+    },
+  });
+
+  addCheck({
+    id: 'host_tee_cloud_verify_enabled',
+    status:
+      !productionEnv || input.env.BOSSRAID_HOST_TEE_SKIP_CLOUD_VERIFY !== '1' ? 'pass' : 'fail',
+    severity: 'blocking',
+    message:
+      'BOSSRAID_HOST_TEE_SKIP_CLOUD_VERIFY must not be set in production. Phala Cloud quote verification is required on host and submission attestation paths.',
+    details: {
+      hostTeeSkipCloudVerify: input.env.BOSSRAID_HOST_TEE_SKIP_CLOUD_VERIFY ?? null,
+    },
+  });
+
+  addCheck({
     id: 'onchain_settlement',
     status: input.settlement.configured ? 'pass' : 'fail',
     severity: 'blocking',
@@ -236,7 +259,8 @@ export function buildProductionReadinessReport(input: {
         ? 'pass'
         : 'fail',
     severity: 'blocking',
-    message: 'Phala production requires BOSSRAID_TEE_PLATFORM=phala with a mounted tappd socket.',
+    message:
+      'Phala production requires BOSSRAID_TEE_PLATFORM=phala with a mounted dstack guest agent socket.',
     details: input.tee,
   });
 

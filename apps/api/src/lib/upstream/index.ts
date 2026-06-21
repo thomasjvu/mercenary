@@ -62,6 +62,7 @@ export async function probeUpstreamChatCompletion(input: {
   apiKey: string;
   modelId: string;
   prompt?: string;
+  env?: NodeJS.ProcessEnv;
 }): Promise<UpstreamChatResult> {
   switch (input.provider) {
     case 'venice':

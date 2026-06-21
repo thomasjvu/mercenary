@@ -88,6 +88,18 @@ pnpm deploy:web:cloudflare
 
 Set the Cloudflare Pages secret `BOSSRAID_API_ORIGIN` to your public API host (Phala CVM), not a self-referential `pages.dev/api` loop. The API host must have `BOSSRAID_X402_ENABLED=true` before wallet top-ups work.
 
+## Host attestation
+
+`pnpm verify:attestation` checks MNEMONIC-signed envelopes from JSON (`attested-runtime` or `attested-result` payloads). It does not validate Phala TDX quotes.
+
+Phala operators can probe the public host route:
+
+```bash
+curl -sS "${BOSSRAID_API_ORIGIN:-http://127.0.0.1:8787}/v1/host/attestation" | jq '{verified, teeVerified, runtimeSigned, teePlatform}'
+```
+
+Set `BOSSRAID_TEE_SOCKET_PATH=/var/run/dstack.sock` and `BOSSRAID_TEE_PLATFORM=phala` on CVM deploys. Use `BOSSRAID_HOST_TEE_SKIP_CLOUD_VERIFY=1` only when Phala Cloud verify is unavailable.
+
 Full command list (settlement, docker, Phala, contracts):
 
 ```bash

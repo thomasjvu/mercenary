@@ -64,6 +64,22 @@ Buyers still use `POST /v1/inference/chat/completions`. The static inference cat
 
 `raid-core`, `provider-registry`, `provider-sdk`, `persistence` / `persistence-sqlite`, `evaluation`, `sandbox-runner`, `privacy-engine`, `smart-pay`, `contracts`, `shared-types`, `ui`.
 
+## Attestation & proof
+
+| Surface              | Route                                  | Purpose                                                                                              |
+| -------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Public host          | `GET /v1/host/attestation`             | Phala TDX quote via dstack (`/var/run/dstack.sock`); optional `signedRuntime` when `MNEMONIC` is set |
+| Admin runtime        | `GET /v1/attested-runtime`             | Signed runtime envelope for operators                                                                |
+| Raid result          | `GET /v1/raid/:raidId/attested-result` | Signed synthesized output                                                                            |
+| Marketplace upstream | `POST /v1/marketplace/tee/attestation` | Hosted seller TEE verification                                                                       |
+| Web inspector        | Sidebar, receipt, marketplace panels   | Host quote, runtime signing, upstream TEE rows                                                       |
+
+Host attestation exposes separate signals: `teeVerified` (hardware quote) and `runtimeSigned` (MNEMONIC envelope). Top-level `verified` tracks TEE quote validity only.
+
+Strict-private raids re-verify provider privacy attestations server-side (`BOSSRAID_PRIVACY_SERVER_VERIFY`, default on). Provider callbacks alone are not trusted for `featuresVerified`.
+
+Known gaps: `MNEMONIC` is not in the Phala core secrets tier; attestation telemetry on raid timelines is still partial. See [proof.md](../overview/proof.md).
+
 ## Constraints
 
 - Providers are HTTP only.

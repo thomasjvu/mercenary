@@ -6,7 +6,18 @@ export {
   type PrivacyEngineConfig,
 } from './compliance.js';
 
-export { verifyPhalaTeeAttestation, type TeeAttestationOptions } from './attestation.js';
+export {
+  verifyPhalaTeeAttestation,
+  type PhalaTeeAttestationOptions,
+  type TeeAttestationOptions,
+} from './attestation.js';
+
+export {
+  verifySubmissionPrivacyAttestation,
+  type VerifySubmissionPrivacyAttestationInput,
+  type VerifySubmissionPrivacyAttestationResult,
+  type VerifySubmissionAttestationIssue,
+} from './verify-submission-attestation.js';
 
 export {
   buildPrivacyAttestation,

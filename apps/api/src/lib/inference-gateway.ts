@@ -145,6 +145,7 @@ export async function runInferenceGatewayJob(input: {
             apiKey: resolvedApiKey,
             modelId: upstreamModelId,
             prompt,
+            env: input.env,
           });
 
     const providerClaimsE2ee = input.provider.privacy?.e2ee === true;
@@ -185,12 +186,6 @@ export async function runInferenceGatewayJob(input: {
       if (teeResult.valid && providerClaimsE2ee && teeResult.e2eeReady) {
         featuresClaimed.push('e2ee');
         featuresVerified.push('e2ee');
-      }
-      if (teeResult.valid && featuresClaimed.includes('signed_outputs')) {
-        featuresVerified.push('signed_outputs');
-      }
-      if (teeResult.valid && featuresClaimed.includes('no_data_retention')) {
-        featuresVerified.push('no_data_retention');
       }
 
       const receipt = buildInferenceReceipt({

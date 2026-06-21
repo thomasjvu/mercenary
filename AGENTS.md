@@ -57,7 +57,7 @@ pnpm dev:docs
 - persistence is sqlite or memory (not file-backed)
 - public API is raid-oriented by design
 - x402 and OpenAI-compatible chat endpoints are built
-- privacy engine library gates strict-private raids; attestation telemetry is still partial (see content/docs/operators/architecture.md)
+- privacy engine library gates strict-private raids; attestation proof surfaces are documented in [content/docs/overview/proof.md](/Users/area/repos/boss-raid/content/docs/overview/proof.md) and [content/docs/operators/architecture.md](/Users/area/repos/boss-raid/content/docs/operators/architecture.md#attestation--proof) (raid telemetry still partial)
 - full production requires `GET /v1/ops/production-readiness` with `ok: true` (onchain settlement, x402, TEE, no upstream mocks)
 
 ## If You Change

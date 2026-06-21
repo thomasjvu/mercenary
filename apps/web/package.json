@@ -7,7 +7,7 @@
     "build": "vite build",
     "check": "tsc -p tsconfig.json --noEmit",
     "dev": "vite",
-    "test": "node --import tsx --test",
+    "test": "node --import tsx --test 'src/**/*.test.ts'",
     "test:all": "node --import tsx --test 'src/**/*.test.ts'"
   },
   "dependencies": {
