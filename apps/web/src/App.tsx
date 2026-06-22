@@ -62,9 +62,6 @@ const PlaygroundPage = lazy(() =>
 const ReceiptPage = lazy(() =>
   import('./pages/ReceiptPage').then((module) => ({ default: module.ReceiptPage }))
 );
-const PartyQuestPage = lazy(() =>
-  import('./pages/PartyQuestPage').then((module) => ({ default: module.PartyQuestPage }))
-);
 const SellerOnboardingPage = lazy(() =>
   import('./pages/SellerOnboardingPage').then((module) => ({
     default: module.SellerOnboardingPage,
@@ -120,7 +117,6 @@ export function App() {
   const isBountiesListRoute = isBountiesListPath(pathname);
   const bountyId = readBountyId(pathname);
   const isBountyDetailRoute = isBountyDetailPath(pathname);
-  const isPartyQuestRoute = pathname === '/party-quest';
   const isLegacyReceiptRoute = pathname === '/receipt';
   const isVerificationRoute = pathname === '/verification';
   const changelogVersion = readChangelogVersion(pathname);
@@ -139,7 +135,6 @@ export function App() {
     isMercenaryRoute ||
     isPlaygroundRoute ||
     isRaidersRoute ||
-    isPartyQuestRoute ||
     isMarketplaceListRoute ||
     isMarketplaceDetailRoute;
   const providers = useSWR<Provider[]>(
@@ -170,6 +165,14 @@ export function App() {
       const nextUrl = `/verification${search}`;
       if (window.location.pathname + window.location.search !== nextUrl) {
         window.history.replaceState({}, '', nextUrl);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      }
+      return;
+    }
+
+    if (pathname === '/party-quest') {
+      if (window.location.pathname !== '/') {
+        window.history.replaceState({}, '', '/');
         window.dispatchEvent(new PopStateEvent('popstate'));
       }
     }
@@ -261,8 +264,6 @@ export function App() {
                 <BountiesPage onNavigate={navigate} />
               ) : isBountyDetailRoute && bountyId ? (
                 <BountyDetailPage bountyId={bountyId} onBack={() => navigate('/bounties')} />
-              ) : isPartyQuestRoute ? (
-                <PartyQuestPage onNavigate={navigate} />
               ) : isRaidersRoute ? (
                 <RaidersPage
                   providers={providers.data ?? []}

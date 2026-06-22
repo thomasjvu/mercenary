@@ -2121,68 +2121,6 @@
   text-transform: lowercase;
 }
 
-.party-quest-lockup {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
-.party-quest-lockup__tile {
-  display: inline-grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  border: 1px solid var(--line-strong);
-  font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.82rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  image-rendering: pixelated;
-  box-shadow: none;
-}
-
-.party-quest-lockup__tile--br {
-  background: var(--rx-red);
-  color: var(--rx-white);
-  border-color: var(--rx-red);
-}
-
-.party-quest-lockup__tile--pq {
-  background: var(--rx-yellow);
-  color: var(--rx-blue);
-  border-color: var(--rx-blue);
-}
-
-.party-quest-lockup__copy {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.party-quest-lockup__title {
-  margin: 0;
-  font-family: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
-  font-size: 1.05rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.party-quest-lockup__join {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0;
-  color: var(--rx-blue);
-  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
 .hero__status-row {
   display: flex;
   align-items: flex-start;
@@ -2192,20 +2130,4 @@
   margin-left: auto;
 }
 
-.party-quest-page__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
 
-.party-quest-page__panel {
-  display: grid;
-  gap: 14px;
-}
-
-.party-quest-page__steps {
-  margin: 0;
-  padding-left: 1.2rem;
-  display: grid;
-  gap: 8px;
-}
