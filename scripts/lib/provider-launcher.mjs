@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 export function resolveProviderProfileFiles(rootDir, env = process.env) {
-  const raw = env.BOSSRAID_PROVIDERS_FILE ?? './examples/providers.http.json';
+  const raw = env.BOSSRAID_PROVIDERS_FILE ?? './examples/inference-marketplace-providers.json';
   return raw
     .split(',')
     .map((entry) => entry.trim())
@@ -54,28 +54,13 @@ export function resolveProviderKeyEnv(profile, mode, env = process.env) {
   const displayName = String(profile.displayName ?? '').toLowerCase();
   const providerId = String(profile.providerId ?? '').toLowerCase();
 
-  if (
-    mode === 'gbstudio' ||
-    displayName.includes('gamma') ||
-    providerId.includes('gamma') ||
-    providerId.includes('regression-averse')
-  ) {
+  if (mode === 'gbstudio' || providerId.includes('regression-averse')) {
     candidates.add('VENICE_API_KEY_GAMMA');
   }
-  if (
-    mode === 'remotion' ||
-    displayName.includes('riko') ||
-    providerId.includes('riko') ||
-    providerId.includes('minimal-diff')
-  ) {
+  if (mode === 'remotion' || providerId.includes('minimal-diff')) {
     candidates.add('VENICE_API_KEY_RIKO');
   }
-  if (
-    mode === 'pixel_art' ||
-    displayName.includes('dottie') ||
-    providerId.includes('dottie') ||
-    providerId.includes('unity-specialist')
-  ) {
+  if (mode === 'pixel_art' || providerId.includes('unity-specialist')) {
     candidates.add('VENICE_API_KEY_DOTTIE');
   }
 

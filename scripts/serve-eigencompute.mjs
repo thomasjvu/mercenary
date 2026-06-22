@@ -57,7 +57,8 @@ const sharedEnv = {
   BOSSRAID_TEE_PLATFORM: process.env.BOSSRAID_TEE_PLATFORM ?? "eigencompute",
   BOSSRAID_STORAGE_BACKEND: process.env.BOSSRAID_STORAGE_BACKEND ?? "sqlite",
   BOSSRAID_SQLITE_FILE: sqliteFile,
-  BOSSRAID_PROVIDERS_FILE: process.env.BOSSRAID_PROVIDERS_FILE ?? "/app/examples/providers.eigencompute.json",
+  BOSSRAID_PROVIDERS_FILE:
+    process.env.BOSSRAID_PROVIDERS_FILE ?? '/app/examples/inference-marketplace-providers.json',
   BOSSRAID_API_HOST: process.env.BOSSRAID_API_HOST ?? "127.0.0.1",
   BOSSRAID_GATEWAY_HOST: process.env.BOSSRAID_GATEWAY_HOST ?? "0.0.0.0",
   BOSSRAID_API_ORIGIN: process.env.BOSSRAID_API_ORIGIN ?? `http://127.0.0.1:${apiPort}`,

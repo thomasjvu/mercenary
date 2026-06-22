@@ -4,9 +4,9 @@ import { generatePrivateKey } from 'viem/accounts';
 import { loadEnvFile, loadLocalEnv } from '../env.mjs';
 import { loadProviderProfiles } from './provider-launcher.mjs';
 
-
-const DEFAULT_PROVIDER_ID = 'dottie';
-const DEFAULT_PROVIDER_TOKEN = 'bossraid-provider-a';
+const DEFAULT_PROVIDER_ID = 'bounty-e2e-provider';
+const DEFAULT_PROVIDER_TOKEN = 'bossraid-bounty-e2e';
+const DEFAULT_PROVIDERS_FILE = './examples/bounty-e2e.providers.json';
 
 export { parseCliArgs, readCliArg, resolveApiBase } from './http-e2e.mjs';
 
@@ -23,7 +23,10 @@ export function resolveBountyProvider(rootDir, cliProviderId) {
     process.env.BOSSRAID_BOUNTY_E2E_PROVIDER_ID?.trim() ||
     process.env.BOSSRAID_PROVIDER_A_ID?.trim();
 
-  const { providerProfiles } = loadProviderProfiles(rootDir);
+  const { providerProfiles } = loadProviderProfiles(rootDir, {
+    ...process.env,
+    BOSSRAID_PROVIDERS_FILE: process.env.BOSSRAID_PROVIDERS_FILE ?? DEFAULT_PROVIDERS_FILE,
+  });
 
   if (explicit) {
     const provider = providerProfiles.find((entry) => entry.providerId === explicit);
@@ -124,4 +127,3 @@ export function loadProviderAddressMapJson(rootDir) {
   }
   return readFileSync(mapPath, 'utf8').trim();
 }
-

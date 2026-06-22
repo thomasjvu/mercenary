@@ -1,5 +1,3 @@
 {
-  "dottie": "0xYOUR_PROVIDER_A_AGENT_WALLET",
-  "riko": "0xYOUR_PROVIDER_B_AGENT_WALLET",
-  "gamma": "0xYOUR_PROVIDER_C_AGENT_WALLET"
+  "bounty-e2e-provider": "0xYOUR_BOUNTY_E2E_PROVIDER_WALLET"
 }

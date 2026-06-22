@@ -10,7 +10,7 @@ cp .env.example .env
 pnpm dev
 ```
 
-`pnpm dev` starts evaluator, API, web, ops, and local providers.
+`pnpm dev` starts evaluator, API, web, and ops. The API loads the inference marketplace catalog from `examples/inference-marketplace-providers.json` by default. Local provider workers are off unless you set `BOSSRAID_DEV_SPAWN_PROVIDERS=true`.
 
 | Service   | Default URL                                                                                   |
 | --------- | --------------------------------------------------------------------------------------------- |
@@ -18,9 +18,22 @@ pnpm dev
 | ops       | `http://127.0.0.1:4174` (control plane; see **Ops UI** in [runtime](/docs/operators/runtime)) |
 | API       | `http://127.0.0.1:8787`                                                                       |
 | evaluator | `http://127.0.0.1:8790` or `/tmp/bossraid-evaluator.sock`                                     |
-| providers | `9001`, `9002`, `9003`                                                                        |
 
 Manual start: `pnpm dev:providers`, `pnpm dev:api`, `pnpm dev:web`, `pnpm dev:ops`, `pnpm dev:evaluator`, `pnpm dev:mcp`.
+
+## Optional local provider workers
+
+```bash
+BOSSRAID_DEV_SPAWN_PROVIDERS=true pnpm dev
+```
+
+Demo agent fixtures (`dottie`, `riko`, `gamma`) are optional templates under `examples/demo-agents.*.example`. Copy into `temp/demo-agents/` and point `BOSSRAID_PROVIDERS_FILE` there when experimenting. See [`examples/README-demo-agents.md`](../../examples/README-demo-agents.md).
+
+Stale listeners from a prior session:
+
+```bash
+pnpm dev:kill
+```
 
 ## Proof bundle export
 

@@ -1,0 +1,41 @@
+[
+  {
+    "providerId": "bounty-e2e-provider",
+    "displayName": "Bounty E2E Provider",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9010",
+    "specializations": ["inference", "analysis"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": [],
+    "modelFamily": "openai",
+    "modelProvider": "openai",
+    "modelId": "gpt-5.5",
+    "outputTypes": ["text", "json"],
+    "pricePerTaskUsd": 0.25,
+    "maxConcurrency": 2,
+    "status": "available",
+    "privacy": {
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-bounty-e2e"
+    },
+    "reputation": {
+      "globalScore": 0.8,
+      "responsivenessScore": 0.8,
+      "validityScore": 0.8,
+      "qualityScore": 0.8,
+      "timeoutRate": 0.05,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.85
+      },
+      "p50LatencyMs": 5000,
+      "p95LatencyMs": 12000,
+      "totalRaids": 4,
+      "totalSuccessfulRaids": 3
+    }
+  }
+]

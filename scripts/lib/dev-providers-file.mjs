@@ -1,20 +1,27 @@
-const defaultProvidersFile = './examples/providers.http.json';
+export const defaultProvidersFile = './examples/inference-marketplace-providers.json';
+
+const removedProviderFiles = [
+  'providers.http.json',
+  'providers.compose.json',
+  'providers.eigencompute.json',
+];
 
 export function resolveDevProvidersFile(env = process.env) {
-  const raw = env.BOSSRAID_PROVIDERS_FILE ?? defaultProvidersFile;
-  if (
-    env.BOSSRAID_DEV_FULL_MARKETPLACE === '1' ||
-    env.BOSSRAID_DEV_FULL_MARKETPLACE === 'true' ||
-    env.BOSSRAID_DEV_FULL_MARKETPLACE === 'yes'
-  ) {
-    return raw;
+  const raw = env.BOSSRAID_PROVIDERS_FILE?.trim();
+  if (!raw) {
+    return defaultProvidersFile;
   }
 
   const entries = raw
     .split(',')
     .map((entry) => entry.trim())
     .filter(Boolean)
-    .filter((entry) => !entry.includes('inference-marketplace-providers.json'));
+    .filter((entry) => !removedProviderFiles.some((legacy) => entry.includes(legacy)));
 
   return entries.length > 0 ? entries.join(',') : defaultProvidersFile;
+}
+
+export function shouldSpawnDevProviders(env = process.env) {
+  const flag = env.BOSSRAID_DEV_SPAWN_PROVIDERS?.trim().toLowerCase();
+  return flag === '1' || flag === 'true' || flag === 'yes';
 }

@@ -55,7 +55,7 @@ services:
       BOSSRAID_API_HOST: '0.0.0.0'
       BOSSRAID_STORAGE_BACKEND: 'sqlite'
       BOSSRAID_SQLITE_FILE: '/data/bossraid-state.sqlite'
-      BOSSRAID_PROVIDERS_FILE: '/app/examples/providers.compose.json'
+      BOSSRAID_PROVIDERS_FILE: '/app/examples/inference-marketplace-providers.json'
       BOSSRAID_ADMIN_TOKEN: '${BOSSRAID_ADMIN_TOKEN:-local-dev-admin-token}'
       BOSSRAID_REGISTRY_TOKEN: '${BOSSRAID_REGISTRY_TOKEN:-}'
       BOSSRAID_API_BODY_LIMIT_BYTES: '${BOSSRAID_API_BODY_LIMIT_BYTES:-524288}'
@@ -75,9 +75,6 @@ services:
       BOSSRAID_EVAL_DOCKER_SOCKET_PATH: '${BOSSRAID_EVAL_DOCKER_SOCKET_PATH:-/var/run/docker.sock}'
       BOSSRAID_EVAL_ALLOW_UNSAFE_HOST_EXECUTION: '${BOSSRAID_EVAL_ALLOW_UNSAFE_HOST_EXECUTION:-false}'
       BOSSRAID_TRUST_PROXY: 'true'
-      BOSSRAID_PROVIDER_A_TOKEN: '${BOSSRAID_PROVIDER_A_TOKEN:-bossraid-provider-a}'
-      BOSSRAID_PROVIDER_B_TOKEN: '${BOSSRAID_PROVIDER_B_TOKEN:-bossraid-provider-b}'
-      BOSSRAID_PROVIDER_C_TOKEN: '${BOSSRAID_PROVIDER_C_TOKEN:-bossraid-provider-c}'
       BOSSRAID_X402_ENABLED: '${BOSSRAID_X402_ENABLED:-false}'
       BOSSRAID_X402_PAY_TO: '${BOSSRAID_X402_PAY_TO:-}'
       PAYAI_API_KEY_ID: '${PAYAI_API_KEY_ID:-}'
@@ -89,12 +86,6 @@ services:
       - bossraid-evaluator-socket:/socket
     depends_on:
       evaluator:
-        condition: service_healthy
-      provider-a:
-        condition: service_healthy
-      provider-b:
-        condition: service_healthy
-      provider-c:
         condition: service_healthy
     networks:
       - bossraid-edge
@@ -155,111 +146,6 @@ services:
           'node',
           '-e',
           "const http=require('node:http');const req=http.request({socketPath:'/socket/evaluator.sock',path:'/health'},(res)=>process.exit(res.statusCode===200?0:1));req.on('error',()=>process.exit(1));req.end();",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
-
-  provider-a:
-    <<: *bossraid-runtime
-    build:
-      context: .
-      target: runtime
-    image: '${BOSSRAID_IMAGE:-bossraid:local}'
-    command: ['node', 'apps/provider-agent/dist/apps/provider-agent/src/index.js']
-    environment:
-      PORT: '9001'
-      BOSSRAID_PROVIDER_HOST: '0.0.0.0'
-      BOSSRAID_PROVIDER_ID: 'dottie'
-      BOSSRAID_PROVIDER_NAME: 'Dottie'
-      BOSSRAID_PROVIDER_TOKEN: '${BOSSRAID_PROVIDER_A_TOKEN:-bossraid-provider-a}'
-      BOSSRAID_CALLBACK_TOKEN: '${BOSSRAID_PROVIDER_A_TOKEN:-bossraid-provider-a}'
-      BOSSRAID_CALLBACK_BASE: 'http://api:8787'
-      BOSSRAID_PROVIDER_INSTRUCTIONS: 'Specialize in pixel-art asset packs, spritesheets, UI frames, and compact retro palettes.'
-      BOSSRAID_PROVIDER_MODE: 'pixel_art'
-      BOSSRAID_MODEL_API_KEY: '${BOSSRAID_MODEL_API_KEY:-}'
-      BOSSRAID_MODEL_API_BASE: '${BOSSRAID_MODEL_API_BASE:-https://api.openai.com/v1}'
-      BOSSRAID_MODEL: '${BOSSRAID_MODEL:-gpt-4.1-mini}'
-    networks:
-      - bossraid-edge
-    healthcheck:
-      test:
-        [
-          'CMD',
-          'node',
-          '-e',
-          "fetch('http://127.0.0.1:9001/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
-
-  provider-b:
-    <<: *bossraid-runtime
-    build:
-      context: .
-      target: runtime
-    image: '${BOSSRAID_IMAGE:-bossraid:local}'
-    command: ['node', 'apps/provider-agent/dist/apps/provider-agent/src/index.js']
-    environment:
-      PORT: '9002'
-      BOSSRAID_PROVIDER_HOST: '0.0.0.0'
-      BOSSRAID_PROVIDER_ID: 'riko'
-      BOSSRAID_PROVIDER_NAME: 'Riko'
-      BOSSRAID_PROVIDER_TOKEN: '${BOSSRAID_PROVIDER_B_TOKEN:-bossraid-provider-b}'
-      BOSSRAID_CALLBACK_TOKEN: '${BOSSRAID_PROVIDER_B_TOKEN:-bossraid-provider-b}'
-      BOSSRAID_CALLBACK_BASE: 'http://api:8787'
-      BOSSRAID_PROVIDER_INSTRUCTIONS: 'Specialize in game marketing videos, teaser hooks, launch copy, and Remotion-ready promo bundles.'
-      BOSSRAID_PROVIDER_MODE: 'remotion'
-      BOSSRAID_MODEL_API_KEY: '${BOSSRAID_MODEL_API_KEY:-}'
-      BOSSRAID_MODEL_API_BASE: '${BOSSRAID_MODEL_API_BASE:-https://api.openai.com/v1}'
-      BOSSRAID_MODEL: '${BOSSRAID_MODEL:-gpt-4.1-mini}'
-    networks:
-      - bossraid-edge
-    healthcheck:
-      test:
-        [
-          'CMD',
-          'node',
-          '-e',
-          "fetch('http://127.0.0.1:9002/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
-
-  provider-c:
-    <<: *bossraid-runtime
-    build:
-      context: .
-      target: runtime
-    image: '${BOSSRAID_IMAGE:-bossraid:local}'
-    command: ['node', 'apps/provider-agent/dist/apps/provider-agent/src/index.js']
-    environment:
-      PORT: '9003'
-      BOSSRAID_PROVIDER_HOST: '0.0.0.0'
-      BOSSRAID_PROVIDER_ID: 'gamma'
-      BOSSRAID_PROVIDER_NAME: 'Gamma'
-      BOSSRAID_PROVIDER_TOKEN: '${BOSSRAID_PROVIDER_C_TOKEN:-bossraid-provider-c}'
-      BOSSRAID_CALLBACK_TOKEN: '${BOSSRAID_PROVIDER_C_TOKEN:-bossraid-provider-c}'
-      BOSSRAID_CALLBACK_BASE: 'http://api:8787'
-      BOSSRAID_PROVIDER_INSTRUCTIONS: 'Specialize in small game-development slices, gameplay logic, and minimal repo patches that keep one clear hook.'
-      BOSSRAID_PROVIDER_MODE: 'gbstudio'
-      BOSSRAID_MODEL_API_KEY: '${BOSSRAID_MODEL_API_KEY:-}'
-      BOSSRAID_MODEL_API_BASE: '${BOSSRAID_MODEL_API_BASE:-https://api.openai.com/v1}'
-      BOSSRAID_MODEL: '${BOSSRAID_MODEL:-gpt-4.1-mini}'
-    networks:
-      - bossraid-edge
-    healthcheck:
-      test:
-        [
-          'CMD',
-          'node',
-          '-e',
-          "fetch('http://127.0.0.1:9003/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
         ]
       interval: 30s
       timeout: 5s

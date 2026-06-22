@@ -24,7 +24,7 @@ if (args.has('help')) {
       '  pnpm test:bounty-escrow:e2e',
       '  pnpm test:bounty-escrow:e2e -- --mode mock --api-base http://127.0.0.1:8787',
       '  pnpm test:bounty-escrow:e2e -- --mode unverified',
-      '  pnpm test:bounty-escrow:e2e -- --mode wallet --provider-id dottie',
+      '  pnpm test:bounty-escrow:e2e -- --mode wallet --provider-id bounty-e2e-provider',
       '',
       'Options:',
       '  --mode mock|wallet|unverified',
@@ -33,7 +33,7 @@ if (args.has('help')) {
       '',
       'Defaults:',
       '  api-base: http://127.0.0.1:8787',
-      '  provider: dottie (from examples/providers.http.json)',
+      '  provider: bounty-e2e-provider (from examples/bounty-e2e.providers.json)',
       '  token: bossraid-provider-a',
     ].join('\n')
   );

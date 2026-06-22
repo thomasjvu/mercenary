@@ -167,11 +167,11 @@ Dev-only bypass: `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND=true` (forbidden in prod
 
 ```bash
 pnpm test:bounty-escrow:local          # zero-config; auto onchain when temp/settlement-bootstrap.env exists
-pnpm test:bounty-escrow:e2e            # against running API; defaults to dottie + bossraid-provider-a
+pnpm test:bounty-escrow:e2e            # against running API; defaults to bounty-e2e-provider
 pnpm test:bounty-escrow:production     # wallet mode; caps reward via BOSSRAID_BOUNTY_E2E_REWARD_USD
 ```
 
-`test:bounty-escrow:local` spins an ephemeral API, uses `dottie` / `bossraid-provider-a` from the provider seed file, and skips x402 unless bootstrap settlement env is present. Optional overrides: [`examples/bounty-e2e.env.example`](../../examples/bounty-e2e.env.example). Provider/agent curl flow: [sellers/bounties.md](../sellers/bounties.md).
+`test:bounty-escrow:local` spins an ephemeral API, uses `bounty-e2e-provider` from [`examples/bounty-e2e.providers.json`](../../examples/bounty-e2e.providers.json), and skips x402 unless bootstrap settlement env is present. Optional overrides: [`examples/bounty-e2e.env.example`](../../examples/bounty-e2e.env.example). Provider/agent curl flow: [sellers/bounties.md](../sellers/bounties.md).
 
 ### 3. Phala deploy
 
