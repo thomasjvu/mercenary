@@ -3,6 +3,7 @@ import { x402Client, x402HTTPClient } from '@x402/core/client';
 import type { SchemeNetworkClient } from '@x402/core/types';
 import { wrapFetchWithPayment } from '@x402/fetch';
 import { ExactEvmScheme, toClientEvmSigner, type ClientEvmSigner } from '@x402/evm';
+import { ExactEvmSchemeV1 } from '@x402/evm/v1';
 import type { DelegationChainEntry } from '@bossraid/shared-types';
 import type { Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -11,11 +12,18 @@ import { encodeBase64Json } from './encoding.js';
 import type { PaidFetchOptions } from './types.js';
 import type { SmartAccountWalletClient } from './wallet.js';
 
+const V1_EVM_NETWORKS = ['base-sepolia', 'base', 'sepolia', 'ethereum'] as const;
+
 function buildPaymentFetch(
-  clientFactory: () => SchemeNetworkClient,
+  schemeClientFactory: () => SchemeNetworkClient,
+  signer: ClientEvmSigner,
   delegationHeader?: string
 ): typeof fetch {
-  const coreClient = new x402Client().register('eip155:*', clientFactory());
+  const coreClient = new x402Client();
+  for (const network of V1_EVM_NETWORKS) {
+    coreClient.registerV1(network, new ExactEvmSchemeV1(signer));
+  }
+  coreClient.register('eip155:*', schemeClientFactory());
   const httpClient = new x402HTTPClient(coreClient);
   const fetchWithPayment = wrapFetchWithPayment(fetch, httpClient);
 
@@ -106,14 +114,21 @@ export async function createPaidFetch(
   const delegationHeader = options.delegationChain?.length
     ? encodeBase64Json(options.delegationChain)
     : undefined;
-  const fallbackClient = new ExactEvmScheme(buildWalletSigner(walletClient, walletAddress));
+  const walletSigner = buildWalletSigner(walletClient, walletAddress);
+  const sessionSigner = buildWalletSigner(walletClient, sessionAccount);
+  const fallbackClient = new ExactEvmScheme(walletSigner);
 
   if (options.permissionContext && options.permissionFrom) {
-    return buildPaymentFetch(() => createErc7710Client(options, fallbackClient), delegationHeader);
+    return buildPaymentFetch(
+      () => createErc7710Client(options, fallbackClient),
+      sessionSigner,
+      delegationHeader
+    );
   }
 
   return buildPaymentFetch(
-    () => new ExactEvmScheme(buildWalletSigner(walletClient, sessionAccount)),
+    () => new ExactEvmScheme(sessionSigner),
+    sessionSigner,
     delegationHeader
   );
 }
@@ -129,10 +144,14 @@ export function createNodePaidFetch(
   const fallbackClient = new ExactEvmScheme(signer);
 
   if (options.permissionContext && options.permissionFrom) {
-    return buildPaymentFetch(() => createErc7710Client(options, fallbackClient), delegationHeader);
+    return buildPaymentFetch(
+      () => createErc7710Client(options, fallbackClient),
+      signer,
+      delegationHeader
+    );
   }
 
-  return buildPaymentFetch(() => new ExactEvmScheme(signer), delegationHeader);
+  return buildPaymentFetch(() => new ExactEvmScheme(signer), signer, delegationHeader);
 }
 
 export function encodeDelegationChain(chain: DelegationChainEntry[]): string {

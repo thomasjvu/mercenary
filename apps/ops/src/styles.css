@@ -162,26 +162,6 @@ textarea,
   place-items: center;
 }
 
-.ops-bg-grid,
-.bg-grid {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(17, 17, 17, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(17, 17, 17, 0.04) 1px, transparent 1px);
-  background-size: 48px 48px;
-  opacity: 0.55;
-}
-
-.ops-frame--theme-dark .ops-bg-grid,
-.ops-frame--theme-dark .bg-grid {
-  background-image:
-    linear-gradient(rgba(241, 244, 251, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(241, 244, 251, 0.04) 1px, transparent 1px);
-}
-
 .rx-spacebar-clip {
   clip-path: polygon(0 0, 100% 0, 100% 77%, 66% 77%, 63.4% 100%, 5.2% 100%, 0 79%);
 }
@@ -680,6 +660,18 @@ h3 {
   color: var(--rx-white);
   border-color: var(--rx-blue);
   background: var(--rx-blue);
+}
+
+.button--primary.ops-auth-unlock {
+  border-color: var(--rx-red);
+  background: var(--rx-red);
+  color: var(--rx-white);
+}
+
+.button--primary.ops-auth-unlock:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--rx-red) 88%, #111111);
+  background: color-mix(in srgb, var(--rx-red) 88%, #111111);
+  color: var(--rx-white);
 }
 
 .button--danger {
@@ -1639,16 +1631,6 @@ h3 {
 
 .ops-auth-footer {
   margin-top: 12px;
-}
-
-.ops-auth-unlock {
-  background: linear-gradient(135deg, var(--rx-yellow) 0 84%, var(--rx-red) 84% 100%);
-  color: var(--rx-blue);
-}
-
-.ops-auth-unlock:hover:not(:disabled) {
-  background: linear-gradient(135deg, var(--rx-blue) 0 82%, var(--rx-red) 82% 100%);
-  color: var(--rx-white);
 }
 
 .rx-control-pane__body,

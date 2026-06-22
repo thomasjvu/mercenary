@@ -486,7 +486,6 @@ export function App() {
       <div
         className={`ops-frame ops-frame--theme-${appTheme}${appTheme === 'dark' ? ' bossraid-surface-dark' : ''}`}
       >
-        <div className="bg-grid" aria-hidden="true" />
         <OpsAuthGate
           adminTokenInput={adminTokenInput}
           appTheme={appTheme}
@@ -504,7 +503,6 @@ export function App() {
     <div
       className={`ops-frame ops-frame--theme-${appTheme}${appTheme === 'dark' ? ' bossraid-surface-dark' : ''}`}
     >
-      <div className="bg-grid" aria-hidden="true" />
       <header className="ops-topbar">
         <div className="ops-topbar__brand">
           <strong>Boss Raid Ops</strong>
