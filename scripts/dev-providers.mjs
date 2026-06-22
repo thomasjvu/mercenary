@@ -1,7 +1,8 @@
-import { spawn } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadLocalEnv } from './env.mjs';
+import { killProcessTree, spawnDevProcess } from './lib/dev-process.mjs';
+import { resolveDevProvidersFile } from './lib/dev-providers-file.mjs';
 import {
   attachProviderShutdown,
   buildProviderChildEnv,
@@ -9,28 +10,19 @@ import {
 } from './lib/provider-launcher.mjs';
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const providerAgentDir = resolve(rootDir, 'apps/provider-agent');
 loadLocalEnv(rootDir);
 const inheritedEnv = process.env;
-const { providersFile, providerProfiles } = loadProviderProfiles(rootDir, inheritedEnv);
-
-const sharedModelConfigured =
-  Boolean(inheritedEnv.BOSSRAID_MODEL_API_KEY) && Boolean(inheritedEnv.BOSSRAID_MODEL);
-const providerStubMode =
-  inheritedEnv.BOSSRAID_PROVIDER_STUB_MODE === '1' ||
-  inheritedEnv.BOSSRAID_PROVIDER_STUB_MODE === 'true' ||
-  inheritedEnv.BOSSRAID_PROVIDER_STUB_MODE === 'yes';
-
-if (!sharedModelConfigured && !providerStubMode) {
-  console.error(
-    'Missing shared model env. Falling back to BOSSRAID_PROVIDER_STUB_MODE for local provider responses.'
-  );
-}
+const providersFile = resolveDevProvidersFile(inheritedEnv);
+const { providerProfiles } = loadProviderProfiles(rootDir, {
+  ...inheritedEnv,
+  BOSSRAID_PROVIDERS_FILE: providersFile,
+});
 
 const spawnProfiles = providerProfiles.filter((profile) => profile.spawnWorker !== false);
 const children = spawnProfiles.map((profile, index) => {
-  const child = spawn('pnpm', ['--filter', '@bossraid/provider-agent', 'dev'], {
-    cwd: rootDir,
-    stdio: 'inherit',
+  const child = spawnDevProcess(process.execPath, ['--import', 'tsx', 'src/index.ts'], {
+    cwd: providerAgentDir,
     env: buildProviderChildEnv(profile, index, inheritedEnv, {
       includeStubMode: true,
       includeCallbackBase: true,
@@ -42,13 +34,15 @@ const children = spawnProfiles.map((profile, index) => {
       console.log(`[providers] ${profile.providerId} exited via signal ${signal}`);
       return;
     }
-    console.log(`[providers] ${profile.providerId} exited with code ${code ?? 0}`);
+    if ((code ?? 0) !== 0) {
+      console.log(`[providers] ${profile.providerId} exited with code ${code ?? 0}`);
+    }
   });
 
   return child;
 });
 
-attachProviderShutdown(children);
+attachProviderShutdown(children, { killProcessTree });
 console.log(
   `[providers] started ${children.length}/${providerProfiles.length} dev providers from ${providersFile}`
 );

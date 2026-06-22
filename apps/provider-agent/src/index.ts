@@ -20,9 +20,25 @@ async function main() {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch((error) => {
+    if (isAddressInUseError(error)) {
+      console.error(
+        `[provider-agent] port ${providerConfig.port} already in use (${providerConfig.providerId})`
+      );
+      process.exit(1);
+      return;
+    }
     logger.error(error);
     process.exit(1);
   });
+}
+
+function isAddressInUseError(error: unknown): error is NodeJS.ErrnoException {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as NodeJS.ErrnoException).code === 'EADDRINUSE'
+  );
 }
 
 function registerShutdownHandlers(closeServer: () => Promise<void>): void {

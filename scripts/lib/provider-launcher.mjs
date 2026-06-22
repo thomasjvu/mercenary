@@ -150,8 +150,7 @@ export function buildProviderChildEnv(profile, index, inheritedEnv, options = {}
     inheritedEnv.BOSSRAID_PROVIDER_STUB_MODE === 'yes';
   const useStubMode =
     options.forceStubMode ??
-    (providerStubMode ||
-      (!providerModelApiKey && !inheritedEnv.BOSSRAID_MODEL_API_KEY));
+    (providerStubMode || (!providerModelApiKey && !inheritedEnv.BOSSRAID_MODEL_API_KEY));
 
   const env = {
     ...inheritedEnv,
@@ -195,7 +194,8 @@ export function buildProviderChildEnv(profile, index, inheritedEnv, options = {}
   return env;
 }
 
-export function attachProviderShutdown(children) {
+export function attachProviderShutdown(children, options = {}) {
+  const killChild = options.killProcessTree ?? ((child) => child.kill('SIGTERM'));
   let shuttingDown = false;
 
   function shutdown(signal) {
@@ -205,13 +205,14 @@ export function attachProviderShutdown(children) {
     shuttingDown = true;
     console.log(`[providers] shutting down on ${signal}`);
     for (const child of children) {
-      if (!child.killed) {
-        child.kill('SIGTERM');
-      }
+      killChild(child, 'SIGTERM');
     }
     setTimeout(() => {
+      for (const child of children) {
+        killChild(child, 'SIGKILL');
+      }
       process.exit(0);
-    }, 250);
+    }, 1000);
   }
 
   process.on('SIGINT', () => shutdown('SIGINT'));

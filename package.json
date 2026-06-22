@@ -9,6 +9,7 @@
     "build": "turbo run build",
     "check": "turbo run check",
     "dev": "node scripts/dev-stack.mjs",
+    "dev:kill": "node scripts/dev-kill.mjs",
     "dev:api": "node scripts/dev-api.mjs",
     "dev:evaluator": "pnpm --filter @bossraid/evaluator dev",
     "dev:mcp": "node scripts/dev-mcp.mjs",
