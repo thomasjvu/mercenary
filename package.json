@@ -2,7 +2,7 @@
   "name": "boss-raid",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@10.28.0",
+  "packageManager": "pnpm@11.8.0",
   "scripts": {
     "acp-seller:docker:build": "node scripts/build-acp-seller-image.mjs",
     "acp-seller:env:export": "node scripts/export-acp-seller-env.mjs",
@@ -77,45 +77,33 @@
     "prepare": "husky install"
   },
   "devDependencies": {
-    "@bossraid/constants": "workspace:^0.1.0",
-    "@bossraid/logger": "workspace:^0.1.0",
-    "@commitlint/cli": "^20.5.2",
-    "@commitlint/config-conventional": "^20.5.0",
-    "@eslint/js": "^10.0.1",
-    "@payai/facilitator": "^2.3.4",
-    "@types/node": "^22.13.10",
-    "@types/react": "^19.1.13",
-    "@types/react-dom": "^19.1.9",
-    "@typescript-eslint/eslint-plugin": "^8.59.1",
-    "@typescript-eslint/parser": "^8.59.1",
-    "@x402/evm": "^2.15.0",
-    "@x402/fetch": "^2.15.0",
-    "eslint": "^10.2.1",
-    "eslint-config-prettier": "^10.1.5",
-    "eslint-plugin-prettier": "^5.5.5",
-    "globals": "^16.2.0",
-    "husky": "^9.1.7",
-    "lint-staged": "^16.4.0",
-    "prettier": "^3.8.3",
-    "tsx": "^4.19.3",
-    "turbo": "^2.4.4",
-    "typescript": "^5.8.2",
-    "typescript-eslint": "^8.59.1",
-    "viem": "^2.47.5"
+    "@bossraid/constants": "workspace:*",
+    "@bossraid/logger": "workspace:*",
+    "@commitlint/cli": "20.5.2",
+    "@commitlint/config-conventional": "20.5.0",
+    "@eslint/js": "10.0.1",
+    "@payai/facilitator": "2.3.4",
+    "@types/node": "22.19.15",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@typescript-eslint/eslint-plugin": "8.59.1",
+    "@typescript-eslint/parser": "8.59.1",
+    "@x402/evm": "2.15.0",
+    "@x402/fetch": "2.15.0",
+    "eslint": "10.2.1",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-prettier": "5.5.5",
+    "globals": "16.5.0",
+    "husky": "9.1.7",
+    "lint-staged": "16.4.0",
+    "prettier": "3.8.3",
+    "tsx": "4.21.0",
+    "turbo": "2.8.19",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.59.1",
+    "viem": "2.47.5"
   },
   "dependencies": {
-    "@x402/core": "^2.15.0"
-  },
-  "pnpm": {
-    "overrides": {
-      "fast-uri": ">=3.1.2",
-      "fastify": ">=5.8.5",
-      "hono": ">=4.12.25",
-      "path-to-regexp": ">=8.4.0",
-      "picomatch": ">=4.0.4",
-      "tmp": ">=0.2.6",
-      "vite": ">=7.3.5",
-      "ws": ">=8.21.0"
-    }
+    "@x402/core": "2.15.0"
   }
 }
