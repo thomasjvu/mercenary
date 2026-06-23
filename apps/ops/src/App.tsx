@@ -32,7 +32,8 @@ import {
   writeOpsSectionHash,
   type OpsSectionId,
 } from './components/OpsSectionNav';
-import { SignalMeter, SignalTag } from './components/ops-ui';
+import { OpsSectionHeader } from './components/ops-visual';
+import { SignalTag } from './components/ops-ui';
 import { DEFAULT_SPAWN_PAYLOAD } from './default-payload';
 import { CONSUMER_LINKS } from './lib/consumer-urls';
 import { readRaidReceipt, rememberRaidReceipt } from './lib/raid-receipt-store';
@@ -533,37 +534,29 @@ export function App() {
       </header>
 
       <main className="ops-stage">
-        <header className="page-hero page-hero--compact ops-hero ops-hero--slim">
-          <div className="page-hero__main">
-            <p className="eyebrow">control plane</p>
-            <h1>
-              Command the mesh. <span className="ops-headline-accent">Mercenary</span> routes the
-              raid.
-            </h1>
-            <p className="lede">
-              Inspect live raids, gate paid ingress, and jump into buyer-facing surfaces.
-            </p>
-          </div>
-          <aside className="page-hero__aside">
-            <SignalMeter
-              className="ops-hero__meter"
-              total={providerTotal}
-              value={health.data?.readyProviders ?? 0}
-            />
-          </aside>
-        </header>
-
-        <OpsHeroStatRow
-          activeProviders={activeProviders.length}
-          healthOk={health.data?.ok ?? false}
-          raidCount={raids.data?.length ?? 0}
-          readyProviders={health.data?.readyProviders ?? 0}
-        />
-
         <OpsSectionNav activeSection={activeSection} onSelect={handleSectionChange} />
 
         {activeSection === 'live' ? (
           <section className="ops-section" id="live">
+            <OpsSectionHeader
+              aside={
+                <SignalTag
+                  blinking={runningState}
+                  label={runningState ? 'live' : 'idle'}
+                  variant={runningState ? 'internal' : 'default'}
+                />
+              }
+              icon="live"
+              title="Live raid"
+            />
+
+            <OpsHeroStatRow
+              activeProviders={activeProviders.length}
+              healthOk={health.data?.ok ?? false}
+              raidCount={raids.data?.length ?? 0}
+              readyProviders={health.data?.readyProviders ?? 0}
+            />
+
             <OpsConsumerLinks
               buyerPaymentEnabled={buyerReady.data?.payment.enabled ?? null}
               opsX402Enabled={x402Enabled}
@@ -582,16 +575,14 @@ export function App() {
             />
 
             <section className="ops-mesh-panel flat-section">
-              <div className="panel-head">
+              <div className="panel-head panel-head--compact">
                 <div>
                   <p className="eyebrow">mesh</p>
-                  <h2>Live provider field</h2>
+                  <h2>Provider field</h2>
                 </div>
-                <SignalTag
-                  blinking={runningState}
-                  label={runningState ? 'mesh live' : 'mesh idle'}
-                  variant={runningState ? 'internal' : 'default'}
-                />
+                <span className="quiet-note">
+                  {health.data?.readyProviders ?? 0}/{providerTotal} ready
+                </span>
               </div>
               <ProviderMesh
                 experts={raidStatus.data?.experts ?? []}
@@ -671,6 +662,7 @@ export function App() {
 
         {activeSection === 'providers' ? (
           <section className="ops-section" id="providers">
+            <OpsSectionHeader icon="providers" title="Provider registry" />
             <OpsProviderSidebar
               filteredProviders={filteredProviders}
               providerHealth={providerHealth.data}

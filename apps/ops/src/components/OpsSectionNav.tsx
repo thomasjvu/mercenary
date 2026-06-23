@@ -1,10 +1,12 @@
+import { OpsIcon, type OpsIconName } from './ops-visual';
+
 export type OpsSectionId = 'live' | 'launch' | 'platform' | 'providers';
 
-const SECTIONS: Array<{ id: OpsSectionId; label: string }> = [
-  { id: 'live', label: 'live raid' },
-  { id: 'launch', label: 'launch' },
-  { id: 'platform', label: 'platform' },
-  { id: 'providers', label: 'providers' },
+const SECTIONS: Array<{ id: OpsSectionId; label: string; icon: OpsIconName }> = [
+  { id: 'live', label: 'live', icon: 'live' },
+  { id: 'launch', label: 'launch', icon: 'launch' },
+  { id: 'platform', label: 'platform', icon: 'platform' },
+  { id: 'providers', label: 'providers', icon: 'providers' },
 ];
 
 type OpsSectionNavProps = {
@@ -23,7 +25,8 @@ export function OpsSectionNav({ activeSection, onSelect }: OpsSectionNavProps) {
           onClick={() => onSelect(section.id)}
           type="button"
         >
-          {section.label}
+          <OpsIcon name={section.icon} size={16} />
+          <span>{section.label}</span>
         </button>
       ))}
     </nav>

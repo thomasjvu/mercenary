@@ -1,5 +1,6 @@
 import { DocsButton } from '@bossraid/ui';
 import { CONSUMER_LINKS } from '../lib/consumer-urls';
+import { OpsIcon } from './ops-visual';
 
 export function OpsAuthGate({
   adminTokenInput,
@@ -22,6 +23,7 @@ export function OpsAuthGate({
     <main className="ops-shell ops-shell--locked">
       <section className="ops-auth-card">
         <div className="ops-auth-card__band">
+          <OpsIcon name="lock" size={28} />
           <p className="eyebrow">Boss Raid Ops</p>
         </div>
 
@@ -33,21 +35,14 @@ export function OpsAuthGate({
           }}
         >
           <div className="ops-auth-card__copy">
-            <h1>Unlock control plane.</h1>
-            <p className="lede">Live raids, provider health, replay, settlement.</p>
-            <p className="quiet-note">
-              Public surface:{' '}
-              <a className="ops-public-link" href={CONSUMER_LINKS.publicApp()}>
-                {CONSUMER_LINKS.publicApp()}
-              </a>
-            </p>
+            <h1>Unlock control plane</h1>
             <label className="ops-auth-field">
               <span className="eyebrow">admin token</span>
               <input
                 autoComplete="current-password"
                 className="search ops-auth-input"
                 onChange={(event) => onTokenChange(event.target.value)}
-                placeholder="paste BOSSRAID_ADMIN_TOKEN"
+                placeholder="BOSSRAID_ADMIN_TOKEN"
                 type="password"
                 value={adminTokenInput}
               />
@@ -66,8 +61,17 @@ export function OpsAuthGate({
           </div>
 
           <div className="ops-auth-footer ops-topbar__actions">
+            <a
+              className="button"
+              href={CONSUMER_LINKS.publicApp()}
+              rel="noreferrer"
+              target="_blank"
+            >
+              <OpsIcon name="external" size={14} />
+              app
+            </a>
             <button className="button" onClick={onThemeToggle} type="button">
-              {appTheme === 'dark' ? 'light mode' : 'dark mode'}
+              {appTheme === 'dark' ? 'light' : 'dark'}
             </button>
             <DocsButton className="button ops-docs-link" />
           </div>

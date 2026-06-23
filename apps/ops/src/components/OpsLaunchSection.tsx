@@ -1,6 +1,7 @@
 import type { ProductionReadiness } from '../api';
 import { CONSUMER_LINKS } from '../lib/consumer-urls';
 import { resolveOpsSpawnRoute, readSpawnPolicySummary } from '../lib/spawn-routing';
+import { OpsFold, OpsKpiTile, OpsSectionHeader } from './ops-visual';
 import { OpsSpawnPanel } from './OpsSpawnPanel';
 import { SignalTag } from './ops-ui';
 
@@ -38,17 +39,27 @@ export function OpsLaunchSection({
 
   return (
     <section className="ops-launch-section" id="launch">
-      <header className="ops-launch-section__head flat-section">
-        <div>
-          <p className="eyebrow">launch</p>
-          <h2>Internal raid launch</h2>
-          <p className="quiet-note">
-            Ops launches use the admin session on POST /v1/raid. Buyer wallet flows stay on
-            Mercenary.
-          </p>
-        </div>
-        <SignalTag label={routing.route} variant="internal" />
-      </header>
+      <OpsSectionHeader
+        aside={<SignalTag label={routing.route} variant="internal" />}
+        icon="launch"
+        title="Raid launch"
+      />
+
+      <div className="ops-kpi-grid ops-kpi-grid--compact">
+        <OpsKpiTile label="agents" value={String(policy.maxAgents ?? 'n/a')} />
+        <OpsKpiTile icon="payment" label="budget" value={`$${policy.maxTotalCost ?? 'n/a'}`} />
+        <OpsKpiTile
+          icon="payment"
+          label="x402"
+          tone={x402Enabled ? 'accent' : 'default'}
+          value={x402Enabled ? 'on' : 'off'}
+        />
+        <OpsKpiTile
+          label="gate"
+          tone={blockingChecks.length > 0 ? 'danger' : 'good'}
+          value={blockingChecks.length > 0 ? 'blocked' : 'clear'}
+        />
+      </div>
 
       <div className="ops-launch-section__body">
         <OpsSpawnPanel
@@ -58,28 +69,25 @@ export function OpsLaunchSection({
         />
 
         <article className="ops-panel ops-panel--launch-gate">
-          <div className="panel-head">
+          <div className="panel-head panel-head--compact">
             <div>
-              <p className="ops-label">route</p>
-              <h3>Launch path</h3>
+              <p className="eyebrow">route</p>
+              <h3>{routing.route}</h3>
             </div>
           </div>
           <p className="quiet-note">{routing.reason}</p>
-          <div className="ops-launch-meta">
-            <span>max agents {policy.maxAgents ?? 'n/a'}</span>
-            <span>max budget ${policy.maxTotalCost ?? 'n/a'}</span>
-            <span>x402 {x402Enabled ? 'enabled' : 'disabled'}</span>
-          </div>
 
           {blockingChecks.length > 0 ? (
-            <ul className="ops-launch-blockers">
-              {blockingChecks.slice(0, 4).map((check) => (
-                <li key={check.id}>
-                  <strong>{check.id}</strong>
-                  <span>{check.message}</span>
-                </li>
-              ))}
-            </ul>
+            <OpsFold count={String(blockingChecks.length)} icon="error" title="blockers">
+              <ul className="ops-launch-blockers">
+                {blockingChecks.slice(0, 4).map((check) => (
+                  <li key={check.id}>
+                    <strong>{check.id}</strong>
+                    <span>{check.message}</span>
+                  </li>
+                ))}
+              </ul>
+            </OpsFold>
           ) : null}
 
           <div className="ops-launch-actions">
@@ -97,7 +105,7 @@ export function OpsLaunchSection({
               rel="noreferrer"
               target="_blank"
             >
-              launch as buyer
+              buyer launch
             </a>
             <a
               className="button"
@@ -105,7 +113,7 @@ export function OpsLaunchSection({
               rel="noreferrer"
               target="_blank"
             >
-              open playground
+              playground
             </a>
           </div>
         </article>

@@ -7,7 +7,8 @@ import {
   type ProductionReadiness,
   type SettlementStatus,
 } from '../api';
-import { Metric, SignalTag } from './ops-ui';
+import { OpsFold, OpsKpiTile, ReadinessMeter, RouteLatencyChart } from './ops-visual';
+import { SignalTag } from './ops-ui';
 
 function buildSettlementRunbookHints(status: SettlementStatus): string[] {
   const hints: string[] = [];
@@ -81,13 +82,14 @@ export function ProductionReadinessPanel() {
     report?.checks.filter((check) => check.status === 'fail' && check.severity === 'blocking') ??
     [];
   const warningChecks = report?.checks.filter((check) => check.status === 'warn') ?? [];
+  const passCount = report?.checks.filter((check) => check.status === 'pass').length ?? 0;
 
   return (
     <article className="ops-panel ops-panel--readiness" aria-label="production readiness">
-      <div className="panel-head">
+      <div className="panel-head panel-head--compact">
         <div>
-          <p className="ops-label">launch gate</p>
-          <h3>Production readiness</h3>
+          <p className="eyebrow">readiness</p>
+          <h3>Launch gate</h3>
         </div>
         <SignalTag
           label={report ? (report.ok ? 'ready' : 'blocked') : 'loading'}
@@ -105,37 +107,62 @@ export function ProductionReadinessPanel() {
 
       {report ? (
         <>
-          <div className="ops-readiness-summary">
-            <Metric label="checks" value={String(report.summary.checks)} />
-            <Metric label="blocking" value={String(report.summary.blockingFailures)} />
-            <Metric label="warnings" value={String(report.summary.warnings)} />
+          <ReadinessMeter
+            fail={report.summary.blockingFailures}
+            pass={passCount}
+            warn={report.summary.warnings}
+          />
+
+          <div className="ops-kpi-grid ops-kpi-grid--compact">
+            <OpsKpiTile label="checks" value={String(report.summary.checks)} />
+            <OpsKpiTile
+              label="blocking"
+              tone={report.summary.blockingFailures > 0 ? 'danger' : 'good'}
+              value={String(report.summary.blockingFailures)}
+            />
+            <OpsKpiTile
+              label="warnings"
+              tone={report.summary.warnings > 0 ? 'accent' : 'default'}
+              value={String(report.summary.warnings)}
+            />
           </div>
 
-          <ul className="ops-readiness-list">
-            {blockingChecks.map((check) => (
-              <li className="ops-readiness-item" key={check.id}>
-                <div className="ops-readiness-item__head">
-                  <strong>{check.id}</strong>
-                  <SignalTag label={check.status} variant={readinessVariant(check.status)} />
-                </div>
-                <p>{check.message}</p>
-              </li>
-            ))}
-            {warningChecks.map((check) => (
-              <li className="ops-readiness-item" key={check.id}>
-                <div className="ops-readiness-item__head">
-                  <strong>{check.id}</strong>
-                  <SignalTag label={check.status} variant={readinessVariant(check.status)} />
-                </div>
-                <p>{check.message}</p>
-              </li>
-            ))}
-          </ul>
+          {blockingChecks.length > 0 || warningChecks.length > 0 ? (
+            <OpsFold
+              count={`${blockingChecks.length + warningChecks.length}`}
+              icon="shield"
+              title="check details"
+            >
+              <ul className="ops-readiness-list">
+                {blockingChecks.map((check) => (
+                  <li className="ops-readiness-item" key={check.id}>
+                    <div className="ops-readiness-item__head">
+                      <strong>{check.id}</strong>
+                      <SignalTag label={check.status} variant={readinessVariant(check.status)} />
+                    </div>
+                    <p>{check.message}</p>
+                  </li>
+                ))}
+                {warningChecks.map((check) => (
+                  <li className="ops-readiness-item" key={check.id}>
+                    <div className="ops-readiness-item__head">
+                      <strong>{check.id}</strong>
+                      <SignalTag label={check.status} variant={readinessVariant(check.status)} />
+                    </div>
+                    <p>{check.message}</p>
+                  </li>
+                ))}
+              </ul>
+            </OpsFold>
+          ) : null}
 
           {report.nextActions.length > 0 ? (
-            <div className="ops-readiness-actions">
-              <p className="ops-label">next actions</p>
-              <ul>
+            <OpsFold
+              count={String(Math.min(report.nextActions.length, 4))}
+              icon="launch"
+              title="next actions"
+            >
+              <ul className="ops-readiness-actions-list">
                 {report.nextActions.slice(0, 4).map((action) => (
                   <li key={action.check}>
                     <strong>{action.check}</strong>
@@ -143,7 +170,7 @@ export function ProductionReadinessPanel() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </OpsFold>
           ) : null}
         </>
       ) : (
@@ -160,13 +187,21 @@ export function SettlementStatusPanel() {
   });
 
   const status = settlement.data;
+  const configuredCount = status
+    ? [
+        status.rpcUrl,
+        status.contracts.registry,
+        status.contracts.escrow,
+        status.contracts.token,
+      ].filter(Boolean).length
+    : 0;
 
   return (
     <article className="ops-panel ops-panel--settlement" aria-label="settlement status">
-      <div className="panel-head">
+      <div className="panel-head panel-head--compact">
         <div>
-          <p className="ops-label">payout rail</p>
-          <h3>Settlement status</h3>
+          <p className="eyebrow">settlement</p>
+          <h3>Payout rail</h3>
         </div>
         <SignalTag
           label={status ? (status.configured ? 'configured' : 'incomplete') : 'loading'}
@@ -184,14 +219,42 @@ export function SettlementStatusPanel() {
 
       {status ? (
         <>
-          <div className="ops-settlement-grid">
-            <Metric label="mode" value={status.mode} />
-            <Metric label="chain" value={status.chain?.id ?? 'n/a'} />
-            <Metric label="rpc" value={status.rpcUrl ?? 'n/a'} />
-            <Metric label="registry" value={status.contracts.registry ? 'set' : 'missing'} />
-            <Metric label="escrow" value={status.contracts.escrow ? 'set' : 'missing'} />
-            <Metric label="token" value={status.contracts.token ? 'set' : 'missing'} />
+          <div className="ops-kpi-grid ops-kpi-grid--compact">
+            <OpsKpiTile icon="payment" label="mode" value={status.mode} />
+            <OpsKpiTile label="chain" value={status.chain?.id ?? 'n/a'} />
+            <OpsKpiTile
+              icon="shield"
+              label="configured"
+              meter={(configuredCount / 4) * 100}
+              tone={status.configured ? 'good' : 'accent'}
+              value={status.configured ? 'yes' : 'no'}
+            />
           </div>
+
+          <OpsFold icon="chart" title="rail config">
+            <div className="ops-settlement-grid">
+              <OpsKpiTile
+                label="rpc"
+                value={status.rpcUrl ? 'set' : 'missing'}
+                tone={status.rpcUrl ? 'good' : 'danger'}
+              />
+              <OpsKpiTile
+                label="registry"
+                tone={status.contracts.registry ? 'good' : 'danger'}
+                value={status.contracts.registry ? 'set' : 'missing'}
+              />
+              <OpsKpiTile
+                label="escrow"
+                tone={status.contracts.escrow ? 'good' : 'danger'}
+                value={status.contracts.escrow ? 'set' : 'missing'}
+              />
+              <OpsKpiTile
+                label="token"
+                tone={status.contracts.token ? 'good' : 'danger'}
+                value={status.contracts.token ? 'set' : 'missing'}
+              />
+            </div>
+          </OpsFold>
 
           {(() => {
             const runbookHints = buildSettlementRunbookHints(status);
@@ -200,14 +263,13 @@ export function SettlementStatusPanel() {
             }
 
             return (
-              <div className="ops-settlement-runbook">
-                <p className="ops-label">runbook</p>
-                <ul>
+              <OpsFold count={String(runbookHints.length)} icon="output" title="runbook">
+                <ul className="ops-settlement-runbook-list">
                   {runbookHints.map((hint) => (
                     <li key={hint}>{hint}</li>
                   ))}
                 </ul>
-              </div>
+              </OpsFold>
             );
           })()}
         </>
@@ -216,10 +278,6 @@ export function SettlementStatusPanel() {
       )}
     </article>
   );
-}
-
-function formatCounterLabel(name: string): string {
-  return name.replaceAll('.', ' / ');
 }
 
 export function OpsMetricsPanel() {
@@ -231,19 +289,25 @@ export function OpsMetricsPanel() {
   const snapshot = metrics.data;
   const counterEntries = Object.entries(snapshot?.counters ?? {})
     .sort(([left], [right]) => left.localeCompare(right))
-    .slice(0, 8);
+    .slice(0, 6);
   const routeEntries = Object.entries(snapshot?.routes ?? {})
     .sort(([, left], [, right]) => right.count - left.count)
-    .slice(0, 6);
+    .slice(0, 6)
+    .map(([route, stats]) => ({
+      route,
+      count: stats.count,
+      averageLatencyMs: stats.averageLatencyMs,
+      errorCount: stats.errorCount,
+    }));
 
   return (
     <article className="ops-panel ops-panel--metrics" aria-label="ops metrics">
-      <div className="panel-head">
+      <div className="panel-head panel-head--compact">
         <div>
-          <p className="ops-label">telemetry</p>
-          <h3>Ops metrics</h3>
+          <p className="eyebrow">telemetry</p>
+          <h3>Route metrics</h3>
         </div>
-        <SignalTag label="live" variant="internal" blinking />
+        <SignalTag blinking label="live" variant="internal" />
       </div>
 
       {metrics.error ? (
@@ -254,31 +318,28 @@ export function OpsMetricsPanel() {
 
       {snapshot ? (
         <>
-          <div className="ops-metrics-counters">
-            {counterEntries.map(([name, value]) => (
-              <Metric key={name} label={formatCounterLabel(name)} value={String(value)} />
-            ))}
-          </div>
-
           {routeEntries.length > 0 ? (
-            <div className="ops-metrics-routes">
-              <p className="ops-label">top routes</p>
-              <ul>
-                {routeEntries.map(([route, stats]) => (
-                  <li key={route}>
-                    <strong>{route}</strong>
-                    <span>
-                      {stats.count} req · {Math.round(stats.averageLatencyMs)}ms avg
-                      {stats.errorCount > 0 ? ` · ${stats.errorCount} err` : ''}
-                    </span>
-                  </li>
+            <RouteLatencyChart routes={routeEntries} />
+          ) : (
+            <p className="quiet-note">No route traffic yet.</p>
+          )}
+
+          {counterEntries.length > 0 ? (
+            <OpsFold count={String(counterEntries.length)} icon="chart" title="counters">
+              <div className="ops-kpi-grid ops-kpi-grid--compact">
+                {counterEntries.map(([name, value]) => (
+                  <OpsKpiTile
+                    key={name}
+                    label={name.replaceAll('.', ' / ')}
+                    value={String(value)}
+                  />
                 ))}
-              </ul>
-            </div>
+              </div>
+            </OpsFold>
           ) : null}
         </>
       ) : (
-        <p className="quiet-note">Loading JSON metrics…</p>
+        <p className="quiet-note">Loading metrics…</p>
       )}
     </article>
   );

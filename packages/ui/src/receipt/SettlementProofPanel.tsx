@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import {
   buildChildJobSummary,
   buildRoutingDecisionSummary,
@@ -195,9 +196,130 @@ export function SettlementProofPanel({
     );
   }
 
+  const policyFields = (
+    <div className="receipt-grid">
+      <SettlementLabelValue
+        label="privacy mode"
+        value={routingProof?.policy.privacyMode ?? 'pending'}
+        variant={variant}
+      />
+      <SettlementLabelValue
+        label="selection"
+        value={routingProof?.policy.selectionMode ?? 'pending'}
+        variant={variant}
+      />
+      <SettlementLabelValue
+        label="venice lane"
+        value={routingProof?.policy.venicePrivateLane ? 'active' : 'off'}
+        variant={variant}
+      />
+      <SettlementLabelValue
+        label="8004 required"
+        value={routingProof?.policy.requireErc8004 ? 'yes' : 'no'}
+        variant={variant}
+      />
+      <SettlementLabelValue
+        label="min trust"
+        value={
+          routingProof?.policy.minTrustScore == null
+            ? 'none'
+            : String(routingProof.policy.minTrustScore)
+        }
+        variant={variant}
+      />
+      <SettlementLabelValue
+        label="venice routed"
+        value={String(veniceProviderCount)}
+        variant={variant}
+      />
+      <SettlementLabelValue
+        label="8004 routed"
+        value={String(erc8004ProviderCount)}
+        variant={variant}
+      />
+      <SettlementLabelValue
+        label="8004 verified"
+        value={String(verifiedErc8004ProviderCount)}
+        variant={variant}
+      />
+      <SettlementLabelValue
+        label="trust scored"
+        value={String(trustScoredProviderCount)}
+        variant={variant}
+      />
+    </div>
+  );
+
+  const settlementFields = (
+    <div className="receipt-grid">
+      <SettlementLabelValue
+        label="mode"
+        value={settlementExecution?.mode ?? 'pending'}
+        variant={variant}
+      />
+      <SettlementLabelValue
+        label="proof"
+        value={settlementExecution?.proofStandard ?? 'pending'}
+        variant={variant}
+      />
+      <SettlementLabelValue
+        label="lifecycle"
+        value={buildSettlementLifecycleLabel(settlementExecution?.lifecycleStatus)}
+        variant={variant}
+      />
+      <SettlementLabelValue
+        label="artifact"
+        value={settlementExecution?.artifactPath ?? 'pending'}
+        variant={variant}
+      />
+      <SettlementLabelValue
+        label="registry"
+        value={settlementExecution?.registryRaidRef ?? 'pending'}
+        variant={variant}
+      />
+      <SettlementLabelValue
+        label="registry contract"
+        value={settlementExecution?.contracts?.registryAddress ?? 'pending'}
+        variant={variant}
+      />
+      <SettlementLabelValue
+        label="escrow contract"
+        value={settlementExecution?.contracts?.escrowAddress ?? 'pending'}
+        variant={variant}
+      />
+      <SettlementLabelValue
+        label="task hash"
+        value={settlementExecution?.taskHash ?? 'pending'}
+        variant={variant}
+      />
+      <SettlementLabelValue
+        label="evaluation hash"
+        value={settlementExecution?.evaluationHash ?? 'pending'}
+        variant={variant}
+      />
+      <SettlementLabelValue
+        label="finalize tx"
+        value={shortValue(settlementExecution?.finalizeTxHash ?? 'pending')}
+        variant={variant}
+      />
+      <SettlementLabelValue
+        label="warnings"
+        value={String(settlementExecution?.warnings?.length ?? 0)}
+        variant={variant}
+      />
+    </div>
+  );
+
+  const listSection = (title: string, content: ReactNode) => (
+    <div className="receipt-list__section">
+      <strong>{title}</strong>
+      {content}
+    </div>
+  );
+
   return (
     <>
-      <div className="receipt-grid">
+      <div className="receipt-stat-grid">
         <SettlementLabelValue label="raid" value={activeRaidId} variant={variant} />
         <SettlementLabelValue label="status" value={resultStatus} variant={variant} />
         <SettlementLabelValue
@@ -206,115 +328,28 @@ export function SettlementProofPanel({
           variant={variant}
         />
         <SettlementLabelValue
-          label="privacy mode"
-          value={routingProof?.policy.privacyMode ?? 'pending'}
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="selection"
-          value={routingProof?.policy.selectionMode ?? 'pending'}
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="venice lane"
-          value={routingProof?.policy.venicePrivateLane ? 'active' : 'off'}
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="8004 required"
-          value={routingProof?.policy.requireErc8004 ? 'yes' : 'no'}
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="min trust"
+          label="payout each"
           value={
-            routingProof?.policy.minTrustScore == null
-              ? 'none'
-              : String(routingProof.policy.minTrustScore)
+            payoutPerSuccessfulProvider == null ? 'pending' : formatUsd(payoutPerSuccessfulProvider)
           }
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="venice routed"
-          value={String(veniceProviderCount)}
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="8004 routed"
-          value={String(erc8004ProviderCount)}
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="8004 verified"
-          value={String(verifiedErc8004ProviderCount)}
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="trust scored"
-          value={String(trustScoredProviderCount)}
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="mode"
-          value={settlementExecution?.mode ?? 'pending'}
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="proof"
-          value={settlementExecution?.proofStandard ?? 'pending'}
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="lifecycle"
-          value={buildSettlementLifecycleLabel(settlementExecution?.lifecycleStatus)}
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="artifact"
-          value={settlementExecution?.artifactPath ?? 'pending'}
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="registry"
-          value={settlementExecution?.registryRaidRef ?? 'pending'}
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="registry contract"
-          value={settlementExecution?.contracts?.registryAddress ?? 'pending'}
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="escrow contract"
-          value={settlementExecution?.contracts?.escrowAddress ?? 'pending'}
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="task hash"
-          value={settlementExecution?.taskHash ?? 'pending'}
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="evaluation hash"
-          value={settlementExecution?.evaluationHash ?? 'pending'}
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="finalize tx"
-          value={shortValue(settlementExecution?.finalizeTxHash ?? 'pending')}
-          variant={variant}
-        />
-        <SettlementLabelValue
-          label="warnings"
-          value={String(settlementExecution?.warnings?.length ?? 0)}
           variant={variant}
         />
       </div>
 
+      <details className="receipt-disclosure">
+        <summary>routing policy</summary>
+        {policyFields}
+      </details>
+
+      <details className="receipt-disclosure">
+        <summary>settlement fields</summary>
+        {settlementFields}
+      </details>
+
       <div className="receipt-list">
-        <div className="receipt-list__section">
-          <strong>routing proof</strong>
-          {routingDecisions.length ? (
+        {listSection(
+          'routing proof',
+          routingDecisions.length ? (
             routingDecisions.map((decision) => (
               <div
                 className="receipt-row"
@@ -326,12 +361,12 @@ export function SettlementProofPanel({
             ))
           ) : (
             <p className="quiet-note">No routing proof recorded yet.</p>
-          )}
-        </div>
+          )
+        )}
 
-        <div className="receipt-list__section">
-          <strong>allocations</strong>
-          {settlementExecution?.allocations?.length ? (
+        {listSection(
+          'allocations',
+          settlementExecution?.allocations?.length ? (
             settlementExecution.allocations.map((allocation) => (
               <div className="receipt-row" key={`${allocation.providerId}-${allocation.role}`}>
                 <span>{allocation.providerId}</span>
@@ -342,12 +377,12 @@ export function SettlementProofPanel({
             ))
           ) : (
             <p className="quiet-note">No settlement allocation yet.</p>
-          )}
-        </div>
+          )
+        )}
 
-        <div className="receipt-list__section">
-          <strong>transactions</strong>
-          {settlementExecution?.transactionHashes?.length ? (
+        {listSection(
+          'transactions',
+          settlementExecution?.transactionHashes?.length ? (
             settlementExecution.transactionHashes.map((hash) => (
               <div className="receipt-row" key={hash}>
                 <span>tx</span>
@@ -356,12 +391,12 @@ export function SettlementProofPanel({
             ))
           ) : (
             <p className="quiet-note">No onchain transaction yet.</p>
-          )}
-        </div>
+          )
+        )}
 
-        <div className="receipt-list__section">
-          <strong>warnings</strong>
-          {settlementExecution?.warnings?.length ? (
+        {listSection(
+          'warnings',
+          settlementExecution?.warnings?.length ? (
             settlementExecution.warnings.map((warning) => (
               <div className="receipt-row" key={warning}>
                 <span>warn</span>
@@ -370,12 +405,12 @@ export function SettlementProofPanel({
             ))
           ) : (
             <p className="quiet-note">No settlement warnings recorded.</p>
-          )}
-        </div>
+          )
+        )}
 
-        <div className="receipt-list__section">
-          <strong>child jobs</strong>
-          {settlementExecution?.childJobs?.length ? (
+        {listSection(
+          'child jobs',
+          settlementExecution?.childJobs?.length ? (
             settlementExecution.childJobs.map((job) => (
               <div className="receipt-row" key={job.jobRef}>
                 <span>{job.providerId}</span>
@@ -384,12 +419,12 @@ export function SettlementProofPanel({
             ))
           ) : (
             <p className="quiet-note">No child-job proof yet.</p>
-          )}
-        </div>
+          )
+        )}
 
-        <div className="receipt-list__section">
-          <strong>reputation events</strong>
-          {reputationEvents.length ? (
+        {listSection(
+          'reputation events',
+          reputationEvents.length ? (
             reputationEvents.map((event) => (
               <div
                 className="receipt-row"
@@ -403,8 +438,8 @@ export function SettlementProofPanel({
             ))
           ) : (
             <p className="quiet-note">No reputation events recorded yet.</p>
-          )}
-        </div>
+          )
+        )}
       </div>
     </>
   );

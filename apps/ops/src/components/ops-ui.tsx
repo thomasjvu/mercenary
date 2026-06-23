@@ -14,6 +14,7 @@ export { buildRoutingDecisionSummary, formatMs, formatScore, formatTimestamp, fo
 
 import { ArtifactStrip } from '@bossraid/ui';
 import type { CSSProperties } from 'react';
+import { OpsFold, OpsIcon, OpsKpiTile, SegmentBar } from './ops-visual';
 import type {
   OpsX402Settings,
   Provider,
@@ -77,82 +78,77 @@ export function X402PaymentsGate({
       : []);
   const readinessBlockers = blockingChecks.map((check) => `${check.id}: ${check.message}`);
 
+  const payToLabel = settings?.payToConfigured
+    ? settings.payTo
+      ? `${settings.payTo.slice(0, 6)}…${settings.payTo.slice(-4)}`
+      : 'set'
+    : 'missing';
+
   return (
     <section className="ops-x402-panel flat-section" aria-label="x402 payment controls">
-      <div className="ops-x402-panel__copy">
-        <p className="eyebrow">payments</p>
-        <h2>x402 USDC gate</h2>
-        <p className="ops-x402-panel__lede">
-          Paid ingress requires explicit confirmation. Buyers on POST /v1/raid and chat routes need
-          USDC when enabled.
-        </p>
+      <div className="ops-x402-panel__head">
+        <div className="ops-x402-panel__title">
+          <OpsIcon name="payment" size={20} />
+          <div>
+            <p className="eyebrow">x402</p>
+            <h2>USDC gate</h2>
+          </div>
+        </div>
+        <SignalTag label={enabled ? 'on' : 'off'} variant={enabled ? 'internal' : 'default'} />
       </div>
 
-      <div className="ops-x402-panel__controls">
-        <div className="ops-x402-status">
-          <SignalTag
-            label={enabled ? 'enabled' : 'disabled'}
-            variant={enabled ? 'internal' : 'default'}
-          />
-          <p className="quiet-note">
-            {enabled
-              ? 'POST /v1/raid and chat routes require payment.'
-              : 'Public ingress stays on free/demo paths.'}
-          </p>
-        </div>
+      <div className="ops-kpi-grid ops-kpi-grid--compact">
+        <OpsKpiTile label="network" value={settings?.network ?? 'n/a'} />
+        <OpsKpiTile label="asset" value={settings?.asset ?? 'n/a'} />
+        <OpsKpiTile
+          label="pay-to"
+          tone={settings?.payToConfigured ? 'good' : 'danger'}
+          value={payToLabel}
+        />
+        <OpsKpiTile label="facilitator" value={settings?.facilitator ?? 'n/a'} />
+      </div>
 
-        <div className="ops-x402-panel__actions">
-          {!enabled ? (
-            <button
-              className="button button--danger"
-              disabled={disabled || !canEnable || readinessBlockers.length > 0}
-              onClick={onRequestEnable}
-              type="button"
-            >
-              enable paid ingress
-            </button>
-          ) : (
-            <button
-              className="button button--danger"
-              disabled={disabled}
-              onClick={onRequestDisable}
-              type="button"
-            >
-              disable paid ingress
-            </button>
-          )}
-        </div>
+      <div className="ops-x402-panel__actions">
+        {!enabled ? (
+          <button
+            className="button button--danger"
+            disabled={disabled || !canEnable || readinessBlockers.length > 0}
+            onClick={onRequestEnable}
+            type="button"
+          >
+            enable
+          </button>
+        ) : (
+          <button
+            className="button button--danger"
+            disabled={disabled}
+            onClick={onRequestDisable}
+            type="button"
+          >
+            disable
+          </button>
+        )}
+      </div>
 
-        <div className="ops-x402-panel__meta">
-          <span>facilitator {settings?.facilitator ?? 'n/a'}</span>
-          <span>network {settings?.network ?? 'n/a'}</span>
-          <span>asset {settings?.asset ?? 'n/a'}</span>
-          <span>
-            pay-to{' '}
-            {settings?.payToConfigured
-              ? settings.payTo
-                ? `${settings.payTo.slice(0, 6)}…${settings.payTo.slice(-4)}`
-                : 'configured'
-              : 'missing'}
-          </span>
-        </div>
-
-        {readinessBlockers.length > 0 && !enabled ? (
+      {readinessBlockers.length > 0 && !enabled ? (
+        <OpsFold count={String(readinessBlockers.length)} icon="error" title="readiness blockers">
           <ul className="ops-x402-panel__blockers">
             {readinessBlockers.map((blocker) => (
               <li key={blocker}>{blocker}</li>
             ))}
           </ul>
-        ) : null}
-        {blockers.length > 0 ? (
+        </OpsFold>
+      ) : null}
+      {blockers.length > 0 ? (
+        <OpsFold count={String(blockers.length)} icon="warn" title="config blockers">
           <ul className="ops-x402-panel__blockers">
             {blockers.map((blocker) => (
               <li key={blocker}>{blocker}</li>
             ))}
           </ul>
-        ) : null}
-        {error ? <p className="error-note">{error}</p> : null}
-      </div>
+        </OpsFold>
+      ) : null}
+      {error ? <p className="error-note">{error}</p> : null}
     </section>
   );
 }
@@ -192,12 +188,39 @@ export function ScoreCard({ entry }: { entry: RankedSubmission }) {
         />
       </div>
       <div className="scorecard__metrics">
-        <span>final {formatScore(breakdown.finalScore)}</span>
-        <span>build {formatScore(breakdown.buildScore)}</span>
-        <span>tests {formatScore(breakdown.testScore)}</span>
-        <span>latency {formatScore(breakdown.latencyScore)}</span>
+        <div className="scorecard__metric-row">
+          <span>final</span>
+          <SegmentBar segments={12} tone="market" value={breakdown.finalScore} />
+          <strong>{formatScore(breakdown.finalScore)}</strong>
+        </div>
+        <div className="scorecard__metric-row">
+          <span>build</span>
+          <SegmentBar segments={12} tone="volume" value={breakdown.buildScore} />
+          <strong>{formatScore(breakdown.buildScore)}</strong>
+        </div>
+        <div className="scorecard__metric-row">
+          <span>tests</span>
+          <SegmentBar segments={12} tone="ref" value={breakdown.testScore} />
+          <strong>{formatScore(breakdown.testScore)}</strong>
+        </div>
+        <div className="scorecard__metric-row">
+          <span>latency</span>
+          <SegmentBar segments={12} tone="savings" value={breakdown.latencyScore} />
+          <strong>{formatScore(breakdown.latencyScore)}</strong>
+        </div>
       </div>
-      <p className="scorecard__summary">{breakdown.summary ?? 'No evaluation summary yet.'}</p>
+      {breakdown.summary ? (
+        <details className="ops-fold">
+          <summary className="ops-fold__summary">
+            <span className="ops-fold__title">
+              <span>summary</span>
+            </span>
+          </summary>
+          <div className="ops-fold__body">
+            <p className="scorecard__summary">{breakdown.summary}</p>
+          </div>
+        </details>
+      ) : null}
       {entry.submission.artifacts?.length ? (
         <ArtifactStrip artifacts={entry.submission.artifacts} compact />
       ) : null}

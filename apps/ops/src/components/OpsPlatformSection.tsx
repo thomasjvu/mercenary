@@ -4,6 +4,7 @@ import {
   ProductionReadinessPanel,
   SettlementStatusPanel,
 } from './OpsReliabilityPanels';
+import { OpsSectionHeader } from './ops-visual';
 import { X402PaymentsGate } from './ops-ui';
 
 type OpsPlatformSectionProps = {
@@ -31,15 +32,7 @@ export function OpsPlatformSection({
 
   return (
     <section className="ops-platform-section" id="platform">
-      <header className="ops-platform-section__head flat-section">
-        <div>
-          <p className="eyebrow">platform</p>
-          <h2>Launch gates and telemetry</h2>
-          <p className="quiet-note">
-            Payment ingress, readiness checks, settlement rail, and route metrics.
-          </p>
-        </div>
-      </header>
+      <OpsSectionHeader icon="platform" title="Platform gates" />
 
       <X402PaymentsGate
         blockingChecks={blockingChecks}
