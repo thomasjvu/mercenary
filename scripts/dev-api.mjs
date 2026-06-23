@@ -28,6 +28,9 @@ const child = spawn('pnpm', ['--filter', '@bossraid/api', 'dev'], {
             process.env.BOSSRAID_EVAL_SANDBOX_URL ?? 'http://127.0.0.1:8790',
         }),
     BOSSRAID_EVAL_SANDBOX_TOKEN: process.env.BOSSRAID_EVAL_SANDBOX_TOKEN ?? 'local-dev-eval-token',
+    BOSSRAID_EVAL_JOB_ISOLATION: process.env.BOSSRAID_EVAL_JOB_ISOLATION ?? 'container',
+    BOSSRAID_OPERATOR_TERMS_ACK: process.env.BOSSRAID_OPERATOR_TERMS_ACK ?? 'true',
+    BOSSRAID_INCIDENT_RESPONSE_ACK: process.env.BOSSRAID_INCIDENT_RESPONSE_ACK ?? 'true',
   },
 });
 

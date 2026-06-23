@@ -130,3 +130,41 @@ test('production readiness allows attestation bypass flags outside production', 
     'pass'
   );
 });
+
+test('production readiness warns on infra gates outside production', () => {
+  const report = buildProductionReadinessReport({
+    ...baseInput,
+    env: {
+      ...baseInput.env,
+      NODE_ENV: 'development',
+      BOSSRAID_TEE_PLATFORM: undefined,
+    },
+    settlement: { mode: 'file', configured: false },
+    tee: {
+      configured: false,
+      platform: null,
+      pathExists: false,
+      socketMounted: false,
+    },
+  });
+
+  assert.equal(report.checks.find((entry) => entry.id === 'node_env_production')?.status, 'warn');
+  assert.equal(report.checks.find((entry) => entry.id === 'onchain_settlement')?.status, 'warn');
+  assert.equal(report.checks.find((entry) => entry.id === 'tee_attestation')?.status, 'warn');
+  assert.equal(report.ok, true);
+});
+
+test('production readiness still blocks missing Phala tee socket in production', () => {
+  const report = buildProductionReadinessReport({
+    ...baseInput,
+    tee: {
+      configured: false,
+      platform: 'phala',
+      pathExists: false,
+      socketMounted: false,
+    },
+  });
+
+  assert.equal(report.checks.find((entry) => entry.id === 'tee_attestation')?.status, 'fail');
+  assert.equal(report.ok, false);
+});

@@ -80,10 +80,10 @@ export function createApiContext(
     env.BOSSRAID_PUBLIC_AUTH_NONCE_TTL_SEC,
     DEFAULTS.PUBLIC_AUTH_NONCE_TTL_SEC
   );
-  const buyerKeyDefaultSpendLimitUsd = readPositiveNumber(
-    env.BOSSRAID_BUYER_KEY_DEFAULT_SPEND_LIMIT_USD
-  );
-  const buyerMaxRequestBudgetUsd = readPositiveNumber(env.BOSSRAID_BUYER_MAX_REQUEST_BUDGET_USD);
+  const buyerKeyDefaultSpendLimitUsd =
+    readPositiveNumber(env.BOSSRAID_BUYER_KEY_DEFAULT_SPEND_LIMIT_USD) ?? 25;
+  const buyerMaxRequestBudgetUsd =
+    readPositiveNumber(env.BOSSRAID_BUYER_MAX_REQUEST_BUDGET_USD) ?? 50;
   const buyerKeyRateLimitMax = readPositiveInteger(
     env.BOSSRAID_BUYER_KEY_RATE_LIMIT_MAX,
     DEFAULTS.PUBLIC_RATE_LIMIT_MAX

@@ -35,31 +35,31 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 
 ## API auth & limits
 
-| Variable                                     | Purpose                                                            |
-| -------------------------------------------- | ------------------------------------------------------------------ |
-| `BOSSRAID_ADMIN_TOKEN`                       | Admin bearer + ops session bootstrap                               |
-| `BOSSRAID_REGISTRY_TOKEN`                    | `POST /agents/register`                                            |
-| `BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST`       | Chat budget fallback                                               |
-| `BOSSRAID_PUBLIC_RATE_LIMIT_*`               | Public spawn/chat limits                                           |
-| `BOSSRAID_BUYER_KEY_RATE_LIMIT_*`            | Per API-key limits                                                 |
-| `BOSSRAID_BUYER_KEY_DEFAULT_SPEND_LIMIT_USD` | Default key cap                                                    |
-| `BOSSRAID_BUYER_MAX_REQUEST_BUDGET_USD`      | Server max request budget                                          |
-| `BOSSRAID_SECRET_ENCRYPTION_KEY`             | Encrypt secrets at rest (required for Venice seller keys in prod)  |
-| `BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS`   | Key rotation decrypt                                               |
-| `BOSSRAID_INFERENCE_GATEWAY_BASE`            | Public base URL for hosted seller gateway (`/gateway/:providerId`) |
-| `BOSSRAID_VENICE_MOCK`                       | `1` = mock Venice upstream for local/tests                         |
-| `BOSSRAID_UPSTREAM_MOCK`                     | `1` = mock Redpill/NEAR/Chutes/Phala upstream list                 |
-| `BOSSRAID_UPSTREAM_TEE_MOCK`                 | `1` = mock upstream TEE attestation verification                   |
-| `BOSSRAID_UPSTREAM_TEE_CLOUD_VERIFY`         | `0` disables Phala Cloud quote verification (default: verify)      |
-| `PHALA_CLOUD_ATTESTATION_VERIFY_URL`         | Override Phala Cloud quote verify endpoint                         |
-| `BOSSRAID_VENICE_API_KEY`                    | Optional platform key for catalog TEE attest                       |
-| `BOSSRAID_REDPILL_API_KEY`                   | Optional platform key for catalog TEE attest                       |
-| `BOSSRAID_NEAR_API_KEY`                      | Optional platform key for catalog TEE attest                       |
-| `BOSSRAID_CHUTES_API_KEY`                    | Optional platform key for catalog TEE attest                       |
-| `BOSSRAID_PHALA_API_KEY`                     | Optional platform key for catalog TEE attest                       |
-| `BOSSRAID_PROVIDER_HEALTH_TIMEOUT_MS`        | Health probe timeout                                               |
-| `BOSSRAID_TRUST_PROXY`                       | Trust forwarded headers                                            |
-| `BOSSRAID_METRICS_PUBLIC`                    | `true` exposes `/metrics` without admin auth (default: admin only) |
+| Variable                                     | Purpose                                                             |
+| -------------------------------------------- | ------------------------------------------------------------------- |
+| `BOSSRAID_ADMIN_TOKEN`                       | Admin bearer + ops session bootstrap                                |
+| `BOSSRAID_REGISTRY_TOKEN`                    | `POST /agents/register`                                             |
+| `BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST`       | Chat budget fallback                                                |
+| `BOSSRAID_PUBLIC_RATE_LIMIT_*`               | Public spawn/chat limits                                            |
+| `BOSSRAID_BUYER_KEY_RATE_LIMIT_*`            | Per API-key limits                                                  |
+| `BOSSRAID_BUYER_KEY_DEFAULT_SPEND_LIMIT_USD` | Default key cap (default `25`; production-readiness gate)           |
+| `BOSSRAID_BUYER_MAX_REQUEST_BUDGET_USD`      | Server max request budget (default `50`; production-readiness gate) |
+| `BOSSRAID_SECRET_ENCRYPTION_KEY`             | Encrypt secrets at rest (required for Venice seller keys in prod)   |
+| `BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS`   | Key rotation decrypt                                                |
+| `BOSSRAID_INFERENCE_GATEWAY_BASE`            | Public base URL for hosted seller gateway (`/gateway/:providerId`)  |
+| `BOSSRAID_VENICE_MOCK`                       | `1` = mock Venice upstream for local/tests                          |
+| `BOSSRAID_UPSTREAM_MOCK`                     | `1` = mock Redpill/NEAR/Chutes/Phala upstream list                  |
+| `BOSSRAID_UPSTREAM_TEE_MOCK`                 | `1` = mock upstream TEE attestation verification                    |
+| `BOSSRAID_UPSTREAM_TEE_CLOUD_VERIFY`         | `0` disables Phala Cloud quote verification (default: verify)       |
+| `PHALA_CLOUD_ATTESTATION_VERIFY_URL`         | Override Phala Cloud quote verify endpoint                          |
+| `BOSSRAID_VENICE_API_KEY`                    | Optional platform key for catalog TEE attest                        |
+| `BOSSRAID_REDPILL_API_KEY`                   | Optional platform key for catalog TEE attest                        |
+| `BOSSRAID_NEAR_API_KEY`                      | Optional platform key for catalog TEE attest                        |
+| `BOSSRAID_CHUTES_API_KEY`                    | Optional platform key for catalog TEE attest                        |
+| `BOSSRAID_PHALA_API_KEY`                     | Optional platform key for catalog TEE attest                        |
+| `BOSSRAID_PROVIDER_HEALTH_TIMEOUT_MS`        | Health probe timeout                                                |
+| `BOSSRAID_TRUST_PROXY`                       | Trust forwarded headers                                             |
+| `BOSSRAID_METRICS_PUBLIC`                    | `true` exposes `/metrics` without admin auth (default: admin only)  |
 
 ## x402
 
@@ -200,7 +200,9 @@ Stored in `.private/.env` (untracked). Used by `pnpm generate:legal-character`.
 
 ## Production acknowledgements
 
-| Variable                         | Purpose                   |
-| -------------------------------- | ------------------------- |
-| `BOSSRAID_OPERATOR_TERMS_ACK`    | Production-readiness gate |
-| `BOSSRAID_INCIDENT_RESPONSE_ACK` | Production-readiness gate |
+| Variable                         | Purpose                                                   |
+| -------------------------------- | --------------------------------------------------------- |
+| `BOSSRAID_OPERATOR_TERMS_ACK`    | Production-readiness gate (`true` before full production) |
+| `BOSSRAID_INCIDENT_RESPONSE_ACK` | Production-readiness gate (`true` before full production) |
+
+Outside `NODE_ENV=production`, `node_env_production`, `onchain_settlement`, and `tee_attestation` report as warnings instead of blocking failures so controlled local launch can pass `GET /v1/ops/production-readiness` while infra is still being wired.

@@ -57,14 +57,16 @@ export function buildProductionReadinessReport(input: {
     checks.push(check);
   };
 
+  const productionEnv = input.env.NODE_ENV === 'production';
+  const teePlatform = input.env.BOSSRAID_TEE_PLATFORM ?? null;
+
   addCheck({
     id: 'node_env_production',
-    status: input.env.NODE_ENV === 'production' ? 'pass' : 'fail',
+    status: productionEnv ? 'pass' : 'warn',
     severity: 'blocking',
-    message:
-      input.env.NODE_ENV === 'production'
-        ? 'API is running with NODE_ENV=production.'
-        : 'Set NODE_ENV=production before public paid traffic.',
+    message: productionEnv
+      ? 'API is running with NODE_ENV=production.'
+      : 'Set NODE_ENV=production before public paid traffic.',
   });
 
   addCheck({
@@ -131,7 +133,6 @@ export function buildProductionReadinessReport(input: {
     details: input.x402,
   });
 
-  const productionEnv = input.env.NODE_ENV === 'production';
   addCheck({
     id: 'unverified_balance_fund',
     status:
@@ -194,7 +195,7 @@ export function buildProductionReadinessReport(input: {
 
   addCheck({
     id: 'onchain_settlement',
-    status: input.settlement.configured ? 'pass' : 'fail',
+    status: input.settlement.configured ? 'pass' : productionEnv ? 'fail' : 'warn',
     severity: 'blocking',
     message:
       input.settlement.mode === 'onchain'
@@ -255,13 +256,23 @@ export function buildProductionReadinessReport(input: {
   const phalaTeeSocketReady =
     input.tee.platform === 'phala' && input.tee.pathExists && input.tee.socketMounted;
   const mnemonicConfigured = Boolean(input.env.MNEMONIC?.trim());
+  const requiresPhalaTee = teePlatform === 'phala';
 
   addCheck({
     id: 'tee_attestation',
-    status: phalaTeeSocketReady ? 'pass' : 'fail',
+    status: requiresPhalaTee
+      ? phalaTeeSocketReady
+        ? 'pass'
+        : 'fail'
+      : productionEnv
+        ? 'fail'
+        : 'warn',
     severity: 'blocking',
-    message:
-      'Phala production requires BOSSRAID_TEE_PLATFORM=phala with a mounted dstack guest agent socket.',
+    message: requiresPhalaTee
+      ? 'Phala production requires BOSSRAID_TEE_PLATFORM=phala with a mounted dstack guest agent socket.'
+      : productionEnv
+        ? 'Production requires BOSSRAID_TEE_PLATFORM=phala with a mounted dstack guest agent socket.'
+        : 'Phala TEE is not configured; required before public production traffic.',
     details: input.tee,
   });
 
