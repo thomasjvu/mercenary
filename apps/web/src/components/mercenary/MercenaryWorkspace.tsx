@@ -69,6 +69,8 @@ export function MercenaryWorkspace({
               lastSubmittedBrief={mercenary.lastSubmittedBrief}
               launchError={mercenary.launchError}
               liveRaidRun={mercenary.liveRaidRun}
+              providerHealth={providerHealth}
+              providers={providers}
               raidIsTerminal={mercenary.raidIsTerminal}
             />
 

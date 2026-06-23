@@ -1,5 +1,7 @@
+import type { Provider, ProviderHealth } from '../../api';
 import { humanizeStatus } from '../../mercenary-format.js';
 import type { LiveRaidRun } from '../../mercenary-result.js';
+import { MercenaryOrchestrationPanel } from './MercenaryOrchestrationPanel';
 import { ChatMessage, StatusPill, TypingDots } from './mercenary-ui';
 
 type MercenaryRaidProgressProps = {
@@ -10,6 +12,8 @@ type MercenaryRaidProgressProps = {
   activeRaidStatus?: string;
   raidIsTerminal: boolean;
   elapsedLabel: string;
+  providers: Provider[];
+  providerHealth: ProviderHealth[];
 };
 
 export function MercenaryRaidProgress({
@@ -20,6 +24,8 @@ export function MercenaryRaidProgress({
   activeRaidStatus,
   raidIsTerminal,
   elapsedLabel,
+  providers,
+  providerHealth,
 }: MercenaryRaidProgressProps) {
   const submittedAt = liveRaidRun?.startedAtMs
     ? new Date(liveRaidRun.startedAtMs).toISOString()
@@ -68,6 +74,16 @@ export function MercenaryRaidProgress({
             <p className="mercenary-message__note">Last refresh error: {liveRaidRun.pollError}</p>
           ) : null}
         </ChatMessage>
+      ) : null}
+
+      {liveRaidRun && !liveRaidRun.directResponse ? (
+        <MercenaryOrchestrationPanel
+          activeRaidStatus={activeRaidStatus}
+          liveRaidRun={liveRaidRun}
+          providerHealth={providerHealth}
+          providers={providers}
+          raidIsTerminal={raidIsTerminal}
+        />
       ) : null}
     </>
   );
