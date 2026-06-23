@@ -58,6 +58,7 @@ const merged = {
 const veniceApiKey = resolveVeniceApiKey(merged);
 
 const core = {
+  ...(isRealValue(merged.MNEMONIC) ? { MNEMONIC: merged.MNEMONIC.trim() } : {}),
   BOSSRAID_IMAGE: isRealValue(merged.BOSSRAID_IMAGE)
     ? merged.BOSSRAID_IMAGE.trim()
     : imageDigestRef('BOSSRAID_IMAGE_DIGEST', 'ghcr.io/thomasjvu/boss-raid', merged),
