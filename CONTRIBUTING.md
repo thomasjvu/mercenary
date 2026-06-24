@@ -40,6 +40,8 @@ pnpm test:smoke:e2e
 pnpm dev
 ```
 
+Operator and deploy commands (`sync:*`, `bootstrap:*`, `docker:*`, etc.) use `pnpm bossraid <command>`. Run `pnpm bossraid help` for the full list.
+
 Manual dev entrypoints:
 
 ```bash

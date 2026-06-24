@@ -16,7 +16,7 @@ Use these files when you want Mercenary to turn one GB Studio task into:
 If you want repo-specific versions of those payloads, run:
 
 ```bash
-pnpm game-raid:build-payload -- --repo /path/to/game --file project.gbsproj --file scripts/game.ts --title "Boss Raid: Slime Panic"
+pnpm bossraid game-raid:build-payload -- --repo /path/to/game --file project.gbsproj --file scripts/game.ts --title "Boss Raid: Slime Panic"
 ```
 
 That writes:

@@ -92,8 +92,8 @@ All three panels use **Mercenary Mk-0** (symmetrical temple spikes, hex reactor,
 Regenerate from OC references:
 
 ```bash
-pnpm sync:oc-references
-pnpm generate:landing-hero
+pnpm bossraid sync:oc-references
+pnpm bossraid generate:landing-hero
 ```
 
 Prompts: `.private/demo-video/prompts/landing-hero-workflows.md`

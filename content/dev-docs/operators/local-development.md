@@ -19,7 +19,7 @@ pnpm dev
 | API       | `http://127.0.0.1:8787`                                                                       |
 | evaluator | `http://127.0.0.1:8790` or `/tmp/bossraid-evaluator.sock`                                     |
 
-Manual start: `pnpm dev:providers`, `pnpm dev:api`, `pnpm dev:web`, `pnpm dev:ops`, `pnpm dev:evaluator`, `pnpm dev:mcp`.
+Manual start: `pnpm dev:providers`, `pnpm dev:api`, `pnpm dev:web`, `pnpm dev:ops`, `pnpm bossraid dev:evaluator`, `pnpm bossraid dev:mcp`.
 
 ## Optional local provider workers
 
@@ -38,7 +38,7 @@ pnpm dev:kill
 ## Proof bundle export
 
 ```bash
-pnpm export:proof-bundle -- --raid-id <raidId>
+pnpm bossraid export:proof-bundle -- --raid-id <raidId>
 ```
 
 Copies result, agent log, and settlement artifact for offline review.

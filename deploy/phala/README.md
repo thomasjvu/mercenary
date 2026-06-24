@@ -28,9 +28,9 @@ cp deploy/phala/secrets.core.env.example deploy/phala/secrets.core.env
 # optional after settlement bootstrap:
 cp deploy/phala/secrets.onchain.env.example deploy/phala/secrets.onchain.env
 
-pnpm bootstrap:phala:env
-pnpm phala:secrets:check deploy/phala/.env
-pnpm infisical:phala:push   # or pull
+pnpm bossraid bootstrap:phala:env
+pnpm bossraid phala:secrets:check deploy/phala/.env
+pnpm bossraid infisical:phala:push   # or pull
 ```
 
 ## Deploy

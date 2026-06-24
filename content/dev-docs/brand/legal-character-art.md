@@ -28,14 +28,14 @@ Canonical stills live in `assets/oc-references/`. See [DESIGN-LOCK.md](../../ass
 Scene prompts: `.private/demo-video/prompts/scenes/S07_legal-float.md`
 
 ```bash
-pnpm sync:oc-references
-pnpm generate:legal-character   # Venice keyframe + 5s clip; writes webm
+pnpm bossraid sync:oc-references
+pnpm bossraid generate:legal-character   # Venice keyframe + 5s clip; writes webm
 ```
 
 `generate:legal-character` runs `venice-legal-character.mjs --regen-image`, queues `wan-2-7-image-to-video` at 720p, then exports the shipped WebM. Re-export only from an existing MP4:
 
 ```bash
-pnpm export:legal-character
+pnpm bossraid export:legal-character
 ```
 
 Requires `VENICE_API_KEY` in `.private/.env` (not committed). Optional: `VENICE_VIDEO_MODEL` (default `wan-2-7-image-to-video`).

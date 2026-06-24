@@ -35,7 +35,7 @@ pnpm build
 BOSSRAID_RPC_URL=https://rpc.example \
 BOSSRAID_DEPLOYER_PRIVATE_KEY=0x... \
 BOSSRAID_TOKEN_ADDRESS=0x... \
-pnpm deploy:contracts
+pnpm bossraid deploy:contracts
 ```
 
 The deploy script compiles the Solidity with `solc-js`, deploys both contracts, writes a manifest, and prints env lines for the orchestrator settlement path.
@@ -59,7 +59,7 @@ Run:
 ```bash
 pnpm build
 
-pnpm bootstrap:settlement-env -- \
+pnpm bossraid bootstrap:settlement-env -- \
   --manifest temp/contracts/deployment.json \
   --provider-addresses examples/provider-addresses.json \
   --evaluator-address 0x...
@@ -82,7 +82,7 @@ BOSSRAID_DEPLOYER_PRIVATE_KEY=0x... \
 BOSSRAID_TOKEN_ADDRESS=0x... \
 BOSSRAID_PROVIDER_ADDRESSES_FILE=examples/provider-addresses.json \
 BOSSRAID_EVALUATOR_ADDRESS=0x... \
-pnpm bootstrap:onchain
+pnpm bossraid bootstrap:onchain
 ```
 
 This deploys both contracts, writes the deployment manifest, writes the settlement env file, and prints the next manual step.

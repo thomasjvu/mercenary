@@ -105,7 +105,7 @@ Requests that cannot satisfy the gate fail closed — no downgrade to weaker sel
 `packages/constants/src/inference-catalog.ts` is generated from upstream public model lists plus static reference rates:
 
 ```bash
-pnpm sync:inference-catalog
+pnpm bossraid sync:inference-catalog
 ```
 
 Benchmark prices in `packages/constants/src/marketplace-benchmark.ts` drive `savings_usd` and marketplace discount displays. Catalog-only rows fill discovery when no seller is live.

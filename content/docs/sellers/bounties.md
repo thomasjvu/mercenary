@@ -52,7 +52,7 @@ pnpm test:bounty-escrow:local
 Against an already-running API:
 
 ```bash
-pnpm test:bounty-escrow:e2e -- --mode unverified
+pnpm bossraid test:bounty-escrow:e2e -- --mode unverified
 ```
 
 Optional env overrides: [`examples/bounty-e2e.env.example`](../../examples/bounty-e2e.env.example).

@@ -196,7 +196,7 @@ Workflow: [operators/appendix/infisical.md](../operators/appendix/infisical.md).
 | `VENICE_API_KEY`     | Venice image edit + image-to-video for OC regen         |
 | `VENICE_VIDEO_MODEL` | Video model override (default `wan-2-7-image-to-video`) |
 
-Stored in `.private/.env` (untracked). Used by `pnpm generate:legal-character`.
+Stored in `.private/.env` (untracked). Used by `pnpm bossraid generate:legal-character`.
 
 ## Production acknowledgements
 

@@ -23,7 +23,7 @@ Theme: copy `.env.example` to `.env.local` (defaults to `VITE_PAPERS_THEME=rx-78
 
 1. Edit Markdown in `content/docs/` or `content/dev-docs/`.
 2. Update nav trees in [`shared/documentation-config.js`](shared/documentation-config.js) when adding pages.
-3. Regenerate route tables: `pnpm sync:docs-routes` (repo root).
+3. Regenerate route tables: `pnpm bossraid sync:docs-routes` (repo root).
 4. If dev server is running, rerun `pnpm run generate:docs` after tree or Markdown changes.
 
 ## Build
@@ -36,8 +36,8 @@ pnpm build:docs
 
 Boss Raid dogfoods [thomasjvu/papers](https://github.com/thomasjvu/papers). See [`content/README.md`](../../content/README.md) for pull/push workflow:
 
-- `pnpm papers:sync-upstream` — pull template improvements
-- `pnpm papers:sync-downstream` — diff and push portable fixes upstream
+- `pnpm bossraid papers:sync-upstream` — pull template improvements
+- `pnpm bossraid papers:sync-downstream` — diff and push portable fixes upstream
 
 Protected Boss Raid overrides are listed in [`scripts/papers-sync-lib.mjs`](../../scripts/papers-sync-lib.mjs) (repo root).
 

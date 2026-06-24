@@ -17,7 +17,7 @@ Canonical reference stills for Venice / Seedream generation. Use together — ne
 Refresh frames and copies:
 
 ```bash
-pnpm sync:oc-references
+pnpm bossraid sync:oc-references
 ```
 
 ## Must keep

@@ -15,15 +15,15 @@ Collection registry: [`apps/docs/shared/content-collections.js`](../apps/docs/sh
 
 ## Agent skill
 
-Canonical agent skill: [`skill.md`](skill.md) — synced to `apps/docs/public/skill.md` and `apps/web/public/skill.md` via `pnpm generate:skill`. Docs install page: `/skill`.
+Canonical agent skill: [`skill.md`](skill.md) — synced to `apps/docs/public/skill.md` and `apps/web/public/skill.md` via `pnpm bossraid generate:skill`. Docs install page: `/skill`.
 
 ## Commands
 
 ```bash
-pnpm dev:docs          # local preview (port 3333)
-pnpm build:docs        # production static build
-pnpm generate:skill    # sync content/skill.md to docs + web public/
-pnpm sync:docs-routes  # regenerate API route table in content/docs/reference/routes.md
+pnpm dev:docs                        # local preview (port 3333)
+pnpm build:docs                      # production static build
+pnpm bossraid generate:skill         # sync content/skill.md to docs + web public/
+pnpm bossraid sync:docs-routes       # regenerate API route table in content/docs/reference/routes.md
 ```
 
 ## Framework sync (dogfooding papers)
@@ -33,8 +33,8 @@ Boss Raid dogfoods [thomasjvu/papers](https://github.com/thomasjvu/papers). Fram
 ### Pull upstream template updates
 
 ```bash
-pnpm papers:sync-upstream -- --dry-run
-pnpm papers:sync-upstream
+pnpm bossraid papers:sync-upstream -- --dry-run
+pnpm bossraid papers:sync-upstream
 ```
 
 Preserves Boss Raid overrides: `content/`, collection config, and protected files in `scripts/papers-sync-lib.mjs`.
@@ -42,10 +42,10 @@ Preserves Boss Raid overrides: `content/`, collection config, and protected file
 ### Push framework fixes upstream
 
 ```bash
-pnpm papers:sync-downstream              # diff vs papers main
-pnpm papers:sync-downstream -- --portable  # list multi-collection overrides to generalize
-pnpm papers:sync-downstream -- --dry-run --apply
-pnpm papers:sync-downstream -- --apply --branch feat/boss-raid-collections
+pnpm bossraid papers:sync-downstream              # diff vs papers main
+pnpm bossraid papers:sync-downstream -- --portable  # list multi-collection overrides to generalize
+pnpm bossraid papers:sync-downstream -- --dry-run --apply
+pnpm bossraid papers:sync-downstream -- --apply --branch feat/boss-raid-collections
 ```
 
 After `--apply`, review `.cache/papers-upstream/` and open a PR to [thomasjvu/papers](https://github.com/thomasjvu/papers).

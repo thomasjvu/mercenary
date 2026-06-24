@@ -2,10 +2,12 @@
 
 Verification, deploy, and operator workflows. Env tables: [reference/env.md](../reference/env.md). Local install and default URLs: [Local development](/dev-docs/operators/local-development) in dev-docs.
 
+Contributor scripts (`check`, `build`, `dev`, `test:*`) live in root `package.json`. Operator, deploy, and integration commands use `pnpm bossraid <command>` — run `pnpm bossraid help` for the full list.
+
 Refresh inference catalog + reference pricing JSON:
 
 ```bash
-pnpm sync:inference-catalog
+pnpm bossraid sync:inference-catalog
 ```
 
 Writes `packages/constants/src/inference-catalog.ts` and `packages/constants/data/inference-model-pricing.json` (Venice rates from public `/models`; Redpill, NEAR, Chutes, Phala from static script rates).
@@ -13,11 +15,11 @@ Writes `packages/constants/src/inference-catalog.ts` and `packages/constants/dat
 Regenerate legal-page Mercenary float (Venice; requires `VENICE_API_KEY` in `.private/.env`):
 
 ```bash
-pnpm sync:oc-references
-pnpm generate:pfp               # Mercenary bust portrait → assets/boss-raid-pfp.png
-pnpm generate:landing-hero      # seller / raider / buyer manga panels → apps/web/src/assets/
-pnpm generate:legal-character   # keyframe + clip + webm export
-pnpm export:legal-character   # re-export webm from existing S07 MP4 only
+pnpm bossraid sync:oc-references
+pnpm bossraid generate:pfp               # Mercenary bust portrait → assets/boss-raid-pfp.png
+pnpm bossraid generate:landing-hero      # seller / raider / buyer manga panels → apps/web/src/assets/
+pnpm bossraid generate:legal-character   # keyframe + clip + webm export
+pnpm bossraid export:legal-character   # re-export webm from existing S07 MP4 only
 ```
 
 See [Legal Character Art](/dev-docs/brand/legal-character-art) in dev-docs.
@@ -25,7 +27,7 @@ See [Legal Character Art](/dev-docs/brand/legal-character-art) in dev-docs.
 Gateway (built web + ops on one origin):
 
 ```bash
-pnpm serve:gateway
+pnpm bossraid serve:gateway
 ```
 
 Serves `/`, `/ops/`, proxies `/api/*` and `/ops-api/*`, exposes `/healthz`.
@@ -66,16 +68,16 @@ BOSSRAID_API_ORIGIN=https://bossraid-web.pages.dev/api pnpm --filter @bossraid/w
 pnpm check
 pnpm build
 pnpm dev
-pnpm serve:gateway
+pnpm bossraid serve:gateway
 pnpm test:unit
 pnpm test:money-path
 pnpm --filter @bossraid/api test src/marketplace-inference.test.ts
 pnpm --filter @bossraid/api test:all
 pnpm --filter @bossraid/web test src/lib/*.test.ts
-pnpm mercenary:rehearse
-pnpm export:proof-bundle -- --raid-id <raidId>
-pnpm verify:attestation
-pnpm deploy:web:cloudflare
+pnpm bossraid mercenary:rehearse
+pnpm bossraid export:proof-bundle -- --raid-id <raidId>
+pnpm bossraid verify:attestation
+pnpm bossraid deploy:web:cloudflare
 ```
 
 Cloudflare Pages deploy (requires Wrangler auth):
@@ -83,14 +85,14 @@ Cloudflare Pages deploy (requires Wrangler auth):
 ```bash
 BOSSRAID_CLOUDFLARE_PAGES_PROJECT=bossraid-web \
 BOSSRAID_API_ORIGIN=https://<your-phala-or-public-api-host>/api \
-pnpm deploy:web:cloudflare
+pnpm bossraid deploy:web:cloudflare
 ```
 
 Set the Cloudflare Pages secret `BOSSRAID_API_ORIGIN` to your public API host (Phala CVM), not a self-referential `pages.dev/api` loop. The API host must have `BOSSRAID_X402_ENABLED=true` before wallet top-ups work.
 
 ## Host attestation
 
-`pnpm verify:attestation` checks MNEMONIC-signed envelopes from JSON (`attested-runtime` or `attested-result` payloads). It does not validate Phala TDX quotes.
+`pnpm bossraid verify:attestation` checks MNEMONIC-signed envelopes from JSON (`attested-runtime` or `attested-result` payloads). It does not validate Phala TDX quotes.
 
 Phala operators can probe the public host route:
 
@@ -103,22 +105,22 @@ Set `BOSSRAID_TEE_SOCKET_PATH=/var/run/dstack.sock` and `BOSSRAID_TEE_PLATFORM=p
 Full command list (settlement, docker, Phala, contracts):
 
 ```bash
-pnpm test:game-raid:e2e
-pnpm test:strict-private:e2e
-pnpm test:mcp:e2e
-pnpm test:x402:e2e
+pnpm test:smoke:e2e
+pnpm bossraid test:strict-private:e2e
+pnpm bossraid test:mcp:e2e
+pnpm bossraid test:x402:e2e
 pnpm test:bounty-escrow:local
-pnpm test:bounty-escrow:e2e
-pnpm test:bounty-escrow:production
-pnpm settle:raid -- --raid-id <raidId>
-pnpm generate:settlement-keys
-pnpm bootstrap:settlement
-pnpm docker:up
-pnpm bootstrap:phala:env
-pnpm production:cutover
-pnpm infisical:phala:pull
-pnpm infisical:phala:push
-pnpm infisical:phala:prune-legacy
+pnpm bossraid test:bounty-escrow:e2e
+pnpm bossraid test:bounty-escrow:production
+pnpm bossraid settle:raid -- --raid-id <raidId>
+pnpm bossraid generate:settlement-keys
+pnpm bossraid bootstrap:settlement
+pnpm bossraid docker:up
+pnpm bossraid bootstrap:phala:env
+pnpm bossraid production:cutover
+pnpm bossraid infisical:phala:pull
+pnpm bossraid infisical:phala:push
+pnpm bossraid infisical:phala:prune-legacy
 ```
 
 `production:cutover` normalizes provider settlement IDs (`dottie` / `riko` / `gamma`), deploys Base contracts when `BOSSRAID_DEPLOYER_PRIVATE_KEY` is funded, merges addresses into `deploy/phala/secrets.onchain.env`, and reassembles `deploy/phala/.env`. Use `--skip-deploy` when contract addresses are already in `temp/contracts/deployment.json`.
@@ -138,16 +140,16 @@ See [appendix/synthesis-registration.md](appendix/synthesis-registration.md).
 ### 2. Settlement keys
 
 ```bash
-pnpm generate:settlement-keys
-pnpm deploy:contracts   # needs BOSSRAID_RPC_URL, BOSSRAID_DEPLOYER_PRIVATE_KEY
-pnpm bootstrap:settlement
+pnpm bossraid generate:settlement-keys
+pnpm bossraid deploy:contracts   # needs BOSSRAID_RPC_URL, BOSSRAID_DEPLOYER_PRIVATE_KEY
+pnpm bossraid bootstrap:settlement
 ```
 
 Fund client wallet (USDC for escrow), provider wallets (~0.01 ETH gas each).
 
 ### 2b. Bounty escrow (onchain)
 
-`pnpm bootstrap:settlement` writes `BOSSRAID_BOUNTY_ESCROW_ADDRESS` alongside raid escrow addresses. Production onchain mode requires it; `GET /v1/ops/production-readiness` reports `bounty_escrow_configured`.
+`pnpm bossraid bootstrap:settlement` writes `BOSSRAID_BOUNTY_ESCROW_ADDRESS` alongside raid escrow addresses. Production onchain mode requires it; `GET /v1/ops/production-readiness` reports `bounty_escrow_configured`.
 
 Operator wallet (`BOSSRAID_CLIENT_PRIVATE_KEY`) must hold:
 
@@ -166,9 +168,9 @@ Buyer flow:
 Dev-only bypass: `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND=true` (forbidden in production audit). Smoke tests:
 
 ```bash
-pnpm test:bounty-escrow:local          # zero-config; auto onchain when temp/settlement-bootstrap.env exists
-pnpm test:bounty-escrow:e2e            # against running API; defaults to bounty-e2e-provider
-pnpm test:bounty-escrow:production     # wallet mode; caps reward via BOSSRAID_BOUNTY_E2E_REWARD_USD
+pnpm test:bounty-escrow:local                        # zero-config; auto onchain when temp/settlement-bootstrap.env exists
+pnpm bossraid test:bounty-escrow:e2e                 # against running API; defaults to bounty-e2e-provider
+pnpm bossraid test:bounty-escrow:production          # wallet mode; caps reward via BOSSRAID_BOUNTY_E2E_REWARD_USD
 ```
 
 `test:bounty-escrow:local` spins an ephemeral API, uses `bounty-e2e-provider` from [`examples/bounty-e2e.providers.json`](../../examples/bounty-e2e.providers.json), and skips x402 unless bootstrap settlement env is present. Optional overrides: [`examples/bounty-e2e.env.example`](../../examples/bounty-e2e.env.example). Provider/agent curl flow: [sellers/bounties.md](../sellers/bounties.md).
@@ -177,10 +179,10 @@ pnpm test:bounty-escrow:production     # wallet mode; caps reward via BOSSRAID_B
 
 ```bash
 cp deploy/phala/secrets.core.env.example deploy/phala/secrets.core.env
-# optional: deploy/phala/secrets.onchain.env after pnpm bootstrap:settlement
-pnpm bootstrap:phala:env
-pnpm phala:secrets:check deploy/phala/.env
-pnpm infisical:phala:push
+# optional: deploy/phala/secrets.onchain.env after pnpm bossraid bootstrap:settlement
+pnpm bossraid bootstrap:phala:env
+pnpm bossraid phala:secrets:check deploy/phala/.env
+pnpm bossraid infisical:phala:push
 ```
 
 ```bash

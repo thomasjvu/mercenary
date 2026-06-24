@@ -51,6 +51,8 @@ pnpm dev:web
 pnpm dev:docs
 ```
 
+Operator and deploy workflows use `pnpm bossraid <command>` (`pnpm bossraid help` lists all). Contributor scripts stay in `package.json`.
+
 ## Current Constraints
 
 - provider workers are HTTP only
@@ -63,11 +65,11 @@ pnpm dev:docs
 ## If You Change
 
 - architecture: update [content/docs/operators/architecture.md](/Users/area/repos/boss-raid/content/docs/operators/architecture.md)
-- routes or payloads: update [content/docs/reference/routes.md](/Users/area/repos/boss-raid/content/docs/reference/routes.md) and the matching buyer/seller page in `content/docs/`. Web route rows are generated from [content/docs/reference/web-routes.template.json](/Users/area/repos/boss-raid/content/docs/reference/web-routes.template.json) via `pnpm sync:docs-routes`.
+- routes or payloads: update [content/docs/reference/routes.md](/Users/area/repos/boss-raid/content/docs/reference/routes.md) and the matching buyer/seller page in `content/docs/`. Web route rows are generated from [content/docs/reference/web-routes.template.json](/Users/area/repos/boss-raid/content/docs/reference/web-routes.template.json) via `pnpm bossraid sync:docs-routes`.
 - commands or env: update [content/docs/operators/runtime.md](/Users/area/repos/boss-raid/content/docs/operators/runtime.md) and [content/docs/reference/env.md](/Users/area/repos/boss-raid/content/docs/reference/env.md)
 - registration story: update [content/docs/operators/appendix/synthesis-registration.md](/Users/area/repos/boss-raid/content/docs/operators/appendix/synthesis-registration.md)
 - brand / RX-78: update [content/dev-docs/brand/rx-78-design-system.md](/Users/area/repos/boss-raid/content/dev-docs/brand/rx-78-design-system.md) and sync [DESIGN.md](/Users/area/repos/boss-raid/DESIGN.md)
-- papers framework: update [apps/docs/FRAMEWORK.md](/Users/area/repos/boss-raid/apps/docs/FRAMEWORK.md); pull with `pnpm papers:sync-upstream`, push with `pnpm papers:sync-downstream`
+- papers framework: update [apps/docs/FRAMEWORK.md](/Users/area/repos/boss-raid/apps/docs/FRAMEWORK.md); pull with `pnpm bossraid papers:sync-upstream`, push with `pnpm bossraid papers:sync-downstream`
 
 ## Coding Standards
 

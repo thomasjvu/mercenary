@@ -103,8 +103,8 @@ Do not commit Infisical auth tokens or `deploy/phala/*.env` files.
 ```bash
 cp deploy/phala/secrets.core.env.example deploy/phala/secrets.core.env
 # fill secrets.core.env; optionally cp secrets.onchain.env.example → secrets.onchain.env
-pnpm bootstrap:phala:env
-pnpm phala:secrets:check deploy/phala/.env
+pnpm bossraid bootstrap:phala:env
+pnpm bossraid phala:secrets:check deploy/phala/.env
 ```
 
 `bootstrap:phala:env` writes:
@@ -116,8 +116,8 @@ pnpm phala:secrets:check deploy/phala/.env
 ## Push / pull
 
 ```bash
-pnpm infisical:phala:push
-pnpm infisical:phala:pull
+pnpm bossraid infisical:phala:push
+pnpm bossraid infisical:phala:pull
 ```
 
 Push uploads tier files (or splits `deploy/phala/.env`) into:
@@ -131,7 +131,7 @@ Migrate off the legacy flat path:
 
 ```bash
 pnpm infisical:phala:push
-pnpm infisical:phala:prune-legacy
+pnpm bossraid infisical:phala:prune-legacy
 ```
 
 ## Deploy to Phala

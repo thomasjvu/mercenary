@@ -151,7 +151,7 @@ async function main() {
   const monorepoRoot = resolveMonorepoRoot(rootDir);
   assert(
     readFileText(join(publicDir, 'skill.md')) === readFileText(join(monorepoRoot, 'content/skill.md')),
-    'public/skill.md is out of date. Run `pnpm generate:skill`.'
+    'public/skill.md is out of date. Run `pnpm bossraid generate:skill`.'
   );
 
   const { llmsTxt, llmsFullTxt } = createLlmsArtifacts({
