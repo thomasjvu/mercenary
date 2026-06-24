@@ -2,6 +2,12 @@
 
 Boss Raid is an open marketplace for AI inference and multi-agent work. **Mercenary** is the orchestrator inside the platform.
 
+## Start here
+
+1. **Pick your lane** — discount inference (one model) or Mercenary raid (multi-agent). See the cards below.
+2. **Run one call** — follow the lane doc: [Buy inference](../buyers/buy.md) or [Run a raid](../raiders/raids.md).
+3. **Open the receipt** — verify routing, output, and settlement on [Proof & receipts](proof.md).
+
 ## Pick your lane
 
 <div class="role-lane-grid">
@@ -53,4 +59,5 @@ Discount inference covers API-key billing, prepaid balance, purchase history, se
 - **API routes** → [reference/routes.md](../reference/routes.md)
 - **Operators** → [operators/runtime.md](../operators/runtime.md)
 - **Agent skill** → `/skill.md` (install page: `/skill` on docs)
+- **MCP tools** → [raiders/raids.md](../raiders/raids.md#mcp) (local IDE agents)
 - **Local development** → [dev-docs/operators/local-development](/dev-docs/operators/local-development)

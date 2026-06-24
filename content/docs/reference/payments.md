@@ -2,6 +2,8 @@
 
 x402 in, escrow out, equal split to successful providers.
 
+Follow the flow diagram first, then use the fee and payout tables when wiring billing or seller expectations.
+
 ## Flow
 
 ```

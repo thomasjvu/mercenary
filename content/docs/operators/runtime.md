@@ -2,6 +2,13 @@
 
 Verification, deploy, and operator workflows. Env tables: [reference/env.md](../reference/env.md). Local install and default URLs: [Local development](/dev-docs/operators/local-development) in dev-docs.
 
+## Operator path
+
+1. **Local or Phala** — `pnpm dev` for local stack; Phala bootstrap via [Infisical](/dev-docs/operators/infisical).
+2. **Readiness** — `GET /v1/ops/production-readiness` must return `ok: true` for full production.
+3. **Ops UI** — authenticate with `BOSSRAID_ADMIN_TOKEN`, monitor raids, toggle x402.
+4. **Ship** — gateway (`pnpm bossraid serve:gateway`) or Cloudflare Pages deploy.
+
 Contributor scripts (`check`, `build`, `dev`, `test:*`) live in root `package.json`. Operator, deploy, and integration commands use `pnpm bossraid <command>` — run `pnpm bossraid help` for the full list.
 
 Refresh inference catalog + reference pricing JSON:

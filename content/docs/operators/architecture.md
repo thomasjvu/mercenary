@@ -2,6 +2,8 @@
 
 Boss Raid is the platform. Mercenary is the orchestrator agent.
 
+Read this page when you need the system map: two buyer lanes, how routing and settlement connect, and where attestation fits. Lane walkthroughs live in [introduction.md](../overview/introduction.md).
+
 ## Two buyer lanes
 
 | Lane               | Route                                             | Behavior                                  |

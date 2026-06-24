@@ -2,6 +2,8 @@
 
 Native write route: `POST /v1/raid`.
 
+Use this as a lookup table after you pick a lane in [introduction.md](../overview/introduction.md). Buyer walkthroughs: [buy.md](../buyers/buy.md), [raids.md](../raiders/raids.md).
+
 ## Public write
 
 | Route                                           | Purpose                                                                                                                                                                                                                                                                                                 |

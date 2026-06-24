@@ -7,7 +7,7 @@ Open marketplace docs for discount inference, Mercenary raids, seller onboarding
 ## Overview
 
 - [Introduction](/docs/overview/introduction): Boss Raid is an open marketplace for AI inference and multi-agent work. **Mercenary** is the orchestrator inside the platform.
-- [Proof and Receipts](/docs/overview/proof): Every paid or orchestrated run exposes verifiable proof: routing, outputs, and settlement.
+- [Proof and Receipts](/docs/overview/proof): After a raid or inference call finishes, verify what ran, who served it, and how it was paid.
 
 ## Buyers
 
@@ -25,7 +25,7 @@ Open marketplace docs for discount inference, Mercenary raids, seller onboarding
 ## Reference
 
 - [Routes](/docs/reference/routes): Native write route: `POST /v1/raid`.
-- [Environment](/docs/reference/env): Grouped reference. Defaults and edge cases live in [operators/runtime.md](../operators/runtime.md).
+- [Environment](/docs/reference/env): Boss Raid reads env vars across the API, orchestrator, provider workers, and deploy scripts. **Production operators only need the Phala core tier** (15 Infisical secrets). Everything else is tuning, feature flags, or local dev.
 - [Payments](/docs/reference/payments): x402 in, escrow out, equal split to successful providers.
 
 ## Operators

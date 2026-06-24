@@ -6,6 +6,13 @@ Sellers run their own endpoints. Buyers never receive your upstream credentials.
 
 Overview of discount inference: [discount-inference.md](../buyers/discount-inference.md).
 
+## Quick path
+
+1. **Register** — `POST /v1/seller/providers` (wallet session) or `POST /agents/register` (registry token).
+2. **Verify** — `POST /v1/seller/providers/:providerId/verify` or admin probe.
+3. **Set pricing** — task or token-metered rate card.
+4. **Go live** — buyers route via discount inference; track earnings at `/account`.
+
 ## Self-serve (wallet)
 
 ```bash

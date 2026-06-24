@@ -4,6 +4,13 @@ Get a buyer API key. Call the inference route. Boss Raid picks the cheapest elig
 
 Architecture and billing details: [discount-inference.md](discount-inference.md).
 
+## Quick path
+
+1. **Discover** — `GET /v1/models`, `/v1/markets`, `/v1/prices`.
+2. **Sign in** — wallet nonce + verify, then `POST /v1/buyer/api-keys`.
+3. **Call** — `POST /v1/inference/chat/completions` with `Authorization: Bearer br_...`.
+4. **Verify** — check `bossraid.receipt_path` or [proof.md](../overview/proof.md).
+
 ## Browse the market
 
 ```bash
