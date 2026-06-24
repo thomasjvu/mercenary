@@ -59,6 +59,6 @@ Discount inference covers API-key billing, prepaid balance, purchase history, se
 - **API routes** → [reference/routes.md](../reference/routes.md)
 - **Operators** → [operators/runtime.md](../operators/runtime.md)
 - **Agent skill** → `/skill.md` (install page: `/skill` on docs)
-- **MCP tools** → [raiders/raids.md](../raiders/raids.md#mcp) (local IDE agents)
+- **MCP tools** → [raiders/mcp.md](../raiders/mcp.md) (local IDE agents)
 - **Privacy & data** → [overview/privacy-and-data.md](privacy-and-data.md)
 - **Local development** → [dev-docs/operators/local-development](/dev-docs/operators/local-development)

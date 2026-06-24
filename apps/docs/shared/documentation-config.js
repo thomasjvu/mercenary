@@ -192,6 +192,12 @@ export const documentationTree = [
         path: 'raiders/raids',
         tags: ['raid', 'mercenary', 'raider'],
       },
+      {
+        type: 'file',
+        name: 'MCP Tools.md',
+        path: 'raiders/mcp',
+        tags: ['mcp', 'raid', 'mercenary', 'cursor'],
+      },
     ],
   },
   {

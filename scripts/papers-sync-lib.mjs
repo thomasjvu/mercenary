@@ -45,6 +45,8 @@ export const EXCLUDED_GENERATED_PATHS = [
   'public/openapi-v1.yaml',
   'public/openapi-internal.yaml',
   'public/images/docs/role-heroes',
+  'public/images/bossraid',
+  'shared/character-note-config.js',
   'src/theme-active.css',
   '.boss-raid-downstream-summary.txt',
 ];
@@ -71,6 +73,7 @@ export const PROTECTED_RELATIVE_PATHS = new Set([
   'shared/docsRouting.js',
   'shared/documentation-config.js',
   'shared/content-collections.js',
+  'shared/character-note-config.js',
   'FRAMEWORK.md',
   'package.json',
   'vite.config.ts',
