@@ -49,9 +49,24 @@ Full guide: **[content/README.md](content/README.md)**
 
 ## Repo layout
 
-**Apps:** `api`, `orchestrator`, `provider-agent`, `evaluator`, `mcp-server`, `web`, `ops`, `video`
+**Apps (9)**
 
-**Packages:** `raid-core`, `provider-registry`, `provider-sdk`, `persistence`, `evaluation`, `contracts`, `shared-types`, `ui`
+| Group              | Apps                                                               | Notes                                         |
+| ------------------ | ------------------------------------------------------------------ | --------------------------------------------- |
+| Production runtime | `api`, `orchestrator`, `provider-agent`, `evaluator`, `web`, `ops` | Built into production Docker image            |
+| Integration        | `mcp-server`                                                       | MCP tools surface; CI build                   |
+| Content / promo    | `docs`, `video`                                                    | Papers site (`pnpm dev:docs`); Remotion promo |
+
+**Packages (22)**
+
+| Group         | Packages                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------- |
+| Foundation    | `shared-types`, `constants`, `api-contracts`                                                |
+| Raid stack    | `raid-core`, `provider-registry`, `provider-sdk`, `evaluation`, `scoring`, `sandbox-runner` |
+| Storage       | `persistence`, `persistence-sqlite`                                                         |
+| UI / proof    | `proof-ui` (headless), `ui` (React)                                                         |
+| Integrations  | `privacy-engine`, `smart-pay`, `venice-client`, `oneshot-relayer`, `http-client`, `logger`  |
+| Deploy / test | `contracts` (Solidity bootstrap), `test-fixtures` (dev/test only)                           |
 
 ## Examples
 
