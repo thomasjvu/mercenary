@@ -97,6 +97,9 @@ importers:
       viem:
         specifier: 2.47.5
         version: 2.47.5(typescript@5.9.3)(zod@3.25.76)
+      yaml:
+        specifier: ^2.9.0
+        version: 2.9.0
 
   apps/api:
     dependencies:
@@ -112,6 +115,9 @@ importers:
       '@bossraid/oneshot-relayer':
         specifier: workspace:*
         version: link:../../packages/oneshot-relayer
+      '@bossraid/openapi-schemas':
+        specifier: workspace:*
+        version: link:../../packages/openapi-schemas
       '@bossraid/orchestrator':
         specifier: workspace:*
         version: link:../orchestrator
@@ -139,6 +145,9 @@ importers:
       '@bossraid/venice-client':
         specifier: workspace:*
         version: link:../../packages/venice-client
+      '@fastify/swagger':
+        specifier: ^9.7.0
+        version: 9.7.0
       '@payai/facilitator':
         specifier: ^2.3.4
         version: 2.3.4(@x402/core@2.15.0)
@@ -166,7 +175,7 @@ importers:
         version: 6.0.2(react@19.2.4)
       '@scalar/api-reference-react':
         specifier: ^0.9.42
-        version: 0.9.47(react@19.2.4)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@5.9.3)(zod@4.3.6)
+        version: 0.9.47(react@19.2.4)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))(typescript@5.9.3)(zod@4.3.6)
       dompurify:
         specifier: ^3.3.3
         version: 3.4.11
@@ -233,7 +242,7 @@ importers:
         version: 15.5.13
       '@vitejs/plugin-react':
         specifier: ^4.3.4
-        version: 4.7.0(vite@7.3.5(@types/node@20.19.43)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.7.0(vite@7.3.5(@types/node@20.19.43)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.9.0))
       autoprefixer:
         specifier: ^10.4.15
         version: 10.5.0(postcss@8.5.8)
@@ -263,7 +272,7 @@ importers:
         version: 3.8.3
       tailwindcss:
         specifier: ^3.3.3
-        version: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
+        version: 3.4.19(tsx@4.21.0)(yaml@2.9.0)
       typescript:
         specifier: ^5
         version: 5.9.3
@@ -272,7 +281,7 @@ importers:
         version: 8.59.1(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3)
       vite:
         specifier: '>=7.3.5'
-        version: 7.3.5(@types/node@20.19.43)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: 7.3.5(@types/node@20.19.43)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.9.0)
 
   apps/evaluator:
     dependencies:
@@ -336,13 +345,13 @@ importers:
     devDependencies:
       '@vitejs/plugin-react':
         specifier: ^5.0.2
-        version: 5.2.0(vite@7.3.5(@types/node@24.13.2)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
+        version: 5.2.0(vite@7.3.5(@types/node@24.13.2)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.9.0))
       tsx:
         specifier: ^4.19.3
         version: 4.21.0
       vite:
         specifier: '>=7.3.5'
-        version: 7.3.5(@types/node@24.13.2)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: 7.3.5(@types/node@24.13.2)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.9.0)
 
   apps/orchestrator:
     dependencies:
@@ -471,13 +480,13 @@ importers:
         version: 1.2.86
       '@vitejs/plugin-react':
         specifier: ^5.0.2
-        version: 5.2.0(vite@7.3.5(@types/node@24.13.2)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
+        version: 5.2.0(vite@7.3.5(@types/node@24.13.2)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.9.0))
       tsx:
         specifier: ^4.19.3
         version: 4.21.0
       vite:
         specifier: '>=7.3.5'
-        version: 7.3.5(@types/node@24.13.2)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+        version: 7.3.5(@types/node@24.13.2)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.9.0)
 
   packages/api-contracts:
     dependencies:
@@ -537,6 +546,8 @@ importers:
         version: 5.9.3
 
   packages/oneshot-relayer: {}
+
+  packages/openapi-schemas: {}
 
   packages/persistence:
     dependencies:
@@ -1392,6 +1403,9 @@ packages:
 
   '@fastify/proxy-addr@5.1.0':
     resolution: {integrity: sha512-INS+6gh91cLUjB+PVHfu1UqcB76Sqtpyp7bnL+FYojhjygvOPA9ctiD/JDKsyD9Xgu4hUhCSJBPig/w7duNajw==}
+
+  '@fastify/swagger@9.7.0':
+    resolution: {integrity: sha512-Vp1SC1GC2Hrkd3faFILv86BzUNyFz5N4/xdExqtCgkGASOzn/x+eMe4qXIGq7cdT6wif/P/oa6r1Ruqx19paZA==}
 
   '@floating-ui/core@1.7.5':
     resolution: {integrity: sha512-1Ih4WTWyw0+lKyFMcBHGbb5U5FtuHJuujoyyr5zTaWS5EYMeT6Jb2AuDeftsCsEuchO+mM2ij5+q9crhydzLhQ==}
@@ -3595,6 +3609,9 @@ packages:
   fast-uri@3.1.2:
     resolution: {integrity: sha512-rVjf7ArG3LTk+FS6Yw81V1DLuZl1bRbNrev6Tmd/9RaroeeRRJhAt7jg/6YFxbvAQXUCavSoZhPPj6oOx+5KjQ==}
 
+  fastify-plugin@5.1.0:
+    resolution: {integrity: sha512-FAIDA8eovSt5qcDgcBvDuX/v0Cjz0ohGhENZ/wpc3y+oZCY2afZ9Baqql3g/lC+OHRnciQol4ww7tuthOb9idw==}
+
   fastify@5.8.5:
     resolution: {integrity: sha512-Yqptv59pQzPgQUSIm87hMqHJmdkb1+GPxdE6vW6FRyVE9G86mt7rOghitiU4JHRaTyDUk9pfeKmDeu70lAwM4Q==}
 
@@ -4101,6 +4118,10 @@ packages:
 
   json-schema-ref-resolver@3.0.0:
     resolution: {integrity: sha512-hOrZIVL5jyYFjzk7+y7n5JDzGlU8rfWDuYyHwGa2WA8/pcmMHezp2xsVwxrebD/Q9t8Nc5DboieySDpCp4WG4A==}
+
+  json-schema-resolver@3.0.0:
+    resolution: {integrity: sha512-HqMnbz0tz2DaEJ3ntsqtx3ezzZyDE7G56A/pPY/NGmrPu76UzsWquOpHFRAf5beTNXoH2LU5cQePVvRli1nchA==}
+    engines: {node: '>=20'}
 
   json-schema-traverse@0.4.1:
     resolution: {integrity: sha512-xbbCH5dCYU5T8LcEhhuh7HJ88HXuW3qsI3Y0zOZFKfZEHcpWiHU/Jxzk629Brsab/mMiHQti9wMP+845RPe3Vg==}
@@ -4657,6 +4678,9 @@ packages:
   open@8.4.2:
     resolution: {integrity: sha512-7x81NCL719oNbsq/3mh+hVrAWmFuEYUqrq/Iw3kUzH8ReypT9QQ0BLoJS7/G9k6N81XjW4qHWtjWwe/9eLy1EQ==}
     engines: {node: '>=12'}
+
+  openapi-types@12.1.3:
+    resolution: {integrity: sha512-N4YtSYJqghVu4iek2ZUvcN/0aqH1kRDuNqzcycDxhOUpg7GdvLa2F3DgS6yBNhInhv2r/6I0Flkn7CqL8+nIcw==}
 
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
@@ -5744,6 +5768,11 @@ packages:
     engines: {node: '>= 14.6'}
     hasBin: true
 
+  yaml@2.9.0:
+    resolution: {integrity: sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
   yargs-parser@21.1.1:
     resolution: {integrity: sha512-tVpsJW7DdjecAiFpbIB1e3qxIQsE6NoPc5/eTdrbbIC4h0LVsWhnoa3g+m2HclBIujHzsxZ4VJVA+GUuc2/LBw==}
     engines: {node: '>=12'}
@@ -6452,6 +6481,16 @@ snapshots:
       '@fastify/forwarded': 3.0.1
       ipaddr.js: 2.3.0
 
+  '@fastify/swagger@9.7.0':
+    dependencies:
+      fastify-plugin: 5.1.0
+      json-schema-resolver: 3.0.0
+      openapi-types: 12.1.3
+      rfdc: 1.4.1
+      yaml: 2.8.3
+    transitivePeerDependencies:
+      - supports-color
+
   '@floating-ui/core@1.7.5':
     dependencies:
       '@floating-ui/utils': 0.2.11
@@ -6474,9 +6513,9 @@ snapshots:
       - '@vue/composition-api'
       - vue
 
-  '@headlessui/tailwindcss@0.2.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))':
+  '@headlessui/tailwindcss@0.2.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))':
     dependencies:
-      tailwindcss: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
+      tailwindcss: 3.4.19(tsx@4.21.0)(yaml@2.9.0)
 
   '@headlessui/vue@1.7.23(vue@3.5.38(typescript@5.9.3))':
     dependencies:
@@ -7155,11 +7194,11 @@ snapshots:
       html-entities: 2.6.0
       react-refresh: 0.18.0
 
-  '@scalar/agent-chat@0.12.11(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@5.9.3)(zod@4.3.6)':
+  '@scalar/agent-chat@0.12.11(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))(typescript@5.9.3)(zod@4.3.6)':
     dependencies:
       '@ai-sdk/vue': 3.0.33(vue@3.5.38(typescript@5.9.3))(zod@4.3.6)
-      '@scalar/api-client': 3.10.4(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@5.9.3)
-      '@scalar/components': 0.27.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@5.9.3)
+      '@scalar/api-client': 3.10.4(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))(typescript@5.9.3)
+      '@scalar/components': 0.27.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))(typescript@5.9.3)
       '@scalar/helpers': 0.8.2
       '@scalar/icons': 0.7.3(typescript@5.9.3)
       '@scalar/json-magic': 0.12.16
@@ -7193,17 +7232,17 @@ snapshots:
       - universal-cookie
       - zod
 
-  '@scalar/api-client@3.10.4(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@5.9.3)':
+  '@scalar/api-client@3.10.4(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))(typescript@5.9.3)':
     dependencies:
-      '@headlessui/tailwindcss': 0.2.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
+      '@headlessui/tailwindcss': 0.2.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))
       '@headlessui/vue': 1.7.23(vue@3.5.38(typescript@5.9.3))
-      '@scalar/components': 0.27.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@5.9.3)
+      '@scalar/components': 0.27.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))(typescript@5.9.3)
       '@scalar/helpers': 0.8.2
       '@scalar/icons': 0.7.3(typescript@5.9.3)
       '@scalar/json-magic': 0.12.16
       '@scalar/oas-utils': 0.18.5(typescript@5.9.3)
       '@scalar/openapi-types': 0.9.1
-      '@scalar/sidebar': 0.9.23(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@5.9.3)
+      '@scalar/sidebar': 0.9.23(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))(typescript@5.9.3)
       '@scalar/snippetz': 0.9.17
       '@scalar/themes': 0.16.0
       '@scalar/typebox': 0.1.3
@@ -7242,9 +7281,9 @@ snapshots:
       - typescript
       - universal-cookie
 
-  '@scalar/api-reference-react@0.9.47(react@19.2.4)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@5.9.3)(zod@4.3.6)':
+  '@scalar/api-reference-react@0.9.47(react@19.2.4)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))(typescript@5.9.3)(zod@4.3.6)':
     dependencies:
-      '@scalar/api-reference': 1.60.0(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@5.9.3)(zod@4.3.6)
+      '@scalar/api-reference': 1.60.0(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))(typescript@5.9.3)(zod@4.3.6)
       '@scalar/types': 0.14.0
       react: 19.2.4
     transitivePeerDependencies:
@@ -7264,18 +7303,18 @@ snapshots:
       - universal-cookie
       - zod
 
-  '@scalar/api-reference@1.60.0(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@5.9.3)(zod@4.3.6)':
+  '@scalar/api-reference@1.60.0(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))(typescript@5.9.3)(zod@4.3.6)':
     dependencies:
       '@headlessui/vue': 1.7.23(vue@3.5.38(typescript@5.9.3))
-      '@scalar/agent-chat': 0.12.11(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@5.9.3)(zod@4.3.6)
-      '@scalar/api-client': 3.10.4(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@5.9.3)
+      '@scalar/agent-chat': 0.12.11(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))(typescript@5.9.3)(zod@4.3.6)
+      '@scalar/api-client': 3.10.4(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))(typescript@5.9.3)
       '@scalar/code-highlight': 0.3.6
-      '@scalar/components': 0.27.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@5.9.3)
+      '@scalar/components': 0.27.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))(typescript@5.9.3)
       '@scalar/helpers': 0.8.2
       '@scalar/icons': 0.7.3(typescript@5.9.3)
       '@scalar/oas-utils': 0.18.5(typescript@5.9.3)
       '@scalar/schemas': 0.5.0
-      '@scalar/sidebar': 0.9.23(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@5.9.3)
+      '@scalar/sidebar': 0.9.23(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))(typescript@5.9.3)
       '@scalar/snippetz': 0.9.17
       '@scalar/themes': 0.16.0
       '@scalar/types': 0.14.0
@@ -7327,11 +7366,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@scalar/components@0.27.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@5.9.3)':
+  '@scalar/components@0.27.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))(typescript@5.9.3)':
     dependencies:
       '@floating-ui/utils': 0.2.10
       '@floating-ui/vue': 1.1.9(vue@3.5.38(typescript@5.9.3))
-      '@headlessui/tailwindcss': 0.2.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
+      '@headlessui/tailwindcss': 0.2.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))
       '@headlessui/vue': 1.7.23(vue@3.5.38(typescript@5.9.3))
       '@scalar/code-highlight': 0.3.6
       '@scalar/helpers': 0.8.2
@@ -7389,9 +7428,9 @@ snapshots:
       '@scalar/helpers': 0.8.2
       '@scalar/validation': 0.6.0
 
-  '@scalar/sidebar@0.9.23(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@5.9.3)':
+  '@scalar/sidebar@0.9.23(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))(typescript@5.9.3)':
     dependencies:
-      '@scalar/components': 0.27.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))(typescript@5.9.3)
+      '@scalar/components': 0.27.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0))(typescript@5.9.3)
       '@scalar/helpers': 0.8.2
       '@scalar/icons': 0.7.3(typescript@5.9.3)
       '@scalar/themes': 0.16.0
@@ -7942,7 +7981,7 @@ snapshots:
 
   '@vercel/oidc@3.1.0': {}
 
-  '@vitejs/plugin-react@4.7.0(vite@7.3.5(@types/node@20.19.43)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))':
+  '@vitejs/plugin-react@4.7.0(vite@7.3.5(@types/node@20.19.43)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.9.0))':
     dependencies:
       '@babel/core': 7.29.0
       '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.29.0)
@@ -7950,11 +7989,11 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-beta.27
       '@types/babel__core': 7.20.5
       react-refresh: 0.17.0
-      vite: 7.3.5(@types/node@20.19.43)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+      vite: 7.3.5(@types/node@20.19.43)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.9.0)
     transitivePeerDependencies:
       - supports-color
 
-  '@vitejs/plugin-react@5.2.0(vite@7.3.5(@types/node@24.13.2)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))':
+  '@vitejs/plugin-react@5.2.0(vite@7.3.5(@types/node@24.13.2)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.9.0))':
     dependencies:
       '@babel/core': 7.29.0
       '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.29.0)
@@ -7962,7 +8001,7 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-rc.3
       '@types/babel__core': 7.20.5
       react-refresh: 0.18.0
-      vite: 7.3.5(@types/node@24.13.2)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+      vite: 7.3.5(@types/node@24.13.2)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.9.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -9186,6 +9225,8 @@ snapshots:
 
   fast-uri@3.1.2: {}
 
+  fastify-plugin@5.1.0: {}
+
   fastify@5.8.5:
     dependencies:
       '@fastify/ajv-compiler': 4.0.5
@@ -9693,6 +9734,14 @@ snapshots:
     dependencies:
       dequal: 2.0.3
 
+  json-schema-resolver@3.0.0:
+    dependencies:
+      debug: 4.4.3
+      fast-uri: 3.1.2
+      rfdc: 1.4.1
+    transitivePeerDependencies:
+      - supports-color
+
   json-schema-traverse@0.4.1: {}
 
   json-schema-traverse@1.0.0: {}
@@ -9795,7 +9844,7 @@ snapshots:
       picomatch: 4.0.4
       string-argv: 0.3.2
       tinyexec: 1.1.1
-      yaml: 2.8.3
+      yaml: 2.9.0
 
   listr2@9.0.5:
     dependencies:
@@ -10468,6 +10517,8 @@ snapshots:
       is-docker: 2.2.1
       is-wsl: 2.2.0
 
+  openapi-types@12.1.3: {}
+
   optionator@0.9.4:
     dependencies:
       deep-is: 0.1.4
@@ -10659,14 +10710,14 @@ snapshots:
       camelcase-css: 2.0.1
       postcss: 8.5.8
 
-  postcss-load-config@6.0.1(jiti@1.21.7)(postcss@8.5.8)(tsx@4.21.0)(yaml@2.8.3):
+  postcss-load-config@6.0.1(jiti@1.21.7)(postcss@8.5.8)(tsx@4.21.0)(yaml@2.9.0):
     dependencies:
       lilconfig: 3.1.3
     optionalDependencies:
       jiti: 1.21.7
       postcss: 8.5.8
       tsx: 4.21.0
-      yaml: 2.8.3
+      yaml: 2.9.0
 
   postcss-modules-extract-imports@3.1.0(postcss@8.5.15):
     dependencies:
@@ -11294,7 +11345,7 @@ snapshots:
 
   tailwind-merge@3.5.0: {}
 
-  tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3):
+  tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.9.0):
     dependencies:
       '@alloc/quick-lru': 5.2.0
       arg: 5.0.2
@@ -11313,7 +11364,7 @@ snapshots:
       postcss: 8.5.8
       postcss-import: 15.1.0(postcss@8.5.8)
       postcss-js: 4.1.0(postcss@8.5.8)
-      postcss-load-config: 6.0.1(jiti@1.21.7)(postcss@8.5.8)(tsx@4.21.0)(yaml@2.8.3)
+      postcss-load-config: 6.0.1(jiti@1.21.7)(postcss@8.5.8)(tsx@4.21.0)(yaml@2.9.0)
       postcss-nested: 6.2.0(postcss@8.5.8)
       postcss-selector-parser: 6.1.4
       resolve: 1.22.12
@@ -11324,7 +11375,7 @@ snapshots:
 
   tapable@2.3.0: {}
 
-  terser-webpack-plugin@5.4.0(esbuild@0.25.0)(webpack@5.105.0):
+  terser-webpack-plugin@5.4.0(esbuild@0.25.0)(webpack@5.105.0(esbuild@0.25.0)):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       jest-worker: 27.5.1
@@ -11602,7 +11653,7 @@ snapshots:
       - utf-8-validate
       - zod
 
-  vite@7.3.5(@types/node@20.19.43)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3):
+  vite@7.3.5(@types/node@20.19.43)(jiti@1.21.7)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.9.0):
     dependencies:
       esbuild: 0.27.4
       fdir: 6.5.0(picomatch@4.0.4)
@@ -11617,9 +11668,9 @@ snapshots:
       lightningcss: 1.32.0
       terser: 5.46.1
       tsx: 4.21.0
-      yaml: 2.8.3
+      yaml: 2.9.0
 
-  vite@7.3.5(@types/node@24.13.2)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3):
+  vite@7.3.5(@types/node@24.13.2)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.9.0):
     dependencies:
       esbuild: 0.27.4
       fdir: 6.5.0(picomatch@4.0.4)
@@ -11634,7 +11685,7 @@ snapshots:
       lightningcss: 1.32.0
       terser: 5.46.1
       tsx: 4.21.0
-      yaml: 2.8.3
+      yaml: 2.9.0
 
   vue-component-type-helpers@3.3.5: {}
 
@@ -11698,7 +11749,7 @@ snapshots:
       neo-async: 2.6.2
       schema-utils: 4.3.3
       tapable: 2.3.0
-      terser-webpack-plugin: 5.4.0(esbuild@0.25.0)(webpack@5.105.0)
+      terser-webpack-plugin: 5.4.0(esbuild@0.25.0)(webpack@5.105.0(esbuild@0.25.0))
       watchpack: 2.5.1
       webpack-sources: 3.3.4
     transitivePeerDependencies:
@@ -11741,6 +11792,8 @@ snapshots:
   yallist@4.0.0: {}
 
   yaml@2.8.3: {}
+
+  yaml@2.9.0: {}
 
   yargs-parser@21.1.1: {}
 

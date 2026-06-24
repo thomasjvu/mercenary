@@ -51,7 +51,8 @@
     "turbo": "2.8.19",
     "typescript": "5.9.3",
     "typescript-eslint": "8.59.1",
-    "viem": "2.47.5"
+    "viem": "2.47.5",
+    "yaml": "^2.9.0"
   },
   "dependencies": {
     "@x402/core": "2.15.0"

@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm run resolve:theme && pnpm run generate:icons && pnpm run generate:skill && pnpm run generate:role-heroes && pnpm run generate:docs && pnpm run generate:seo -- --mode development && vite",
-    "build": "pnpm run resolve:theme && pnpm run generate:icons && pnpm run generate:llms && pnpm run generate:skill && pnpm run generate:role-heroes && pnpm run generate:docs && pnpm run generate:seo -- --mode production && tsc -b && vite build && pnpm run generate:route-html -- --mode production && pnpm run generate:pagefind",
+    "build": "pnpm run resolve:theme && pnpm run generate:icons && pnpm run generate:llms && pnpm run generate:skill && pnpm run generate:role-heroes && pnpm run generate:openapi && pnpm run generate:docs && pnpm run generate:seo -- --mode production && tsc -b && vite build && pnpm run generate:route-html -- --mode production && pnpm run generate:pagefind",
     "check": "pnpm run type-check",
     "resolve:theme": "node scripts/resolve-theme.mjs",
     "papers:theme": "node scripts/papers-theme.mjs",
@@ -17,6 +17,8 @@
     "generate:skill": "node ../../scripts/sync-skill.mjs",
     "generate:role-heroes": "node ../../scripts/sync-docs-role-heroes.mjs",
     "generate:docs": "node scripts/generate-docs.mjs",
+    "generate:openapi": "pnpm --dir ../.. bossraid sync:openapi",
+    "check:openapi": "node ../../scripts/check-openapi.mjs --check",
     "generate:pagefind": "node scripts/generate-pagefind.mjs",
     "generate:seo": "node scripts/generate-seo.mjs",
     "generate:route-html": "node scripts/generate-route-html.mjs",

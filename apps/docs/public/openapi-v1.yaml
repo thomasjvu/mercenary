@@ -1,22 +1,1868 @@
 openapi: 3.1.0
 info:
-  title: papers Example API
+  title: Boss Raid API
   version: 0.1.0
-  description: Sample OpenAPI document for the papers documentation template.
-servers:
-  - url: https://api.example.com
+  description: Open marketplace API for discount inference, Mercenary raids,
+    seller onboarding, and operator runtime.
+components:
+  schemas: {}
 paths:
   /health:
     get:
       summary: Health check
-      tags: [System]
+      tags:
+        - Health
+      x-bossraid-audience: public
       responses:
-        '200':
-          description: Service is healthy
-  /docs:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  ok:
+                    type: boolean
+                  providers:
+                    type: integer
+                  readyProviders:
+                    type: integer
+                  raids:
+                    type: integer
+                required:
+                  - ok
+                  - providers
+                  - readyProviders
+                  - raids
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /ready:
     get:
-      summary: List published docs
-      tags: [Docs]
+      summary: Readiness and production gate snapshot
+      tags:
+        - Health
+      x-bossraid-audience: public
       responses:
-        '200':
-          description: Documentation manifest
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  ok:
+                    type: boolean
+                  gates:
+                    type: object
+                    additionalProperties: true
+                  providers:
+                    type: integer
+                  readyProviders:
+                    type: integer
+                  storage:
+                    type: object
+                    additionalProperties: true
+                  payment:
+                    type: object
+                    additionalProperties: true
+                  settlement:
+                    type: object
+                    additionalProperties: true
+                required:
+                  - ok
+                  - gates
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      tags:
+        - Health
+      x-bossraid-audience: public
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: string
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/host/attestation:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/auth/nonce:
+    post:
+      summary: Create wallet auth nonce
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                wallet:
+                  type: string
+                  description: Optional wallet address to bind the nonce.
+      x-bossraid-audience: public
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  nonce:
+                    type: string
+                  message:
+                    type: string
+                  expiresAt:
+                    type: string
+                    format: date-time
+                required:
+                  - nonce
+                  - message
+                  - expiresAt
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/auth/verify:
+    post:
+      summary: Verify wallet signature and open session
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                message:
+                  type: string
+                signature:
+                  type: string
+              required:
+                - message
+                - signature
+      x-bossraid-audience: public
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  authenticated:
+                    type: boolean
+                  wallet:
+                    type: string
+                  expiresAt:
+                    type: string
+                    format: date-time
+                  account:
+                    type: object
+                    additionalProperties: true
+                required:
+                  - authenticated
+                  - wallet
+                  - expiresAt
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/session:
+    get:
+      summary: Read current public session
+      tags:
+        - Auth
+      x-bossraid-audience: public
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  authenticated:
+                    type: boolean
+                  wallet:
+                    type: string
+                  expiresAt:
+                    type: string
+                    format: date-time
+                  account:
+                    type: object
+                    additionalProperties: true
+                required:
+                  - authenticated
+    delete:
+      summary: Clear public session
+      tags:
+        - Auth
+      x-bossraid-audience: public
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  authenticated:
+                    type: boolean
+                  wallet:
+                    type: string
+                  expiresAt:
+                    type: string
+                    format: date-time
+                  account:
+                    type: object
+                    additionalProperties: true
+                required:
+                  - authenticated
+  /v1/buyer/api-keys:
+    get:
+      summary: List buyer API keys
+      tags:
+        - Auth
+      x-bossraid-audience: public
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+    post:
+      summary: Create buyer API key
+      tags:
+        - Auth
+      x-bossraid-audience: public
+      responses:
+        "201":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/buyer/api-keys/{keyId}:
+    delete:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: keyId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+    patch:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: keyId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/auth/agent-session:
+    post:
+      responses:
+        "200":
+          description: Default Response
+    get:
+      responses:
+        "200":
+          description: Default Response
+    delete:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/providers:
+    get:
+      responses:
+        "200":
+          description: Default Response
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/providers/{providerId}:
+    patch:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: providerId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/providers/{providerId}/verify:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: providerId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/earnings:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/stats:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/buyer/purchases:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/buyer/balance:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/buyer/balance/fund:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/models:
+    get:
+      summary: List OpenAI-compatible marketplace models
+      tags:
+        - Marketplace
+      x-bossraid-audience: public
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  object:
+                    type: string
+                    enum:
+                      - list
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                required:
+                  - object
+                  - data
+  /v1/prices:
+    get:
+      summary: List marketplace price cards
+      tags:
+        - Marketplace
+      x-bossraid-audience: public
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  object:
+                    type: string
+                    enum:
+                      - list
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                required:
+                  - object
+                  - data
+  /v1/markets:
+    get:
+      summary: Marketplace snapshot with stats and settlement policy
+      tags:
+        - Marketplace
+      x-bossraid-audience: public
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  object:
+                    type: string
+                  stats:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      activeOffers:
+                        type: integer
+                      sellerOffersActive:
+                        type: integer
+                      modelsLive:
+                        type: integer
+                      routedRequests24h:
+                        type: integer
+                      earnedBySellers24hUsd:
+                        type: number
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+  /v1/marketplace/stats:
+    get:
+      summary: Public marketplace counters
+      tags:
+        - Marketplace
+      x-bossraid-audience: public
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  activeOffers:
+                    type: integer
+                  sellerOffersActive:
+                    type: integer
+                  modelsLive:
+                    type: integer
+                  routedRequests24h:
+                    type: integer
+                  earnedBySellers24hUsd:
+                    type: number
+  /v1/raid:
+    post:
+      summary: Spawn a Mercenary raid
+      tags:
+        - Raid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              properties:
+                task:
+                  type: object
+                  additionalProperties: true
+                  properties:
+                    title:
+                      type: string
+                    description:
+                      type: string
+                    language:
+                      type: string
+                    framework:
+                      type: string
+                    files:
+                      type: array
+                      items:
+                        type: object
+                        additionalProperties: true
+                        properties:
+                          path:
+                            type: string
+                          content:
+                            type: string
+                          sha256:
+                            type: string
+                        required:
+                          - path
+                          - content
+                  required:
+                    - title
+                    - description
+                    - language
+                raidPolicy:
+                  type: object
+                  additionalProperties: true
+                output:
+                  type: object
+                  additionalProperties: true
+                hostContext:
+                  type: object
+                  additionalProperties: true
+              required:
+                - task
+      x-bossraid-audience: public
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  raidId:
+                    type: string
+                  status:
+                    type: string
+                  phase:
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+                  updatedAt:
+                    type: string
+                    format: date-time
+                required:
+                  - raidId
+                  - status
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "402":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "409":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/raid/{raidId}:
+    get:
+      summary: Get raid status
+      tags:
+        - Raid
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: raidId
+          required: true
+          description: Raid identifier.
+      x-bossraid-audience: public
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  raidId:
+                    type: string
+                  status:
+                    type: string
+                  phase:
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+                  updatedAt:
+                    type: string
+                    format: date-time
+                required:
+                  - raidId
+                  - status
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "404":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/raid/{raidId}/result:
+    get:
+      summary: Get raid result
+      tags:
+        - Raid
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: raidId
+          required: true
+          description: Raid identifier.
+      x-bossraid-audience: public
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  raidId:
+                    type: string
+                  status:
+                    type: string
+                  artifacts:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                  synthesis:
+                    type: object
+                    additionalProperties: true
+                  settlement:
+                    type: object
+                    additionalProperties: true
+                required:
+                  - raidId
+                  - status
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "404":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/raid/{raidId}/agent_log.json:
+    get:
+      summary: Download Mercenary agent log JSON
+      tags:
+        - Raid
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: raidId
+          required: true
+          description: Raid identifier.
+      x-bossraid-audience: public
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "404":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/raid/{raidId}/attested-result:
+    get:
+      summary: Get TEE-attested raid result proof
+      tags:
+        - Raid
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: raidId
+          required: true
+          description: Raid identifier.
+      x-bossraid-audience: public
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "404":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/raid/{raidId}/provider-settlement:
+    get:
+      summary: Get provider settlement payload for a raid
+      tags:
+        - Raid
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: providerId
+          required: false
+        - schema:
+            type: string
+          in: query
+          name: provider_id
+          required: false
+        - schema:
+            type: string
+          in: path
+          name: raidId
+          required: true
+          description: Raid identifier.
+      x-bossraid-audience: public
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "404":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/inference/chat/completions:
+    post:
+      summary: Discount inference chat completion
+      tags: &a1
+        - Chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              properties:
+                model:
+                  type: string
+                messages:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      role:
+                        type: string
+                        enum:
+                          - system
+                          - user
+                          - assistant
+                          - tool
+                      content: {}
+                    required:
+                      - role
+                      - content
+                stream:
+                  type: boolean
+                max_tokens:
+                  type: integer
+                temperature:
+                  type: number
+              required:
+                - messages
+      x-bossraid-audience: public
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  id:
+                    type: string
+                  object:
+                    type: string
+                  created:
+                    type: integer
+                  model:
+                    type: string
+                  choices:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                  usage:
+                    type: object
+                    additionalProperties: true
+                required:
+                  - id
+                  - object
+                  - choices
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "402":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "409":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/chat/completions:
+    post:
+      summary: OpenAI-compatible chat completion
+      tags: *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              properties:
+                model:
+                  type: string
+                messages:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      role:
+                        type: string
+                        enum:
+                          - system
+                          - user
+                          - assistant
+                          - tool
+                      content: {}
+                    required:
+                      - role
+                      - content
+                stream:
+                  type: boolean
+                max_tokens:
+                  type: integer
+                temperature:
+                  type: number
+              required:
+                - messages
+      x-bossraid-audience: public
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  id:
+                    type: string
+                  object:
+                    type: string
+                  created:
+                    type: integer
+                  model:
+                    type: string
+                  choices:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                  usage:
+                    type: object
+                    additionalProperties: true
+                required:
+                  - id
+                  - object
+                  - choices
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "402":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "409":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/providers/{providerId}/heartbeat:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: providerId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/providers/{providerId}/submit:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: providerId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/providers/{providerId}/failure:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: providerId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/providers:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/providers/health:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/providers/{providerId}/stats:
+    get:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: providerId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /agents/register:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /agents/{providerId}/verify:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: providerId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /agents/heartbeat:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /agents/discover:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /gateway/{providerId}/health:
+    get:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: providerId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /gateway/{providerId}/v1/raid/accept:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: providerId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/venice/connect:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/venice/models/catalog:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/venice/models:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/venice/offers:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/venice/config:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/venice/offers/{modelId}:
+    delete:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: modelId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/redpill/connect:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/redpill/models/catalog:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/redpill/models:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/redpill/offers:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/redpill/config:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/redpill/offers/{modelId}:
+    delete:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: modelId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/near/connect:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/near/models/catalog:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/near/models:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/near/offers:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/near/config:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/near/offers/{modelId}:
+    delete:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: modelId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/chutes/connect:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/chutes/models/catalog:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/chutes/models:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/chutes/offers:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/chutes/config:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/chutes/offers/{modelId}:
+    delete:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: modelId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/phala/connect:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/phala/models/catalog:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/phala/models:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/phala/offers:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/phala/config:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/phala/offers/{modelId}:
+    delete:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: modelId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/status:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/marketplace/tee/attestation:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/marketplace/models/{modelId}/tee:
+    get:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: modelId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/marketplace/tee/attestation/preflight:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/inference/receipts/{receiptId}:
+    get:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: receiptId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/inference/receipts/{receiptId}/verify:
+    get:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: receiptId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/relayer/capabilities/{chainId}:
+    get:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: chainId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/relayer/fee-data:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/relayer/estimate:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/relayer/send:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/relayer/status/{taskId}:
+    get:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: taskId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/relayer/webhook:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/bounties:
+    post:
+      responses:
+        "200":
+          description: Default Response
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/bounties/{bountyId}/fund:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: bountyId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/bounties/{bountyId}:
+    get:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: bountyId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/bounties/{bountyId}/bids:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: bountyId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/bounties/{bountyId}/award:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: bountyId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/bounties/{bountyId}/awards/{awardId}/deliver:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: bountyId
+          required: true
+        - schema:
+            type: string
+          in: path
+          name: awardId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/bounties/{bountyId}/awards/{awardId}/accept:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: bountyId
+          required: true
+        - schema:
+            type: string
+          in: path
+          name: awardId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/bounties/{bountyId}/awards/{awardId}/claim:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: bountyId
+          required: true
+        - schema:
+            type: string
+          in: path
+          name: awardId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/bounties/{bountyId}/refund:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: bountyId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/bounties/{bountyId}/raids:
+    post:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: bountyId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+servers:
+  - url: http://localhost:8787
+    description: Local development
+tags:
+  - name: Health
+    description: Liveness and readiness probes.
+  - name: Auth
+    description: Wallet session and buyer API keys.
+  - name: Raid
+    description: Mercenary multi-agent raids.
+  - name: Chat
+    description: OpenAI-compatible chat completions.
+  - name: Marketplace
+    description: Models, prices, and marketplace stats.
+  - name: Account
+    description: Buyer balance and purchase history.
+  - name: Providers
+    description: Seller registration and callbacks.
+  - name: Bounties
+    description: Bounty escrow and payouts.
+  - name: Ops
+    description: Operator session, runtime, and readiness gates.

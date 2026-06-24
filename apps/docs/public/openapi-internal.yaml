@@ -1,15 +1,572 @@
 openapi: 3.1.0
 info:
-  title: papers Internal API
+  title: Boss Raid Operator API
   version: 0.1.0
-  description: Second example spec for multi-API OpenAPI explorer configuration.
-servers:
-  - url: https://internal.example.com
+  description: Operator session, runtime telemetry, and production readiness routes.
+components:
+  schemas: {}
 paths:
-  /build:
-    post:
-      summary: Trigger docs build
-      tags: [Build]
+  /v1/raids:
+    get:
+      summary: List raids (admin)
+      tags:
+        - Raid
+        - Ops
+      x-bossraid-audience: internal
       responses:
-        '202':
-          description: Build accepted
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/raid/{raidId}/abort:
+    post:
+      summary: Abort a raid (admin)
+      tags:
+        - Raid
+        - Ops
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: raidId
+          required: true
+          description: Raid identifier.
+      x-bossraid-audience: internal
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  raidId:
+                    type: string
+                  status:
+                    type: string
+                  phase:
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+                  updatedAt:
+                    type: string
+                    format: date-time
+                required:
+                  - raidId
+                  - status
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "404":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/evaluations/{raidId}/replay:
+    post:
+      summary: Replay raid evaluation (admin)
+      tags:
+        - Raid
+        - Ops
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: raidId
+          required: true
+          description: Raid identifier.
+      x-bossraid-audience: internal
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "404":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/agent.json:
+    get:
+      summary: Mercenary agent manifest
+      tags:
+        - Ops
+      x-bossraid-audience: internal
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /v1/attested-runtime:
+    get:
+      summary: TEE-attested runtime proof
+      tags:
+        - Ops
+      x-bossraid-audience: internal
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/runtime:
+    get:
+      summary: Runtime configuration snapshot
+      tags:
+        - Ops
+      x-bossraid-audience: internal
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/runtime/evaluator-smoke:
+    post:
+      summary: Run evaluator smoke task
+      tags:
+        - Ops
+      x-bossraid-audience: internal
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/ops/session:
+    get:
+      summary: Read ops session state
+      tags:
+        - Ops
+      x-bossraid-audience: internal
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+    post:
+      summary: Open ops session
+      tags:
+        - Ops
+      x-bossraid-audience: internal
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "503":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+    delete:
+      summary: Clear ops session
+      tags:
+        - Ops
+      x-bossraid-audience: internal
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /v1/ops/settings:
+    get:
+      summary: Read ops settings
+      tags:
+        - Ops
+      x-bossraid-audience: internal
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+    patch:
+      summary: Update ops settings
+      tags:
+        - Ops
+      x-bossraid-audience: internal
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/ops/settlement/status:
+    get:
+      summary: Settlement configuration status
+      tags:
+        - Ops
+      x-bossraid-audience: internal
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/ops/metrics:
+    get:
+      summary: Ops metrics snapshot
+      tags:
+        - Ops
+      x-bossraid-audience: internal
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+  /v1/ops/production-readiness:
+    get:
+      summary: Production readiness gates
+      tags:
+        - Ops
+      x-bossraid-audience: internal
+      responses:
+        "200":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "401":
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                  - error
+                  - message
+servers:
+  - url: http://localhost:8787
+    description: Local development
+tags:
+  - name: Health
+    description: Liveness and readiness probes.
+  - name: Auth
+    description: Wallet session and buyer API keys.
+  - name: Raid
+    description: Mercenary multi-agent raids.
+  - name: Chat
+    description: OpenAI-compatible chat completions.
+  - name: Marketplace
+    description: Models, prices, and marketplace stats.
+  - name: Account
+    description: Buyer balance and purchase history.
+  - name: Providers
+    description: Seller registration and callbacks.
+  - name: Bounties
+    description: Bounty escrow and payouts.
+  - name: Ops
+    description: Operator session, runtime, and readiness gates.

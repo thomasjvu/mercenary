@@ -4,6 +4,8 @@ Native write route: `POST /v1/raid`.
 
 Use this as a lookup table after you pick a lane in [introduction.md](../overview/introduction.md). Buyer walkthroughs: [buy.md](../buyers/buy.md), [raids.md](../raiders/raids.md).
 
+Interactive OpenAPI explorer: [openapi.md](openapi.md) (`pnpm bossraid sync:openapi` regenerates `apps/docs/public/openapi-v1.yaml` and `openapi-internal.yaml` from `@fastify/swagger`).
+
 ## Public write
 
 | Route                                           | Purpose                                                                                                                                                                                                                                                                                                 |

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-24T19:49:29.704Z",
+  "generated": "2026-06-24T20:30:21.516Z",
   "paths": [
     "overview/introduction",
     "overview/proof",
@@ -9,6 +9,7 @@
     "sellers/sell",
     "raiders/raids",
     "reference/routes",
+    "reference/openapi",
     "reference/env",
     "reference/payments",
     "operators/runtime",
@@ -17,7 +18,7 @@
     "llms",
     "skill"
   ],
-  "count": 15,
+  "count": 16,
   "titles": {
     "overview/introduction": "Introduction",
     "overview/proof": "Proof & Receipts",
@@ -27,6 +28,7 @@
     "sellers/sell": "Sell Inference",
     "raiders/raids": "Run a Raid",
     "reference/routes": "Routes",
+    "reference/openapi": "OpenAPI",
     "reference/env": "Environment Variables",
     "reference/payments": "Payments",
     "operators/runtime": "Runtime & Commands",

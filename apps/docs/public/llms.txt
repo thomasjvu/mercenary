@@ -26,6 +26,7 @@ Open marketplace docs for discount inference, Mercenary raids, seller onboarding
 ## Reference
 
 - [Routes](/docs/reference/routes): Native write route: `POST /v1/raid`.
+- [OpenAPI](/docs/reference/openapi): Boss Raid publishes two OpenAPI specs generated from the live Fastify route schemas:
 - [Environment](/docs/reference/env): Boss Raid reads env vars across the API, orchestrator, provider workers, and deploy scripts. **Production operators only need the Phala core tier** (15 Infisical secrets). Everything else is tuning, feature flags, or local dev.
 - [Payments](/docs/reference/payments): x402 in, escrow out, equal split to successful providers.
 

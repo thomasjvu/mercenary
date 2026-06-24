@@ -32,10 +32,23 @@ export const i18nConfig = {
 
 /** @type {import('./documentation-config.js').OpenApiConfig} */
 export const openapiConfig = {
-  enabled: false,
+  enabled: true,
   pagePath: 'reference/openapi',
   defaultSpecId: 'public',
-  specs: [],
+  specs: [
+    {
+      id: 'public',
+      label: 'Boss Raid Public API',
+      description: 'Buyer, seller, and raider routes.',
+      url: '/openapi-v1.yaml',
+    },
+    {
+      id: 'internal',
+      label: 'Boss Raid Operator API',
+      description: 'Ops session, runtime telemetry, and production readiness routes.',
+      url: '/openapi-internal.yaml',
+    },
+  ],
 };
 
 /** Framework pages served from apps/docs/src/docs/content (not content/docs). */
@@ -187,6 +200,7 @@ export const documentationTree = [
     path: 'reference',
     children: [
       { type: 'file', name: 'Routes.md', path: 'reference/routes', tags: ['api', 'routes'] },
+      { type: 'file', name: 'OpenAPI.md', path: 'reference/openapi', tags: ['api', 'openapi'] },
       { type: 'file', name: 'Environment.md', path: 'reference/env', tags: ['env', 'config'] },
       { type: 'file', name: 'Payments.md', path: 'reference/payments', tags: ['x402', 'payments'] },
     ],

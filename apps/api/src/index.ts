@@ -1,3 +1,4 @@
+import type { FastifyInstance } from 'fastify';
 import { ApiContractError } from '@bossraid/api-contracts';
 import {
   createDefaultOrchestrator,
@@ -32,16 +33,37 @@ import { registerInferenceReceiptRoutes } from './routes/inference-receipts.js';
 import { registerRelayerRoutes } from './routes/relayer.js';
 import { registerBountyRoutes } from './routes/bounties.js';
 import { startX402ReconciliationWorker } from './lib/x402-reconciliation.js';
+import { registerOpenApi } from './openapi/register.js';
+import type { ApiContext } from './api-context.js';
+import type { ApiHandlerGroups } from './handlers/index.js';
 
 export { resolveChatTerminalSettleGraceMs } from './lib/env.js';
 
-export function buildApiServer(
-  orchestrator: BossRaidOrchestrator,
-  env: NodeJS.ProcessEnv = process.env
-) {
-  const ctx = createApiContext(orchestrator, env);
-  const handlers = createApiHandlers(ctx);
-  const { app, apiMetrics, requestStartTimes } = ctx;
+function registerApiRoutes(
+  app: FastifyInstance,
+  ctx: ApiContext,
+  handlers: ApiHandlerGroups
+): void {
+  registerHealthRoutes(app, ctx, handlers);
+  registerHostAttestationRoutes(app, ctx, handlers);
+  registerAuthRoutes(app, ctx, handlers);
+  registerAccountRoutes(app, ctx, handlers);
+  registerMarketplaceRoutes(app, ctx, handlers);
+  registerRaidRoutes(app, ctx, handlers);
+  registerChatRoutes(app, ctx, handlers);
+  registerOpsRoutes(app, ctx, handlers);
+  registerProviderRoutes(app, ctx, handlers);
+  registerAgentRoutes(app, ctx, handlers);
+  registerInferenceGatewayRoutes(app, ctx);
+  registerSellerUpstreamRoutes(app, ctx, handlers);
+  registerMarketplaceTeeRoutes(app, ctx, handlers);
+  registerInferenceReceiptRoutes(app, ctx);
+  registerRelayerRoutes(app, ctx, handlers);
+  registerBountyRoutes(app, ctx, handlers);
+}
+
+function wireApiServer(app: FastifyInstance, ctx: ApiContext, handlers: ApiHandlerGroups): void {
+  const { apiMetrics, requestStartTimes } = ctx;
 
   app.addHook('onRequest', (request, _reply, done) => {
     requestStartTimes.set(request, Date.now());
@@ -118,30 +140,34 @@ export function buildApiServer(
     });
   });
 
-  registerHealthRoutes(app, ctx, handlers);
-  registerHostAttestationRoutes(app, ctx, handlers);
-  registerAuthRoutes(app, ctx, handlers);
-  registerAccountRoutes(app, ctx, handlers);
-  registerMarketplaceRoutes(app, ctx, handlers);
-  registerRaidRoutes(app, ctx, handlers);
-  registerChatRoutes(app, ctx, handlers);
-  registerOpsRoutes(app, ctx, handlers);
-  registerProviderRoutes(app, ctx, handlers);
-  registerAgentRoutes(app, ctx, handlers);
-  registerInferenceGatewayRoutes(app, ctx);
-  registerSellerUpstreamRoutes(app, ctx, handlers);
-  registerMarketplaceTeeRoutes(app, ctx, handlers);
-  registerInferenceReceiptRoutes(app, ctx);
-  registerRelayerRoutes(app, ctx, handlers);
-  registerBountyRoutes(app, ctx, handlers);
+  registerApiRoutes(app, ctx, handlers);
   startX402ReconciliationWorker(ctx);
+}
 
-  return app;
+export function buildApiServer(
+  orchestrator: BossRaidOrchestrator,
+  env: NodeJS.ProcessEnv = process.env
+) {
+  const ctx = createApiContext(orchestrator, env);
+  const handlers = createApiHandlers(ctx);
+  wireApiServer(ctx.app, ctx, handlers);
+  return ctx.app;
+}
+
+export async function prepareApiServer(
+  orchestrator: BossRaidOrchestrator,
+  env: NodeJS.ProcessEnv = process.env
+) {
+  const ctx = createApiContext(orchestrator, env);
+  const handlers = createApiHandlers(ctx);
+  await registerOpenApi(ctx.app);
+  wireApiServer(ctx.app, ctx, handlers);
+  return ctx.app;
 }
 
 async function main() {
   const orchestrator = await createDefaultOrchestrator(runtimeOptionsFromEnv());
-  const app = buildApiServer(orchestrator);
+  const app = await prepareApiServer(orchestrator);
   const port = Number(process.env.PORT || NETWORK.LOCAL_API_PORT.toString());
   const host = process.env.BOSSRAID_API_HOST ?? process.env.HOST ?? NETWORK.LOCALHOST;
   await app.listen({ port, host });

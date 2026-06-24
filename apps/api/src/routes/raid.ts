@@ -1,4 +1,12 @@
 import { type FastifyInstance } from 'fastify';
+import {
+  apiErrorSchema,
+  raidIdParamsSchema,
+  raidResultResponseSchema,
+  raidStatusResponseSchema,
+  spawnRaidBodySchema,
+} from '@bossraid/openapi-schemas';
+import { internalRouteSchema, publicRouteSchema } from '../openapi/audience.js';
 import { parseBossRaidRequest } from '@bossraid/api-contracts';
 import { asSingleHeader } from '@bossraid/shared-types';
 import { buildAgentLog } from '../agent-log.js';
@@ -25,100 +33,176 @@ function registerRaidDetailRoutes(
   const { requireRaidReadAccess, readRaidAccessTokenQuery, requireAdmin } = handlers.auth;
   const { ensureSettlementProofState, getRaidId } = handlers.raid;
 
-  app.get(`${basePath}/:raidId`, async (request, reply) => {
-    const raidId = getRaidId(request);
-    const authorizationError = requireRaidReadAccess(reply, raidId, request.headers);
-    if (authorizationError) {
-      return authorizationError;
+  app.get(
+    `${basePath}/:raidId`,
+    {
+      schema: publicRouteSchema({
+        tags: ['Raid'],
+        summary: 'Get raid status',
+        params: raidIdParamsSchema,
+        response: {
+          200: raidStatusResponseSchema,
+          401: apiErrorSchema,
+          404: apiErrorSchema,
+        },
+      }),
+    },
+    async (request, reply) => {
+      const raidId = getRaidId(request);
+      const authorizationError = requireRaidReadAccess(reply, raidId, request.headers);
+      if (authorizationError) {
+        return authorizationError;
+      }
+
+      return serializeRaidStatus(ctx.orchestrator.getStatus(raidId));
     }
+  );
 
-    return serializeRaidStatus(ctx.orchestrator.getStatus(raidId));
-  });
+  app.get(
+    `${basePath}/:raidId/result`,
+    {
+      schema: publicRouteSchema({
+        tags: ['Raid'],
+        summary: 'Get raid result',
+        params: raidIdParamsSchema,
+        response: {
+          200: raidResultResponseSchema,
+          401: apiErrorSchema,
+          404: apiErrorSchema,
+        },
+      }),
+    },
+    async (request, reply) => {
+      const raidId = getRaidId(request);
+      const authorizationError = requireRaidReadAccess(reply, raidId, request.headers);
+      if (authorizationError) {
+        return authorizationError;
+      }
 
-  app.get(`${basePath}/:raidId/result`, async (request, reply) => {
-    const raidId = getRaidId(request);
-    const authorizationError = requireRaidReadAccess(reply, raidId, request.headers);
-    if (authorizationError) {
-      return authorizationError;
+      await ensureSettlementProofState(raidId);
+      return serializeRaidResult(ctx.orchestrator.getResult(raidId));
     }
+  );
 
-    await ensureSettlementProofState(raidId);
-    return serializeRaidResult(ctx.orchestrator.getResult(raidId));
-  });
+  app.get(
+    `${basePath}/:raidId/agent_log.json`,
+    {
+      schema: publicRouteSchema({
+        tags: ['Raid'],
+        summary: 'Download Mercenary agent log JSON',
+        params: raidIdParamsSchema,
+        response: {
+          200: { type: 'object', additionalProperties: true },
+          401: apiErrorSchema,
+          404: apiErrorSchema,
+        },
+      }),
+    },
+    async (request, reply) => {
+      const raidId = getRaidId(request);
+      const queryAccessToken = readRaidAccessTokenQuery(request.query);
+      const authorizationError = requireRaidReadAccess(
+        reply,
+        raidId,
+        request.headers,
+        queryAccessToken
+      );
+      if (authorizationError) {
+        return authorizationError;
+      }
 
-  app.get(`${basePath}/:raidId/agent_log.json`, async (request, reply) => {
-    const raidId = getRaidId(request);
-    const queryAccessToken = readRaidAccessTokenQuery(request.query);
-    const authorizationError = requireRaidReadAccess(
-      reply,
-      raidId,
-      request.headers,
-      queryAccessToken
-    );
-    if (authorizationError) {
-      return authorizationError;
+      const raid = ctx.orchestrator.getRaid(raidId);
+      if (!raid) {
+        reply.code(404);
+        return {
+          error: 'not_found',
+          message: `Unknown raid: ${raidId}`,
+        };
+      }
+
+      reply.header('cache-control', 'private, no-store');
+      await ensureSettlementProofState(raidId);
+      await handlers.raid.ensureErc8004ProofState({ includeMercenary: false });
+      return buildAgentLog(raid, {
+        getRaid: (currentRaidId) => ctx.orchestrator.getRaid(currentRaidId),
+        getProvider: (providerId) => ctx.orchestrator.getProviderProfile(providerId),
+        raidAccessToken:
+          asSingleHeader(request.headers[RAID_ACCESS_TOKEN_HEADER]) ?? queryAccessToken,
+      });
     }
+  );
 
-    const raid = ctx.orchestrator.getRaid(raidId);
-    if (!raid) {
-      reply.code(404);
+  app.get(
+    `${basePath}/:raidId/attested-result`,
+    {
+      schema: publicRouteSchema({
+        tags: ['Raid'],
+        summary: 'Get TEE-attested raid result proof',
+        params: raidIdParamsSchema,
+        response: {
+          200: { type: 'object', additionalProperties: true },
+          401: apiErrorSchema,
+          404: apiErrorSchema,
+          503: apiErrorSchema,
+        },
+      }),
+    },
+    async (request, reply) => {
+      const raidId = getRaidId(request);
+      const authorizationError = requireRaidReadAccess(reply, raidId, request.headers);
+      if (authorizationError) {
+        return authorizationError;
+      }
+
+      if (!ctx.teeSigner.account) {
+        reply.code(503);
+        return {
+          error: 'tee_signer_not_configured',
+          message:
+            ctx.teeSigner.error ??
+            'MNEMONIC environment variable is required for attested raid result proofs.',
+        };
+      }
+
+      await ensureSettlementProofState(raidId);
+      const result = ctx.orchestrator.getResult(raidId);
+      const payload = buildAttestedRaidResultPayload(ctx.env, result, ctx.workerIsolation);
+      const message = buildAttestedRaidResultMessage(payload);
+      const signature = await ctx.teeSigner.account.signMessage({ message });
+
       return {
-        error: 'not_found',
-        message: `Unknown raid: ${raidId}`,
+        signer: ctx.teeSigner.account.address,
+        message,
+        messageHash: hashAttestationText(message),
+        signature,
+        payload,
       };
     }
+  );
 
-    reply.header('cache-control', 'private, no-store');
-    await ensureSettlementProofState(raidId);
-    await handlers.raid.ensureErc8004ProofState({ includeMercenary: false });
-    return buildAgentLog(raid, {
-      getRaid: (currentRaidId) => ctx.orchestrator.getRaid(currentRaidId),
-      getProvider: (providerId) => ctx.orchestrator.getProviderProfile(providerId),
-      raidAccessToken:
-        asSingleHeader(request.headers[RAID_ACCESS_TOKEN_HEADER]) ?? queryAccessToken,
-    });
-  });
+  app.post(
+    `${basePath}/:raidId/abort`,
+    {
+      schema: internalRouteSchema({
+        tags: ['Raid'],
+        summary: 'Abort a raid (admin)',
+        params: raidIdParamsSchema,
+        response: {
+          200: raidStatusResponseSchema,
+          401: apiErrorSchema,
+          404: apiErrorSchema,
+        },
+      }),
+    },
+    async (request, reply) => {
+      const adminError = requireAdmin(reply, request.headers);
+      if (adminError) {
+        return adminError;
+      }
 
-  app.get(`${basePath}/:raidId/attested-result`, async (request, reply) => {
-    const raidId = getRaidId(request);
-    const authorizationError = requireRaidReadAccess(reply, raidId, request.headers);
-    if (authorizationError) {
-      return authorizationError;
+      return ctx.orchestrator.abortRaid(getRaidId(request));
     }
-
-    if (!ctx.teeSigner.account) {
-      reply.code(503);
-      return {
-        error: 'tee_signer_not_configured',
-        message:
-          ctx.teeSigner.error ??
-          'MNEMONIC environment variable is required for attested raid result proofs.',
-      };
-    }
-
-    await ensureSettlementProofState(raidId);
-    const result = ctx.orchestrator.getResult(raidId);
-    const payload = buildAttestedRaidResultPayload(ctx.env, result, ctx.workerIsolation);
-    const message = buildAttestedRaidResultMessage(payload);
-    const signature = await ctx.teeSigner.account.signMessage({ message });
-
-    return {
-      signer: ctx.teeSigner.account.address,
-      message,
-      messageHash: hashAttestationText(message),
-      signature,
-      payload,
-    };
-  });
-
-  app.post(`${basePath}/:raidId/abort`, async (request, reply) => {
-    const adminError = requireAdmin(reply, request.headers);
-    if (adminError) {
-      return adminError;
-    }
-
-    return ctx.orchestrator.abortRaid(getRaidId(request));
-  });
+  );
 }
 
 export function registerRaidRoutes(
@@ -130,60 +214,130 @@ export function registerRaidRoutes(
   const { requireAdmin, requireProviderOrRaidReadAccess } = handlers.auth;
   const { spawnParsedRaid, buildProviderSettlementPayload } = handlers.raid;
 
-  app.get('/v1/raids', async (request, reply) => {
-    const adminError = requireAdmin(reply, request.headers);
-    if (adminError) {
-      return adminError;
+  app.get(
+    '/v1/raids',
+    {
+      schema: internalRouteSchema({
+        tags: ['Raid'],
+        summary: 'List raids (admin)',
+        response: {
+          200: {
+            type: 'array',
+            items: { type: 'object', additionalProperties: true },
+          },
+          401: apiErrorSchema,
+        },
+      }),
+    },
+    async (request, reply) => {
+      const adminError = requireAdmin(reply, request.headers);
+      if (adminError) {
+        return adminError;
+      }
+
+      return orchestrator.listRaids().map(toRaidListItemResponse);
     }
+  );
 
-    return orchestrator.listRaids().map(toRaidListItemResponse);
-  });
-
-  app.post('/v1/raid', async (request, reply) => {
-    return spawnParsedRaid(request, reply, parseBossRaidRequest);
-  });
+  app.post(
+    '/v1/raid',
+    {
+      schema: publicRouteSchema({
+        tags: ['Raid'],
+        summary: 'Spawn a Mercenary raid',
+        body: spawnRaidBodySchema,
+        response: {
+          200: raidStatusResponseSchema,
+          400: apiErrorSchema,
+          401: apiErrorSchema,
+          402: apiErrorSchema,
+          409: apiErrorSchema,
+          503: apiErrorSchema,
+        },
+      }),
+    },
+    async (request, reply) => spawnParsedRaid(request, reply, parseBossRaidRequest)
+  );
 
   registerRaidDetailRoutes(app, ctx, handlers);
 
-  app.post('/v1/evaluations/:raidId/replay', async (request, reply) => {
-    const adminError = requireAdmin(reply, request.headers);
-    if (adminError) {
-      return adminError;
-    }
+  app.post(
+    '/v1/evaluations/:raidId/replay',
+    {
+      schema: internalRouteSchema({
+        tags: ['Raid'],
+        summary: 'Replay raid evaluation (admin)',
+        params: raidIdParamsSchema,
+        response: {
+          200: { type: 'object', additionalProperties: true },
+          401: apiErrorSchema,
+          404: apiErrorSchema,
+        },
+      }),
+    },
+    async (request, reply) => {
+      const adminError = requireAdmin(reply, request.headers);
+      if (adminError) {
+        return adminError;
+      }
 
-    return orchestrator.replayEvaluation((request.params as { raidId: string }).raidId);
-  });
+      return orchestrator.replayEvaluation((request.params as { raidId: string }).raidId);
+    }
+  );
 
-  app.get('/v1/raid/:raidId/provider-settlement', async (request, reply) => {
-    const raidId = (request.params as { raidId: string }).raidId;
-    const query = request.query as { providerId?: unknown; provider_id?: unknown };
-    const providerId =
-      asSingleQueryValue(query.providerId) ?? asSingleQueryValue(query.provider_id);
-    if (!providerId) {
-      reply.code(400);
-      return {
-        error: 'bad_request',
-        message: 'providerId is required.',
-      };
+  app.get(
+    '/v1/raid/:raidId/provider-settlement',
+    {
+      schema: publicRouteSchema({
+        tags: ['Raid'],
+        summary: 'Get provider settlement payload for a raid',
+        params: raidIdParamsSchema,
+        querystring: {
+          type: 'object',
+          properties: {
+            providerId: { type: 'string' },
+            provider_id: { type: 'string' },
+          },
+        },
+        response: {
+          200: { type: 'object', additionalProperties: true },
+          400: apiErrorSchema,
+          401: apiErrorSchema,
+          404: apiErrorSchema,
+        },
+      }),
+    },
+    async (request, reply) => {
+      const raidId = (request.params as { raidId: string }).raidId;
+      const query = request.query as { providerId?: unknown; provider_id?: unknown };
+      const providerId =
+        asSingleQueryValue(query.providerId) ?? asSingleQueryValue(query.provider_id);
+      if (!providerId) {
+        reply.code(400);
+        return {
+          error: 'bad_request',
+          message: 'providerId is required.',
+        };
+      }
+      const authorizationError = requireProviderOrRaidReadAccess(reply, raidId, providerId, {
+        method: request.method,
+        path: request.url,
+        body: {},
+        bodyText: '',
+        headers: request.headers,
+      });
+      if (authorizationError) {
+        return authorizationError;
+      }
+      const payload = await buildProviderSettlementPayload(raidId, providerId);
+      if (!payload) {
+        reply.code(404);
+        return {
+          error: 'not_found',
+          message: `No settlement data for provider ${providerId} on raid ${raidId}.`,
+        };
+      }
+      return payload;
     }
-    const authorizationError = requireProviderOrRaidReadAccess(reply, raidId, providerId, {
-      method: request.method,
-      path: request.url,
-      body: {},
-      bodyText: '',
-      headers: request.headers,
-    });
-    if (authorizationError) {
-      return authorizationError;
-    }
-    const payload = await buildProviderSettlementPayload(raidId, providerId);
-    if (!payload) {
-      reply.code(404);
-      return {
-        error: 'not_found',
-        message: `No settlement data for provider ${providerId} on raid ${raidId}.`,
-      };
-    }
-    return payload;
-  });
+  );
 }

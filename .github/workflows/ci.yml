@@ -47,6 +47,9 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: OpenAPI drift check
+        run: pnpm --filter @bossraid/docs check:openapi
+
       - name: Docs build
         run: pnpm build:docs
 

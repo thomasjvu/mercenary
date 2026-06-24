@@ -11,6 +11,14 @@ Verification, deploy, and operator workflows. Env tables: [reference/env.md](../
 
 Contributor scripts (`check`, `build`, `dev`, `test:*`) live in root `package.json`. Operator, deploy, and integration commands use `pnpm bossraid <command>` — run `pnpm bossraid help` for the full list.
 
+Regenerate OpenAPI specs after route or schema changes:
+
+```bash
+pnpm bossraid sync:openapi
+```
+
+CI runs `pnpm bossraid check:openapi`. Specs are served from `apps/docs/public/` and documented in [reference/openapi.md](../reference/openapi.md).
+
 Refresh inference catalog + reference pricing JSON:
 
 ```bash

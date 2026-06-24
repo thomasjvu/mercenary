@@ -733,6 +733,8 @@ Native write route: `POST /v1/raid`.
 
 Use this as a lookup table after you pick a lane in [introduction.md](../overview/introduction.md). Buyer walkthroughs: [buy.md](../buyers/buy.md), [raids.md](../raiders/raids.md).
 
+Interactive OpenAPI explorer: [openapi.md](openapi.md) (`pnpm bossraid sync:openapi` regenerates `apps/docs/public/openapi-v1.yaml` and `openapi-internal.yaml` from `@fastify/swagger`).
+
 ## Public write
 
 | Route                                           | Purpose                                                                                                                                                                                                                                                                                                 |
@@ -902,6 +904,36 @@ Admin: `Authorization: Bearer $BOSSRAID_ADMIN_TOKEN` or ops session cookie.
 - Onchain settlement: result/attested-result reads may refresh contract state before respond.
 - Registration fields `verification`, `privacy`, `erc8004`, `trust`, `reputation` stay separate.
 
+
+---
+
+
+### OpenAPI
+
+URL: /docs/reference/openapi
+
+# OpenAPI
+
+Boss Raid publishes two OpenAPI specs generated from the live Fastify route schemas:
+
+| Spec | File | Audience |
+| ---- | ---- | -------- |
+| Public API | `openapi-v1.yaml` | Buyers, sellers, raiders |
+| Operator API | `openapi-internal.yaml` | Ops session, runtime, readiness |
+
+Open the interactive viewer at [/docs/reference/openapi](/docs/reference/openapi).
+
+## Regenerate
+
+```bash
+pnpm bossraid sync:openapi
+```
+
+CI runs `pnpm bossraid check:openapi` to fail when committed specs drift from `@fastify/swagger` output.
+
+## Source of truth
+
+Route schemas live in `apps/api/src/routes/*` and shared JSON Schema helpers in `packages/openapi-schemas/`. The export script boots an in-memory API instance and writes filtered specs into `apps/docs/public/`.
 
 ---
 
@@ -1244,6 +1276,14 @@ Verification, deploy, and operator workflows. Env tables: [reference/env.md](../
 4. **Ship** — gateway (`pnpm bossraid serve:gateway`) or Cloudflare Pages deploy.
 
 Contributor scripts (`check`, `build`, `dev`, `test:*`) live in root `package.json`. Operator, deploy, and integration commands use `pnpm bossraid <command>` — run `pnpm bossraid help` for the full list.
+
+Regenerate OpenAPI specs after route or schema changes:
+
+```bash
+pnpm bossraid sync:openapi
+```
+
+CI runs `pnpm bossraid check:openapi`. Specs are served from `apps/docs/public/` and documented in [reference/openapi.md](../reference/openapi.md).
 
 Refresh inference catalog + reference pricing JSON:
 

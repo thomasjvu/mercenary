@@ -40,6 +40,21 @@ const COMMANDS = {
     description: 'Regenerate API route table in content/docs/reference/routes.md',
     run: () => runNode('scripts/sync-docs-web-routes.mjs'),
   },
+  'sync:openapi': {
+    category: 'sync',
+    description: 'Export public and operator OpenAPI specs into apps/docs/public',
+    run: () =>
+      runWithEnv({ TSX_TSCONFIG_PATH: 'tsconfig.base.json' }, 'node', [
+        '--import',
+        'tsx',
+        'scripts/export-openapi.mjs',
+      ]),
+  },
+  'check:openapi': {
+    category: 'sync',
+    description: 'Verify committed OpenAPI specs match @fastify/swagger output',
+    run: () => runNode('scripts/check-openapi.mjs', ['--check']),
+  },
   'sync:oc-references': {
     category: 'sync',
     description: 'Sync OC reference art from .private demo pipeline',

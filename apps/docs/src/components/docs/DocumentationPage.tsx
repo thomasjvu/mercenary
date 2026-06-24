@@ -570,8 +570,8 @@ const DocumentationPage = React.memo(
               </motion.button>
             ))}
 
-          <div className="flex h-full w-full gap-6 overflow-hidden">
-            <div className="relative min-w-0 flex-1">
+          <div className="flex h-full min-h-0 w-full gap-6 overflow-hidden">
+            <div className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col">
               {isLoading && (
                 <div
                   className="absolute left-4 top-4 z-20 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs"
