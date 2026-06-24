@@ -53,7 +53,7 @@ pnpm dev:docs
 
 Operator and deploy workflows use `pnpm bossraid <command>` (`pnpm bossraid help` lists all). Contributor scripts stay in `package.json`.
 
-`/improve` and `/execute-plan` write handoff files to `plans/` (gitignored, local only).
+`/improve` and `/execute-plan` write handoff files to `plans/` (gitignored, local only). Host-specific Party Quest bootstrap runbooks live under `deploy/ops-local/` (gitignored); see [`deploy/ops-local.example/README.md`](deploy/ops-local.example/README.md).
 
 ## Current Constraints
 

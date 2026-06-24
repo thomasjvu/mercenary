@@ -36,6 +36,8 @@ Party Quest / Forgejo campaign tooling for [`examples/campaigns/bossraid-develop
 
 Also exposed as `pnpm bossraid test:partyquest-bossraid:smoke`.
 
+Host bootstrap shell runbooks (Linux + Party Quest) are gitignored under [`deploy/ops-local/`](../deploy/ops-local/) — see [`deploy/ops-local.example/README.md`](../deploy/ops-local.example/README.md).
+
 ## Shared modules (`lib/`)
 
 Not invoked directly. Imported by dev, e2e, deploy, and bounty scripts:

@@ -58,4 +58,6 @@ Both use `gamma`, `dottie`, and `riko` ids but serve different purposes:
 
 ## Campaign tooling
 
-Party Quest operator scripts live under [`campaigns/bossraid-development/`](campaigns/bossraid-development/). Entry: `pnpm bossraid party-quest:smoke` (see [`scripts/README.md`](../scripts/README.md)).
+Portable Party Quest scripts and fixtures: [`campaigns/bossraid-development/`](campaigns/bossraid-development/). Entry: `pnpm bossraid party-quest:smoke`.
+
+Host-specific bootstrap runbooks are **not** in git — use [`deploy/ops-local.example/README.md`](../deploy/ops-local.example/README.md).

@@ -56,7 +56,7 @@ function reseedQuests() {
     'bash',
     [
       '-lc',
-      `cd "${partyQuestDir}" && docker compose -f docker-compose.spectre.yml --env-file .env.self-hosted run --rm -e CONVEX_SELF_HOSTED_URL=http://party-quest-convex-1:3210 convex-deploy npx convex run seed:seedBossraidDevelopment`,
+      `cd "${partyQuestDir}" && docker compose -f ${process.env.PARTY_QUEST_COMPOSE_FILE || 'docker-compose.yml'} --env-file .env.self-hosted run --rm -e CONVEX_SELF_HOSTED_URL=http://party-quest-convex-1:3210 convex-deploy npx convex run seed:seedBossraidDevelopment`,
     ],
     { encoding: 'utf8' }
   );
