@@ -15,6 +15,7 @@ import ContentRenderer from '../ContentRenderer';
 import DocsLogoMark from '../DocsLogoMark';
 import DocsVariantSelector from '../DocsVariantSelector';
 import DocumentationGraph from '../DocumentationGraph/OptimizedDocumentationGraph';
+import MindmapExpandModal from '../DocumentationGraph/MindmapExpandModal';
 import FileTree from '../FileTree';
 import fileTreeStyles from '../FileTree.module.css';
 
@@ -143,6 +144,7 @@ const DocumentationPage = React.memo(
     });
     const [rightSidebarVisible, setRightSidebarVisible] = useState(getInitialRightSidebarState);
     const [mobileMapVisible, setMobileMapVisible] = useState(false);
+    const [mindmapExpanded, setMindmapExpanded] = useState(false);
 
     const sidebarAnimationVariants = useMemo(() => {
       if (prefersReducedMotion) {
@@ -639,22 +641,21 @@ const DocumentationPage = React.memo(
                     exit="exit"
                     variants={rightRailPanelVariants}
                     transition={rightRailPanelTransition}
-                    className="absolute inset-0 flex h-full flex-col will-change-[opacity]"
+                    className="absolute inset-x-0 top-0 will-change-[opacity]"
                   >
-                    <div className="min-h-0 flex-1">
-                      <DocumentationGraph
-                        currentPath={path}
-                        onNodeClick={(nodePath) => {
-                          navigate(
-                            buildCanonicalCollectionPath(collection, nodePath, {
-                              version: routeContext.activeVersion,
-                              locale: routeContext.activeLocale,
-                            })
-                          );
-                        }}
-                        className="h-full w-full"
-                      />
-                    </div>
+                    <DocumentationGraph
+                      currentPath={path}
+                      onExpandRequest={() => setMindmapExpanded(true)}
+                      onNodeClick={(nodePath) => {
+                        navigate(
+                          buildCanonicalCollectionPath(collection, nodePath, {
+                            version: routeContext.activeVersion,
+                            locale: routeContext.activeLocale,
+                          })
+                        );
+                      }}
+                      className="w-full"
+                    />
                   </motion.div>
                 ) : (
                   <motion.div
@@ -738,6 +739,20 @@ const DocumentationPage = React.memo(
             </motion.div>
           )}
         </AnimatePresence>
+
+        <MindmapExpandModal
+          isOpen={mindmapExpanded}
+          onClose={() => setMindmapExpanded(false)}
+          currentPath={path}
+          onNodeClick={(nodePath) => {
+            navigate(
+              buildCanonicalCollectionPath(collection, nodePath, {
+                version: routeContext.activeVersion,
+                locale: routeContext.activeLocale,
+              })
+            );
+          }}
+        />
       </main>
     );
   }

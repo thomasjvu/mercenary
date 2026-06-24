@@ -1,6 +1,7 @@
 import { Icon } from '@iconify/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 import { useTheme } from '../../providers/ThemeProvider';
 
@@ -55,24 +56,26 @@ export default function MindmapExpandModal({
         visible: { opacity: 1, scale: 1 },
       }
     : {
-        hidden: { opacity: 0, scale: 0.96, y: 12 },
+        hidden: { opacity: 0, scale: 0.95, y: -20 },
         visible: { opacity: 1, scale: 1, y: 0 },
       };
 
-  return (
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
-          <motion.button
-            type="button"
-            aria-label="Close expanded mindmap"
+          <motion.div
             initial="hidden"
             animate="visible"
             exit="hidden"
             variants={backdropVariants}
             transition={{ duration: 0.15 }}
             onClick={onClose}
-            className="fixed inset-0 z-50 border-0 p-0"
+            className="fixed inset-0 z-50"
             style={{
               backgroundColor: 'var(--overlay-color)',
               backdropFilter: 'blur(6px)',
@@ -86,10 +89,10 @@ export default function MindmapExpandModal({
             exit="hidden"
             variants={modalVariants}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+            className="fixed inset-0 z-50 flex items-start justify-center pt-[12vh] pointer-events-none"
           >
             <div
-              className="pointer-events-auto flex h-[min(78vh,52rem)] w-full max-w-6xl flex-col overflow-hidden rounded-lg shadow-2xl"
+              className="pointer-events-auto flex h-[min(72vh,44rem)] w-full max-w-5xl flex-col overflow-hidden rounded-lg shadow-2xl"
               style={{
                 backgroundColor: 'var(--card-color)',
                 border: '1px solid var(--border-color)',
@@ -105,9 +108,6 @@ export default function MindmapExpandModal({
                     style={{ color: 'var(--text-color)', fontFamily: 'var(--mono-font)' }}
                   >
                     Interactive map
-                  </p>
-                  <p className="text-2xs" style={{ color: 'var(--muted-color)' }}>
-                    Drag to pan, use +/- to zoom
                   </p>
                 </div>
                 <button
@@ -128,7 +128,6 @@ export default function MindmapExpandModal({
                     onNodeClick?.(path);
                     onClose();
                   }}
-                  className="h-full"
                   layoutMode="expanded"
                 />
               </div>
@@ -136,6 +135,7 @@ export default function MindmapExpandModal({
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
