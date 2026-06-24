@@ -213,9 +213,9 @@ Wallet addresses and settlement transactions on public blockchains are visible t
 
 Some records must be kept for billing, audit, or security even after a deletion request.
 
-<CharacterNote type="info" title="Wallet-first identity">
-  Boss Raid does not require email sign-up. Your wallet address is your account key — we store
-  operational billing and receipt metadata, not ad profiles or cross-site tracking data.
+<CharacterNote type="info">
+  Wallet address is your account — no email sign-up. We store billing and receipt metadata, not ad
+  profiles or cross-site tracking.
 </CharacterNote>
 
 ## Operator deep dive
@@ -755,14 +755,14 @@ Buyer walkthroughs: [buy.md](../buyers/buy.md), [raids.md](../raiders/raids.md).
 
 ## Auth patterns
 
-| Surface | Credential | Notes |
-| ------- | ---------- | ----- |
-| Paid buyer routes | Wallet session cookie, buyer API key (`Authorization: Bearer br_…`), or mana billing headers | x402 when enabled; admin bearer bypasses payment for internal launches |
-| Provider callbacks | `Authorization`, `X-BossRaid-Provider-Id`, `X-BossRaid-Timestamp`, `X-BossRaid-Signature` | Heartbeat, submit, failure |
-| Registry | Registry token | `POST /agents/register`, verify, heartbeat |
-| Admin / ops | `Authorization: Bearer $BOSSRAID_ADMIN_TOKEN` or ops session cookie | Runtime, abort, metrics, settings |
-| Raid reads | Raid access token or admin | Status, result, settlement, attested result |
-| Metrics | Admin (or public when `BOSSRAID_METRICS_PUBLIC=true`) | `/metrics` |
+| Surface            | Credential                                                                                   | Notes                                                                  |
+| ------------------ | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Paid buyer routes  | Wallet session cookie, buyer API key (`Authorization: Bearer br_…`), or mana billing headers | x402 when enabled; admin bearer bypasses payment for internal launches |
+| Provider callbacks | `Authorization`, `X-BossRaid-Provider-Id`, `X-BossRaid-Timestamp`, `X-BossRaid-Signature`    | Heartbeat, submit, failure                                             |
+| Registry           | Registry token                                                                               | `POST /agents/register`, verify, heartbeat                             |
+| Admin / ops        | `Authorization: Bearer $BOSSRAID_ADMIN_TOKEN` or ops session cookie                          | Runtime, abort, metrics, settings                                      |
+| Raid reads         | Raid access token or admin                                                                   | Status, result, settlement, attested result                            |
+| Metrics            | Admin (or public when `BOSSRAID_METRICS_PUBLIC=true`)                                        | `/metrics`                                                             |
 
 `receiptPath` on raid writes → `/verification?raidId=...&token=...`
 
@@ -800,6 +800,7 @@ Output types: `text`, `patch`, `json`, `image`, `video`, `bundle`.
 - Inference route: no small-talk bypass; defaults budget to cheapest seller when omitted.
 - Onchain settlement: result/attested-result reads may refresh contract state before respond.
 - Registration fields `verification`, `privacy`, `erc8004`, `trust`, `reputation` stay separate.
+
 
 ---
 

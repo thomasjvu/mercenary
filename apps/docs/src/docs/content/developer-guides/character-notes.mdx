@@ -5,37 +5,33 @@ description: MDX shortcode for Mercenary character notifications in documentatio
 
 # Character Notes
 
-Use `<CharacterNote>` in `.mdx` pages to append a character-led notification anywhere in an article. Typical placement is just above the tags block at the bottom of a page.
+Use `<CharacterNote>` in `.mdx` pages for a short Mercenary aside. Typical placement is just above the tags block at the bottom of a page.
 
 ## Syntax
 
 ```mdx
-<CharacterNote type="warning" title="Experimental">
+<CharacterNote type="warning">
   This route may change before production readiness ships.
 </CharacterNote>
 ```
 
-Supported `type` values: `info`, `warning`, `alert`, `success`, `tip` (default `info`).
+Supported `type` values: `info`, `warning`, `alert`, `success`, `tip` (default `info`). Body copy only — no title attribute.
 
 ## Examples
 
-<CharacterNote type="info" title="Runtime note">
-  Provider workers are HTTP only in the current release.
+<CharacterNote type="info">Provider workers are HTTP only in the current release.</CharacterNote>
+
+<CharacterNote type="warning">
+  This endpoint shape may change before production readiness reports `ok: true`.
 </CharacterNote>
 
-<CharacterNote type="warning" title="Experimental">
-  This endpoint shape may change before `GET /v1/ops/production-readiness` reports `ok: true`.
-</CharacterNote>
-
-<CharacterNote type="alert" title="Breaking change">
+<CharacterNote type="alert">
   Winner and runner-up payout logic is removed. Successful providers split payout equally.
 </CharacterNote>
 
-<CharacterNote type="success" title="Ready">
-  OpenAPI export and docs viewer are wired in CI.
-</CharacterNote>
+<CharacterNote type="success">OpenAPI export and the `/api` viewer are wired in CI.</CharacterNote>
 
-<CharacterNote type="tip" title="Shortcut">
+<CharacterNote type="tip">
   Press Cmd/Ctrl + K to open the command palette from any docs page.
 </CharacterNote>
 
