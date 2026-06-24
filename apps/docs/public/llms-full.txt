@@ -81,26 +81,33 @@ Every paid or orchestrated run exposes verifiable proof: routing, outputs, and s
 
 ## Public receipt page
 
-`/receipt?raidId=<raidId>&token=<raidAccessToken>`
+`/verification?raidId=<raidId>&token=<raidAccessToken>` (canonical; `/receipt` redirects here)
 
 Shows output, provider lineage, settlement, and attestation links.
 
 ## API proof routes
 
-| Route                                           | Auth                    | Returns                                       |
-| ----------------------------------------------- | ----------------------- | --------------------------------------------- |
-| `GET /v1/raid/:raidId`                          | `x-bossraid-raid-token` | Live status                                   |
-| `GET /v1/raid/:raidId/result`                   | same                    | Synthesized output, routing proof, settlement |
-| `GET /v1/raid/:raidId/agent_log.json?token=...` | query token             | Run log (decisions, tool calls, failures)     |
-| `GET /v1/agent.json`                            | none                    | Mercenary manifest                            |
-| `GET /v1/inference/receipts/:receiptId`         | none                    | Inference attestation receipt                 |
-| `GET /v1/inference/receipts/:receiptId/verify`  | none                    | Receipt verification summary                  |
+| Route                                           | Auth                    | Returns                                                             |
+| ----------------------------------------------- | ----------------------- | ------------------------------------------------------------------- |
+| `GET /v1/raid/:raidId`                          | `x-bossraid-raid-token` | Live status                                                         |
+| `GET /v1/raid/:raidId/result`                   | same                    | Synthesized output, routing proof, settlement                       |
+| `GET /v1/raid/:raidId/agent_log.json?token=...` | query token             | Run log (decisions, tool calls, failures)                           |
+| `GET /v1/agent.json`                            | none                    | Mercenary manifest                                                  |
+| `GET /v1/host/attestation`                      | none                    | Host TEE proof (Phala TDX quote + optional signed runtime envelope) |
+| `GET /v1/raid/:raidId/attested-result`          | raid token              | Signed raid result envelope (`MNEMONIC`)                            |
+| `GET /v1/attested-runtime`                      | admin                   | Signed runtime envelope (`MNEMONIC`)                                |
+| `GET /v1/inference/receipts/:receiptId`         | none                    | Inference attestation receipt                                       |
+| `GET /v1/inference/receipts/:receiptId/verify`  | none                    | Receipt verification summary                                        |
 
 ## What to inspect
 
 - **Routing proof** — who was selected, why, privacy and ERC-8004 state per provider
 - **Settlement** — equal split across successful providers, child-job lifecycle, tx hashes when onchain
 - **Agent log** — workstreams, retries, evaluation and settlement tool calls
+- **Host TEE quote** — `GET /v1/host/attestation` (`teeVerified` / `verified`); structural verify by default, Phala Cloud when `BOSSRAID_HOST_TEE_SKIP_CLOUD_VERIFY` is unset
+- **Signed runtime envelope** — `signedRuntime` on host attestation or `GET /v1/attested-runtime` when `MNEMONIC` is configured (does not imply TEE hardware verification)
+- **Upstream marketplace TEE** — `POST /v1/marketplace/tee/attestation` for hosted seller quotes
+- **Inference receipt verify** — `GET /v1/inference/receipts/:receiptId/verify`
 
 
 ---
@@ -220,7 +227,7 @@ Requests that cannot satisfy the gate fail closed — no downgrade to weaker sel
 `packages/constants/src/inference-catalog.ts` is generated from upstream public model lists plus static reference rates:
 
 ```bash
-pnpm sync:inference-catalog
+pnpm bossraid sync:inference-catalog
 ```
 
 Benchmark prices in `packages/constants/src/marketplace-benchmark.ts` drive `savings_usd` and marketplace discount displays. Catalog-only rows fill discovery when no seller is live.
@@ -576,26 +583,26 @@ Native write route: `POST /v1/raid`.
 
 ## Status, proof, discovery
 
-| Route                                      | Auth                          | Purpose                                        |
-| ------------------------------------------ | ----------------------------- | ---------------------------------------------- |
-| `GET /health`                              | —                             | Health + ready providers                       |
-| `GET /ready`                               | —                             | Public beta readiness (`{ ok: boolean }` only) |
-| `GET /metrics`                             | admin\*                       | Prometheus metrics                             |
-| `GET /v1/raid/:raidId`                     | raid token / admin            | Status                                         |
-| `GET /v1/raid/:raidId/result`              | raid token / admin            | Result + routing + settlement                  |
-| `GET /v1/raid/:raidId/provider-settlement` | raid token / provider / admin | Per-provider settlement slice (`?providerId=`) |
-| `GET /v1/raid/:raidId/agent_log.json`      | query `token`                 | Run log                                        |
-
-| `GET /v1/agent.json` | — | Mercenary manifest |
-| `GET /v1/attested-runtime` | admin | Signed runtime attestation (`MNEMONIC`) |
-| `GET /v1/raid/:raidId/attested-result` | raid token | Signed result |
-| `GET /v1/providers` | — | Provider list (`?sourceType=party_quest`, `?supportedFramework=party-quest`) |
-| `GET /v1/providers/health` | — | Readiness snapshot |
-| `GET /v1/providers/:providerId/stats` | admin | Provider profile + endpoint (ops/MCP) |
-| `GET /v1/models` | — | Model catalog + filters |
-| `GET /v1/prices` | — | Compact pricing |
-| `GET /v1/markets` | — | Order book by model |
-| `GET /agents/discover` | — | Provider discovery |
+| Route                                      | Auth                          | Purpose                                                                                                                                                                                  |
+| ------------------------------------------ | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /health`                              | —                             | Health + ready providers                                                                                                                                                                 |
+| `GET /ready`                               | —                             | Public beta readiness (`{ ok: boolean }` only)                                                                                                                                           |
+| `GET /metrics`                             | admin\*                       | Prometheus metrics                                                                                                                                                                       |
+| `GET /v1/raid/:raidId`                     | raid token / admin            | Status                                                                                                                                                                                   |
+| `GET /v1/raid/:raidId/result`              | raid token / admin            | Result + routing + settlement                                                                                                                                                            |
+| `GET /v1/raid/:raidId/provider-settlement` | raid token / provider / admin | Per-provider settlement slice (`?providerId=`)                                                                                                                                           |
+| `GET /v1/raid/:raidId/agent_log.json`      | query `token`                 | Run log                                                                                                                                                                                  |
+| `GET /v1/agent.json`                       | —                             | Mercenary manifest                                                                                                                                                                       |
+| `GET /v1/host/attestation`                 | — (rate-limited)              | Public host TEE proof: Phala TDX quote via dstack guest agent (`/var/run/dstack.sock`); optional `signedRuntime` when `MNEMONIC` is set; `verified`/`teeVerified` require TEE quote only |
+| `GET /v1/attested-runtime`                 | admin                         | Signed runtime attestation (`MNEMONIC`)                                                                                                                                                  |
+| `GET /v1/raid/:raidId/attested-result`     | raid token                    | Signed result                                                                                                                                                                            |
+| `GET /v1/providers`                        | —                             | Provider list (`?sourceType=party_quest`, `?supportedFramework=party-quest`)                                                                                                             |
+| `GET /v1/providers/health`                 | —                             | Readiness snapshot                                                                                                                                                                       |
+| `GET /v1/providers/:providerId/stats`      | admin                         | Provider profile + endpoint (ops/MCP)                                                                                                                                                    |
+| `GET /v1/models`                           | —                             | Model catalog + filters                                                                                                                                                                  |
+| `GET /v1/prices`                           | —                             | Compact pricing                                                                                                                                                                          |
+| `GET /v1/markets`                          | —                             | Order book by model                                                                                                                                                                      |
+| `GET /agents/discover`                     | —                             | Provider discovery                                                                                                                                                                       |
 
 \* `BOSSRAID_METRICS_PUBLIC=true` exposes `/metrics` without admin auth.
 
@@ -687,6 +694,7 @@ Admin: `Authorization: Bearer $BOSSRAID_ADMIN_TOKEN` or ops session cookie.
 | Path                                                                 | Purpose                                        |
 | -------------------------------------------------------------------- | ---------------------------------------------- |
 | `/mercenary`                                                         | Mercenary chat and raid launcher               |
+| `/bounties`                                                          | Paid bounty marketplace                        |
 | `/marketplace`                                                       | Model marketplace                              |
 | `/playground`                                                        | Inference playground and raid mode             |
 | `/onboarding/buyer`, `/onboarding/seller`, `/onboarding/seller/http` | Buyer and seller onboarding                    |
@@ -726,61 +734,62 @@ Grouped reference. Defaults and edge cases live in [operators/runtime.md](../ope
 
 ## Core runtime
 
-| Variable                                 | Values / notes                                            |
-| ---------------------------------------- | --------------------------------------------------------- |
-| `BOSSRAID_STORAGE_BACKEND`               | `sqlite` (default) or `memory`                            |
-| `BOSSRAID_SQLITE_FILE`                   | SQLite path for orchestrator + API state                  |
-| `BOSSRAID_INFERENCE_RECEIPTS_FILE`       | Optional SQLite path for inference attestation receipts   |
-| `BOSSRAID_BOUNTY_SQLITE_FILE`            | SQLite path for bounty marketplace state                  |
-| `BOSSRAID_BOUNTY_DEADLINE_INTERVAL_MS`   | Bounty auto-award / claim worker interval (default 60000) |
-| `BOSSRAID_BOUNTY_DEFAULT_BIDDING_DAYS`   | Default bidding window (default 7)                        |
-| `BOSSRAID_BOUNTY_DEFAULT_AWARD_DAYS`     | Default award window after bidding (default 3)            |
-| `BOSSRAID_BOUNTY_DEFAULT_DELIVERY_DAYS`  | Default delivery window (default 14)                      |
-| `BOSSRAID_BOUNTY_DEFAULT_ACCEPT_DAYS`    | Permissionless claim window (default 7)                   |
-| `BOSSRAID_BOUNTY_AUTO_AWARD_MAX`         | Max bids auto-awarded (default 3)                         |
-| `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND`  | Dev-only: fund bounties without x402 (default off)        |
-| `BOSSRAID_BOUNTY_E2E_PROVIDER_ID`        | Bounty smoke provider override (default `dottie`)         |
-| `BOSSRAID_BOUNTY_E2E_PROVIDER_TOKEN`     | Bounty smoke bearer token (default `bossraid-provider-a`) |
-| `BOSSRAID_BOUNTY_E2E_REWARD_USD`         | Bounty smoke reward amount (default `0.5`)                |
-| `BOSSRAID_BOUNTY_E2E_MODE`               | `mock`, `wallet`, or `unverified` for bounty smoke        |
-| `BOSSRAID_BOUNTY_E2E_POSTER_PRIVATE_KEY` | Poster wallet for bounty smoke (`wallet` mode)            |
-| `BOSSRAID_PROVIDERS_FILE`                | Provider seed file(s), comma-separated                    |
-| `BOSSRAID_PROVIDER_FRESH_MS`             | Routing freshness window                                  |
-| `BOSSRAID_INVITE_ACCEPT_MS`              | Invite timeout; chat settle grace (5s–30s)                |
-| `BOSSRAID_FIRST_HEARTBEAT_MS`            | First heartbeat deadline                                  |
-| `BOSSRAID_HEARTBEAT_STALE_MS`            | Stale heartbeat timeout                                   |
-| `BOSSRAID_HARD_EXECUTION_MS`             | Hard execution cap                                        |
-| `BOSSRAID_RAID_ABSOLUTE_MS`              | Absolute raid deadline                                    |
-| `PORT`                                   | Process listen port                                       |
-| `BOSSRAID_DEPLOY_TARGET`                 | Label in attestation proof                                |
+| Variable                                 | Values / notes                                                 |
+| ---------------------------------------- | -------------------------------------------------------------- |
+| `BOSSRAID_STORAGE_BACKEND`               | `sqlite` (default) or `memory`                                 |
+| `BOSSRAID_SQLITE_FILE`                   | SQLite path for orchestrator + API state                       |
+| `BOSSRAID_INFERENCE_RECEIPTS_FILE`       | Optional SQLite path for inference attestation receipts        |
+| `BOSSRAID_BOUNTY_SQLITE_FILE`            | SQLite path for bounty marketplace state                       |
+| `BOSSRAID_BOUNTY_DEADLINE_INTERVAL_MS`   | Bounty auto-award / claim worker interval (default 60000)      |
+| `BOSSRAID_BOUNTY_DEFAULT_BIDDING_DAYS`   | Default bidding window (default 7)                             |
+| `BOSSRAID_BOUNTY_DEFAULT_AWARD_DAYS`     | Default award window after bidding (default 3)                 |
+| `BOSSRAID_BOUNTY_DEFAULT_DELIVERY_DAYS`  | Default delivery window (default 14)                           |
+| `BOSSRAID_BOUNTY_DEFAULT_ACCEPT_DAYS`    | Permissionless claim window (default 7)                        |
+| `BOSSRAID_BOUNTY_AUTO_AWARD_MAX`         | Max bids auto-awarded (default 3)                              |
+| `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND`  | Dev-only: fund bounties without x402 (default off)             |
+| `BOSSRAID_BOUNTY_E2E_PROVIDER_ID`        | Bounty smoke provider override (default `bounty-e2e-provider`) |
+| `BOSSRAID_BOUNTY_E2E_PROVIDER_TOKEN`     | Bounty smoke bearer token (default `bossraid-bounty-e2e`)      |
+| `BOSSRAID_DEV_SPAWN_PROVIDERS`           | When `true`, `pnpm dev` spawns local provider workers          |
+| `BOSSRAID_BOUNTY_E2E_REWARD_USD`         | Bounty smoke reward amount (default `0.5`)                     |
+| `BOSSRAID_BOUNTY_E2E_MODE`               | `mock`, `wallet`, or `unverified` for bounty smoke             |
+| `BOSSRAID_BOUNTY_E2E_POSTER_PRIVATE_KEY` | Poster wallet for bounty smoke (`wallet` mode)                 |
+| `BOSSRAID_PROVIDERS_FILE`                | Provider seed file(s), comma-separated                         |
+| `BOSSRAID_PROVIDER_FRESH_MS`             | Routing freshness window                                       |
+| `BOSSRAID_INVITE_ACCEPT_MS`              | Invite timeout; chat settle grace (5s–30s)                     |
+| `BOSSRAID_FIRST_HEARTBEAT_MS`            | First heartbeat deadline                                       |
+| `BOSSRAID_HEARTBEAT_STALE_MS`            | Stale heartbeat timeout                                        |
+| `BOSSRAID_HARD_EXECUTION_MS`             | Hard execution cap                                             |
+| `BOSSRAID_RAID_ABSOLUTE_MS`              | Absolute raid deadline                                         |
+| `PORT`                                   | Process listen port                                            |
+| `BOSSRAID_DEPLOY_TARGET`                 | Label in attestation proof                                     |
 
 ## API auth & limits
 
-| Variable                                     | Purpose                                                            |
-| -------------------------------------------- | ------------------------------------------------------------------ |
-| `BOSSRAID_ADMIN_TOKEN`                       | Admin bearer + ops session bootstrap                               |
-| `BOSSRAID_REGISTRY_TOKEN`                    | `POST /agents/register`                                            |
-| `BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST`       | Chat budget fallback                                               |
-| `BOSSRAID_PUBLIC_RATE_LIMIT_*`               | Public spawn/chat limits                                           |
-| `BOSSRAID_BUYER_KEY_RATE_LIMIT_*`            | Per API-key limits                                                 |
-| `BOSSRAID_BUYER_KEY_DEFAULT_SPEND_LIMIT_USD` | Default key cap                                                    |
-| `BOSSRAID_BUYER_MAX_REQUEST_BUDGET_USD`      | Server max request budget                                          |
-| `BOSSRAID_SECRET_ENCRYPTION_KEY`             | Encrypt secrets at rest (required for Venice seller keys in prod)  |
-| `BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS`   | Key rotation decrypt                                               |
-| `BOSSRAID_INFERENCE_GATEWAY_BASE`            | Public base URL for hosted seller gateway (`/gateway/:providerId`) |
-| `BOSSRAID_VENICE_MOCK`                       | `1` = mock Venice upstream for local/tests                         |
-| `BOSSRAID_UPSTREAM_MOCK`                     | `1` = mock Redpill/NEAR/Chutes/Phala upstream list                 |
-| `BOSSRAID_UPSTREAM_TEE_MOCK`                 | `1` = mock upstream TEE attestation verification                   |
-| `BOSSRAID_UPSTREAM_TEE_CLOUD_VERIFY`         | `0` disables Phala Cloud quote verification (default: verify)      |
-| `PHALA_CLOUD_ATTESTATION_VERIFY_URL`         | Override Phala Cloud quote verify endpoint                         |
-| `BOSSRAID_VENICE_API_KEY`                    | Optional platform key for catalog TEE attest                       |
-| `BOSSRAID_REDPILL_API_KEY`                   | Optional platform key for catalog TEE attest                       |
-| `BOSSRAID_NEAR_API_KEY`                      | Optional platform key for catalog TEE attest                       |
-| `BOSSRAID_CHUTES_API_KEY`                    | Optional platform key for catalog TEE attest                       |
-| `BOSSRAID_PHALA_API_KEY`                     | Optional platform key for catalog TEE attest                       |
-| `BOSSRAID_PROVIDER_HEALTH_TIMEOUT_MS`        | Health probe timeout                                               |
-| `BOSSRAID_TRUST_PROXY`                       | Trust forwarded headers                                            |
-| `BOSSRAID_METRICS_PUBLIC`                    | `true` exposes `/metrics` without admin auth (default: admin only) |
+| Variable                                     | Purpose                                                             |
+| -------------------------------------------- | ------------------------------------------------------------------- |
+| `BOSSRAID_ADMIN_TOKEN`                       | Admin bearer + ops session bootstrap                                |
+| `BOSSRAID_REGISTRY_TOKEN`                    | `POST /agents/register`                                             |
+| `BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST`       | Chat budget fallback                                                |
+| `BOSSRAID_PUBLIC_RATE_LIMIT_*`               | Public spawn/chat limits                                            |
+| `BOSSRAID_BUYER_KEY_RATE_LIMIT_*`            | Per API-key limits                                                  |
+| `BOSSRAID_BUYER_KEY_DEFAULT_SPEND_LIMIT_USD` | Default key cap (default `25`; production-readiness gate)           |
+| `BOSSRAID_BUYER_MAX_REQUEST_BUDGET_USD`      | Server max request budget (default `50`; production-readiness gate) |
+| `BOSSRAID_SECRET_ENCRYPTION_KEY`             | Encrypt secrets at rest (required for Venice seller keys in prod)   |
+| `BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS`   | Key rotation decrypt                                                |
+| `BOSSRAID_INFERENCE_GATEWAY_BASE`            | Public base URL for hosted seller gateway (`/gateway/:providerId`)  |
+| `BOSSRAID_VENICE_MOCK`                       | `1` = mock Venice upstream for local/tests                          |
+| `BOSSRAID_UPSTREAM_MOCK`                     | `1` = mock Redpill/NEAR/Chutes/Phala upstream list                  |
+| `BOSSRAID_UPSTREAM_TEE_MOCK`                 | `1` = mock upstream TEE attestation verification                    |
+| `BOSSRAID_UPSTREAM_TEE_CLOUD_VERIFY`         | `0` disables Phala Cloud quote verification (default: verify)       |
+| `PHALA_CLOUD_ATTESTATION_VERIFY_URL`         | Override Phala Cloud quote verify endpoint                          |
+| `BOSSRAID_VENICE_API_KEY`                    | Optional platform key for catalog TEE attest                        |
+| `BOSSRAID_REDPILL_API_KEY`                   | Optional platform key for catalog TEE attest                        |
+| `BOSSRAID_NEAR_API_KEY`                      | Optional platform key for catalog TEE attest                        |
+| `BOSSRAID_CHUTES_API_KEY`                    | Optional platform key for catalog TEE attest                        |
+| `BOSSRAID_PHALA_API_KEY`                     | Optional platform key for catalog TEE attest                        |
+| `BOSSRAID_PROVIDER_HEALTH_TIMEOUT_MS`        | Health probe timeout                                                |
+| `BOSSRAID_TRUST_PROXY`                       | Trust forwarded headers                                             |
+| `BOSSRAID_METRICS_PUBLIC`                    | `true` exposes `/metrics` without admin auth (default: admin only)  |
 
 ## x402
 
@@ -849,12 +858,17 @@ Workflow: [operators/appendix/infisical.md](../operators/appendix/infisical.md).
 
 ## ERC-8004 & attestation
 
-| Variable                                            | Purpose                          |
-| --------------------------------------------------- | -------------------------------- |
-| `BOSSRAID_ERC8004_VERIFY`                           | Live onchain identity checks     |
-| `BOSSRAID_ERC8004_*`                                | Mercenary/provider identity refs |
-| `MNEMONIC`                                          | Host attestation signing         |
-| `BOSSRAID_TEE_PLATFORM`, `BOSSRAID_TEE_SOCKET_PATH` | Phala TEE (default `phala`)      |
+| Variable                              | Purpose                                                                                                                                                                                                                                                                                             |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BOSSRAID_ERC8004_VERIFY`             | Live onchain identity checks                                                                                                                                                                                                                                                                        |
+| `BOSSRAID_ERC8004_*`                  | Mercenary/provider identity refs                                                                                                                                                                                                                                                                    |
+| `MNEMONIC`                            | Signs host `signedRuntime` envelopes (`GET /v1/host/attestation`, admin `GET /v1/attested-runtime`, raid `GET /v1/raid/:raidId/attested-result`); does not set `teeVerified`. **Required on Phala production** (`mnemonic_configured` production-readiness gate). Phala core Infisical tier secret. |
+| `BOSSRAID_TEE_PLATFORM`               | Host TEE platform label (`phala`, `eigencompute`, etc.)                                                                                                                                                                                                                                             |
+| `BOSSRAID_TEE_RUNTIME_MODE`           | Runtime mode recorded in TEE attestations (default `phala-cvm`)                                                                                                                                                                                                                                     |
+| `BOSSRAID_TEE_SOCKET_PATH`            | Phala dstack guest agent socket (default `/var/run/dstack.sock`; set `/var/run/tappd.sock` on legacy tappd-only hosts)                                                                                                                                                                              |
+| `BOSSRAID_HOST_TEE_SKIP_CLOUD_VERIFY` | `1` = structural TDX verify only on host route; unset = Phala Cloud verify. **Blocked in production** (`NODE_ENV=production` + production-readiness)                                                                                                                                                |
+| `BOSSRAID_UPSTREAM_TEE_CLOUD_VERIFY`  | `0` disables cloud verify for marketplace/upstream TEE paths                                                                                                                                                                                                                                        |
+| `BOSSRAID_PRIVACY_SERVER_VERIFY`      | `0` = dev-only: skip server-side provider privacy attestation re-verify. **Blocked in production**                                                                                                                                                                                                  |
 
 ## Evaluator
 
@@ -912,14 +926,16 @@ Workflow: [operators/appendix/infisical.md](../operators/appendix/infisical.md).
 | `VENICE_API_KEY`     | Venice image edit + image-to-video for OC regen         |
 | `VENICE_VIDEO_MODEL` | Video model override (default `wan-2-7-image-to-video`) |
 
-Stored in `.private/.env` (untracked). Used by `pnpm generate:legal-character`.
+Stored in `.private/.env` (untracked). Used by `pnpm bossraid generate:legal-character`.
 
 ## Production acknowledgements
 
-| Variable                         | Purpose                   |
-| -------------------------------- | ------------------------- |
-| `BOSSRAID_OPERATOR_TERMS_ACK`    | Production-readiness gate |
-| `BOSSRAID_INCIDENT_RESPONSE_ACK` | Production-readiness gate |
+| Variable                         | Purpose                                                   |
+| -------------------------------- | --------------------------------------------------------- |
+| `BOSSRAID_OPERATOR_TERMS_ACK`    | Production-readiness gate (`true` before full production) |
+| `BOSSRAID_INCIDENT_RESPONSE_ACK` | Production-readiness gate (`true` before full production) |
+
+Outside `NODE_ENV=production`, `node_env_production`, `onchain_settlement`, and `tee_attestation` report as warnings instead of blocking failures so controlled local launch can pass `GET /v1/ops/production-readiness` while infra is still being wired.
 
 
 ---
@@ -1032,10 +1048,12 @@ URL: /docs/operators/runtime
 
 Verification, deploy, and operator workflows. Env tables: [reference/env.md](../reference/env.md). Local install and default URLs: [Local development](/dev-docs/operators/local-development) in dev-docs.
 
+Contributor scripts (`check`, `build`, `dev`, `test:*`) live in root `package.json`. Operator, deploy, and integration commands use `pnpm bossraid <command>` — run `pnpm bossraid help` for the full list.
+
 Refresh inference catalog + reference pricing JSON:
 
 ```bash
-pnpm sync:inference-catalog
+pnpm bossraid sync:inference-catalog
 ```
 
 Writes `packages/constants/src/inference-catalog.ts` and `packages/constants/data/inference-model-pricing.json` (Venice rates from public `/models`; Redpill, NEAR, Chutes, Phala from static script rates).
@@ -1043,11 +1061,11 @@ Writes `packages/constants/src/inference-catalog.ts` and `packages/constants/dat
 Regenerate legal-page Mercenary float (Venice; requires `VENICE_API_KEY` in `.private/.env`):
 
 ```bash
-pnpm sync:oc-references
-pnpm generate:pfp               # Mercenary bust portrait → assets/boss-raid-pfp.png
-pnpm generate:landing-hero      # seller / raider / buyer manga panels → apps/web/src/assets/
-pnpm generate:legal-character   # keyframe + clip + webm export
-pnpm export:legal-character   # re-export webm from existing S07 MP4 only
+pnpm bossraid sync:oc-references
+pnpm bossraid generate:pfp               # Mercenary bust portrait → assets/boss-raid-pfp.png
+pnpm bossraid generate:landing-hero      # seller / raider / buyer manga panels → apps/web/src/assets/
+pnpm bossraid generate:legal-character   # keyframe + clip + webm export
+pnpm bossraid export:legal-character   # re-export webm from existing S07 MP4 only
 ```
 
 See [Legal Character Art](/dev-docs/brand/legal-character-art) in dev-docs.
@@ -1055,7 +1073,7 @@ See [Legal Character Art](/dev-docs/brand/legal-character-art) in dev-docs.
 Gateway (built web + ops on one origin):
 
 ```bash
-pnpm serve:gateway
+pnpm bossraid serve:gateway
 ```
 
 Serves `/`, `/ops/`, proxies `/api/*` and `/ops-api/*`, exposes `/healthz`.
@@ -1096,16 +1114,16 @@ BOSSRAID_API_ORIGIN=https://bossraid-web.pages.dev/api pnpm --filter @bossraid/w
 pnpm check
 pnpm build
 pnpm dev
-pnpm serve:gateway
+pnpm bossraid serve:gateway
 pnpm test:unit
 pnpm test:money-path
 pnpm --filter @bossraid/api test src/marketplace-inference.test.ts
 pnpm --filter @bossraid/api test:all
 pnpm --filter @bossraid/web test src/lib/*.test.ts
-pnpm mercenary:rehearse
-pnpm export:proof-bundle -- --raid-id <raidId>
-pnpm verify:attestation
-pnpm deploy:web:cloudflare
+pnpm bossraid mercenary:rehearse
+pnpm bossraid export:proof-bundle -- --raid-id <raidId>
+pnpm bossraid verify:attestation
+pnpm bossraid deploy:web:cloudflare
 ```
 
 Cloudflare Pages deploy (requires Wrangler auth):
@@ -1113,30 +1131,42 @@ Cloudflare Pages deploy (requires Wrangler auth):
 ```bash
 BOSSRAID_CLOUDFLARE_PAGES_PROJECT=bossraid-web \
 BOSSRAID_API_ORIGIN=https://<your-phala-or-public-api-host>/api \
-pnpm deploy:web:cloudflare
+pnpm bossraid deploy:web:cloudflare
 ```
 
 Set the Cloudflare Pages secret `BOSSRAID_API_ORIGIN` to your public API host (Phala CVM), not a self-referential `pages.dev/api` loop. The API host must have `BOSSRAID_X402_ENABLED=true` before wallet top-ups work.
 
+## Host attestation
+
+`pnpm bossraid verify:attestation` checks MNEMONIC-signed envelopes from JSON (`attested-runtime` or `attested-result` payloads). It does not validate Phala TDX quotes.
+
+Phala operators can probe the public host route:
+
+```bash
+curl -sS "${BOSSRAID_API_ORIGIN:-http://127.0.0.1:8787}/v1/host/attestation" | jq '{verified, teeVerified, runtimeSigned, teePlatform}'
+```
+
+Set `BOSSRAID_TEE_SOCKET_PATH=/var/run/dstack.sock` and `BOSSRAID_TEE_PLATFORM=phala` on CVM deploys. Use `BOSSRAID_HOST_TEE_SKIP_CLOUD_VERIFY=1` only when Phala Cloud verify is unavailable.
+
 Full command list (settlement, docker, Phala, contracts):
 
 ```bash
-pnpm test:game-raid:e2e
-pnpm test:strict-private:e2e
-pnpm test:mcp:e2e
-pnpm test:x402:e2e
+pnpm test:smoke:e2e
+pnpm bossraid test:strict-private:e2e
+pnpm bossraid test:mcp:e2e
+pnpm bossraid test:x402:e2e
 pnpm test:bounty-escrow:local
-pnpm test:bounty-escrow:e2e
-pnpm test:bounty-escrow:production
-pnpm settle:raid -- --raid-id <raidId>
-pnpm generate:settlement-keys
-pnpm bootstrap:settlement
-pnpm docker:up
-pnpm bootstrap:phala:env
-pnpm production:cutover
-pnpm infisical:phala:pull
-pnpm infisical:phala:push
-pnpm infisical:phala:prune-legacy
+pnpm bossraid test:bounty-escrow:e2e
+pnpm bossraid test:bounty-escrow:production
+pnpm bossraid settle:raid -- --raid-id <raidId>
+pnpm bossraid generate:settlement-keys
+pnpm bossraid bootstrap:settlement
+pnpm bossraid docker:up
+pnpm bossraid bootstrap:phala:env
+pnpm bossraid production:cutover
+pnpm bossraid infisical:phala:pull
+pnpm bossraid infisical:phala:push
+pnpm bossraid infisical:phala:prune-legacy
 ```
 
 `production:cutover` normalizes provider settlement IDs (`dottie` / `riko` / `gamma`), deploys Base contracts when `BOSSRAID_DEPLOYER_PRIVATE_KEY` is funded, merges addresses into `deploy/phala/secrets.onchain.env`, and reassembles `deploy/phala/.env`. Use `--skip-deploy` when contract addresses are already in `temp/contracts/deployment.json`.
@@ -1156,16 +1186,16 @@ See [appendix/synthesis-registration.md](appendix/synthesis-registration.md).
 ### 2. Settlement keys
 
 ```bash
-pnpm generate:settlement-keys
-pnpm deploy:contracts   # needs BOSSRAID_RPC_URL, BOSSRAID_DEPLOYER_PRIVATE_KEY
-pnpm bootstrap:settlement
+pnpm bossraid generate:settlement-keys
+pnpm bossraid deploy:contracts   # needs BOSSRAID_RPC_URL, BOSSRAID_DEPLOYER_PRIVATE_KEY
+pnpm bossraid bootstrap:settlement
 ```
 
 Fund client wallet (USDC for escrow), provider wallets (~0.01 ETH gas each).
 
 ### 2b. Bounty escrow (onchain)
 
-`pnpm bootstrap:settlement` writes `BOSSRAID_BOUNTY_ESCROW_ADDRESS` alongside raid escrow addresses. Production onchain mode requires it; `GET /v1/ops/production-readiness` reports `bounty_escrow_configured`.
+`pnpm bossraid bootstrap:settlement` writes `BOSSRAID_BOUNTY_ESCROW_ADDRESS` alongside raid escrow addresses. Production onchain mode requires it; `GET /v1/ops/production-readiness` reports `bounty_escrow_configured`.
 
 Operator wallet (`BOSSRAID_CLIENT_PRIVATE_KEY`) must hold:
 
@@ -1184,21 +1214,21 @@ Buyer flow:
 Dev-only bypass: `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND=true` (forbidden in production audit). Smoke tests:
 
 ```bash
-pnpm test:bounty-escrow:local          # zero-config; auto onchain when temp/settlement-bootstrap.env exists
-pnpm test:bounty-escrow:e2e            # against running API; defaults to dottie + bossraid-provider-a
-pnpm test:bounty-escrow:production     # wallet mode; caps reward via BOSSRAID_BOUNTY_E2E_REWARD_USD
+pnpm test:bounty-escrow:local                        # zero-config; auto onchain when temp/settlement-bootstrap.env exists
+pnpm bossraid test:bounty-escrow:e2e                 # against running API; defaults to bounty-e2e-provider
+pnpm bossraid test:bounty-escrow:production          # wallet mode; caps reward via BOSSRAID_BOUNTY_E2E_REWARD_USD
 ```
 
-`test:bounty-escrow:local` spins an ephemeral API, uses `dottie` / `bossraid-provider-a` from the provider seed file, and skips x402 unless bootstrap settlement env is present. Optional overrides: [`examples/bounty-e2e.env.example`](../../examples/bounty-e2e.env.example). Provider/agent curl flow: [sellers/bounties.md](../sellers/bounties.md).
+`test:bounty-escrow:local` spins an ephemeral API, uses `bounty-e2e-provider` from [`examples/bounty-e2e.providers.json`](../../examples/bounty-e2e.providers.json), and skips x402 unless bootstrap settlement env is present. Optional overrides: [`examples/bounty-e2e.env.example`](../../examples/bounty-e2e.env.example). Provider/agent curl flow: [sellers/bounties.md](../sellers/bounties.md).
 
 ### 3. Phala deploy
 
 ```bash
 cp deploy/phala/secrets.core.env.example deploy/phala/secrets.core.env
-# optional: deploy/phala/secrets.onchain.env after pnpm bootstrap:settlement
-pnpm bootstrap:phala:env
-pnpm phala:secrets:check deploy/phala/.env
-pnpm infisical:phala:push
+# optional: deploy/phala/secrets.onchain.env after pnpm bossraid bootstrap:settlement
+pnpm bossraid bootstrap:phala:env
+pnpm bossraid phala:secrets:check deploy/phala/.env
+pnpm bossraid infisical:phala:push
 ```
 
 ```bash
@@ -1331,6 +1361,22 @@ Buyers still use `POST /v1/inference/chat/completions`. The static inference cat
 
 `raid-core`, `provider-registry`, `provider-sdk`, `persistence` / `persistence-sqlite`, `evaluation`, `sandbox-runner`, `privacy-engine`, `smart-pay`, `contracts`, `shared-types`, `ui`.
 
+## Attestation & proof
+
+| Surface              | Route                                  | Purpose                                                                                              |
+| -------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Public host          | `GET /v1/host/attestation`             | Phala TDX quote via dstack (`/var/run/dstack.sock`); optional `signedRuntime` when `MNEMONIC` is set |
+| Admin runtime        | `GET /v1/attested-runtime`             | Signed runtime envelope for operators                                                                |
+| Raid result          | `GET /v1/raid/:raidId/attested-result` | Signed synthesized output                                                                            |
+| Marketplace upstream | `POST /v1/marketplace/tee/attestation` | Hosted seller TEE verification                                                                       |
+| Web inspector        | Sidebar, receipt, marketplace panels   | Host quote, runtime signing, upstream TEE rows                                                       |
+
+Host attestation exposes separate signals: `teeVerified` (hardware quote) and `runtimeSigned` (MNEMONIC envelope). Top-level `verified` tracks TEE quote validity only.
+
+Strict-private raids re-verify provider privacy attestations server-side (`BOSSRAID_PRIVACY_SERVER_VERIFY`, default on). Provider callbacks alone are not trusted for `featuresVerified`.
+
+Known gaps: `MNEMONIC` is not in the Phala core secrets tier; attestation telemetry on raid timelines is still partial. See [proof.md](../overview/proof.md).
+
 ## Constraints
 
 - Providers are HTTP only.
@@ -1446,7 +1492,7 @@ Boss Raid lets a developer or another agent submit one task through `POST /v1/ra
 | Track                               | What Boss Raid shows                                                                                                                 | Main proof in repo                                                                                                              | Current truth                                                                                                                          |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Synthesis Open Track                | One request becomes one managed multi-agent raid with one result and one proof surface.                                              | `POST /v1/raid`, `/receipt`, `GET /v1/agent.json`, `GET /v1/raid/:raidId/agent_log.json?token=...`                              | Strong now.                                                                                                                            |
-| Venice                              | Strict-private routing prefers Venice-backed providers and keeps the privacy decision visible in routing proof.                      | `examples/strict-private-raid.json`, `pnpm test:strict-private:e2e`                                                             | Strong now when Venice-backed providers are configured.                                                                                |
+| Venice                              | Strict-private routing prefers Venice-backed providers and keeps the privacy decision visible in routing proof.                      | `examples/strict-private-raid.json`, `pnpm bossraid test:strict-private:e2e`                                                    | Strong now when Venice-backed providers are configured.                                                                                |
 | Base Agent Services                 | Boss Raid is an agent service with public HTTP ingress, discovery, and x402 payment gating.                                          | `POST /v1/raid`, `POST /v1/chat/completions`, x402 routes, Base-oriented settlement env in repo                                 | Strong now for service shape; stronger with live paid traffic.                                                                         |
 | Protocol Labs: Let the Agent Cook   | Mercenary runs the discover, plan, route, verify, synthesize, and settle loop with public manifest and run log proof.                | `GET /v1/agent.json`, `GET /v1/raid/:raidId/agent_log.json?token=...`, MCP tool flow                                            | Strong now.                                                                                                                            |
 | Protocol Labs: Agents With Receipts | Boss Raid can surface ERC-8004 identity refs, trust-gated routing, receipt proof, and DevSpot-style manifest plus run log.           | provider `erc8004` metadata, `requireErc8004`, `minTrustScore`, receipt, `agent.json`, `agent_log.json`                         | Good architecture now. Final sponsor-grade proof still needs real live ERC-8004 tx refs.                                               |
@@ -1617,8 +1663,8 @@ Do not commit Infisical auth tokens or `deploy/phala/*.env` files.
 ```bash
 cp deploy/phala/secrets.core.env.example deploy/phala/secrets.core.env
 # fill secrets.core.env; optionally cp secrets.onchain.env.example → secrets.onchain.env
-pnpm bootstrap:phala:env
-pnpm phala:secrets:check deploy/phala/.env
+pnpm bossraid bootstrap:phala:env
+pnpm bossraid phala:secrets:check deploy/phala/.env
 ```
 
 `bootstrap:phala:env` writes:
@@ -1630,8 +1676,8 @@ pnpm phala:secrets:check deploy/phala/.env
 ## Push / pull
 
 ```bash
-pnpm infisical:phala:push
-pnpm infisical:phala:pull
+pnpm bossraid infisical:phala:push
+pnpm bossraid infisical:phala:pull
 ```
 
 Push uploads tier files (or splits `deploy/phala/.env`) into:
@@ -1645,7 +1691,7 @@ Migrate off the legacy flat path:
 
 ```bash
 pnpm infisical:phala:push
-pnpm infisical:phala:prune-legacy
+pnpm bossraid infisical:phala:prune-legacy
 ```
 
 ## Deploy to Phala
