@@ -5,7 +5,7 @@ import path from 'path';
 
 import { getContentCollection } from '../shared/content-collections.js';
 import { resolveCollectionContentRoot } from './lib/collectionContentRoot.mjs';
-import { documentationTree, homepageConfig } from '../shared/documentation-config.js';
+import { documentationTree, homepageConfig, openapiConfig } from '../shared/documentation-config.js';
 import { createLlmsArtifacts } from './lib/llmsArtifacts.mjs';
 
 const rootDir = process.cwd();
@@ -23,6 +23,7 @@ async function main() {
     const { llmsTxt, llmsFullTxt, resolvedFileCount, expectedFileCount } = createLlmsArtifacts({
       documentationTree,
       homepageConfig,
+      openapiConfig,
       rootDir,
       contentRoot: docsContentRoot,
     });

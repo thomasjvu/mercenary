@@ -33,7 +33,7 @@ export const i18nConfig = {
 /** @type {import('./documentation-config.js').OpenApiConfig} */
 export const openapiConfig = {
   enabled: true,
-  pagePath: 'reference/openapi',
+  routePrefix: '/api',
   defaultSpecId: 'public',
   specs: [
     {
@@ -206,7 +206,6 @@ export const documentationTree = [
     path: 'reference',
     children: [
       { type: 'file', name: 'Routes.md', path: 'reference/routes', tags: ['api', 'routes'] },
-      { type: 'file', name: 'OpenAPI.md', path: 'reference/openapi', tags: ['api', 'openapi'] },
       { type: 'file', name: 'Environment.md', path: 'reference/env', tags: ['env', 'config'] },
       { type: 'file', name: 'Payments.md', path: 'reference/payments', tags: ['x402', 'payments'] },
     ],

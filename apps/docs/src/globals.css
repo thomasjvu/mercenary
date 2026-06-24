@@ -1358,14 +1358,41 @@ code {
   }
 }
 
+.openapi-page {
+  height: 100vh;
+  height: 100dvh;
+}
+
+.openapi-page-main {
+  min-height: 0;
+}
+
 .openapi-reference-shell {
-  min-height: 70vh;
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.openapi-page .openapi-reference-shell {
+  min-height: 0;
 }
 
 .openapi-reference-shell .scalar-api-reference {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.doc-content .openapi-reference-shell {
+  min-height: 70vh;
+}
+
+.doc-content .openapi-reference-shell .scalar-api-reference {
   border: 1px solid var(--border-unified);
   border-radius: var(--radius-md);
-  overflow: hidden;
 }
 
 .doc-content .legal-page-header .legal-last-updated {

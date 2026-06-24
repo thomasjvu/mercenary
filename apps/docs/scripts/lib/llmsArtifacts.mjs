@@ -115,6 +115,23 @@ export function createLlmsArtifacts(options = {}) {
 
   processTree(documentationTree);
 
+  const openapiConfig = options.openapiConfig;
+  if (openapiConfig?.enabled && openapiConfig.specs?.length > 0) {
+    const routePrefix = openapiConfig.routePrefix || '/api';
+
+    sections.push({
+      title: 'API Reference',
+      items: openapiConfig.specs.map((spec) => ({
+        title: spec.label,
+        path:
+          spec.id === openapiConfig.defaultSpecId
+            ? routePrefix
+            : `${routePrefix}/${spec.id}`,
+        description: spec.description || 'Interactive OpenAPI reference.',
+      })),
+    });
+  }
+
   let llmsTxt = `# ${siteName} Documentation\n\n`;
 
   if (siteSubtitle) {

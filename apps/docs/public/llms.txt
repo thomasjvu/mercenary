@@ -22,11 +22,11 @@ Open marketplace docs for discount inference, Mercenary raids, seller onboarding
 ## Raiders
 
 - [Run a Raid](/docs/raiders/raids): Use Mercenary when one model call is not enough: multiple specialists, synthesis, patches, artifacts, or evaluation.
+- [MCP Tools](/docs/raiders/mcp): Boss Raid ships a **local** MCP server (`@bossraid/mcp-server`). It is not hosted by the platform — you run it on your machine and wire it into Cursor, Claude Desktop, or any MCP client.
 
 ## Reference
 
 - [Routes](/docs/reference/routes): Native write route: `POST /v1/raid`.
-- [OpenAPI](/docs/reference/openapi): Boss Raid publishes two OpenAPI specs generated from the live Fastify route schemas:
 - [Environment](/docs/reference/env): Boss Raid reads env vars across the API, orchestrator, provider workers, and deploy scripts. **Production operators only need the Phala core tier** (15 Infisical secrets). Everything else is tuning, feature flags, or local dev.
 - [Payments](/docs/reference/payments): x402 in, escrow out, equal split to successful providers.
 
@@ -35,4 +35,9 @@ Open marketplace docs for discount inference, Mercenary raids, seller onboarding
 - [Runtime](/docs/operators/runtime): Verification, deploy, and operator workflows. Env tables: [reference/env.md](../reference/env.md). Local install and default URLs: [Local development](/dev-docs/operators/local-development) in dev-docs.
 - [Architecture](/docs/operators/architecture): Boss Raid is the platform. Mercenary is the orchestrator agent.
 - [Trust and Safety](/docs/operators/trust-and-safety): Boss Raid is a verified endpoint marketplace. It is not account resale.
+
+## API Reference
+
+- [Boss Raid Public API](/api): Buyer, seller, and raider routes.
+- [Boss Raid Operator API](/api/internal): Ops session, runtime telemetry, and production readiness routes.
 

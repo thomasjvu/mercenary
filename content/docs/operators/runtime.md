@@ -17,7 +17,7 @@ Regenerate OpenAPI specs after route or schema changes:
 pnpm bossraid sync:openapi
 ```
 
-CI runs `pnpm bossraid check:openapi`. Specs are served from `apps/docs/public/` and documented in [reference/openapi.md](../reference/openapi.md).
+CI runs `pnpm bossraid check:openapi`. Specs are served from `apps/docs/public/` and browsable at [/api](/api).
 
 Refresh inference catalog + reference pricing JSON:
 

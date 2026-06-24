@@ -3,9 +3,6 @@ import { useEffect, useMemo, useState } from 'react';
 
 import HostedFilePreview from '../components/HostedFilePreview';
 import DocumentationPage from '../components/docs/DocumentationPage';
-import OpenApiPage from './OpenApiPage';
-import { getOpenApiPagePath } from '../lib/openapi';
-import { openapiConfig } from '../../shared/documentation-config.js';
 import { getContentCollection } from '../data/collections';
 import { getDocument, resolveDocumentPath } from '../lib/content';
 import { createLogger } from '../utils/logger';
@@ -56,19 +53,6 @@ export default function CollectionDocsPage({ collectionId }: CollectionDocsPageP
     [collection, docPath, routeContext.activeLocale, routeContext.activeVersion]
   );
   const hostedAssetConfig = useMemo(() => getHostedAssetPageConfig(docPath), [docPath]);
-  const openApiPagePath = getOpenApiPagePath();
-  const openApiSpecId = useMemo(() => {
-    if (!openapiConfig.enabled || !docPath.startsWith(openApiPagePath)) {
-      return undefined;
-    }
-
-    if (docPath === openApiPagePath) {
-      return undefined;
-    }
-
-    return docPath.slice(openApiPagePath.length + 1) || undefined;
-  }, [docPath, openApiPagePath]);
-  const isOpenApiPage = openapiConfig.enabled && docPath.startsWith(openApiPagePath);
   const renderedContent = useMemo(
     () => (hostedAssetConfig ? stripHostedAssetPreview(content, docPath) : content),
     [content, docPath, hostedAssetConfig]
@@ -181,10 +165,6 @@ export default function CollectionDocsPage({ collectionId }: CollectionDocsPageP
       noIndex,
     });
   }, [canonicalPath, collection.description, docDescription, docTitle]);
-
-  if (isOpenApiPage) {
-    return <OpenApiPage specId={openApiSpecId} />;
-  }
 
   if (!hasLoadedOnce && loading) {
     return (

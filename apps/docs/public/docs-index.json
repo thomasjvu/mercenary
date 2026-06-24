@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-24T21:14:57.131Z",
+  "generated": "2026-06-24T21:19:14.851Z",
   "paths": [
     "overview/introduction",
     "overview/proof",
@@ -10,7 +10,6 @@
     "raiders/raids",
     "raiders/mcp",
     "reference/routes",
-    "reference/openapi",
     "reference/env",
     "reference/payments",
     "operators/runtime",
@@ -19,7 +18,7 @@
     "llms",
     "skill"
   ],
-  "count": 17,
+  "count": 16,
   "titles": {
     "overview/introduction": "Introduction",
     "overview/proof": "Proof & Receipts",
@@ -30,7 +29,6 @@
     "raiders/raids": "Run a Raid",
     "raiders/mcp": "MCP tools",
     "reference/routes": "Routes",
-    "reference/openapi": "OpenAPI",
     "reference/env": "Environment Variables",
     "reference/payments": "Payments",
     "operators/runtime": "Runtime & Commands",
