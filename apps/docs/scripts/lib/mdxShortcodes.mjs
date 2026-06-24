@@ -159,8 +159,8 @@ function transformCharacterNote(node) {
     className: 'papers-character-note__avatar',
     src: characterNoteAvatars[safeType],
     alt: '',
-    width: 96,
-    height: 96,
+    width: 64,
+    height: 64,
     loading: 'lazy',
     decoding: 'async',
   });
