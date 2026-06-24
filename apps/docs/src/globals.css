@@ -1162,7 +1162,7 @@ code {
 .doc-content .papers-character-note {
   display: grid;
   grid-template-columns: minmax(0, 15%) minmax(0, 85%);
-  align-items: start;
+  align-items: center;
   gap: var(--space-3);
   margin: var(--space-4) 0;
   padding: var(--space-3) var(--space-4);
@@ -1199,10 +1199,21 @@ code {
 }
 
 .doc-content .papers-character-note__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-self: center;
   min-width: 0;
   color: var(--muted-color);
   font-size: var(--text-sm);
   line-height: 1.45;
+}
+
+.doc-content .papers-character-note__body p {
+  margin: 0;
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
 }
 
 .doc-content .papers-character-note__body > :first-child {
