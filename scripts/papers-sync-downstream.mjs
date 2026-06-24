@@ -16,7 +16,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 
 import {
@@ -190,25 +190,20 @@ function applyChanges(changed) {
     cpSync(entry.localPath, entry.upstreamPath);
   }
 
-  if (!dryRun && apply) {
-    const summaryPath = join(cacheDir, '.boss-raid-downstream-summary.txt');
-    const lines = [
-      'Boss Raid downstream sync',
-      `Repo: ${PAPERS_REPO}`,
-      `Changed files: ${changed.length}`,
-      '',
-      ...changed.map((entry) => `${entry.status}\t${entry.relativePath}`),
-      '',
-      'Next:',
-      '  cd .cache/papers-upstream',
-      '  git status',
-      '  git add -A',
-      '  git commit -m "feat: framework improvements from boss-raid dogfood"',
-      '  git push origin <branch>',
-      '  gh pr create --repo thomasjvu/papers',
-    ];
-    writeFileSync(summaryPath, `${lines.join('\n')}\n`);
-    console.log(`Wrote ${relative(repoRoot, summaryPath)}`);
+  if (!dryRun && apply && changed.length > 0) {
+    console.log('');
+    console.log('Downstream copy complete. Review .cache/papers-upstream and open a PR to thomasjvu/papers.');
+    console.log(`Changed files: ${changed.length}`);
+    for (const entry of changed) {
+      console.log(`  ${entry.status}\t${entry.relativePath}`);
+    }
+    console.log('');
+    console.log('Next:');
+    console.log('  cd .cache/papers-upstream');
+    console.log('  git status');
+    console.log('  git add -A');
+    console.log('  git commit -m "feat: framework improvements from dogfood"');
+    console.log('  git push origin <branch>');
   }
 }
 

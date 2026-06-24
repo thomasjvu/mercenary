@@ -1,8 +1,9 @@
 {
-  "generated": "2026-06-24T19:06:11.682Z",
+  "generated": "2026-06-24T19:49:29.704Z",
   "paths": [
     "overview/introduction",
     "overview/proof",
+    "overview/privacy-and-data",
     "buyers/discount-inference",
     "buyers/buy",
     "sellers/sell",
@@ -16,10 +17,11 @@
     "llms",
     "skill"
   ],
-  "count": 14,
+  "count": 15,
   "titles": {
     "overview/introduction": "Introduction",
     "overview/proof": "Proof & Receipts",
+    "overview/privacy-and-data": "Privacy & Data",
     "buyers/discount-inference": "Discount inference",
     "buyers/buy": "Buy Inference",
     "sellers/sell": "Sell Inference",

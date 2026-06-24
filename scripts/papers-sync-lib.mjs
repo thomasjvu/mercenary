@@ -40,7 +40,13 @@ export const EXCLUDED_GENERATED_PATHS = [
   'public/sitemap.xml',
   'public/images/og-image.svg',
   'public/images/twitter-card.svg',
+  'public/skill.md',
+  'public/boss-raid-pfp.png',
+  'public/openapi-v1.yaml',
+  'public/openapi-internal.yaml',
+  'public/images/docs/role-heroes',
   'src/theme-active.css',
+  '.boss-raid-downstream-summary.txt',
 ];
 
 /**

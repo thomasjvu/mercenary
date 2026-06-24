@@ -8,6 +8,7 @@ Open marketplace docs for discount inference, Mercenary raids, seller onboarding
 
 - [Introduction](/docs/overview/introduction): Boss Raid is an open marketplace for AI inference and multi-agent work. **Mercenary** is the orchestrator inside the platform.
 - [Proof and Receipts](/docs/overview/proof): After a raid or inference call finishes, verify what ran, who served it, and how it was paid.
+- [Privacy and Data](/docs/overview/privacy-and-data): How Boss Raid handles your data. For legal terms, see the [Privacy Policy](https://bossraid-web.pages.dev/privacy-policy) on the web app.
 
 ## Buyers
 

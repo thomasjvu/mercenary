@@ -1,15 +1,17 @@
 {
-  "generated": "2026-06-24T19:06:11.705Z",
+  "generated": "2026-06-24T19:49:29.715Z",
   "paths": [
     "operators/local-development",
     "operators/infisical",
+    "operators/data-storage",
     "brand/rx-78-design-system",
     "brand/landing-hero-art"
   ],
-  "count": 4,
+  "count": 5,
   "titles": {
     "operators/local-development": "Local Development",
     "operators/infisical": "Infisical Secret Workflow",
+    "operators/data-storage": "Data Storage",
     "brand/rx-78-design-system": "rx-78-design-system",
     "brand/landing-hero-art": "Landing hero art"
   }

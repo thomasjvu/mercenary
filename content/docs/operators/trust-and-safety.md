@@ -2,7 +2,7 @@
 
 Boss Raid is a verified endpoint marketplace. It is not account resale.
 
-Read seller and buyer boundaries first, then payment and privacy gates. Registration steps: [sell.md](../sellers/sell.md).
+Read seller and buyer boundaries first, then payment and privacy gates. Data practices: [privacy-and-data.md](../overview/privacy-and-data.md). Registration steps: [sell.md](../sellers/sell.md).
 
 ## Seller boundary
 

@@ -72,6 +72,7 @@ Discount inference covers API-key billing, prepaid balance, purchase history, se
 - **Operators** → [operators/runtime.md](../operators/runtime.md)
 - **Agent skill** → `/skill.md` (install page: `/skill` on docs)
 - **MCP tools** → [raiders/raids.md](../raiders/raids.md#mcp) (local IDE agents)
+- **Privacy & data** → [overview/privacy-and-data.md](privacy-and-data.md)
 - **Local development** → [dev-docs/operators/local-development](/dev-docs/operators/local-development)
 
 
@@ -150,6 +151,71 @@ For strict-private or attested runs, add these checks:
 | `GET /v1/inference/receipts/:receiptId/verify`  | none                    | Receipt verification summary                                        |
 
 Architecture detail: [operators/architecture.md](../operators/architecture.md#attestation--proof).
+
+
+---
+
+
+### Privacy and Data
+
+URL: /docs/overview/privacy-and-data
+
+# Privacy & Data
+
+How Boss Raid handles your data. For legal terms, see the [Privacy Policy](https://bossraid-web.pages.dev/privacy-policy) on the web app.
+
+## Short answer
+
+Boss Raid is **wallet-first**, not email-first. We do not sell personal information, run ad tracking, or require a traditional user profile. We **do** store operational records — wallet addresses, billing metadata, raid receipts, and encrypted seller credentials — so the marketplace can route work, settle payments, and show account history.
+
+## What we store
+
+| Data                               | Why                                                     | Where                                        |
+| ---------------------------------- | ------------------------------------------------------- | -------------------------------------------- |
+| **Wallet address**                 | Sign-in, account identity, payouts                      | API control state (SQLite)                   |
+| **Session token**                  | Keep you signed in on web/API                           | API control state; HTTP-only cookie on web   |
+| **Buyer API key hash**             | Authenticate `br_...` keys without storing plaintext    | API control state                            |
+| **Prepaid balance & purchases**    | Billing, spend caps, purchase history                   | API control state                            |
+| **Raid & inference metadata**      | Routing proof, receipts, settlement, ops visibility     | Orchestrator SQLite + API state              |
+| **Seller endpoint & pricing**      | Marketplace routing and verification                    | Provider registry (orchestrator SQLite)      |
+| **Encrypted upstream API keys**    | Hosted seller inference without exposing keys to buyers | API control state (encrypted at rest)        |
+| **Bounty board records**           | Escrow, bids, awards, delivery                          | Separate bounty SQLite                       |
+| **Inference attestation receipts** | Strict E2EE / TEE receipt verification                  | Optional inference-receipts SQLite           |
+| **Server logs**                    | Security, abuse prevention, operations                  | Host logs (IP, user-agent, request metadata) |
+
+We store **API key hashes**, not the full `br_...` secret. You only see the plaintext key once at creation.
+
+## What we do not collect
+
+- **Email or name** — not required to use the marketplace (optional only if you contact support).
+- **Payment card numbers** — x402 and on-ramp partners process payments; we receive transaction references, not full card data.
+- **Advertising profiles** — no third-party ad pixels or cross-site tracking cookies.
+- **Plaintext seller upstream keys** — encrypted when `BOSSRAID_SECRET_ENCRYPTION_KEY` is configured.
+
+## Prompts and outputs
+
+Boss Raid processes your prompts and task files to route requests and return results. **Sellers and upstream model providers** receive the content required to fulfill a call. Their retention policies are their own.
+
+- **Default paths** — metadata for billing, receipts, and abuse prevention is retained with raid/inference records.
+- **Strict-private raids** — routing requires providers that claim TEE, E2EE, signed outputs, and no retention. Verify receipts on [proof.md](proof.md).
+
+We do not use your prompts for advertising or unrelated profiling.
+
+## On-chain data
+
+Wallet addresses and settlement transactions on public blockchains are visible to anyone. Boss Raid does not control that visibility.
+
+## Your choices
+
+1. **Revoke API keys** — `DELETE /v1/buyer/api-keys/:keyId` or account UI at `/account`.
+2. **Sign out** — clears the session cookie; ops sessions expire by TTL.
+3. **Privacy requests** — contact the operator listed in the [Privacy Policy](https://bossraid-web.pages.dev/privacy-policy). Wallet ownership may be required to verify identity.
+
+Some records must be kept for billing, audit, or security even after a deletion request.
+
+## Operator deep dive
+
+Database layout, retention knobs, and encryption details: [Data storage](/dev-docs/operators/data-storage) in dev-docs.
 
 
 ---
@@ -1528,7 +1594,7 @@ URL: /docs/operators/trust-and-safety
 
 Boss Raid is a verified endpoint marketplace. It is not account resale.
 
-Read seller and buyer boundaries first, then payment and privacy gates. Registration steps: [sell.md](../sellers/sell.md).
+Read seller and buyer boundaries first, then payment and privacy gates. Data practices: [privacy-and-data.md](../overview/privacy-and-data.md). Registration steps: [sell.md](../sellers/sell.md).
 
 ## Seller boundary
 

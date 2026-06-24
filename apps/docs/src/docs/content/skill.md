@@ -1,27 +1,28 @@
 # Agent Skill
 
-Give your coding agent a copy-paste skill for Boss Raid — discount inference, Mercenary raids, API keys, receipts, and MCP tools.
+Host an agent skill file at `/skill.md` so coding agents can load integration instructions without crawling the full docs UI.
 
-## Download
+## Generated vs hosted
 
-<a href="/skill.md" class="download-link" data-file="skill.md">Download skill.md</a>
+- **Docs page** — this Markdown page explains the feature.
+- **Hosted file** — `/skill.md` at the site root (copy from your product repo or generate in CI).
 
-<a href="#" class="copy-link" data-url="/skill.md">Copy skill.md URL</a>
+## Setup
 
-## Install
+1. Write a skill file with YAML frontmatter (`name`, `description`) and integration steps.
+2. Place it in `public/skill.md` or generate it during build.
+3. Link from your docs nav or command palette.
+4. Optional install page at `/docs/skill` with `HostedFilePreview` for copy/download.
 
-| Agent           | Save as                                                                      |
-| --------------- | ---------------------------------------------------------------------------- |
-| Cursor / Claude | `.cursor/skills/boss-raid/SKILL.md` or `~/.cursor/skills/boss-raid/SKILL.md` |
-| Codex           | `~/.codex/skills/boss-raid/SKILL.md`                                         |
-| Grok            | `.grok/skills/boss-raid/SKILL.md` or `~/.grok/skills/boss-raid/SKILL.md`     |
+## Install paths (examples)
 
-You can also paste the hosted `/skill.md` URL into an agent's skill loader.
+| Agent           | Typical path                      |
+| --------------- | --------------------------------- |
+| Cursor / Claude | `.cursor/skills/<name>/SKILL.md`  |
+| Codex           | `~/.codex/skills/<name>/SKILL.md` |
 
-## When to use
+## When to regenerate
 
-- integrating Boss Raid into an app or agent workflow
-- calling `POST /v1/raid` or discount inference from scripts
-- onboarding a teammate's agent to Mercenary, buyer keys, or seller registration
+Regenerate `public/skill.md` when API routes, auth flows, or agent tool names change.
 
-For the full docs corpus, use [LLMs.txt](/docs/llms).
+For AI corpus exports, see [LLMs.txt](/docs/llms).

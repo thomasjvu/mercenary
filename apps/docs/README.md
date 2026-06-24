@@ -1,46 +1,56 @@
-# Boss Raid docs (papers framework)
+# papers
 
-Static documentation site for Boss Raid. Framework code lives here; Markdown content lives in repo-root [`content/`](../../content/).
+Static documentation framework — React, Vite, TypeScript, generated Markdown, Pagefind search, `llms.txt` exports, and SEO-friendly static output.
 
-| Collection   | Content dir         | Route         |
-| ------------ | ------------------- | ------------- |
-| Product docs | `content/docs/`     | `/docs/*`     |
-| Dev / brand  | `content/dev-docs/` | `/dev-docs/*` |
-
-## Local preview
-
-From repo root:
+## Quick start
 
 ```bash
-pnpm dev:docs
+npm install
+npm run dev
 ```
 
-Dev server: `http://localhost:3333`
+Dev server: `http://localhost:3333` — start at `/docs/getting-started/introduction`.
 
-Theme: copy `.env.example` to `.env.local` (defaults to `VITE_PAPERS_THEME=rx-78`). Homepage landing is off — set `homepageConfig.enabled` in `shared/documentation-config.js` to restore it.
+## Customize
 
-## Authoring
+| File / directory                 | Purpose                                                              |
+| -------------------------------- | -------------------------------------------------------------------- |
+| `shared/documentation-config.js` | Sidebar tree, homepage, OpenAPI config                               |
+| `src/docs/content/`              | Framework starter pages (getting started, deployment, API reference) |
+| `.env.local`                     | Site name, canonical URL, GitHub links                               |
+| `src/globals.css`                | Theme tokens and typography                                          |
+| `themes/`                        | Theme packages (`tokens.css`, `theme.json`)                          |
 
-1. Edit Markdown in `content/docs/` or `content/dev-docs/`.
-2. Update nav trees in [`shared/documentation-config.js`](shared/documentation-config.js) when adding pages.
-3. Regenerate route tables: `pnpm bossraid sync:docs-routes` (repo root).
-4. If dev server is running, rerun `pnpm run generate:docs` after tree or Markdown changes.
+Author product docs in your own content directory or monorepo `content/` collection — see [FRAMEWORK.md](FRAMEWORK.md).
 
-## Build
+## Commands
 
 ```bash
-pnpm build:docs
+npm run dev
+npm run generate:docs
+npm run generate:llms
+npm run check:docs-tree
+npm run build
+npm run release:check
 ```
 
-## Framework sync
+## Ship checklist
 
-Boss Raid dogfoods [thomasjvu/papers](https://github.com/thomasjvu/papers). See [`content/README.md`](../../content/README.md) for pull/push workflow:
+1. Edit Markdown in `src/docs/content/` (or your external content root).
+2. Update `shared/documentation-config.js` when the tree changes.
+3. Run `npm run generate:docs` (build does this automatically).
+4. Set `VITE_SITE_URL` for production canonical URLs and sitemap.
+5. Run `npm test`, `npm run lint`, and `npm run build`.
 
-- `pnpm bossraid papers:sync-upstream` — pull template improvements
-- `pnpm bossraid papers:sync-downstream` — diff and push portable fixes upstream
+## Docs
 
-Protected Boss Raid overrides are listed in [`scripts/papers-sync-lib.mjs`](../../scripts/papers-sync-lib.mjs) (repo root).
+- [FRAMEWORK.md](FRAMEWORK.md) — roadmap and feature inventory
+- [RELEASING.md](RELEASING.md) — release process
 
-## Upstream template docs
+## Boss Raid fork
 
-The leftover `src/docs/content/` tree is papers starter content (excluded from Boss Raid builds). It remains for upstream sync reference only.
+This copy dogfoods papers inside the Boss Raid monorepo. Product content lives in repo-root [`content/`](../../content/README.md); framework sync uses `pnpm bossraid papers:sync-upstream` / `papers:sync-downstream` from the repo root.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

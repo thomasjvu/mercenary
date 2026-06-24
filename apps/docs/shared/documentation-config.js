@@ -127,6 +127,12 @@ export const documentationTree = [
         path: 'overview/proof',
         tags: ['receipt', 'attestation', 'proof'],
       },
+      {
+        type: 'file',
+        name: 'Privacy and Data.md',
+        path: 'overview/privacy-and-data',
+        tags: ['privacy', 'data', 'account'],
+      },
     ],
   },
   {
@@ -225,6 +231,12 @@ export const devDocumentationTree = [
         name: 'Infisical Secrets.md',
         path: 'operators/infisical',
         tags: ['secrets', 'infisical', 'deploy'],
+      },
+      {
+        type: 'file',
+        name: 'Data Storage.md',
+        path: 'operators/data-storage',
+        tags: ['sqlite', 'persistence', 'privacy'],
       },
     ],
   },
