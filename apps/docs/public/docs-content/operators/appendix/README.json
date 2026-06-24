@@ -3,7 +3,7 @@
   "title": "Appendix",
   "description": "Operator-only reference. Not required for buy/sell quickstarts.",
   "frontmatter": {},
-  "content": "# Appendix\n\nOperator-only reference. Not required for buy/sell quickstarts.\n\n- [Hackathon track map](hackathon.md)\n- [Infisical secret workflow](infisical.md)\n- [ERC-8004 / ACP registration](synthesis-registration.md)\n",
+  "content": "# Appendix\n\nOperator-only reference. Not required for buy/sell quickstarts.\n\n- [Infisical secret workflow](infisical.md)",
   "contentFormat": "markdown",
   "sourcePath": "operators/appendix/README.md"
 }

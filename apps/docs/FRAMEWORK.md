@@ -35,6 +35,7 @@ When porting this feature upstream to [thomasjvu/papers](https://github.com/thom
 | Pagefind search + command palette          | Yes                                                      |
 | Interactive doc graph                      | Yes                                                      |
 | `llms.txt` generation                      | Yes                                                      |
+| Hosted asset preview (`HostedFilePreview`) | Yes — `/docs/llms`, `/docs/skill` with CodeBlock preview |
 | OpenAPI explorer (Scalar)                  | Yes                                                      |
 | Edit on GitHub footer                      | Yes                                                      |
 | Version / i18n route scaffolding           | Yes (enable in `documentation-config.js`)                |

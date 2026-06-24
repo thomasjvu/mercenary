@@ -24,8 +24,4 @@ You can also paste the hosted `/skill.md` URL into an agent's skill loader.
 - calling `POST /v1/raid` or discount inference from scripts
 - onboarding a teammate's agent to Mercenary, buyer keys, or seller registration
 
-For the full docs corpus, use [LLMs.txt](/llms).
-
-## Preview
-
-{skill-preview}
+For the full docs corpus, use [LLMs.txt](/docs/llms).

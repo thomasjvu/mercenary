@@ -136,7 +136,7 @@ export function sanitizeTask(input: BossRaidSpawnInput): SanitizedTaskSpec {
     issues.push({
       severity: 'warn',
       code: 'external_search_requested',
-      message: 'Provider execution should stay offline for the hackathon MVP.',
+      message: 'Provider execution should stay offline when external search is disabled.',
     });
   }
 

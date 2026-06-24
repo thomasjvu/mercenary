@@ -189,14 +189,14 @@ Workflow: [operators/appendix/infisical.md](../operators/appendix/infisical.md).
 | `BOSSRAID_SMOKE_MAX_TOTAL_COST` | Max raid cost for party quest smoke (default `1`)       |
 | `BOSSRAID_API_KEY`              | Trusted client bearer (Alkahest strict Gemma lane)      |
 
-## Demo video generation (local, `.private/`)
+## Brand asset generation (local, `.private/`)
 
-| Variable             | Purpose                                                 |
-| -------------------- | ------------------------------------------------------- |
-| `VENICE_API_KEY`     | Venice image edit + image-to-video for OC regen         |
-| `VENICE_VIDEO_MODEL` | Video model override (default `wan-2-7-image-to-video`) |
+| Variable             | Purpose                                          |
+| -------------------- | ------------------------------------------------ |
+| `VENICE_API_KEY`     | Venice image edit for OC reference regen         |
+| `VENICE_VIDEO_MODEL` | Video model override for optional clip workflows |
 
-Stored in `.private/.env` (untracked). Used by `pnpm bossraid generate:legal-character`.
+Stored in `.private/.env` (untracked). Used by `pnpm bossraid generate:pfp` and `generate:landing-hero`.
 
 ## Production acknowledgements
 

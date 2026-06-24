@@ -1,6 +1,6 @@
 import { Icon } from '@iconify/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { getContentCollection, getDocumentationTree } from '../../data/collections';
@@ -34,6 +34,7 @@ interface DocumentationPageProps {
   sourcePath?: string;
   contentFormat?: DocumentContentFormat;
   contentSlot?: React.ReactNode;
+  trailingContent?: ReactNode;
   isLoading?: boolean;
   pendingPath?: string;
 }
@@ -97,6 +98,7 @@ const DocumentationPage = React.memo(
     sourcePath,
     contentFormat: _contentFormat = 'markdown',
     contentSlot,
+    trailingContent,
     collectionId = 'docs',
     isLoading = false,
     pendingPath,
@@ -442,29 +444,51 @@ const DocumentationPage = React.memo(
                 className="border-t pt-4 space-y-2"
                 style={{ borderColor: 'var(--border-unified)' }}
               >
-                <Link
-                  to="/llms"
+                <button
+                  onClick={() => {
+                    navigate(
+                      buildCanonicalCollectionPath(collection, 'llms', {
+                        version: routeContext.activeVersion,
+                        locale: routeContext.activeLocale,
+                      })
+                    );
+                    if (isMobile) {
+                      setSidebarVisible(false);
+                    }
+                  }}
                   className="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-opacity hover:opacity-80"
                   style={utilityButtonStyle}
+                  type="button"
                 >
                   <span className="flex items-center gap-2">
                     <Icon icon="mingcute:file-info-line" className="h-4 w-4" />
                     <span>LLMs.txt</span>
                   </span>
                   <Icon icon="mingcute:arrow-right-line" className="h-4 w-4" />
-                </Link>
+                </button>
 
-                <Link
-                  to="/skill"
+                <button
+                  onClick={() => {
+                    navigate(
+                      buildCanonicalCollectionPath(collection, 'skill', {
+                        version: routeContext.activeVersion,
+                        locale: routeContext.activeLocale,
+                      })
+                    );
+                    if (isMobile) {
+                      setSidebarVisible(false);
+                    }
+                  }}
                   className="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-opacity hover:opacity-80"
                   style={utilityButtonStyle}
+                  type="button"
                 >
                   <span className="flex items-center gap-2">
                     <Icon icon="mingcute:magic-2-line" className="h-4 w-4" />
                     <span>Agent Skill</span>
                   </span>
                   <Icon icon="mingcute:arrow-right-line" className="h-4 w-4" />
-                </Link>
+                </button>
 
                 <button
                   onClick={handleMapButtonClick}
@@ -572,6 +596,7 @@ const DocumentationPage = React.memo(
                   content={content}
                   path={path}
                   sourcePath={sourcePath}
+                  trailingContent={trailingContent}
                 />
               )}
             </div>

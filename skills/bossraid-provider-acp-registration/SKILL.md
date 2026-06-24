@@ -14,8 +14,8 @@ Use this skill when a task involves:
 
 ## Read First
 
-- [content/docs/operators/appendix/synthesis-registration.md](/Users/area/repos/boss-raid/content/docs/operators/appendix/synthesis-registration.md)
-- [content/docs/operators/appendix/hackathon.md](/Users/area/repos/boss-raid/content/docs/operators/appendix/hackathon.md)
+- [content/docs/operators/runtime.md](/Users/area/repos/boss-raid/content/docs/operators/runtime.md) — deploy checklist and ACP registration
+- [examples/onboarding/virtuals-acp-capture-sheet.md](/Users/area/repos/boss-raid/examples/onboarding/virtuals-acp-capture-sheet.md)
 - [examples/providers/provider-registration.base-mainnet.example.json](examples/providers/provider-registration.base-mainnet.example.json)
 - [references/provider-specializations.md](/Users/area/Desktop/boss-raid/skills/bossraid-provider-acp-registration/references/provider-specializations.md)
 

@@ -12,17 +12,13 @@ pnpm bossraid sync:inference-catalog
 
 Writes `packages/constants/src/inference-catalog.ts` and `packages/constants/data/inference-model-pricing.json` (Venice rates from public `/models`; Redpill, NEAR, Chutes, Phala from static script rates).
 
-Regenerate legal-page Mercenary float (Venice; requires `VENICE_API_KEY` in `.private/.env`):
+Regenerate brand assets (Venice; requires `VENICE_API_KEY` in `.private/.env`):
 
 ```bash
 pnpm bossraid sync:oc-references
-pnpm bossraid generate:pfp               # Mercenary bust portrait → assets/boss-raid-pfp.png
-pnpm bossraid generate:landing-hero      # seller / raider / buyer manga panels → apps/web/src/assets/
-pnpm bossraid generate:legal-character   # keyframe + clip + webm export
-pnpm bossraid export:legal-character   # re-export webm from existing S07 MP4 only
+pnpm bossraid generate:pfp          # Mercenary bust portrait → assets/boss-raid-pfp.png
+pnpm bossraid generate:landing-hero   # seller / raider / buyer manga panels → apps/web/src/assets/
 ```
-
-See [Legal Character Art](/dev-docs/brand/legal-character-art) in dev-docs.
 
 Gateway (built web + ops on one origin):
 
@@ -134,8 +130,6 @@ Active hosted stack: Phala CVM. EigenCompute stays in-repo for optional judging/
 1. Register Mercenary + providers at `https://acpx.virtuals.io`
 2. Fill `examples/onboarding/virtuals-acp-capture-sheet.md`
 3. Map ERC-8004 fields into `deploy/phala/secrets.onchain.env` (see `secrets.onchain.env.example`)
-
-See [appendix/synthesis-registration.md](appendix/synthesis-registration.md).
 
 ### 2. Settlement keys
 

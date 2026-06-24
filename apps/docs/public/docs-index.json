@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-18T00:09:57.213Z",
+  "generated": "2026-06-24T18:56:10.506Z",
   "paths": [
     "overview/introduction",
     "overview/proof",
@@ -14,13 +14,11 @@
     "operators/architecture",
     "operators/trust-and-safety",
     "operators/appendix/README",
-    "operators/appendix/hackathon",
     "operators/appendix/infisical",
-    "operators/appendix/synthesis-registration",
     "llms",
     "skill"
   ],
-  "count": 18,
+  "count": 16,
   "titles": {
     "overview/introduction": "Introduction",
     "overview/proof": "Proof & Receipts",
@@ -35,9 +33,7 @@
     "operators/architecture": "Architecture",
     "operators/trust-and-safety": "Trust & Safety",
     "operators/appendix/README": "Appendix",
-    "operators/appendix/hackathon": "Hackathon",
     "operators/appendix/infisical": "Infisical Secret Workflow",
-    "operators/appendix/synthesis-registration": "Synthesis Registration",
     "llms": "LLMs.txt",
     "skill": "Agent Skill"
   }

@@ -105,6 +105,22 @@ export const PORTABLE_IMPROVEMENTS = [
     note: 'Route shell for arbitrary content collections.',
   },
   {
+    path: 'src/lib/hostedAssetPage.ts',
+    note: 'Framework hosted asset pages (llms.txt, skill.md) config and preview stripping.',
+  },
+  {
+    path: 'src/components/HostedFilePreview.tsx',
+    note: 'CodeBlock preview for hosted text assets on framework doc pages.',
+  },
+  {
+    path: 'src/components/ContentRenderer.tsx',
+    note: 'Optional trailingContent slot for hosted asset previews.',
+  },
+  {
+    path: 'src/pages/HostedAssetRedirectPage.tsx',
+    note: 'Legacy /llms and /skill redirects into the docs SPA shell.',
+  },
+  {
     path: 'FRAMEWORK.md',
     note: 'Content collections dogfood notes and upstream porting checklist.',
   },

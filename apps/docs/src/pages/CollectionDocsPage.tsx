@@ -1,6 +1,7 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 
+import HostedFilePreview from '../components/HostedFilePreview';
 import DocumentationPage from '../components/docs/DocumentationPage';
 import { getContentCollection } from '../data/collections';
 import { getDocument, resolveDocumentPath } from '../lib/content';
@@ -11,6 +12,7 @@ import {
   parseCollectionRoutePath,
 } from '../../shared/docsRouting.js';
 import { extractDescriptionFromMarkdown } from '../../shared/seo.js';
+import { getHostedAssetPageConfig, stripHostedAssetPreview } from '../lib/hostedAssetPage';
 
 const logger = createLogger('CollectionDocsPage');
 const SITE_NAME = import.meta.env.VITE_SITE_NAME || 'Boss Raid Docs';
@@ -50,6 +52,31 @@ export default function CollectionDocsPage({ collectionId }: CollectionDocsPageP
       }),
     [collection, docPath, routeContext.activeLocale, routeContext.activeVersion]
   );
+  const hostedAssetConfig = useMemo(() => getHostedAssetPageConfig(docPath), [docPath]);
+  const renderedContent = useMemo(
+    () => (hostedAssetConfig ? stripHostedAssetPreview(content, docPath) : content),
+    [content, docPath, hostedAssetConfig]
+  );
+  const trailingContent = useMemo(() => {
+    if (!hostedAssetConfig) {
+      return undefined;
+    }
+
+    return (
+      <section className="doc-hosted-preview-section">
+        <h2
+          className="mb-4 text-xl font-bold"
+          style={{ color: 'var(--text-color)', fontFamily: 'var(--mono-font)' }}
+        >
+          Preview
+        </h2>
+        <HostedFilePreview
+          assetUrl={hostedAssetConfig.assetUrl}
+          assetLabel={hostedAssetConfig.assetLabel}
+        />
+      </section>
+    );
+  }, [hostedAssetConfig]);
 
   useEffect(() => {
     const normalizedCurrentPath = location.pathname.replace(/\/+$/, '') || '/';
@@ -152,12 +179,13 @@ export default function CollectionDocsPage({ collectionId }: CollectionDocsPageP
   return (
     <DocumentationPage
       collectionId={collectionId}
-      initialContent={content}
+      initialContent={renderedContent}
       currentPath={currentDocPath || docPath}
       sourcePath={docSourcePath}
       contentFormat={docContentFormat}
       isLoading={loading}
       pendingPath={docPath}
+      trailingContent={trailingContent}
     />
   );
 }

@@ -190,46 +190,6 @@ export function createSeoRouteEntries(docsIndex, documentsByPath, options = {}) 
   }
 
   for (const docPath of docsIndex.paths) {
-    if (docPath === 'llms') {
-      const document = getDocumentForRoute(docPath, '/llms', documentsByPath, routeOptions);
-
-      if (!document) {
-        continue;
-      }
-
-      registerRoute({
-        routePath: '/llms',
-        canonicalPath: '/llms',
-        title: `LLMs.txt | ${siteName}`,
-        description:
-          getDocumentDescription(document) ||
-          'AI-friendly text exports generated from the documentation corpus.',
-        type: 'article',
-        includeInSitemap: true,
-      });
-      continue;
-    }
-
-    if (docPath === 'skill') {
-      const document = getDocumentForRoute(docPath, '/skill', documentsByPath, routeOptions);
-
-      if (!document) {
-        continue;
-      }
-
-      registerRoute({
-        routePath: '/skill',
-        canonicalPath: '/skill',
-        title: `Agent Skill | ${siteName}`,
-        description:
-          getDocumentDescription(document) ||
-          'Agent skill file for integrating with Boss Raid APIs, Mercenary raids, and MCP tools.',
-        type: 'article',
-        includeInSitemap: true,
-      });
-      continue;
-    }
-
     registerDocsRouteVariants(registerRoute, docPath, docPath, documentsByPath, {
       ...routeOptions,
       includeInSitemap: true,
