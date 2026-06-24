@@ -78,7 +78,7 @@ ERC-8004 identity registration and ERC-8183 settlement are handled through the V
 
 ### Step 2: Map to Boss Raid Env
 
-Use `examples/virtuals-acp-capture-sheet.md` as a guide. Map the ACP output:
+Use `examples/onboarding/virtuals-acp-capture-sheet.md` as a guide. Map the ACP output:
 
 **Mercenary env vars** (API container):
 

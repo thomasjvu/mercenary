@@ -61,7 +61,7 @@ pnpm build
 
 pnpm bossraid bootstrap:settlement-env -- \
   --manifest temp/contracts/deployment.json \
-  --provider-addresses examples/provider-addresses.json \
+  --provider-addresses examples/settlement/provider-addresses.json \
   --evaluator-address 0x...
 ```
 
@@ -80,7 +80,7 @@ pnpm build
 BOSSRAID_RPC_URL=https://rpc.example \
 BOSSRAID_DEPLOYER_PRIVATE_KEY=0x... \
 BOSSRAID_TOKEN_ADDRESS=0x... \
-BOSSRAID_PROVIDER_ADDRESSES_FILE=examples/provider-addresses.json \
+BOSSRAID_PROVIDER_ADDRESSES_FILE=examples/settlement/provider-addresses.json \
 BOSSRAID_EVALUATOR_ADDRESS=0x... \
 pnpm bossraid bootstrap:onchain
 ```

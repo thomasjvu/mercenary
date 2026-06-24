@@ -17,7 +17,7 @@ const opsBase = process.env.BOSSRAID_OPS_BASE ?? 'http://127.0.0.1:4174';
 const rehearsalEnv = {
   ...process.env,
   BOSSRAID_STORAGE_BACKEND: process.env.BOSSRAID_STORAGE_BACKEND ?? 'sqlite',
-  BOSSRAID_PROVIDERS_FILE: process.env.BOSSRAID_PROVIDERS_FILE ?? './examples/inference-marketplace-providers.json',
+  BOSSRAID_PROVIDERS_FILE: process.env.BOSSRAID_PROVIDERS_FILE ?? './examples/inference/inference-marketplace-providers.json',
   BOSSRAID_SQLITE_FILE: process.env.BOSSRAID_SQLITE_FILE ?? './temp/bossraid-mercenary.sqlite',
   VITE_BOSSRAID_API_BASE: process.env.VITE_BOSSRAID_API_BASE ?? apiBase,
   BOSSRAID_X402_ENABLED: process.env.BOSSRAID_X402_ENABLED ?? 'true',

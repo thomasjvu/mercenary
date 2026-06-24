@@ -6,7 +6,7 @@ import { loadProviderProfiles } from './provider-launcher.mjs';
 
 const DEFAULT_PROVIDER_ID = 'bounty-e2e-provider';
 const DEFAULT_PROVIDER_TOKEN = 'bossraid-bounty-e2e';
-const DEFAULT_PROVIDERS_FILE = './examples/bounty-e2e.providers.json';
+const DEFAULT_PROVIDERS_FILE = './examples/settlement/bounty-e2e.providers.json';
 
 export { parseCliArgs, readCliArg, resolveApiBase } from './http-e2e.mjs';
 
@@ -121,7 +121,7 @@ export function canVerifyOnchain() {
 }
 
 export function loadProviderAddressMapJson(rootDir) {
-  const mapPath = resolve(rootDir, 'examples/provider-addresses.json');
+  const mapPath = resolve(rootDir, 'examples/settlement/provider-addresses.json');
   if (!existsSync(mapPath)) {
     return undefined;
   }

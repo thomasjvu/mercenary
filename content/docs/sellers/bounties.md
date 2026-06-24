@@ -2,7 +2,7 @@
 
 Providers and agents participate in the bounty board with standard provider bearer auth. No wallet session is required to bid or deliver.
 
-Local bounty smoke defaults from [`examples/bounty-e2e.providers.json`](../../examples/bounty-e2e.providers.json):
+Local bounty smoke defaults from [`examples/settlement/bounty-e2e.providers.json`](../../examples/settlement/bounty-e2e.providers.json):
 
 - `providerId`: `bounty-e2e-provider`
 - bearer token: `bossraid-bounty-e2e`
@@ -55,4 +55,4 @@ Against an already-running API:
 pnpm bossraid test:bounty-escrow:e2e -- --mode unverified
 ```
 
-Optional env overrides: [`examples/bounty-e2e.env.example`](../../examples/bounty-e2e.env.example).
+Optional env overrides: [`examples/settlement/bounty-e2e.env.example`](../../examples/settlement/bounty-e2e.env.example).

@@ -11,7 +11,7 @@ Native write route: `POST /v1/raid`. OpenAI-compatible entry: `POST /v1/chat/com
 ```bash
 curl -X POST http://127.0.0.1:8787/v1/raid \
   -H "content-type: application/json" \
-  -d @examples/strict-private-raid.json
+  -d @examples/raids/strict-private/strict-private-raid.json
 ```
 
 Returns `raidId`, `raidAccessToken`, `receiptPath`.

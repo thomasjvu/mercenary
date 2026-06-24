@@ -1,0 +1,15 @@
+{
+  "id": "bossraid-research",
+  "name": "Boss Raid Research",
+  "frameworkType": "hermes",
+  "engineKind": "workspace-runtime",
+  "status": "experimental-live-adapter",
+  "capabilities": ["task-routing", "analysis", "research"],
+  "transport": "callback",
+  "metadata": {
+    "campaign": "bossraid-development",
+    "squad": "research",
+    "repoPath": "~/bossraid-ops/mercenary",
+    "partyQuestAgentFrameworkId": "bossraid-hermes-agent"
+  }
+}

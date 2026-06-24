@@ -55,7 +55,7 @@ services:
       BOSSRAID_API_HOST: '0.0.0.0'
       BOSSRAID_STORAGE_BACKEND: 'sqlite'
       BOSSRAID_SQLITE_FILE: '/data/bossraid-state.sqlite'
-      BOSSRAID_PROVIDERS_FILE: '/app/examples/inference-marketplace-providers.json'
+      BOSSRAID_PROVIDERS_FILE: '/app/examples/inference/inference-marketplace-providers.json'
       BOSSRAID_ADMIN_TOKEN: '${BOSSRAID_ADMIN_TOKEN:-local-dev-admin-token}'
       BOSSRAID_REGISTRY_TOKEN: '${BOSSRAID_REGISTRY_TOKEN:-}'
       BOSSRAID_API_BODY_LIMIT_BYTES: '${BOSSRAID_API_BODY_LIMIT_BYTES:-524288}'

@@ -1,0 +1,15 @@
+{
+  "id": "bossraid-marketing",
+  "name": "Boss Raid Marketing",
+  "frameworkType": "phantasy",
+  "engineKind": "workspace-runtime",
+  "status": "experimental-live-adapter",
+  "capabilities": ["task-routing", "content", "analysis"],
+  "transport": "callback",
+  "metadata": {
+    "campaign": "bossraid-development",
+    "squad": "marketing",
+    "repoPath": "~/bossraid-ops/mercenary",
+    "partyQuestAgentFrameworkId": "bossraid-phantasy-agent"
+  }
+}

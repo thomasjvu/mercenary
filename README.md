@@ -70,6 +70,8 @@ Full guide: **[content/README.md](content/README.md)**
 
 ## Examples
 
-- Chat raid: [`examples/chat-completion-request.json`](examples/chat-completion-request.json)
-- Native raid: [`examples/unity-bug/task.json`](examples/unity-bug/task.json)
-- Strict-private: [`examples/strict-private-raid.json`](examples/strict-private-raid.json)
+- Chat raid: [`examples/inference/chat-completion-request.json`](examples/inference/chat-completion-request.json)
+- Native raid: [`examples/raids/unity-bug/task.json`](examples/raids/unity-bug/task.json)
+- Strict-private: [`examples/raids/strict-private/strict-private-raid.json`](examples/raids/strict-private/strict-private-raid.json)
+
+Fixture index: [`examples/README.md`](examples/README.md)

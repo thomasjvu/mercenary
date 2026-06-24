@@ -132,7 +132,7 @@ Active hosted stack: Phala CVM. EigenCompute stays in-repo for optional judging/
 ### 1. ACP registration (once)
 
 1. Register Mercenary + providers at `https://acpx.virtuals.io`
-2. Fill `examples/virtuals-acp-capture-sheet.md`
+2. Fill `examples/onboarding/virtuals-acp-capture-sheet.md`
 3. Map ERC-8004 fields into `deploy/phala/secrets.onchain.env` (see `secrets.onchain.env.example`)
 
 See [appendix/synthesis-registration.md](appendix/synthesis-registration.md).
@@ -173,7 +173,7 @@ pnpm bossraid test:bounty-escrow:e2e                 # against running API; defa
 pnpm bossraid test:bounty-escrow:production          # wallet mode; caps reward via BOSSRAID_BOUNTY_E2E_REWARD_USD
 ```
 
-`test:bounty-escrow:local` spins an ephemeral API, uses `bounty-e2e-provider` from [`examples/bounty-e2e.providers.json`](../../examples/bounty-e2e.providers.json), and skips x402 unless bootstrap settlement env is present. Optional overrides: [`examples/bounty-e2e.env.example`](../../examples/bounty-e2e.env.example). Provider/agent curl flow: [sellers/bounties.md](../sellers/bounties.md).
+`test:bounty-escrow:local` spins an ephemeral API, uses `bounty-e2e-provider` from [`examples/settlement/bounty-e2e.providers.json`](../../examples/settlement/bounty-e2e.providers.json), and skips x402 unless bootstrap settlement env is present. Optional overrides: [`examples/settlement/bounty-e2e.env.example`](../../examples/settlement/bounty-e2e.env.example). Provider/agent curl flow: [sellers/bounties.md](../sellers/bounties.md).
 
 ### 3. Phala deploy
 

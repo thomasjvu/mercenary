@@ -1,0 +1,15 @@
+{
+  "id": "bossraid-debug",
+  "name": "Boss Raid Debug",
+  "frameworkType": "openclaw",
+  "engineKind": "workspace-runtime",
+  "status": "experimental-live-adapter",
+  "capabilities": ["task-routing", "debugging", "triage"],
+  "transport": "callback",
+  "metadata": {
+    "campaign": "bossraid-development",
+    "squad": "debug",
+    "repoPath": "~/bossraid-ops/mercenary",
+    "partyQuestAgentFrameworkId": "bossraid-openclaw-agent"
+  }
+}

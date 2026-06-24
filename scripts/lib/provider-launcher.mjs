@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 export function resolveProviderProfileFiles(rootDir, env = process.env) {
-  const raw = env.BOSSRAID_PROVIDERS_FILE ?? './examples/inference-marketplace-providers.json';
+  const raw = env.BOSSRAID_PROVIDERS_FILE ?? './examples/inference/inference-marketplace-providers.json';
   return raw
     .split(',')
     .map((entry) => entry.trim())

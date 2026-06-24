@@ -57,7 +57,7 @@ services:
       BOSSRAID_API_HOST: '0.0.0.0'
       BOSSRAID_STORAGE_BACKEND: 'sqlite'
       BOSSRAID_SQLITE_FILE: '/data/bossraid-state.sqlite'
-      BOSSRAID_PROVIDERS_FILE: '${BOSSRAID_PROVIDERS_FILE:-/app/examples/inference-marketplace-providers.json}'
+      BOSSRAID_PROVIDERS_FILE: '${BOSSRAID_PROVIDERS_FILE:-/app/examples/inference/inference-marketplace-providers.json}'
       BOSSRAID_SECRET_ENCRYPTION_KEY: '${BOSSRAID_SECRET_ENCRYPTION_KEY}'
       BOSSRAID_SECRET_ENCRYPTION_KEY_ID: '${BOSSRAID_SECRET_ENCRYPTION_KEY_ID:-phala-current}'
       BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS: '${BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS:-}'

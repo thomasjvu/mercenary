@@ -241,7 +241,7 @@ export function listInferenceCatalogModelIds(): string[] {
 
 function writeProvidersJson(providers) {
   writeFileSync(
-    resolve(rootDir, 'examples/inference-marketplace-providers.json'),
+    resolve(rootDir, 'examples/inference/inference-marketplace-providers.json'),
     `${JSON.stringify(providers, null, 2)}\n`
   );
 }
@@ -392,7 +392,7 @@ async function main() {
     `[catalog] synced ${veniceModels.length} Venice + ${redpillModels.length} Redpill + ${nearModels.length} NEAR + ${chutesModels.length} Chutes + ${phalaModels.length} Phala models`
   );
   console.log(`[catalog] wrote packages/constants/src/inference-catalog.ts`);
-  console.log(`[catalog] wrote examples/inference-marketplace-providers.json (${providers.length} sellers)`);
+  console.log(`[catalog] wrote examples/inference/inference-marketplace-providers.json (${providers.length} sellers)`);
   console.log('[catalog] wrote packages/constants/data/inference-model-pricing.json');
 }
 

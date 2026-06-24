@@ -473,7 +473,7 @@ Native write route: `POST /v1/raid`. OpenAI-compatible entry: `POST /v1/chat/com
 ```bash
 curl -X POST http://127.0.0.1:8787/v1/raid \
   -H "content-type: application/json" \
-  -d @examples/strict-private-raid.json
+  -d @examples/raids/strict-private/strict-private-raid.json
 ```
 
 Returns `raidId`, `raidAccessToken`, `receiptPath`.
@@ -1178,7 +1178,7 @@ Active hosted stack: Phala CVM. EigenCompute stays in-repo for optional judging/
 ### 1. ACP registration (once)
 
 1. Register Mercenary + providers at `https://acpx.virtuals.io`
-2. Fill `examples/virtuals-acp-capture-sheet.md`
+2. Fill `examples/onboarding/virtuals-acp-capture-sheet.md`
 3. Map ERC-8004 fields into `deploy/phala/secrets.onchain.env` (see `secrets.onchain.env.example`)
 
 See [appendix/synthesis-registration.md](appendix/synthesis-registration.md).
@@ -1219,7 +1219,7 @@ pnpm bossraid test:bounty-escrow:e2e                 # against running API; defa
 pnpm bossraid test:bounty-escrow:production          # wallet mode; caps reward via BOSSRAID_BOUNTY_E2E_REWARD_USD
 ```
 
-`test:bounty-escrow:local` spins an ephemeral API, uses `bounty-e2e-provider` from [`examples/bounty-e2e.providers.json`](../../examples/bounty-e2e.providers.json), and skips x402 unless bootstrap settlement env is present. Optional overrides: [`examples/bounty-e2e.env.example`](../../examples/bounty-e2e.env.example). Provider/agent curl flow: [sellers/bounties.md](../sellers/bounties.md).
+`test:bounty-escrow:local` spins an ephemeral API, uses `bounty-e2e-provider` from [`examples/settlement/bounty-e2e.providers.json`](../../examples/settlement/bounty-e2e.providers.json), and skips x402 unless bootstrap settlement env is present. Optional overrides: [`examples/settlement/bounty-e2e.env.example`](../../examples/settlement/bounty-e2e.env.example). Provider/agent curl flow: [sellers/bounties.md](../sellers/bounties.md).
 
 ### 3. Phala deploy
 
@@ -1492,16 +1492,16 @@ Boss Raid lets a developer or another agent submit one task through `POST /v1/ra
 | Track                               | What Boss Raid shows                                                                                                                 | Main proof in repo                                                                                                              | Current truth                                                                                                                          |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Synthesis Open Track                | One request becomes one managed multi-agent raid with one result and one proof surface.                                              | `POST /v1/raid`, `/receipt`, `GET /v1/agent.json`, `GET /v1/raid/:raidId/agent_log.json?token=...`                              | Strong now.                                                                                                                            |
-| Venice                              | Strict-private routing prefers Venice-backed providers and keeps the privacy decision visible in routing proof.                      | `examples/strict-private-raid.json`, `pnpm bossraid test:strict-private:e2e`                                                    | Strong now when Venice-backed providers are configured.                                                                                |
+| Venice                              | Strict-private routing prefers Venice-backed providers and keeps the privacy decision visible in routing proof.                      | `examples/raids/strict-private/strict-private-raid.json`, `pnpm bossraid test:strict-private:e2e`                                 | Strong now when Venice-backed providers are configured.                                                                                |
 | Base Agent Services                 | Boss Raid is an agent service with public HTTP ingress, discovery, and x402 payment gating.                                          | `POST /v1/raid`, `POST /v1/chat/completions`, x402 routes, Base-oriented settlement env in repo                                 | Strong now for service shape; stronger with live paid traffic.                                                                         |
 | Protocol Labs: Let the Agent Cook   | Mercenary runs the discover, plan, route, verify, synthesize, and settle loop with public manifest and run log proof.                | `GET /v1/agent.json`, `GET /v1/raid/:raidId/agent_log.json?token=...`, MCP tool flow                                            | Strong now.                                                                                                                            |
 | Protocol Labs: Agents With Receipts | Boss Raid can surface ERC-8004 identity refs, trust-gated routing, receipt proof, and DevSpot-style manifest plus run log.           | provider `erc8004` metadata, `requireErc8004`, `minTrustScore`, receipt, `agent.json`, `agent_log.json`                         | Good architecture now. Final sponsor-grade proof still needs real live ERC-8004 tx refs.                                               |
-| Virtuals ERC-8183 Open Build        | Boss Raid exposes ERC-8183-aligned settlement data and a concrete ACP-to-Boss-Raid mapping for provider identity and address wiring. | settlement proof surfaces, `examples/provider-registration.base-mainnet.example.json`, `examples/virtuals-acp-capture-sheet.md` | Good architecture now. Final sponsor-grade proof still needs live onchain settlement txs.                                              |
+| Virtuals ERC-8183 Open Build        | Boss Raid exposes ERC-8183-aligned settlement data and a concrete ACP-to-Boss-Raid mapping for provider identity and address wiring. | settlement proof surfaces, `examples/providers/provider-registration.base-mainnet.example.json`, `examples/onboarding/virtuals-acp-capture-sheet.md`, `examples/settlement/base-mainnet-proof.env.example`, `examples/settlement/provider-addresses.base-mainnet.json` | Good architecture now. Final sponsor-grade proof still needs live onchain settlement txs.                                              |
 | EigenCloud                          | Boss Raid can run in one EigenCompute TEE container and expose attested runtime and attested result proof.                           | `Dockerfile.eigencompute`, `scripts/serve-eigencompute.mjs`, attestation routes                                                 | Strong architecture now. The lane stays in-repo for sponsor and judging proof even while the active hosted runtime budget is on Phala. |
 | MetaMask Cookoff: x402 + ERC-7710   | `/mercenary` paid raid mode uses MetaMask Smart Accounts Kit with ERC-7710 delegation payments against the MetaMask facilitator.     | `packages/smart-pay`, `BOSSRAID_X402_ASSET_TRANSFER_METHOD=erc7710`, `POST /v1/raid`                                            | Strong when Base mainnet facilitator + funded wallet are configured.                                                                   |
 | MetaMask Cookoff: Best Agent        | Mercenary remains the main orchestrator while the browser flow connects, grants ERC-7715 budget, and pays for raids.                 | `/mercenary`, `/account`, `GET /v1/agent.json`, `GET /v1/raid/:id/agent_log.json`                                               | Strong now for Mercenary flow shape.                                                                                                   |
 | MetaMask Cookoff: A2A coordination  | Payment redelegation chain (7715 → 7710 → x402) plus workstream redelegation events in `agent_log.json`.                             | `bossraid_grant_session`, `agent_redelegate` tool calls, `paymentProof.delegationChain`                                         | Strong architecture now.                                                                                                               |
-| MetaMask Cookoff: Venice            | Mercenary calls Venice directly for plan/synthesize and routes Venice-backed provider workstreams.                                   | `packages/venice-client`, `examples/hackathon-venice-raid.json`, strict-private routing proof                                   | Strong when Venice API key or x402 wallet is configured.                                                                               |
+| MetaMask Cookoff: Venice            | Mercenary calls Venice directly for plan/synthesize and routes Venice-backed provider workstreams.                                   | `packages/venice-client`, `examples/raids/hackathon-venice-raid.json`, strict-private routing proof                              | Strong when Venice API key or x402 wallet is configured.                                                                               |
 | MetaMask Cookoff: 1Shot relayer     | Public relayer status webhook + browser upgrade path for gas-abstracted 7710 execution.                                              | `packages/oneshot-relayer`, `POST /v1/relayer/webhook`, `GET /v1/relayer/status/:taskId`                                        | Strong architecture now. Final proof needs a confirmed mainnet relay task.                                                             |
 
 ## Cohesive Demo Flow
@@ -1531,10 +1531,10 @@ Boss Raid lets a developer or another agent submit one task through `POST /v1/ra
 - screenshot image: `assets/cover.png`
 - promo render source: `apps/video`
 - rendered promo output: `temp/video/boss-raid-mercenary.mp4`
-- game raid example: `examples/game-raid/native-raid.json`
-- strict-private example: `examples/strict-private-raid.json`
-- MetaMask cookoff Venice example: `examples/hackathon-venice-raid.json`
-- MCP host-agent example: `examples/game-raid/delegate-input.json`
+- game raid example: `examples/raids/game-raid/native-raid.json`
+- strict-private example: `examples/raids/strict-private/strict-private-raid.json`
+- MetaMask cookoff Venice example: `examples/raids/hackathon-venice-raid.json`
+- MCP host-agent example: `examples/raids/game-raid/delegate-input.json`
 
 ## Public Proof Surface
 
@@ -1793,7 +1793,7 @@ ERC-8004 identity registration and ERC-8183 settlement are handled through the V
 
 ### Step 2: Map to Boss Raid Env
 
-Use `examples/virtuals-acp-capture-sheet.md` as a guide. Map the ACP output:
+Use `examples/onboarding/virtuals-acp-capture-sheet.md` as a guide. Map the ACP output:
 
 **Mercenary env vars** (API container):
 

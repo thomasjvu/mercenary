@@ -33,7 +33,7 @@ if (args.has('help')) {
       '',
       'Defaults:',
       '  api-base: http://127.0.0.1:8787',
-      '  provider: bounty-e2e-provider (from examples/bounty-e2e.providers.json)',
+      '  provider: bounty-e2e-provider (from examples/settlement/bounty-e2e.providers.json)',
       '  token: bossraid-provider-a',
     ].join('\n')
   );

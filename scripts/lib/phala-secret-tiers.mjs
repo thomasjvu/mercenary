@@ -172,7 +172,7 @@ export function buildDeployDefaults(merged = {}) {
   const providerModelBase = merged.VENICE_API_BASE ?? 'https://api.venice.ai/api/v1';
 
   const defaults = {
-    BOSSRAID_PROVIDERS_FILE: '/app/examples/game-raid/providers.compose.json',
+    BOSSRAID_PROVIDERS_FILE: '/app/examples/raids/game-raid/providers.compose.json',
     BOSSRAID_TEE_SOCKET_PATH: '/var/run/dstack.sock',
     BOSSRAID_SECRET_ENCRYPTION_KEY_ID: 'phala-2026-05',
     BOSSRAID_SETTLEMENT_FUND_JOBS: 'true',

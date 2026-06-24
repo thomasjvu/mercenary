@@ -1,4 +1,4 @@
-export const defaultProvidersFile = './examples/inference-marketplace-providers.json';
+export const defaultProvidersFile = './examples/inference/inference-marketplace-providers.json';
 
 const removedProviderFiles = [
   'providers.http.json',

@@ -26,13 +26,13 @@ pnpm bossraid test:strict-private:e2e
 
 ## Examples-only
 
-Party Quest / Forgejo campaign tooling for [`examples/bossraid-development/`](../examples/bossraid-development/):
+Party Quest / Forgejo campaign tooling for [`examples/campaigns/bossraid-development/`](../examples/campaigns/bossraid-development/):
 
-- `examples/bossraid-development/scripts/setup-forgejo-ops.mjs`
-- `examples/bossraid-development/scripts/setup-forgejo-agent-users.mjs`
-- `examples/bossraid-development/scripts/dogfood-party-quest-bossraid.mjs`
-- `examples/bossraid-development/scripts/smoke-party-quest-bossraid.mjs`
-- `examples/bossraid-development/scripts/test-party-quest-bossraid-smoke.mjs`
+- `examples/campaigns/bossraid-development/scripts/setup-forgejo-ops.mjs`
+- `examples/campaigns/bossraid-development/scripts/setup-forgejo-agent-users.mjs`
+- `examples/campaigns/bossraid-development/scripts/dogfood-party-quest-bossraid.mjs`
+- `examples/campaigns/bossraid-development/scripts/smoke-party-quest-bossraid.mjs`
+- `examples/campaigns/bossraid-development/scripts/test-party-quest-bossraid-smoke.mjs`
 
 Also exposed as `pnpm bossraid test:partyquest-bossraid:smoke`.
 

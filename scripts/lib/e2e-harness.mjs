@@ -13,7 +13,7 @@ export function createE2eEnv(options) {
     defaultPortBase = 8700,
     sqlitePrefix = 'raid-e2e',
     providersFile,
-    defaultProvidersFile = './examples/inference-marketplace-providers.json',
+    defaultProvidersFile = './examples/inference/inference-marketplace-providers.json',
   } = options;
 
   loadLocalEnv(rootDir);
@@ -23,7 +23,7 @@ export function createE2eEnv(options) {
   const explicitProvidersFile = process.env.BOSSRAID_PROVIDERS_FILE;
   const resolvedProvidersFile =
     explicitProvidersFile &&
-      explicitProvidersFile !== './examples/inference-marketplace-providers.json'
+      explicitProvidersFile !== './examples/inference/inference-marketplace-providers.json'
       ? explicitProvidersFile
       : providersFile ?? defaultProvidersFile;
   const explicitSqliteFile = process.env.BOSSRAID_SQLITE_FILE;

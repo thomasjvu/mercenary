@@ -147,7 +147,7 @@ const COMMANDS = {
   'test:partyquest-bossraid:smoke': {
     category: 'test',
     description: 'Party Quest integration smoke',
-    run: () => runNode('examples/bossraid-development/scripts/test-party-quest-bossraid-smoke.mjs'),
+    run: () => runNode('examples/campaigns/bossraid-development/scripts/test-party-quest-bossraid-smoke.mjs'),
   },
   'test:bounty-escrow:e2e': {
     category: 'test',

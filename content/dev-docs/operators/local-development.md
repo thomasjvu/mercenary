@@ -10,7 +10,7 @@ cp .env.example .env
 pnpm dev
 ```
 
-`pnpm dev` starts evaluator, API, web, and ops. The API loads the inference marketplace catalog from `examples/inference-marketplace-providers.json` by default. Local provider workers are off unless you set `BOSSRAID_DEV_SPAWN_PROVIDERS=true`.
+`pnpm dev` starts evaluator, API, web, and ops. The API loads the inference marketplace catalog from `examples/inference/inference-marketplace-providers.json` by default. Local provider workers are off unless you set `BOSSRAID_DEV_SPAWN_PROVIDERS=true`.
 
 | Service   | Default URL                                                                                   |
 | --------- | --------------------------------------------------------------------------------------------- |
@@ -27,7 +27,7 @@ Manual start: `pnpm dev:providers`, `pnpm dev:api`, `pnpm dev:web`, `pnpm dev:op
 BOSSRAID_DEV_SPAWN_PROVIDERS=true pnpm dev
 ```
 
-Demo agent fixtures (`dottie`, `riko`, `gamma`) are optional templates under `examples/demo-agents.*.example`. Copy into `temp/demo-agents/` and point `BOSSRAID_PROVIDERS_FILE` there when experimenting. See [`examples/README-demo-agents.md`](../../examples/README-demo-agents.md).
+Demo agent fixtures (`dottie`, `riko`, `gamma`) are optional templates under `examples/providers/demo-agents.*.example`. Copy into `temp/demo-agents/` and point `BOSSRAID_PROVIDERS_FILE` there when experimenting. See [`examples/providers/README-demo-agents.md`](../../examples/providers/README-demo-agents.md).
 
 Stale listeners from a prior session:
 

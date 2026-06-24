@@ -223,9 +223,9 @@ function routePathFor(route) {
 
 function defaultPayloadForRoute(route) {
   if (route === 'inference') {
-    return 'examples/inference-chat-completion-request.json';
+    return 'examples/inference/inference-chat-completion-request.json';
   }
   return route === 'chat'
-    ? 'examples/chat-completion-request.json'
-    : 'examples/unity-bug/task.json';
+    ? 'examples/inference/chat-completion-request.json'
+    : 'examples/raids/unity-bug/task.json';
 }
