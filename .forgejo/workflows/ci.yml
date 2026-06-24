@@ -23,9 +23,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+      - run: corepack enable
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10.28.0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -44,4 +43,4 @@ jobs:
         timeout-minutes: 15
       - run: pnpm test:smoke:e2e
         timeout-minutes: 15
-      - run: NODE_ENV=production BOSSRAID_SETTLEMENT_MODE=onchain BOSSRAID_X402_ENABLED=true BOSSRAID_SETTLEMENT_FUND_JOBS=true BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS=true BOSSRAID_BOUNTY_ESCROW_ADDRESS=0x0000000000000000000000000000000000000201 BOSSRAID_ONESHOT_RELAYER_WEBHOOK_SECRET=ci-audit-secret BOSSRAID_SECRET_ENCRYPTION_KEY=ci-audit-encryption-key node scripts/audit-production-deploy-env.mjs
+      - run: NODE_ENV=production BOSSRAID_SETTLEMENT_MODE=onchain BOSSRAID_X402_ENABLED=true BOSSRAID_SETTLEMENT_FUND_JOBS=true BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS=true BOSSRAID_BOUNTY_ESCROW_ADDRESS=0x0000000000000000000000000000000000000201 BOSSRAID_ONESHOT_RELAYER_WEBHOOK_SECRET=ci-audit-secret BOSSRAID_SECRET_ENCRYPTION_KEY=ci-audit-encryption-key pnpm bossraid audit:production-env

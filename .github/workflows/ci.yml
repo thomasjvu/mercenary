@@ -7,6 +7,10 @@ on:
     branches: [main, development, staging]
   workflow_dispatch:
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -64,4 +68,4 @@ jobs:
         timeout-minutes: 15
 
       - name: Production deploy env audit
-        run: NODE_ENV=production BOSSRAID_SETTLEMENT_MODE=onchain BOSSRAID_X402_ENABLED=true BOSSRAID_SETTLEMENT_FUND_JOBS=true BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS=true BOSSRAID_BOUNTY_ESCROW_ADDRESS=0x0000000000000000000000000000000000000201 BOSSRAID_ONESHOT_RELAYER_WEBHOOK_SECRET=ci-audit-secret BOSSRAID_SECRET_ENCRYPTION_KEY=ci-audit-encryption-key node scripts/audit-production-deploy-env.mjs
+        run: NODE_ENV=production BOSSRAID_SETTLEMENT_MODE=onchain BOSSRAID_X402_ENABLED=true BOSSRAID_SETTLEMENT_FUND_JOBS=true BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS=true BOSSRAID_BOUNTY_ESCROW_ADDRESS=0x0000000000000000000000000000000000000201 BOSSRAID_ONESHOT_RELAYER_WEBHOOK_SECRET=ci-audit-secret BOSSRAID_SECRET_ENCRYPTION_KEY=ci-audit-encryption-key pnpm bossraid audit:production-env

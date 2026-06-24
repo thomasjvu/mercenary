@@ -61,6 +61,8 @@ pnpm dev:ops
 
 ## Pull Requests
 
+GitHub and Forgejo auto-fill the PR template. For bugs or features, pick an issue template when opening an issue.
+
 - Explain the user-visible behavior change.
 - List new env vars, routes, commands, or workflows.
 - Include the verification commands you ran.
