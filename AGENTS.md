@@ -53,6 +53,8 @@ pnpm dev:docs
 
 Operator and deploy workflows use `pnpm bossraid <command>` (`pnpm bossraid help` lists all). Contributor scripts stay in `package.json`.
 
+`/improve` and `/execute-plan` write handoff files to `plans/` (gitignored, local only).
+
 ## Current Constraints
 
 - provider workers are HTTP only
