@@ -1171,17 +1171,30 @@ code {
   background: var(--card-color);
 }
 
+.doc-content .papers-character-note__avatar-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
 .doc-content .papers-character-note__avatar {
   width: 100%;
   max-width: 100%;
   height: auto;
   aspect-ratio: 1;
   object-fit: contain;
-  background: transparent;
-  justify-self: center;
+  margin: 0;
+  padding: 0;
   border: none;
   border-radius: 0;
-  margin: 0;
+  background: none;
+  box-shadow: none;
+  outline: none;
   display: block;
 }
 
@@ -2285,8 +2298,8 @@ code.wallet-address {
   }
 }
 
-/* Add rounded border to all markdown images except icons */
-.markdown-content img:not([src*='pixel-']) {
+/* Add rounded border to all markdown images except icons and character-note avatars */
+.markdown-content img:not([src*='pixel-']):not(.papers-character-note__avatar) {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   width: 100%;
@@ -2296,23 +2309,14 @@ code.wallet-address {
   margin: var(--space-6) auto;
 }
 
-/* Ensure icon and character-note avatars don't get the markdown image styling */
+/* Ensure icon images don't get the markdown image styling */
 .icon-heading img,
-.social-links-inline img,
-.markdown-content .papers-character-note__avatar,
-.doc-content .papers-character-note__avatar {
+.social-links-inline img {
   border: none;
   border-radius: 0;
   margin: 0;
   width: auto;
   display: inline;
-}
-
-.markdown-content .papers-character-note__avatar,
-.doc-content .papers-character-note__avatar {
-  width: 100%;
-  max-width: 100%;
-  display: block;
 }
 
 .avatar-expression-grid {

@@ -165,6 +165,14 @@ function transformCharacterNote(node) {
     decoding: 'async',
   });
 
+  const avatarSlot = createElement(
+    'div',
+    {
+      className: 'papers-character-note__avatar-slot',
+    },
+    [avatar]
+  );
+
   const body = createElement(
     'div',
     {
@@ -179,7 +187,7 @@ function transformCharacterNote(node) {
       className: `papers-character-note papers-character-note--${safeType}`,
       role: 'note',
     },
-    [avatar, body]
+    [avatarSlot, body]
   );
 }
 
