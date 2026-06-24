@@ -112,7 +112,7 @@ const COMMANDS = {
   'test:game-raid:e2e': {
     category: 'test',
     description: 'Game raid stack e2e (alias of test:smoke:e2e)',
-    run: () => runNode('scripts/test-game-raid-e2e.mjs'),
+    run: () => runNode('scripts/test-raid-e2e.mjs', ['--profile', 'game']),
   },
   'test:evaluator:e2e': {
     category: 'test',
@@ -122,12 +122,12 @@ const COMMANDS = {
   'test:private-game-raid:e2e': {
     category: 'test',
     description: 'Private game raid e2e',
-    run: () => runNode('scripts/test-private-game-raid-e2e.mjs'),
+    run: () => runNode('scripts/test-raid-e2e.mjs', ['--profile', 'private-game']),
   },
   'test:strict-private:e2e': {
     category: 'test',
     description: 'Strict-private raid e2e',
-    run: () => runNode('scripts/test-strict-private-raid-e2e.mjs'),
+    run: () => runNode('scripts/test-raid-e2e.mjs', ['--profile', 'strict-private']),
   },
   'test:mcp:e2e': {
     category: 'test',
@@ -147,7 +147,7 @@ const COMMANDS = {
   'test:partyquest-bossraid:smoke': {
     category: 'test',
     description: 'Party Quest integration smoke',
-    run: () => runNode('scripts/test-party-quest-bossraid-smoke.mjs'),
+    run: () => runNode('examples/bossraid-development/scripts/test-party-quest-bossraid-smoke.mjs'),
   },
   'test:bounty-escrow:e2e': {
     category: 'test',

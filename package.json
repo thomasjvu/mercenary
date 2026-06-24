@@ -23,7 +23,7 @@
     "test:attestation": "pnpm --filter @bossraid/privacy-engine test && pnpm --filter @bossraid/api exec node --import tsx --test src/host-attestation.test.ts src/marketplace-tee.test.ts",
     "test:bounty-escrow:local": "node scripts/test-bounty-escrow-local-e2e.mjs",
     "test:money-path": "pnpm --filter @bossraid/api exec node --import tsx --test src/bounty-service.test.ts src/bounty-onchain.test.ts src/bounty-onchain-chain.test.ts src/lib/bounty-store.test.ts src/lib/x402-reconciliation.test.ts src/launch-payment-billing.test.ts src/lib/raid-launch-billing.test.ts src/x402-settled-payments.test.ts src/lib/chat-terminal-wait.test.ts src/lib/streaming-chat-reconcile.test.ts src/handlers/payment-reconcile.test.ts src/payment-api-key.test.ts src/relayer.test.ts src/lib/inference-gateway.test.ts",
-    "test:smoke:e2e": "node scripts/test-game-raid-e2e.mjs",
+    "test:smoke:e2e": "node scripts/test-raid-e2e.mjs --profile game",
     "test:unit": "turbo run test"
   },
   "devDependencies": {

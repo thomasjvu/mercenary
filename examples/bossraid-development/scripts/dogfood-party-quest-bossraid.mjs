@@ -14,11 +14,11 @@ import { fileURLToPath } from 'node:url';
 const AGENTS = ['bossraid-code', 'bossraid-debug', 'bossraid-marketing', 'bossraid-research'];
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
-const repoRoot = resolve(process.env.BOSSRAID_REPO || join(scriptDir, '..'));
+const repoRoot = resolve(process.env.BOSSRAID_REPO || join(scriptDir, '../../..'));
 const envDir = resolve(
-  process.env.BOSSRAID_AGENT_ENV_DIR || join(homedir(), 'bossraid-ops/workspaces/env'),
+  process.env.BOSSRAID_AGENT_ENV_DIR || join(homedir(), 'bossraid-ops/workspaces/env')
 );
-const smokeScript = join(repoRoot, 'scripts/smoke-party-quest-bossraid.mjs');
+const smokeScript = join(scriptDir, 'smoke-party-quest-bossraid.mjs');
 const day = new Date().toISOString().slice(0, 10);
 const evidenceDir = join(repoRoot, 'evidence', 'party-quest');
 const evidenceJsonl =
@@ -30,7 +30,7 @@ const dryRun = argv.includes('--dry-run');
 const pauseBridges = argv.includes('--pause-bridges');
 const reseedEach = argv.includes('--reseed');
 const extraArgs = argv.filter(
-  (arg) => !['--pause-bridges', '--reseed', '--dry-run', '--help', '-h'].includes(arg),
+  (arg) => !['--pause-bridges', '--reseed', '--dry-run', '--help', '-h'].includes(arg)
 );
 const partyQuestDir = process.env.PARTY_QUEST_DIR?.trim() || join(homedir(), 'party-quest');
 const BRIDGE_PORTS = [2201, 2202, 2203];
@@ -58,7 +58,7 @@ function reseedQuests() {
       '-lc',
       `cd "${partyQuestDir}" && docker compose -f docker-compose.spectre.yml --env-file .env.self-hosted run --rm -e CONVEX_SELF_HOSTED_URL=http://party-quest-convex-1:3210 convex-deploy npx convex run seed:seedBossraidDevelopment`,
     ],
-    { encoding: 'utf8' },
+    { encoding: 'utf8' }
   );
   if (result.status !== 0) {
     process.stderr.write(result.stderr || result.stdout || 'reseed failed\n');
@@ -92,7 +92,7 @@ mkdirSync(evidenceDir, { recursive: true });
 if (dryRun) {
   process.stdout.write(
     JSON.stringify({ dryRun: true, repoRoot, envDir, evidenceJsonl, agents: AGENTS }, null, 2) +
-      '\n',
+      '\n'
   );
   process.exit(0);
 }

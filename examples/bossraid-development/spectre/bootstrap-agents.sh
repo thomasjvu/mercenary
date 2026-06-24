@@ -43,7 +43,7 @@ done
 echo "==> Forgejo agent users"
 if [ -n "${FORGEJO_TOKEN:-}" ]; then
   FORGEJO_TOKEN="${FORGEJO_TOKEN}" WORKSPACE_ENV_DIR="${WORKSPACES}/env" \
-    node "${BOSSRAID_REPO}/scripts/setup-forgejo-agent-users.mjs"
+    node "${BOSSRAID_REPO}/examples/bossraid-development/scripts/setup-forgejo-agent-users.mjs"
 else
   echo "warn: FORGEJO_TOKEN not set — skip agent user provisioning"
 fi
@@ -80,4 +80,4 @@ BOSSRAID_REPO="${BOSSRAID_REPO}" \
 BOSSRAID_RUNTIME_SEED_FILE="${SEED_FILE}" \
   bash "${BOSSRAID_REPO}/examples/bossraid-development/spectre/register-all-bossraid-agents.sh"
 
-echo "Done. Dogfood: node ${BOSSRAID_REPO}/scripts/dogfood-party-quest-bossraid.mjs --pause-bridges --reseed"
+echo "Done. Dogfood: node ${BOSSRAID_REPO}/examples/bossraid-development/scripts/dogfood-party-quest-bossraid.mjs --pause-bridges --reseed"

@@ -18,7 +18,7 @@ echo "==> Bootstrap agents + Party Quest seeds"
 bash "${BOSSRAID_REPO}/examples/bossraid-development/spectre/bootstrap-agents.sh"
 
 echo "==> Dogfood all four squads"
-node "${BOSSRAID_REPO}/scripts/dogfood-party-quest-bossraid.mjs" --pause-bridges --reseed
+node "${BOSSRAID_REPO}/examples/bossraid-development/scripts/dogfood-party-quest-bossraid.mjs" --pause-bridges --reseed
 
 echo "==> Forgejo CI (re-trigger if needed)"
 echo "Open https://forgejo.phantasy.bot/bossraid/mercenary/actions"

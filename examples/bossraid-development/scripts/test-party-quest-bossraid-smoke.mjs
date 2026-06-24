@@ -5,9 +5,9 @@ import { decodePaymentResponseHeader, x402Client, x402HTTPClient } from '@x402/f
 import { ExactEvmScheme } from '@x402/evm';
 import { ExactEvmSchemeV1 } from '@x402/evm/v1';
 import { privateKeyToAccount } from 'viem/accounts';
-import { loadLocalEnv } from './env.mjs';
+import { loadLocalEnv } from '../../../scripts/env.mjs';
 
-const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 loadLocalEnv(rootDir);
 
 const apiBase = requiredUrlFrom([
@@ -463,7 +463,11 @@ function requiredEnv(name) {
 }
 
 function parseBoolean(value) {
-  return ['1', 'true', 'yes', 'on'].includes(String(value ?? '').trim().toLowerCase());
+  return ['1', 'true', 'yes', 'on'].includes(
+    String(value ?? '')
+      .trim()
+      .toLowerCase()
+  );
 }
 
 function ensureTrailingSlash(value) {
