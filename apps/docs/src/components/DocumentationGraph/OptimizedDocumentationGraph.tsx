@@ -1,7 +1,9 @@
+import { Icon } from '@iconify/react';
 import React, { useEffect, useRef, useState, useMemo, useCallback, useId } from 'react';
 
 import { useDebouncedCallback } from '../../hooks/useDebounce';
 
+import MindmapExpandModal from './MindmapExpandModal';
 import GraphControls from './GraphControls';
 import GraphLegend from './GraphLegend';
 import GraphLinks from './GraphLinks';
@@ -12,6 +14,7 @@ interface OptimizedDocumentationGraphProps {
   currentPath?: string;
   onNodeClick?: (path: string) => void;
   className?: string;
+  layoutMode?: 'sidebar' | 'expanded';
 }
 
 function hashAngle(value: string): number {
@@ -29,6 +32,7 @@ export default function OptimizedDocumentationGraph({
   currentPath,
   onNodeClick,
   className = '',
+  layoutMode = 'sidebar',
 }: OptimizedDocumentationGraphProps) {
   const instanceId = useId();
   const svgRef = useRef<SVGSVGElement>(null);
@@ -48,6 +52,7 @@ export default function OptimizedDocumentationGraph({
   // Interaction state
   const [isNavigating, setIsNavigating] = useState(false);
   const [pendingSwitchNodeId, setPendingSwitchNodeId] = useState<string | undefined>(undefined);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const MIN_SCALE = 0.5;
   const MAX_SCALE = 2;
@@ -319,10 +324,12 @@ export default function OptimizedDocumentationGraph({
     setPendingSwitchNodeId(undefined);
   }, [currentPath]);
 
-  const isSidebarView = dimensions.height <= 300;
+  const isSidebarView = layoutMode === 'sidebar' && dimensions.height <= 300;
+  const graphHeightClass =
+    layoutMode === 'expanded' ? 'h-full min-h-[28rem]' : isSidebarView ? 'h-48' : 'h-96';
 
   return (
-    <div className={`documentation-graph ${className}`}>
+    <div className={`documentation-graph flex h-full flex-col ${className}`}>
       {/* Search Input */}
       <div className="mb-2">
         <input
@@ -344,9 +351,7 @@ export default function OptimizedDocumentationGraph({
 
       {/* Graph Container */}
       <div
-        className={`graph-container ui-panel relative overflow-hidden ${
-          isSidebarView ? 'h-48' : 'h-96'
-        }`}
+        className={`graph-container ui-panel relative min-h-0 flex-1 overflow-hidden ${graphHeightClass}`}
       >
         {/* Mind-map label */}
         <div
@@ -369,6 +374,19 @@ export default function OptimizedDocumentationGraph({
           maxScale={MAX_SCALE}
           isSidebarView={isSidebarView}
         />
+
+        {layoutMode !== 'expanded' && (
+          <button
+            type="button"
+            onClick={() => setIsExpanded(true)}
+            className="ui-control-ghost absolute bottom-2 right-3 z-10 flex h-7 w-7 items-center justify-center rounded-md"
+            style={{ fontFamily: 'var(--mono-font)', color: 'var(--mindmap-text-color)' }}
+            aria-label="Expand interactive map"
+            title="Expand map"
+          >
+            <Icon icon="mingcute:fullscreen-line" className="h-4 w-4" />
+          </button>
+        )}
 
         <svg
           key={graphRenderKey}
@@ -445,6 +463,13 @@ export default function OptimizedDocumentationGraph({
         searchTerm={searchTerm}
         searchResults={searchResults}
         isSidebarView={isSidebarView}
+      />
+
+      <MindmapExpandModal
+        isOpen={isExpanded}
+        onClose={() => setIsExpanded(false)}
+        currentPath={currentPath}
+        onNodeClick={onNodeClick}
       />
     </div>
   );

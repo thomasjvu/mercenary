@@ -23,9 +23,9 @@ Right now it controls:
 
 ## Theme, Motion, And Font Controls
 
-These settings come from `ThemeProvider` and are surfaced through `SettingsMenu`.
+These settings come from `ThemeProvider` and are surfaced in the command palette (`Cmd/Ctrl + K`).
 
-The font control cycles through sans, mono, and serif instead of opening a dropdown.
+The settings button opens the palette directly. Preference commands include theme, motion, and font family (sans, mono, serif).
 
 Installable themes live under `themes/` and are selected with `VITE_PAPERS_THEME`. See [Themes](./themes).
 

@@ -17,7 +17,7 @@ import DocsVariantSelector from '../DocsVariantSelector';
 import DocumentationGraph from '../DocumentationGraph/OptimizedDocumentationGraph';
 import FileTree from '../FileTree';
 import fileTreeStyles from '../FileTree.module.css';
-import SettingsMenu from '../SettingsMenu';
+
 import { socialLinks } from '../../constants/social';
 import { UI_CLASSES } from '../../constants/ui';
 import { getMobileTogglePositionClasses, uiConfig } from '../../config/ui';
@@ -515,29 +515,23 @@ const DocumentationPage = React.memo(
                   />
                 </button>
 
-                <div
-                  className="flex items-center justify-between rounded-lg border px-3 py-2"
-                  style={{
-                    backgroundColor: 'var(--card-color)',
-                    borderColor: 'var(--border-unified)',
-                  }}
+                <button
+                  onClick={openCommandPalette}
+                  className="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-opacity hover:opacity-80"
+                  style={utilityButtonStyle}
+                  type="button"
                 >
-                  <div>
-                    <p
-                      className="text-2xs uppercase tracking-[0.2em]"
-                      style={{ color: 'var(--muted-color)', fontFamily: 'var(--mono-font)' }}
-                    >
-                      Preferences
-                    </p>
-                    <p
-                      className="text-sm"
-                      style={{ color: 'var(--text-color)', fontFamily: 'var(--mono-font)' }}
-                    >
-                      Theme and motion
-                    </p>
-                  </div>
-                  <SettingsMenu placement="top" />
-                </div>
+                  <span className="flex items-center gap-2">
+                    <Icon icon="mingcute:settings-3-fill" className="h-4 w-4" />
+                    <span>Preferences</span>
+                  </span>
+                  <span
+                    className="text-2xs"
+                    style={{ color: 'var(--muted-color)', fontFamily: 'var(--mono-font)' }}
+                  >
+                    {shortcutLabel}
+                  </span>
+                </button>
               </div>
             </motion.aside>
           )}
