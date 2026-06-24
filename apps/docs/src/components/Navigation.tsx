@@ -427,7 +427,7 @@ export default function Navigation({
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`social-link flex items-center gap-1 ${UI_CLASSES.button}`}
+                      className="social-link flex items-center gap-1"
                       style={{
                         color: 'var(--muted-color)',
                       }}

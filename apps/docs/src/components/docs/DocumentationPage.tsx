@@ -60,7 +60,7 @@ function RightRailFooter() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={link.name}
-            className={`social-link ${UI_CLASSES.button}`}
+            className="social-link"
             style={{ color: 'var(--toc-text-color)' }}
           >
             <div className="h-5 w-5">{link.icon}</div>
