@@ -21,22 +21,23 @@ Generated output lands in `public/docs-content/` (and per-collection indexes). T
 
 ## Shipped
 
-| Feature                                    | Status                                                    |
-| ------------------------------------------ | --------------------------------------------------------- |
-| Markdown + frontmatter                     | Yes                                                       |
-| MDX (sanitized HTML at build)              | Yes                                                       |
-| GitHub callouts                            | Yes                                                       |
-| Mermaid diagrams                           | Yes                                                       |
-| Pagefind search + command palette          | Yes                                                       |
-| Interactive doc graph                      | Yes                                                       |
-| `llms.txt` generation                      | Yes                                                       |
-| Hosted asset preview (`HostedFilePreview`) | Yes                                                       |
-| Themed code blocks                         | Yes — per-theme `--code-bg`, clip-path, min-height tokens |
-| OpenAPI explorer (Scalar)                  | Yes                                                       |
-| Edit on GitHub footer                      | Yes                                                       |
-| Version / i18n scaffolding                 | Yes                                                       |
-| Tree sync                                  | `npm run check:docs-tree`                                 |
-| Starter CLI                                | `npm create papers`                                       |
+| Feature                                    | Status                                                             |
+| ------------------------------------------ | ------------------------------------------------------------------ |
+| Markdown + frontmatter                     | Yes                                                                |
+| MDX (sanitized HTML at build)              | Yes                                                                |
+| GitHub callouts                            | Yes                                                                |
+| CharacterNote MDX shortcode                | Yes — Mercenary avatar variants for info/warning/alert/success/tip |
+| Mermaid diagrams                           | Yes                                                                |
+| Pagefind search + command palette          | Yes                                                                |
+| Interactive doc graph                      | Yes                                                                |
+| `llms.txt` generation                      | Yes                                                                |
+| Hosted asset preview (`HostedFilePreview`) | Yes                                                                |
+| Themed code blocks                         | Yes — per-theme `--code-bg`, clip-path, min-height tokens          |
+| OpenAPI explorer (Scalar)                  | Yes                                                                |
+| Edit on GitHub footer                      | Yes                                                                |
+| Version / i18n scaffolding                 | Yes                                                                |
+| Tree sync                                  | `npm run check:docs-tree`                                          |
+| Starter CLI                                | `npm create papers`                                                |
 
 ## Enable versioned or localized docs
 
