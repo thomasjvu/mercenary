@@ -186,7 +186,7 @@ phala deploy --cvm-id bossraid-main \
   --wait
 ```
 
-Secret rotation: `phala envs update bossraid-main -e deploy/phala/.env`. Infisical workflow: [appendix/infisical.md](appendix/infisical.md).
+Secret rotation: `phala envs update bossraid-main -e deploy/phala/.env`. Infisical workflow: [Infisical secrets](/dev-docs/operators/infisical) in dev-docs.
 
 ### 4. Verify
 

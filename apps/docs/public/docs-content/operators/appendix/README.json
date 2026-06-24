@@ -1,9 +1,0 @@
-{
-  "path": "operators/appendix/README",
-  "title": "Appendix",
-  "description": "Operator-only reference. Not required for buy/sell quickstarts.",
-  "frontmatter": {},
-  "content": "# Appendix\n\nOperator-only reference. Not required for buy/sell quickstarts.\n\n- [Infisical secret workflow](infisical.md)",
-  "contentFormat": "markdown",
-  "sourcePath": "operators/appendix/README.md"
-}

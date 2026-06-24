@@ -28,11 +28,6 @@ Open marketplace docs for discount inference, Mercenary raids, seller onboarding
 - [Environment](/docs/reference/env): Grouped reference. Defaults and edge cases live in [operators/runtime.md](../operators/runtime.md).
 - [Payments](/docs/reference/payments): x402 in, escrow out, equal split to successful providers.
 
-## Appendix
-
-- [Overview](/docs/operators/appendix/README): Operator-only reference. Not required for buy/sell quickstarts.
-- [Infisical](/docs/operators/appendix/infisical): Boss Raid stores **tiered Phala secrets** in Infisical and assembles the full
-
 ## Operators
 
 - [Runtime](/docs/operators/runtime): Verification, deploy, and operator workflows. Env tables: [reference/env.md](../reference/env.md). Local install and default URLs: [Local development](/dev-docs/operators/local-development) in dev-docs.

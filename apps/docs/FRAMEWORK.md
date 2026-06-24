@@ -26,27 +26,28 @@ When porting this feature upstream to [thomasjvu/papers](https://github.com/thom
 
 ## Shipped
 
-| Feature                                    | Status                                                   |
-| ------------------------------------------ | -------------------------------------------------------- |
-| Markdown + frontmatter                     | Yes                                                      |
-| MDX (`.mdx` → sanitized HTML at build)     | Yes                                                      |
-| GitHub callouts (`> [!NOTE]`)              | Yes                                                      |
-| Mermaid diagrams                           | Yes                                                      |
-| Pagefind search + command palette          | Yes                                                      |
-| Interactive doc graph                      | Yes                                                      |
-| `llms.txt` generation                      | Yes                                                      |
-| Hosted asset preview (`HostedFilePreview`) | Yes — `/docs/llms`, `/docs/skill` with CodeBlock preview |
-| OpenAPI explorer (Scalar)                  | Yes                                                      |
-| Edit on GitHub footer                      | Yes                                                      |
-| Version / i18n route scaffolding           | Yes (enable in `documentation-config.js`)                |
-| Doc JSON prefetch on hover                 | Yes                                                      |
-| Tree sync script                           | `npm run check:docs-tree`                                |
-| Tree auto-append                           | `npm run sync:docs-tree -- --write`                      |
-| MDX shortcodes (`Callout`, `Tabs`, `Card`) | Yes                                                      |
-| Mermaid lazy load                          | Yes (`MermaidDiagram` async chunk + `vendor-mermaid`)    |
-| Lazy feature boundary checks               | Yes (`npm test` guards provider imports in lazy modules) |
-| OpenAPI multi-spec                         | Yes (`openapiConfig` in `documentation-config.js`)       |
-| Starter CLI                                | `npm create papers` via `packages/create-papers`         |
+| Feature                                     | Status                                                                       |
+| ------------------------------------------- | ---------------------------------------------------------------------------- |
+| Markdown + frontmatter                      | Yes                                                                          |
+| MDX (`.mdx` → sanitized HTML at build)      | Yes                                                                          |
+| GitHub callouts (`> [!NOTE]`)               | Yes                                                                          |
+| Mermaid diagrams                            | Yes                                                                          |
+| Pagefind search + command palette           | Yes                                                                          |
+| Interactive doc graph                       | Yes                                                                          |
+| `llms.txt` generation                       | Yes                                                                          |
+| Hosted asset preview (`HostedFilePreview`)  | Yes — `/docs/llms`, `/docs/skill` with CodeBlock preview                     |
+| Themed code blocks (`CodeBlock.module.css`) | Yes — `--code-block-radius`, `--code-block-clip-path`, `--code-bg` per theme |
+| OpenAPI explorer (Scalar)                   | Yes                                                                          |
+| Edit on GitHub footer                       | Yes                                                                          |
+| Version / i18n route scaffolding            | Yes (enable in `documentation-config.js`)                                    |
+| Doc JSON prefetch on hover                  | Yes                                                                          |
+| Tree sync script                            | `npm run check:docs-tree`                                                    |
+| Tree auto-append                            | `npm run sync:docs-tree -- --write`                                          |
+| MDX shortcodes (`Callout`, `Tabs`, `Card`)  | Yes                                                                          |
+| Mermaid lazy load                           | Yes (`MermaidDiagram` async chunk + `vendor-mermaid`)                        |
+| Lazy feature boundary checks                | Yes (`npm test` guards provider imports in lazy modules)                     |
+| OpenAPI multi-spec                          | Yes (`openapiConfig` in `documentation-config.js`)                           |
+| Starter CLI                                 | `npm create papers` via `packages/create-papers`                             |
 
 ## Enable versioned or localized docs
 

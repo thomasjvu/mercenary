@@ -203,25 +203,6 @@ export const documentationTree = [
         path: 'operators/trust-and-safety',
         tags: ['trust', 'policy'],
       },
-      {
-        type: 'directory',
-        name: 'Appendix',
-        path: 'operators/appendix',
-        children: [
-          {
-            type: 'file',
-            name: 'Overview.md',
-            path: 'operators/appendix/README',
-            tags: ['appendix'],
-          },
-          {
-            type: 'file',
-            name: 'Infisical.md',
-            path: 'operators/appendix/infisical',
-            tags: ['secrets'],
-          },
-        ],
-      },
     ],
   },
 ];
@@ -238,6 +219,12 @@ export const devDocumentationTree = [
         name: 'Local Development.md',
         path: 'operators/local-development',
         tags: ['runtime', 'dev', 'local'],
+      },
+      {
+        type: 'file',
+        name: 'Infisical Secrets.md',
+        path: 'operators/infisical',
+        tags: ['secrets', 'infisical', 'deploy'],
       },
     ],
   },

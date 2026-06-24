@@ -109,7 +109,7 @@ Core tier keys:
 | `BOSSRAID_VENICE_API_KEY`                                                                                          | Shared upstream inference key for all 3 Phala providers |
 | `BOSSRAID_X402_PAY_TO`, `PAYAI_API_KEY_ID`, `PAYAI_API_KEY_SECRET`                                                 | Paid traffic                                            |
 
-Workflow: [operators/appendix/infisical.md](../operators/appendix/infisical.md).
+Workflow: [Infisical secrets](/dev-docs/operators/infisical) in dev-docs.
 
 ## Settlement
 
