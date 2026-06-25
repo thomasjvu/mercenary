@@ -381,19 +381,11 @@ const DocumentationPage = React.memo(
                     style={{ color: 'var(--text-color)' }}
                   >
                     <DocsLogoMark size="lg" />
-                    <span className="min-w-0">
-                      <span
-                        className="block truncate text-sm uppercase tracking-[0.28em]"
-                        style={{ color: 'var(--muted-color)', fontFamily: 'var(--mono-font)' }}
-                      >
-                        Docs
-                      </span>
-                      <span
-                        className="block truncate text-lg font-black uppercase tracking-[0.18em]"
-                        style={{ color: 'var(--text-color)', fontFamily: 'var(--mono-font)' }}
-                      >
-                        {siteName}
-                      </span>
+                    <span
+                      className="min-w-0 truncate text-lg font-black uppercase tracking-[0.18em]"
+                      style={{ color: 'var(--text-color)', fontFamily: 'var(--mono-font)' }}
+                    >
+                      {siteName}
                     </span>
                   </Link>
 
@@ -465,29 +457,6 @@ const DocumentationPage = React.memo(
                   <span className="flex items-center gap-2">
                     <Icon icon="mingcute:file-info-line" className="h-4 w-4" />
                     <span>LLMs.txt</span>
-                  </span>
-                  <Icon icon="mingcute:arrow-right-line" className="h-4 w-4" />
-                </button>
-
-                <button
-                  onClick={() => {
-                    navigate(
-                      buildCanonicalCollectionPath(collection, 'skill', {
-                        version: routeContext.activeVersion,
-                        locale: routeContext.activeLocale,
-                      })
-                    );
-                    if (isMobile) {
-                      setSidebarVisible(false);
-                    }
-                  }}
-                  className="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-opacity hover:opacity-80"
-                  style={utilityButtonStyle}
-                  type="button"
-                >
-                  <span className="flex items-center gap-2">
-                    <Icon icon="mingcute:magic-2-line" className="h-4 w-4" />
-                    <span>Agent Skill</span>
                   </span>
                   <Icon icon="mingcute:arrow-right-line" className="h-4 w-4" />
                 </button>

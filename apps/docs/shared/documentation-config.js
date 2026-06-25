@@ -208,6 +208,12 @@ export const documentationTree = [
       { type: 'file', name: 'Routes.md', path: 'reference/routes', tags: ['api', 'routes'] },
       { type: 'file', name: 'Environment.md', path: 'reference/env', tags: ['env', 'config'] },
       { type: 'file', name: 'Payments.md', path: 'reference/payments', tags: ['x402', 'payments'] },
+      {
+        type: 'file',
+        name: 'Agent Skill.md',
+        path: 'skill',
+        tags: ['skill', 'agent', 'reference'],
+      },
     ],
   },
   {

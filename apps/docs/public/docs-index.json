@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-24T21:19:14.851Z",
+  "generated": "2026-06-25T00:26:23.959Z",
   "paths": [
     "overview/introduction",
     "overview/proof",
@@ -12,11 +12,11 @@
     "reference/routes",
     "reference/env",
     "reference/payments",
+    "skill",
     "operators/runtime",
     "operators/architecture",
     "operators/trust-and-safety",
-    "llms",
-    "skill"
+    "llms"
   ],
   "count": 16,
   "titles": {
@@ -31,10 +31,10 @@
     "reference/routes": "Routes",
     "reference/env": "Environment Variables",
     "reference/payments": "Payments",
+    "skill": "Agent Skill",
     "operators/runtime": "Runtime & Commands",
     "operators/architecture": "Architecture",
     "operators/trust-and-safety": "Trust & Safety",
-    "llms": "LLMs.txt",
-    "skill": "Agent Skill"
+    "llms": "LLMs.txt"
   }
 }

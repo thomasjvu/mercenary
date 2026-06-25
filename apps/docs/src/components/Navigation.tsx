@@ -26,7 +26,6 @@ const navItems: NavItem[] = [
   { label: 'Design System', href: '/docs/developer-guides/design-system' },
   { label: 'Deployment', href: '/docs/deployment/overview' },
   { label: 'LLMs.txt', href: '/docs/llms' },
-  { label: 'Agent Skill', href: '/docs/skill' },
 ];
 
 const bracketAnimationConfig = {
