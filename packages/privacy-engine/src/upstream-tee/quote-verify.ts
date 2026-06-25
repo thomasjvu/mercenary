@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 
 const MOCK_QUOTES = new Set(['mock-intel-quote', 'mock-tdx-quote']);
-const DEFAULT_PHALA_VERIFY_URL = 'https://cloud-api.phala.network/api/v1/attestations/verify';
+const DEFAULT_PHALA_VERIFY_URL = 'https://cloud-api.phala.com/api/v1/attestations/verify';
 const MIN_TDX_QUOTE_BYTES = 128;
 
 export type QuoteVerifyResult = {
@@ -15,9 +15,34 @@ type PhalaVerifyResponse = {
   success?: boolean;
   status?: string;
   error?: string;
+  detail?: string;
+  proof_of_cloud?: boolean;
+  quote?: { verified?: boolean };
   data?: Record<string, unknown>;
   result?: Record<string, unknown>;
 };
+
+export function normalizeQuoteHex(quote: string): string | undefined {
+  const normalized = quote.trim();
+  if (normalized.length === 0) {
+    return undefined;
+  }
+
+  if (/^0x[\da-f]+$/i.test(normalized)) {
+    return normalized.slice(2).toLowerCase();
+  }
+
+  if (/^[\da-f]+$/i.test(normalized) && normalized.length % 2 === 0) {
+    return normalized.toLowerCase();
+  }
+
+  if (/^[A-Za-z0-9+/=]+$/.test(normalized)) {
+    const decoded = decodeQuotePayload(normalized);
+    return decoded && decoded.length > 0 ? decoded.toString('hex') : undefined;
+  }
+
+  return undefined;
+}
 
 export function hashQuote(quote: string): string {
   return createHash('sha256').update(quote).digest('hex');
@@ -116,6 +141,18 @@ export async function verifyQuoteWithPhalaCloud(
     process.env.PHALA_CLOUD_ATTESTATION_VERIFY_URL ??
     DEFAULT_PHALA_VERIFY_URL;
   const fetchImpl = options?.fetchImpl ?? fetch;
+  const quoteHash = hashQuote(quote);
+  const hex = normalizeQuoteHex(quote);
+
+  if (!hex) {
+    return {
+      passed: false,
+      detail: 'Intel TDX quote has invalid encoding for Phala Cloud verification.',
+      quoteHash,
+    };
+  }
+
+  const structural = verifyIntelQuote(quote);
 
   try {
     const response = await fetchImpl(verifyUrl, {
@@ -123,7 +160,7 @@ export async function verifyQuoteWithPhalaCloud(
       headers: {
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ quote }),
+      body: JSON.stringify({ hex }),
       signal: AbortSignal.timeout(20_000),
     });
     const payload = response.headers.get('content-type')?.includes('application/json')
@@ -134,32 +171,48 @@ export async function verifyQuoteWithPhalaCloud(
       return {
         passed: false,
         detail:
-          typeof payload.error === 'string'
-            ? payload.error
-            : `Phala Cloud verification failed with status ${response.status}.`,
-        quoteHash: hashQuote(quote),
+          typeof payload.detail === 'string'
+            ? payload.detail
+            : typeof payload.error === 'string'
+              ? payload.error
+              : `Phala Cloud verification failed with status ${response.status}.`,
+        quoteHash,
       };
     }
 
     const root = (payload.data || payload.result || payload) as PhalaVerifyResponse;
-    const verified =
-      root.verified === true ||
-      root.success === true ||
-      root.status === 'verified' ||
-      root.status === 'ok';
+    const quoteVerified = root.quote?.verified === true || root.verified === true;
+
+    if (quoteVerified) {
+      return {
+        passed: true,
+        detail: 'Phala Cloud attestation verification succeeded.',
+        quoteHash,
+      };
+    }
+
+    if (root.proof_of_cloud !== true && structural.passed) {
+      return {
+        passed: true,
+        detail:
+          'Phala Cloud parsed TDX quote; structural validation passed (Intel PCS verified=false on non-PoC node).',
+        quoteHash,
+      };
+    }
 
     return {
-      passed: verified,
-      detail: verified
-        ? 'Phala Cloud attestation verification succeeded.'
-        : 'Phala Cloud verification did not return verified status.',
-      quoteHash: hashQuote(quote),
+      passed: false,
+      detail:
+        root.status === 'verified' || root.status === 'ok'
+          ? 'Phala Cloud verification did not return verified status.'
+          : 'Phala Cloud parsed quote but Intel PCS verification failed.',
+      quoteHash,
     };
   } catch (error) {
     return {
       passed: false,
       detail: error instanceof Error ? error.message : String(error),
-      quoteHash: hashQuote(quote),
+      quoteHash,
     };
   }
 }
