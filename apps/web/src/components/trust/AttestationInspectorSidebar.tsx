@@ -1,10 +1,13 @@
 import type { MarketplaceModelTeeSummaryView } from '@bossraid/shared-types';
 import type { HostAttestationResponse } from '../../api/host-attestation.js';
 import type { ReadyResponse } from '../../api/health.js';
-import { buildRuntimeAttestationLabel } from '../../mercenary-result.js';
 import { buildAgentManifestUrl, buildHostAttestationUrl } from '../../lib/receipt-url.js';
 import type { AttestationInspectorContextInput } from '../../contexts/AttestationInspectorContext.js';
 import type { ReceiptUpstreamAttestationRow } from '../../lib/receipt-attestation-view.js';
+import {
+  buildHostAttestationInspectorView,
+  type HostInspectorChip,
+} from '../../lib/host-attestation-inspector-view.js';
 import { ReceiptUpstreamAttestationPanel } from '../receipt/ReceiptUpstreamAttestationPanel.js';
 import { CopyableAddress } from './CopyableAddress.js';
 
@@ -13,8 +16,10 @@ type AttestationInspectorSidebarProps = {
   onClose: () => void;
   context: AttestationInspectorContextInput;
   ready: ReadyResponse | undefined;
+  readyLoading: boolean;
   readyError: unknown;
   hostAttestation: HostAttestationResponse | undefined;
+  hostAttestationLoading: boolean;
   hostAttestationError: unknown;
   modelTee: MarketplaceModelTeeSummaryView | undefined;
   modelTeeError: unknown;
@@ -30,14 +35,27 @@ function SignalRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function InspectorContextHeader({ context }: { context: AttestationInspectorContextInput }) {
+function InspectorChip({ chip }: { chip: HostInspectorChip }) {
+  return (
+    <span className={`attestation-inspector__chip attestation-inspector__chip--${chip.tone}`}>
+      <span>{chip.label}</span>
+      <strong>{chip.value}</strong>
+    </span>
+  );
+}
+
+function InspectorContextHeader({
+  context,
+  hostContextNote,
+}: {
+  context: AttestationInspectorContextInput;
+  hostContextNote: string;
+}) {
   if (!context.raidId && !context.modelId && !context.provider) {
     return (
       <section className="attestation-inspector__panel attestation-inspector__panel--context">
         <p className="attestation-inspector__section-label">context</p>
-        <p className="attestation-inspector__note">
-          Host runtime proof. Open from a model or receipt for upstream context.
-        </p>
+        <p className="attestation-inspector__note">{hostContextNote}</p>
       </section>
     );
   }
@@ -59,8 +77,10 @@ export function AttestationInspectorSidebar({
   onClose,
   context,
   ready,
+  readyLoading,
   readyError,
   hostAttestation,
+  hostAttestationLoading,
   hostAttestationError,
   modelTee,
   modelTeeError,
@@ -68,17 +88,17 @@ export function AttestationInspectorSidebar({
 }: AttestationInspectorSidebarProps) {
   const tee = hostAttestation?.teeAttestation;
   const signedRuntime = hostAttestation?.signedRuntime;
-  const deploymentTarget =
-    hostAttestation?.deploymentTarget ?? ready?.gates?.tee.platform ?? 'pending';
-  const teePlatform = hostAttestation?.teePlatform ?? ready?.gates?.tee.platform ?? 'pending';
-  const teeSocketLive =
-    ready?.gates?.tee.socketMounted === true || ready?.gates?.tee.pathExists === true;
-  const teeVerified = Boolean(
-    hostAttestation?.teeVerified ?? hostAttestation?.verified ?? tee?.valid
-  );
-  const runtimeSigned = Boolean(hostAttestation?.runtimeSigned ?? signedRuntime);
-  const runtimeLabel = buildRuntimeAttestationLabel(deploymentTarget, teePlatform);
   const upstreamRows = context.upstreamAttestations ?? [];
+  const hasRaidContext = Boolean(context.raidId || context.modelId || context.provider);
+
+  const view = buildHostAttestationInspectorView({
+    ready,
+    readyLoading,
+    hostAttestation,
+    hostLoading: hostAttestationLoading,
+    hostError: hostAttestationError,
+    hasRaidContext,
+  });
 
   return (
     <>
@@ -104,20 +124,26 @@ export function AttestationInspectorSidebar({
           </button>
         </div>
 
-        <InspectorContextHeader context={context} />
+        <InspectorContextHeader context={context} hostContextNote={view.hostContextNote} />
 
         <section className="attestation-inspector__panel attestation-inspector__panel--compact">
           <p className="attestation-inspector__section-label">host runtime</p>
           <div className="attestation-inspector__summary">
-            <strong>{runtimeLabel}</strong>
-            <span>
-              {teeVerified ? 'tee verified' : runtimeSigned ? 'runtime signed' : 'pending'} · tee{' '}
-              {teeSocketLive ? 'live' : 'offline'}
-              {signedRuntime
-                ? ` · ${signedRuntime.payload.readyProviders}/${signedRuntime.payload.providers} ready`
-                : ''}
-            </span>
+            <strong>{view.headline}</strong>
+            <span>{view.subline}</span>
           </div>
+
+          <div className="attestation-inspector__chip-strip">
+            {view.chips.map((chip) => (
+              <InspectorChip chip={chip} key={chip.label} />
+            ))}
+          </div>
+
+          {view.loadingMessage ? (
+            <p className="attestation-inspector__note attestation-inspector__note--loading">
+              {view.loadingMessage}
+            </p>
+          ) : null}
 
           {tee ? (
             <>
@@ -141,6 +167,15 @@ export function AttestationInspectorSidebar({
                       key={check.id}
                     >
                       {check.passed ? '✓' : '✗'} {check.detail ?? check.id}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {tee.notes && tee.notes.length > 0 && !tee.valid ? (
+                <ul className="upstream-tee-panel__checks">
+                  {tee.notes.map((note) => (
+                    <li className="upstream-tee-panel__check--fail" key={note}>
+                      {note}
                     </li>
                   ))}
                 </ul>
@@ -171,6 +206,9 @@ export function AttestationInspectorSidebar({
             </section>
           ) : null}
 
+          {view.unavailableMessage ? (
+            <p className="attestation-inspector__note">{view.unavailableMessage}</p>
+          ) : null}
           {hostAttestationError && !hostAttestation ? (
             <p className="attestation-inspector__note">
               {hostAttestationError instanceof Error

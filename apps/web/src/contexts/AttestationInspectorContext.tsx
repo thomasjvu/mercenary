@@ -30,8 +30,10 @@ type AttestationInspectorValue = {
   context: AttestationInspectorContextInput;
   lastContext: AttestationInspectorContextInput;
   ready: ReturnType<typeof useSWR>['data'];
+  readyLoading: boolean;
   readyError: unknown;
   hostAttestation: HostAttestationResponse | undefined;
+  hostAttestationLoading: boolean;
   hostAttestationError: unknown;
   openInspector: (context?: AttestationInspectorContextInput) => void;
   openProofInspector: () => void;
@@ -60,18 +62,15 @@ export function AttestationInspectorProvider({ children }: { children: ReactNode
   const [isOpen, setIsOpen] = useState(false);
   const [context, setContext] = useState<AttestationInspectorContextInput>({});
   const [lastContext, setLastContext] = useState<AttestationInspectorContextInput>({});
-  const ready = useSWR(isOpen ? 'attestation-inspector-ready' : null, fetchReady, {
+  const ready = useSWR('host-ready', fetchReady, {
+    refreshInterval: 30_000,
+    revalidateOnFocus: false,
+  });
+  const hostAttestation = useSWR('host-attestation', fetchHostAttestationOptional, {
+    refreshInterval: 30_000,
     revalidateOnFocus: false,
     shouldRetryOnError: false,
   });
-  const hostAttestation = useSWR(
-    isOpen ? 'attestation-inspector-host' : null,
-    fetchHostAttestationOptional,
-    {
-      revalidateOnFocus: false,
-      shouldRetryOnError: false,
-    }
-  );
   const modelTee = useSWR(
     isOpen && context.modelId ? ['attestation-inspector-model-tee', context.modelId] : null,
     ([, modelId]: [string, string]) => fetchModelTeeSummary(modelId),
@@ -119,8 +118,10 @@ export function AttestationInspectorProvider({ children }: { children: ReactNode
       context,
       lastContext,
       ready: ready.data,
+      readyLoading: ready.isLoading,
       readyError: ready.error,
       hostAttestation: hostAttestation.data,
+      hostAttestationLoading: hostAttestation.isLoading,
       hostAttestationError: hostAttestation.error,
       openInspector,
       openProofInspector,
@@ -131,12 +132,14 @@ export function AttestationInspectorProvider({ children }: { children: ReactNode
       context,
       hostAttestation.data,
       hostAttestation.error,
+      hostAttestation.isLoading,
       isOpen,
       lastContext,
       openInspector,
       openProofInspector,
       ready.data,
       ready.error,
+      ready.isLoading,
     ]
   );
 
@@ -147,6 +150,7 @@ export function AttestationInspectorProvider({ children }: { children: ReactNode
         context={context}
         hostAttestation={hostAttestation.data}
         hostAttestationError={hostAttestation.error}
+        hostAttestationLoading={hostAttestation.isLoading}
         isOpen={isOpen}
         modelTee={modelTee.data}
         modelTeeError={modelTee.error}
@@ -154,6 +158,7 @@ export function AttestationInspectorProvider({ children }: { children: ReactNode
         onClose={closeInspector}
         ready={ready.data}
         readyError={ready.error}
+        readyLoading={ready.isLoading}
       />
     </AttestationInspectorContext.Provider>
   );

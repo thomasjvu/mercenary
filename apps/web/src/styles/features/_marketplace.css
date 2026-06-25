@@ -1574,6 +1574,49 @@
   gap: 8px;
 }
 
+.attestation-inspector__chip-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.attestation-inspector__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.attestation-inspector__chip span {
+  color: var(--muted);
+}
+
+.attestation-inspector__chip strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.attestation-inspector__chip--ready {
+  border-color: color-mix(in srgb, var(--rx-blue) 45%, var(--line));
+}
+
+.attestation-inspector__chip--pending {
+  border-color: color-mix(in srgb, var(--muted) 35%, var(--line));
+}
+
+.attestation-inspector__chip--failed {
+  border-color: color-mix(in srgb, var(--rx-red) 45%, var(--line));
+}
+
+.attestation-inspector__chip--offline {
+  border-color: color-mix(in srgb, var(--muted) 55%, var(--line));
+}
+
 .attestation-inspector__links {
   display: flex;
   flex-wrap: wrap;
