@@ -112,7 +112,7 @@ const DocumentationPage = React.memo(
     const { prefersReducedMotion } = useTheme();
     const content = useMemo(() => stripMarkdownBom(initialContent), [initialContent]);
     const path = currentPath;
-    const siteName = import.meta.env.VITE_SITE_NAME || 'Boss Raid Docs';
+    const siteName = import.meta.env.VITE_SITE_NAME || 'Boss Raid';
     const isMac = typeof navigator !== 'undefined' && /mac/i.test(navigator.platform);
     const shortcutLabel = isMac ? 'Cmd + K' : 'Ctrl + K';
     const nextPathLabel = useMemo(
@@ -382,7 +382,7 @@ const DocumentationPage = React.memo(
                   >
                     <DocsLogoMark size="lg" />
                     <span
-                      className="min-w-0 truncate text-lg font-black uppercase tracking-[0.18em]"
+                      className="min-w-0 truncate text-xl font-black uppercase tracking-[0.14em] md:text-2xl"
                       style={{ color: 'var(--text-color)', fontFamily: 'var(--mono-font)' }}
                     >
                       {siteName}

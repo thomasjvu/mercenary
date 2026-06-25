@@ -15,7 +15,7 @@ import { extractDescriptionFromMarkdown } from '../../shared/seo.js';
 import { getHostedAssetPageConfig, stripHostedAssetPreview } from '../lib/hostedAssetPage';
 
 const logger = createLogger('CollectionDocsPage');
-const SITE_NAME = import.meta.env.VITE_SITE_NAME || 'Boss Raid Docs';
+const SITE_NAME = import.meta.env.VITE_SITE_NAME || 'Boss Raid';
 
 type CollectionDocsPageProps = {
   collectionId: string;
