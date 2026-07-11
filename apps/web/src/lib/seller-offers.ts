@@ -6,7 +6,7 @@ type ProviderSource = Provider['source'] & { targetType?: string };
 
 export function isHostedInferenceOffer(provider: Pick<Provider, 'source'>): boolean {
   const type = provider.source?.type;
-  return type === 'inference_hosted' || type === 'venice_hosted';
+  return type === 'inference_hosted' || type === 'venice_hosted' || type === 'harness_hosted';
 }
 
 export function resolveHostedOfferUpstream(

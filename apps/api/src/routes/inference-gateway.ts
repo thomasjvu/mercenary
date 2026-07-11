@@ -3,9 +3,11 @@ import { verifyProviderAuth } from '@bossraid/provider-sdk';
 import { asSingleHeader, type ProviderTaskPackage } from '@bossraid/shared-types';
 import {
   createProviderRunId,
+  isHostedHarnessProvider,
   isHostedInferenceProvider,
   probeHostedInferenceProviderHealth,
   resolveHostedProviderUpstream,
+  runHarnessGatewayJob,
   runInferenceGatewayJob,
 } from '../lib/inference-gateway.js';
 import { type ApiContext } from '../api-context.js';
@@ -40,6 +42,8 @@ export function registerInferenceGatewayRoutes(app: FastifyInstance, ctx: ApiCon
       agentFramework: health.agentFramework,
       modelProvider: health.modelProvider,
       model: health.model,
+      harnessProfile: health.harnessProfile,
+      harnessMode: isHostedHarnessProvider(provider) ? 'agent_harness' : 'api_chat',
       upstream,
     };
   });
@@ -121,22 +125,35 @@ export function registerInferenceGatewayRoutes(app: FastifyInstance, ctx: ApiCon
     }
 
     const providerRunId = createProviderRunId();
+    const harnessSeat = isHostedHarnessProvider(provider);
 
-    void runInferenceGatewayJob({
-      orchestrator,
-      controlState,
-      inferenceReceiptStore: ctx.inferenceReceiptStore,
-      provider,
-      body,
-      providerRunId,
-      env: ctx.env,
-    });
+    if (harnessSeat) {
+      void runHarnessGatewayJob({
+        orchestrator,
+        controlState,
+        provider,
+        body,
+        providerRunId,
+        env: ctx.env,
+      });
+    } else {
+      void runInferenceGatewayJob({
+        orchestrator,
+        controlState,
+        inferenceReceiptStore: ctx.inferenceReceiptStore,
+        provider,
+        body,
+        providerRunId,
+        env: ctx.env,
+      });
+    }
 
     return {
       accepted: true,
       providerId,
       providerRunId,
       upstream,
+      lane: harnessSeat ? 'harness' : 'chat',
     };
   });
 }

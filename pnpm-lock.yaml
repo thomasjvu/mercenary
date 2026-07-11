@@ -103,6 +103,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@bossraid/agent-harness':
+        specifier: workspace:*
+        version: link:../../packages/agent-harness
       '@bossraid/api-contracts':
         specifier: workspace:*
         version: link:../../packages/api-contracts
@@ -398,6 +401,9 @@ importers:
 
   apps/provider-agent:
     dependencies:
+      '@bossraid/agent-harness':
+        specifier: workspace:*
+        version: link:../../packages/agent-harness
       '@bossraid/constants':
         specifier: workspace:*
         version: link:../../packages/constants
@@ -487,6 +493,15 @@ importers:
       vite:
         specifier: '>=7.3.5'
         version: 7.3.5(@types/node@24.13.2)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.9.0)
+
+  packages/agent-harness:
+    dependencies:
+      '@bossraid/privacy-engine':
+        specifier: workspace:*
+        version: link:../privacy-engine
+      '@bossraid/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
 
   packages/api-contracts:
     dependencies:
@@ -3758,6 +3773,7 @@ packages:
   git-raw-commits@5.0.1:
     resolution: {integrity: sha512-Y+csSm2GD/PCSh6Isd/WiMjNAydu0VBiG9J7EdQsNA5P9uXvLayqjmTsNlK5Gs9IhblFZqOU0yid5Il5JPoLiQ==}
     engines: {node: '>=18'}
+    deprecated: Deprecated and no longer maintained. Use @conventional-changelog/git-client instead.
     hasBin: true
 
   glob-parent@5.1.2:

@@ -366,7 +366,8 @@ export async function dispatchProvider(
 
     const hostedProvider =
       provider.profile.source?.type === 'inference_hosted' ||
-      provider.profile.source?.type === 'venice_hosted';
+      provider.profile.source?.type === 'venice_hosted' ||
+      provider.profile.source?.type === 'harness_hosted';
     if (!hostedProvider) {
       deps.timers.setFirstHeartbeatTimeout(
         raidId,

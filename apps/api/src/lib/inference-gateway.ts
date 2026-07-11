@@ -1,5 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import { NETWORK } from '@bossraid/constants';
+import {
+  defaultModelBaseForHarness,
+  runAgentHarnessLoop,
+  type HarnessKind,
+  type HarnessRuntimeConfig,
+} from '@bossraid/agent-harness';
+import { NETWORK, UPSTREAM_PROVIDER_CONFIG } from '@bossraid/constants';
 import type { UpstreamProviderId } from '@bossraid/constants';
 import { isUpstreamProviderId } from '@bossraid/constants';
 import type { BossRaidOrchestrator } from '@bossraid/orchestrator';
@@ -15,6 +21,7 @@ import { buildInferenceReceipt, verifyUpstreamTee } from './attestation-service.
 import type { InferenceReceiptStore } from './inference-receipt-store.js';
 import { extractInferencePromptFromTask } from './task-prompt.js';
 import { generateAttestationNonce, probeUpstreamChatCompletion } from './upstream/index.js';
+import { harnessKindForUpstream } from './upstream-offers.js';
 import { probeVeniceE2eeChatCompletion } from './venice-e2ee.js';
 
 export function resolveInferenceGatewayBase(env: NodeJS.ProcessEnv = process.env): string {
@@ -64,7 +71,15 @@ export function resolveHostedProviderUpstream(
 }
 
 export function isHostedInferenceProvider(provider: ProviderProfile): boolean {
-  return provider.source?.type === 'inference_hosted' || provider.source?.type === 'venice_hosted';
+  return (
+    provider.source?.type === 'inference_hosted' ||
+    provider.source?.type === 'venice_hosted' ||
+    provider.source?.type === 'harness_hosted'
+  );
+}
+
+export function isHostedHarnessProvider(provider: ProviderProfile): boolean {
+  return provider.source?.type === 'harness_hosted';
 }
 
 export function probeHostedInferenceProviderHealth(
@@ -221,6 +236,136 @@ export async function runInferenceGatewayJob(input: {
       explanation: `${upstream} hosted gateway completed ${upstreamModelId}.`,
       confidence: 0.92,
       filesTouched: [],
+      submittedAt: new Date().toISOString(),
+      privacyAttestation,
+    });
+  } catch (error) {
+    await input.orchestrator.recordProviderFailure(input.body.raidId, input.provider.providerId, {
+      raidId: input.body.raidId,
+      providerId: input.provider.providerId,
+      providerRunId: input.providerRunId,
+      message: error instanceof Error ? error.message : String(error),
+      failedAt: new Date().toISOString(),
+    });
+  }
+}
+
+/**
+ * Multi-tenant harness seat: seller key from control state, tool loop on platform process.
+ * No new Phala CVM — shared always-on host runs an ephemeral workspace per accept.
+ */
+export async function runHarnessGatewayJob(input: {
+  orchestrator: BossRaidOrchestrator;
+  controlState: ApiControlState;
+  provider: ProviderProfile;
+  body: {
+    raidId: string;
+    providerId: string;
+    task: ProviderTaskPackage;
+    deadlineUnix: number;
+  };
+  providerRunId: string;
+  env?: NodeJS.ProcessEnv;
+}): Promise<void> {
+  const env = input.env ?? process.env;
+  const wallet = input.provider.source?.externalRef;
+  const upstream = resolveHostedProviderUpstream(input.provider);
+  if (!wallet || !upstream) {
+    await input.orchestrator.recordProviderFailure(input.body.raidId, input.provider.providerId, {
+      raidId: input.body.raidId,
+      providerId: input.provider.providerId,
+      providerRunId: input.providerRunId,
+      message: 'harness_hosted seller wallet or upstream missing',
+      failedAt: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    const resolvedApiKey = input.controlState.readSellerUpstreamApiKey(wallet, upstream);
+    if (!resolvedApiKey) {
+      throw new Error(`${upstream} API key is not configured for this seller.`);
+    }
+
+    const kind = harnessKindForUpstream(upstream);
+    if (kind === 'off') {
+      throw new Error(`Upstream ${upstream} does not support platform harness seats.`);
+    }
+
+    const modelId =
+      input.provider.pricing?.upstreamModelId ??
+      input.provider.modelId ??
+      input.provider.harnessProfile?.planProvider ??
+      'unknown';
+    const apiBase =
+      env[`BOSSRAID_${upstream.toUpperCase()}_API_BASE`]?.trim() ||
+      env.BOSSRAID_CHUTES_LLM_BASE?.trim() ||
+      UPSTREAM_PROVIDER_CONFIG[upstream].upstreamBase ||
+      defaultModelBaseForHarness(kind);
+
+    const config: HarnessRuntimeConfig = {
+      kind,
+      installation: input.provider.harnessProfile?.installation ?? 'fresh',
+      skills: input.provider.harnessProfile?.skills ?? [],
+      imageDigest: input.provider.harnessProfile?.imageDigest,
+      modelId,
+      modelApiBase: apiBase,
+      planProvider: input.provider.harnessProfile?.planProvider ?? upstream,
+      maxSteps: Math.max(1, Math.min(32, Number(env.BOSSRAID_HARNESS_MAX_STEPS ?? '10') || 10)),
+      allowShell: false,
+    };
+
+    const timeRemainingMs = Math.max(input.body.deadlineUnix * 1000 - Date.now() - 1000, 5_000);
+    const submission = await runAgentHarnessLoop({
+      task: input.body.task,
+      config,
+      apiBase,
+      apiKey: resolvedApiKey,
+      model: modelId,
+      timeoutMs: timeRemainingMs,
+      onProgress: (message, progress) => {
+        void input.orchestrator.recordProviderHeartbeat(
+          input.body.raidId,
+          input.provider.providerId,
+          {
+            raidId: input.body.raidId,
+            providerId: input.provider.providerId,
+            providerRunId: input.providerRunId,
+            progress,
+            message,
+            timestamp: new Date().toISOString(),
+          }
+        );
+      },
+    });
+
+    const featuresClaimed: PrivacyFeatureKey[] = [];
+    if (input.provider.privacy?.teeAttested) featuresClaimed.push('tee_attested');
+    if (input.provider.privacy?.signedOutputs) featuresClaimed.push('signed_outputs');
+    if (input.provider.privacy?.noDataRetention) featuresClaimed.push('no_data_retention');
+
+    const privacyAttestation =
+      featuresClaimed.length > 0
+        ? buildPrivacyAttestation({
+            providerId: input.provider.providerId,
+            raidId: input.body.raidId,
+            featuresClaimed,
+            featuresVerified: [],
+            externalApiCalls: [`${apiBase}/chat/completions`],
+            dataRetained: false,
+          })
+        : undefined;
+
+    await input.orchestrator.recordProviderSubmission(input.body.raidId, {
+      raidId: input.body.raidId,
+      providerId: input.provider.providerId,
+      providerRunId: input.providerRunId,
+      answerText: submission.answerText,
+      patchUnifiedDiff: submission.patchUnifiedDiff,
+      explanation: `${submission.explanation} [platform harness ${kind}; steps=${submission.harnessTrace.steps}]`,
+      confidence: submission.confidence,
+      claimedRootCause: submission.claimedRootCause ?? undefined,
+      filesTouched: submission.filesTouched,
       submittedAt: new Date().toISOString(),
       privacyAttestation,
     });

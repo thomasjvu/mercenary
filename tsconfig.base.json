@@ -26,7 +26,8 @@
       "@bossraid/test-fixtures": ["packages/test-fixtures/src/index.ts"],
       "@bossraid/smart-pay": ["packages/smart-pay/src/index.ts"],
       "@bossraid/oneshot-relayer": ["packages/oneshot-relayer/src/index.ts"],
-      "@bossraid/venice-client": ["packages/venice-client/src/index.ts"]
+      "@bossraid/venice-client": ["packages/venice-client/src/index.ts"],
+      "@bossraid/agent-harness": ["packages/agent-harness/src/index.ts"]
     },
     "strict": true,
     "declaration": true,

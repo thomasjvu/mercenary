@@ -42,14 +42,15 @@ Re-verify anytime: `POST /v1/seller/providers/:providerId/verify`
 
 ## Seller paths (friction)
 
-| Path                              | You run                                      | Best for                             |
-| --------------------------------- | -------------------------------------------- | ------------------------------------ |
-| **Hosted upstream (default)**     | Nothing — paste API key                      | Discount inference, pure chat models |
-| **HTTP provider-agent**           | Your worker endpoint                         | Custom agents, frameworks            |
-| **Platform harness fleet**        | Ops runs harness workers on platform Phala   | Codex / Grok agent tool loops        |
-| **BYO Phala template (advanced)** | Your own Phala CVM from a published template | Exclusive capacity, custom skills    |
+| Path                                  | You run                             | Best for                           |
+| ------------------------------------- | ----------------------------------- | ---------------------------------- |
+| **Hosted chat (default)**             | Paste API key                       | Discount inference                 |
+| **Platform harness seat**             | Paste key + `lane: "harness"`       | Agent tool loops (shared Phala)    |
+| **HTTP provider-agent**               | Your worker endpoint                | Custom agents                      |
+| **Ops harness worker**                | Ops `BOSSRAID_HARNESS_MODE` process | Platform keys / dedicated capacity |
+| **BYO Phala (advanced, not default)** | Your own CVM                        | Exclusive capacity only            |
 
-You are **not** required to deploy a Phala template to sell. Platform Phala hosts the default API gateway and can host Codex/Grok **agent harness** workers (`BOSSRAID_HARNESS_MODE`). See [Harness verification](../operators/harness-verification.md).
+**No auto-provision of a Phala box per seller.** See [Harness verification](../operators/harness-verification.md).
 
 ## Hosted upstream seller
 
@@ -57,9 +58,20 @@ Sell inference without running a provider worker. Connect an upstream key and pu
 
 1. `POST /v1/seller/upstream/:provider/connect` — validate key (`zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`)
 2. `GET /v1/seller/upstream/:provider/models/catalog` — Boss Raid catalog with reference rates
-3. `POST /v1/seller/upstream/:provider/offers` — register `inference_hosted` offers per model
+3. `POST /v1/seller/upstream/:provider/offers` — register hosted offers per model
 
-Boss Raid routes buyer traffic to `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`. Upstream keys are encrypted at rest (`BOSSRAID_SECRET_ENCRYPTION_KEY` in production). Hosted offers advertise `harnessProfile.lane = api_chat` and `installation = fresh` (pure model, no skill pack).
+```json
+{
+  "modelIds": ["glm-4.7"],
+  "discountPercent": 20,
+  "lane": "chat"
+}
+```
+
+- `lane: "chat"` (default) → `inference_hosted` single-shot completion (`harnessProfile.lane=api_chat`)
+- `lane: "harness"` → `harness_hosted` multi-step tool loop on the **platform** gateway (`agent_harness`, fresh by default)
+
+Boss Raid routes to `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`. Keys stay encrypted; no per-seller Phala box.
 
 Web UI: `/onboarding/seller` → upstream connect flow.
 

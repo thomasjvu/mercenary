@@ -1,5 +1,4 @@
 import type { ProviderTaskPackage } from '@bossraid/shared-types';
-import type { ModelSubmission } from '../types.js';
 import type { HarnessRuntimeConfig } from './profile.js';
 import {
   executeHarnessTool,
@@ -8,6 +7,7 @@ import {
   type ToolCall,
   type ToolResult,
 } from './tools.js';
+import type { HarnessSubmission } from './types.js';
 import { createHarnessWorkspace } from './workspace.js';
 
 type ChatMessage =
@@ -146,7 +146,7 @@ export async function runAgentHarnessLoop(input: {
   model: string;
   timeoutMs: number;
   onProgress?: (message: string, progress: number) => void;
-}): Promise<ModelSubmission & { harnessTrace: { steps: number; toolCalls: number } }> {
+}): Promise<HarnessSubmission> {
   if (input.config.kind === 'off') {
     throw new Error('Harness mode is off.');
   }

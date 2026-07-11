@@ -8,8 +8,9 @@ export {
   parseHarnessSkills,
   planProviderForHarness,
   resolveInstallation,
+  runAgentHarnessLoop,
+  createHarnessWorkspace,
   type HarnessKind,
   type HarnessRuntimeConfig,
-} from './profile.js';
-export { runAgentHarnessLoop } from './loop.js';
-export { createHarnessWorkspace } from './workspace.js';
+  type HarnessSubmission,
+} from '@bossraid/agent-harness';

@@ -1,0 +1,23 @@
+{
+  "name": "@bossraid/agent-harness",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/agent-harness/src/index.js",
+  "types": "dist/agent-harness/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/agent-harness/src/index.d.ts",
+      "default": "./dist/agent-harness/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test 'src/**/*.test.ts'"
+  },
+  "dependencies": {
+    "@bossraid/privacy-engine": "workspace:*",
+    "@bossraid/shared-types": "workspace:*"
+  }
+}

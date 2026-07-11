@@ -281,6 +281,9 @@ export function registerSellerUpstreamRoutes(
       verificationStatus: string;
     }> = [];
 
+    const laneRaw = body.lane ?? body.offerLane ?? body.offer_lane;
+    const lane = laneRaw === 'harness' || laneRaw === 'agent_harness' ? 'harness' : 'chat';
+
     for (const modelId of modelIds) {
       const registration = buildHostedProviderRegistration({
         provider,
@@ -289,6 +292,7 @@ export function registerSellerUpstreamRoutes(
         discountPercent,
         payoutWallet,
         env,
+        lane,
       });
       if (!registration) {
         continue;
@@ -326,6 +330,7 @@ export function registerSellerUpstreamRoutes(
     return {
       object: `seller.${provider}.offers`,
       provider,
+      lane,
       discountPercent,
       payoutWallet,
       providers: published.map((entry) => {

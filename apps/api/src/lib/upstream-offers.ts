@@ -1,5 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
+import {
+  buildHarnessProfile,
+  defaultModelBaseForHarness,
+  type HarnessKind,
+} from '@bossraid/agent-harness';
+import { INFERENCE_MODEL_CATALOG, UPSTREAM_PROVIDER_CONFIG } from '@bossraid/constants';
 import type { UpstreamProviderId } from '@bossraid/constants';
 import {
   defaultApiChatHarnessProfile,
@@ -38,6 +43,8 @@ export function deriveDiscountedTokenRates(input: { modelId: string; discountPer
   };
 }
 
+export type HostedOfferLane = 'chat' | 'harness';
+
 export function buildHostedProviderRegistration(input: {
   provider: UpstreamProviderId;
   wallet: string;
@@ -46,6 +53,8 @@ export function buildHostedProviderRegistration(input: {
   discountPercent: number;
   payoutWallet: string;
   env?: NodeJS.ProcessEnv;
+  /** chat = single completion; harness = multi-step tool loop on platform fleet (no per-seller Phala). */
+  lane?: HostedOfferLane;
 }): ProviderRegistrationInput | undefined {
   const rates = deriveDiscountedTokenRates({
     modelId: input.modelId,
@@ -55,25 +64,59 @@ export function buildHostedProviderRegistration(input: {
     return undefined;
   }
 
-  const providerId = buildUpstreamSellerProviderId(input.provider, input.wallet, input.modelId);
+  const lane: HostedOfferLane = input.lane === 'harness' ? 'harness' : 'chat';
+  const harnessKind = harnessKindForUpstream(input.provider);
+  if (lane === 'harness' && harnessKind === 'off') {
+    return undefined;
+  }
+
+  const agentIdBase = buildUpstreamSellerProviderId(input.provider, input.wallet, input.modelId);
+  const providerId = lane === 'harness' ? `${agentIdBase}-harness`.slice(0, 96) : agentIdBase;
   const catalogEntry = INFERENCE_MODEL_CATALOG.find((entry) => entry.modelId === input.modelId);
   const attestationVendor = catalogEntry?.attestationVendor ?? input.provider;
+  const framework = resolveAgentFrameworkForUpstream(input.provider);
+  const planProvider = catalogEntry?.modelProvider ?? input.provider;
+  const modelApiBase =
+    input.env?.[`BOSSRAID_${input.provider.toUpperCase()}_API_BASE`]?.trim() ||
+    (harnessKind !== 'off' ? defaultModelBaseForHarness(harnessKind) : undefined) ||
+    UPSTREAM_PROVIDER_CONFIG[input.provider].upstreamBase;
+
+  const harnessProfile =
+    lane === 'harness' && harnessKind !== 'off'
+      ? buildHarnessProfile({
+          kind: harnessKind,
+          installation: 'fresh',
+          skills: [],
+          modelId: rates.upstreamModelId,
+          modelApiBase,
+          planProvider,
+          maxSteps: 10,
+          allowShell: false,
+        })
+      : defaultApiChatHarnessProfile({
+          framework,
+          planProvider,
+          verification: 'unverified',
+        });
 
   return {
     agentId: providerId,
-    name: input.displayName ?? catalogEntry?.displayName ?? input.modelId,
+    name:
+      (input.displayName ?? catalogEntry?.displayName ?? input.modelId) +
+      (lane === 'harness' ? ' (harness)' : ''),
     endpoint: resolveInferenceGatewayProviderEndpoint(providerId, input.env),
-    capabilities: ['inference', 'text'],
-    supportedLanguages: ['text'],
-    supportedFrameworks: ['openai_compatible'],
-    outputTypes: ['text', 'json'],
-    agentFramework: resolveAgentFrameworkForUpstream(input.provider),
+    capabilities:
+      lane === 'harness' ? ['inference', 'text', 'patch', 'agent'] : ['inference', 'text'],
+    supportedLanguages: ['text', 'typescript', 'python'],
+    supportedFrameworks: ['openai_compatible', 'node'],
+    outputTypes: lane === 'harness' ? ['text', 'json', 'patch'] : ['text', 'json'],
+    agentFramework: framework,
     modelFamily: input.provider,
-    modelProvider: catalogEntry?.modelProvider ?? input.provider,
+    modelProvider: planProvider,
     modelId: input.modelId,
-    maxConcurrency: 2,
+    maxConcurrency: lane === 'harness' ? 1 : 2,
     source: {
-      type: 'inference_hosted',
+      type: lane === 'harness' ? 'harness_hosted' : 'inference_hosted',
       targetType: input.provider,
       externalRef: input.wallet.toLowerCase(),
     },
@@ -94,7 +137,7 @@ export function buildHostedProviderRegistration(input: {
       pricePer1mInputTokensUsd: rates.pricePer1mInputTokensUsd,
       pricePer1mOutputTokensUsd: rates.pricePer1mOutputTokensUsd,
       minimumChargeUsd: rates.minimumChargeUsd,
-      rateCardVersion: `${input.provider}-hosted-v1`,
+      rateCardVersion: `${input.provider}-hosted-${lane}-v1`,
       upstreamModelId: rates.upstreamModelId,
       maxContextTokens: rates.maxContextTokens,
     },
@@ -106,20 +149,40 @@ export function buildHostedProviderRegistration(input: {
       status: 'pending',
     },
     marketplaceOfferStatus: 'active',
-    harnessProfile: defaultApiChatHarnessProfile({
-      framework: resolveAgentFrameworkForUpstream(input.provider),
-      planProvider: catalogEntry?.modelProvider ?? input.provider,
-      verification: 'unverified',
-    }),
+    harnessProfile,
   };
+}
+
+export function harnessKindForUpstream(provider: UpstreamProviderId): HarnessKind {
+  if (provider === 'xai') return 'grok';
+  if (provider === 'zai') return 'glm';
+  if (provider === 'chutes') return 'chutes';
+  // OpenAI-compatible hosted keys (redpill/near/phala/venice) use codex-style tool loop.
+  if (
+    provider === 'venice' ||
+    provider === 'redpill' ||
+    provider === 'near' ||
+    provider === 'phala'
+  ) {
+    return 'codex';
+  }
+  return 'off';
 }
 
 function resolveAgentFrameworkForUpstream(
   provider: UpstreamProviderId
-): 'grok' | 'glm' | 'chutes' | 'custom' {
+): 'grok' | 'glm' | 'chutes' | 'codex' | 'custom' {
   if (provider === 'xai') return 'grok';
   if (provider === 'zai') return 'glm';
   if (provider === 'chutes') return 'chutes';
+  if (
+    provider === 'venice' ||
+    provider === 'redpill' ||
+    provider === 'near' ||
+    provider === 'phala'
+  ) {
+    return 'codex';
+  }
   return 'custom';
 }
 

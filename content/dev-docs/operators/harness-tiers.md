@@ -1,40 +1,34 @@
 # Harness tiers & Phala sizing
 
-How Boss Raid sells API chat vs coding-agent harnesses without forcing every seller to deploy Phala.
+## Auto-provision per seller?
 
-## Phala topology (important)
+**No.** Default is a **shared always-on Phala CVM** (or small fleet). Per-seller CVM auto-provision is out of scope for the marketplace path (cost, boot time, ops blast radius). Use BYO only for exclusive capacity.
 
-**We do not create a new Phala CVM per raid or per seller.**
+## Topology
 
-| Unit           | Lifetime                                                                         |
-| -------------- | -------------------------------------------------------------------------------- |
-| Phala CVM      | Always-on (API + optional harness workers)                                       |
-| Harness accept | Ephemeral workspace (temp dir → tools → wipe)                                    |
-| Extra CVM      | Only when ops scales fleet capacity or a Tier-2 BYO seller deploys their own box |
+```
+Seller key (encrypted) ──┐
+                         ├─► Platform gateway on Phala CVM
+Buyer raid ──────────────┘         │
+                                   ├ chat: single completion
+                                   └ harness: ephemeral workspace + tool loop → wipe
+```
 
-**Self-serve** = seller pastes credentials / publishes offers in the web UI (no SSH). It is **not** “Boss Raid spins a private Phala for every signup.”
+## Self-serve seats
 
-## Tiers
+| Lane    | API                                     | source.type        |
+| ------- | --------------------------------------- | ------------------ |
+| Chat    | `POST …/offers` default                 | `inference_hosted` |
+| Harness | `POST …/offers` with `"lane":"harness"` | `harness_hosted`   |
 
-| Tier                   | Who runs compute              | Seller friction                  | Buyer disclosure         |
-| ---------------------- | ----------------------------- | -------------------------------- | ------------------------ |
-| **0 Hosted API**       | Platform Phala gateway        | Paste upstream key               | `api_chat` + `fresh`     |
-| **1 Platform harness** | Platform Phala provider-agent | Ops runs `BOSSRAID_HARNESS_MODE` | `agent_harness` + skills |
-| **2 BYO Phala**        | Seller CVM                    | Deploy template                  | Same profile schema      |
+Both use the seller’s stored upstream key. Harness runs in-process on the API host via `@bossraid/agent-harness`.
 
-## Harness modes
+## Ops workers (optional)
 
-- `codex` — OpenAI tools
-- `grok` — xAI tools (`api.x.ai`)
-- `glm` — Z.ai Coding Plan (`api.z.ai/api/coding/paas/v4`)
-- `chutes` — Chutes OpenAI gateway (`llm.chutes.ai/v1`, TEE models preferred)
+`BOSSRAID_HARNESS_MODE=codex|grok|glm|chutes` still supported for dedicated processes with platform keys.
 
-Examples: `examples/providers/harness-*.env.example`.
+## Modes
 
-Verification: [Harness verification](/docs/operators/harness-verification). Offline: `pnpm bossraid verify:proof-bundle`.
+codex · grok · glm · chutes (+ OpenAI-compatible upstreams map harness seats to codex-style tools)
 
-## Status
-
-- Tier 0: Venice, xAI, Z.ai/GLM, **Chutes**, Redpill, NEAR, Phala
-- Tier 1 tool loops: **codex**, **grok**, **glm**, **chutes**
-- Offline verifier: export + verify proof-bundle
+Offline verify: `pnpm bossraid verify:proof-bundle`.

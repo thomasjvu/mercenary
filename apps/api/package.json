@@ -19,6 +19,7 @@
     "test:all": "node --import tsx --test 'src/**/*.test.ts'"
   },
   "dependencies": {
+    "@bossraid/agent-harness": "workspace:*",
     "@bossraid/api-contracts": "workspace:*",
     "@bossraid/constants": "workspace:*",
     "@bossraid/raid-core": "workspace:*",

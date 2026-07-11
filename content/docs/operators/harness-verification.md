@@ -4,9 +4,29 @@ How Boss Raid proves **who ran the work**, **which model**, and whether the inst
 
 ## Is harness hosted on our Phala?
 
-**Yes for platform fleet (Tier 1).** Codex, Grok, GLM, and Chutes agent-harness workers are normal Boss Raid HTTP providers. On production they run inside the same **always-on Phala CVM** stack as the API (or a dedicated harness CVM). **No new Phala box per raid or per seller** — each accept gets an ephemeral workspace that is wiped after submit.
+**Yes for platform fleet (Tier 1).** On production, harness work runs inside the same **always-on Phala CVM** stack as the API (or a dedicated harness CVM). **No new Phala box per raid or per seller** — each accept gets an ephemeral workspace that is wiped after submit.
 
-Sellers do **not** need their own Phala for the default path. **Self-serve** means paste keys in the product UI (Tier 0 chat already); Tier 1 ops still deploys workers today, with multi-tenant key injection as a future seat feature — still not a per-seller CVM.
+### Should we auto-provision a Phala CVM per seller?
+
+**No (default).** Auto-provision is slow, expensive, and unnecessary for marketplace volume.
+
+| Option                              | When                                                                                                     |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Shared platform seats (default)** | Seller pastes key → `source.type=harness_hosted` → gateway injects key and runs tool loop on shared host |
+| **Ops-run worker**                  | `BOSSRAID_HARNESS_MODE=codex\|grok\|glm\|chutes` process with platform keys                              |
+| **BYO Phala CVM**                   | Power seller needs exclusive capacity / custom skills image — manual Tier 2                              |
+
+### Seller self-serve (implemented)
+
+1. Connect key: `POST /v1/seller/upstream/:provider/connect` (`zai`, `xai`, `chutes`, …)
+2. Publish **chat** offers (default) or **harness seats**:
+
+```bash
+POST /v1/seller/upstream/zai/offers
+{ "modelIds": ["glm-4.7"], "discountPercent": 20, "lane": "harness" }
+```
+
+`lane: "harness"` registers a `harness_hosted` provider on the platform gateway. Buyers route as usual; on accept the API runs the agent tool loop with **that seller’s encrypted key**. Still one shared Phala — not a private CVM.
 
 | Layer              | Runs where                                                    | Seller friction                                       |
 | ------------------ | ------------------------------------------------------------- | ----------------------------------------------------- |
