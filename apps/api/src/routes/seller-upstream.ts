@@ -29,7 +29,7 @@ function invalidProviderReply(provider: string) {
   return {
     statusCode: 400,
     error: 'invalid_upstream_provider',
-    message: `Unknown upstream provider '${provider}'. Expected one of: venice, redpill, near, chutes, phala.`,
+    message: `Unknown upstream provider '${provider}'. Expected one of: venice, redpill, near, chutes, phala, xai.`,
   };
 }
 

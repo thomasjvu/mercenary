@@ -191,6 +191,21 @@ export function verifyUpstreamAttestationReport(
       return verifyNearReport(input);
     case 'chutes':
       return verifyChutesReport(input);
+    case 'xai':
+      return {
+        valid: false,
+        vendor: 'xai',
+        modelId: input.modelId,
+        nonce: input.nonce,
+        verifiedAt: new Date().toISOString(),
+        checks: [
+          {
+            id: 'xai_tee_unsupported',
+            passed: false,
+            detail: 'xAI does not publish upstream TEE attestation reports.',
+          },
+        ],
+      };
   }
 }
 

@@ -25,6 +25,11 @@ import {
   fetchVeniceUpstreamModels,
   probeVeniceChatCompletion,
 } from './venice.js';
+import {
+  fetchXaiAttestationReport,
+  fetchXaiUpstreamModels,
+  probeXaiChatCompletion,
+} from './xai.js';
 import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
 
 export type {
@@ -54,6 +59,8 @@ export async function fetchUpstreamModels(
       return fetchChutesUpstreamModels(apiKey);
     case 'phala':
       return fetchPhalaUpstreamModels(apiKey);
+    case 'xai':
+      return fetchXaiUpstreamModels(apiKey);
   }
 }
 
@@ -75,6 +82,8 @@ export async function probeUpstreamChatCompletion(input: {
       return probeChutesChatCompletion(input);
     case 'phala':
       return probePhalaChatCompletion(input);
+    case 'xai':
+      return probeXaiChatCompletion(input);
   }
 }
 
@@ -104,5 +113,7 @@ export async function fetchUpstreamAttestationReport(input: {
       });
     case 'phala':
       return fetchPhalaAttestationReport(input);
+    case 'xai':
+      return fetchXaiAttestationReport(input);
   }
 }

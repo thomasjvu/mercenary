@@ -43,6 +43,7 @@ export const AGENT_FRAMEWORKS = new Set<AgentFramework>([
   'codex',
   'claude_code',
   'openclaw',
+  'grok',
   'custom',
 ]);
 const PROVIDER_VERIFICATION_STATUSES = new Set<ProviderVerificationStatus>([

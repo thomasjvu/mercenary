@@ -406,7 +406,11 @@ export async function probeProviderHealth(profile: ProviderProfile): Promise<Pro
 }
 
 function normalizeHealthAgentFramework(value: unknown): ProviderProfile['agentFramework'] {
-  return value === 'codex' || value === 'claude_code' || value === 'openclaw' || value === 'custom'
+  return value === 'codex' ||
+    value === 'claude_code' ||
+    value === 'openclaw' ||
+    value === 'grok' ||
+    value === 'custom'
     ? value
     : undefined;
 }

@@ -1,15 +1,16 @@
 {
-  "generatedAt": "2026-06-15T23:39:37.445Z",
+  "generatedAt": "2026-07-11T05:36:12.182Z",
   "source": {
     "venice": "https://api.venice.ai/api/v1/models (public, no API key)",
     "redpill": "scripts/sync-inference-catalog.mjs static rates",
     "near": "scripts/sync-inference-catalog.mjs static rates",
     "chutes": "scripts/sync-inference-catalog.mjs static rates",
-    "phala": "scripts/sync-inference-catalog.mjs static rates"
+    "phala": "scripts/sync-inference-catalog.mjs static rates",
+    "xai": "scripts/sync-inference-catalog.mjs static rates (api.x.ai)"
   },
   "providers": {
     "venice": {
-      "modelCount": 89,
+      "modelCount": 100,
       "models": [
         {
           "modelId": "aion-labs-aion-2-0",
@@ -23,13 +24,24 @@
           "e2ee": false
         },
         {
-          "modelId": "arcee-trinity-large-thinking",
-          "displayName": "Trinity Large Thinking",
-          "upstreamModelId": "arcee-trinity-large-thinking",
-          "inputPer1mUsd": 0.3125,
-          "outputPer1mUsd": 1.125,
+          "modelId": "aion-labs-aion-3-0",
+          "displayName": "Aion 3.0",
+          "upstreamModelId": "aion-labs-aion-3-0",
+          "inputPer1mUsd": 3.75,
+          "outputPer1mUsd": 7.5,
+          "referenceTaskUsd": 0.0114,
+          "maxContextTokens": 128000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "aion-labs-aion-3-0-mini",
+          "displayName": "Aion 3.0 Mini",
+          "upstreamModelId": "aion-labs-aion-3-0-mini",
+          "inputPer1mUsd": 0.875,
+          "outputPer1mUsd": 1.75,
           "referenceTaskUsd": 0.01,
-          "maxContextTokens": 256000,
+          "maxContextTokens": 128000,
           "teeAttested": false,
           "e2ee": false
         },
@@ -62,17 +74,6 @@
           "inputPer1mUsd": 6,
           "outputPer1mUsd": 30,
           "referenceTaskUsd": 0.0367,
-          "maxContextTokens": 1000000,
-          "teeAttested": false,
-          "e2ee": false
-        },
-        {
-          "modelId": "claude-opus-4-6-fast",
-          "displayName": "Claude Opus 4.6 Fast",
-          "upstreamModelId": "claude-opus-4-6-fast",
-          "inputPer1mUsd": 36,
-          "outputPer1mUsd": 180,
-          "referenceTaskUsd": 0.2203,
           "maxContextTokens": 1000000,
           "teeAttested": false,
           "e2ee": false
@@ -144,6 +145,17 @@
           "e2ee": false
         },
         {
+          "modelId": "claude-sonnet-5",
+          "displayName": "Claude Sonnet 5",
+          "upstreamModelId": "claude-sonnet-5",
+          "inputPer1mUsd": 3,
+          "outputPer1mUsd": 15,
+          "referenceTaskUsd": 0.0184,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
           "modelId": "deepseek-v3.2",
           "displayName": "DeepSeek V3.2",
           "upstreamModelId": "deepseek-v3.2",
@@ -158,8 +170,8 @@
           "modelId": "deepseek-v4-flash",
           "displayName": "DeepSeek V4 Flash",
           "upstreamModelId": "deepseek-v4-flash",
-          "inputPer1mUsd": 0.17,
-          "outputPer1mUsd": 0.35,
+          "inputPer1mUsd": 0.138,
+          "outputPer1mUsd": 0.275,
           "referenceTaskUsd": 0.01,
           "maxContextTokens": 1000000,
           "teeAttested": false,
@@ -169,12 +181,23 @@
           "modelId": "deepseek-v4-pro",
           "displayName": "DeepSeek V4 Pro",
           "upstreamModelId": "deepseek-v4-pro",
-          "inputPer1mUsd": 1.73,
-          "outputPer1mUsd": 3.796,
+          "inputPer1mUsd": 1.65,
+          "outputPer1mUsd": 3.301,
           "referenceTaskUsd": 0.01,
           "maxContextTokens": 1000000,
           "teeAttested": false,
           "e2ee": false
+        },
+        {
+          "modelId": "e2ee-deepseek-v4-flash",
+          "displayName": "DeepSeek V4 Flash",
+          "upstreamModelId": "e2ee-deepseek-v4-flash",
+          "inputPer1mUsd": 0.182,
+          "outputPer1mUsd": 0.373,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 1000000,
+          "teeAttested": true,
+          "e2ee": true
         },
         {
           "modelId": "e2ee-gemma-3-27b-p",
@@ -210,17 +233,6 @@
           "e2ee": true
         },
         {
-          "modelId": "e2ee-glm-4-7-flash-p",
-          "displayName": "GLM 4.7 Flash",
-          "upstreamModelId": "e2ee-glm-4-7-flash-p",
-          "inputPer1mUsd": 0.13,
-          "outputPer1mUsd": 0.55,
-          "referenceTaskUsd": 0.01,
-          "maxContextTokens": 198000,
-          "teeAttested": true,
-          "e2ee": true
-        },
-        {
           "modelId": "e2ee-glm-4-7-p",
           "displayName": "GLM 4.7",
           "upstreamModelId": "e2ee-glm-4-7-p",
@@ -239,6 +251,17 @@
           "outputPer1mUsd": 4.15,
           "referenceTaskUsd": 0.01,
           "maxContextTokens": 200000,
+          "teeAttested": true,
+          "e2ee": true
+        },
+        {
+          "modelId": "e2ee-glm-5-2-p",
+          "displayName": "GLM 5.2",
+          "upstreamModelId": "e2ee-glm-5-2-p",
+          "inputPer1mUsd": 1.75,
+          "outputPer1mUsd": 5.75,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 524288,
           "teeAttested": true,
           "e2ee": true
         },
@@ -281,6 +304,17 @@
           "upstreamModelId": "e2ee-qwen3-30b-a3b-p",
           "inputPer1mUsd": 0.19,
           "outputPer1mUsd": 0.69,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": true,
+          "e2ee": true
+        },
+        {
+          "modelId": "e2ee-qwen3-6-27b",
+          "displayName": "Qwen 3.6 27B FP8",
+          "upstreamModelId": "e2ee-qwen3-6-27b",
+          "inputPer1mUsd": 0.346,
+          "outputPer1mUsd": 3.46,
           "referenceTaskUsd": 0.01,
           "maxContextTokens": 256000,
           "teeAttested": true,
@@ -389,8 +423,8 @@
           "modelId": "google-gemma-4-26b-a4b-it",
           "displayName": "Google Gemma 4 26B A4B Instruct",
           "upstreamModelId": "google-gemma-4-26b-a4b-it",
-          "inputPer1mUsd": 0.1625,
-          "outputPer1mUsd": 0.5,
+          "inputPer1mUsd": 0.13,
+          "outputPer1mUsd": 0.4,
           "referenceTaskUsd": 0.01,
           "maxContextTokens": 256000,
           "teeAttested": false,
@@ -441,6 +475,17 @@
           "e2ee": false
         },
         {
+          "modelId": "grok-4-5",
+          "displayName": "Grok 4.5",
+          "upstreamModelId": "grok-4-5",
+          "inputPer1mUsd": 2.27,
+          "outputPer1mUsd": 6.8,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 500000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
           "modelId": "grok-build-0-1",
           "displayName": "Grok Build 0.1",
           "upstreamModelId": "grok-build-0-1",
@@ -477,8 +522,19 @@
           "modelId": "kimi-k2-6",
           "displayName": "Kimi K2.6",
           "upstreamModelId": "kimi-k2-6",
-          "inputPer1mUsd": 0.85,
-          "outputPer1mUsd": 4.655,
+          "inputPer1mUsd": 0.75,
+          "outputPer1mUsd": 3.5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 256000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "kimi-k2-7-code",
+          "displayName": "Kimi K2.7 Code",
+          "upstreamModelId": "kimi-k2-7-code",
+          "inputPer1mUsd": 0.75,
+          "outputPer1mUsd": 3.5,
           "referenceTaskUsd": 0.01,
           "maxContextTokens": 256000,
           "teeAttested": false,
@@ -521,8 +577,8 @@
           "modelId": "minimax-m25",
           "displayName": "MiniMax M2.5",
           "upstreamModelId": "minimax-m25",
-          "inputPer1mUsd": 0.34,
-          "outputPer1mUsd": 1.19,
+          "inputPer1mUsd": 0.27,
+          "outputPer1mUsd": 0.95,
           "referenceTaskUsd": 0.01,
           "maxContextTokens": 198000,
           "teeAttested": false,
@@ -540,13 +596,13 @@
           "e2ee": false
         },
         {
-          "modelId": "minimax-m3",
-          "displayName": "MiniMax M3",
-          "upstreamModelId": "minimax-m3",
+          "modelId": "minimax-m3-preview",
+          "displayName": "MiniMax M3 Preview",
+          "upstreamModelId": "minimax-m3-preview",
           "inputPer1mUsd": 0.3,
           "outputPer1mUsd": 1.2,
           "referenceTaskUsd": 0.01,
-          "maxContextTokens": 500000,
+          "maxContextTokens": 524288,
           "teeAttested": false,
           "e2ee": false
         },
@@ -609,8 +665,8 @@
           "modelId": "olafangensan-glm-4.7-flash-heretic",
           "displayName": "GLM 4.7 Flash Heretic",
           "upstreamModelId": "olafangensan-glm-4.7-flash-heretic",
-          "inputPer1mUsd": 0.14,
-          "outputPer1mUsd": 0.8,
+          "inputPer1mUsd": 0.07,
+          "outputPer1mUsd": 0.4,
           "referenceTaskUsd": 0.01,
           "maxContextTokens": 200000,
           "teeAttested": false,
@@ -722,6 +778,72 @@
           "inputPer1mUsd": 37.5,
           "outputPer1mUsd": 225,
           "referenceTaskUsd": 0.2679,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "openai-gpt-56-luna",
+          "displayName": "GPT-5.6 Luna",
+          "upstreamModelId": "openai-gpt-56-luna",
+          "inputPer1mUsd": 1.25,
+          "outputPer1mUsd": 7.5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "openai-gpt-56-luna-pro",
+          "displayName": "GPT-5.6 Luna Pro",
+          "upstreamModelId": "openai-gpt-56-luna-pro",
+          "inputPer1mUsd": 1.25,
+          "outputPer1mUsd": 7.5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "openai-gpt-56-sol",
+          "displayName": "GPT-5.6 Sol",
+          "upstreamModelId": "openai-gpt-56-sol",
+          "inputPer1mUsd": 6.25,
+          "outputPer1mUsd": 37.5,
+          "referenceTaskUsd": 0.0446,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "openai-gpt-56-sol-pro",
+          "displayName": "GPT-5.6 Sol Pro",
+          "upstreamModelId": "openai-gpt-56-sol-pro",
+          "inputPer1mUsd": 6.25,
+          "outputPer1mUsd": 37.5,
+          "referenceTaskUsd": 0.0446,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "openai-gpt-56-terra",
+          "displayName": "GPT-5.6 Terra",
+          "upstreamModelId": "openai-gpt-56-terra",
+          "inputPer1mUsd": 3.125,
+          "outputPer1mUsd": 18.75,
+          "referenceTaskUsd": 0.0223,
+          "maxContextTokens": 1000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "openai-gpt-56-terra-pro",
+          "displayName": "GPT-5.6 Terra Pro",
+          "upstreamModelId": "openai-gpt-56-terra-pro",
+          "inputPer1mUsd": 3.125,
+          "outputPer1mUsd": 18.75,
+          "referenceTaskUsd": 0.0223,
           "maxContextTokens": 1000000,
           "teeAttested": false,
           "e2ee": false
@@ -862,21 +984,10 @@
           "modelId": "qwen3-vl-235b-a22b",
           "displayName": "Qwen3 VL 235B",
           "upstreamModelId": "qwen3-vl-235b-a22b",
-          "inputPer1mUsd": 0.25,
-          "outputPer1mUsd": 1.5,
+          "inputPer1mUsd": 0.21,
+          "outputPer1mUsd": 1.9,
           "referenceTaskUsd": 0.01,
-          "maxContextTokens": 256000,
-          "teeAttested": false,
-          "e2ee": false
-        },
-        {
-          "modelId": "tencent-hy3-preview",
-          "displayName": "Hy3 Preview",
-          "upstreamModelId": "tencent-hy3-preview",
-          "inputPer1mUsd": 0.063,
-          "outputPer1mUsd": 0.21,
-          "referenceTaskUsd": 0.01,
-          "maxContextTokens": 256000,
+          "maxContextTokens": 128000,
           "teeAttested": false,
           "e2ee": false
         },
@@ -906,8 +1017,8 @@
           "modelId": "xiaomi-mimo-v2-5",
           "displayName": "MiMo-V2.5",
           "upstreamModelId": "xiaomi-mimo-v2-5",
-          "inputPer1mUsd": 0.175,
-          "outputPer1mUsd": 0.35,
+          "inputPer1mUsd": 0.14,
+          "outputPer1mUsd": 0.28,
           "referenceTaskUsd": 0.01,
           "maxContextTokens": 1000000,
           "teeAttested": false,
@@ -939,8 +1050,8 @@
           "modelId": "zai-org-glm-4.6",
           "displayName": "GLM 4.6",
           "upstreamModelId": "zai-org-glm-4.6",
-          "inputPer1mUsd": 0.85,
-          "outputPer1mUsd": 2.75,
+          "inputPer1mUsd": 0.43,
+          "outputPer1mUsd": 1.75,
           "referenceTaskUsd": 0.01,
           "maxContextTokens": 198000,
           "teeAttested": false,
@@ -983,10 +1094,21 @@
           "modelId": "zai-org-glm-5-1",
           "displayName": "GLM 5.1",
           "upstreamModelId": "zai-org-glm-5-1",
-          "inputPer1mUsd": 1.75,
-          "outputPer1mUsd": 5.5,
+          "inputPer1mUsd": 1.54,
+          "outputPer1mUsd": 4.84,
           "referenceTaskUsd": 0.01,
           "maxContextTokens": 200000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "zai-org-glm-5-2",
+          "displayName": "GLM 5.2",
+          "upstreamModelId": "zai-org-glm-5-2",
+          "inputPer1mUsd": 1.4,
+          "outputPer1mUsd": 4.4,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 1000000,
           "teeAttested": false,
           "e2ee": false
         }
@@ -1055,6 +1177,44 @@
           "e2ee": true
         }
       ]
+    },
+    "xai": {
+      "modelCount": 3,
+      "models": [
+        {
+          "modelId": "grok-4-1-fast-non-reasoning",
+          "displayName": "Grok 4.1 Fast",
+          "upstreamModelId": "grok-4-1-fast-non-reasoning",
+          "inputPer1mUsd": 0.2,
+          "outputPer1mUsd": 0.5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 2000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "grok-4-1-fast-reasoning",
+          "displayName": "Grok 4.1 Fast Reasoning",
+          "upstreamModelId": "grok-4-1-fast-reasoning",
+          "inputPer1mUsd": 0.2,
+          "outputPer1mUsd": 0.5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 2000000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "grok-4.5",
+          "displayName": "Grok 4.5",
+          "upstreamModelId": "grok-4.5",
+          "inputPer1mUsd": 2,
+          "outputPer1mUsd": 6,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 500000,
+          "teeAttested": false,
+          "e2ee": false
+        }
+      ]
     }
   },
   "models": [
@@ -1069,14 +1229,24 @@
       "maxContextTokens": 128000
     },
     {
-      "modelId": "arcee-trinity-large-thinking",
+      "modelId": "aion-labs-aion-3-0",
       "modelProvider": "venice",
-      "displayName": "Trinity Large Thinking",
-      "upstreamModelId": "arcee-trinity-large-thinking",
-      "inputPer1mUsd": 0.3125,
-      "outputPer1mUsd": 1.125,
+      "displayName": "Aion 3.0",
+      "upstreamModelId": "aion-labs-aion-3-0",
+      "inputPer1mUsd": 3.75,
+      "outputPer1mUsd": 7.5,
+      "referenceTaskUsd": 0.0114,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "aion-labs-aion-3-0-mini",
+      "modelProvider": "venice",
+      "displayName": "Aion 3.0 Mini",
+      "upstreamModelId": "aion-labs-aion-3-0-mini",
+      "inputPer1mUsd": 0.875,
+      "outputPer1mUsd": 1.75,
       "referenceTaskUsd": 0.01,
-      "maxContextTokens": 256000
+      "maxContextTokens": 128000
     },
     {
       "modelId": "claude-fable-5",
@@ -1106,16 +1276,6 @@
       "inputPer1mUsd": 6,
       "outputPer1mUsd": 30,
       "referenceTaskUsd": 0.0367,
-      "maxContextTokens": 1000000
-    },
-    {
-      "modelId": "claude-opus-4-6-fast",
-      "modelProvider": "venice",
-      "displayName": "Claude Opus 4.6 Fast",
-      "upstreamModelId": "claude-opus-4-6-fast",
-      "inputPer1mUsd": 36,
-      "outputPer1mUsd": 180,
-      "referenceTaskUsd": 0.2203,
       "maxContextTokens": 1000000
     },
     {
@@ -1179,6 +1339,16 @@
       "maxContextTokens": 1000000
     },
     {
+      "modelId": "claude-sonnet-5",
+      "modelProvider": "venice",
+      "displayName": "Claude Sonnet 5",
+      "upstreamModelId": "claude-sonnet-5",
+      "inputPer1mUsd": 3,
+      "outputPer1mUsd": 15,
+      "referenceTaskUsd": 0.0184,
+      "maxContextTokens": 1000000
+    },
+    {
       "modelId": "deepseek-v3.2",
       "modelProvider": "venice",
       "displayName": "DeepSeek V3.2",
@@ -1193,8 +1363,8 @@
       "modelProvider": "venice",
       "displayName": "DeepSeek V4 Flash",
       "upstreamModelId": "deepseek-v4-flash",
-      "inputPer1mUsd": 0.17,
-      "outputPer1mUsd": 0.35,
+      "inputPer1mUsd": 0.138,
+      "outputPer1mUsd": 0.275,
       "referenceTaskUsd": 0.01,
       "maxContextTokens": 1000000
     },
@@ -1203,8 +1373,18 @@
       "modelProvider": "venice",
       "displayName": "DeepSeek V4 Pro",
       "upstreamModelId": "deepseek-v4-pro",
-      "inputPer1mUsd": 1.73,
-      "outputPer1mUsd": 3.796,
+      "inputPer1mUsd": 1.65,
+      "outputPer1mUsd": 3.301,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "e2ee-deepseek-v4-flash",
+      "modelProvider": "venice",
+      "displayName": "DeepSeek V4 Flash",
+      "upstreamModelId": "e2ee-deepseek-v4-flash",
+      "inputPer1mUsd": 0.182,
+      "outputPer1mUsd": 0.373,
       "referenceTaskUsd": 0.01,
       "maxContextTokens": 1000000
     },
@@ -1239,16 +1419,6 @@
       "maxContextTokens": 32000
     },
     {
-      "modelId": "e2ee-glm-4-7-flash-p",
-      "modelProvider": "venice",
-      "displayName": "GLM 4.7 Flash",
-      "upstreamModelId": "e2ee-glm-4-7-flash-p",
-      "inputPer1mUsd": 0.13,
-      "outputPer1mUsd": 0.55,
-      "referenceTaskUsd": 0.01,
-      "maxContextTokens": 198000
-    },
-    {
       "modelId": "e2ee-glm-4-7-p",
       "modelProvider": "venice",
       "displayName": "GLM 4.7",
@@ -1267,6 +1437,16 @@
       "outputPer1mUsd": 4.15,
       "referenceTaskUsd": 0.01,
       "maxContextTokens": 200000
+    },
+    {
+      "modelId": "e2ee-glm-5-2-p",
+      "modelProvider": "venice",
+      "displayName": "GLM 5.2",
+      "upstreamModelId": "e2ee-glm-5-2-p",
+      "inputPer1mUsd": 1.75,
+      "outputPer1mUsd": 5.75,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 524288
     },
     {
       "modelId": "e2ee-gpt-oss-120b-p",
@@ -1305,6 +1485,16 @@
       "upstreamModelId": "e2ee-qwen3-30b-a3b-p",
       "inputPer1mUsd": 0.19,
       "outputPer1mUsd": 0.69,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "e2ee-qwen3-6-27b",
+      "modelProvider": "venice",
+      "displayName": "Qwen 3.6 27B FP8",
+      "upstreamModelId": "e2ee-qwen3-6-27b",
+      "inputPer1mUsd": 0.346,
+      "outputPer1mUsd": 3.46,
       "referenceTaskUsd": 0.01,
       "maxContextTokens": 256000
     },
@@ -1403,8 +1593,8 @@
       "modelProvider": "venice",
       "displayName": "Google Gemma 4 26B A4B Instruct",
       "upstreamModelId": "google-gemma-4-26b-a4b-it",
-      "inputPer1mUsd": 0.1625,
-      "outputPer1mUsd": 0.5,
+      "inputPer1mUsd": 0.13,
+      "outputPer1mUsd": 0.4,
       "referenceTaskUsd": 0.01,
       "maxContextTokens": 256000
     },
@@ -1417,6 +1607,26 @@
       "outputPer1mUsd": 0.36,
       "referenceTaskUsd": 0.01,
       "maxContextTokens": 256000
+    },
+    {
+      "modelId": "grok-4-1-fast-non-reasoning",
+      "modelProvider": "xai",
+      "displayName": "Grok 4.1 Fast",
+      "upstreamModelId": "grok-4-1-fast-non-reasoning",
+      "inputPer1mUsd": 0.2,
+      "outputPer1mUsd": 0.5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 2000000
+    },
+    {
+      "modelId": "grok-4-1-fast-reasoning",
+      "modelProvider": "xai",
+      "displayName": "Grok 4.1 Fast Reasoning",
+      "upstreamModelId": "grok-4-1-fast-reasoning",
+      "inputPer1mUsd": 0.2,
+      "outputPer1mUsd": 0.5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 2000000
     },
     {
       "modelId": "grok-4-20",
@@ -1447,6 +1657,26 @@
       "outputPer1mUsd": 2.83,
       "referenceTaskUsd": 0.01,
       "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "grok-4-5",
+      "modelProvider": "venice",
+      "displayName": "Grok 4.5",
+      "upstreamModelId": "grok-4-5",
+      "inputPer1mUsd": 2.27,
+      "outputPer1mUsd": 6.8,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 500000
+    },
+    {
+      "modelId": "grok-4.5",
+      "modelProvider": "xai",
+      "displayName": "Grok 4.5",
+      "upstreamModelId": "grok-4.5",
+      "inputPer1mUsd": 2,
+      "outputPer1mUsd": 6,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 500000
     },
     {
       "modelId": "grok-build-0-1",
@@ -1483,8 +1713,18 @@
       "modelProvider": "venice",
       "displayName": "Kimi K2.6",
       "upstreamModelId": "kimi-k2-6",
-      "inputPer1mUsd": 0.85,
-      "outputPer1mUsd": 4.655,
+      "inputPer1mUsd": 0.75,
+      "outputPer1mUsd": 3.5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 256000
+    },
+    {
+      "modelId": "kimi-k2-7-code",
+      "modelProvider": "venice",
+      "displayName": "Kimi K2.7 Code",
+      "upstreamModelId": "kimi-k2-7-code",
+      "inputPer1mUsd": 0.75,
+      "outputPer1mUsd": 3.5,
       "referenceTaskUsd": 0.01,
       "maxContextTokens": 256000
     },
@@ -1523,8 +1763,8 @@
       "modelProvider": "venice",
       "displayName": "MiniMax M2.5",
       "upstreamModelId": "minimax-m25",
-      "inputPer1mUsd": 0.34,
-      "outputPer1mUsd": 1.19,
+      "inputPer1mUsd": 0.27,
+      "outputPer1mUsd": 0.95,
       "referenceTaskUsd": 0.01,
       "maxContextTokens": 198000
     },
@@ -1539,14 +1779,14 @@
       "maxContextTokens": 198000
     },
     {
-      "modelId": "minimax-m3",
+      "modelId": "minimax-m3-preview",
       "modelProvider": "venice",
-      "displayName": "MiniMax M3",
-      "upstreamModelId": "minimax-m3",
+      "displayName": "MiniMax M3 Preview",
+      "upstreamModelId": "minimax-m3-preview",
       "inputPer1mUsd": 0.3,
       "outputPer1mUsd": 1.2,
       "referenceTaskUsd": 0.01,
-      "maxContextTokens": 500000
+      "maxContextTokens": 524288
     },
     {
       "modelId": "mistral-small-2603",
@@ -1603,8 +1843,8 @@
       "modelProvider": "venice",
       "displayName": "GLM 4.7 Flash Heretic",
       "upstreamModelId": "olafangensan-glm-4.7-flash-heretic",
-      "inputPer1mUsd": 0.14,
-      "outputPer1mUsd": 0.8,
+      "inputPer1mUsd": 0.07,
+      "outputPer1mUsd": 0.4,
       "referenceTaskUsd": 0.01,
       "maxContextTokens": 200000
     },
@@ -1706,6 +1946,66 @@
       "inputPer1mUsd": 37.5,
       "outputPer1mUsd": 225,
       "referenceTaskUsd": 0.2679,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "openai-gpt-56-luna",
+      "modelProvider": "venice",
+      "displayName": "GPT-5.6 Luna",
+      "upstreamModelId": "openai-gpt-56-luna",
+      "inputPer1mUsd": 1.25,
+      "outputPer1mUsd": 7.5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "openai-gpt-56-luna-pro",
+      "modelProvider": "venice",
+      "displayName": "GPT-5.6 Luna Pro",
+      "upstreamModelId": "openai-gpt-56-luna-pro",
+      "inputPer1mUsd": 1.25,
+      "outputPer1mUsd": 7.5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "openai-gpt-56-sol",
+      "modelProvider": "venice",
+      "displayName": "GPT-5.6 Sol",
+      "upstreamModelId": "openai-gpt-56-sol",
+      "inputPer1mUsd": 6.25,
+      "outputPer1mUsd": 37.5,
+      "referenceTaskUsd": 0.0446,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "openai-gpt-56-sol-pro",
+      "modelProvider": "venice",
+      "displayName": "GPT-5.6 Sol Pro",
+      "upstreamModelId": "openai-gpt-56-sol-pro",
+      "inputPer1mUsd": 6.25,
+      "outputPer1mUsd": 37.5,
+      "referenceTaskUsd": 0.0446,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "openai-gpt-56-terra",
+      "modelProvider": "venice",
+      "displayName": "GPT-5.6 Terra",
+      "upstreamModelId": "openai-gpt-56-terra",
+      "inputPer1mUsd": 3.125,
+      "outputPer1mUsd": 18.75,
+      "referenceTaskUsd": 0.0223,
+      "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "openai-gpt-56-terra-pro",
+      "modelProvider": "venice",
+      "displayName": "GPT-5.6 Terra Pro",
+      "upstreamModelId": "openai-gpt-56-terra-pro",
+      "inputPer1mUsd": 3.125,
+      "outputPer1mUsd": 18.75,
+      "referenceTaskUsd": 0.0223,
       "maxContextTokens": 1000000
     },
     {
@@ -1843,10 +2143,10 @@
       "modelProvider": "venice",
       "displayName": "Qwen3 VL 235B",
       "upstreamModelId": "qwen3-vl-235b-a22b",
-      "inputPer1mUsd": 0.25,
-      "outputPer1mUsd": 1.5,
+      "inputPer1mUsd": 0.21,
+      "outputPer1mUsd": 1.9,
       "referenceTaskUsd": 0.01,
-      "maxContextTokens": 256000
+      "maxContextTokens": 128000
     },
     {
       "modelId": "redpill/phala-gemma-4-26b-a4b-uncensored",
@@ -1867,16 +2167,6 @@
       "outputPer1mUsd": 1.5,
       "referenceTaskUsd": 0.01,
       "maxContextTokens": 128000
-    },
-    {
-      "modelId": "tencent-hy3-preview",
-      "modelProvider": "venice",
-      "displayName": "Hy3 Preview",
-      "upstreamModelId": "tencent-hy3-preview",
-      "inputPer1mUsd": 0.063,
-      "outputPer1mUsd": 0.21,
-      "referenceTaskUsd": 0.01,
-      "maxContextTokens": 256000
     },
     {
       "modelId": "venice-uncensored-1-2",
@@ -1903,8 +2193,8 @@
       "modelProvider": "venice",
       "displayName": "MiMo-V2.5",
       "upstreamModelId": "xiaomi-mimo-v2-5",
-      "inputPer1mUsd": 0.175,
-      "outputPer1mUsd": 0.35,
+      "inputPer1mUsd": 0.14,
+      "outputPer1mUsd": 0.28,
       "referenceTaskUsd": 0.01,
       "maxContextTokens": 1000000
     },
@@ -1933,8 +2223,8 @@
       "modelProvider": "venice",
       "displayName": "GLM 4.6",
       "upstreamModelId": "zai-org-glm-4.6",
-      "inputPer1mUsd": 0.85,
-      "outputPer1mUsd": 2.75,
+      "inputPer1mUsd": 0.43,
+      "outputPer1mUsd": 1.75,
       "referenceTaskUsd": 0.01,
       "maxContextTokens": 198000
     },
@@ -1973,10 +2263,20 @@
       "modelProvider": "venice",
       "displayName": "GLM 5.1",
       "upstreamModelId": "zai-org-glm-5-1",
-      "inputPer1mUsd": 1.75,
-      "outputPer1mUsd": 5.5,
+      "inputPer1mUsd": 1.54,
+      "outputPer1mUsd": 4.84,
       "referenceTaskUsd": 0.01,
       "maxContextTokens": 200000
+    },
+    {
+      "modelId": "zai-org-glm-5-2",
+      "modelProvider": "venice",
+      "displayName": "GLM 5.2",
+      "upstreamModelId": "zai-org-glm-5-2",
+      "inputPer1mUsd": 1.4,
+      "outputPer1mUsd": 4.4,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 1000000
     },
     {
       "modelId": "zai-org/GLM-5.1-FP8",

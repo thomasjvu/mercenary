@@ -6,6 +6,7 @@ const AGENT_FRAMEWORK_OPTIONS = [
   ['codex', 'codex'],
   ['claude_code', 'claude code'],
   ['openclaw', 'openclaw'],
+  ['grok', 'grok / xAI'],
   ['custom', 'custom'],
 ] as const;
 

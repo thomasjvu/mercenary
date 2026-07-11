@@ -6,6 +6,7 @@ const PROVIDER_INFERENCE_MOCK_KEYS: Record<UpstreamProviderId, string> = {
   near: 'BOSSRAID_NEAR_MOCK',
   chutes: 'BOSSRAID_CHUTES_MOCK',
   phala: 'BOSSRAID_PHALA_MOCK',
+  xai: 'BOSSRAID_XAI_MOCK',
 };
 
 export function isProviderInferenceMock(

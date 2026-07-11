@@ -44,7 +44,7 @@ Single-provider marketplace lane. API normalizes every request to `maxAgents: 1`
 
 Self-serve sellers connect a Venice API key in the web UI. The API stores the key encrypted in control state, materializes one provider profile per selected model, and routes inference through an embedded hosted gateway:
 
-1. Seller `POST /v1/seller/upstream/:provider/connect` validates the key against upstream `GET /models` (`venice`, `redpill`, `near`, `chutes`, `phala`).
+1. Seller `POST /v1/seller/upstream/:provider/connect` validates the key against upstream `GET /models` (`xai`, `venice`, `redpill`, `near`, `chutes`, `phala`).
 2. Seller `POST /v1/seller/upstream/:provider/offers` registers offers with `source.type = inference_hosted` and `source.targetType = :provider`.
 3. Each offer endpoint is `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`.
 4. Gateway `POST /v1/raid/accept` proxies the raid task to the upstream chat API, verifies TEE attestation when privacy features are claimed, and records the provider submission in-process.

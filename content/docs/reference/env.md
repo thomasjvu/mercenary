@@ -134,13 +134,14 @@ Onchain overlay template: `deploy/phala/secrets.onchain.env.example`.
 | Variable                                | Purpose                                            |
 | --------------------------------------- | -------------------------------------------------- |
 | `BOSSRAID_VENICE_MOCK`                  | `1` = mock Venice upstream for local/tests         |
-| `BOSSRAID_UPSTREAM_MOCK`                | `1` = mock Redpill/NEAR/Chutes/Phala upstream list |
+| `BOSSRAID_XAI_MOCK`                     | `1` = mock xAI/Grok upstream for local/tests       |
+| `BOSSRAID_UPSTREAM_MOCK`                | `1` = mock Redpill/NEAR/Chutes/Phala/xAI list      |
 | `BOSSRAID_UPSTREAM_TEE_MOCK`            | `1` = mock upstream TEE attestation verification   |
 | `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND` | Dev-only: fund bounties without x402 (default off) |
 
 ### Catalog TEE platform keys (optional)
 
-`BOSSRAID_VENICE_API_KEY`, `BOSSRAID_REDPILL_API_KEY`, `BOSSRAID_NEAR_API_KEY`, `BOSSRAID_CHUTES_API_KEY`, `BOSSRAID_PHALA_API_KEY` — platform keys for catalog TEE attest when sellers do not supply their own.
+`BOSSRAID_VENICE_API_KEY`, `BOSSRAID_REDPILL_API_KEY`, `BOSSRAID_NEAR_API_KEY`, `BOSSRAID_CHUTES_API_KEY`, `BOSSRAID_PHALA_API_KEY`, `BOSSRAID_XAI_API_KEY` — platform keys for catalog inference/TEE when sellers do not supply their own.
 
 ### Evaluator
 

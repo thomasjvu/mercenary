@@ -1,4 +1,4 @@
-export type UpstreamTeeVendor = 'venice' | 'redpill' | 'near' | 'chutes' | 'phala';
+export type UpstreamTeeVendor = 'venice' | 'redpill' | 'near' | 'chutes' | 'phala' | 'xai';
 
 export type UpstreamTeeCheck = {
   id: string;

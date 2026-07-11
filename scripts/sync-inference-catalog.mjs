@@ -17,6 +17,8 @@ const FEATURED_LIVE_MODEL_IDS = new Set([
   'openai-gpt-55',
   'zai-org/GLM-5.1-FP8',
   'tee-qwen3-5-122b-chutes',
+  'grok-4.5',
+  'grok-4-1-fast-reasoning',
 ]);
 
 const REDPILL_MODELS = [
@@ -88,6 +90,55 @@ const PHALA_MODELS = [
     e2ee: true,
     signedOutputs: true,
     noDataRetention: true,
+  },
+];
+
+/** xAI Grok — static reference rates (OpenAI-compatible https://api.x.ai/v1). */
+const XAI_MODELS = [
+  {
+    modelId: 'grok-4.5',
+    displayName: 'Grok 4.5',
+    modelProvider: 'xai',
+    attestationVendor: 'xai',
+    upstream: 'grok-4.5',
+    inputPer1mUsd: 2,
+    outputPer1mUsd: 6,
+    maxContextTokens: 500_000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+    signedOutputs: false,
+    noDataRetention: false,
+  },
+  {
+    modelId: 'grok-4-1-fast-reasoning',
+    displayName: 'Grok 4.1 Fast Reasoning',
+    modelProvider: 'xai',
+    attestationVendor: 'xai',
+    upstream: 'grok-4-1-fast-reasoning',
+    inputPer1mUsd: 0.2,
+    outputPer1mUsd: 0.5,
+    maxContextTokens: 2_000_000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+    signedOutputs: false,
+    noDataRetention: false,
+  },
+  {
+    modelId: 'grok-4-1-fast-non-reasoning',
+    displayName: 'Grok 4.1 Fast',
+    modelProvider: 'xai',
+    attestationVendor: 'xai',
+    upstream: 'grok-4-1-fast-non-reasoning',
+    inputPer1mUsd: 0.2,
+    outputPer1mUsd: 0.5,
+    maxContextTokens: 2_000_000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+    signedOutputs: false,
+    noDataRetention: false,
   },
 ];
 
@@ -218,8 +269,8 @@ function writeCatalogTs(catalog) {
 export type InferenceCatalogEntry = {
   modelId: string;
   displayName: string;
-  modelProvider: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes';
-  attestationVendor: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes';
+  modelProvider: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai';
+  attestationVendor: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai';
   upstreamModelId: string;
   inputPer1mUsd: number;
   outputPer1mUsd: number;
@@ -277,6 +328,7 @@ function writeCatalogPricingJson(catalog) {
       near: 'scripts/sync-inference-catalog.mjs static rates',
       chutes: 'scripts/sync-inference-catalog.mjs static rates',
       phala: 'scripts/sync-inference-catalog.mjs static rates',
+      xai: 'scripts/sync-inference-catalog.mjs static rates (api.x.ai)',
     },
     providers,
     models: catalog
@@ -359,7 +411,15 @@ async function main() {
   const nearModels = normalizeStaticModels(NEAR_MODELS);
   const chutesModels = normalizeStaticModels(CHUTES_MODELS);
   const phalaModels = normalizeStaticModels(PHALA_MODELS);
-  const catalog = [...veniceModels, ...redpillModels, ...nearModels, ...chutesModels, ...phalaModels];
+  const xaiModels = normalizeStaticModels(XAI_MODELS);
+  const catalog = [
+    ...veniceModels,
+    ...redpillModels,
+    ...nearModels,
+    ...chutesModels,
+    ...phalaModels,
+    ...xaiModels,
+  ];
   assertUniqueModelIds(catalog);
 
   let livePort = 9100;
@@ -389,7 +449,7 @@ async function main() {
   writeProvidersJson(providers);
 
   console.log(
-    `[catalog] synced ${veniceModels.length} Venice + ${redpillModels.length} Redpill + ${nearModels.length} NEAR + ${chutesModels.length} Chutes + ${phalaModels.length} Phala models`
+    `[catalog] synced ${veniceModels.length} Venice + ${redpillModels.length} Redpill + ${nearModels.length} NEAR + ${chutesModels.length} Chutes + ${phalaModels.length} Phala + ${xaiModels.length} xAI models`
   );
   console.log(`[catalog] wrote packages/constants/src/inference-catalog.ts`);
   console.log(`[catalog] wrote examples/inference/inference-marketplace-providers.json (${providers.length} sellers)`);

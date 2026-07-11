@@ -16,6 +16,7 @@ import { fetchSellerStats } from '../api/auth.js';
 import { useWalletAuth } from './useWalletAuth.js';
 
 export const SELLER_PROVIDER_ORDER: UpstreamProviderId[] = [
+  'xai',
   'venice',
   'redpill',
   'near',

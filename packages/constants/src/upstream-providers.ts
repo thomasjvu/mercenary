@@ -1,4 +1,11 @@
-export const UPSTREAM_PROVIDER_IDS = ['venice', 'redpill', 'near', 'chutes', 'phala'] as const;
+export const UPSTREAM_PROVIDER_IDS = [
+  'venice',
+  'redpill',
+  'near',
+  'chutes',
+  'phala',
+  'xai',
+] as const;
 
 export type UpstreamProviderId = (typeof UPSTREAM_PROVIDER_IDS)[number];
 
@@ -45,6 +52,13 @@ export const UPSTREAM_PROVIDER_CONFIG: Record<UpstreamProviderId, UpstreamProvid
     upstreamBase: 'https://cloud-api.phala.network/api/v1',
     attestationVendor: 'phala',
     supportsE2ee: true,
+  },
+  xai: {
+    id: 'xai',
+    displayName: 'xAI (Grok)',
+    upstreamBase: 'https://api.x.ai/v1',
+    attestationVendor: 'xai',
+    supportsE2ee: false,
   },
 };
 
