@@ -18,7 +18,8 @@ import {
   collectVerifiedFundPayment,
 } from '../lib/verified-fund-payment.js';
 import { buildX402SettlementFingerprint } from '../control-state/x402-settled-payments.js';
-import { readPaymentSignature } from '../lib/x402-reconciliation.js';
+import { attemptX402Refund, readPaymentSignature } from '../lib/x402-reconciliation.js';
+import { buildPaymentRequiredForRoute } from '../x402.js';
 
 function normalizeEndpointKey(endpoint: string): string {
   try {
@@ -340,6 +341,29 @@ export function registerAccountRoutes(
         return {
           error: 'payment_unverified',
           message: 'Verified x402 settlement fingerprint is required before crediting balance.',
+        };
+      }
+
+      const payer = payment.settlement.payer?.trim().toLowerCase();
+      if (!payer || payer !== session.wallet.toLowerCase()) {
+        const paymentSignature = readPaymentSignature(request.headers);
+        const paymentRequired =
+          payment.paymentRequired ??
+          buildPaymentRequiredForRoute(readX402ConfigForContext(ctx), 'balance', amountUsd);
+        if (paymentSignature && payment.settlement.success) {
+          await attemptX402Refund(ctx, {
+            kind: 'balance_fund_refund',
+            route: 'balance',
+            reason: 'balance_payer_mismatch',
+            paymentSignature,
+            paymentRequired,
+            settlementTx: payment.settlement.transaction,
+          });
+        }
+        reply.code(403);
+        return {
+          error: 'payer_mismatch',
+          message: 'x402 payer must match the signed-in wallet before balance credit.',
         };
       }
 

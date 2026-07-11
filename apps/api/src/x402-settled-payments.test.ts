@@ -76,6 +76,31 @@ test('tryClaimX402SettledPayment rejects duplicate fingerprints atomically', () 
   assert.equal(controlState.tryClaimX402SettledPayment(entry), false);
 });
 
+test('tryClaimX402SettledPaymentDetailed allows same reservation re-entry', () => {
+  const controlState = createApiControlState({
+    ...process.env,
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+  });
+  const fingerprint = buildX402SettlementFingerprint({
+    settlementTx: '0xreservation-reentry',
+  });
+  assert.ok(fingerprint);
+  const entry = {
+    fingerprint: fingerprint!,
+    wallet: '0xbuyer',
+    route: 'chat' as const,
+    amountUsd: 1,
+    createdAt: new Date().toISOString(),
+    reservationId: 'res-1',
+  };
+  assert.equal(controlState.tryClaimX402SettledPaymentDetailed(entry).status, 'claimed');
+  assert.equal(controlState.tryClaimX402SettledPaymentDetailed(entry).status, 'same_reservation');
+  assert.equal(
+    controlState.tryClaimX402SettledPaymentDetailed({ ...entry, reservationId: 'res-2' }).status,
+    'duplicate'
+  );
+});
+
 test('settled payment fingerprints expire by TTL not a short LRU', async () => {
   const { pruneX402SettledPayments } = await import('./control-state/x402-settled-payments.js');
   const now = Date.now();

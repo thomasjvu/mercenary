@@ -71,4 +71,6 @@ test('isPrivateOrSpecialIp covers common ranges', () => {
   assert.equal(isPrivateOrSpecialIp('172.16.0.1'), true);
   assert.equal(isPrivateOrSpecialIp('8.8.8.8'), false);
   assert.equal(isPrivateOrSpecialIp('localhost'), true);
+  // Integer form of 127.0.0.1
+  assert.equal(isPrivateOrSpecialIp('2130706433'), true);
 });

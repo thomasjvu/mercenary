@@ -2,9 +2,8 @@ import { type FastifyInstance } from 'fastify';
 import { marketplaceStatsSchema, openAiModelListSchema } from '@bossraid/openapi-schemas';
 import { publicRouteSchema } from '../openapi/audience.js';
 import {
-  buildInferenceMarkets,
   buildInferenceMarketSnapshot,
-  mergeInferenceCatalogMarkets,
+  countLiveMarketplaceModels,
   buildOpenAiCompatibleModelEntry,
   buildInferencePriceEntry,
 } from '../lib/inference-marketplace.js';
@@ -29,13 +28,7 @@ function buildPublicMarketplaceStats(
     MARKETPLACE_PUBLIC_PAYOUT_SCAN_LIMIT
   );
   const metrics24h = computeSellerPayout24hMetrics(sellerPayouts);
-  const modelsLive = mergeInferenceCatalogMarkets(
-    buildInferenceMarkets(
-      providers.filter(
-        (provider) => (provider.marketplaceOfferStatus ?? 'active') === 'active' && provider.modelId
-      )
-    )
-  ).length;
+  const modelsLive = countLiveMarketplaceModels(providers);
 
   return {
     activeOffers,

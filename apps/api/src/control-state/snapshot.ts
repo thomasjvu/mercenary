@@ -119,6 +119,10 @@ export function encryptApiControlStateSnapshot(
       ...config,
       apiKeyCiphertext: cipher.encrypt(config.apiKeyCiphertext),
     })),
+    x402Reconciliations: snapshot.x402Reconciliations.map((entry) => ({
+      ...entry,
+      paymentSignature: cipher.encrypt(entry.paymentSignature),
+    })),
   };
 }
 
@@ -167,5 +171,14 @@ export function decryptApiControlStateSnapshot(
         }))
       : snapshot.buyerApiKeys,
     sellerUpstreamConfigs,
+    x402Reconciliations: Array.isArray(snapshot.x402Reconciliations)
+      ? snapshot.x402Reconciliations.map((entry) => ({
+          ...entry,
+          paymentSignature:
+            typeof entry.paymentSignature === 'string'
+              ? cipher.decrypt(entry.paymentSignature)
+              : entry.paymentSignature,
+        }))
+      : snapshot.x402Reconciliations,
   };
 }

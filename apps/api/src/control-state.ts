@@ -261,7 +261,9 @@ export function createApiControlStateFromStore(store: ApiControlStateStore) {
           provider,
           apiKey,
           cipher: createSecretCipher(env),
-          requireEncryption: env.NODE_ENV === 'production',
+          requireEncryption:
+            env.NODE_ENV === 'production' ||
+            (env.BOSSRAID_STORAGE_BACKEND ?? 'sqlite') !== 'memory',
         },
         nowMs
       );
@@ -355,6 +357,13 @@ export function createApiControlStateFromStore(store: ApiControlStateStore) {
 
     tryClaimX402SettledPayment(entry: x402SettledPayments.X402SettledPaymentEntry): boolean {
       return x402SettledPayments.tryClaimX402SettledPayment(ctx, entry);
+    },
+
+    tryClaimX402SettledPaymentDetailed(
+      entry: x402SettledPayments.X402SettledPaymentEntry,
+      nowMs = Date.now()
+    ): x402SettledPayments.ClaimX402SettledPaymentResult {
+      return x402SettledPayments.tryClaimX402SettledPaymentDetailed(ctx, entry, nowMs);
     },
 
     tryClaimX402SettledPaymentAndCredit(

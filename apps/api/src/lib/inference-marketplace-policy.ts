@@ -1,6 +1,14 @@
 import { asSingleHeader, type ChatCompletionRequest } from '@bossraid/shared-types';
 import { safeEqualString } from './http.js';
 
+/** Strict private marketplace / Alkahest lane required privacy feature set. */
+export const STRICT_PRIVATE_PRIVACY_FEATURES = [
+  'tee_attested',
+  'e2ee',
+  'signed_outputs',
+  'no_data_retention',
+] as const satisfies NonNullable<ChatCompletionRequest['raidPolicy']>['requirePrivacyFeatures'];
+
 export function readPolicyStringArray(value: unknown): string[] | undefined {
   if (Array.isArray(value)) {
     return value.filter((item): item is string => typeof item === 'string');
@@ -33,9 +41,7 @@ export function forceDiscountInferenceChatPolicy(
     ? 'strict'
     : (readPrivacyMode(policy.privacyMode) ?? readPrivacyMode(policy.privacy_mode) ?? 'prefer');
   const requiredPrivacyFeatures = options.strictAlkahestLane
-    ? (['tee_attested', 'e2ee', 'signed_outputs', 'no_data_retention'] as NonNullable<
-        ChatCompletionRequest['raidPolicy']
-      >['requirePrivacyFeatures'])
+    ? [...STRICT_PRIVATE_PRIVACY_FEATURES]
     : undefined;
 
   return {

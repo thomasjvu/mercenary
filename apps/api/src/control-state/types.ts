@@ -16,7 +16,7 @@ export type RelayerTaskEntry = {
 
 export type X402ReconciliationEntry = {
   id: string;
-  kind: 'spawn_refund' | 'bounty_fund_refund';
+  kind: 'spawn_refund' | 'bounty_fund_refund' | 'balance_fund_refund';
   status: 'pending' | 'completed' | 'failed';
   reason: string;
   route: 'raid' | 'chat' | 'inference' | 'balance' | 'bounty';
@@ -136,9 +136,11 @@ export type SellerUpstreamConfigEntry = {
 export type X402SettledPaymentEntry = {
   fingerprint: string;
   wallet: string;
-  route: 'balance' | 'bounty';
+  route: 'balance' | 'bounty' | 'raid' | 'chat' | 'inference';
   amountUsd: number;
   createdAt: string;
+  /** Optional launch reservation id for raid/chat/inference idempotent re-entry after crash. */
+  reservationId?: string;
 };
 
 export type ApiControlStateSnapshot = {

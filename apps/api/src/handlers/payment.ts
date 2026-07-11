@@ -13,6 +13,7 @@ import { readX402ConfigForContext } from '../lib/x402-runtime.js';
 import { buildLaunchRequestKey } from '../lib/http.js';
 import { computeSavingsUsd, estimateBenchmarkPriceUsd } from '@bossraid/constants';
 import { attemptX402Refund, readPaymentSignature } from '../lib/x402-reconciliation.js';
+import { buildX402SettlementFingerprint } from '../control-state/x402-settled-payments.js';
 import { type ApiContext } from '../api-context.js';
 import { createManaBillingHandlers, type ManaBillingContext } from './billing-mana.js';
 import { createAuthHandlers } from './auth.js';
@@ -386,9 +387,33 @@ export function createPaymentHandlers(
       paymentRequired,
     });
 
+    const fingerprint = buildX402SettlementFingerprint({
+      settlementTx: payment.settlement?.transaction,
+      paymentSignature: readPaymentSignature(request.headers),
+    });
+    if (fingerprint && payment.settlement?.success) {
+      const claim = ctx.controlState.tryClaimX402SettledPaymentDetailed({
+        fingerprint,
+        wallet: payment.settlement.payer?.toLowerCase() ?? 'unknown',
+        route,
+        amountUsd: payment.escrowFundingUsd,
+        createdAt: new Date().toISOString(),
+        reservationId: reservation.id,
+      });
+      if (claim.status === 'duplicate') {
+        throw new ApiContractError(
+          'This x402 payment was already applied to another launch reservation.',
+          409
+        );
+      }
+    }
+
     reservation.escrowFundingUsd = payment.escrowFundingUsd;
     reservation.platformMarkupUsd = payment.platformMarkupUsd;
     reservation.x402PaidAmountUsd = payment.paidAmountUsd;
+
+    // Durable write so crash between settle and spawn does not drop paid markers.
+    await ctx.orchestrator.persistState();
 
     return {
       settlement: payment.settlement,

@@ -160,23 +160,36 @@ export async function runAgentHarnessLoop(input: {
   let submit: SubmitPayload | undefined;
   let toolCalls = 0;
   let steps = 0;
+  const deadlineMs = Date.now() + Math.max(1, input.timeoutMs);
 
   try {
     for (let step = 0; step < input.config.maxSteps; step += 1) {
+      const remainingMs = deadlineMs - Date.now();
+      if (remainingMs <= 0) {
+        throw new Error(
+          `Harness ${input.config.kind} exceeded wall-clock budget (${input.timeoutMs}ms).`
+        );
+      }
+
       steps = step + 1;
       input.onProgress?.(
         `Harness ${input.config.kind} step ${steps}/${input.config.maxSteps}`,
         Math.min(0.85, 0.1 + step * 0.1)
       );
 
-      const remainingMs = Math.max(2_000, input.timeoutMs - step * 1_000);
       const response = await callChatCompletions({
         apiBase: input.apiBase,
         apiKey: input.apiKey,
         model: input.model,
         messages,
-        timeoutMs: remainingMs,
+        timeoutMs: Math.max(1, remainingMs),
       });
+
+      if (Date.now() >= deadlineMs) {
+        throw new Error(
+          `Harness ${input.config.kind} exceeded wall-clock budget (${input.timeoutMs}ms).`
+        );
+      }
 
       const choice = response.choices?.[0];
       const message = choice?.message;

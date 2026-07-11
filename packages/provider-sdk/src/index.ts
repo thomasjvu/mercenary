@@ -288,8 +288,16 @@ async function postJson<TResponse>(
         ),
       },
       body,
+      // Do not follow redirects — a 3xx to loopback/metadata bypasses hostname checks.
+      redirect: 'manual',
       signal: controller.signal,
     });
+
+    if (response.status >= 300 && response.status < 400) {
+      throw new Error(
+        `${profile.providerId} request redirected (${response.status}); redirects are not allowed for provider endpoints.`
+      );
+    }
 
     console.info(
       `[provider-http] ${profile.providerId} POST ${path} status=${response.status} elapsed_ms=${Date.now() - startedAt}`
@@ -347,8 +355,20 @@ export async function probeProviderHealth(profile: ProviderProfile): Promise<Pro
   try {
     const response = await fetch(resolveProviderEndpointPath(profile, '/health').url, {
       method: 'GET',
+      redirect: 'manual',
       signal: controller.signal,
     });
+
+    if (response.status >= 300 && response.status < 400) {
+      return {
+        providerId: profile.providerId,
+        providerName: profile.displayName,
+        endpoint: profile.endpoint,
+        reachable: false,
+        ready: false,
+        error: `Provider health redirected (${response.status}); redirects are not allowed.`,
+      };
+    }
 
     let payload: Record<string, unknown> = {};
     try {

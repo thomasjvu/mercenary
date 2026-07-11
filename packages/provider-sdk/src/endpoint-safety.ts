@@ -40,6 +40,19 @@ export function isBlockedMetadataHost(hostname: string): boolean {
   return false;
 }
 
+/** Decode single-number / octal-ish dotted forms the runtime might still connect. */
+function decodeNumericIpv4(host: string): string | undefined {
+  // Decimal integer form of IPv4 (e.g. 2130706433 → 127.0.0.1)
+  if (/^\d+$/u.test(host)) {
+    const n = Number(host);
+    if (!Number.isSafeInteger(n) || n < 0 || n > 0xffffffff) {
+      return undefined;
+    }
+    return [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join('.');
+  }
+  return undefined;
+}
+
 export function isPrivateOrSpecialIp(hostname: string): boolean {
   const host = stripBrackets(hostname).toLowerCase();
 
@@ -56,11 +69,19 @@ export function isPrivateOrSpecialIp(hostname: string): boolean {
     return isPrivateOrSpecialIp(v4Mapped[1]);
   }
 
+  const decoded = decodeNumericIpv4(host);
+  if (decoded) {
+    return isPrivateOrSpecialIp(decoded);
+  }
+
+  // IPv6 unique-local and link-local (prefix match on expanded/compressed forms).
   if (
     host.startsWith('fc') ||
     host.startsWith('fd') ||
     host.startsWith('fe80:') ||
-    host === 'fe80::'
+    host === 'fe80::' ||
+    host.startsWith('::1') ||
+    host === '0.0.0.0'
   ) {
     return true;
   }

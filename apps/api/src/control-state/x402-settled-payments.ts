@@ -1,14 +1,9 @@
 import { createHash } from 'node:crypto';
 import { ensurePublicAccountInSnapshot } from './sessions.js';
 import type { ControlStateContext } from './state-context.js';
+import type { X402SettledPaymentEntry } from './types.js';
 
-export type X402SettledPaymentEntry = {
-  fingerprint: string;
-  wallet: string;
-  route: 'balance' | 'bounty';
-  amountUsd: number;
-  createdAt: string;
-};
+export type { X402SettledPaymentEntry };
 
 /** Keep settled payment fingerprints for 90 days (anti double-credit), not a short LRU. */
 const SETTLED_PAYMENT_TTL_MS = 90 * 24 * 60 * 60 * 1000;
@@ -76,21 +71,59 @@ export function recordX402SettledPayment(
   return entry;
 }
 
+export type ClaimX402SettledPaymentResult =
+  | { status: 'claimed' }
+  | { status: 'duplicate' }
+  | { status: 'same_reservation' };
+
+/**
+ * Atomically claim a settled-payment fingerprint (no balance side effects).
+ * Uses mutateState so concurrent writers cannot double-claim after x402 settle.
+ * When `reservationId` matches an existing claim, returns `same_reservation` for crash re-entry.
+ */
+export function tryClaimX402SettledPaymentDetailed(
+  context: ControlStateContext,
+  entry: X402SettledPaymentEntry,
+  nowMs = Date.now()
+): ClaimX402SettledPaymentResult {
+  let result: ClaimX402SettledPaymentResult = { status: 'duplicate' };
+  try {
+    context.mutateState((snapshot) => {
+      const existing = snapshot.x402SettledPayments.find(
+        (item) => item.fingerprint === entry.fingerprint && isSettledPaymentFresh(item, nowMs)
+      );
+      if (existing) {
+        if (
+          entry.reservationId &&
+          existing.reservationId &&
+          entry.reservationId === existing.reservationId
+        ) {
+          result = { status: 'same_reservation' };
+        } else {
+          result = { status: 'duplicate' };
+        }
+        return;
+      }
+      const next = snapshot.x402SettledPayments.filter(
+        (item) => item.fingerprint !== entry.fingerprint
+      );
+      next.push(entry);
+      snapshot.x402SettledPayments = pruneX402SettledPayments(next, nowMs);
+      result = { status: 'claimed' };
+    }, nowMs);
+  } catch {
+    result = { status: 'duplicate' };
+  }
+  return result;
+}
+
+/** Boolean wrapper for bounty/balance paths (true = newly claimed). */
 export function tryClaimX402SettledPayment(
   context: ControlStateContext,
-  entry: X402SettledPaymentEntry
+  entry: X402SettledPaymentEntry,
+  nowMs = Date.now()
 ): boolean {
-  const snapshot = context.loadWorkingSnapshot();
-  const nowMs = Date.now();
-  if (
-    snapshot.x402SettledPayments.some(
-      (item) => item.fingerprint === entry.fingerprint && isSettledPaymentFresh(item, nowMs)
-    )
-  ) {
-    return false;
-  }
-  recordX402SettledPayment(context, entry);
-  return true;
+  return tryClaimX402SettledPaymentDetailed(context, entry, nowMs).status === 'claimed';
 }
 
 export function tryClaimX402SettledPaymentAndCredit(

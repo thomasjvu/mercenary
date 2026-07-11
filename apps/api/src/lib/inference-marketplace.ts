@@ -16,6 +16,7 @@ import {
   forceDiscountInferenceChatPolicy,
   readPolicyStringArray,
   readTrustedAlkahestClient,
+  STRICT_PRIVATE_PRIVACY_FEATURES,
 } from './inference-marketplace-policy.js';
 import { filterEligibleMarketplaceProviders } from './inference-marketplace-query.js';
 import {
@@ -163,9 +164,7 @@ export function resolveDiscountInferenceDefaultMaxTotalCost(
             | undefined,
           privacyMode: privacyMode === 'strict' ? 'strict' : undefined,
           requirePrivacyFeatures:
-            privacyMode === 'strict'
-              ? (['tee_attested', 'e2ee', 'signed_outputs', 'no_data_retention'] as const)
-              : undefined,
+            privacyMode === 'strict' ? [...STRICT_PRIVATE_PRIVACY_FEATURES] : undefined,
           requireErc8004,
           minTrustScore,
           onlineOnly: false,
@@ -311,15 +310,44 @@ function buildCatalogOnlyMarket(entry: InferenceCatalogEntry): InferenceMarket {
   };
 }
 
-export function mergeInferenceCatalogMarkets(liveMarkets: InferenceMarket[]): InferenceMarket[] {
-  const merged = new Map(liveMarkets.map((market) => [market.modelId, market]));
+/** Static catalog-only markets (no live sellers) — built once per process. */
+let catalogOnlyMarketsById: Map<string, InferenceMarket> | null = null;
+let catalogEntryByModelId: Map<string, InferenceCatalogEntry> | null = null;
 
-  for (const entry of INFERENCE_MODEL_CATALOG) {
-    const existing = merged.get(entry.modelId);
-    if (existing) {
-      merged.set(entry.modelId, applyCatalogReferencePricing(existing, entry));
-    } else {
-      merged.set(entry.modelId, buildCatalogOnlyMarket(entry));
+function getCatalogEntryByModelId(): Map<string, InferenceCatalogEntry> {
+  if (!catalogEntryByModelId) {
+    catalogEntryByModelId = new Map(INFERENCE_MODEL_CATALOG.map((entry) => [entry.modelId, entry]));
+  }
+  return catalogEntryByModelId;
+}
+
+function getCatalogOnlyMarketsById(): Map<string, InferenceMarket> {
+  if (!catalogOnlyMarketsById) {
+    catalogOnlyMarketsById = new Map(
+      INFERENCE_MODEL_CATALOG.map((entry) => [entry.modelId, buildCatalogOnlyMarket(entry)])
+    );
+  }
+  return catalogOnlyMarketsById;
+}
+
+/**
+ * Overlay live seller markets onto the static catalog.
+ * Catalog-only rows are cloned from a process-level cache (not rebuilt every request).
+ */
+export function mergeInferenceCatalogMarkets(liveMarkets: InferenceMarket[]): InferenceMarket[] {
+  const catalogEntries = getCatalogEntryByModelId();
+  const catalogOnly = getCatalogOnlyMarketsById();
+  const merged = new Map<string, InferenceMarket>();
+
+  for (const market of liveMarkets) {
+    const entry = catalogEntries.get(market.modelId);
+    merged.set(market.modelId, entry ? applyCatalogReferencePricing(market, entry) : market);
+  }
+
+  for (const [modelId, catalogMarket] of catalogOnly) {
+    if (!merged.has(modelId)) {
+      // Shallow clone so callers cannot mutate the shared cache entry.
+      merged.set(modelId, { ...catalogMarket, pricing: { ...catalogMarket.pricing }, sellers: [] });
     }
   }
 
@@ -328,6 +356,23 @@ export function mergeInferenceCatalogMarkets(liveMarkets: InferenceMarket[]): In
     const rightRate = right.cheapestRateUsd ?? Number.POSITIVE_INFINITY;
     return leftRate - rightRate || left.modelId.localeCompare(right.modelId);
   });
+}
+
+/** Distinct live model ids among active sellers — avoids full catalog merge for stats. */
+export function countLiveMarketplaceModels(providers: ProviderProfile[]): number {
+  const ids = new Set<string>();
+  for (const provider of providers) {
+    if ((provider.marketplaceOfferStatus ?? 'active') !== 'active') {
+      continue;
+    }
+    if (provider.status === 'offline') {
+      continue;
+    }
+    if (provider.modelId) {
+      ids.add(provider.modelId);
+    }
+  }
+  return ids.size;
 }
 
 function buildInferenceMarketSeller(provider: ProviderProfile): InferenceMarketSeller {

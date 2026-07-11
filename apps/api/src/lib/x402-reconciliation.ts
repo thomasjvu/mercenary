@@ -35,7 +35,11 @@ export async function attemptX402Refund(
   try {
     await refundPayment(x402Config, input.paymentSignature, input.paymentRequired, input.reason);
     ctx.apiMetrics.increment(
-      input.kind === 'bounty_fund_refund' ? 'x402.bounty_refunded' : 'x402.spawn_refunded'
+      input.kind === 'bounty_fund_refund'
+        ? 'x402.bounty_refunded'
+        : input.kind === 'balance_fund_refund'
+          ? 'x402.balance_refunded'
+          : 'x402.spawn_refunded'
     );
     return { refunded: true };
   } catch (error) {

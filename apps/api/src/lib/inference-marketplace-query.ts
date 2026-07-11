@@ -1,6 +1,7 @@
 import { providerMatchesMarketplaceConstraints } from '@bossraid/provider-registry';
 import type { ProviderProfile, ProviderVerificationStatus } from '@bossraid/shared-types';
 import type { MarketplaceQueryParams } from './marketplace-query.js';
+import { STRICT_PRIVATE_PRIVACY_FEATURES } from './inference-marketplace-policy.js';
 import {
   readProviderMarketRateUsd,
   resolveProviderMarketModelId,
@@ -32,9 +33,7 @@ export function providerMatchesMarketplaceQuery(
         | undefined,
       privacyMode: options.privacyMode === 'strict' ? 'strict' : undefined,
       requirePrivacyFeatures:
-        options.privacyMode === 'strict'
-          ? (['tee_attested', 'e2ee', 'signed_outputs', 'no_data_retention'] as const)
-          : undefined,
+        options.privacyMode === 'strict' ? [...STRICT_PRIVATE_PRIVACY_FEATURES] : undefined,
       onlineOnly: false,
     },
     { skipFreshnessCheck: true }

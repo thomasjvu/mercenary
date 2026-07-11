@@ -150,12 +150,39 @@ export async function prepareBountyFundPayment(input: {
     paymentSignature: readPaymentSignature(input.headers),
   });
   if (payment.settlement?.payer && payment.settlement.payer.toLowerCase() !== input.posterWallet) {
+    // Payment already settled with facilitator — refund so payer is not stranded (mirror onchain fail path).
+    const paymentSignature = readPaymentSignature(input.headers);
+    const x402Config = readX402ConfigForContext(input.ctx);
+    const paymentRequired =
+      payment.paymentRequired ??
+      buildPaymentRequiredForRoute(x402Config, 'bounty', input.draft.rewardAmountUsd, {
+        extra: { bountyId: input.bountyId },
+      });
+    let refundStatus: { refunded: boolean; reconciliationId?: string; error?: string } = {
+      refunded: false,
+      error: 'missing_payment_signature',
+    };
+    if (paymentSignature && payment.settlement?.success) {
+      refundStatus = await attemptX402Refund(input.ctx, {
+        kind: 'bounty_fund_refund',
+        route: 'bounty',
+        reason: 'bounty_payer_mismatch',
+        paymentSignature,
+        paymentRequired,
+        bountyId: input.bountyId,
+        settlementTx: payment.settlement.transaction,
+      });
+    }
     return {
       ok: false,
       statusCode: 403,
       body: {
         error: 'payer_mismatch',
-        message: 'x402 payer must match the bounty poster wallet.',
+        message: refundStatus.refunded
+          ? 'x402 payer must match the bounty poster wallet. Your payment was refunded automatically.'
+          : 'x402 payer must match the bounty poster wallet. A refund has been queued for automatic retry.',
+        refunded: refundStatus.refunded,
+        reconciliationId: refundStatus.reconciliationId,
       },
     };
   }
