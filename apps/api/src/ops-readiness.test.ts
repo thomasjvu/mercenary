@@ -74,6 +74,26 @@ test('GET /ready reports public beta readiness gates', async () => {
   }
 });
 
+test('GET /ready reports buyer request budget limit', async () => {
+  const app = createTestApiServer([], {
+    ...process.env,
+    BOSSRAID_BUYER_MAX_REQUEST_BUDGET_USD: '5',
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+    BOSSRAID_X402_ENABLED: 'false',
+  });
+
+  try {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/ready',
+    });
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().limits?.buyerMaxRequestBudgetUsd, 5);
+  } finally {
+    await app.close();
+  }
+});
+
 test('GET /ready passes settlement gate for production file settlement mode', async () => {
   const app = createTestApiServer([], {
     ...process.env,

@@ -73,6 +73,8 @@ export function buildProviderVerificationRegistrationInput(
     auth: provider.auth,
     verification,
     reputation: provider.reputation,
+    harnessProfile: provider.harnessProfile,
+    marketplaceOfferStatus: provider.marketplaceOfferStatus,
   };
 }
 
@@ -93,7 +95,8 @@ export async function verifyProviderFromHealth(
 ): Promise<ProviderProfile> {
   const verification = buildProviderVerificationFromHealth(provider, health);
   return orchestrator.upsertRegisteredProvider(
-    buildProviderVerificationRegistrationInput(provider, verification)
+    buildProviderVerificationRegistrationInput(provider, verification),
+    { allowTakeover: false }
   );
 }
 

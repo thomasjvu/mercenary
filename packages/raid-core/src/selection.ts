@@ -162,6 +162,8 @@ export function providerMatchesTask(
       minReputationScore: task.constraints.minReputation * 100,
       privacyMode: task.constraints.privacyMode,
       requirePrivacyFeatures: task.constraints.requirePrivacyFeatures,
+      allowedInstallations: task.constraints.allowedInstallations,
+      requiredSkills: task.constraints.requiredSkills,
       onlineOnly: true,
       maxHeartbeatAgeMs,
     },

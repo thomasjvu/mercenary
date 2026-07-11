@@ -247,6 +247,12 @@ export const devDocumentationTree = [
     children: [
       {
         type: 'file',
+        name: 'Tech Stack.md',
+        path: 'operators/tech-stack',
+        tags: ['stack', 'architecture', 'dev'],
+      },
+      {
+        type: 'file',
         name: 'Local Development.md',
         path: 'operators/local-development',
         tags: ['runtime', 'dev', 'local'],

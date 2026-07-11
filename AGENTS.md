@@ -62,7 +62,7 @@ Operator and deploy workflows use `pnpm bossraid <command>` (`pnpm bossraid help
 - public API is raid-oriented by design
 - x402 and OpenAI-compatible chat endpoints are built
 - privacy engine library gates strict-private raids; attestation proof surfaces are documented in [content/docs/overview/proof.md](/Users/area/repos/boss-raid/content/docs/overview/proof.md) and [content/docs/operators/architecture.md](/Users/area/repos/boss-raid/content/docs/operators/architecture.md#attestation--proof) (raid telemetry still partial)
-- full production requires `GET /v1/ops/production-readiness` with `ok: true` (onchain settlement, x402, TEE, no upstream mocks)
+- full production requires `GET /v1/ops/production-readiness` with `ok: true` (onchain settlement configured, Phala TEE, container eval, no upstream mocks, strong secrets). x402 may remain disabled and still pass readiness (private rehearsal); enable x402 for public paid traffic. SQLite is allowed with a storage warning (controlled launch only).
 
 ## If You Change
 

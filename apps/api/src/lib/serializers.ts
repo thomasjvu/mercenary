@@ -73,6 +73,7 @@ export function serializeProviderProfile(
     lastSeenAt: provider.lastSeenAt,
     source: serializeProviderSource(provider.source),
     marketplaceOfferStatus: provider.marketplaceOfferStatus ?? 'active',
+    harnessProfile: provider.harnessProfile,
   };
 }
 

@@ -40,6 +40,17 @@ curl -X POST http://127.0.0.1:8787/v1/seller/providers \
 
 Re-verify anytime: `POST /v1/seller/providers/:providerId/verify`
 
+## Seller paths (friction)
+
+| Path                                 | You run                                      | Best for                                  |
+| ------------------------------------ | -------------------------------------------- | ----------------------------------------- |
+| **Hosted upstream (default)**        | Nothing — paste API key                      | Discount inference, pure chat models      |
+| **HTTP provider-agent**              | Your worker endpoint                         | Custom agents, frameworks                 |
+| **Platform harness fleet (planned)** | Nothing — paste coding-plan credentials      | Claude Code / Codex / similar agent loops |
+| **BYO Phala template (advanced)**    | Your own Phala CVM from a published template | Exclusive capacity, custom skills         |
+
+You are **not** required to deploy a Phala template to sell. Platform Phala hosts the default API gateway and (later) harness fleet.
+
 ## Hosted upstream seller
 
 Sell inference without running a provider worker. Connect an upstream key and publish catalog offers:
@@ -48,9 +59,21 @@ Sell inference without running a provider worker. Connect an upstream key and pu
 2. `GET /v1/seller/upstream/:provider/models/catalog` — Boss Raid catalog with reference rates
 3. `POST /v1/seller/upstream/:provider/offers` — register `inference_hosted` offers per model
 
-Boss Raid routes buyer traffic to `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`. Upstream keys are encrypted at rest (`BOSSRAID_SECRET_ENCRYPTION_KEY` in production).
+Boss Raid routes buyer traffic to `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`. Upstream keys are encrypted at rest (`BOSSRAID_SECRET_ENCRYPTION_KEY` in production). Hosted offers advertise `harnessProfile.lane = api_chat` and `installation = fresh` (pure model, no skill pack).
 
 Web UI: `/onboarding/seller` → upstream connect flow.
+
+## Harness profile (fresh vs skills)
+
+Every provider may publish a `harnessProfile` so buyers know whether they get a pure install:
+
+| Field          | Meaning                                                         |
+| -------------- | --------------------------------------------------------------- |
+| `lane`         | `api_chat` (chat completion) or `agent_harness` (CLI/tool loop) |
+| `installation` | `fresh` (stock), `skill_augmented`, or `unknown`                |
+| `skills[]`     | Declared skill ids/versions/hashes when augmented               |
+
+Buyers can constrain raids with `allowedInstallations: ["fresh"]` or `requiredSkills: [...]`.
 
 ## Registry bootstrap (admin token)
 
@@ -78,15 +101,18 @@ Your endpoint must implement the Boss Raid provider HTTP contract: health, accep
 
 ## Metadata fields (keep separate)
 
-| Field          | Purpose                               |
-| -------------- | ------------------------------------- |
-| `verification` | Endpoint/API/framework/model checks   |
-| `privacy`      | TEE, signed outputs, retention claims |
-| `erc8004`      | Onchain identity refs                 |
-| `trust`        | External trust scores                 |
-| `reputation`   | Observed performance                  |
+| Field            | Purpose                                          |
+| ---------------- | ------------------------------------------------ |
+| `verification`   | Endpoint/API/framework/model checks              |
+| `privacy`        | TEE, signed outputs, retention **feature flags** |
+| `erc8004`        | Onchain identity refs                            |
+| `trust`          | Derived from ERC-8004 evidence (not self-scored) |
+| `reputation`     | Observed performance                             |
+| `harnessProfile` | Fresh vs skill-augmented agent/API install       |
 
-Do not merge these. Buyers filter on the combination they need.
+Do not merge these. Client-supplied numeric `privacy.score` / `trust.score` are ignored for routing. Buyers filter on the combination they need.
+
+Self-serve endpoints must be **public HTTPS** in production (private/loopback targets are blocked to prevent SSRF). Local compose uses private endpoints automatically when `NODE_ENV !== production`, or set `BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS=1`.
 
 ## Pricing modes
 
@@ -97,7 +123,9 @@ Rate-card changes affect future quotes only. Settlement uses the immutable quote
 
 ## Payout
 
-Successful providers split escrow equally. Invalid or rejected work gets $0. No winner/runner-up logic.
+- **Multi-agent raids:** successful providers split escrow **equally**. No winner/runner-up logic.
+- **Discount inference (single provider):** pays the selected seller; budget is capped to their declared rate.
+- Invalid or rejected work gets $0.
 
 | Lane                                 | Minimum payout                                         |
 | ------------------------------------ | ------------------------------------------------------ |

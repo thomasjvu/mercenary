@@ -127,8 +127,11 @@ export class RaidLifecycleCoordinator {
     this.deps.providerRegistry.registerProvider(provider);
   }
 
-  async upsertRegisteredProvider(input: ProviderRegistrationInput): Promise<ProviderProfile> {
-    return this.deps.providerRegistry.upsertRegisteredProvider(input);
+  async upsertRegisteredProvider(
+    input: ProviderRegistrationInput,
+    options?: { allowTakeover?: boolean }
+  ): Promise<ProviderProfile> {
+    return this.deps.providerRegistry.upsertRegisteredProvider(input, options);
   }
 
   async recordAgentHeartbeat(input: AgentHeartbeatInput): Promise<ProviderProfile | undefined> {

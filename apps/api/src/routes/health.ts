@@ -23,7 +23,7 @@ export function registerHealthRoutes(
   ctx: ApiContext,
   handlers: ApiHandlerGroups
 ): void {
-  const { orchestrator, env, apiMetrics, metricsPublic } = ctx;
+  const { orchestrator, env, apiMetrics, metricsPublic, buyerMaxRequestBudgetUsd } = ctx;
   const { requireAdmin } = handlers.auth;
   const { collectProviderHealth } = handlers.raid;
 
@@ -159,6 +159,9 @@ export function registerHealthRoutes(
         settlement: {
           mode: settlementMode,
           configured: settlementConfigured,
+        },
+        limits: {
+          buyerMaxRequestBudgetUsd,
         },
       };
     }

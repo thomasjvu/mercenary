@@ -23,6 +23,35 @@ export type PrivacyFeatureKey =
 export type ProviderStatus = 'available' | 'degraded' | 'offline';
 export type MarketplaceOfferStatus = 'active' | 'paused';
 
+/** Pure chat API vs agent harness (CLI/tool loop). */
+export type HarnessLane = 'api_chat' | 'agent_harness';
+/** Whether the harness image is stock or has skills installed. */
+export type HarnessInstallation = 'fresh' | 'skill_augmented' | 'unknown';
+export type HarnessProfileVerification = 'unverified' | 'heartbeat_self_report' | 'image_attested';
+
+export interface HarnessSkillRef {
+  id: string;
+  name?: string;
+  version?: string;
+  contentHash?: string;
+}
+
+/**
+ * Discloses whether buyers get a pure model/harness install or one with skills.
+ * Hosted API offers default to api_chat + fresh; agent workers must report skills.
+ */
+export interface HarnessProfile {
+  lane: HarnessLane;
+  installation: HarnessInstallation;
+  skills: HarnessSkillRef[];
+  imageDigest?: string;
+  compositionHash?: string;
+  framework?: AgentFramework | string;
+  planProvider?: string;
+  attestedAt?: string;
+  verification?: HarnessProfileVerification;
+}
+
 export interface ProviderReputation {
   globalScore: number;
   responsivenessScore: number;
@@ -170,6 +199,7 @@ export interface ProviderProfile {
   lastSeenAt?: string;
   auth?: ProviderAuthConfig;
   source?: ProviderSourceMetadata;
+  harnessProfile?: HarnessProfile;
 }
 
 export interface ProviderRegistrationInput {
@@ -191,6 +221,7 @@ export interface ProviderRegistrationInput {
   privacy?: ProviderPrivacy;
   erc8004?: Partial<Erc8004Identity>;
   trust?: Partial<ProviderTrust>;
+  harnessProfile?: HarnessProfile;
   pricing?: {
     mode?: ProviderPricingMode;
     pricePerTaskUsd?: number;
@@ -235,7 +266,20 @@ export interface ProviderHealthStatus {
   modelProvider?: string;
   model?: string | null;
   modelApiBase?: string;
+  harnessProfile?: HarnessProfile;
   error?: string;
+}
+
+export function defaultApiChatHarnessProfile(
+  overrides: Partial<HarnessProfile> = {}
+): HarnessProfile {
+  return {
+    lane: 'api_chat',
+    installation: 'fresh',
+    skills: [],
+    verification: 'unverified',
+    ...overrides,
+  };
 }
 
 export interface TeeAttestationResult {

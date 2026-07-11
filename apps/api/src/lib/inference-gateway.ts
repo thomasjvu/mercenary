@@ -89,6 +89,7 @@ export function probeHostedInferenceProviderHealth(
     agentFramework: provider.agentFramework ?? 'custom',
     modelProvider: provider.modelProvider ?? upstream ?? 'unknown',
     model: provider.modelId ?? null,
+    harnessProfile: provider.harnessProfile,
     error: configured
       ? undefined
       : `${upstream ?? 'Upstream'} API key is not configured for this seller.`,

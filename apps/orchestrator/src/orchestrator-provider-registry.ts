@@ -39,6 +39,24 @@ export type ProviderRegistryCoordinatorDeps = {
   getProviderCapacityDeps: () => OrchestratorProviderCapacityDeps;
 };
 
+export class ProviderRegistrationConflictError extends Error {
+  readonly code = 'provider_conflict';
+  readonly conflict: {
+    providerId: string;
+    agentId?: string;
+    reason: 'agent_id' | 'endpoint';
+  };
+
+  constructor(
+    message: string,
+    conflict: { providerId: string; agentId?: string; reason: 'agent_id' | 'endpoint' }
+  ) {
+    super(message);
+    this.name = 'ProviderRegistrationConflictError';
+    this.conflict = conflict;
+  }
+}
+
 export class ProviderRegistryCoordinator {
   readonly providers = new Map<string, ProviderProfile>();
   readonly providerRuntimes = new Map<string, RaidProvider>();
@@ -77,14 +95,55 @@ export class ProviderRegistryCoordinator {
     return this.providers.get(agentId);
   }
 
-  async upsertRegisteredProvider(input: ProviderRegistrationInput): Promise<ProviderProfile> {
+  /**
+   * Register or update a provider. Without `allowTakeover`, refuses to overwrite a
+   * different agentId that already owns the same endpoint (or vice-versa collisions).
+   */
+  async upsertRegisteredProvider(
+    input: ProviderRegistrationInput,
+    options: { allowTakeover?: boolean } = {}
+  ): Promise<ProviderProfile> {
     this.deps.assertPersistenceWritable();
-    const existing =
-      this.resolveProviderByAgentId(input.agentId) ??
-      [...this.providers.values()].find(
-        (provider) =>
-          normalizeProviderEndpoint(provider.endpoint) === normalizeProviderEndpoint(input.endpoint)
-      );
+    const byAgent = this.resolveProviderByAgentId(input.agentId);
+    const byEndpoint = [...this.providers.values()].find(
+      (provider) =>
+        normalizeProviderEndpoint(provider.endpoint) === normalizeProviderEndpoint(input.endpoint)
+    );
+
+    if (!options.allowTakeover) {
+      if (
+        byEndpoint &&
+        byEndpoint.agentId !== input.agentId &&
+        byEndpoint.providerId !== input.agentId &&
+        (!byAgent || byAgent.providerId !== byEndpoint.providerId)
+      ) {
+        throw new ProviderRegistrationConflictError(
+          `Endpoint is already registered to provider "${byEndpoint.providerId}".`,
+          {
+            providerId: byEndpoint.providerId,
+            agentId: byEndpoint.agentId,
+            reason: 'endpoint',
+          }
+        );
+      }
+      if (
+        byAgent &&
+        byEndpoint &&
+        byAgent.providerId !== byEndpoint.providerId &&
+        byEndpoint.agentId !== input.agentId
+      ) {
+        throw new ProviderRegistrationConflictError(
+          `Agent id and endpoint resolve to different providers ("${byAgent.providerId}" vs "${byEndpoint.providerId}").`,
+          {
+            providerId: byEndpoint.providerId,
+            agentId: byEndpoint.agentId,
+            reason: 'endpoint',
+          }
+        );
+      }
+    }
+
+    const existing = byAgent ?? byEndpoint;
     const profile = buildProviderProfileFromRegistration(input, existing);
     profile.status = 'available';
     profile.lastSeenAt = new Date().toISOString();

@@ -45,7 +45,10 @@ export function registerAgentRoutes(
       };
     }
 
-    const provider = await orchestrator.upsertRegisteredProvider(registration);
+    // Registry token is privileged and may reassign endpoints intentionally.
+    const provider = await orchestrator.upsertRegisteredProvider(registration, {
+      allowTakeover: true,
+    });
     await ensureErc8004ProofState({ includeMercenary: false, providers: [provider] });
     return serializeProviderProfile(provider, { includeEndpoint: true });
   });

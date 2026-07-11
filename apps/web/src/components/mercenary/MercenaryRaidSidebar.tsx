@@ -7,7 +7,6 @@ import type {
   SpecialistTraceRecord,
 } from '../../mercenary-specialist-types.js';
 import type { MercenaryThreadRecord } from '../../lib/mercenary-threads.js';
-import type { BuyerApiKeyCreateState } from '../../hooks/useBuyerApiKeyCreate.js';
 import type { MercenaryPaymentKeyOption } from '../../hooks/useMercenaryPayment.js';
 import { MercenaryAgentCard } from './MercenaryAgentCard.js';
 import { MercenaryPaymentPanel } from './MercenaryPaymentPanel.js';
@@ -49,8 +48,8 @@ type MercenaryRaidSidebarProps = {
   budgetStatus?: string | null;
   budgetPending?: boolean;
   maxBudgetUsd?: number;
+  hostMaxBudgetUsd?: number;
   onMaxBudgetUsdChange?: (value: number) => void;
-  keyCreate?: BuyerApiKeyCreateState;
   isLaunching?: boolean;
 };
 
@@ -89,8 +88,8 @@ export function MercenaryRaidSidebar({
   budgetStatus = null,
   budgetPending = false,
   maxBudgetUsd = 12,
+  hostMaxBudgetUsd,
   onMaxBudgetUsdChange,
-  keyCreate,
   isLaunching = false,
 }: MercenaryRaidSidebarProps) {
   const runTone = liveRaidRun
@@ -161,16 +160,12 @@ export function MercenaryRaidSidebar({
             <StatusPill tone={runtimeAttestationTone}>{runtimeAttestationStatus}</StatusPill>
           )}
         </div>
-        {onSelectApiKey &&
-        onMaxBudgetUsdChange &&
-        onSpendLimitDraftChange &&
-        onSaveSpendLimit &&
-        keyCreate ? (
+        {onSelectApiKey && onMaxBudgetUsdChange && onSpendLimitDraftChange && onSaveSpendLimit ? (
           <MercenaryPaymentPanel
             budgetPending={budgetPending}
             budgetStatus={budgetStatus}
             isLaunching={isLaunching}
-            keyCreate={keyCreate}
+            hostMaxBudgetUsd={hostMaxBudgetUsd}
             keyOptions={keyOptions}
             maxBudgetUsd={maxBudgetUsd}
             onMaxBudgetUsdChange={onMaxBudgetUsdChange}

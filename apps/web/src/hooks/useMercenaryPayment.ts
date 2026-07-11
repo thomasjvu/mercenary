@@ -7,8 +7,6 @@ import {
   saveBuyerApiKey,
   type SavedBuyerApiKey,
 } from '../lib/buyer-api-key-vault.js';
-import { useBuyerApiKeyCreate } from './useBuyerApiKeyCreate.js';
-
 const API_KEY_STORAGE_KEY = 'bossraid.mercenary.apiKeyId';
 const MIN_KEY_BUDGET_USD = 1;
 
@@ -28,21 +26,6 @@ export function useMercenaryPayment() {
   const [spendLimitDraft, setSpendLimitDraft] = useState(String(MIN_KEY_BUDGET_USD));
   const [budgetStatus, setBudgetStatus] = useState<string | null>(null);
   const [budgetPending, setBudgetPending] = useState(false);
-
-  const keyCreate = useBuyerApiKeyCreate({
-    defaultName: 'Mercenary key',
-    onCreated: async (apiKey) => {
-      const vaultKeys = listSavedBuyerApiKeys();
-      setSavedApiKeys(vaultKeys);
-      const created = vaultKeys.find((entry) => entry.apiKey === apiKey);
-      if (created) {
-        setSelectedApiKeyId(created.id);
-        window.sessionStorage.setItem(API_KEY_STORAGE_KEY, created.id);
-        setSpendLimitDraft(String(created.spendLimitUsd ?? MIN_KEY_BUDGET_USD));
-      }
-      await session.mutate();
-    },
-  });
 
   useEffect(() => {
     const vaultKeys = listSavedBuyerApiKeys();
@@ -157,7 +140,6 @@ export function useMercenaryPayment() {
     saveSpendLimit,
     budgetStatus,
     budgetPending,
-    keyCreate,
     sessionLoading: session.isLoading,
     isAuthenticated: session.data?.authenticated === true,
   };

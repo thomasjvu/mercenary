@@ -1,5 +1,7 @@
 import type {
   Erc8004Identity,
+  HarnessInstallation,
+  HarnessProfile,
   OutputType,
   PrivacyFeatureKey,
   ProviderDiscoveryQuery,
@@ -9,6 +11,7 @@ import type {
   PrivacyRoutingMode,
   RaidTaskSpec,
 } from '@bossraid/shared-types';
+import { defaultApiChatHarnessProfile } from '@bossraid/shared-types';
 import { DEFAULTS } from '@bossraid/constants';
 
 function clamp01(value: number): number {
@@ -23,14 +26,13 @@ function normalizeFilterValue(value: string | undefined): string {
   return value?.trim().toLowerCase() ?? '';
 }
 
+/**
+ * Derive privacy score from attested feature flags only.
+ * Client-supplied `privacy.score` is ignored so sellers cannot self-rank.
+ */
 export function computePrivacyScore(privacy: ProviderPrivacy | undefined): number {
   if (!privacy) {
     return 0;
-  }
-
-  const explicit = typeof privacy.score === 'number' ? privacy.score : undefined;
-  if (typeof explicit === 'number' && Number.isFinite(explicit)) {
-    return Math.max(0, Math.min(100, explicit));
   }
 
   let score = 0;
@@ -86,13 +88,13 @@ export function erc8004IdentityIsRegistered(identity: Erc8004Identity | undefine
   return Boolean(identity?.agentId && identity.registrationTx);
 }
 
+/**
+ * Derive trust from ERC-8004 registration evidence only.
+ * Client-supplied `trust.score` is ignored so sellers cannot self-rank.
+ */
 export function computeTrustScore(provider: ProviderProfile): number {
   if (provider.erc8004?.verification?.status === 'failed') {
     return 0;
-  }
-
-  if (typeof provider.trust?.score === 'number' && Number.isFinite(provider.trust.score)) {
-    return Math.max(0, Math.min(100, provider.trust.score));
   }
 
   const identity = provider.erc8004;
@@ -207,9 +209,43 @@ export type ProviderMarketplaceConstraints = {
   minReputationScore?: number;
   privacyMode?: PrivacyRoutingMode;
   requirePrivacyFeatures?: PrivacyFeatureKey[];
+  allowedInstallations?: HarnessInstallation[];
+  requiredSkills?: string[];
   onlineOnly?: boolean;
   maxHeartbeatAgeMs?: number;
 };
+
+export function resolveHarnessProfile(provider: ProviderProfile): HarnessProfile {
+  if (provider.harnessProfile) {
+    return provider.harnessProfile;
+  }
+  return defaultApiChatHarnessProfile({
+    framework: provider.agentFramework,
+    planProvider: provider.modelProvider,
+  });
+}
+
+export function providerMatchesHarnessConstraints(
+  provider: ProviderProfile,
+  constraints: {
+    allowedInstallations?: HarnessInstallation[];
+    requiredSkills?: string[];
+  }
+): boolean {
+  const profile = resolveHarnessProfile(provider);
+  if (constraints.allowedInstallations?.length) {
+    if (!constraints.allowedInstallations.includes(profile.installation)) {
+      return false;
+    }
+  }
+  if (constraints.requiredSkills?.length) {
+    const skillIds = new Set(profile.skills.map((skill) => skill.id));
+    if (!constraints.requiredSkills.every((skillId) => skillIds.has(skillId))) {
+      return false;
+    }
+  }
+  return true;
+}
 
 export function providerMatchesAllowedModelFamilies(
   provider: ProviderProfile,
@@ -337,6 +373,15 @@ export function providerMatchesMarketplaceConstraints(
   if (
     constraints.allowedAgentFrameworks?.length &&
     !providerMatchesAllowedAgentFrameworks(provider, constraints.allowedAgentFrameworks)
+  ) {
+    return false;
+  }
+
+  if (
+    !providerMatchesHarnessConstraints(provider, {
+      allowedInstallations: constraints.allowedInstallations,
+      requiredSkills: constraints.requiredSkills,
+    })
   ) {
     return false;
   }

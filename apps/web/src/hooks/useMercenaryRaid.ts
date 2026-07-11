@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useCopyFeedback } from './useCopyFeedback.js';
 import type { SubmissionArtifact } from '@bossraid/shared-types';
 import type { Provider, ProviderHealth, RaidSpawnOutput } from '../api';
@@ -29,6 +29,11 @@ import {
   buildMercenaryRaidThreadPersistenceSignature,
   resolveInitialMercenaryRaidThreadState,
 } from '../lib/mercenary-raid-thread-store.js';
+import {
+  buildMercenaryBudgetPreflightError,
+  clampMercenaryBudgetUsd,
+  resolveMercenaryBudgetUsd,
+} from '../lib/mercenary-budget.js';
 
 type UseMercenaryRaidOptions = {
   providers: Provider[];
@@ -38,6 +43,7 @@ type UseMercenaryRaidOptions = {
   paymentMode?: 'wallet' | 'api_key';
   apiKeySecret?: string;
   persistThreads?: boolean;
+  hostMaxBudgetUsd?: number;
 };
 
 export function useMercenaryRaid({
@@ -48,11 +54,14 @@ export function useMercenaryRaid({
   paymentMode = 'wallet',
   apiKeySecret,
   persistThreads = true,
+  hostMaxBudgetUsd,
 }: UseMercenaryRaidOptions) {
   const initial = resolveInitialMercenaryRaidThreadState(persistThreads);
   const [threadStore, setThreadStore] = useState<MercenaryThreadStore>(initial.store);
   const [activeThreadId, setActiveThreadId] = useState(initial.thread.id);
-  const [maxBudgetUsd, setMaxBudgetUsd] = useState(initial.thread.maxBudgetUsd);
+  const [maxBudgetUsd, setMaxBudgetUsd] = useState(() =>
+    resolveMercenaryBudgetUsd(initial.thread.maxBudgetUsd, hostMaxBudgetUsd)
+  );
   const [raidBrief, setRaidBrief] = useState(initial.thread.raidBrief);
   const [lastSubmittedBrief, setLastSubmittedBrief] = useState<string | null>(
     initial.thread.lastSubmittedBrief
@@ -108,9 +117,20 @@ export function useMercenaryRaid({
     });
   }
 
+  const updateMaxBudgetUsd = useCallback(
+    (nextBudgetUsd: number) => {
+      setMaxBudgetUsd(clampMercenaryBudgetUsd(nextBudgetUsd, hostMaxBudgetUsd));
+    },
+    [hostMaxBudgetUsd]
+  );
+
+  useEffect(() => {
+    setMaxBudgetUsd((current) => clampMercenaryBudgetUsd(current, hostMaxBudgetUsd));
+  }, [hostMaxBudgetUsd]);
+
   function applyThread(thread: MercenaryThreadRecord) {
     const applied = applyMercenaryRaidThreadRecord(thread);
-    setMaxBudgetUsd(applied.maxBudgetUsd);
+    setMaxBudgetUsd(resolveMercenaryBudgetUsd(applied.maxBudgetUsd, hostMaxBudgetUsd));
     setRaidBrief(applied.raidBrief);
     setLastSubmittedBrief(applied.lastSubmittedBrief);
     setLiveRaidRun(applied.liveRaidRun);
@@ -256,10 +276,19 @@ export function useMercenaryRaid({
         throw new Error('Selected API key is missing its secret. Re-save the key from /account.');
       }
 
+      const requestBudgetUsd = clampMercenaryBudgetUsd(maxBudgetUsd, hostMaxBudgetUsd);
+      if (
+        hostMaxBudgetUsd != null &&
+        Number.isFinite(hostMaxBudgetUsd) &&
+        maxBudgetUsd > hostMaxBudgetUsd
+      ) {
+        throw new Error(buildMercenaryBudgetPreflightError(maxBudgetUsd, hostMaxBudgetUsd));
+      }
+
       const fetchWithPayment = usesApiKey ? undefined : await createFetchWithPayment?.();
       const launched = await launchPaidMercenaryRaid({
         submittedBrief,
-        maxBudgetUsd: Math.max(maxBudgetUsd, 1),
+        maxBudgetUsd: requestBudgetUsd,
         paymentMode: usesApiKey ? 'api_key' : 'wallet',
         apiKey: apiKeySecret,
         fetchWithPayment,
@@ -372,7 +401,8 @@ export function useMercenaryRaid({
 
   return {
     maxBudgetUsd,
-    setMaxBudgetUsd,
+    setMaxBudgetUsd: updateMaxBudgetUsd,
+    hostMaxBudgetUsd,
     raidBrief,
     setRaidBrief,
     lastSubmittedBrief,

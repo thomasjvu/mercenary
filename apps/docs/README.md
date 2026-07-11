@@ -2,6 +2,8 @@
 
 Static documentation framework — React, Vite, TypeScript, generated Markdown, Pagefind search, `llms.txt` exports, and SEO-friendly static output.
 
+**Boss Raid fork:** use `pnpm` from the repo root, not `npm`. Product content lives in repo-root [`content/`](../../content/README.md). Framework starter pages under `src/docs/content/` are **not published** on the Boss Raid docs site — only `content/docs` and `content/dev-docs` collections are.
+
 ## Quick start
 
 ```bash

@@ -55,7 +55,7 @@ Buyers still use `POST /v1/inference/chat/completions`. The static inference cat
 ## Apps
 
 - `apps/api` — public API, auth, x402, proof routes, hosted inference gateway
-- `apps/orchestrator` — planning, routing, synthesis, settlement
+- `apps/orchestrator` — planning, routing, synthesis, settlement (library embedded in `api`; not a separate production process)
 - `apps/provider-agent` — HTTP provider worker
 - `apps/evaluator` — sandboxed runtime probes
 - `apps/mcp-server` — MCP adapter
@@ -64,7 +64,7 @@ Buyers still use `POST /v1/inference/chat/completions`. The static inference cat
 
 ## Packages
 
-`raid-core`, `provider-registry`, `provider-sdk`, `persistence` / `persistence-sqlite`, `evaluation`, `sandbox-runner`, `privacy-engine`, `smart-pay`, `contracts`, `shared-types`, `ui`.
+Full stack map: [Tech Stack](/dev-docs/operators/tech-stack) in dev-docs. Core groups: foundation (`shared-types`, `constants`, `api-contracts`, `openapi-schemas`), raid stack (`raid-core`, `provider-registry`, `provider-sdk`, `evaluation`, `scoring`, `sandbox-runner`), storage (`persistence`, `persistence-sqlite`), UI/proof (`ui`, `proof-ui`), integrations (`privacy-engine`, `smart-pay`, `venice-client`, `oneshot-relayer`, `http-client`, `logger`), deploy/test (`contracts`, `test-fixtures`).
 
 ## Attestation & proof
 
@@ -80,7 +80,7 @@ Host attestation exposes separate signals: `teeVerified` (hardware quote) and `r
 
 Strict-private raids re-verify provider privacy attestations server-side (`BOSSRAID_PRIVACY_SERVER_VERIFY`, default on). Provider callbacks alone are not trusted for `featuresVerified`.
 
-Known gaps: `MNEMONIC` is not in the Phala core secrets tier; attestation telemetry on raid timelines is still partial. See [proof.md](../overview/proof.md).
+Known gaps: attestation telemetry on raid timelines is still partial. `MNEMONIC` is required for Phala production signed envelopes and is listed in the Phala core secrets tier (`deploy/phala/secrets.core.env.example`). See [proof.md](../overview/proof.md).
 
 ## Constraints
 

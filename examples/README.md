@@ -47,7 +47,7 @@ These paths are wired into smoke tests — edit copies under `temp/`, not the re
 | ------------------------------- | --------------------------------------------------------------------- |
 | `pnpm test:smoke:e2e`           | `raids/game-raid/`, `raids/strict-private/`                           |
 | `pnpm test:bounty-escrow:local` | `settlement/bounty-e2e.providers.json`                                |
-| `pnpm test:x402:e2e`            | `inference/chat-completion-request.json`, `raids/unity-bug/task.json` |
+| `pnpm bossraid test:x402:e2e`   | `inference/chat-completion-request.json`, `raids/unity-bug/task.json` |
 
 ## Demo agents vs game-raid providers
 

@@ -14,6 +14,8 @@ One request in → Mercenary routes HTTP providers → one result out with recei
 | Mercenary raid     | `POST /v1/raid`                       |
 | Proof              | `/receipt`, `GET /v1/agent.json`      |
 
+Requires **Node.js >= 22.13** (built-in `node:sqlite` persistence).
+
 ## Quick start
 
 ```bash
@@ -45,23 +47,25 @@ Full guide: **[content/README.md](content/README.md)**
 | Sellers       | [content/docs/sellers/sell.md](content/docs/sellers/sell.md)                                   |
 | Raiders       | [content/docs/raiders/raids.md](content/docs/raiders/raids.md)                                 |
 | Operators     | [content/docs/operators/runtime.md](content/docs/operators/runtime.md)                         |
+| Tech stack    | [content/dev-docs/operators/tech-stack.md](content/dev-docs/operators/tech-stack.md)           |
 | Brand / RX-78 | [content/dev-docs/brand/rx-78-design-system.md](content/dev-docs/brand/rx-78-design-system.md) |
 
 ## Repo layout
 
 **Apps (9)**
 
-| Group              | Apps                                                               | Notes                                         |
-| ------------------ | ------------------------------------------------------------------ | --------------------------------------------- |
-| Production runtime | `api`, `orchestrator`, `provider-agent`, `evaluator`, `web`, `ops` | Built into production Docker image            |
-| Integration        | `mcp-server`                                                       | MCP tools surface; CI build                   |
-| Content / promo    | `docs`, `video`                                                    | Papers site (`pnpm dev:docs`); Remotion promo |
+| Group                       | Apps                                               | Notes                                                                       |
+| --------------------------- | -------------------------------------------------- | --------------------------------------------------------------------------- |
+| Production runtime          | `api`, `provider-agent`, `evaluator`, `web`, `ops` | Built into production Docker image; gateway via `scripts/serve-gateway.mjs` |
+| Core library (in API image) | `orchestrator`                                     | TypeScript library embedded in `api` — not a separate process               |
+| Integration                 | `mcp-server`                                       | MCP tools surface; CI build                                                 |
+| Content / promo             | `docs`, `video`                                    | Papers site (`pnpm dev:docs`); Remotion promo                               |
 
 **Packages (22)**
 
 | Group         | Packages                                                                                    |
 | ------------- | ------------------------------------------------------------------------------------------- |
-| Foundation    | `shared-types`, `constants`, `api-contracts`                                                |
+| Foundation    | `shared-types`, `constants`, `api-contracts`, `openapi-schemas`                             |
 | Raid stack    | `raid-core`, `provider-registry`, `provider-sdk`, `evaluation`, `scoring`, `sandbox-runner` |
 | Storage       | `persistence`, `persistence-sqlite`                                                         |
 | UI / proof    | `proof-ui` (headless), `ui` (React)                                                         |

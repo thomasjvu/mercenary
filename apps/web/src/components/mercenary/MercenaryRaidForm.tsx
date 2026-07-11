@@ -1,10 +1,15 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { DEFAULT_MERCENARY_BUDGET_USD } from '../../mercenary-result.js';
 import { shouldLaunchOnComposerKey } from '../../lib/mercenary-composer.js';
+import {
+  formatMercenaryBudgetCap,
+  MIN_MERCENARY_BUDGET_USD,
+  resolveMercenaryBudgetUsd,
+} from '../../lib/mercenary-budget.js';
 
 type MercenaryRaidFormProps = {
   raidBrief: string;
   maxBudgetUsd: number;
+  hostMaxBudgetUsd?: number;
   balanceUsd?: number;
   isAuthenticated: boolean;
   hasConversation: boolean;
@@ -19,6 +24,7 @@ type MercenaryRaidFormProps = {
 export function MercenaryRaidForm({
   raidBrief,
   maxBudgetUsd,
+  hostMaxBudgetUsd,
   balanceUsd,
   isAuthenticated,
   hasConversation,
@@ -41,13 +47,16 @@ export function MercenaryRaidForm({
 
   function handleBudgetChange(rawValue: string) {
     const parsed = Number(rawValue);
-    if (!Number.isFinite(parsed) || parsed < 1) {
-      onBudgetChange(Math.max(DEFAULT_MERCENARY_BUDGET_USD, 1));
+    if (!Number.isFinite(parsed) || parsed < MIN_MERCENARY_BUDGET_USD) {
+      onBudgetChange(resolveMercenaryBudgetUsd(undefined, hostMaxBudgetUsd));
       return;
     }
 
     onBudgetChange(parsed);
   }
+
+  const budgetCapHint =
+    hostMaxBudgetUsd != null ? formatMercenaryBudgetCap(hostMaxBudgetUsd) : null;
 
   return (
     <div className="mercenary-composer">
@@ -85,13 +94,17 @@ export function MercenaryRaidForm({
               className="mercenary-composer__budget-input"
               disabled={isLaunching}
               inputMode="decimal"
-              min={1}
+              max={hostMaxBudgetUsd}
+              min={MIN_MERCENARY_BUDGET_USD}
               onChange={(event) => handleBudgetChange(event.target.value)}
               step={1}
               type="number"
               value={maxBudgetUsd}
             />
           </label>
+          {budgetCapHint ? (
+            <span className="mercenary-composer__budget-cap">{budgetCapHint}</span>
+          ) : null}
           {balanceLabel ? <span className="mercenary-composer__credit">{balanceLabel}</span> : null}
         </div>
         <p className="mercenary-composer__hint">Enter sends · Shift+Enter newline</p>

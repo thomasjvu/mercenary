@@ -1,5 +1,7 @@
 import { type FastifyInstance } from 'fastify';
 import { parseProviderRegistrationInput } from '@bossraid/api-contracts';
+import { assertProviderEndpointSafe, UnsafeProviderEndpointError } from '@bossraid/provider-sdk';
+import type { ProviderProfile } from '@bossraid/shared-types';
 import { buildSelfServeProviderRegistrationInput } from '../lib/account.js';
 import { verifyProviderByHealthProbe } from '../lib/provider-verification.js';
 import { readPositiveInteger, readPositiveNumber } from '../lib/env.js';
@@ -17,6 +19,40 @@ import {
 } from '../lib/verified-fund-payment.js';
 import { buildX402SettlementFingerprint } from '../control-state/x402-settled-payments.js';
 import { readPaymentSignature } from '../lib/x402-reconciliation.js';
+
+function normalizeEndpointKey(endpoint: string): string {
+  try {
+    const url = new URL(endpoint);
+    url.hash = '';
+    url.search = '';
+    const path = url.pathname.replace(/\/+$/u, '') || '/';
+    return `${url.protocol}//${url.host}${path}`.toLowerCase();
+  } catch {
+    return endpoint.trim().toLowerCase();
+  }
+}
+
+function findConflictingSellerProvider(
+  providers: ProviderProfile[],
+  input: { agentId: string; endpoint: string },
+  controlState: ApiContext['controlState'],
+  wallet: string
+): ProviderProfile | undefined {
+  const endpointKey = normalizeEndpointKey(input.endpoint);
+  return providers.find((provider) => {
+    const sameAgent = provider.agentId === input.agentId || provider.providerId === input.agentId;
+    const sameEndpoint = normalizeEndpointKey(provider.endpoint) === endpointKey;
+    if (!sameAgent && !sameEndpoint) {
+      return false;
+    }
+    const owner = controlState.findSellerWalletForProvider(provider.providerId);
+    if (!owner) {
+      // Unowned registry entry — self-serve must not claim it.
+      return true;
+    }
+    return owner !== wallet.toLowerCase();
+  });
+}
 
 export function registerAccountRoutes(
   app: FastifyInstance,
@@ -49,7 +85,32 @@ export function registerAccountRoutes(
     const input = parseProviderRegistrationInput(
       buildSelfServeProviderRegistrationInput(request.body, session.wallet)
     );
-    const provider = await orchestrator.upsertRegisteredProvider(input);
+    try {
+      assertProviderEndpointSafe(input.endpoint);
+    } catch (error) {
+      if (error instanceof UnsafeProviderEndpointError) {
+        reply.code(400);
+        return { error: error.code, message: error.message };
+      }
+      throw error;
+    }
+    const conflict = findConflictingSellerProvider(
+      orchestrator.listProviders(),
+      input,
+      controlState,
+      session.wallet
+    );
+    if (conflict) {
+      reply.code(409);
+      return {
+        error: 'provider_conflict',
+        message: `Provider agent id or endpoint is already registered to another seller (${conflict.providerId}).`,
+        providerId: conflict.providerId,
+      };
+    }
+    const provider = await orchestrator.upsertRegisteredProvider(input, {
+      allowTakeover: false,
+    });
     controlState.linkSellerProvider(session.wallet, provider.providerId);
     const { provider: verifiedProvider, health } = await verifyProviderByHealthProbe(
       orchestrator,
@@ -82,7 +143,32 @@ export function registerAccountRoutes(
     const input = parseProviderRegistrationInput(
       buildSelfServeProviderRegistrationInput(request.body, session.wallet, provider)
     );
-    const updatedProvider = await orchestrator.upsertRegisteredProvider(input);
+    try {
+      assertProviderEndpointSafe(input.endpoint);
+    } catch (error) {
+      if (error instanceof UnsafeProviderEndpointError) {
+        reply.code(400);
+        return { error: error.code, message: error.message };
+      }
+      throw error;
+    }
+    const conflict = findConflictingSellerProvider(
+      orchestrator.listProviders().filter((item) => item.providerId !== providerId),
+      input,
+      controlState,
+      session.wallet
+    );
+    if (conflict) {
+      reply.code(409);
+      return {
+        error: 'provider_conflict',
+        message: `Provider agent id or endpoint is already registered to another seller (${conflict.providerId}).`,
+        providerId: conflict.providerId,
+      };
+    }
+    const updatedProvider = await orchestrator.upsertRegisteredProvider(input, {
+      allowTakeover: false,
+    });
     await ensureErc8004ProofState({ includeMercenary: false, providers: [updatedProvider] });
     return serializeProviderProfile(updatedProvider, { includeEndpoint: true });
   });

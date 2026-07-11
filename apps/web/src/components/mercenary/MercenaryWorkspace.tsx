@@ -33,6 +33,7 @@ export function MercenaryWorkspace({
   const smartPay = useSmartAccountPay();
   const payment = useMercenaryPayment();
   const paymentEnabled = ready.data?.payment?.enabled === true;
+  const hostMaxBudgetUsd = ready.data?.limits?.buyerMaxRequestBudgetUsd;
   const isSignedIn = walletAuth.isAuthenticated;
 
   const { openInspector } = useAttestationInspector();
@@ -44,6 +45,7 @@ export function MercenaryWorkspace({
     paymentMode: payment.paymentMode,
     apiKeySecret: payment.apiKeySecret,
     persistThreads: !embedded,
+    hostMaxBudgetUsd,
   });
 
   return (
@@ -106,6 +108,7 @@ export function MercenaryWorkspace({
             balanceUsd={walletAuth.session?.account?.balanceUsd}
             canSendBrief={mercenary.canSendBrief && isSignedIn}
             hasConversation={mercenary.hasConversation}
+            hostMaxBudgetUsd={mercenary.hostMaxBudgetUsd}
             isAuthenticated={isSignedIn}
             isLaunching={mercenary.isLaunching}
             maxBudgetUsd={mercenary.maxBudgetUsd}
@@ -125,7 +128,7 @@ export function MercenaryWorkspace({
         budgetStatus={payment.budgetStatus}
         canLaunchLiveRaid={mercenary.canLaunchLiveRaid}
         isLaunching={mercenary.isLaunching}
-        keyCreate={payment.keyCreate}
+        hostMaxBudgetUsd={mercenary.hostMaxBudgetUsd}
         keyOptions={payment.keyOptions}
         maxBudgetUsd={mercenary.maxBudgetUsd}
         onMaxBudgetUsdChange={mercenary.setMaxBudgetUsd}

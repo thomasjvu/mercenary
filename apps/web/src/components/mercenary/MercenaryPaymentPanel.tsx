@@ -1,8 +1,18 @@
-import type { BuyerApiKeyCreateState } from '../../hooks/useBuyerApiKeyCreate.js';
+import type { MouseEvent } from 'react';
 import type { MercenaryPaymentKeyOption } from '../../hooks/useMercenaryPayment.js';
+import { formatMercenaryBudgetCap, MIN_MERCENARY_BUDGET_USD } from '../../lib/mercenary-budget.js';
 
 const MIN_KEY_BUDGET_USD = 1;
-const MIN_RAID_BUDGET_USD = 1;
+
+function openAccountSettings(event: MouseEvent<HTMLAnchorElement>) {
+  event.preventDefault();
+  if (window.location.pathname === '/account') {
+    return;
+  }
+  window.history.pushState({}, '', '/account');
+  window.dispatchEvent(new PopStateEvent('popstate'));
+  window.scrollTo({ top: 0 });
+}
 
 type MercenaryPaymentPanelProps = {
   paymentMode: 'wallet' | 'api_key';
@@ -16,8 +26,8 @@ type MercenaryPaymentPanelProps = {
   budgetStatus: string | null;
   budgetPending: boolean;
   maxBudgetUsd: number;
+  hostMaxBudgetUsd?: number;
   onMaxBudgetUsdChange: (value: number) => void;
-  keyCreate: BuyerApiKeyCreateState;
   isLaunching: boolean;
 };
 
@@ -33,18 +43,21 @@ export function MercenaryPaymentPanel({
   budgetStatus,
   budgetPending,
   maxBudgetUsd,
+  hostMaxBudgetUsd,
   onMaxBudgetUsdChange,
-  keyCreate,
   isLaunching,
 }: MercenaryPaymentPanelProps) {
   function handleRaidBudgetChange(rawValue: string) {
     const parsed = Number(rawValue);
-    if (!Number.isFinite(parsed) || parsed < MIN_RAID_BUDGET_USD) {
-      onMaxBudgetUsdChange(MIN_RAID_BUDGET_USD);
+    if (!Number.isFinite(parsed) || parsed < MIN_MERCENARY_BUDGET_USD) {
+      onMaxBudgetUsdChange(MIN_MERCENARY_BUDGET_USD);
       return;
     }
     onMaxBudgetUsdChange(parsed);
   }
+
+  const budgetCapHint =
+    hostMaxBudgetUsd != null ? formatMercenaryBudgetCap(hostMaxBudgetUsd) : null;
 
   return (
     <div className="mercenary-run-panel__payment">
@@ -98,7 +111,15 @@ export function MercenaryPaymentPanel({
           </p>
           {!selectedKey.hasSecret ? (
             <p className="mercenary-run-panel__payment-note">
-              Secret missing for this key. Create a new key below or re-save from /account.
+              Secret missing for this key.{' '}
+              <a
+                className="mercenary-run-panel__payment-link"
+                href="/account"
+                onClick={openAccountSettings}
+              >
+                Re-save from account settings
+              </a>
+              .
             </p>
           ) : null}
           {budgetStatus ? (
@@ -115,47 +136,25 @@ export function MercenaryPaymentPanel({
           className="mercenary-run-panel__budget-input"
           disabled={isLaunching}
           inputMode="decimal"
-          min={MIN_RAID_BUDGET_USD}
+          max={hostMaxBudgetUsd}
+          min={MIN_MERCENARY_BUDGET_USD}
           onChange={(event) => handleRaidBudgetChange(event.target.value)}
           step={1}
           type="number"
           value={maxBudgetUsd}
         />
       </div>
+      {budgetCapHint ? <p className="mercenary-run-panel__payment-meta">{budgetCapHint}</p> : null}
 
-      {keyOptions.length === 0 ? (
-        <div className="mercenary-run-panel__payment-create">
-          <input
-            className="mercenary-run-panel__budget-input"
-            disabled={keyCreate.pending || isLaunching}
-            onChange={(event) => keyCreate.setKeyName(event.target.value)}
-            placeholder="Key name"
-            type="text"
-            value={keyCreate.keyName}
-          />
-          <input
-            className="mercenary-run-panel__budget-input"
-            disabled={keyCreate.pending || isLaunching}
-            inputMode="decimal"
-            min={MIN_KEY_BUDGET_USD}
-            onChange={(event) => keyCreate.setSpendLimit(event.target.value)}
-            step={1}
-            type="number"
-            value={keyCreate.spendLimit}
-          />
-          <button
-            className="mercenary-run-panel__chip mercenary-run-panel__chip--button"
-            disabled={keyCreate.pending || isLaunching}
-            onClick={() => void keyCreate.createKey()}
-            type="button"
-          >
-            {keyCreate.pending ? 'creating…' : 'create key'}
-          </button>
-          {keyCreate.keyError ? (
-            <p className="mercenary-run-panel__payment-note">{keyCreate.keyError}</p>
-          ) : null}
-        </div>
-      ) : null}
+      <p className="mercenary-run-panel__payment-meta">
+        <a
+          className="mercenary-run-panel__payment-link"
+          href="/account"
+          onClick={openAccountSettings}
+        >
+          Create API keys in account settings
+        </a>
+      </p>
     </div>
   );
 }

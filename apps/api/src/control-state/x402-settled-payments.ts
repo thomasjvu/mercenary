@@ -10,7 +10,10 @@ export type X402SettledPaymentEntry = {
   createdAt: string;
 };
 
-const MAX_STORED_ENTRIES = 1_000;
+/** Keep settled payment fingerprints for 90 days (anti double-credit), not a short LRU. */
+const SETTLED_PAYMENT_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+/** Hard safety cap against unbounded growth under pathological load. */
+const MAX_STORED_ENTRIES = 100_000;
 
 export function buildX402SettlementFingerprint(input: {
   settlementTx?: string;
@@ -27,10 +30,36 @@ export function buildX402SettlementFingerprint(input: {
   return `sig:${createHash('sha256').update(signature).digest('hex')}`;
 }
 
+function isSettledPaymentFresh(entry: X402SettledPaymentEntry, nowMs: number): boolean {
+  const createdAtMs = Date.parse(entry.createdAt);
+  if (!Number.isFinite(createdAtMs)) {
+    return false;
+  }
+  return nowMs - createdAtMs <= SETTLED_PAYMENT_TTL_MS;
+}
+
+export function pruneX402SettledPayments(
+  entries: X402SettledPaymentEntry[],
+  nowMs = Date.now()
+): X402SettledPaymentEntry[] {
+  const fresh = entries.filter((entry) => isSettledPaymentFresh(entry, nowMs));
+  if (fresh.length <= MAX_STORED_ENTRIES) {
+    return fresh;
+  }
+  // Prefer newest when over the absolute safety cap.
+  return fresh
+    .slice()
+    .sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt))
+    .slice(-MAX_STORED_ENTRIES);
+}
+
 export function hasX402SettledPayment(context: ControlStateContext, fingerprint: string): boolean {
+  const nowMs = Date.now();
   return context
     .loadWorkingSnapshot()
-    .x402SettledPayments.some((entry) => entry.fingerprint === fingerprint);
+    .x402SettledPayments.some(
+      (entry) => entry.fingerprint === fingerprint && isSettledPaymentFresh(entry, nowMs)
+    );
 }
 
 export function recordX402SettledPayment(
@@ -42,7 +71,7 @@ export function recordX402SettledPayment(
     (item) => item.fingerprint !== entry.fingerprint
   );
   next.push(entry);
-  snapshot.x402SettledPayments = next.slice(-MAX_STORED_ENTRIES);
+  snapshot.x402SettledPayments = pruneX402SettledPayments(next);
   context.writeState(snapshot);
   return entry;
 }
@@ -52,7 +81,12 @@ export function tryClaimX402SettledPayment(
   entry: X402SettledPaymentEntry
 ): boolean {
   const snapshot = context.loadWorkingSnapshot();
-  if (snapshot.x402SettledPayments.some((item) => item.fingerprint === entry.fingerprint)) {
+  const nowMs = Date.now();
+  if (
+    snapshot.x402SettledPayments.some(
+      (item) => item.fingerprint === entry.fingerprint && isSettledPaymentFresh(item, nowMs)
+    )
+  ) {
     return false;
   }
   recordX402SettledPayment(context, entry);
@@ -70,7 +104,11 @@ export function tryClaimX402SettledPaymentAndCredit(
   };
   try {
     context.mutateState((snapshot) => {
-      if (snapshot.x402SettledPayments.some((item) => item.fingerprint === entry.fingerprint)) {
+      if (
+        snapshot.x402SettledPayments.some(
+          (item) => item.fingerprint === entry.fingerprint && isSettledPaymentFresh(item, nowMs)
+        )
+      ) {
         const account = ensurePublicAccountInSnapshot(snapshot, entry.wallet);
         result = { claimed: false, balanceUsd: account.balanceUsd };
         return;
@@ -79,7 +117,7 @@ export function tryClaimX402SettledPaymentAndCredit(
         (item) => item.fingerprint !== entry.fingerprint
       );
       next.push(entry);
-      snapshot.x402SettledPayments = next.slice(-MAX_STORED_ENTRIES);
+      snapshot.x402SettledPayments = pruneX402SettledPayments(next, nowMs);
       const account = ensurePublicAccountInSnapshot(snapshot, entry.wallet);
       account.balanceUsd += Math.max(0, entry.amountUsd);
       account.updatedAt = new Date(nowMs).toISOString();

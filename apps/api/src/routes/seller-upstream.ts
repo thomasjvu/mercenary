@@ -295,7 +295,8 @@ export function registerSellerUpstreamRoutes(
       }
 
       const providerProfile = await orchestrator.upsertRegisteredProvider(
-        parseProviderRegistrationInput(registration)
+        parseProviderRegistrationInput(registration),
+        { allowTakeover: false }
       );
       controlState.linkSellerProvider(session.wallet, providerProfile.providerId);
 
@@ -399,7 +400,8 @@ export function registerSellerUpstreamRoutes(
             session.wallet,
             profile
           )
-        )
+        ),
+        { allowTakeover: false }
       );
 
       return serializeProviderProfile(updated, { includeEndpoint: true });

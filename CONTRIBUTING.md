@@ -25,6 +25,8 @@ Read these first:
 - Document any new command, env var, route, or workflow change.
 - Prefer real behavior over demo-only behavior.
 
+Requires **Node.js >= 22.13** (built-in `node:sqlite` persistence). CI and Docker use Node 22.
+
 ## Local Workflow
 
 ```bash

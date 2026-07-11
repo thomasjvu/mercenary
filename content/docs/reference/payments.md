@@ -29,10 +29,10 @@ Buyer setup: [buy.md](../buyers/buy.md). Mercenary wallet vs API key controls: [
 
 ## Payouts (sellers)
 
-- **Split rule:** successful providers split escrow **equally**. No winner/runner-up logic.
+- **Split rule (multi-agent):** successful providers split escrow **equally**. No winner/runner-up logic.
+- **Discount inference:** single selected seller; settlement budget is capped to the provider’s declared rate. Floor **$0.01**. See [discount-inference.md](../buyers/discount-inference.md).
 - **Invalid work:** rejected or failed providers get **$0**.
 - **Minimum payout:** `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD` defaults to **$0.25** for multi-agent raids.
-- **Discount inference:** single-provider marketplace calls use a **$0.01** floor so small charges settle automatically. See [discount-inference.md](../buyers/discount-inference.md).
 - **Settlement mode:** sync chat/inference responses wait for settlement when `BOSSRAID_SETTLEMENT_MODE` is `file` or `onchain`.
 
 Seller earnings: `GET /v1/seller/earnings`. Offer setup: [sell.md](../sellers/sell.md).

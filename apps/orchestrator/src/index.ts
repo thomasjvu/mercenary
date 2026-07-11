@@ -60,6 +60,7 @@ import { readRaidRetentionTtlMs } from './raid-retention.js';
 import { findWorkspaceRoot, resolveWorkspacePath } from '@bossraid/constants/workspace';
 
 export { InvalidRaidLaunchReservationError, NoEligibleProvidersError } from './raid-launch.js';
+export { ProviderRegistrationConflictError } from './orchestrator-provider-registry.js';
 export { PersistenceUnavailableError } from './persistence-queue.js';
 export { UnknownRaidError };
 
@@ -104,8 +105,11 @@ export class BossRaidOrchestrator {
     this.raidLifecycle.registerProvider(provider);
   }
 
-  async upsertRegisteredProvider(input: ProviderRegistrationInput): Promise<ProviderProfile> {
-    return this.raidLifecycle.upsertRegisteredProvider(input);
+  async upsertRegisteredProvider(
+    input: ProviderRegistrationInput,
+    options?: { allowTakeover?: boolean }
+  ): Promise<ProviderProfile> {
+    return this.raidLifecycle.upsertRegisteredProvider(input, options);
   }
 
   async recordAgentHeartbeat(input: AgentHeartbeatInput): Promise<ProviderProfile | undefined> {

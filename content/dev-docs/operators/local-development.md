@@ -1,6 +1,8 @@
 # Local Development
 
-Install and run the Boss Raid stack locally. Product runtime reference: [Runtime & Commands](/docs/operators/runtime).
+Install and run the Boss Raid stack locally. Product runtime reference: [Runtime & Commands](/docs/operators/runtime). Stack map: [Tech Stack](tech-stack.md).
+
+Requires **Node.js >= 22.13** (built-in `node:sqlite` persistence).
 
 ## Quick local run
 

@@ -72,7 +72,7 @@ Upstream keys are encrypted at rest. Buyers never see seller credentials.
 
 ### Payout and pause
 
-- Successful providers split escrow equally.
+- Single-provider inference pays the selected seller up to their declared rate (budget is capped to that rate). Multi-agent raids split escrow **equally** across successful providers only.
 - Single-provider inference settles down to **$0.01** (multi-agent raids use the $0.25 default floor).
 - Earnings: `GET /v1/seller/earnings`, `/v1/seller/stats` (includes `modelDemand` routed volume).
 - Pause: `marketplaceOfferStatus: "paused"` removes the seller from routing.
@@ -83,7 +83,7 @@ See [Sell inference](../sellers/sell.md) for registration examples.
 
 ### Prefer (default)
 
-`raid_policy.privacy_mode: "prefer"` ranks privacy-verified sellers when available. No eligible seller → fail closed.
+`raid_policy.privacy_mode: "prefer"` keeps privacy as a **tiebreak** after cost on this lane. Discount inference always forces `selectionMode: cost_first` (cheapest eligible seller wins). Privacy features are hard requirements only under `strict` mode.
 
 ### Strict E2EE catalog models
 

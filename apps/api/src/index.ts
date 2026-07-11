@@ -5,10 +5,12 @@ import {
   InvalidRaidLaunchReservationError,
   NoEligibleProvidersError,
   PersistenceUnavailableError,
+  ProviderRegistrationConflictError,
   runtimeOptionsFromEnv,
   UnknownRaidError,
   type BossRaidOrchestrator,
 } from '@bossraid/orchestrator';
+import { UnsafeProviderEndpointError } from '@bossraid/provider-sdk';
 import { NETWORK } from '@bossraid/constants';
 import logger from '@bossraid/logger';
 import { mapContractErrorCode } from './lib/contract-errors.js';
@@ -102,6 +104,24 @@ function wireApiServer(app: FastifyInstance, ctx: ApiContext, handlers: ApiHandl
       apiMetrics.increment('routing.no_eligible_providers');
       reply.code(409).send({
         error: 'no_eligible_providers',
+        message: error.message,
+      });
+      return;
+    }
+
+    if (error instanceof ProviderRegistrationConflictError) {
+      reply.code(409).send({
+        error: error.code,
+        message: error.message,
+        providerId: error.conflict.providerId,
+        reason: error.conflict.reason,
+      });
+      return;
+    }
+
+    if (error instanceof UnsafeProviderEndpointError) {
+      reply.code(400).send({
+        error: error.code,
         message: error.message,
       });
       return;

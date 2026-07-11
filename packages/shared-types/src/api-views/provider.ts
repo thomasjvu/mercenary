@@ -29,6 +29,17 @@ export type ProviderViewResponse = {
   modelProvider?: string;
   modelId?: string;
   outputTypes?: string[];
+  harnessProfile?: {
+    lane: 'api_chat' | 'agent_harness';
+    installation: 'fresh' | 'skill_augmented' | 'unknown';
+    skills: Array<{ id: string; name?: string; version?: string; contentHash?: string }>;
+    imageDigest?: string;
+    compositionHash?: string;
+    framework?: string;
+    planProvider?: string;
+    attestedAt?: string;
+    verification?: 'unverified' | 'heartbeat_self_report' | 'image_attested';
+  };
   lastSeenAt?: string;
   verification?: {
     status: 'pending' | 'verified' | 'failed' | 'error';

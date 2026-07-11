@@ -21,6 +21,7 @@ export const readyResponseSchema = {
     storage: { type: 'object', additionalProperties: true },
     payment: { type: 'object', additionalProperties: true },
     settlement: { type: 'object', additionalProperties: true },
+    limits: { type: 'object', additionalProperties: true },
   },
   required: ['ok', 'gates'],
 } as const;

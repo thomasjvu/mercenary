@@ -77,9 +77,7 @@ export function buildProductionReadinessReport(input: {
     message:
       input.storageBackend === 'memory'
         ? 'Memory storage is not acceptable for production.'
-        : input.storageBackend === 'sqlite'
-          ? 'SQLite is acceptable for controlled launch only; full production needs managed durable SQL, backups, and restore drills.'
-          : 'File storage is acceptable for controlled launch only; full production needs managed durable SQL, backups, and restore drills.',
+        : 'SQLite is acceptable for controlled launch only; full production needs managed durable SQL, backups, and restore drills.',
     details: {
       backend: input.storageBackend,
       healthy: input.persistenceHealthy,

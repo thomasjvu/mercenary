@@ -51,7 +51,9 @@ export function LandingHeroSection({ state, onNavigate }: LandingHeroSectionProp
             return (
               <div
                 aria-hidden={workflowTab !== tab}
-                className={`hero__actions ${workflowLayerClass(tab, workflowTab)}`}
+                className={`hero__actions ${workflowLayerClass(tab, workflowTab)}${
+                  tab === 'seller' ? ' hero__actions--seller-cta' : ''
+                }`}
                 key={tab}
               >
                 <a

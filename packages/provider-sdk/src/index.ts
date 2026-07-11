@@ -8,12 +8,44 @@ import type {
   ProviderHealthStatus,
   ProviderPricing,
   ProviderHeartbeat,
+  ProviderPrivacy,
   ProviderProfile,
   ProviderRegistrationInput,
   ProviderSubmission,
   ProviderTaskPackage,
+  ProviderTrust,
 } from '@bossraid/shared-types';
+import { defaultApiChatHarnessProfile } from '@bossraid/shared-types';
 import { DEFAULTS } from '@bossraid/constants';
+import { assertProviderEndpointSafe } from './endpoint-safety.js';
+
+export {
+  assertProviderEndpointSafe,
+  isBlockedMetadataHost,
+  isPrivateOrSpecialIp,
+  shouldAllowPrivateProviderEndpoints,
+  UnsafeProviderEndpointError,
+} from './endpoint-safety.js';
+
+/** Client-supplied numeric privacy scores are ignored; features drive routing scores. */
+function stripClientPrivacyScore(
+  privacy: ProviderPrivacy | undefined
+): ProviderPrivacy | undefined {
+  if (!privacy) {
+    return undefined;
+  }
+  const { score: _ignored, ...rest } = privacy;
+  return rest;
+}
+
+/** Client-supplied numeric trust scores are ignored; ERC-8004 fields drive trust. */
+function stripClientTrustScore(trust: ProviderTrust | undefined): ProviderTrust | undefined {
+  if (!trust) {
+    return undefined;
+  }
+  const { score: _ignored, ...rest } = trust;
+  return Object.keys(rest).length > 0 ? rest : undefined;
+}
 
 const HMAC_TIMESTAMP_MAX_SKEW_MS = 5 * 60_000;
 const DEFAULT_PROVIDER_HEALTH_TIMEOUT_MS = DEFAULTS.PROVIDER_HEALTH_TIMEOUT;
@@ -232,6 +264,7 @@ async function postJson<TResponse>(
   path: string,
   payload: unknown
 ): Promise<TResponse> {
+  assertProviderEndpointSafe(profile.endpoint);
   const body = JSON.stringify(payload);
   const endpoint = resolveProviderEndpointPath(profile, path);
   const startedAt = Date.now();
@@ -294,6 +327,19 @@ function readProviderAcceptTimeoutMs(env: NodeJS.ProcessEnv = process.env): numb
 }
 
 export async function probeProviderHealth(profile: ProviderProfile): Promise<ProviderHealthStatus> {
+  try {
+    assertProviderEndpointSafe(profile.endpoint);
+  } catch (error) {
+    return {
+      providerId: profile.providerId,
+      providerName: profile.displayName,
+      endpoint: profile.endpoint,
+      reachable: false,
+      ready: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+
   const controller = new AbortController();
   const timeoutMs = readProviderHealthTimeoutMs();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -470,10 +516,10 @@ export function buildProviderProfileFromRegistration(
     marketplaceOfferStatus:
       input.marketplaceOfferStatus ?? existing?.marketplaceOfferStatus ?? 'active',
     routingCooldownUntil: existing?.routingCooldownUntil,
-    privacy: {
+    privacy: stripClientPrivacyScore({
       ...existing?.privacy,
       ...input.privacy,
-    },
+    }),
     erc8004: (() => {
       const merged =
         existing?.erc8004 || input.erc8004
@@ -498,13 +544,21 @@ export function buildProviderProfileFromRegistration(
         verification: merged.verification,
       };
     })(),
-    trust:
+    trust: stripClientTrustScore(
       existing?.trust || input.trust
         ? {
             ...existing?.trust,
             ...input.trust,
           }
-        : undefined,
+        : undefined
+    ),
+    harnessProfile:
+      input.harnessProfile ??
+      existing?.harnessProfile ??
+      defaultApiChatHarnessProfile({
+        framework: input.agentFramework ?? existing?.agentFramework,
+        planProvider: input.modelProvider ?? existing?.modelProvider,
+      }),
     reputation: {
       globalScore: input.reputation?.globalScore ?? existing?.reputation?.globalScore ?? 0.5,
       responsivenessScore:

@@ -4,6 +4,7 @@ import type {
   Erc8004Verification,
   OutputType,
   PrivacyAttestation,
+  HarnessInstallation,
   PrivacyFeatureKey,
   PrivacyRoutingMode,
   ProviderPricing,
@@ -100,6 +101,10 @@ export interface RaidConstraints {
   requirePrivacyFeatures?: PrivacyFeatureKey[];
   selectionMode?: SelectionMode;
   minimumPayoutThresholdUsd?: number;
+  /** Prefer pure installs (`fresh`) or allow skill-augmented harnesses. */
+  allowedInstallations?: HarnessInstallation[];
+  /** Require every listed skill id on the provider harness profile. */
+  requiredSkills?: string[];
 }
 
 export interface RewardPolicy {

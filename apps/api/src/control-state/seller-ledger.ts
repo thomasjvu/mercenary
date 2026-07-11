@@ -32,6 +32,19 @@ export function sellerOwnsProvider(
   return account?.sellerProviderIds.includes(providerId) ?? false;
 }
 
+/** Wallet that currently claims ownership of a registered seller provider id, if any. */
+export function findSellerWalletForProvider(
+  ctx: ControlStateContext,
+  providerId: string,
+  nowMs = Date.now()
+): string | undefined {
+  const { snapshot } = ctx.readPrunedState(nowMs);
+  const match = snapshot.publicAccounts.find((account) =>
+    account.sellerProviderIds.includes(providerId)
+  );
+  return match?.wallet;
+}
+
 export function recordSellerPayout(
   ctx: ControlStateContext,
   input: Omit<SellerPayoutEntry, 'id' | 'createdAt'> & { id?: string; createdAt?: string }

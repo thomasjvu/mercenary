@@ -20,10 +20,15 @@ export type ReadySettlement = {
   configured: boolean;
 };
 
+export type ReadyLimits = {
+  buyerMaxRequestBudgetUsd?: number;
+};
+
 export type ReadyResponse = {
   ok: boolean;
   payment?: ReadyPayment;
   settlement?: ReadySettlement;
+  limits?: ReadyLimits;
   gates?: {
     api: boolean;
     storage: boolean;

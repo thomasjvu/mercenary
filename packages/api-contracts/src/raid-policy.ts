@@ -1,5 +1,6 @@
 import type { BossRaidRequest, RaidConstraints } from '@bossraid/shared-types';
 import {
+  ApiContractError,
   ensureAgentFrameworkArray,
   ensureBooleanLike,
   ensureFiniteNumberLike,
@@ -60,6 +61,8 @@ export interface RaidPolicyFields {
   privacyMode: unknown;
   requirePrivacyFeatures: unknown;
   selectionMode: unknown;
+  allowedInstallations: unknown;
+  requiredSkills: unknown;
 }
 
 export interface RaidConstraintsFields {
@@ -80,6 +83,8 @@ export interface RaidConstraintsFields {
   privacyMode: unknown;
   requirePrivacyFeatures: unknown;
   selectionMode: unknown;
+  allowedInstallations: unknown;
+  requiredSkills: unknown;
 }
 
 export interface RaidConstraintsOverrides {
@@ -109,6 +114,8 @@ export interface RaidConstraintsFieldLabels {
   privacyMode: string;
   requirePrivacyFeatures: string;
   selectionMode: string;
+  allowedInstallations: string;
+  requiredSkills: string;
 }
 
 export function raidConstraintsFieldLabels(
@@ -132,6 +139,8 @@ export function raidConstraintsFieldLabels(
     privacyMode: `${prefix}.privacy_mode`,
     requirePrivacyFeatures: `${prefix}.require_privacy_features`,
     selectionMode: `${prefix}.selection_mode`,
+    allowedInstallations: `${prefix}.allowed_installations`,
+    requiredSkills: `${prefix}.required_skills`,
   };
 }
 
@@ -157,6 +166,8 @@ export function readRaidConstraintsFields(source: Record<string, unknown>): Raid
     privacyMode: read('privacyMode', 'privacy_mode'),
     requirePrivacyFeatures: read('requirePrivacyFeatures', 'require_privacy_features'),
     selectionMode: read('selectionMode', 'selection_mode'),
+    allowedInstallations: read('allowedInstallations', 'allowed_installations'),
+    requiredSkills: read('requiredSkills', 'required_skills'),
   };
 }
 
@@ -181,6 +192,8 @@ export function raidPolicyFieldsToConstraintFields(
     privacyMode: fields.privacyMode,
     requirePrivacyFeatures: fields.requirePrivacyFeatures,
     selectionMode: fields.selectionMode,
+    allowedInstallations: fields.allowedInstallations,
+    requiredSkills: fields.requiredSkills,
   };
 }
 
@@ -269,7 +282,30 @@ export function buildRaidConstraintsFromFields(
       fields.selectionMode == null
         ? undefined
         : ensureSelectionMode(fields.selectionMode, labels.selectionMode),
+    allowedInstallations:
+      fields.allowedInstallations == null
+        ? undefined
+        : ensureHarnessInstallationArray(fields.allowedInstallations, labels.allowedInstallations),
+    requiredSkills:
+      fields.requiredSkills == null
+        ? undefined
+        : ensureStringArray(fields.requiredSkills, labels.requiredSkills),
   };
+}
+
+function ensureHarnessInstallationArray(
+  value: unknown,
+  label: string
+): Array<'fresh' | 'skill_augmented' | 'unknown'> {
+  const items = ensureStringArray(value, label);
+  return items.map((item) => {
+    if (item === 'fresh' || item === 'skill_augmented' || item === 'unknown') {
+      return item;
+    }
+    throw new ApiContractError(
+      `Expected harness installation values (fresh|skill_augmented|unknown) for ${label}.`
+    );
+  });
 }
 
 export function readRaidPolicyFields(source: Record<string, unknown>): RaidPolicyFields {
@@ -302,6 +338,8 @@ export function readRaidPolicyFields(source: Record<string, unknown>): RaidPolic
     privacyMode: read('privacyMode', 'privacy_mode'),
     requirePrivacyFeatures: read('requirePrivacyFeatures', 'require_privacy_features'),
     selectionMode: read('selectionMode', 'selection_mode'),
+    allowedInstallations: read('allowedInstallations', 'allowed_installations'),
+    requiredSkills: read('requiredSkills', 'required_skills'),
   };
 }
 

@@ -187,7 +187,20 @@ Onchain overlay template: `deploy/phala/secrets.onchain.env.example`.
 | `BOSSRAID_OPERATOR_TERMS_ACK`    | Production-readiness gate (`true` before full production) |
 | `BOSSRAID_INCIDENT_RESPONSE_ACK` | Production-readiness gate (`true` before full production) |
 
-Outside `NODE_ENV=production`, `node_env_production`, `onchain_settlement`, and `tee_attestation` report as warnings instead of blocking failures so controlled local launch can pass `GET /v1/ops/production-readiness` while infra is still being wired.
+Outside `NODE_ENV=production`, `node_env_production`, `onchain_settlement`, and `tee_attestation` report as warnings instead of blocking failures. Other checks still apply regardless of `NODE_ENV` — notably `evaluator_isolation` (requires per-job containers), strong `BOSSRAID_ADMIN_TOKEN` / `BOSSRAID_REGISTRY_TOKEN`, and operator acks. Local stacks often report `ok: false` until those are configured; that is expected.
+
+### Settlement / operator extras (commonly needed)
+
+| Variable                                         | Purpose                                                                                  |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `BOSSRAID_SETTLEMENT_TREASURY_KEY`               | Signs onchain settlement fund txs                                                        |
+| `BOSSRAID_EVALUATOR_ADDRESS`                     | Onchain evaluator address for job complete/reject                                        |
+| `BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY`      | Optional evaluator signer for onchain complete                                           |
+| `BOSSRAID_SETTLEMENT_PROVIDER_PRIVATE_KEYS_JSON` | Optional map of provider wallets for onchain job steps                                   |
+| `BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS`      | `1` = allow private/loopback provider URLs in production (trusted compose networks only) |
+| `BOSSRAID_TRUSTED_CLIENT_KEY`                    | Alias for trusted-client bearer (with `BOSSRAID_API_KEY`)                                |
+| `BOSSRAID_RAID_RETENTION_TTL_SEC`                | Raid record retention window                                                             |
+| `BOSSRAID_X402_RECONCILIATION_INTERVAL_MS`       | x402 refund/reconcile worker interval                                                    |
 
 ## Dev & smoke only
 

@@ -371,6 +371,36 @@
   border: none;
 }
 
+.app-shell--landing .hero__actions--seller-cta .button {
+  transition:
+    border-color 140ms ease,
+    border-radius 220ms ease,
+    color 140ms ease,
+    background-color 140ms ease,
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.app-shell--landing .hero__actions--seller-cta .button--primary {
+  border-radius: 0;
+}
+
+.app-shell--landing .hero__actions--seller-cta .button--primary:hover,
+.app-shell--landing .hero__actions--seller-cta .button--primary:focus-visible {
+  border-radius: 14px;
+}
+
+.app-shell--landing .hero__actions--seller-cta .button:not(.button--primary) {
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+}
+
+.app-shell--landing .hero__actions--seller-cta .button:not(.button--primary):hover,
+.app-shell--landing .hero__actions--seller-cta .button:not(.button--primary):focus-visible {
+  border: 1px solid var(--accent);
+  border-radius: 0;
+}
+
 .app-shell--landing .lede {
   font-size: 0.9rem;
   line-height: 1.35;

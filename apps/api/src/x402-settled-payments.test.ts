@@ -75,3 +75,31 @@ test('tryClaimX402SettledPayment rejects duplicate fingerprints atomically', () 
   assert.equal(controlState.tryClaimX402SettledPayment(entry), true);
   assert.equal(controlState.tryClaimX402SettledPayment(entry), false);
 });
+
+test('settled payment fingerprints expire by TTL not a short LRU', async () => {
+  const { pruneX402SettledPayments } = await import('./control-state/x402-settled-payments.js');
+  const now = Date.now();
+  const pruned = pruneX402SettledPayments(
+    [
+      {
+        fingerprint: 'tx:old',
+        wallet: '0x1',
+        route: 'balance',
+        amountUsd: 1,
+        createdAt: new Date(now - 100 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        fingerprint: 'tx:fresh',
+        wallet: '0x1',
+        route: 'balance',
+        amountUsd: 1,
+        createdAt: new Date(now - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    ],
+    now
+  );
+  assert.deepEqual(
+    pruned.map((entry) => entry.fingerprint),
+    ['tx:fresh']
+  );
+});

@@ -76,6 +76,18 @@ export function RaiderRow({ raider, rank, onTry, onMarket }: RaiderRowProps) {
             label="wins"
             value={String(raider.successfulRaids)}
           />
+          {raider.provider.harnessProfile?.installation === 'fresh' ||
+          (!raider.provider.harnessProfile &&
+            (raider.provider.source?.type === 'inference_hosted' ||
+              raider.provider.source?.type === 'venice_hosted')) ? (
+            <RaiderBadge icon="pixel:checkmark-solid" label="fresh install" />
+          ) : null}
+          {raider.provider.harnessProfile?.installation === 'skill_augmented' ? (
+            <RaiderBadge
+              icon="pixel:cog-solid"
+              label={`${raider.provider.harnessProfile.skills.length || 0} skills`}
+            />
+          ) : null}
           {raider.provider.verification?.status === 'verified' ? (
             <RaiderBadge icon="pixel:check-solid" label="verified agent" />
           ) : null}

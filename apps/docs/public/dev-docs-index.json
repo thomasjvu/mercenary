@@ -1,14 +1,16 @@
 {
-  "generated": "2026-06-24T19:49:29.715Z",
+  "generated": "2026-06-28T18:33:23.412Z",
   "paths": [
+    "operators/tech-stack",
     "operators/local-development",
     "operators/infisical",
     "operators/data-storage",
     "brand/rx-78-design-system",
     "brand/landing-hero-art"
   ],
-  "count": 5,
+  "count": 6,
   "titles": {
+    "operators/tech-stack": "Tech Stack",
     "operators/local-development": "Local Development",
     "operators/infisical": "Infisical Secret Workflow",
     "operators/data-storage": "Data Storage",

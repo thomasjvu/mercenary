@@ -168,6 +168,10 @@ export function createApiControlStateFromStore(store: ApiControlStateStore) {
       return sellerLedger.sellerOwnsProvider(ctx, wallet, providerId, nowMs);
     },
 
+    findSellerWalletForProvider(providerId: string, nowMs = Date.now()): string | undefined {
+      return sellerLedger.findSellerWalletForProvider(ctx, providerId, nowMs);
+    },
+
     creditBuyerBalance(wallet: string, amountUsd: number, nowMs = Date.now()): PublicAccountEntry {
       return buyerLedger.creditBuyerBalance(ctx, wallet, amountUsd, nowMs);
     },

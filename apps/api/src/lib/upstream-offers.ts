@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import type { UpstreamProviderId } from '@bossraid/constants';
-import type { ProviderRegistrationInput } from '@bossraid/shared-types';
+import {
+  defaultApiChatHarnessProfile,
+  type ProviderRegistrationInput,
+} from '@bossraid/shared-types';
 import {
   buildUpstreamSellerProviderId,
   resolveInferenceGatewayProviderEndpoint,
@@ -103,6 +106,11 @@ export function buildHostedProviderRegistration(input: {
       status: 'pending',
     },
     marketplaceOfferStatus: 'active',
+    harnessProfile: defaultApiChatHarnessProfile({
+      framework: 'custom',
+      planProvider: catalogEntry?.modelProvider ?? input.provider,
+      verification: 'unverified',
+    }),
   };
 }
 

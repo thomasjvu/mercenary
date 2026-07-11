@@ -1213,6 +1213,14 @@
   flex-wrap: wrap;
 }
 
+.mercenary-composer__budget-cap {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
 .mercenary-composer__credit {
   color: var(--text);
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
@@ -1761,9 +1769,19 @@
   line-height: 1.4;
 }
 
-.mercenary-run-panel__payment-create {
-  display: grid;
-  gap: 6px;
+.mercenary-run-panel__payment-link {
+  color: inherit;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--muted) 55%, transparent);
+  text-underline-offset: 2px;
+}
+
+.mercenary-run-panel__payment-link:hover {
+  color: var(--rx-blue);
+  text-decoration-color: currentColor;
 }
 
 .mercenary-threads {

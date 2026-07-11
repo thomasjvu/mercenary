@@ -1,0 +1,153 @@
+export class UnsafeProviderEndpointError extends Error {
+  readonly code = 'unsafe_provider_endpoint';
+
+  constructor(message: string) {
+    super(message);
+    this.name = 'UnsafeProviderEndpointError';
+  }
+}
+
+const BLOCKED_HOSTNAMES = new Set([
+  'metadata.google.internal',
+  'metadata.goog',
+  'metadata',
+  'kubernetes.default',
+  'kubernetes.default.svc',
+  'kubernetes.default.svc.cluster.local',
+]);
+
+function readBooleanEnv(value: string | undefined): boolean {
+  return value === '1' || value === 'true' || value === 'yes';
+}
+
+function stripBrackets(hostname: string): string {
+  if (hostname.startsWith('[') && hostname.endsWith(']')) {
+    return hostname.slice(1, -1);
+  }
+  return hostname;
+}
+
+/** Cloud metadata / link-local probing targets — never valid seller endpoints. */
+export function isBlockedMetadataHost(hostname: string): boolean {
+  const host = stripBrackets(hostname).toLowerCase();
+  if (BLOCKED_HOSTNAMES.has(host) || host.endsWith('.metadata.google.internal')) {
+    return true;
+  }
+  // IPv4 link-local (includes 169.254.169.254 metadata)
+  if (/^169\.254\./u.test(host)) {
+    return true;
+  }
+  return false;
+}
+
+export function isPrivateOrSpecialIp(hostname: string): boolean {
+  const host = stripBrackets(hostname).toLowerCase();
+
+  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local')) {
+    return true;
+  }
+
+  if (host === '::1' || host === '0:0:0:0:0:0:0:1') {
+    return true;
+  }
+
+  const v4Mapped = host.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/u);
+  if (v4Mapped?.[1]) {
+    return isPrivateOrSpecialIp(v4Mapped[1]);
+  }
+
+  if (
+    host.startsWith('fc') ||
+    host.startsWith('fd') ||
+    host.startsWith('fe80:') ||
+    host === 'fe80::'
+  ) {
+    return true;
+  }
+
+  const parts = host.split('.').map((part) => Number(part));
+  if (
+    parts.length === 4 &&
+    parts.every((part) => Number.isInteger(part) && part >= 0 && part <= 255)
+  ) {
+    const [a, b] = parts;
+    if (a === 0 || a === 10 || a === 127) {
+      return true;
+    }
+    if (a === 169 && b === 254) {
+      return true;
+    }
+    if (a === 172 && b !== undefined && b >= 16 && b <= 31) {
+      return true;
+    }
+    if (a === 192 && b === 168) {
+      return true;
+    }
+    if (a === 100 && b !== undefined && b >= 64 && b <= 127) {
+      return true;
+    }
+    if (a !== undefined && a >= 224) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function shouldAllowPrivateProviderEndpoints(env: NodeJS.ProcessEnv = process.env): boolean {
+  if (readBooleanEnv(env.BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS)) {
+    return true;
+  }
+  return env.NODE_ENV !== 'production';
+}
+
+/**
+ * Reject provider endpoints that would make the API an open SSRF proxy.
+ * Loopback/private targets are allowed outside production (or with explicit opt-in)
+ * so local compose providers keep working. Link-local metadata hosts are never allowed.
+ */
+export function assertProviderEndpointSafe(
+  endpoint: string,
+  options: { allowPrivateNetwork?: boolean; env?: NodeJS.ProcessEnv } = {}
+): void {
+  const env = options.env ?? process.env;
+  const allowPrivate = options.allowPrivateNetwork ?? shouldAllowPrivateProviderEndpoints(env);
+
+  let url: URL;
+  try {
+    url = new URL(endpoint);
+  } catch {
+    throw new UnsafeProviderEndpointError('Provider endpoint is not a valid URL.');
+  }
+
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new UnsafeProviderEndpointError(
+      `Unsupported provider endpoint protocol "${url.protocol}". Use http: or https:.`
+    );
+  }
+
+  if (url.username || url.password) {
+    throw new UnsafeProviderEndpointError(
+      'Provider endpoint must not include embedded credentials.'
+    );
+  }
+
+  const hostname = stripBrackets(url.hostname).toLowerCase();
+  if (!hostname) {
+    throw new UnsafeProviderEndpointError('Provider endpoint hostname is required.');
+  }
+
+  if (isBlockedMetadataHost(hostname)) {
+    throw new UnsafeProviderEndpointError('Provider endpoint host is blocked.');
+  }
+
+  if (!allowPrivate && isPrivateOrSpecialIp(hostname)) {
+    throw new UnsafeProviderEndpointError(
+      'Provider endpoint targets a private, loopback, or link-local address. Use a public HTTPS endpoint in production, or set BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS=1 for trusted private networks.'
+    );
+  }
+
+  if (env.NODE_ENV === 'production' && url.protocol !== 'https:' && !allowPrivate) {
+    throw new UnsafeProviderEndpointError('Provider endpoints must use HTTPS in production.');
+  }
+}
