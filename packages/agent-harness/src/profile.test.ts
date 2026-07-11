@@ -16,7 +16,10 @@ test('normalizeHarnessKind maps aliases', () => {
   assert.equal(normalizeHarnessKind('glm'), 'glm');
   assert.equal(normalizeHarnessKind('zai'), 'glm');
   assert.equal(normalizeHarnessKind('chutes'), 'chutes');
-  assert.throws(() => normalizeHarnessKind('claude'), /BOSSRAID_HARNESS_MODE/);
+  assert.equal(normalizeHarnessKind('claude_code'), 'claude_code');
+  assert.equal(normalizeHarnessKind('claude'), 'claude_code');
+  assert.equal(normalizeHarnessKind('anthropic'), 'claude_code');
+  assert.throws(() => normalizeHarnessKind('unknown-harness'), /BOSSRAID_HARNESS_MODE/);
 });
 
 test('parseHarnessSkills and installation', () => {

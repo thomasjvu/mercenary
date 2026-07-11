@@ -13,7 +13,7 @@ How Boss Raid proves **who ran the work**, **which model**, and whether the inst
 | Option                              | When                                                                                                     |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | **Shared platform seats (default)** | Seller pastes key → `source.type=harness_hosted` → gateway injects key and runs tool loop on shared host |
-| **Ops-run worker**                  | `BOSSRAID_HARNESS_MODE=codex\|grok\|glm\|chutes` process with platform keys                              |
+| **Ops-run worker**                  | `BOSSRAID_HARNESS_MODE=codex\|grok\|glm\|chutes\|claude_code` process with platform keys                 |
 | **BYO Phala CVM**                   | Power seller needs exclusive capacity / custom skills image — manual Tier 2                              |
 
 ### Seller self-serve (implemented)
@@ -109,14 +109,14 @@ pnpm --filter @bossraid/provider-agent dev
 
 Env:
 
-| Variable                                    | Purpose                                         |
-| ------------------------------------------- | ----------------------------------------------- |
-| `BOSSRAID_HARNESS_MODE`                     | `codex` \| `grok` \| `glm` \| `chutes` \| `off` |
-| `BOSSRAID_HARNESS_SKILLS`                   | Comma list `id` or `id@version` (empty = fresh) |
-| `BOSSRAID_HARNESS_IMAGE_DIGEST`             | Optional image digest for stronger disclosure   |
-| `BOSSRAID_HARNESS_MAX_STEPS`                | Tool loop budget (default 10)                   |
-| `BOSSRAID_MODEL_API_BASE`                   | OpenAI or xAI base URL                          |
-| `BOSSRAID_MODEL_API_KEY` / `BOSSRAID_MODEL` | Upstream credentials                            |
+| Variable                                    | Purpose                                                          |
+| ------------------------------------------- | ---------------------------------------------------------------- |
+| `BOSSRAID_HARNESS_MODE`                     | `codex` \| `grok` \| `glm` \| `chutes` \| `claude_code` \| `off` |
+| `BOSSRAID_HARNESS_SKILLS`                   | Comma list `id` or `id@version` (empty = fresh)                  |
+| `BOSSRAID_HARNESS_IMAGE_DIGEST`             | Optional image digest for stronger disclosure                    |
+| `BOSSRAID_HARNESS_MAX_STEPS`                | Tool loop budget (default 10)                                    |
+| `BOSSRAID_MODEL_API_BASE`                   | OpenAI or xAI base URL                                           |
+| `BOSSRAID_MODEL_API_KEY` / `BOSSRAID_MODEL` | Upstream credentials                                             |
 
 ## Ops: run Grok harness
 
@@ -146,6 +146,30 @@ pnpm --filter @bossraid/provider-agent dev
 ```
 
 Example env: `examples/providers/harness-chutes.env.example`. Tier 0 sellers: `POST /v1/seller/upstream/chutes/connect` (OpenAI catalog on `llm.chutes.ai/v1`; TEE evidence still via `api.chutes.ai` when instances support it).
+
+## Ops: run Claude Code harness
+
+Claude Code here means **Claude models + Boss Raid's agent tool loop** (`agentFramework: claude_code`), not the Anthropic desktop/CLI binary on the CVM.
+
+```bash
+export BOSSRAID_HARNESS_MODE=claude_code
+export BOSSRAID_MODEL_API_BASE=https://api.anthropic.com/v1
+export BOSSRAID_MODEL=claude-sonnet-4-5
+export BOSSRAID_MODEL_API_KEY=sk-ant-...
+pnpm --filter @bossraid/provider-agent dev
+```
+
+Example env: `examples/providers/harness-claude-code.env.example`. Tier 0 sellers: `POST /v1/seller/upstream/anthropic/connect` then publish catalog ids like `anthropic/claude-sonnet-4-5` with `lane: "harness"`.
+
+## Threads (not server-persisted)
+
+Hosted inference and harness seats are **stateless across turns**:
+
+- Chat completions expect the client to send the full `messages` history each call.
+- Platform harness seats create an **ephemeral workspace per job**; they do not keep a long-lived conversation store for buyers.
+- Mercenary UI thread lists are **browser-local** only.
+
+Sellers do not need to implement thread storage. If a product later needs durable multi-turn memory, that belongs in a buyer/app layer or a dedicated platform store — not in the inference adapter.
 
 ## Offline verify
 

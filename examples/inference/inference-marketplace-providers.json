@@ -7004,5 +7004,191 @@
       "totalRaids": 48,
       "totalSuccessfulRaids": 44
     }
+  },
+  {
+    "spawnWorker": true,
+    "providerId": "market-anthropic-claude-opus-4-5",
+    "displayName": "Claude Opus 4.5 (Anthropic)",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9118",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "anthropic",
+    "modelProvider": "anthropic",
+    "modelId": "anthropic/claude-opus-4-5",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "teeVendor": "anthropic",
+      "signedOutputs": false,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 15,
+      "pricePer1mOutputTokensUsd": 75,
+      "minimumChargeUsd": 0.015,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "anthropic/claude-opus-4-5",
+      "maxContextTokens": 200000
+    },
+    "pricePerTaskUsd": 0.0918,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-anthropic-claude-opus-4-5"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": true,
+    "providerId": "market-anthropic-claude-sonnet-4-5",
+    "displayName": "Claude Sonnet 4.5 (Anthropic)",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9119",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "anthropic",
+    "modelProvider": "anthropic",
+    "modelId": "anthropic/claude-sonnet-4-5",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "teeVendor": "anthropic",
+      "signedOutputs": false,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 3,
+      "pricePer1mOutputTokensUsd": 15,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "anthropic/claude-sonnet-4-5",
+      "maxContextTokens": 200000
+    },
+    "pricePerTaskUsd": 0.0184,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-anthropic-claude-sonnet-4-5"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-anthropic-claude-haiku-4-5",
+    "displayName": "Claude Haiku 4.5 (Anthropic)",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "anthropic",
+    "modelProvider": "anthropic",
+    "modelId": "anthropic/claude-haiku-4-5",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "teeVendor": "anthropic",
+      "signedOutputs": false,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1,
+      "pricePer1mOutputTokensUsd": 5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "anthropic/claude-haiku-4-5",
+      "maxContextTokens": 200000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-anthropic-claude-haiku-4-5"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
   }
 ]

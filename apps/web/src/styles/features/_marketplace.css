@@ -1120,6 +1120,48 @@
   flex-wrap: wrap;
 }
 
+.manage-offers__title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.manage-offers__title-row h2 {
+  margin: 0;
+}
+
+.manage-offers__lane {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.manage-offers__lane--chat {
+  border-color: color-mix(in srgb, #5b8def 40%, var(--line));
+  color: #5b8def;
+}
+
+.manage-offers__lane--harness {
+  border-color: color-mix(in srgb, #2ea060 40%, var(--line));
+  color: #2ea060;
+}
+
+.app-frame--theme-dark .manage-offers__lane--chat {
+  color: #8eb6ff;
+}
+
+.app-frame--theme-dark .manage-offers__lane--harness {
+  color: #6fe39a;
+}
+
 .manage-offers__actions {
   display: grid;
   gap: 8px;

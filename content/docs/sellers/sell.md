@@ -56,13 +56,13 @@ Re-verify anytime: `POST /v1/seller/providers/:providerId/verify`
 
 Sell inference without running a provider worker. Connect an upstream key and publish catalog offers:
 
-1. `POST /v1/seller/upstream/:provider/connect` — validate key (`zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`)
+1. `POST /v1/seller/upstream/:provider/connect` — validate key (`anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`)
 2. `GET /v1/seller/upstream/:provider/models/catalog` — Boss Raid catalog with reference rates
 3. `POST /v1/seller/upstream/:provider/offers` — register hosted offers per model
 
 ```json
 {
-  "modelIds": ["glm-4.7"],
+  "modelIds": ["anthropic/claude-sonnet-4-5"],
   "discountPercent": 20,
   "lane": "chat"
 }
@@ -71,9 +71,31 @@ Sell inference without running a provider worker. Connect an upstream key and pu
 - `lane: "chat"` (default) → `inference_hosted` single-shot completion (`harnessProfile.lane=api_chat`)
 - `lane: "harness"` → `harness_hosted` multi-step tool loop on the **platform** gateway (`agent_harness`, fresh by default)
 
+| Upstream  | Chat framework | Harness kind (`lane: "harness"`) |
+| --------- | -------------- | -------------------------------- |
+| Anthropic | `claude_code`  | `claude_code` (Claude Code seat) |
+| xAI       | `grok`         | `grok`                           |
+| Z.ai      | `glm`          | `glm`                            |
+| Chutes    | `chutes`       | `chutes`                         |
+| Venice/…  | `codex`        | `codex`-style tool loop          |
+
+Claude Code on Boss Raid is **Claude models + the platform tool loop** (not a shell-out to the Claude Code CLI on a CVM).
+
 Boss Raid routes to `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`. Keys stay encrypted; no per-seller Phala box.
 
-Web UI: `/onboarding/seller` → upstream connect flow.
+Web UI: `/onboarding/seller` → connect key → pick **Chat** vs **Harness** → publish. Manage offers shows a chat/harness badge per listing.
+
+## Threads & multi-turn (seller / provider)
+
+**You do not persist buyer chat threads as the inference provider.**
+
+| Surface                                | Who owns history                                        | Server role                           |
+| -------------------------------------- | ------------------------------------------------------- | ------------------------------------- |
+| Discount chat (`/v1/chat/completions`) | Client sends full `messages[]` each request             | Stateless completion; no thread store |
+| Mercenary UI threads                   | Browser `localStorage` (`bossraid.mercenary.threads.*`) | Raid state via raid APIs only         |
+| Harness seat jobs                      | Ephemeral workspace per accept                          | Workspace discarded after submit/fail |
+
+Implication: multi-turn context is the client's job. Buyers (or apps) must resend prior turns. Do not assume the gateway remembers conversation IDs.
 
 ## Harness profile (fresh vs skills)
 

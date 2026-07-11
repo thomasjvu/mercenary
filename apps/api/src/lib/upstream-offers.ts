@@ -157,6 +157,7 @@ export function harnessKindForUpstream(provider: UpstreamProviderId): HarnessKin
   if (provider === 'xai') return 'grok';
   if (provider === 'zai') return 'glm';
   if (provider === 'chutes') return 'chutes';
+  if (provider === 'anthropic') return 'claude_code';
   // OpenAI-compatible hosted keys (redpill/near/phala/venice) use codex-style tool loop.
   if (
     provider === 'venice' ||
@@ -171,10 +172,11 @@ export function harnessKindForUpstream(provider: UpstreamProviderId): HarnessKin
 
 function resolveAgentFrameworkForUpstream(
   provider: UpstreamProviderId
-): 'grok' | 'glm' | 'chutes' | 'codex' | 'custom' {
+): 'grok' | 'glm' | 'chutes' | 'codex' | 'claude_code' | 'custom' {
   if (provider === 'xai') return 'grok';
   if (provider === 'zai') return 'glm';
   if (provider === 'chutes') return 'chutes';
+  if (provider === 'anthropic') return 'claude_code';
   if (
     provider === 'venice' ||
     provider === 'redpill' ||

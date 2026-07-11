@@ -25,7 +25,7 @@ Refresh inference catalog + reference pricing JSON:
 pnpm bossraid sync:inference-catalog
 ```
 
-Writes `packages/constants/src/inference-catalog.ts` and `packages/constants/data/inference-model-pricing.json` (Venice rates from public `/models`; Redpill, NEAR, Chutes, Phala from static script rates).
+Writes `packages/constants/src/inference-catalog.ts` and `packages/constants/data/inference-model-pricing.json` (Venice rates from public `/models`; Redpill, NEAR, Chutes, Phala, xAI, Z.ai, Anthropic from static script rates).
 
 Regenerate brand assets (Venice; requires `VENICE_API_KEY` in `.private/.env`):
 

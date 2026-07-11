@@ -9,20 +9,40 @@ type ManageOfferCardProps = {
   state: ManageOffersState;
 };
 
+function resolveOfferLaneBadge(provider: Provider): { label: string; tone: 'chat' | 'harness' } {
+  if (
+    provider.source?.type === 'harness_hosted' ||
+    provider.harnessProfile?.lane === 'agent_harness'
+  ) {
+    return { label: 'harness', tone: 'harness' };
+  }
+  return { label: 'chat', tone: 'chat' };
+}
+
 export function ManageOfferCard({ provider, state }: ManageOfferCardProps) {
   const upstream = resolveHostedOfferUpstream(provider.source, provider.modelProvider);
   const offerStatus = provider.marketplaceOfferStatus ?? 'active';
+  const lane = resolveOfferLaneBadge(provider);
 
   return (
     <article className="page-panel manage-offers__card">
       <div className="manage-offers__main">
-        <h2>{provider.displayName}</h2>
+        <div className="manage-offers__title-row">
+          <h2>{provider.displayName}</h2>
+          <span className={`manage-offers__lane manage-offers__lane--${lane.tone}`}>
+            {lane.label}
+          </span>
+        </div>
         <p className="manage-offers__meta">
           {provider.modelId} · {provider.modelProvider ?? upstream}
+          {provider.agentFramework ? ` · ${provider.agentFramework}` : ''}
         </p>
         <p className="manage-offers__meta">{formatHostedOfferPricing(provider)}</p>
         <p className="manage-offers__meta">
           status {provider.verification?.status ?? 'pending'} · offer {offerStatus}
+          {provider.harnessProfile?.installation
+            ? ` · ${provider.harnessProfile.installation}`
+            : ''}
         </p>
         {provider.privacy?.teeAttested || provider.privacy?.e2ee ? (
           <UpstreamTeeVerificationPanel

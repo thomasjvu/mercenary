@@ -129,6 +129,9 @@ export function isValidSellerUpstreamConfigEntry(
       provider === 'redpill' ||
       provider === 'near' ||
       provider === 'chutes' ||
-      provider === 'phala')
+      provider === 'phala' ||
+      provider === 'xai' ||
+      provider === 'zai' ||
+      provider === 'anthropic')
   );
 }

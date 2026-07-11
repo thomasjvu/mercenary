@@ -37,16 +37,18 @@ curl http://127.0.0.1:8787/v1/inference/chat/completions \
   -H "authorization: Bearer br_..." \
   -H "content-type: application/json" \
   -d '{
-    "model": "gpt-5.5",
+    "model": "anthropic/claude-sonnet-4-5",
     "messages": [
       { "role": "user", "content": "Write a concise status update." }
     ],
     "raid_policy": {
-      "allowed_model_providers": ["openai"],
+      "allowed_model_providers": ["anthropic"],
       "privacy_mode": "prefer"
     }
   }'
 ```
+
+Each call is independent: include prior turns in `messages` if you want multi-turn context. Boss Raid does not store chat threads for you.
 
 Defaults: one seller, `cost_first` routing, `allowed_model_ids` = request `model`. Budget defaults to the cheapest matching seller rate when `max_total_cost` is omitted.
 

@@ -3,8 +3,16 @@
 export type InferenceCatalogEntry = {
   modelId: string;
   displayName: string;
-  modelProvider: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai' | 'zai';
-  attestationVendor: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai' | 'zai';
+  modelProvider: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai' | 'zai' | 'anthropic';
+  attestationVendor:
+    | 'venice'
+    | 'phala'
+    | 'redpill'
+    | 'near'
+    | 'chutes'
+    | 'xai'
+    | 'zai'
+    | 'anthropic';
   upstreamModelId: string;
   inputPer1mUsd: number;
   outputPer1mUsd: number;
@@ -1479,6 +1487,45 @@ export const INFERENCE_MODEL_CATALOG: InferenceCatalogEntry[] = [
     upstreamModelId: 'glm-5.2',
     inputPer1mUsd: 0.6,
     outputPer1mUsd: 2,
+    maxContextTokens: 200000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+  },
+  {
+    modelId: 'anthropic/claude-opus-4-5',
+    displayName: 'Claude Opus 4.5 (Anthropic)',
+    modelProvider: 'anthropic',
+    attestationVendor: 'anthropic',
+    upstreamModelId: 'claude-opus-4-5',
+    inputPer1mUsd: 15,
+    outputPer1mUsd: 75,
+    maxContextTokens: 200000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+  },
+  {
+    modelId: 'anthropic/claude-sonnet-4-5',
+    displayName: 'Claude Sonnet 4.5 (Anthropic)',
+    modelProvider: 'anthropic',
+    attestationVendor: 'anthropic',
+    upstreamModelId: 'claude-sonnet-4-5',
+    inputPer1mUsd: 3,
+    outputPer1mUsd: 15,
+    maxContextTokens: 200000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+  },
+  {
+    modelId: 'anthropic/claude-haiku-4-5',
+    displayName: 'Claude Haiku 4.5 (Anthropic)',
+    modelProvider: 'anthropic',
+    attestationVendor: 'anthropic',
+    upstreamModelId: 'claude-haiku-4-5',
+    inputPer1mUsd: 1,
+    outputPer1mUsd: 5,
     maxContextTokens: 200000,
     privacy: 'standard',
     teeAttested: false,

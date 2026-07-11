@@ -21,6 +21,8 @@ const FEATURED_LIVE_MODEL_IDS = new Set([
   'grok-4-1-fast-reasoning',
   'glm-4.7',
   'glm-5-turbo',
+  'anthropic/claude-sonnet-4-5',
+  'anthropic/claude-opus-4-5',
   'chutes-deepseek-v3.2-tee',
   'chutes-glm-5.2-tee',
 ]);
@@ -182,6 +184,58 @@ const ZAI_MODELS = [
     upstream: 'glm-5.2',
     inputPer1mUsd: 0.6,
     outputPer1mUsd: 2,
+    maxContextTokens: 200_000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+    signedOutputs: false,
+    noDataRetention: false,
+  },
+];
+
+/**
+ * Anthropic first-party Claude — catalog modelIds are namespaced (Venice already lists
+ * unprefixed claude-* via their marketplace). upstream is the Anthropic API model string.
+ */
+const ANTHROPIC_MODELS = [
+  {
+    modelId: 'anthropic/claude-opus-4-5',
+    displayName: 'Claude Opus 4.5 (Anthropic)',
+    modelProvider: 'anthropic',
+    attestationVendor: 'anthropic',
+    upstream: 'claude-opus-4-5',
+    inputPer1mUsd: 15,
+    outputPer1mUsd: 75,
+    maxContextTokens: 200_000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+    signedOutputs: false,
+    noDataRetention: false,
+  },
+  {
+    modelId: 'anthropic/claude-sonnet-4-5',
+    displayName: 'Claude Sonnet 4.5 (Anthropic)',
+    modelProvider: 'anthropic',
+    attestationVendor: 'anthropic',
+    upstream: 'claude-sonnet-4-5',
+    inputPer1mUsd: 3,
+    outputPer1mUsd: 15,
+    maxContextTokens: 200_000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+    signedOutputs: false,
+    noDataRetention: false,
+  },
+  {
+    modelId: 'anthropic/claude-haiku-4-5',
+    displayName: 'Claude Haiku 4.5 (Anthropic)',
+    modelProvider: 'anthropic',
+    attestationVendor: 'anthropic',
+    upstream: 'claude-haiku-4-5',
+    inputPer1mUsd: 1,
+    outputPer1mUsd: 5,
     maxContextTokens: 200_000,
     privacy: 'standard',
     teeAttested: false,
@@ -367,8 +421,8 @@ function writeCatalogTs(catalog) {
 export type InferenceCatalogEntry = {
   modelId: string;
   displayName: string;
-  modelProvider: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai' | 'zai';
-  attestationVendor: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai' | 'zai';
+  modelProvider: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai' | 'zai' | 'anthropic';
+  attestationVendor: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai' | 'zai' | 'anthropic';
   upstreamModelId: string;
   inputPer1mUsd: number;
   outputPer1mUsd: number;
@@ -428,6 +482,7 @@ function writeCatalogPricingJson(catalog) {
       phala: 'scripts/sync-inference-catalog.mjs static rates',
       xai: 'scripts/sync-inference-catalog.mjs static rates (api.x.ai)',
       zai: 'scripts/sync-inference-catalog.mjs static rates (api.z.ai coding paas)',
+      anthropic: 'scripts/sync-inference-catalog.mjs static rates (api.anthropic.com)',
     },
     providers,
     models: catalog
@@ -512,6 +567,7 @@ async function main() {
   const phalaModels = normalizeStaticModels(PHALA_MODELS);
   const xaiModels = normalizeStaticModels(XAI_MODELS);
   const zaiModels = normalizeStaticModels(ZAI_MODELS);
+  const anthropicModels = normalizeStaticModels(ANTHROPIC_MODELS);
   const catalog = [
     ...veniceModels,
     ...redpillModels,
@@ -520,6 +576,7 @@ async function main() {
     ...phalaModels,
     ...xaiModels,
     ...zaiModels,
+    ...anthropicModels,
   ];
   assertUniqueModelIds(catalog);
 
@@ -550,7 +607,7 @@ async function main() {
   writeProvidersJson(providers);
 
   console.log(
-    `[catalog] synced ${veniceModels.length} Venice + ${redpillModels.length} Redpill + ${nearModels.length} NEAR + ${chutesModels.length} Chutes + ${phalaModels.length} Phala + ${xaiModels.length} xAI + ${zaiModels.length} Z.ai models`
+    `[catalog] synced ${veniceModels.length} Venice + ${redpillModels.length} Redpill + ${nearModels.length} NEAR + ${chutesModels.length} Chutes + ${phalaModels.length} Phala + ${xaiModels.length} xAI + ${zaiModels.length} Z.ai + ${anthropicModels.length} Anthropic models`
   );
   console.log(`[catalog] wrote packages/constants/src/inference-catalog.ts`);
   console.log(`[catalog] wrote examples/inference/inference-marketplace-providers.json (${providers.length} sellers)`);

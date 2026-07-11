@@ -10,7 +10,7 @@ import type {
   HarnessSkillRef,
 } from '@bossraid/shared-types';
 
-export type HarnessKind = 'off' | 'codex' | 'grok' | 'glm' | 'chutes';
+export type HarnessKind = 'off' | 'codex' | 'grok' | 'glm' | 'chutes' | 'claude_code';
 
 export type HarnessRuntimeConfig = {
   kind: HarnessKind;
@@ -33,15 +33,20 @@ export function normalizeHarnessKind(value: string | undefined): HarnessKind {
     value === 'grok' ||
     value === 'glm' ||
     value === 'chutes' ||
-    value === 'zai'
+    value === 'zai' ||
+    value === 'claude_code' ||
+    value === 'claude' ||
+    value === 'anthropic'
   ) {
-    return value === 'zai' ? 'glm' : value;
+    if (value === 'zai') return 'glm';
+    if (value === 'claude' || value === 'anthropic') return 'claude_code';
+    return value;
   }
   if (value === '1' || value === 'true' || value === 'agent' || value === 'agent_harness') {
     return 'codex';
   }
   throw new Error(
-    'BOSSRAID_HARNESS_MODE must be off, codex, grok, glm, or chutes (or true for codex default).'
+    'BOSSRAID_HARNESS_MODE must be off, codex, grok, glm, chutes, or claude_code (or true for codex default).'
   );
 }
 
@@ -56,6 +61,7 @@ export function frameworkForHarness(kind: HarnessKind): AgentFramework | undefin
   if (kind === 'grok') return 'grok';
   if (kind === 'glm') return 'glm';
   if (kind === 'chutes') return 'chutes';
+  if (kind === 'claude_code') return 'claude_code';
   return undefined;
 }
 
@@ -64,6 +70,7 @@ export function planProviderForHarness(kind: HarnessKind): string | undefined {
   if (kind === 'grok') return 'xai';
   if (kind === 'glm') return 'zai';
   if (kind === 'chutes') return 'chutes';
+  if (kind === 'claude_code') return 'anthropic';
   return undefined;
 }
 
@@ -71,6 +78,7 @@ export function defaultModelBaseForHarness(kind: HarnessKind): string {
   if (kind === 'grok') return 'https://api.x.ai/v1';
   if (kind === 'glm') return 'https://api.z.ai/api/coding/paas/v4';
   if (kind === 'chutes') return 'https://llm.chutes.ai/v1';
+  if (kind === 'claude_code') return 'https://api.anthropic.com/v1';
   if (kind === 'codex') return 'https://api.openai.com/v1';
   return 'https://api.openai.com/v1';
 }
@@ -79,6 +87,7 @@ export function defaultModelNameForHarness(kind: HarnessKind): string | undefine
   if (kind === 'grok') return 'grok-4.5';
   if (kind === 'glm') return 'glm-4.7';
   if (kind === 'chutes') return 'deepseek-ai/DeepSeek-V3.2-TEE';
+  if (kind === 'claude_code') return 'claude-sonnet-4-5';
   if (kind === 'codex') return 'gpt-5.5';
   return undefined;
 }

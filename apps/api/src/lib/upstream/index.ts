@@ -26,6 +26,11 @@ import {
   probeVeniceChatCompletion,
 } from './venice.js';
 import {
+  fetchAnthropicAttestationReport,
+  fetchAnthropicUpstreamModels,
+  probeAnthropicChatCompletion,
+} from './anthropic.js';
+import {
   fetchXaiAttestationReport,
   fetchXaiUpstreamModels,
   probeXaiChatCompletion,
@@ -68,6 +73,8 @@ export async function fetchUpstreamModels(
       return fetchXaiUpstreamModels(apiKey);
     case 'zai':
       return fetchZaiUpstreamModels(apiKey);
+    case 'anthropic':
+      return fetchAnthropicUpstreamModels(apiKey);
   }
 }
 
@@ -93,6 +100,8 @@ export async function probeUpstreamChatCompletion(input: {
       return probeXaiChatCompletion(input);
     case 'zai':
       return probeZaiChatCompletion(input);
+    case 'anthropic':
+      return probeAnthropicChatCompletion(input);
   }
 }
 
@@ -126,5 +135,7 @@ export async function fetchUpstreamAttestationReport(input: {
       return fetchXaiAttestationReport(input);
     case 'zai':
       return fetchZaiAttestationReport(input);
+    case 'anthropic':
+      return fetchAnthropicAttestationReport(input);
   }
 }

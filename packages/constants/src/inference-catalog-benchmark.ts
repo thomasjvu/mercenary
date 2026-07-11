@@ -114,6 +114,9 @@ export const CATALOG_BENCHMARK_TASK_USD: Record<string, number> = {
   'glm-4.7': 0.01,
   'glm-5-turbo': 0.01,
   'glm-5.2': 0.01,
+  'anthropic/claude-opus-4-5': 0.0918,
+  'anthropic/claude-sonnet-4-5': 0.0184,
+  'anthropic/claude-haiku-4-5': 0.01,
 };
 
 export const CATALOG_BENCHMARK_INPUT_PER_1M_USD: Record<string, number> = {
@@ -230,6 +233,9 @@ export const CATALOG_BENCHMARK_INPUT_PER_1M_USD: Record<string, number> = {
   'glm-4.7': 0.5,
   'glm-5-turbo': 0.4,
   'glm-5.2': 0.6,
+  'anthropic/claude-opus-4-5': 15,
+  'anthropic/claude-sonnet-4-5': 3,
+  'anthropic/claude-haiku-4-5': 1,
 };
 
 export const CATALOG_BENCHMARK_OUTPUT_PER_1M_USD: Record<string, number> = {
@@ -346,4 +352,7 @@ export const CATALOG_BENCHMARK_OUTPUT_PER_1M_USD: Record<string, number> = {
   'glm-4.7': 1.5,
   'glm-5-turbo': 1.2,
   'glm-5.2': 2,
+  'anthropic/claude-opus-4-5': 75,
+  'anthropic/claude-sonnet-4-5': 15,
+  'anthropic/claude-haiku-4-5': 5,
 };

@@ -221,6 +221,21 @@ export function verifyUpstreamAttestationReport(
           },
         ],
       };
+    case 'anthropic':
+      return {
+        valid: false,
+        vendor: 'anthropic',
+        modelId: input.modelId,
+        nonce: input.nonce,
+        verifiedAt: new Date().toISOString(),
+        checks: [
+          {
+            id: 'anthropic_tee_unsupported',
+            passed: false,
+            detail: 'Anthropic (Claude) does not publish upstream TEE attestation reports.',
+          },
+        ],
+      };
   }
 }
 

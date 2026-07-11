@@ -6,6 +6,7 @@ export const UPSTREAM_PROVIDER_IDS = [
   'phala',
   'xai',
   'zai',
+  'anthropic',
 ] as const;
 
 export type UpstreamProviderId = (typeof UPSTREAM_PROVIDER_IDS)[number];
@@ -69,6 +70,14 @@ export const UPSTREAM_PROVIDER_CONFIG: Record<UpstreamProviderId, UpstreamProvid
     // Standard token API: https://api.z.ai/api/paas/v4
     upstreamBase: 'https://api.z.ai/api/coding/paas/v4',
     attestationVendor: 'zai',
+    supportsE2ee: false,
+  },
+  anthropic: {
+    id: 'anthropic',
+    displayName: 'Anthropic (Claude)',
+    // OpenAI-compatible surface for Claude models (Messages API also available).
+    upstreamBase: 'https://api.anthropic.com/v1',
+    attestationVendor: 'anthropic',
     supportsE2ee: false,
   },
 };

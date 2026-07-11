@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-11T06:04:43.877Z",
+  "generatedAt": "2026-07-11T06:18:31.048Z",
   "source": {
     "venice": "https://api.venice.ai/api/v1/models (public, no API key)",
     "redpill": "scripts/sync-inference-catalog.mjs static rates",
@@ -7,7 +7,8 @@
     "chutes": "scripts/sync-inference-catalog.mjs static rates (llm.chutes.ai)",
     "phala": "scripts/sync-inference-catalog.mjs static rates",
     "xai": "scripts/sync-inference-catalog.mjs static rates (api.x.ai)",
-    "zai": "scripts/sync-inference-catalog.mjs static rates (api.z.ai coding paas)"
+    "zai": "scripts/sync-inference-catalog.mjs static rates (api.z.ai coding paas)",
+    "anthropic": "scripts/sync-inference-catalog.mjs static rates (api.anthropic.com)"
   },
   "providers": {
     "venice": {
@@ -1287,6 +1288,44 @@
           "e2ee": false
         }
       ]
+    },
+    "anthropic": {
+      "modelCount": 3,
+      "models": [
+        {
+          "modelId": "anthropic/claude-haiku-4-5",
+          "displayName": "Claude Haiku 4.5 (Anthropic)",
+          "upstreamModelId": "claude-haiku-4-5",
+          "inputPer1mUsd": 1,
+          "outputPer1mUsd": 5,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 200000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "anthropic/claude-opus-4-5",
+          "displayName": "Claude Opus 4.5 (Anthropic)",
+          "upstreamModelId": "claude-opus-4-5",
+          "inputPer1mUsd": 15,
+          "outputPer1mUsd": 75,
+          "referenceTaskUsd": 0.0918,
+          "maxContextTokens": 200000,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "anthropic/claude-sonnet-4-5",
+          "displayName": "Claude Sonnet 4.5 (Anthropic)",
+          "upstreamModelId": "claude-sonnet-4-5",
+          "inputPer1mUsd": 3,
+          "outputPer1mUsd": 15,
+          "referenceTaskUsd": 0.0184,
+          "maxContextTokens": 200000,
+          "teeAttested": false,
+          "e2ee": false
+        }
+      ]
     }
   },
   "models": [
@@ -1319,6 +1358,36 @@
       "outputPer1mUsd": 1.75,
       "referenceTaskUsd": 0.01,
       "maxContextTokens": 128000
+    },
+    {
+      "modelId": "anthropic/claude-haiku-4-5",
+      "modelProvider": "anthropic",
+      "displayName": "Claude Haiku 4.5 (Anthropic)",
+      "upstreamModelId": "claude-haiku-4-5",
+      "inputPer1mUsd": 1,
+      "outputPer1mUsd": 5,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 200000
+    },
+    {
+      "modelId": "anthropic/claude-opus-4-5",
+      "modelProvider": "anthropic",
+      "displayName": "Claude Opus 4.5 (Anthropic)",
+      "upstreamModelId": "claude-opus-4-5",
+      "inputPer1mUsd": 15,
+      "outputPer1mUsd": 75,
+      "referenceTaskUsd": 0.0918,
+      "maxContextTokens": 200000
+    },
+    {
+      "modelId": "anthropic/claude-sonnet-4-5",
+      "modelProvider": "anthropic",
+      "displayName": "Claude Sonnet 4.5 (Anthropic)",
+      "upstreamModelId": "claude-sonnet-4-5",
+      "inputPer1mUsd": 3,
+      "outputPer1mUsd": 15,
+      "referenceTaskUsd": 0.0184,
+      "maxContextTokens": 200000
     },
     {
       "modelId": "chutes-deepseek-v3.2-tee",

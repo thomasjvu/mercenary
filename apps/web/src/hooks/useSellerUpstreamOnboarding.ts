@@ -16,6 +16,7 @@ import { fetchSellerStats } from '../api/auth.js';
 import { useWalletAuth } from './useWalletAuth.js';
 
 export const SELLER_PROVIDER_ORDER: UpstreamProviderId[] = [
+  'anthropic',
   'chutes',
   'zai',
   'xai',
@@ -24,6 +25,8 @@ export const SELLER_PROVIDER_ORDER: UpstreamProviderId[] = [
   'near',
   'phala',
 ];
+
+export type SellerOfferLane = 'chat' | 'harness';
 
 export function useSellerUpstreamOnboarding() {
   const { session, status, setStatus, connectWallet, isAuthenticated } = useWalletAuth(
@@ -47,6 +50,7 @@ export function useSellerUpstreamOnboarding() {
   const [models, setModels] = useState<UpstreamCatalogModel[]>([]);
   const [selectedModelIds, setSelectedModelIds] = useState<string[]>([]);
   const [discountPercent, setDiscountPercent] = useState('40');
+  const [offerLane, setOfferLane] = useState<SellerOfferLane>('chat');
   const [payoutWallet, setPayoutWallet] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -116,9 +120,11 @@ export function useSellerUpstreamOnboarding() {
         modelIds: selectedModelIds,
         discountPercent: Number(discountPercent) || 0,
         payoutWallet: payoutWallet.trim() || session?.wallet,
+        lane: offerLane,
       });
+      const laneLabel = offerLane === 'harness' ? 'harness (tool loop)' : 'chat (single-shot)';
       setPublishResult(
-        `Published ${result.providers.length} offer${result.providers.length === 1 ? '' : 's'}.`
+        `Published ${result.providers.length} ${laneLabel} offer${result.providers.length === 1 ? '' : 's'}.`
       );
       setStatus('Offers are live on the marketplace.');
       await sellerStats.mutate();
@@ -132,6 +138,7 @@ export function useSellerUpstreamOnboarding() {
   function handleProviderChange(nextProvider: UpstreamProviderId) {
     setProvider(nextProvider);
     setSelectedModelIds([]);
+    setOfferLane('chat');
   }
 
   return {
@@ -152,6 +159,8 @@ export function useSellerUpstreamOnboarding() {
     setSelectedModelIds,
     discountPercent,
     setDiscountPercent,
+    offerLane,
+    setOfferLane,
     payoutWallet,
     setPayoutWallet,
     pickerOpen,

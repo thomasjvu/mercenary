@@ -85,6 +85,8 @@ export async function publishSellerUpstreamOffers(
     modelIds: string[];
     discountPercent: number;
     payoutWallet?: string;
+    /** chat = single completion (default); harness = multi-step tool loop on platform seats */
+    lane?: 'chat' | 'harness';
   }
 ) {
   return fetchJson<{

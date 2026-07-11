@@ -119,7 +119,8 @@ export type UpstreamProviderKind =
   | 'chutes'
   | 'phala'
   | 'xai'
-  | 'zai';
+  | 'zai'
+  | 'anthropic';
 
 export type SellerUpstreamConfigEntry = {
   configId: string;
