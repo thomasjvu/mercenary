@@ -193,7 +193,9 @@ export async function runInferenceGatewayJob(input: {
     }
 
     let privacyAttestation;
-    if (featuresClaimed.length > 0 || providerClaimsE2ee || input.provider.privacy?.teeAttested) {
+    const needsUpstreamTee = input.provider.privacy?.teeAttested === true || providerClaimsE2ee;
+
+    if (needsUpstreamTee) {
       const nonce = generateAttestationNonce();
       const { attestation: teeResult } = await verifyUpstreamTee({
         provider: upstream,
@@ -204,10 +206,7 @@ export async function runInferenceGatewayJob(input: {
         env: input.env,
       });
 
-      if (
-        (input.provider.privacy?.teeAttested || providerClaimsE2ee) &&
-        (!teeResult.valid || (providerClaimsE2ee && !teeResult.e2eeReady))
-      ) {
+      if (!teeResult.valid || (providerClaimsE2ee && !teeResult.e2eeReady)) {
         throw new Error('Hosted provider TEE/E2EE attestation failed.');
       }
 
@@ -242,6 +241,17 @@ export async function runInferenceGatewayJob(input: {
         dataRetained: false,
       });
       privacyAttestation.inferenceReceiptId = receipt.receiptId;
+    } else if (featuresClaimed.length > 0) {
+      // Plan providers (xAI/Z.ai/Anthropic): no upstream TEE reports. Still record
+      // privacy claims without calling a TEE attestation endpoint.
+      privacyAttestation = buildPrivacyAttestation({
+        providerId: input.provider.providerId,
+        raidId: input.body.raidId,
+        featuresClaimed,
+        featuresVerified: [],
+        externalApiCalls: [`${upstream}:chat/completions`],
+        dataRetained: false,
+      });
     }
 
     await input.orchestrator.recordProviderSubmission(input.body.raidId, {

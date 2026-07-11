@@ -196,7 +196,8 @@ export function validateSubmissionSchema(
     if ((submission.patchUnifiedDiff ?? '').trim().length === 0) {
       issues.push('empty_diff');
     }
-  } else if (isTextTask && (submission.answerText ?? '').trim().length < MIN_EXPLANATION_LENGTH) {
+  } else if (isTextTask && (submission.answerText ?? '').trim().length === 0) {
+    // Chat / short completions are valid; only fully empty answers fail.
     issues.push('empty_answer');
   } else if (!isTextTask && !hasArtifactOfType(submission, primaryType)) {
     issues.push('missing_artifact');

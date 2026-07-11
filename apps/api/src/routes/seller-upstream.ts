@@ -98,26 +98,39 @@ export function registerSellerUpstreamRoutes(
       };
     }
 
-    const teeSampleModel =
-      INFERENCE_MODEL_CATALOG.find(
-        (entry) => entry.attestationVendor === provider && entry.teeAttested
-      )?.upstreamModelId ??
-      INFERENCE_MODEL_CATALOG.find((entry) => entry.modelProvider === provider)?.upstreamModelId;
+    // Only TEE-capable catalog models need preflight. Plan providers (xAI, Z.ai, Anthropic)
+    // have no upstream TEE reports — do not fall back to a non-TEE model and throw.
+    const teeSampleModel = INFERENCE_MODEL_CATALOG.find(
+      (entry) =>
+        (entry.attestationVendor === provider || entry.modelProvider === provider) &&
+        entry.teeAttested
+    )?.upstreamModelId;
 
     if (teeSampleModel) {
-      const { attestation } = await verifyUpstreamTee({
-        provider,
-        modelId: teeSampleModel,
-        providerId: `seller:${session.wallet}:${provider}`,
-        apiKey,
-        env,
-      });
-      if (!attestation.valid) {
+      try {
+        const { attestation } = await verifyUpstreamTee({
+          provider,
+          modelId: teeSampleModel,
+          providerId: `seller:${session.wallet}:${provider}`,
+          apiKey,
+          env,
+        });
+        if (!attestation.valid) {
+          reply.code(400);
+          return {
+            error: 'tee_preflight_failed',
+            message: 'Upstream TEE attestation preflight failed for this API key.',
+            checks: attestation.checks,
+          };
+        }
+      } catch (error) {
         reply.code(400);
         return {
           error: 'tee_preflight_failed',
-          message: 'Upstream TEE attestation preflight failed for this API key.',
-          checks: attestation.checks,
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Upstream TEE attestation preflight failed for this API key.',
         };
       }
     }
