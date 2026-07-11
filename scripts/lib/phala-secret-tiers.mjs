@@ -20,6 +20,14 @@ export const PHALA_CORE_KEYS = [
   'BOSSRAID_X402_PAY_TO',
 ];
 
+/** Optional platform plan keys (not required for deploy preflight). */
+export const PHALA_OPTIONAL_PLAN_KEYS = [
+  'BOSSRAID_XAI_API_KEY',
+  'BOSSRAID_ZAI_API_KEY',
+  'BOSSRAID_ANTHROPIC_API_KEY',
+  'BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY',
+];
+
 export const PHALA_ONCHAIN_KEYS = [
   'BOSSRAID_CLIENT_PRIVATE_KEY',
   'BOSSRAID_EVALUATOR_ADDRESS',
@@ -253,6 +261,18 @@ export function assembleDeployEnv(core = {}, onchain = {}, options = {}) {
     for (const suffix of PROVIDER_SUFFIXES) {
       merged[`BOSSRAID_PROVIDER_${suffix}_MODEL_API_KEY`] = veniceApiKey;
     }
+  }
+
+  // Preserve optional plan-provider keys when present (xAI/Z.ai/Anthropic platform seats).
+  for (const key of PHALA_OPTIONAL_PLAN_KEYS) {
+    if (isRealValue(core[key])) {
+      merged[key] = core[key].trim();
+    } else if (isRealValue(merged[key])) {
+      merged[key] = merged[key].trim();
+    }
+  }
+  if (!isRealValue(merged.BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY)) {
+    merged.BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY = '1';
   }
 
   return merged;

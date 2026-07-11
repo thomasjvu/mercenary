@@ -9,6 +9,8 @@ import { resolveInferenceGatewayProviderEndpoint } from './inference-gateway.js'
 
 /** Matches web featured strip; only models with catalog rates are published. */
 export const PLATFORM_LIQUIDITY_FEATURED_MODEL_IDS = [
+  'grok-4.5',
+  'grok-4-1-fast-reasoning',
   'anthropic/claude-opus-4-5',
   'anthropic/claude-sonnet-4-5',
   'openai-gpt-55',
