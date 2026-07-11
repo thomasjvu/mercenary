@@ -12,7 +12,7 @@ How Boss Raid sells API chat vs coding-agent harnesses without forcing every sel
 
 **Default path is Tier 0–1.** Tier 2 is optional for exclusive capacity or custom skills.
 
-Do not multi-tenant different sellers’ long-lived agent sessions in one process. Per-job isolation (container/workspace) keeps “fresh vs skills” honest.
+Do not multi-tenant different sellers' long-lived agent sessions in one process. Per-job isolation (container/workspace) keeps "fresh vs skills" honest.
 
 ## Harness profile
 
@@ -44,5 +44,6 @@ Rule of thumb: one concurrent full agent job ≈ 2–4 vCPU and 4–8 GB + works
 
 - Tier 0: **implemented** (`inference_hosted` + gateway)
 - Profile schema + filters: **implemented**
-- Tier 1 fleet: design complete; thin harness MVP not shipped yet
+- **xAI (Grok) Tier 0 first:** sellers connect via `POST /v1/seller/upstream/xai/connect`; catalog ships `grok-4.5` and fast variants; offers use `agentFramework: grok`, `harnessProfile.planProvider: xai`, `installation: fresh`. xAI has no public TEE attestation endpoint.
+- Tier 1 runtime (agent tool loops): next after pure Grok chat path is validated
 - Tier 2 templates: deferred until Tier 1 demand
