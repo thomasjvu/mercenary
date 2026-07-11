@@ -208,24 +208,25 @@ Outside `NODE_ENV=production`, `node_env_production`, `onchain_settlement`, and 
 
 These vars are for local development, CI smoke tests, and contributor tooling. **Do not set in production.**
 
-| Variable                                 | Purpose                                                        |
-| ---------------------------------------- | -------------------------------------------------------------- |
-| `BOSSRAID_DEV_SPAWN_PROVIDERS`           | When `true`, `pnpm dev` spawns local provider workers          |
-| `BOSSRAID_CALLBACK_BASE`                 | Provider callback URL in local dev                             |
-| `BOSSRAID_PROVIDER_STUB_MODE`            | `1` = stub upstream responses in `dev:providers`               |
-| `BOSSRAID_HARNESS_MODE`                  | `off` \| `codex` \| `grok` \| `glm` — agent tool loop          |
-| `BOSSRAID_HARNESS_SKILLS`                | Comma skill ids (`id` or `id@version`); empty = fresh          |
-| `BOSSRAID_HARNESS_IMAGE_DIGEST`          | Optional worker image digest for harness profile               |
-| `BOSSRAID_HARNESS_MAX_STEPS`             | Max tool-loop steps (default 10)                               |
-| `BOSSRAID_BOUNTY_E2E_PROVIDER_ID`        | Bounty smoke provider override (default `bounty-e2e-provider`) |
-| `BOSSRAID_BOUNTY_E2E_PROVIDER_TOKEN`     | Bounty smoke bearer token (default `bossraid-bounty-e2e`)      |
-| `BOSSRAID_BOUNTY_E2E_REWARD_USD`         | Bounty smoke reward amount (default `0.5`)                     |
-| `BOSSRAID_BOUNTY_E2E_MODE`               | `mock`, `wallet`, or `unverified` for bounty smoke             |
-| `BOSSRAID_BOUNTY_E2E_POSTER_PRIVATE_KEY` | Poster wallet for bounty smoke (`wallet` mode)                 |
-| `BOSSRAID_SMOKE_TIMEOUT_MS`              | Party quest smoke timeout (default `600000`)                   |
-| `BOSSRAID_SMOKE_PAYLOAD_FILE`            | Optional raid payload JSON for party quest smoke               |
-| `BOSSRAID_SMOKE_MAX_TOTAL_COST`          | Max raid cost for party quest smoke (default `1`)              |
-| `VENICE_API_KEY`                         | Brand asset gen in `.private/.env` (untracked)                 |
-| `VENICE_VIDEO_MODEL`                     | Video model override for optional clip workflows               |
+| Variable                                 | Purpose                                                          |
+| ---------------------------------------- | ---------------------------------------------------------------- |
+| `BOSSRAID_DEV_SPAWN_PROVIDERS`           | When `true`, `pnpm dev` spawns local provider workers            |
+| `BOSSRAID_CALLBACK_BASE`                 | Provider callback URL in local dev                               |
+| `BOSSRAID_PROVIDER_STUB_MODE`            | `1` = stub upstream responses in `dev:providers`                 |
+| `BOSSRAID_HARNESS_MODE`                  | `off` \| `codex` \| `grok` \| `glm` \| `chutes` — agent tools    |
+| `BOSSRAID_CHUTES_LLM_BASE`               | Override Chutes OpenAI base (default `https://llm.chutes.ai/v1`) |
+| `BOSSRAID_HARNESS_SKILLS`                | Comma skill ids (`id` or `id@version`); empty = fresh            |
+| `BOSSRAID_HARNESS_IMAGE_DIGEST`          | Optional worker image digest for harness profile                 |
+| `BOSSRAID_HARNESS_MAX_STEPS`             | Max tool-loop steps (default 10)                                 |
+| `BOSSRAID_BOUNTY_E2E_PROVIDER_ID`        | Bounty smoke provider override (default `bounty-e2e-provider`)   |
+| `BOSSRAID_BOUNTY_E2E_PROVIDER_TOKEN`     | Bounty smoke bearer token (default `bossraid-bounty-e2e`)        |
+| `BOSSRAID_BOUNTY_E2E_REWARD_USD`         | Bounty smoke reward amount (default `0.5`)                       |
+| `BOSSRAID_BOUNTY_E2E_MODE`               | `mock`, `wallet`, or `unverified` for bounty smoke               |
+| `BOSSRAID_BOUNTY_E2E_POSTER_PRIVATE_KEY` | Poster wallet for bounty smoke (`wallet` mode)                   |
+| `BOSSRAID_SMOKE_TIMEOUT_MS`              | Party quest smoke timeout (default `600000`)                     |
+| `BOSSRAID_SMOKE_PAYLOAD_FILE`            | Optional raid payload JSON for party quest smoke                 |
+| `BOSSRAID_SMOKE_MAX_TOTAL_COST`          | Max raid cost for party quest smoke (default `1`)                |
+| `VENICE_API_KEY`                         | Brand asset gen in `.private/.env` (untracked)                   |
+| `VENICE_VIDEO_MODEL`                     | Video model override for optional clip workflows                 |
 
 Used by `pnpm bossraid test:mcp:e2e`, bounty e2e scripts, party quest smoke, and `pnpm bossraid generate:pfp` / `generate:landing-hero`.

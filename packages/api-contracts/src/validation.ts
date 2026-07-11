@@ -45,6 +45,7 @@ export const AGENT_FRAMEWORKS = new Set<AgentFramework>([
   'openclaw',
   'grok',
   'glm',
+  'chutes',
   'custom',
 ]);
 const PROVIDER_VERIFICATION_STATUSES = new Set<ProviderVerificationStatus>([

@@ -135,7 +135,7 @@ function toolResultsToMessages(results: ToolResult[]): ChatMessage[] {
 }
 
 /**
- * Multi-step agent tool loop for Codex (OpenAI-compatible) and Grok (xAI chat tools).
+ * Multi-step agent tool loop for Codex, Grok, GLM, and Chutes (OpenAI-compatible tools).
  * Workspace is ephemeral and disposed after the run.
  */
 export async function runAgentHarnessLoop(input: {

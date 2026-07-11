@@ -8,7 +8,14 @@ export type SelectionMode =
   | 'cost_first'
   | 'diverse_mix'
   | 'round_robin';
-export type AgentFramework = 'codex' | 'claude_code' | 'openclaw' | 'grok' | 'glm' | 'custom';
+export type AgentFramework =
+  | 'codex'
+  | 'claude_code'
+  | 'openclaw'
+  | 'grok'
+  | 'glm'
+  | 'chutes'
+  | 'custom';
 export type ProviderVerificationStatus = 'pending' | 'verified' | 'failed' | 'error';
 export type ProviderPricingMode = 'token_metered' | 'task';
 export type ProviderPricingCurrency = 'USD' | 'USDC';

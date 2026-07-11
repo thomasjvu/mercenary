@@ -4,15 +4,15 @@ How Boss Raid proves **who ran the work**, **which model**, and whether the inst
 
 ## Is harness hosted on our Phala?
 
-**Yes for platform fleet (Tier 1).** Codex, Grok, and GLM agent-harness workers are normal Boss Raid HTTP providers. On production they run inside the same **always-on Phala CVM** stack as the API (or a dedicated harness CVM). **No new Phala box per raid or per seller** — each accept gets an ephemeral workspace that is wiped after submit.
+**Yes for platform fleet (Tier 1).** Codex, Grok, GLM, and Chutes agent-harness workers are normal Boss Raid HTTP providers. On production they run inside the same **always-on Phala CVM** stack as the API (or a dedicated harness CVM). **No new Phala box per raid or per seller** — each accept gets an ephemeral workspace that is wiped after submit.
 
 Sellers do **not** need their own Phala for the default path. **Self-serve** means paste keys in the product UI (Tier 0 chat already); Tier 1 ops still deploys workers today, with multi-tenant key injection as a future seat feature — still not a per-seller CVM.
 
-| Layer              | Runs where                                                                  | Seller friction                                       |
-| ------------------ | --------------------------------------------------------------------------- | ----------------------------------------------------- |
-| Tier 0 chat        | Platform Phala API gateway                                                  | Paste upstream key                                    |
-| **Tier 1 harness** | Platform Phala provider-agent with `BOSSRAID_HARNESS_MODE=codex\|grok\|glm` | Ops deploys worker; keys in env / future seller vault |
-| Tier 2 BYO         | Seller Phala template                                                       | Seller deploys exclusive seat                         |
+| Layer              | Runs where                                                    | Seller friction                                       |
+| ------------------ | ------------------------------------------------------------- | ----------------------------------------------------- |
+| Tier 0 chat        | Platform Phala API gateway                                    | Paste upstream key                                    |
+| **Tier 1 harness** | Platform Phala provider-agent (`codex`/`grok`/`glm`/`chutes`) | Ops deploys worker; keys in env / future seller vault |
+| Tier 2 BYO         | Seller Phala template                                         | Seller deploys exclusive seat                         |
 
 ## What buyers can verify
 
@@ -66,7 +66,7 @@ Buyers filter with raid policy:
 
 - `allowedInstallations: ["fresh"]`
 - `requiredSkills: ["…"]`
-- `allowedAgentFrameworks: ["codex"]`, `["grok"]`, or `["glm"]`
+- `allowedAgentFrameworks: ["codex"]`, `["grok"]`, `["glm"]`, or `["chutes"]`
 
 ### 4. Routing proof + agent log
 
@@ -91,7 +91,7 @@ Env:
 
 | Variable                                    | Purpose                                         |
 | ------------------------------------------- | ----------------------------------------------- |
-| `BOSSRAID_HARNESS_MODE`                     | `codex` \| `grok` \| `glm` \| `off`             |
+| `BOSSRAID_HARNESS_MODE`                     | `codex` \| `grok` \| `glm` \| `chutes` \| `off` |
 | `BOSSRAID_HARNESS_SKILLS`                   | Comma list `id` or `id@version` (empty = fresh) |
 | `BOSSRAID_HARNESS_IMAGE_DIGEST`             | Optional image digest for stronger disclosure   |
 | `BOSSRAID_HARNESS_MAX_STEPS`                | Tool loop budget (default 10)                   |
@@ -114,6 +114,18 @@ pnpm --filter @bossraid/provider-agent dev
 ```
 
 Example env: `examples/providers/harness-glm.env.example`. Sellers can also publish Tier 0 chat via `POST /v1/seller/upstream/zai/connect` (same coding base URL by default).
+
+## Ops: run Chutes.ai harness
+
+```bash
+export BOSSRAID_HARNESS_MODE=chutes
+export BOSSRAID_MODEL_API_BASE=https://llm.chutes.ai/v1
+export BOSSRAID_MODEL=deepseek-ai/DeepSeek-V3.2-TEE
+export BOSSRAID_MODEL_API_KEY=cpk_...
+pnpm --filter @bossraid/provider-agent dev
+```
+
+Example env: `examples/providers/harness-chutes.env.example`. Tier 0 sellers: `POST /v1/seller/upstream/chutes/connect` (OpenAI catalog on `llm.chutes.ai/v1`; TEE evidence still via `api.chutes.ai` when instances support it).
 
 ## Offline verify
 

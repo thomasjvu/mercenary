@@ -25,7 +25,7 @@ export type ProviderViewResponse = {
   };
   status: string;
   modelFamily?: string;
-  agentFramework?: 'codex' | 'claude_code' | 'openclaw' | 'grok' | 'glm' | 'custom';
+  agentFramework?: 'codex' | 'claude_code' | 'openclaw' | 'grok' | 'glm' | 'chutes' | 'custom';
   modelProvider?: string;
   modelId?: string;
   outputTypes?: string[];
@@ -109,7 +109,7 @@ export type ProviderHealthViewResponse = {
   ready: boolean;
   statusCode?: number;
   missing?: string[];
-  agentFramework?: 'codex' | 'claude_code' | 'openclaw' | 'grok' | 'glm' | 'custom';
+  agentFramework?: 'codex' | 'claude_code' | 'openclaw' | 'grok' | 'glm' | 'chutes' | 'custom';
   modelProvider?: string;
   model?: string | null;
   modelApiBase?: string;

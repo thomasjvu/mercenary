@@ -1,4 +1,4 @@
-import type { UpstreamProviderId } from '@bossraid/constants';
+import { UPSTREAM_PROVIDER_CONFIG, type UpstreamProviderId } from '@bossraid/constants';
 import {
   buildMockChutesTeeEvidence,
   fetchUpstreamModelsWithFallback,
@@ -8,8 +8,11 @@ import {
 import { fetchUpstreamJson } from './shared.js';
 import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
 
-const CHUTES_BASE = 'https://api.chutes.ai';
 const PROVIDER = 'chutes' satisfies UpstreamProviderId;
+/** OpenAI-compatible inference (agents, tools). */
+const CHUTES_LLM_BASE = UPSTREAM_PROVIDER_CONFIG.chutes.upstreamBase;
+/** Management + instance TEE evidence. */
+const CHUTES_API_BASE = 'https://api.chutes.ai';
 
 const MOCK_CHUTES_MODELS: UpstreamModelRecord[] = [
   {
@@ -18,21 +21,69 @@ const MOCK_CHUTES_MODELS: UpstreamModelRecord[] = [
     teeAttested: true,
     e2ee: false,
   },
+  {
+    id: 'deepseek-ai/DeepSeek-V3.2-TEE',
+    displayName: 'DeepSeek V3.2 TEE',
+    teeAttested: true,
+    e2ee: false,
+  },
+  {
+    id: 'zai-org/GLM-5.2-TEE',
+    displayName: 'GLM 5.2 TEE (Chutes)',
+    teeAttested: true,
+    e2ee: false,
+  },
+  {
+    id: 'MiniMaxAI/MiniMax-M2.5-TEE',
+    displayName: 'MiniMax M2.5 TEE',
+    teeAttested: true,
+    e2ee: false,
+  },
 ];
+
+function resolveChutesLlmBase(env: NodeJS.ProcessEnv = process.env): string {
+  return (
+    env.BOSSRAID_CHUTES_LLM_BASE?.trim().replace(/\/+$/u, '') ||
+    env.BOSSRAID_CHUTES_API_BASE?.trim().replace(/\/+$/u, '') ||
+    CHUTES_LLM_BASE
+  );
+}
 
 export async function fetchChutesUpstreamModels(
   apiKey: string,
   options: { env?: NodeJS.ProcessEnv } = {}
 ): Promise<UpstreamModelRecord[]> {
+  const env = options.env ?? process.env;
+  const llmBase = resolveChutesLlmBase(env);
+
   return fetchUpstreamModelsWithFallback({
     provider: PROVIDER,
     apiKey,
     mockModels: MOCK_CHUTES_MODELS,
-    env: options.env,
+    env,
     fetchModels: async () => {
+      // Prefer OpenAI-compatible catalog on llm.chutes.ai
+      try {
+        const payload = await fetchUpstreamJson<{
+          data?: Array<{ id: string; name?: string; owned_by?: string }>;
+        }>(`${llmBase}/models`, { apiKey });
+        if (payload.data?.length) {
+          return payload.data.map((model) => ({
+            id: model.id,
+            displayName: model.name ?? model.id,
+            teeAttested:
+              model.id.toLowerCase().includes('tee') ||
+              model.id.toLowerCase().includes('confidential'),
+            e2ee: false,
+          }));
+        }
+      } catch {
+        // fall through to management API
+      }
+
       const payload = await fetchUpstreamJson<{
         data?: Array<{ id: string; name?: string; tee?: boolean }>;
-      }>(`${CHUTES_BASE}/chutes`, { apiKey });
+      }>(`${CHUTES_API_BASE}/chutes`, { apiKey });
       return (payload.data ?? []).map((model) => ({
         id: model.id,
         displayName: model.name ?? model.id,
@@ -49,20 +100,52 @@ export async function probeChutesChatCompletion(input: {
   prompt?: string;
   env?: NodeJS.ProcessEnv;
 }): Promise<UpstreamChatResult> {
+  const env = input.env ?? process.env;
+  const llmBase = resolveChutesLlmBase(env);
+  const messages = [{ role: 'user', content: input.prompt ?? 'Reply with the single word: ok' }];
+
+  // Prefer unified OpenAI path (tool-calling / agents)
+  try {
+    const result = await probeOpenAiStyleChatCompletion({
+      provider: PROVIDER,
+      apiKey: input.apiKey,
+      url: `${llmBase}/chat/completions`,
+      env,
+      mockContent: `mock-chutes-response:${input.modelId}`,
+      mockExtras: { instanceId: 'mock-instance' },
+      body: {
+        model: input.modelId,
+        messages,
+        max_tokens: 16,
+        stream: false,
+      },
+    });
+    return { ...result, instanceId: result.instanceId ?? result.requestId };
+  } catch (error) {
+    if (env.NODE_ENV === 'production' || isProviderInferenceMockLocal(env)) {
+      throw error;
+    }
+  }
+
+  // Legacy per-chute path on api.chutes.ai
   const result = await probeOpenAiStyleChatCompletion({
     provider: PROVIDER,
     apiKey: input.apiKey,
-    url: `${CHUTES_BASE}/chutes/${encodeURIComponent(input.modelId)}/chat/completions`,
-    env: input.env,
+    url: `${CHUTES_API_BASE}/chutes/${encodeURIComponent(input.modelId)}/chat/completions`,
+    env,
     mockContent: `mock-chutes-response:${input.modelId}`,
     mockExtras: { instanceId: 'mock-instance' },
     body: {
-      messages: [{ role: 'user', content: input.prompt ?? 'Reply with the single word: ok' }],
+      messages,
       max_tokens: 16,
       stream: false,
     },
   });
   return { ...result, instanceId: result.instanceId ?? result.requestId };
+}
+
+function isProviderInferenceMockLocal(env: NodeJS.ProcessEnv): boolean {
+  return env.BOSSRAID_UPSTREAM_MOCK === '1' || env.BOSSRAID_CHUTES_MOCK === '1';
 }
 
 export async function fetchChutesAttestationEvidence(input: {
@@ -76,7 +159,9 @@ export async function fetchChutesAttestationEvidence(input: {
     return buildMockChutesTeeEvidence({ nonce: input.nonce });
   }
 
-  const url = new URL(`${CHUTES_BASE}/instances/${encodeURIComponent(input.instanceId)}/evidence`);
+  const url = new URL(
+    `${CHUTES_API_BASE}/instances/${encodeURIComponent(input.instanceId)}/evidence`
+  );
   url.searchParams.set('nonce', input.nonce);
   return fetchUpstreamJson(url.toString(), { apiKey: input.apiKey });
 }

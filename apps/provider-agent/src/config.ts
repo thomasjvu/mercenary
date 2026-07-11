@@ -8,6 +8,9 @@ function readBoolean(value: string | undefined): boolean {
 import { NETWORK } from '@bossraid/constants';
 import {
   buildHarnessProfile,
+  defaultModelBaseForHarness,
+  defaultModelNameForHarness,
+  frameworkForHarness,
   normalizeHarnessKind,
   parseHarnessSkills,
   planProviderForHarness,
@@ -112,23 +115,8 @@ export function buildProviderConfig(env: NodeJS.ProcessEnv = process.env) {
 
   const harnessKind = normalizeHarnessKind(env.BOSSRAID_HARNESS_MODE);
   const harnessSkills = parseHarnessSkills(env.BOSSRAID_HARNESS_SKILLS);
-  const defaultModelBase =
-    harnessKind === 'grok'
-      ? 'https://api.x.ai/v1'
-      : harnessKind === 'glm'
-        ? 'https://api.z.ai/api/coding/paas/v4'
-        : harnessKind === 'codex'
-          ? 'https://api.openai.com/v1'
-          : 'https://api.openai.com/v1';
-  const modelApiBase = env.BOSSRAID_MODEL_API_BASE ?? defaultModelBase;
-  const defaultModelName =
-    harnessKind === 'grok'
-      ? 'grok-4.5'
-      : harnessKind === 'glm'
-        ? 'glm-4.7'
-        : harnessKind === 'codex'
-          ? 'gpt-5.5'
-          : undefined;
+  const modelApiBase = env.BOSSRAID_MODEL_API_BASE ?? defaultModelBaseForHarness(harnessKind);
+  const defaultModelName = defaultModelNameForHarness(harnessKind);
   const modelName =
     env.BOSSRAID_MODEL ??
     (readBoolean(env.BOSSRAID_PROVIDER_STUB_MODE)
@@ -167,24 +155,8 @@ export function buildProviderConfig(env: NodeJS.ProcessEnv = process.env) {
     modelTimeoutMs: Number(env.BOSSRAID_MODEL_TIMEOUT_MS ?? '45000'),
     maxOutputTokens: Number(env.BOSSRAID_MAX_OUTPUT_TOKENS ?? '2200'),
     providerMode: normalizeProviderMode(env.BOSSRAID_PROVIDER_MODE),
-    agentFramework:
-      env.BOSSRAID_AGENT_FRAMEWORK ??
-      (harnessKind === 'codex'
-        ? 'codex'
-        : harnessKind === 'grok'
-          ? 'grok'
-          : harnessKind === 'glm'
-            ? 'glm'
-            : 'custom'),
-    modelProvider:
-      env.BOSSRAID_MODEL_PROVIDER ??
-      (harnessKind === 'grok'
-        ? 'xai'
-        : harnessKind === 'glm'
-          ? 'zai'
-          : harnessKind === 'codex'
-            ? 'openai'
-            : undefined),
+    agentFramework: env.BOSSRAID_AGENT_FRAMEWORK ?? frameworkForHarness(harnessKind) ?? 'custom',
+    modelProvider: env.BOSSRAID_MODEL_PROVIDER ?? planProviderForHarness(harnessKind),
     harness,
     harnessProfile,
     providerAuth,

@@ -16,12 +16,12 @@ import { fetchSellerStats } from '../api/auth.js';
 import { useWalletAuth } from './useWalletAuth.js';
 
 export const SELLER_PROVIDER_ORDER: UpstreamProviderId[] = [
+  'chutes',
   'zai',
   'xai',
   'venice',
   'redpill',
   'near',
-  'chutes',
   'phala',
 ];
 

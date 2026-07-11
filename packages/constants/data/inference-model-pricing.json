@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-07-11T06:00:35.797Z",
+  "generatedAt": "2026-07-11T06:04:43.877Z",
   "source": {
     "venice": "https://api.venice.ai/api/v1/models (public, no API key)",
     "redpill": "scripts/sync-inference-catalog.mjs static rates",
     "near": "scripts/sync-inference-catalog.mjs static rates",
-    "chutes": "scripts/sync-inference-catalog.mjs static rates",
+    "chutes": "scripts/sync-inference-catalog.mjs static rates (llm.chutes.ai)",
     "phala": "scripts/sync-inference-catalog.mjs static rates",
     "xai": "scripts/sync-inference-catalog.mjs static rates (api.x.ai)",
     "zai": "scripts/sync-inference-catalog.mjs static rates (api.z.ai coding paas)"
@@ -1148,8 +1148,41 @@
       ]
     },
     "chutes": {
-      "modelCount": 1,
+      "modelCount": 4,
       "models": [
+        {
+          "modelId": "chutes-deepseek-v3.2-tee",
+          "displayName": "DeepSeek V3.2 TEE (Chutes)",
+          "upstreamModelId": "deepseek-ai/DeepSeek-V3.2-TEE",
+          "inputPer1mUsd": 0.3,
+          "outputPer1mUsd": 1.2,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": true,
+          "e2ee": false
+        },
+        {
+          "modelId": "chutes-glm-5.2-tee",
+          "displayName": "GLM 5.2 TEE (Chutes)",
+          "upstreamModelId": "zai-org/GLM-5.2-TEE",
+          "inputPer1mUsd": 0.35,
+          "outputPer1mUsd": 1.4,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 200000,
+          "teeAttested": true,
+          "e2ee": false
+        },
+        {
+          "modelId": "chutes-minimax-m2.5-tee",
+          "displayName": "MiniMax M2.5 TEE (Chutes)",
+          "upstreamModelId": "MiniMaxAI/MiniMax-M2.5-TEE",
+          "inputPer1mUsd": 0.25,
+          "outputPer1mUsd": 1,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 128000,
+          "teeAttested": true,
+          "e2ee": false
+        },
         {
           "modelId": "tee-qwen3-5-122b-chutes",
           "displayName": "TEE Qwen3.5 122B (Chutes)",
@@ -1284,6 +1317,36 @@
       "upstreamModelId": "aion-labs-aion-3-0-mini",
       "inputPer1mUsd": 0.875,
       "outputPer1mUsd": 1.75,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "chutes-deepseek-v3.2-tee",
+      "modelProvider": "chutes",
+      "displayName": "DeepSeek V3.2 TEE (Chutes)",
+      "upstreamModelId": "deepseek-ai/DeepSeek-V3.2-TEE",
+      "inputPer1mUsd": 0.3,
+      "outputPer1mUsd": 1.2,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 128000
+    },
+    {
+      "modelId": "chutes-glm-5.2-tee",
+      "modelProvider": "chutes",
+      "displayName": "GLM 5.2 TEE (Chutes)",
+      "upstreamModelId": "zai-org/GLM-5.2-TEE",
+      "inputPer1mUsd": 0.35,
+      "outputPer1mUsd": 1.4,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 200000
+    },
+    {
+      "modelId": "chutes-minimax-m2.5-tee",
+      "modelProvider": "chutes",
+      "displayName": "MiniMax M2.5 TEE (Chutes)",
+      "upstreamModelId": "MiniMaxAI/MiniMax-M2.5-TEE",
+      "inputPer1mUsd": 0.25,
+      "outputPer1mUsd": 1,
       "referenceTaskUsd": 0.01,
       "maxContextTokens": 128000
     },

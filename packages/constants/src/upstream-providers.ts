@@ -42,8 +42,9 @@ export const UPSTREAM_PROVIDER_CONFIG: Record<UpstreamProviderId, UpstreamProvid
   },
   chutes: {
     id: 'chutes',
-    displayName: 'Chutes',
-    upstreamBase: 'https://api.chutes.ai',
+    displayName: 'Chutes.ai',
+    // OpenAI-compatible agent/LLM gateway (tools, chat). Management/TEE still on api.chutes.ai.
+    upstreamBase: 'https://llm.chutes.ai/v1',
     attestationVendor: 'chutes',
     supportsE2ee: false,
   },

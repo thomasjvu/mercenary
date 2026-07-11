@@ -8,6 +8,7 @@ const AGENT_FRAMEWORK_OPTIONS = [
   ['openclaw', 'openclaw'],
   ['grok', 'grok / xAI'],
   ['glm', 'glm / Z.ai'],
+  ['chutes', 'chutes.ai'],
   ['custom', 'custom'],
 ] as const;
 

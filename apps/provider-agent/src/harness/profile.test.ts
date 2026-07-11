@@ -15,6 +15,7 @@ test('normalizeHarnessKind maps aliases', () => {
   assert.equal(normalizeHarnessKind('true'), 'codex');
   assert.equal(normalizeHarnessKind('glm'), 'glm');
   assert.equal(normalizeHarnessKind('zai'), 'glm');
+  assert.equal(normalizeHarnessKind('chutes'), 'chutes');
   assert.throws(() => normalizeHarnessKind('claude'), /BOSSRAID_HARNESS_MODE/);
 });
 

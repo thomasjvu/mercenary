@@ -1,6 +1,8 @@
 export {
   buildHarnessProfile,
   computeCompositionHash,
+  defaultModelBaseForHarness,
+  defaultModelNameForHarness,
   frameworkForHarness,
   normalizeHarnessKind,
   parseHarnessSkills,
