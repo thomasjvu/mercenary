@@ -55,7 +55,7 @@ You are **not** required to deploy a Phala template to sell. Platform Phala host
 
 Sell inference without running a provider worker. Connect an upstream key and publish catalog offers:
 
-1. `POST /v1/seller/upstream/:provider/connect` — validate key (`xai`, `venice`, `redpill`, `near`, `chutes`, `phala`)
+1. `POST /v1/seller/upstream/:provider/connect` — validate key (`zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`)
 2. `GET /v1/seller/upstream/:provider/models/catalog` — Boss Raid catalog with reference rates
 3. `POST /v1/seller/upstream/:provider/offers` — register `inference_hosted` offers per model
 

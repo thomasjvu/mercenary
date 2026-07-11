@@ -6632,5 +6632,191 @@
       "totalRaids": 48,
       "totalSuccessfulRaids": 44
     }
+  },
+  {
+    "spawnWorker": true,
+    "providerId": "market-glm-4-7",
+    "displayName": "GLM 4.7 (Z.ai Coding Plan)",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9114",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "zai",
+    "modelProvider": "zai",
+    "modelId": "glm-4.7",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "teeVendor": "zai",
+      "signedOutputs": false,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.5,
+      "pricePer1mOutputTokensUsd": 1.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "glm-4.7",
+      "maxContextTokens": 200000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-glm-4-7"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": true,
+    "providerId": "market-glm-5-turbo",
+    "displayName": "GLM 5 Turbo (Z.ai Coding Plan)",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9115",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "zai",
+    "modelProvider": "zai",
+    "modelId": "glm-5-turbo",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "teeVendor": "zai",
+      "signedOutputs": false,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.4,
+      "pricePer1mOutputTokensUsd": 1.2,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "glm-5-turbo",
+      "maxContextTokens": 200000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-glm-5-turbo"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-glm-5-2",
+    "displayName": "GLM 5.2 (Z.ai Coding Plan)",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "zai",
+    "modelProvider": "zai",
+    "modelId": "glm-5.2",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "teeVendor": "zai",
+      "signedOutputs": false,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.6,
+      "pricePer1mOutputTokensUsd": 2,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "glm-5.2",
+      "maxContextTokens": 200000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-glm-5-2"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
   }
 ]

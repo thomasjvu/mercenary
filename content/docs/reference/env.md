@@ -135,13 +135,14 @@ Onchain overlay template: `deploy/phala/secrets.onchain.env.example`.
 | --------------------------------------- | -------------------------------------------------- |
 | `BOSSRAID_VENICE_MOCK`                  | `1` = mock Venice upstream for local/tests         |
 | `BOSSRAID_XAI_MOCK`                     | `1` = mock xAI/Grok upstream for local/tests       |
-| `BOSSRAID_UPSTREAM_MOCK`                | `1` = mock Redpill/NEAR/Chutes/Phala/xAI list      |
+| `BOSSRAID_ZAI_MOCK`                     | `1` = mock Z.ai/GLM upstream for local/tests       |
+| `BOSSRAID_UPSTREAM_MOCK`                | `1` = mock Redpill/NEAR/Chutes/Phala/xAI/Z.ai list |
 | `BOSSRAID_UPSTREAM_TEE_MOCK`            | `1` = mock upstream TEE attestation verification   |
 | `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND` | Dev-only: fund bounties without x402 (default off) |
 
 ### Catalog TEE platform keys (optional)
 
-`BOSSRAID_VENICE_API_KEY`, `BOSSRAID_REDPILL_API_KEY`, `BOSSRAID_NEAR_API_KEY`, `BOSSRAID_CHUTES_API_KEY`, `BOSSRAID_PHALA_API_KEY`, `BOSSRAID_XAI_API_KEY` — platform keys for catalog inference/TEE when sellers do not supply their own.
+`BOSSRAID_VENICE_API_KEY`, `BOSSRAID_REDPILL_API_KEY`, `BOSSRAID_NEAR_API_KEY`, `BOSSRAID_CHUTES_API_KEY`, `BOSSRAID_PHALA_API_KEY`, `BOSSRAID_XAI_API_KEY`, `BOSSRAID_ZAI_API_KEY` — platform keys for catalog inference/TEE when sellers do not supply their own. Optional `BOSSRAID_ZAI_API_BASE` overrides the default coding-plan base URL.
 
 ### Evaluator
 
@@ -212,7 +213,7 @@ These vars are for local development, CI smoke tests, and contributor tooling. *
 | `BOSSRAID_DEV_SPAWN_PROVIDERS`           | When `true`, `pnpm dev` spawns local provider workers          |
 | `BOSSRAID_CALLBACK_BASE`                 | Provider callback URL in local dev                             |
 | `BOSSRAID_PROVIDER_STUB_MODE`            | `1` = stub upstream responses in `dev:providers`               |
-| `BOSSRAID_HARNESS_MODE`                  | `off` \| `codex` \| `grok` — agent tool loop in provider-agent |
+| `BOSSRAID_HARNESS_MODE`                  | `off` \| `codex` \| `grok` \| `glm` — agent tool loop          |
 | `BOSSRAID_HARNESS_SKILLS`                | Comma skill ids (`id` or `id@version`); empty = fresh          |
 | `BOSSRAID_HARNESS_IMAGE_DIGEST`          | Optional worker image digest for harness profile               |
 | `BOSSRAID_HARNESS_MAX_STEPS`             | Max tool-loop steps (default 10)                               |

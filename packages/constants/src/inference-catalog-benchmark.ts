@@ -108,6 +108,9 @@ export const CATALOG_BENCHMARK_TASK_USD: Record<string, number> = {
   'grok-4.5': 0.01,
   'grok-4-1-fast-reasoning': 0.01,
   'grok-4-1-fast-non-reasoning': 0.01,
+  'glm-4.7': 0.01,
+  'glm-5-turbo': 0.01,
+  'glm-5.2': 0.01,
 };
 
 export const CATALOG_BENCHMARK_INPUT_PER_1M_USD: Record<string, number> = {
@@ -218,6 +221,9 @@ export const CATALOG_BENCHMARK_INPUT_PER_1M_USD: Record<string, number> = {
   'grok-4.5': 2,
   'grok-4-1-fast-reasoning': 0.2,
   'grok-4-1-fast-non-reasoning': 0.2,
+  'glm-4.7': 0.5,
+  'glm-5-turbo': 0.4,
+  'glm-5.2': 0.6,
 };
 
 export const CATALOG_BENCHMARK_OUTPUT_PER_1M_USD: Record<string, number> = {
@@ -328,4 +334,7 @@ export const CATALOG_BENCHMARK_OUTPUT_PER_1M_USD: Record<string, number> = {
   'grok-4.5': 6,
   'grok-4-1-fast-reasoning': 0.5,
   'grok-4-1-fast-non-reasoning': 0.5,
+  'glm-4.7': 1.5,
+  'glm-5-turbo': 1.2,
+  'glm-5.2': 2,
 };

@@ -51,6 +51,16 @@ export {
 } from './upstream-tee/quote-verify.js';
 
 export {
+  computeHarnessCompositionHash,
+  harnessFreshClaimIsConsistent,
+  harnessModelHost,
+  parseHarnessSkills,
+  recomputeHarnessCompositionHash,
+  resolveHarnessInstallation,
+  type HarnessCompositionInput,
+} from './harness-composition.js';
+
+export {
   decryptChunk,
   decryptE2eeStream,
   encryptMessage,

@@ -68,6 +68,63 @@ async function main(): Promise<void> {
   await writeJson(resolve(outDir, 'agent_log.json'), agentLog);
   await writeJson(resolve(outDir, 'result.json'), result);
 
+  const providers = (raid.selectedProviders ?? [])
+    .map((providerId) => orchestrator.getProviderProfile(providerId))
+    .filter((provider): provider is NonNullable<typeof provider> => Boolean(provider))
+    .map((provider) => ({
+      providerId: provider.providerId,
+      agentId: provider.agentId,
+      displayName: provider.displayName,
+      modelId: provider.modelId,
+      modelProvider: provider.modelProvider,
+      agentFramework: provider.agentFramework,
+      endpoint: provider.endpoint,
+      verification: provider.verification,
+      privacy: provider.privacy,
+      harnessProfile: provider.harnessProfile,
+      scores: provider.scores,
+    }));
+  await writeJson(resolve(outDir, 'providers.json'), { providers });
+
+  if (raid.routingProof) {
+    await writeJson(resolve(outDir, 'routing-proof.json'), raid.routingProof);
+  }
+
+  const attestations = (raid.rankedSubmissions ?? []).map((ranked) => ({
+    providerId: ranked.submission.providerId,
+    valid: ranked.breakdown.valid,
+    privacyAttestation: ranked.submission.privacyAttestation ?? null,
+    harnessProfile:
+      providers.find((provider) => provider.providerId === ranked.submission.providerId)
+        ?.harnessProfile ?? null,
+  }));
+  await writeJson(resolve(outDir, 'attestations.json'), { attestations });
+
+  const settlementSummary = raid.settlementExecution
+    ? {
+        mode: raid.settlementExecution.mode,
+        proofStandard: raid.settlementExecution.proofStandard,
+        registryRaidRef: raid.settlementExecution.registryRaidRef ?? null,
+        transactionHashes: raid.settlementExecution.transactionHashes ?? [],
+        childJobs: raid.settlementExecution.childJobs ?? [],
+        status: raid.settlementExecution.status,
+      }
+    : null;
+  await writeJson(resolve(outDir, 'settlement.json'), { settlement: settlementSummary });
+
+  let hostAttestationFile: string | null = null;
+  if (args.apiBaseUrl) {
+    try {
+      const hostAttestation = await fetchJson(
+        `${args.apiBaseUrl.replace(/\/+$/u, '')}/v1/host/attestation`
+      );
+      await writeJson(resolve(outDir, 'host-attestation.json'), hostAttestation);
+      hostAttestationFile = 'host-attestation.json';
+    } catch {
+      hostAttestationFile = null;
+    }
+  }
+
   let settlementArtifactFile: string | null = null;
   if (raid.settlementExecution?.artifactPath) {
     const copied = await copySettlementArtifact(raid.settlementExecution.artifactPath, outDir);
@@ -81,8 +138,18 @@ async function main(): Promise<void> {
   });
 
   await writeJson(resolve(outDir, 'proof-index.json'), {
-    schemaVersion: 'bossraid-proof-bundle/v1',
+    schemaVersion: 'bossraid-proof-bundle/v2',
     generatedAt: new Date().toISOString(),
+    checksAvailable: [
+      'bundle_schema',
+      'raid_terminal',
+      'routing_providers',
+      'harness_composition',
+      'harness_fresh_claim',
+      'privacy_attestation_shape',
+      'settlement_txs',
+      'host_attestation',
+    ],
     raid: {
       raidId: raid.id,
       status: raid.status,
@@ -108,6 +175,11 @@ async function main(): Promise<void> {
       manifest: 'agent.json',
       agentLog: 'agent_log.json',
       result: 'result.json',
+      providers: 'providers.json',
+      routingProof: raid.routingProof ? 'routing-proof.json' : null,
+      attestations: 'attestations.json',
+      settlement: 'settlement.json',
+      hostAttestation: hostAttestationFile,
       proofIndex: 'proof-index.json',
       settlementArtifact: settlementArtifactFile,
     },
@@ -275,6 +347,16 @@ function readTeeWalletAddress(env: NodeJS.ProcessEnv): string | null {
 async function writeJson(path: string, value: unknown): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+}
+
+async function fetchJson(url: string): Promise<unknown> {
+  const response = await fetch(url, {
+    headers: { accept: 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status} for ${url}`);
+  }
+  return response.json();
 }
 
 async function copySettlementArtifact(sourcePath: string, outDir: string): Promise<string | null> {

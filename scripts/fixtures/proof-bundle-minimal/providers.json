@@ -1,0 +1,19 @@
+{
+  "providers": [
+    {
+      "providerId": "harness-glm-fresh",
+      "modelId": "glm-4.7",
+      "modelProvider": "zai",
+      "agentFramework": "glm",
+      "harnessProfile": {
+        "lane": "agent_harness",
+        "installation": "fresh",
+        "skills": [],
+        "framework": "glm",
+        "planProvider": "zai",
+        "compositionHash": "a73437cff1e9024a93caba5f1c2b68f25bb49bf8182e7a3b0f07e64adf197941",
+        "verification": "heartbeat_self_report"
+      }
+    }
+  ]
+}

@@ -1,4 +1,8 @@
-import { createHash } from 'node:crypto';
+import {
+  computeHarnessCompositionHash,
+  parseHarnessSkills,
+  resolveHarnessInstallation,
+} from '@bossraid/privacy-engine';
 import type {
   AgentFramework,
   HarnessInstallation,
@@ -6,7 +10,7 @@ import type {
   HarnessSkillRef,
 } from '@bossraid/shared-types';
 
-export type HarnessKind = 'off' | 'codex' | 'grok';
+export type HarnessKind = 'off' | 'codex' | 'grok' | 'glm';
 
 export type HarnessRuntimeConfig = {
   kind: HarnessKind;
@@ -24,36 +28,21 @@ export function normalizeHarnessKind(value: string | undefined): HarnessKind {
   if (!value || value === 'off' || value === '0' || value === 'false') {
     return 'off';
   }
-  if (value === 'codex' || value === 'grok') {
-    return value;
+  if (value === 'codex' || value === 'grok' || value === 'glm' || value === 'zai') {
+    return value === 'zai' ? 'glm' : value;
   }
   if (value === '1' || value === 'true' || value === 'agent' || value === 'agent_harness') {
     return 'codex';
   }
-  throw new Error('BOSSRAID_HARNESS_MODE must be off, codex, or grok (or true for codex default).');
+  throw new Error(
+    'BOSSRAID_HARNESS_MODE must be off, codex, grok, or glm (or true for codex default).'
+  );
 }
 
-export function parseHarnessSkills(raw: string | undefined): HarnessSkillRef[] {
-  if (!raw?.trim()) {
-    return [];
-  }
-  // Comma-separated skill ids, optional id@version
-  return raw
-    .split(',')
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .map((entry) => {
-      const [id, version] = entry.split('@');
-      return {
-        id: id!.trim(),
-        version: version?.trim() || undefined,
-        contentHash: createHash('sha256').update(entry).digest('hex').slice(0, 16),
-      };
-    });
-}
+export { parseHarnessSkills };
 
 export function resolveInstallation(skills: HarnessSkillRef[]): HarnessInstallation {
-  return skills.length > 0 ? 'skill_augmented' : 'fresh';
+  return resolveHarnessInstallation(skills);
 }
 
 export function frameworkForHarness(kind: HarnessKind): AgentFramework | undefined {
@@ -62,6 +51,9 @@ export function frameworkForHarness(kind: HarnessKind): AgentFramework | undefin
   }
   if (kind === 'grok') {
     return 'grok';
+  }
+  if (kind === 'glm') {
+    return 'glm';
   }
   return undefined;
 }
@@ -72,6 +64,9 @@ export function planProviderForHarness(kind: HarnessKind): string | undefined {
   }
   if (kind === 'grok') {
     return 'xai';
+  }
+  if (kind === 'glm') {
+    return 'zai';
   }
   return undefined;
 }
@@ -84,32 +79,7 @@ export function computeCompositionHash(input: {
   modelId?: string;
   modelApiBase?: string;
 }): string {
-  const payload = JSON.stringify({
-    kind: input.kind,
-    installation: input.installation,
-    skills: input.skills
-      .map((skill) => ({
-        id: skill.id,
-        version: skill.version ?? null,
-        contentHash: skill.contentHash ?? null,
-      }))
-      .sort((left, right) => left.id.localeCompare(right.id)),
-    imageDigest: input.imageDigest ?? null,
-    modelId: input.modelId ?? null,
-    modelHost: safeHost(input.modelApiBase),
-  });
-  return createHash('sha256').update(payload).digest('hex');
-}
-
-function safeHost(apiBase: string | undefined): string | null {
-  if (!apiBase) {
-    return null;
-  }
-  try {
-    return new URL(apiBase).host;
-  } catch {
-    return apiBase;
-  }
+  return computeHarnessCompositionHash(input);
 }
 
 export function buildHarnessProfile(config: HarnessRuntimeConfig): HarnessProfile | undefined {

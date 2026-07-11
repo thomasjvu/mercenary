@@ -414,6 +414,7 @@ function normalizeHealthAgentFramework(value: unknown): ProviderProfile['agentFr
     value === 'claude_code' ||
     value === 'openclaw' ||
     value === 'grok' ||
+    value === 'glm' ||
     value === 'custom'
     ? value
     : undefined;

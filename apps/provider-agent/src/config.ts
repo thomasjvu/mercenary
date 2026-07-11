@@ -115,21 +115,25 @@ export function buildProviderConfig(env: NodeJS.ProcessEnv = process.env) {
   const defaultModelBase =
     harnessKind === 'grok'
       ? 'https://api.x.ai/v1'
-      : harnessKind === 'codex'
-        ? 'https://api.openai.com/v1'
-        : 'https://api.openai.com/v1';
+      : harnessKind === 'glm'
+        ? 'https://api.z.ai/api/coding/paas/v4'
+        : harnessKind === 'codex'
+          ? 'https://api.openai.com/v1'
+          : 'https://api.openai.com/v1';
   const modelApiBase = env.BOSSRAID_MODEL_API_BASE ?? defaultModelBase;
+  const defaultModelName =
+    harnessKind === 'grok'
+      ? 'grok-4.5'
+      : harnessKind === 'glm'
+        ? 'glm-4.7'
+        : harnessKind === 'codex'
+          ? 'gpt-5.5'
+          : undefined;
   const modelName =
     env.BOSSRAID_MODEL ??
     (readBoolean(env.BOSSRAID_PROVIDER_STUB_MODE)
-      ? harnessKind === 'grok'
-        ? 'grok-4.5'
-        : 'gpt-5.5'
-      : harnessKind === 'grok'
-        ? 'grok-4.5'
-        : harnessKind === 'codex'
-          ? 'gpt-5.5'
-          : undefined);
+      ? (defaultModelName ?? 'gpt-5.5')
+      : defaultModelName);
 
   const harness: HarnessRuntimeConfig = {
     kind: harnessKind,
@@ -165,10 +169,22 @@ export function buildProviderConfig(env: NodeJS.ProcessEnv = process.env) {
     providerMode: normalizeProviderMode(env.BOSSRAID_PROVIDER_MODE),
     agentFramework:
       env.BOSSRAID_AGENT_FRAMEWORK ??
-      (harnessKind === 'codex' ? 'codex' : harnessKind === 'grok' ? 'grok' : 'custom'),
+      (harnessKind === 'codex'
+        ? 'codex'
+        : harnessKind === 'grok'
+          ? 'grok'
+          : harnessKind === 'glm'
+            ? 'glm'
+            : 'custom'),
     modelProvider:
       env.BOSSRAID_MODEL_PROVIDER ??
-      (harnessKind === 'grok' ? 'xai' : harnessKind === 'codex' ? 'openai' : undefined),
+      (harnessKind === 'grok'
+        ? 'xai'
+        : harnessKind === 'glm'
+          ? 'zai'
+          : harnessKind === 'codex'
+            ? 'openai'
+            : undefined),
     harness,
     harnessProfile,
     providerAuth,

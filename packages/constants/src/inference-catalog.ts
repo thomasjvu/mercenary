@@ -3,8 +3,8 @@
 export type InferenceCatalogEntry = {
   modelId: string;
   displayName: string;
-  modelProvider: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai';
-  attestationVendor: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai';
+  modelProvider: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai' | 'zai';
+  attestationVendor: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai' | 'zai';
   upstreamModelId: string;
   inputPer1mUsd: number;
   outputPer1mUsd: number;
@@ -1402,6 +1402,45 @@ export const INFERENCE_MODEL_CATALOG: InferenceCatalogEntry[] = [
     inputPer1mUsd: 0.2,
     outputPer1mUsd: 0.5,
     maxContextTokens: 2000000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+  },
+  {
+    modelId: 'glm-4.7',
+    displayName: 'GLM 4.7 (Z.ai Coding Plan)',
+    modelProvider: 'zai',
+    attestationVendor: 'zai',
+    upstreamModelId: 'glm-4.7',
+    inputPer1mUsd: 0.5,
+    outputPer1mUsd: 1.5,
+    maxContextTokens: 200000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+  },
+  {
+    modelId: 'glm-5-turbo',
+    displayName: 'GLM 5 Turbo (Z.ai Coding Plan)',
+    modelProvider: 'zai',
+    attestationVendor: 'zai',
+    upstreamModelId: 'glm-5-turbo',
+    inputPer1mUsd: 0.4,
+    outputPer1mUsd: 1.2,
+    maxContextTokens: 200000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+  },
+  {
+    modelId: 'glm-5.2',
+    displayName: 'GLM 5.2 (Z.ai Coding Plan)',
+    modelProvider: 'zai',
+    attestationVendor: 'zai',
+    upstreamModelId: 'glm-5.2',
+    inputPer1mUsd: 0.6,
+    outputPer1mUsd: 2,
+    maxContextTokens: 200000,
     privacy: 'standard',
     teeAttested: false,
     e2ee: false,

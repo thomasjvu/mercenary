@@ -122,6 +122,17 @@ const COMMANDS = {
         ...extra,
       ]),
   },
+  'verify:proof-bundle': {
+    category: 'generate',
+    description: 'Offline-verify an exported proof bundle',
+    run: (extra) =>
+      runWithEnv({ TSX_TSCONFIG_PATH: 'tsconfig.base.json' }, 'node', [
+        '--import',
+        'tsx',
+        'scripts/verify-proof-bundle.ts',
+        ...extra,
+      ]),
+  },
 
   // Tests (beyond CI defaults in package.json)
   'test:game-raid:e2e': {

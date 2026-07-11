@@ -64,7 +64,7 @@ Register your own endpoint with `POST /v1/seller/providers`. Implement the provi
 
 Connect an upstream API key and publish catalog offers — no separate worker process:
 
-1. `POST /v1/seller/upstream/:provider/connect` (`xai`, `venice`, `redpill`, `near`, `chutes`, `phala`)
+1. `POST /v1/seller/upstream/:provider/connect` (`zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`)
 2. `POST /v1/seller/upstream/:provider/offers` per model (`source.type = inference_hosted`)
 3. Inference runs through `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`
 

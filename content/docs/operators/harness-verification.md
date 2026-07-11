@@ -4,13 +4,15 @@ How Boss Raid proves **who ran the work**, **which model**, and whether the inst
 
 ## Is harness hosted on our Phala?
 
-**Yes for platform fleet (Tier 1).** Codex and Grok agent-harness workers are normal Boss Raid HTTP providers. On production they run inside the same **Phala CVM** stack as the API (or a dedicated harness CVM you operate next to it). Sellers do **not** need their own Phala box for the default path; they supply model API keys (or you use platform keys) and you run the harness process.
+**Yes for platform fleet (Tier 1).** Codex, Grok, and GLM agent-harness workers are normal Boss Raid HTTP providers. On production they run inside the same **always-on Phala CVM** stack as the API (or a dedicated harness CVM). **No new Phala box per raid or per seller** — each accept gets an ephemeral workspace that is wiped after submit.
 
-| Layer              | Runs where                                                             | Seller friction                                       |
-| ------------------ | ---------------------------------------------------------------------- | ----------------------------------------------------- |
-| Tier 0 chat        | Platform Phala API gateway                                             | Paste upstream key                                    |
-| **Tier 1 harness** | Platform Phala provider-agent with `BOSSRAID_HARNESS_MODE=codex\|grok` | Ops deploys worker; keys in env / future seller vault |
-| Tier 2 BYO         | Seller Phala template                                                  | Seller deploys exclusive seat                         |
+Sellers do **not** need their own Phala for the default path. **Self-serve** means paste keys in the product UI (Tier 0 chat already); Tier 1 ops still deploys workers today, with multi-tenant key injection as a future seat feature — still not a per-seller CVM.
+
+| Layer              | Runs where                                                                  | Seller friction                                       |
+| ------------------ | --------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Tier 0 chat        | Platform Phala API gateway                                                  | Paste upstream key                                    |
+| **Tier 1 harness** | Platform Phala provider-agent with `BOSSRAID_HARNESS_MODE=codex\|grok\|glm` | Ops deploys worker; keys in env / future seller vault |
+| Tier 2 BYO         | Seller Phala template                                                       | Seller deploys exclusive seat                         |
 
 ## What buyers can verify
 
@@ -64,7 +66,7 @@ Buyers filter with raid policy:
 
 - `allowedInstallations: ["fresh"]`
 - `requiredSkills: ["…"]`
-- `allowedAgentFrameworks: ["codex"]` or `["grok"]`
+- `allowedAgentFrameworks: ["codex"]`, `["grok"]`, or `["glm"]`
 
 ### 4. Routing proof + agent log
 
@@ -89,7 +91,7 @@ Env:
 
 | Variable                                    | Purpose                                         |
 | ------------------------------------------- | ----------------------------------------------- |
-| `BOSSRAID_HARNESS_MODE`                     | `codex` \| `grok` \| `off`                      |
+| `BOSSRAID_HARNESS_MODE`                     | `codex` \| `grok` \| `glm` \| `off`             |
 | `BOSSRAID_HARNESS_SKILLS`                   | Comma list `id` or `id@version` (empty = fresh) |
 | `BOSSRAID_HARNESS_IMAGE_DIGEST`             | Optional image digest for stronger disclosure   |
 | `BOSSRAID_HARNESS_MAX_STEPS`                | Tool loop budget (default 10)                   |
@@ -99,6 +101,26 @@ Env:
 ## Ops: run Grok harness
 
 Same worker binary; set `BOSSRAID_HARNESS_MODE=grok`, `BOSSRAID_MODEL_API_BASE=https://api.x.ai/v1`, `BOSSRAID_MODEL=grok-4.5`. See `examples/providers/harness-grok.env.example`.
+
+## Ops: run GLM (Z.ai Coding Plan) harness
+
+```bash
+# Use the coding plan base URL so subscription quota is charged correctly
+export BOSSRAID_HARNESS_MODE=glm
+export BOSSRAID_MODEL_API_BASE=https://api.z.ai/api/coding/paas/v4
+export BOSSRAID_MODEL=glm-4.7
+export BOSSRAID_MODEL_API_KEY=zai-...
+pnpm --filter @bossraid/provider-agent dev
+```
+
+Example env: `examples/providers/harness-glm.env.example`. Sellers can also publish Tier 0 chat via `POST /v1/seller/upstream/zai/connect` (same coding base URL by default).
+
+## Offline verify
+
+```bash
+pnpm bossraid export:proof-bundle -- --raid-id <raidId> --api-base-url http://127.0.0.1:8787
+pnpm bossraid verify:proof-bundle -- --dir temp/proof-bundles/<raidId>
+```
 
 ## Honest product summary
 

@@ -5,6 +5,7 @@ export const UPSTREAM_PROVIDER_IDS = [
   'chutes',
   'phala',
   'xai',
+  'zai',
 ] as const;
 
 export type UpstreamProviderId = (typeof UPSTREAM_PROVIDER_IDS)[number];
@@ -58,6 +59,15 @@ export const UPSTREAM_PROVIDER_CONFIG: Record<UpstreamProviderId, UpstreamProvid
     displayName: 'xAI (Grok)',
     upstreamBase: 'https://api.x.ai/v1',
     attestationVendor: 'xai',
+    supportsE2ee: false,
+  },
+  zai: {
+    id: 'zai',
+    displayName: 'Z.ai (GLM)',
+    // Default to GLM Coding Plan OpenAI-compatible endpoint (subscription quota).
+    // Standard token API: https://api.z.ai/api/paas/v4
+    upstreamBase: 'https://api.z.ai/api/coding/paas/v4',
+    attestationVendor: 'zai',
     supportsE2ee: false,
   },
 };

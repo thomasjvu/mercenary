@@ -15,6 +15,8 @@ const PROVIDER_BRANDS: Record<string, ProviderBrand> = {
   redpill: { icon: 'simple-icons:ethereum', label: 'RedPill' },
   phala: { icon: 'simple-icons:ethereum', label: 'Phala' },
   xai: { icon: 'simple-icons:x', label: 'xAI' },
+  zai: { icon: 'simple-icons:openai', label: 'Z.ai' },
+  glm: { icon: 'simple-icons:openai', label: 'GLM' },
   deepseek: { icon: 'simple-icons:deepseek', label: 'DeepSeek' },
   qwen: { icon: 'simple-icons:alibabacloud', label: 'Qwen' },
   groq: { icon: 'simple-icons:meta', label: 'Groq' },

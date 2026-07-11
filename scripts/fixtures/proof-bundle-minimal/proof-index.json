@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "bossraid-proof-bundle/v2",
+  "generatedAt": "2026-07-11T00:00:00.000Z",
+  "checksAvailable": [
+    "bundle_schema",
+    "raid_terminal",
+    "harness_composition",
+    "harness_fresh_claim"
+  ],
+  "raid": {
+    "raidId": "raid-fixture-1",
+    "status": "final",
+    "parentRaidId": null,
+    "childRaidCount": 0,
+    "requireErc8004": false,
+    "minTrustScore": null,
+    "venicePrivateLane": false
+  },
+  "settlement": null,
+  "files": {
+    "result": "result.json",
+    "providers": "providers.json",
+    "attestations": "attestations.json",
+    "settlement": "settlement.json",
+    "proofIndex": "proof-index.json"
+  },
+  "publicUrls": null
+}

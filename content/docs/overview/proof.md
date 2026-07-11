@@ -65,4 +65,17 @@ For strict-private or attested runs, add these checks:
 | `GET /v1/inference/receipts/:receiptId`         | none                    | Inference attestation receipt                                       |
 | `GET /v1/inference/receipts/:receiptId/verify`  | none                    | Receipt verification summary                                        |
 
+## 5. Offline proof export + verify
+
+Export a static bundle from local sqlite (or after a raid completes on disk):
+
+```bash
+pnpm bossraid export:proof-bundle -- --raid-id <raidId> --api-base-url http://127.0.0.1:8787
+pnpm bossraid verify:proof-bundle -- --dir temp/proof-bundles/<raidId>
+```
+
+`export:proof-bundle` writes result, agent log, providers (with harness profiles), attestations, settlement summary, and optional host attestation. `verify:proof-bundle` recomputes harness composition hashes, checks fresh claims, and can validate settlement txs when `BOSSRAID_SETTLEMENT_RPC_URL` is set. It does **not** require trusting the web UI.
+
+Agent harness layers (Phala host TEE vs model disclosure): [operators/harness-verification.md](../operators/harness-verification.md).
+
 Architecture detail: [operators/architecture.md](../operators/architecture.md#attestation--proof).

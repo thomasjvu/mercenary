@@ -30,6 +30,11 @@ import {
   fetchXaiUpstreamModels,
   probeXaiChatCompletion,
 } from './xai.js';
+import {
+  fetchZaiAttestationReport,
+  fetchZaiUpstreamModels,
+  probeZaiChatCompletion,
+} from './zai.js';
 import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
 
 export type {
@@ -61,6 +66,8 @@ export async function fetchUpstreamModels(
       return fetchPhalaUpstreamModels(apiKey);
     case 'xai':
       return fetchXaiUpstreamModels(apiKey);
+    case 'zai':
+      return fetchZaiUpstreamModels(apiKey);
   }
 }
 
@@ -84,6 +91,8 @@ export async function probeUpstreamChatCompletion(input: {
       return probePhalaChatCompletion(input);
     case 'xai':
       return probeXaiChatCompletion(input);
+    case 'zai':
+      return probeZaiChatCompletion(input);
   }
 }
 
@@ -115,5 +124,7 @@ export async function fetchUpstreamAttestationReport(input: {
       return fetchPhalaAttestationReport(input);
     case 'xai':
       return fetchXaiAttestationReport(input);
+    case 'zai':
+      return fetchZaiAttestationReport(input);
   }
 }

@@ -19,6 +19,8 @@ const FEATURED_LIVE_MODEL_IDS = new Set([
   'tee-qwen3-5-122b-chutes',
   'grok-4.5',
   'grok-4-1-fast-reasoning',
+  'glm-4.7',
+  'glm-5-turbo',
 ]);
 
 const REDPILL_MODELS = [
@@ -90,6 +92,55 @@ const PHALA_MODELS = [
     e2ee: true,
     signedOutputs: true,
     noDataRetention: true,
+  },
+];
+
+/** Z.ai GLM Coding Plan — static rates (OpenAI-compatible coding endpoint). */
+const ZAI_MODELS = [
+  {
+    modelId: 'glm-4.7',
+    displayName: 'GLM 4.7 (Z.ai Coding Plan)',
+    modelProvider: 'zai',
+    attestationVendor: 'zai',
+    upstream: 'glm-4.7',
+    inputPer1mUsd: 0.5,
+    outputPer1mUsd: 1.5,
+    maxContextTokens: 200_000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+    signedOutputs: false,
+    noDataRetention: false,
+  },
+  {
+    modelId: 'glm-5-turbo',
+    displayName: 'GLM 5 Turbo (Z.ai Coding Plan)',
+    modelProvider: 'zai',
+    attestationVendor: 'zai',
+    upstream: 'glm-5-turbo',
+    inputPer1mUsd: 0.4,
+    outputPer1mUsd: 1.2,
+    maxContextTokens: 200_000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+    signedOutputs: false,
+    noDataRetention: false,
+  },
+  {
+    modelId: 'glm-5.2',
+    displayName: 'GLM 5.2 (Z.ai Coding Plan)',
+    modelProvider: 'zai',
+    attestationVendor: 'zai',
+    upstream: 'glm-5.2',
+    inputPer1mUsd: 0.6,
+    outputPer1mUsd: 2,
+    maxContextTokens: 200_000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+    signedOutputs: false,
+    noDataRetention: false,
   },
 ];
 
@@ -269,8 +320,8 @@ function writeCatalogTs(catalog) {
 export type InferenceCatalogEntry = {
   modelId: string;
   displayName: string;
-  modelProvider: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai';
-  attestationVendor: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai';
+  modelProvider: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai' | 'zai';
+  attestationVendor: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai' | 'zai';
   upstreamModelId: string;
   inputPer1mUsd: number;
   outputPer1mUsd: number;
@@ -329,6 +380,7 @@ function writeCatalogPricingJson(catalog) {
       chutes: 'scripts/sync-inference-catalog.mjs static rates',
       phala: 'scripts/sync-inference-catalog.mjs static rates',
       xai: 'scripts/sync-inference-catalog.mjs static rates (api.x.ai)',
+      zai: 'scripts/sync-inference-catalog.mjs static rates (api.z.ai coding paas)',
     },
     providers,
     models: catalog
@@ -412,6 +464,7 @@ async function main() {
   const chutesModels = normalizeStaticModels(CHUTES_MODELS);
   const phalaModels = normalizeStaticModels(PHALA_MODELS);
   const xaiModels = normalizeStaticModels(XAI_MODELS);
+  const zaiModels = normalizeStaticModels(ZAI_MODELS);
   const catalog = [
     ...veniceModels,
     ...redpillModels,
@@ -419,6 +472,7 @@ async function main() {
     ...chutesModels,
     ...phalaModels,
     ...xaiModels,
+    ...zaiModels,
   ];
   assertUniqueModelIds(catalog);
 
@@ -449,7 +503,7 @@ async function main() {
   writeProvidersJson(providers);
 
   console.log(
-    `[catalog] synced ${veniceModels.length} Venice + ${redpillModels.length} Redpill + ${nearModels.length} NEAR + ${chutesModels.length} Chutes + ${phalaModels.length} Phala + ${xaiModels.length} xAI models`
+    `[catalog] synced ${veniceModels.length} Venice + ${redpillModels.length} Redpill + ${nearModels.length} NEAR + ${chutesModels.length} Chutes + ${phalaModels.length} Phala + ${xaiModels.length} xAI + ${zaiModels.length} Z.ai models`
   );
   console.log(`[catalog] wrote packages/constants/src/inference-catalog.ts`);
   console.log(`[catalog] wrote examples/inference/inference-marketplace-providers.json (${providers.length} sellers)`);

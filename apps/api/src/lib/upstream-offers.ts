@@ -67,7 +67,7 @@ export function buildHostedProviderRegistration(input: {
     supportedLanguages: ['text'],
     supportedFrameworks: ['openai_compatible'],
     outputTypes: ['text', 'json'],
-    agentFramework: input.provider === 'xai' ? 'grok' : 'custom',
+    agentFramework: input.provider === 'xai' ? 'grok' : input.provider === 'zai' ? 'glm' : 'custom',
     modelFamily: input.provider,
     modelProvider: catalogEntry?.modelProvider ?? input.provider,
     modelId: input.modelId,
@@ -107,7 +107,7 @@ export function buildHostedProviderRegistration(input: {
     },
     marketplaceOfferStatus: 'active',
     harnessProfile: defaultApiChatHarnessProfile({
-      framework: input.provider === 'xai' ? 'grok' : 'custom',
+      framework: input.provider === 'xai' ? 'grok' : input.provider === 'zai' ? 'glm' : 'custom',
       planProvider: catalogEntry?.modelProvider ?? input.provider,
       verification: 'unverified',
     }),

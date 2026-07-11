@@ -112,7 +112,14 @@ export type ApiRateLimitEntry = {
   resetAt: number;
 };
 
-export type UpstreamProviderKind = 'venice' | 'redpill' | 'near' | 'chutes' | 'phala' | 'xai';
+export type UpstreamProviderKind =
+  | 'venice'
+  | 'redpill'
+  | 'near'
+  | 'chutes'
+  | 'phala'
+  | 'xai'
+  | 'zai';
 
 export type SellerUpstreamConfigEntry = {
   configId: string;

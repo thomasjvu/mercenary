@@ -12,6 +12,7 @@ const KEY_PREFIX_BY_PROVIDER: Record<UpstreamProviderId, string> = {
   chutes: 'ch',
   phala: 'ph',
   xai: 'xa',
+  zai: 'za',
 };
 
 export function buildUpstreamKeyPrefix(provider: UpstreamProviderId, apiKey: string): string {

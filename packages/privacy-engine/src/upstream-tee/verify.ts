@@ -206,6 +206,21 @@ export function verifyUpstreamAttestationReport(
           },
         ],
       };
+    case 'zai':
+      return {
+        valid: false,
+        vendor: 'zai',
+        modelId: input.modelId,
+        nonce: input.nonce,
+        verifiedAt: new Date().toISOString(),
+        checks: [
+          {
+            id: 'zai_tee_unsupported',
+            passed: false,
+            detail: 'Z.ai (GLM) does not publish upstream TEE attestation reports.',
+          },
+        ],
+      };
   }
 }
 
