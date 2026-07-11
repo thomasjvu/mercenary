@@ -11,10 +11,13 @@ export function SellerOfferPublishStep({ state }: SellerOfferPublishStepProps) {
     connectWallet,
     pending,
     selectedModelIds,
+    offerLane,
     handlePublish,
     publishResult,
     status,
   } = state;
+
+  const publishLabel = offerLane === 'harness' ? 'publish harness seats' : 'publish chat offers';
 
   return (
     <div className="sell-form-row sell-form-row--publish">
@@ -33,9 +36,13 @@ export function SellerOfferPublishStep({ state }: SellerOfferPublishStepProps) {
           onClick={() => void handlePublish()}
           type="button"
         >
-          {pending ? 'publishing...' : 'publish offers'}
+          {pending ? 'publishing...' : publishLabel}
         </button>
       )}
+      <p className="quiet-note">
+        First success path: connect key → pick 1–3 models → publish chat. Buyers resend full message
+        history for multi-turn; the platform does not store threads.
+      </p>
       {publishResult ? <FormStatus>{publishResult}</FormStatus> : null}
       {status ? <FormStatus>{status}</FormStatus> : null}
     </div>

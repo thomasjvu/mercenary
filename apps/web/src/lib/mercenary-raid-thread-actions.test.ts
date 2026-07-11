@@ -23,7 +23,9 @@ test('buildSelectThreadStore persists the active snapshot and switches threads',
   assert.ok(result);
   assert.equal(result.store.activeThreadId, 'thread-b');
   assert.equal(result.thread.id, 'thread-b');
-  assert.equal(result.store.threads[0]?.raidBrief, 'ship cleanup');
+  // upsert re-sorts by updatedAt; assert the snapshot content by id
+  const persisted = result.store.threads.find((thread) => thread.id === 'thread-a');
+  assert.equal(persisted?.raidBrief, 'ship cleanup');
 });
 
 test('buildStartNewThreadStore prepends a fresh thread', () => {

@@ -15,16 +15,24 @@ import {
 import { fetchSellerStats } from '../api/auth.js';
 import { useWalletAuth } from './useWalletAuth.js';
 
+/** Plans first (paste key → sell), then TEE marketplaces. */
 export const SELLER_PROVIDER_ORDER: UpstreamProviderId[] = [
   'anthropic',
-  'chutes',
-  'zai',
   'xai',
+  'zai',
+  'chutes',
   'venice',
   'redpill',
   'near',
   'phala',
 ];
+
+const PLAN_PROVIDERS = new Set<UpstreamProviderId>(['anthropic', 'xai', 'zai', 'chutes']);
+
+export function sellerProviderOptionLabel(provider: UpstreamProviderId): string {
+  const name = UPSTREAM_PROVIDER_CONFIG[provider].displayName;
+  return PLAN_PROVIDERS.has(provider) ? `${name} · plan` : `${name} · TEE market`;
+}
 
 export type SellerOfferLane = 'chat' | 'harness';
 
@@ -32,7 +40,7 @@ export function useSellerUpstreamOnboarding() {
   const { session, status, setStatus, connectWallet, isAuthenticated } = useWalletAuth(
     'Connect wallet in the sidebar before selling inference.'
   );
-  const [provider, setProvider] = useState<UpstreamProviderId>('venice');
+  const [provider, setProvider] = useState<UpstreamProviderId>('anthropic');
   const catalogModels = useSWR(`/v1/seller/upstream/${provider}/models/catalog`, () =>
     fetchSellerUpstreamCatalogModels(provider)
   );

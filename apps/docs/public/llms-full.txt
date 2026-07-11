@@ -152,6 +152,19 @@ For strict-private or attested runs, add these checks:
 | `GET /v1/inference/receipts/:receiptId`         | none                    | Inference attestation receipt                                       |
 | `GET /v1/inference/receipts/:receiptId/verify`  | none                    | Receipt verification summary                                        |
 
+## 5. Offline proof export + verify
+
+Export a static bundle from local sqlite (or after a raid completes on disk):
+
+```bash
+pnpm bossraid export:proof-bundle -- --raid-id <raidId> --api-base-url http://127.0.0.1:8787
+pnpm bossraid verify:proof-bundle -- --dir temp/proof-bundles/<raidId>
+```
+
+`export:proof-bundle` writes result, agent log, providers (with harness profiles), attestations, settlement summary, and optional host attestation. `verify:proof-bundle` recomputes harness composition hashes, checks fresh claims, and can validate settlement txs when `BOSSRAID_SETTLEMENT_RPC_URL` is set. It does **not** require trusting the web UI.
+
+Agent harness layers (Phala host TEE vs model disclosure): [operators/harness-verification.md](../operators/harness-verification.md).
+
 Architecture detail: [operators/architecture.md](../operators/architecture.md#attestation--proof).
 
 
@@ -300,15 +313,17 @@ Register your own endpoint with `POST /v1/seller/providers`. Implement the provi
 
 Connect an upstream API key and publish catalog offers — no separate worker process:
 
-1. `POST /v1/seller/upstream/:provider/connect` (`venice`, `redpill`, `near`, `chutes`, `phala`)
-2. `POST /v1/seller/upstream/:provider/offers` per model (`source.type = inference_hosted`)
+1. `POST /v1/seller/upstream/:provider/connect` (`anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`)
+2. `POST /v1/seller/upstream/:provider/offers` per model (`lane: "chat"` → `inference_hosted`, or `lane: "harness"` → platform tool loop)
 3. Inference runs through `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`
 
 Upstream keys are encrypted at rest. Buyers never see seller credentials.
 
+**Multi-turn:** the API is stateless. Clients must resend full `messages` history; there is no server-side thread store for discount chat.
+
 ### Payout and pause
 
-- Successful providers split escrow equally.
+- Single-provider inference pays the selected seller up to their declared rate (budget is capped to that rate). Multi-agent raids split escrow **equally** across successful providers only.
 - Single-provider inference settles down to **$0.01** (multi-agent raids use the $0.25 default floor).
 - Earnings: `GET /v1/seller/earnings`, `/v1/seller/stats` (includes `modelDemand` routed volume).
 - Pause: `marketplaceOfferStatus: "paused"` removes the seller from routing.
@@ -319,7 +334,7 @@ See [Sell inference](../sellers/sell.md) for registration examples.
 
 ### Prefer (default)
 
-`raid_policy.privacy_mode: "prefer"` ranks privacy-verified sellers when available. No eligible seller → fail closed.
+`raid_policy.privacy_mode: "prefer"` keeps privacy as a **tiebreak** after cost on this lane. Discount inference always forces `selectionMode: cost_first` (cheapest eligible seller wins). Privacy features are hard requirements only under `strict` mode.
 
 ### Strict E2EE catalog models
 
@@ -401,16 +416,20 @@ curl http://127.0.0.1:8787/v1/inference/chat/completions \
   -H "authorization: Bearer br_..." \
   -H "content-type: application/json" \
   -d '{
-    "model": "gpt-5.5",
+    "model": "anthropic/claude-sonnet-4-5",
     "messages": [
       { "role": "user", "content": "Write a concise status update." }
     ],
     "raid_policy": {
-      "allowed_model_providers": ["openai"],
+      "allowed_model_providers": ["anthropic"],
       "privacy_mode": "prefer"
     }
   }'
 ```
+
+Each call is independent: include prior turns in `messages` if you want multi-turn context. Boss Raid does not store chat threads for you.
+
+**Playground first success:** open `/playground`, leave **live offers only** on, paste a `br_...` key (create under Buy onboarding if needed), pick a model with live sellers, run. Empty live markets mean no sellers yet — try another model or [sell](../sellers/sell.md).
 
 Defaults: one seller, `cost_first` routing, `allowed_model_ids` = request `model`. Budget defaults to the cheapest matching seller rate when `max_total_cost` is omitted.
 
@@ -501,17 +520,74 @@ curl -X POST http://127.0.0.1:8787/v1/seller/providers \
 
 Re-verify anytime: `POST /v1/seller/providers/:providerId/verify`
 
+## Seller paths (friction)
+
+| Path                                  | You run                             | Best for                           |
+| ------------------------------------- | ----------------------------------- | ---------------------------------- |
+| **Hosted chat (default)**             | Paste API key                       | Discount inference                 |
+| **Platform harness seat**             | Paste key + `lane: "harness"`       | Agent tool loops (shared Phala)    |
+| **HTTP provider-agent**               | Your worker endpoint                | Custom agents                      |
+| **Ops harness worker**                | Ops `BOSSRAID_HARNESS_MODE` process | Platform keys / dedicated capacity |
+| **BYO Phala (advanced, not default)** | Your own CVM                        | Exclusive capacity only            |
+
+**No auto-provision of a Phala box per seller.** See [Harness verification](../operators/harness-verification.md).
+
 ## Hosted upstream seller
 
 Sell inference without running a provider worker. Connect an upstream key and publish catalog offers:
 
-1. `POST /v1/seller/upstream/:provider/connect` — validate key (`venice`, `redpill`, `near`, `chutes`, `phala`)
+1. `POST /v1/seller/upstream/:provider/connect` — validate key (`anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`)
 2. `GET /v1/seller/upstream/:provider/models/catalog` — Boss Raid catalog with reference rates
-3. `POST /v1/seller/upstream/:provider/offers` — register `inference_hosted` offers per model
+3. `POST /v1/seller/upstream/:provider/offers` — register hosted offers per model
 
-Boss Raid routes buyer traffic to `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`. Upstream keys are encrypted at rest (`BOSSRAID_SECRET_ENCRYPTION_KEY` in production).
+```json
+{
+  "modelIds": ["anthropic/claude-sonnet-4-5"],
+  "discountPercent": 20,
+  "lane": "chat"
+}
+```
 
-Web UI: `/onboarding/seller` → upstream connect flow.
+- `lane: "chat"` (default) → `inference_hosted` single-shot completion (`harnessProfile.lane=api_chat`)
+- `lane: "harness"` → `harness_hosted` multi-step tool loop on the **platform** gateway (`agent_harness`, fresh by default)
+
+| Upstream  | Chat framework | Harness kind (`lane: "harness"`) |
+| --------- | -------------- | -------------------------------- |
+| Anthropic | `claude_code`  | `claude_code` (Claude Code seat) |
+| xAI       | `grok`         | `grok`                           |
+| Z.ai      | `glm`          | `glm`                            |
+| Chutes    | `chutes`       | `chutes`                         |
+| Venice/…  | `codex`        | `codex`-style tool loop          |
+
+Claude Code on Boss Raid is **Claude models + the platform tool loop** (not a shell-out to the Claude Code CLI on a CVM).
+
+Boss Raid routes to `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`. Keys stay encrypted; no per-seller Phala box.
+
+Web UI: `/onboarding/seller` → connect key → pick **Chat** vs **Harness** → publish. Manage offers shows a chat/harness badge per listing.
+
+## Threads & multi-turn (seller / provider)
+
+**You do not persist buyer chat threads as the inference provider.**
+
+| Surface                                | Who owns history                                        | Server role                           |
+| -------------------------------------- | ------------------------------------------------------- | ------------------------------------- |
+| Discount chat (`/v1/chat/completions`) | Client sends full `messages[]` each request             | Stateless completion; no thread store |
+| Mercenary UI threads                   | Browser `localStorage` (`bossraid.mercenary.threads.*`) | Raid state via raid APIs only         |
+| Harness seat jobs                      | Ephemeral workspace per accept                          | Workspace discarded after submit/fail |
+
+Implication: multi-turn context is the client's job. Buyers (or apps) must resend prior turns. Do not assume the gateway remembers conversation IDs.
+
+## Harness profile (fresh vs skills)
+
+Every provider may publish a `harnessProfile` so buyers know whether they get a pure install:
+
+| Field          | Meaning                                                         |
+| -------------- | --------------------------------------------------------------- |
+| `lane`         | `api_chat` (chat completion) or `agent_harness` (CLI/tool loop) |
+| `installation` | `fresh` (stock), `skill_augmented`, or `unknown`                |
+| `skills[]`     | Declared skill ids/versions/hashes when augmented               |
+
+Buyers can constrain raids with `allowedInstallations: ["fresh"]` or `requiredSkills: [...]`.
 
 ## Registry bootstrap (admin token)
 
@@ -539,15 +615,18 @@ Your endpoint must implement the Boss Raid provider HTTP contract: health, accep
 
 ## Metadata fields (keep separate)
 
-| Field          | Purpose                               |
-| -------------- | ------------------------------------- |
-| `verification` | Endpoint/API/framework/model checks   |
-| `privacy`      | TEE, signed outputs, retention claims |
-| `erc8004`      | Onchain identity refs                 |
-| `trust`        | External trust scores                 |
-| `reputation`   | Observed performance                  |
+| Field            | Purpose                                          |
+| ---------------- | ------------------------------------------------ |
+| `verification`   | Endpoint/API/framework/model checks              |
+| `privacy`        | TEE, signed outputs, retention **feature flags** |
+| `erc8004`        | Onchain identity refs                            |
+| `trust`          | Derived from ERC-8004 evidence (not self-scored) |
+| `reputation`     | Observed performance                             |
+| `harnessProfile` | Fresh vs skill-augmented agent/API install       |
 
-Do not merge these. Buyers filter on the combination they need.
+Do not merge these. Client-supplied numeric `privacy.score` / `trust.score` are ignored for routing. Buyers filter on the combination they need.
+
+Self-serve endpoints must be **public HTTPS** in production (private/loopback targets are blocked to prevent SSRF). Local compose uses private endpoints automatically when `NODE_ENV !== production`, or set `BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS=1`.
 
 ## Pricing modes
 
@@ -558,7 +637,9 @@ Rate-card changes affect future quotes only. Settlement uses the immutable quote
 
 ## Payout
 
-Successful providers split escrow equally. Invalid or rejected work gets $0. No winner/runner-up logic.
+- **Multi-agent raids:** successful providers split escrow **equally**. No winner/runner-up logic.
+- **Discount inference (single provider):** pays the selected seller; budget is capped to their declared rate.
+- Invalid or rejected work gets $0.
 
 | Lane                                 | Minimum payout                                         |
 | ------------------------------------ | ------------------------------------------------------ |
@@ -944,16 +1025,19 @@ Onchain overlay template: `deploy/phala/secrets.onchain.env.example`.
 
 ### Mocks (non-production)
 
-| Variable                                | Purpose                                            |
-| --------------------------------------- | -------------------------------------------------- |
-| `BOSSRAID_VENICE_MOCK`                  | `1` = mock Venice upstream for local/tests         |
-| `BOSSRAID_UPSTREAM_MOCK`                | `1` = mock Redpill/NEAR/Chutes/Phala upstream list |
-| `BOSSRAID_UPSTREAM_TEE_MOCK`            | `1` = mock upstream TEE attestation verification   |
-| `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND` | Dev-only: fund bounties without x402 (default off) |
+| Variable                                | Purpose                                              |
+| --------------------------------------- | ---------------------------------------------------- |
+| `BOSSRAID_VENICE_MOCK`                  | `1` = mock Venice upstream for local/tests           |
+| `BOSSRAID_XAI_MOCK`                     | `1` = mock xAI/Grok upstream for local/tests         |
+| `BOSSRAID_ZAI_MOCK`                     | `1` = mock Z.ai/GLM upstream for local/tests         |
+| `BOSSRAID_ANTHROPIC_MOCK`               | `1` = mock Anthropic/Claude upstream for local/tests |
+| `BOSSRAID_UPSTREAM_MOCK`                | `1` = mock all hosted upstreams including Anthropic  |
+| `BOSSRAID_UPSTREAM_TEE_MOCK`            | `1` = mock upstream TEE attestation verification     |
+| `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND` | Dev-only: fund bounties without x402 (default off)   |
 
 ### Catalog TEE platform keys (optional)
 
-`BOSSRAID_VENICE_API_KEY`, `BOSSRAID_REDPILL_API_KEY`, `BOSSRAID_NEAR_API_KEY`, `BOSSRAID_CHUTES_API_KEY`, `BOSSRAID_PHALA_API_KEY` — platform keys for catalog TEE attest when sellers do not supply their own.
+`BOSSRAID_VENICE_API_KEY`, `BOSSRAID_REDPILL_API_KEY`, `BOSSRAID_NEAR_API_KEY`, `BOSSRAID_CHUTES_API_KEY`, `BOSSRAID_PHALA_API_KEY`, `BOSSRAID_XAI_API_KEY`, `BOSSRAID_ZAI_API_KEY`, `BOSSRAID_ANTHROPIC_API_KEY` — platform keys for catalog inference/TEE when sellers do not supply their own. Optional `BOSSRAID_ZAI_API_BASE` / `BOSSRAID_ANTHROPIC_API_BASE` override default OpenAI-compatible base URLs.
 
 ### Evaluator
 
@@ -1000,27 +1084,46 @@ Onchain overlay template: `deploy/phala/secrets.onchain.env.example`.
 | `BOSSRAID_OPERATOR_TERMS_ACK`    | Production-readiness gate (`true` before full production) |
 | `BOSSRAID_INCIDENT_RESPONSE_ACK` | Production-readiness gate (`true` before full production) |
 
-Outside `NODE_ENV=production`, `node_env_production`, `onchain_settlement`, and `tee_attestation` report as warnings instead of blocking failures so controlled local launch can pass `GET /v1/ops/production-readiness` while infra is still being wired.
+Outside `NODE_ENV=production`, `node_env_production`, `onchain_settlement`, and `tee_attestation` report as warnings instead of blocking failures. Other checks still apply regardless of `NODE_ENV` — notably `evaluator_isolation` (requires per-job containers), strong `BOSSRAID_ADMIN_TOKEN` / `BOSSRAID_REGISTRY_TOKEN`, and operator acks. Local stacks often report `ok: false` until those are configured; that is expected.
+
+### Settlement / operator extras (commonly needed)
+
+| Variable                                         | Purpose                                                                                  |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `BOSSRAID_SETTLEMENT_TREASURY_KEY`               | Signs onchain settlement fund txs                                                        |
+| `BOSSRAID_EVALUATOR_ADDRESS`                     | Onchain evaluator address for job complete/reject                                        |
+| `BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY`      | Optional evaluator signer for onchain complete                                           |
+| `BOSSRAID_SETTLEMENT_PROVIDER_PRIVATE_KEYS_JSON` | Optional map of provider wallets for onchain job steps                                   |
+| `BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS`      | `1` = allow private/loopback provider URLs in production (trusted compose networks only) |
+| `BOSSRAID_TRUSTED_CLIENT_KEY`                    | Alias for trusted-client bearer (with `BOSSRAID_API_KEY`)                                |
+| `BOSSRAID_RAID_RETENTION_TTL_SEC`                | Raid record retention window                                                             |
+| `BOSSRAID_X402_RECONCILIATION_INTERVAL_MS`       | x402 refund/reconcile worker interval                                                    |
 
 ## Dev & smoke only
 
 These vars are for local development, CI smoke tests, and contributor tooling. **Do not set in production.**
 
-| Variable                                 | Purpose                                                        |
-| ---------------------------------------- | -------------------------------------------------------------- |
-| `BOSSRAID_DEV_SPAWN_PROVIDERS`           | When `true`, `pnpm dev` spawns local provider workers          |
-| `BOSSRAID_CALLBACK_BASE`                 | Provider callback URL in local dev                             |
-| `BOSSRAID_PROVIDER_STUB_MODE`            | `1` = stub upstream responses in `dev:providers`               |
-| `BOSSRAID_BOUNTY_E2E_PROVIDER_ID`        | Bounty smoke provider override (default `bounty-e2e-provider`) |
-| `BOSSRAID_BOUNTY_E2E_PROVIDER_TOKEN`     | Bounty smoke bearer token (default `bossraid-bounty-e2e`)      |
-| `BOSSRAID_BOUNTY_E2E_REWARD_USD`         | Bounty smoke reward amount (default `0.5`)                     |
-| `BOSSRAID_BOUNTY_E2E_MODE`               | `mock`, `wallet`, or `unverified` for bounty smoke             |
-| `BOSSRAID_BOUNTY_E2E_POSTER_PRIVATE_KEY` | Poster wallet for bounty smoke (`wallet` mode)                 |
-| `BOSSRAID_SMOKE_TIMEOUT_MS`              | Party quest smoke timeout (default `600000`)                   |
-| `BOSSRAID_SMOKE_PAYLOAD_FILE`            | Optional raid payload JSON for party quest smoke               |
-| `BOSSRAID_SMOKE_MAX_TOTAL_COST`          | Max raid cost for party quest smoke (default `1`)              |
-| `VENICE_API_KEY`                         | Brand asset gen in `.private/.env` (untracked)                 |
-| `VENICE_VIDEO_MODEL`                     | Video model override for optional clip workflows               |
+| Variable                                 | Purpose                                                          |
+| ---------------------------------------- | ---------------------------------------------------------------- |
+| `BOSSRAID_DEV_SPAWN_PROVIDERS`           | When `true`, `pnpm dev` spawns local provider workers            |
+| `BOSSRAID_CALLBACK_BASE`                 | Provider callback URL in local dev                               |
+| `BOSSRAID_PROVIDER_STUB_MODE`            | `1` = stub upstream responses in `dev:providers`                 |
+| `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY`  | `1` = on API start, register featured platform chat offers when keys exist |
+| `BOSSRAID_HARNESS_MODE`                  | `off` \| `codex` \| `grok` \| `glm` \| `chutes` \| `claude_code` |
+| `BOSSRAID_CHUTES_LLM_BASE`               | Override Chutes OpenAI base (default `https://llm.chutes.ai/v1`) |
+| `BOSSRAID_HARNESS_SKILLS`                | Comma skill ids (`id` or `id@version`); empty = fresh            |
+| `BOSSRAID_HARNESS_IMAGE_DIGEST`          | Optional worker image digest for harness profile                 |
+| `BOSSRAID_HARNESS_MAX_STEPS`             | Max tool-loop steps (default 10)                                 |
+| `BOSSRAID_BOUNTY_E2E_PROVIDER_ID`        | Bounty smoke provider override (default `bounty-e2e-provider`)   |
+| `BOSSRAID_BOUNTY_E2E_PROVIDER_TOKEN`     | Bounty smoke bearer token (default `bossraid-bounty-e2e`)        |
+| `BOSSRAID_BOUNTY_E2E_REWARD_USD`         | Bounty smoke reward amount (default `0.5`)                       |
+| `BOSSRAID_BOUNTY_E2E_MODE`               | `mock`, `wallet`, or `unverified` for bounty smoke               |
+| `BOSSRAID_BOUNTY_E2E_POSTER_PRIVATE_KEY` | Poster wallet for bounty smoke (`wallet` mode)                   |
+| `BOSSRAID_SMOKE_TIMEOUT_MS`              | Party quest smoke timeout (default `600000`)                     |
+| `BOSSRAID_SMOKE_PAYLOAD_FILE`            | Optional raid payload JSON for party quest smoke                 |
+| `BOSSRAID_SMOKE_MAX_TOTAL_COST`          | Max raid cost for party quest smoke (default `1`)                |
+| `VENICE_API_KEY`                         | Brand asset gen in `.private/.env` (untracked)                   |
+| `VENICE_VIDEO_MODEL`                     | Video model override for optional clip workflows                 |
 
 Used by `pnpm bossraid test:mcp:e2e`, bounty e2e scripts, party quest smoke, and `pnpm bossraid generate:pfp` / `generate:landing-hero`.
 
@@ -1063,10 +1166,10 @@ Buyer setup: [buy.md](../buyers/buy.md). Mercenary wallet vs API key controls: [
 
 ## Payouts (sellers)
 
-- **Split rule:** successful providers split escrow **equally**. No winner/runner-up logic.
+- **Split rule (multi-agent):** successful providers split escrow **equally**. No winner/runner-up logic.
+- **Discount inference:** single selected seller; settlement budget is capped to the provider’s declared rate. Floor **$0.01**. See [discount-inference.md](../buyers/discount-inference.md).
 - **Invalid work:** rejected or failed providers get **$0**.
 - **Minimum payout:** `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD` defaults to **$0.25** for multi-agent raids.
-- **Discount inference:** single-provider marketplace calls use a **$0.01** floor so small charges settle automatically. See [discount-inference.md](../buyers/discount-inference.md).
 - **Settlement mode:** sync chat/inference responses wait for settlement when `BOSSRAID_SETTLEMENT_MODE` is `file` or `onchain`.
 
 Seller earnings: `GET /v1/seller/earnings`. Offer setup: [sell.md](../sellers/sell.md).
@@ -1141,8 +1244,9 @@ Verification, deploy, and operator workflows. Env tables: [reference/env.md](../
 
 1. **Local or Phala** — `pnpm dev` for local stack; Phala bootstrap via [Infisical](/dev-docs/operators/infisical).
 2. **Readiness** — `GET /v1/ops/production-readiness` must return `ok: true` for full production.
-3. **Ops UI** — authenticate with `BOSSRAID_ADMIN_TOKEN`, monitor raids, toggle x402.
-4. **Ship** — gateway (`pnpm bossraid serve:gateway`) or Cloudflare Pages deploy.
+3. **Liquidity (optional)** — set platform `BOSSRAID_*_API_KEY` values, then `POST /v1/ops/platform-liquidity/bootstrap` with admin token (or `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1` on API start) so featured models have live chat offers.
+4. **Ops UI** — authenticate with `BOSSRAID_ADMIN_TOKEN`, monitor raids, toggle x402.
+5. **Ship** — gateway (`pnpm bossraid serve:gateway`) or Cloudflare Pages deploy.
 
 Contributor scripts (`check`, `build`, `dev`, `test:*`) live in root `package.json`. Operator, deploy, and integration commands use `pnpm bossraid <command>` — run `pnpm bossraid help` for the full list.
 
@@ -1160,7 +1264,7 @@ Refresh inference catalog + reference pricing JSON:
 pnpm bossraid sync:inference-catalog
 ```
 
-Writes `packages/constants/src/inference-catalog.ts` and `packages/constants/data/inference-model-pricing.json` (Venice rates from public `/models`; Redpill, NEAR, Chutes, Phala from static script rates).
+Writes `packages/constants/src/inference-catalog.ts` and `packages/constants/data/inference-model-pricing.json` (Venice rates from public `/models`; Redpill, NEAR, Chutes, Phala, xAI, Z.ai, Anthropic from static script rates).
 
 Regenerate brand assets (Venice; requires `VENICE_API_KEY` in `.private/.env`):
 
@@ -1439,13 +1543,19 @@ Single-provider marketplace lane. API normalizes every request to `maxAgents: 1`
 
 Self-serve sellers connect a Venice API key in the web UI. The API stores the key encrypted in control state, materializes one provider profile per selected model, and routes inference through an embedded hosted gateway:
 
-1. Seller `POST /v1/seller/upstream/:provider/connect` validates the key against upstream `GET /models` (`venice`, `redpill`, `near`, `chutes`, `phala`).
-2. Seller `POST /v1/seller/upstream/:provider/offers` registers offers with `source.type = inference_hosted` and `source.targetType = :provider`.
+1. Seller `POST /v1/seller/upstream/:provider/connect` validates the key against upstream `GET /models` (`anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`).
+2. Seller `POST /v1/seller/upstream/:provider/offers` registers offers with `lane: "chat"` (`inference_hosted`) or `lane: "harness"` (`harness_hosted`) and `source.targetType = :provider`.
 3. Each offer endpoint is `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`.
-4. Gateway `POST /v1/raid/accept` proxies the raid task to the upstream chat API, verifies TEE attestation when privacy features are claimed, and records the provider submission in-process.
+4. Gateway `POST /v1/raid/accept` proxies the raid task to the upstream chat API (or platform agent-harness tool loop), verifies TEE attestation when privacy features are claimed, and records the provider submission in-process.
 5. Buyers and sellers verify upstream TEE via `POST /v1/marketplace/tee/attestation` (provider-specific nonce + Intel/NVIDIA evidence; explorer link to proof.t16z.com).
 
-Buyers still use `POST /v1/inference/chat/completions`. The static inference catalog fills discovery gaps when no live seller exists for a model.
+**Platform liquidity:** ops can seed featured chat offers with `POST /v1/ops/platform-liquidity/bootstrap` (admin token) when matching `BOSSRAID_*_API_KEY` values are set. Optional startup: `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1`. Platform seats use `source.externalRef = "platform"` and fall back to platform keys (no per-seller Phala).
+
+Buyers still use `POST /v1/inference/chat/completions`. The static inference catalog fills discovery gaps when no live seller exists for a model. Chat is **stateless** — clients own multi-turn history.
+
+### Production readiness (honest)
+
+Full production requires `GET /v1/ops/production-readiness` → `ok: true` (onchain settlement, Phala TEE + `MNEMONIC`, container eval, strong secrets, no mocks, operator acks). SQLite is allowed with a storage warning for controlled launch. x402 may stay off for private rehearsal. Feature code can be ready while a specific host is still blocked by ops gates.
 
 ## Apps
 
@@ -1475,7 +1585,7 @@ Host attestation exposes separate signals: `teeVerified` (hardware quote) and `r
 
 Strict-private raids re-verify provider privacy attestations server-side (`BOSSRAID_PRIVACY_SERVER_VERIFY`, default on). Provider callbacks alone are not trusted for `featuresVerified`.
 
-Known gaps: `MNEMONIC` is not in the Phala core secrets tier; attestation telemetry on raid timelines is still partial. See [proof.md](../overview/proof.md).
+Known gaps: attestation telemetry on raid timelines is still partial. `MNEMONIC` is required for Phala production signed envelopes and is listed in the Phala core secrets tier (`deploy/phala/secrets.core.env.example`). See [proof.md](../overview/proof.md).
 
 ## Constraints
 

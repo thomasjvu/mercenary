@@ -1,3 +1,16 @@
+.inference-playground__live-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.inference-playground__live-toggle input {
+  accent-color: var(--accent);
+}
+
 .playground-page__header,
 .playground-page__mode-bar {
   display: flex;

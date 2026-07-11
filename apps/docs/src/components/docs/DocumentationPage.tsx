@@ -20,7 +20,6 @@ import FileTree from '../FileTree';
 import fileTreeStyles from '../FileTree.module.css';
 
 import { socialLinks } from '../../constants/social';
-import { UI_CLASSES } from '../../constants/ui';
 import { getMobileTogglePositionClasses, uiConfig } from '../../config/ui';
 import TableOfContents from './TableOfContents';
 import {

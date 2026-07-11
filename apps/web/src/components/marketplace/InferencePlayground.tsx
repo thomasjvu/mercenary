@@ -54,8 +54,28 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
           <p className="inference-playground__meta" aria-live="polite">
             {state.modelSummary}
           </p>
+          <p className="quiet-note">
+            Each call is independent — resend prior turns in your prompt/history for multi-turn.
+            {state.budgetPreview ? ` ${state.budgetPreview}.` : ''}
+          </p>
 
-          <details className="inference-playground__advanced">
+          <label className="inference-playground__live-toggle">
+            <input
+              checked={state.liveOnly}
+              onChange={(event) => state.setLiveOnly(event.target.checked)}
+              type="checkbox"
+            />
+            <span>live offers only ({state.liveMarketCount} markets)</span>
+          </label>
+
+          {!state.apiKey.trim() && !state.strictE2ee ? (
+            <p className="quiet-note">
+              Need a buyer key? Create one under <a href="/onboarding/buyer">Buy onboarding</a> or
+              paste a saved <code>br_...</code> below.
+            </p>
+          ) : null}
+
+          <details className="inference-playground__advanced" open={!state.apiKey.trim()}>
             <summary>credentials</summary>
             <div className="inference-playground__field-grid inference-playground__field-grid--stack">
               {state.savedApiKeys.length > 0 ? (

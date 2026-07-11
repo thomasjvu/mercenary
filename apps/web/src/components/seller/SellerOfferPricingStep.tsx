@@ -23,7 +23,7 @@ export function SellerOfferPricingStep({ state }: SellerOfferPricingStepProps) {
         <span aria-hidden="true" className="sell-form-row__mark">
           ○
         </span>
-        <strong>Set pricing &amp; lane</strong>
+        <strong>Set pricing</strong>
       </div>
       <div className="sell-form-row__fields sell-form-row__fields--grid">
         <FormInput
@@ -40,32 +40,37 @@ export function SellerOfferPricingStep({ state }: SellerOfferPricingStepProps) {
           value={payoutWallet}
         />
       </div>
-      <div className="sell-lane-toggle" role="group" aria-label="Offer lane">
-        <button
-          className={`sell-lane-toggle__btn${offerLane === 'chat' ? ' is-active' : ''}`}
-          onClick={() => setOfferLane('chat')}
-          type="button"
-        >
-          <span className="sell-lane-toggle__title">Chat</span>
-          <span className="sell-lane-toggle__hint">Single completion · discount inference</span>
-        </button>
-        <button
-          className={`sell-lane-toggle__btn${offerLane === 'harness' ? ' is-active' : ''}`}
-          onClick={() => setOfferLane('harness')}
-          type="button"
-        >
-          <span className="sell-lane-toggle__title">Harness</span>
-          <span className="sell-lane-toggle__hint">
-            Multi-step tool loop · platform seat (no personal Phala box)
-          </span>
-        </button>
-      </div>
       <p className="quiet-note">
-        Buyers pay {buyerPercent}% of reference at {discountPercent}% discount.
-        {offerLane === 'harness'
-          ? ' Harness offers publish as agent_harness (fresh install) on shared platform seats.'
-          : ' Chat offers publish as api_chat single-shot completions.'}
+        Buyers pay {buyerPercent}% of reference at {discountPercent}% discount. Default is{' '}
+        <strong>chat</strong> (single completion) — best first publish.
       </p>
+      <details className="sell-advanced" open={offerLane === 'harness'}>
+        <summary>Agent seat (advanced)</summary>
+        <div className="sell-lane-toggle" role="group" aria-label="Offer lane">
+          <button
+            className={`sell-lane-toggle__btn${offerLane === 'chat' ? ' is-active' : ''}`}
+            onClick={() => setOfferLane('chat')}
+            type="button"
+          >
+            <span className="sell-lane-toggle__title">Chat</span>
+            <span className="sell-lane-toggle__hint">Single completion · discount inference</span>
+          </button>
+          <button
+            className={`sell-lane-toggle__btn${offerLane === 'harness' ? ' is-active' : ''}`}
+            onClick={() => setOfferLane('harness')}
+            type="button"
+          >
+            <span className="sell-lane-toggle__title">Harness</span>
+            <span className="sell-lane-toggle__hint">
+              Multi-step tool loop · platform seat (no personal Phala box)
+            </span>
+          </button>
+        </div>
+        <p className="quiet-note">
+          Harness seats share platform capacity. Buyers do not get a dedicated Phala box per seller.
+          Multi-turn chat history is owned by the client — each request is independent.
+        </p>
+      </details>
     </div>
   );
 }

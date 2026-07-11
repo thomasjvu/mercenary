@@ -37,8 +37,18 @@ export type PlaygroundUserMessage = {
 export function useInferencePlayground({ initialModelId }: UseInferencePlaygroundOptions = {}) {
   const markets = useSWR('playground-markets', () => fetchMarkets());
 
+  const [liveOnly, setLiveOnly] = useState(true);
+
   const modelOptions = useMemo(
-    () => buildPlaygroundModelOptions(markets.data?.data ?? []),
+    () => buildPlaygroundModelOptions(markets.data?.data ?? [], { liveOnly }),
+    [markets.data?.data, liveOnly]
+  );
+
+  const liveMarketCount = useMemo(
+    () =>
+      (markets.data?.data ?? []).filter(
+        (market) => (market.activeProviderCount ?? market.providerCount ?? 0) > 0
+      ).length,
     [markets.data?.data]
   );
 
@@ -187,24 +197,33 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
       ? JSON.stringify({ content: responseText }, null, 2)
       : 'Run inference to see response metadata here.';
 
+  const budgetPreview =
+    selectedModel?.referenceRateUsd != null
+      ? `cheapest ~$${selectedModel.referenceRateUsd.toFixed(4)}/task · budget cap $${maxBudget || '1'}`
+      : maxBudget
+        ? `budget cap $${maxBudget}`
+        : null;
+
   const modelSummary = selectedModel
     ? [
         selectedModel.liveSellers > 0 ? `${selectedModel.liveSellers} live` : 'catalog only',
-        selectedModel.referenceRateUsd != null
-          ? `from $${selectedModel.referenceRateUsd.toFixed(3)}`
-          : null,
+        budgetPreview,
         selectedModel.teeAttested ? 'tee' : null,
         selectedModel.e2ee ? 'e2ee' : null,
       ]
         .filter(Boolean)
         .join(' · ')
-    : 'pick a model';
+    : liveOnly && liveMarketCount === 0
+      ? 'No live offers yet — turn off “live only” or sell a model'
+      : 'pick a model';
 
   const providerPlaceholder = markets.isLoading ? 'loading...' : 'any provider';
   const modelPlaceholder = markets.isLoading
     ? 'loading...'
     : filteredModelOptions.length === 0
-      ? 'no models'
+      ? liveOnly
+        ? 'no live models'
+        : 'no models'
       : 'search models...';
 
   async function handleRun() {
@@ -231,7 +250,8 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
 
     if (selectedModel && selectedModel.liveSellers === 0 && privacyMode !== 'strict') {
       setError({
-        message: 'No live sellers for this model yet. Pick a model with active sellers.',
+        message:
+          'No live sellers for this model yet. Pick a live model, turn on “live only”, or sell it yourself from New offer.',
         variant: 'guide',
       });
       return;
@@ -325,6 +345,9 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
     setModel,
     providerFilter,
     setProviderFilter,
+    liveOnly,
+    setLiveOnly,
+    liveMarketCount,
     prompt,
     setPrompt,
     savedApiKeys,
@@ -338,6 +361,7 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
     setPrivacyMode,
     maxBudget,
     setMaxBudget,
+    budgetPreview,
     pending,
     error,
     responseText,

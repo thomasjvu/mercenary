@@ -188,6 +188,17 @@ export async function prepareApiServer(
 async function main() {
   const orchestrator = await createDefaultOrchestrator(runtimeOptionsFromEnv());
   const app = await prepareApiServer(orchestrator);
+  if (process.env.BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY === '1') {
+    const { bootstrapPlatformLiquidity } = await import('./lib/platform-liquidity.js');
+    const result = await bootstrapPlatformLiquidity({ orchestrator, env: process.env });
+    logger.info(
+      {
+        published: result.published.length,
+        skipped: result.skipped.length,
+      },
+      'platform liquidity bootstrap complete'
+    );
+  }
   const port = Number(process.env.PORT || NETWORK.LOCAL_API_PORT.toString());
   const host = process.env.BOSSRAID_API_HOST ?? process.env.HOST ?? NETWORK.LOCALHOST;
   await app.listen({ port, host });

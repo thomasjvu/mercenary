@@ -50,6 +50,8 @@ curl http://127.0.0.1:8787/v1/inference/chat/completions \
 
 Each call is independent: include prior turns in `messages` if you want multi-turn context. Boss Raid does not store chat threads for you.
 
+**Playground first success:** open `/playground`, leave **live offers only** on, paste a `br_...` key (create under Buy onboarding if needed), pick a model with live sellers, run. Empty live markets mean no sellers yet — try another model or [sell](../sellers/sell.md).
+
 Defaults: one seller, `cost_first` routing, `allowed_model_ids` = request `model`. Budget defaults to the cheapest matching seller rate when `max_total_cost` is omitted.
 
 ## Response metadata

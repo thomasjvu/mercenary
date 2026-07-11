@@ -13,7 +13,8 @@ export type PlaygroundModelOption = {
 };
 
 export function buildPlaygroundModelOptions(
-  markets: InferenceMarket[] = []
+  markets: InferenceMarket[] = [],
+  options: { liveOnly?: boolean } = {}
 ): PlaygroundModelOption[] {
   const catalogById = new Map(INFERENCE_MODEL_CATALOG.map((entry) => [entry.modelId, entry]));
 
@@ -31,5 +32,11 @@ export function buildPlaygroundModelOptions(
         attestationVendor: catalog?.attestationVendor ?? catalog?.modelProvider ?? 'venice',
       };
     })
-    .sort((left, right) => left.displayName.localeCompare(right.displayName));
+    .filter((entry) => !options.liveOnly || entry.liveSellers > 0)
+    .sort((left, right) => {
+      // Live inventory first, then alpha
+      if (left.liveSellers > 0 && right.liveSellers === 0) return -1;
+      if (left.liveSellers === 0 && right.liveSellers > 0) return 1;
+      return left.displayName.localeCompare(right.displayName);
+    });
 }

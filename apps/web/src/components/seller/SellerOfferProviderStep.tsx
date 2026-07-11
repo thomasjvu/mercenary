@@ -1,8 +1,8 @@
 import type { UpstreamProviderId } from '@bossraid/constants';
-import { upstreamProviderLabel } from '../../api/seller-upstream.js';
 import { FormInput, FormSelect, FormStatus } from '../system/FormField.js';
 import {
   SELLER_PROVIDER_ORDER,
+  sellerProviderOptionLabel,
   type SellerUpstreamOnboardingState,
 } from '../../hooks/useSellerUpstreamOnboarding.js';
 
@@ -37,10 +37,15 @@ export function SellerOfferProviderStep({ state }: SellerOfferProviderStepProps)
         <FormSelect
           label="Provider"
           onChange={(event) => setProvider(event.target.value as UpstreamProviderId)}
-          options={SELLER_PROVIDER_ORDER.map((entry) => [entry, upstreamProviderLabel(entry)])}
+          options={SELLER_PROVIDER_ORDER.map((entry) => [entry, sellerProviderOptionLabel(entry)])}
           value={provider}
         />
-        <p className="quiet-note">{providerConfig.upstreamBase}</p>
+        <p className="quiet-note">
+          {providerConfig.upstreamBase}
+          {provider === 'anthropic'
+            ? ' · Direct Anthropic (catalog ids anthropic/*). Venice resale Claude is a different listing.'
+            : ''}
+        </p>
         <FormInput
           autoComplete="off"
           label="Provider API key"

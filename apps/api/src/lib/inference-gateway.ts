@@ -21,6 +21,7 @@ import { buildInferenceReceipt, verifyUpstreamTee } from './attestation-service.
 import type { InferenceReceiptStore } from './inference-receipt-store.js';
 import { extractInferencePromptFromTask } from './task-prompt.js';
 import { generateAttestationNonce, probeUpstreamChatCompletion } from './upstream/index.js';
+import { resolveHostedUpstreamApiKey } from './platform-liquidity.js';
 import { harnessKindForUpstream } from './upstream-offers.js';
 import { probeVeniceE2eeChatCompletion } from './venice-e2ee.js';
 
@@ -84,12 +85,22 @@ export function isHostedHarnessProvider(provider: ProviderProfile): boolean {
 
 export function probeHostedInferenceProviderHealth(
   controlState: ApiControlState,
-  provider: ProviderProfile
+  provider: ProviderProfile,
+  env: NodeJS.ProcessEnv = process.env
 ): ProviderHealthStatus {
   const wallet = provider.source?.externalRef;
   const upstream = resolveHostedProviderUpstream(provider);
   const configured =
-    wallet && upstream ? Boolean(controlState.readSellerUpstreamConfig(wallet, upstream)) : false;
+    wallet && upstream
+      ? Boolean(
+          resolveHostedUpstreamApiKey({
+            controlState,
+            wallet,
+            upstream,
+            env,
+          }) || controlState.readSellerUpstreamConfig(wallet, upstream)
+        )
+      : false;
 
   return {
     providerId: provider.providerId,
@@ -142,7 +153,12 @@ export async function runInferenceGatewayJob(input: {
     input.provider.pricing?.upstreamModelId ?? input.provider.modelId ?? input.body.providerId;
 
   try {
-    const resolvedApiKey = input.controlState.readSellerUpstreamApiKey(wallet, upstream);
+    const resolvedApiKey = resolveHostedUpstreamApiKey({
+      controlState: input.controlState,
+      wallet,
+      upstream,
+      env: input.env,
+    });
     if (!resolvedApiKey) {
       throw new Error(`${upstream} API key is not configured for this seller.`);
     }
@@ -282,7 +298,12 @@ export async function runHarnessGatewayJob(input: {
   }
 
   try {
-    const resolvedApiKey = input.controlState.readSellerUpstreamApiKey(wallet, upstream);
+    const resolvedApiKey = resolveHostedUpstreamApiKey({
+      controlState: input.controlState,
+      wallet,
+      upstream,
+      env,
+    });
     if (!resolvedApiKey) {
       throw new Error(`${upstream} API key is not configured for this seller.`);
     }

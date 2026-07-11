@@ -83,6 +83,9 @@ paths:
                   settlement:
                     type: object
                     additionalProperties: true
+                  limits:
+                    type: object
+                    additionalProperties: true
                 required:
                   - ok
                   - gates
@@ -1621,6 +1624,114 @@ paths:
         "200":
           description: Default Response
   /v1/seller/upstream/phala/offers/{modelId}:
+    delete:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: modelId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/xai/connect:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/xai/models/catalog:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/xai/models:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/xai/offers:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/xai/config:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/xai/offers/{modelId}:
+    delete:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: modelId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/zai/connect:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/zai/models/catalog:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/zai/models:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/zai/offers:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/zai/config:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/zai/offers/{modelId}:
+    delete:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: modelId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/anthropic/connect:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/anthropic/models/catalog:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/anthropic/models:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/anthropic/offers:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/anthropic/config:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/anthropic/offers/{modelId}:
     delete:
       parameters:
         - schema:

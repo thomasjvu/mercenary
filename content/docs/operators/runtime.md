@@ -6,8 +6,9 @@ Verification, deploy, and operator workflows. Env tables: [reference/env.md](../
 
 1. **Local or Phala** — `pnpm dev` for local stack; Phala bootstrap via [Infisical](/dev-docs/operators/infisical).
 2. **Readiness** — `GET /v1/ops/production-readiness` must return `ok: true` for full production.
-3. **Ops UI** — authenticate with `BOSSRAID_ADMIN_TOKEN`, monitor raids, toggle x402.
-4. **Ship** — gateway (`pnpm bossraid serve:gateway`) or Cloudflare Pages deploy.
+3. **Liquidity (optional)** — set platform `BOSSRAID_*_API_KEY` values, then `POST /v1/ops/platform-liquidity/bootstrap` with admin token (or `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1` on API start) so featured models have live chat offers.
+4. **Ops UI** — authenticate with `BOSSRAID_ADMIN_TOKEN`, monitor raids, toggle x402.
+5. **Ship** — gateway (`pnpm bossraid serve:gateway`) or Cloudflare Pages deploy.
 
 Contributor scripts (`check`, `build`, `dev`, `test:*`) live in root `package.json`. Operator, deploy, and integration commands use `pnpm bossraid <command>` — run `pnpm bossraid help` for the full list.
 

@@ -9,6 +9,10 @@ import {
 } from '@bossraid/constants';
 import { buildProductionReadinessReport } from '../lib/production-readiness.js';
 import {
+  bootstrapPlatformLiquidity,
+  listPlatformLiquidityCandidates,
+} from '../lib/platform-liquidity.js';
+import {
   isFullOnchainSettlementConfigured,
   isSettlementGateConfigured,
 } from '../lib/settlement-mode.js';
@@ -555,6 +559,61 @@ export function registerOpsRoutes(
         },
         workerIsolation,
       });
+    }
+  );
+
+  app.get(
+    '/v1/ops/platform-liquidity',
+    {
+      schema: internalRouteSchema({
+        tags: ['Ops'],
+        summary: 'Featured model liquidity candidates and key coverage',
+        response: {
+          200: { type: 'object', additionalProperties: true },
+          401: apiErrorSchema,
+        },
+      }),
+    },
+    async (request, reply) => {
+      const adminError = requireAdmin(reply, request.headers);
+      if (adminError) {
+        return adminError;
+      }
+      const candidates = listPlatformLiquidityCandidates(env);
+      return {
+        object: 'platform_liquidity_status',
+        candidates,
+        readyCount: candidates.filter((entry) => entry.hasPlatformKey).length,
+      };
+    }
+  );
+
+  app.post(
+    '/v1/ops/platform-liquidity/bootstrap',
+    {
+      schema: internalRouteSchema({
+        tags: ['Ops'],
+        summary: 'Register platform-owned chat offers for featured models with platform keys',
+        response: {
+          200: { type: 'object', additionalProperties: true },
+          401: apiErrorSchema,
+        },
+      }),
+    },
+    async (request, reply) => {
+      const adminError = requireAdmin(reply, request.headers);
+      if (adminError) {
+        return adminError;
+      }
+      const body = (request.body ?? {}) as { discountPercent?: number };
+      const result = await bootstrapPlatformLiquidity({
+        orchestrator,
+        env,
+        discountPercent:
+          typeof body.discountPercent === 'number' ? body.discountPercent : undefined,
+      });
+      reply.code(200);
+      return result;
     }
   );
 }

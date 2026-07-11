@@ -44,13 +44,19 @@ Single-provider marketplace lane. API normalizes every request to `maxAgents: 1`
 
 Self-serve sellers connect a Venice API key in the web UI. The API stores the key encrypted in control state, materializes one provider profile per selected model, and routes inference through an embedded hosted gateway:
 
-1. Seller `POST /v1/seller/upstream/:provider/connect` validates the key against upstream `GET /models` (`zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`).
-2. Seller `POST /v1/seller/upstream/:provider/offers` registers offers with `source.type = inference_hosted` and `source.targetType = :provider`.
+1. Seller `POST /v1/seller/upstream/:provider/connect` validates the key against upstream `GET /models` (`anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`).
+2. Seller `POST /v1/seller/upstream/:provider/offers` registers offers with `lane: "chat"` (`inference_hosted`) or `lane: "harness"` (`harness_hosted`) and `source.targetType = :provider`.
 3. Each offer endpoint is `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`.
-4. Gateway `POST /v1/raid/accept` proxies the raid task to the upstream chat API, verifies TEE attestation when privacy features are claimed, and records the provider submission in-process.
+4. Gateway `POST /v1/raid/accept` proxies the raid task to the upstream chat API (or platform agent-harness tool loop), verifies TEE attestation when privacy features are claimed, and records the provider submission in-process.
 5. Buyers and sellers verify upstream TEE via `POST /v1/marketplace/tee/attestation` (provider-specific nonce + Intel/NVIDIA evidence; explorer link to proof.t16z.com).
 
-Buyers still use `POST /v1/inference/chat/completions`. The static inference catalog fills discovery gaps when no live seller exists for a model.
+**Platform liquidity:** ops can seed featured chat offers with `POST /v1/ops/platform-liquidity/bootstrap` (admin token) when matching `BOSSRAID_*_API_KEY` values are set. Optional startup: `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1`. Platform seats use `source.externalRef = "platform"` and fall back to platform keys (no per-seller Phala).
+
+Buyers still use `POST /v1/inference/chat/completions`. The static inference catalog fills discovery gaps when no live seller exists for a model. Chat is **stateless** — clients own multi-turn history.
+
+### Production readiness (honest)
+
+Full production requires `GET /v1/ops/production-readiness` → `ok: true` (onchain settlement, Phala TEE + `MNEMONIC`, container eval, strong secrets, no mocks, operator acks). SQLite is allowed with a storage warning for controlled launch. x402 may stay off for private rehearsal. Feature code can be ready while a specific host is still blocked by ops gates.
 
 ## Apps
 
