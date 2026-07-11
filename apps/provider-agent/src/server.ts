@@ -67,6 +67,7 @@ async function runProviderJob(
         teeSocketPath: providerConfig.teeSocketPath,
         externalApiCalls,
         dataRetained: false,
+        harnessProfile: providerConfig.harnessProfile,
       }
     );
     await callback(`/v1/providers/${body.providerId}/submit`, {
@@ -106,6 +107,11 @@ export function buildProviderAgentServer() {
       providerId: providerConfig.providerId,
       providerName: providerConfig.displayName,
       model: providerConfig.modelName ?? null,
+      modelProvider: providerConfig.modelProvider ?? null,
+      agentFramework: providerConfig.agentFramework ?? null,
+      modelApiBase: providerConfig.modelApiBase,
+      harnessProfile: providerConfig.harnessProfile ?? null,
+      harnessMode: providerConfig.harness.kind,
     };
   });
 

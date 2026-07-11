@@ -92,6 +92,9 @@ export function serializeProviderHealth(
     missing: options.includeDiagnostics ? health.missing : undefined,
     modelApiBase: options.includeDiagnostics ? health.modelApiBase : undefined,
     error: options.includeDiagnostics ? health.error : undefined,
+    agentFramework: health.agentFramework,
+    modelProvider: health.modelProvider,
+    harnessProfile: health.harnessProfile,
   };
 }
 

@@ -6,6 +6,14 @@ function readBoolean(value: string | undefined): boolean {
 }
 
 import { NETWORK } from '@bossraid/constants';
+import {
+  buildHarnessProfile,
+  normalizeHarnessKind,
+  parseHarnessSkills,
+  planProviderForHarness,
+  resolveInstallation,
+  type HarnessRuntimeConfig,
+} from './harness/index.js';
 
 function normalizeAuthType(value: string, envKey: string): ProviderAgentAuthType {
   if (value === 'bearer' || value === 'hmac' || value === 'none') {
@@ -102,6 +110,40 @@ export function buildProviderConfig(env: NodeJS.ProcessEnv = process.env) {
   validateAuthConfig('Provider ingress', providerAuth, allowInsecureAuth);
   validateAuthConfig('Callback', callbackAuth, allowInsecureAuth);
 
+  const harnessKind = normalizeHarnessKind(env.BOSSRAID_HARNESS_MODE);
+  const harnessSkills = parseHarnessSkills(env.BOSSRAID_HARNESS_SKILLS);
+  const defaultModelBase =
+    harnessKind === 'grok'
+      ? 'https://api.x.ai/v1'
+      : harnessKind === 'codex'
+        ? 'https://api.openai.com/v1'
+        : 'https://api.openai.com/v1';
+  const modelApiBase = env.BOSSRAID_MODEL_API_BASE ?? defaultModelBase;
+  const modelName =
+    env.BOSSRAID_MODEL ??
+    (readBoolean(env.BOSSRAID_PROVIDER_STUB_MODE)
+      ? harnessKind === 'grok'
+        ? 'grok-4.5'
+        : 'gpt-5.5'
+      : harnessKind === 'grok'
+        ? 'grok-4.5'
+        : harnessKind === 'codex'
+          ? 'gpt-5.5'
+          : undefined);
+
+  const harness: HarnessRuntimeConfig = {
+    kind: harnessKind,
+    installation: resolveInstallation(harnessSkills),
+    skills: harnessSkills,
+    imageDigest: env.BOSSRAID_HARNESS_IMAGE_DIGEST?.trim() || undefined,
+    modelId: modelName,
+    modelApiBase,
+    planProvider: env.BOSSRAID_HARNESS_PLAN_PROVIDER ?? planProviderForHarness(harnessKind),
+    maxSteps: Math.max(1, Math.min(32, Number(env.BOSSRAID_HARNESS_MAX_STEPS ?? '10'))),
+    allowShell: readBoolean(env.BOSSRAID_HARNESS_ALLOW_SHELL),
+  };
+  const harnessProfile = buildHarnessProfile(harness);
+
   return {
     providerId: env.BOSSRAID_PROVIDER_ID ?? 'provider-agent',
     displayName: env.BOSSRAID_PROVIDER_NAME ?? 'Provider Agent',
@@ -114,14 +156,21 @@ export function buildProviderConfig(env: NodeJS.ProcessEnv = process.env) {
       env.BOSSRAID_PROVIDER_INSTRUCTIONS ??
       'You are a specialist patch author. Return the smallest correct unified diff that addresses the reported issue without touching unrelated code.',
     stubMode: readBoolean(env.BOSSRAID_PROVIDER_STUB_MODE),
-    modelApiBase: env.BOSSRAID_MODEL_API_BASE ?? 'https://api.openai.com/v1',
+    modelApiBase,
     modelApiKey: env.BOSSRAID_MODEL_API_KEY,
-    modelName:
-      env.BOSSRAID_MODEL ?? (readBoolean(env.BOSSRAID_PROVIDER_STUB_MODE) ? 'gpt-5.5' : undefined),
+    modelName,
     modelReasoningEffort: env.BOSSRAID_MODEL_REASONING_EFFORT ?? 'medium',
     modelTimeoutMs: Number(env.BOSSRAID_MODEL_TIMEOUT_MS ?? '45000'),
     maxOutputTokens: Number(env.BOSSRAID_MAX_OUTPUT_TOKENS ?? '2200'),
     providerMode: normalizeProviderMode(env.BOSSRAID_PROVIDER_MODE),
+    agentFramework:
+      env.BOSSRAID_AGENT_FRAMEWORK ??
+      (harnessKind === 'codex' ? 'codex' : harnessKind === 'grok' ? 'grok' : 'custom'),
+    modelProvider:
+      env.BOSSRAID_MODEL_PROVIDER ??
+      (harnessKind === 'grok' ? 'xai' : harnessKind === 'codex' ? 'openai' : undefined),
+    harness,
+    harnessProfile,
     providerAuth,
     callbackAuth,
     privacyFeatures: (() => {

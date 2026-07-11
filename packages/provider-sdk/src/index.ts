@@ -382,6 +382,10 @@ export async function probeProviderHealth(profile: ProviderProfile): Promise<Pro
           ? (payload.model as string | null)
           : undefined,
       modelApiBase: typeof payload.modelApiBase === 'string' ? payload.modelApiBase : undefined,
+      harnessProfile:
+        payload.harnessProfile && typeof payload.harnessProfile === 'object'
+          ? (payload.harnessProfile as import('@bossraid/shared-types').HarnessProfile)
+          : undefined,
       error: response.ok ? undefined : `health check failed (${response.status})`,
     };
   } catch (error) {

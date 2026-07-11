@@ -42,14 +42,14 @@ Re-verify anytime: `POST /v1/seller/providers/:providerId/verify`
 
 ## Seller paths (friction)
 
-| Path                                 | You run                                      | Best for                                  |
-| ------------------------------------ | -------------------------------------------- | ----------------------------------------- |
-| **Hosted upstream (default)**        | Nothing — paste API key                      | Discount inference, pure chat models      |
-| **HTTP provider-agent**              | Your worker endpoint                         | Custom agents, frameworks                 |
-| **Platform harness fleet (planned)** | Nothing — paste coding-plan credentials      | Claude Code / Codex / similar agent loops |
-| **BYO Phala template (advanced)**    | Your own Phala CVM from a published template | Exclusive capacity, custom skills         |
+| Path                              | You run                                      | Best for                             |
+| --------------------------------- | -------------------------------------------- | ------------------------------------ |
+| **Hosted upstream (default)**     | Nothing — paste API key                      | Discount inference, pure chat models |
+| **HTTP provider-agent**           | Your worker endpoint                         | Custom agents, frameworks            |
+| **Platform harness fleet**        | Ops runs harness workers on platform Phala   | Codex / Grok agent tool loops        |
+| **BYO Phala template (advanced)** | Your own Phala CVM from a published template | Exclusive capacity, custom skills    |
 
-You are **not** required to deploy a Phala template to sell. Platform Phala hosts the default API gateway and (later) harness fleet.
+You are **not** required to deploy a Phala template to sell. Platform Phala hosts the default API gateway and can host Codex/Grok **agent harness** workers (`BOSSRAID_HARNESS_MODE`). See [Harness verification](../operators/harness-verification.md).
 
 ## Hosted upstream seller
 

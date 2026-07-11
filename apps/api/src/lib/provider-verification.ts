@@ -45,7 +45,8 @@ export function buildProviderVerificationFromHealth(
 
 export function buildProviderVerificationRegistrationInput(
   provider: ProviderProfile,
-  verification: NonNullable<ProviderProfile['verification']>
+  verification: NonNullable<ProviderProfile['verification']>,
+  health?: ProviderHealthStatus
 ): ProviderRegistrationInput {
   return {
     agentId: provider.agentId ?? provider.providerId,
@@ -57,9 +58,9 @@ export function buildProviderVerificationRegistrationInput(
     supportedFrameworks: provider.supportedFrameworks,
     outputTypes: provider.outputTypes,
     modelFamily: provider.modelFamily,
-    agentFramework: provider.agentFramework,
-    modelProvider: provider.modelProvider,
-    modelId: provider.modelId,
+    agentFramework: health?.agentFramework ?? provider.agentFramework,
+    modelProvider: health?.modelProvider ?? provider.modelProvider,
+    modelId: typeof health?.model === 'string' ? health.model : (provider.modelId ?? undefined),
     maxConcurrency: provider.maxConcurrency,
     source: provider.source,
     privacy: provider.privacy,
@@ -73,7 +74,7 @@ export function buildProviderVerificationRegistrationInput(
     auth: provider.auth,
     verification,
     reputation: provider.reputation,
-    harnessProfile: provider.harnessProfile,
+    harnessProfile: health?.harnessProfile ?? provider.harnessProfile,
     marketplaceOfferStatus: provider.marketplaceOfferStatus,
   };
 }
@@ -95,7 +96,7 @@ export async function verifyProviderFromHealth(
 ): Promise<ProviderProfile> {
   const verification = buildProviderVerificationFromHealth(provider, health);
   return orchestrator.upsertRegisteredProvider(
-    buildProviderVerificationRegistrationInput(provider, verification),
+    buildProviderVerificationRegistrationInput(provider, verification, health),
     { allowTakeover: false }
   );
 }

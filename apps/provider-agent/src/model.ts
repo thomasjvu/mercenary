@@ -1,5 +1,6 @@
 import type { ProviderTaskPackage } from '@bossraid/shared-types';
 import { providerConfig } from './config.js';
+import { runAgentHarnessLoop } from './harness/index.js';
 import {
   attachContributionRole,
   maybeRequestSpecializedSubmission,
@@ -244,6 +245,20 @@ export async function requestModelSubmission(
 
   const timeRemainingMs = Math.max(deadlineUnix * 1000 - Date.now() - 1000, 1_000);
   const timeoutMs = Math.min(providerConfig.modelTimeoutMs, timeRemainingMs);
+
+  if (providerConfig.harness.kind !== 'off') {
+    const harnessResult = await runAgentHarnessLoop({
+      task,
+      config: providerConfig.harness,
+      apiBase: providerConfig.modelApiBase,
+      apiKey: providerConfig.modelApiKey,
+      model: providerConfig.modelName,
+      timeoutMs: Math.max(timeoutMs, 15_000),
+    });
+    const { harnessTrace: _trace, ...submission } = harnessResult;
+    return attachContributionRole(normalizeSubmission(submission, task), task);
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 

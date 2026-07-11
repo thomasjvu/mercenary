@@ -7,6 +7,7 @@ export interface PrivacyFeaturesConfig {
   teeSocketPath?: string;
   externalApiCalls?: string[];
   dataRetained?: boolean;
+  harnessProfile?: import('@bossraid/shared-types').HarnessProfile;
 }
 
 const PROVIDER_TEE_CACHE_TTL_MS = 10 * 60 * 1000;
@@ -27,7 +28,21 @@ export async function buildProviderPrivacyAttestation(
     providerTeeCache,
     PROVIDER_TEE_CACHE_TTL_MS,
     {
-      reportData: JSON.stringify({ providerId, raidId }),
+      reportData: JSON.stringify({
+        providerId,
+        raidId,
+        harness: config.harnessProfile
+          ? {
+              lane: config.harnessProfile.lane,
+              installation: config.harnessProfile.installation,
+              compositionHash: config.harnessProfile.compositionHash,
+              framework: config.harnessProfile.framework,
+              planProvider: config.harnessProfile.planProvider,
+              imageDigest: config.harnessProfile.imageDigest,
+              skills: config.harnessProfile.skills.map((skill) => skill.id),
+            }
+          : null,
+      }),
       runtimeMode: process.env.BOSSRAID_TEE_RUNTIME_MODE ?? 'phala-cvm-gpu',
       skipCloudVerify: process.env.BOSSRAID_HOST_TEE_SKIP_CLOUD_VERIFY === '1',
     }

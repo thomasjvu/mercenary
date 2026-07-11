@@ -212,6 +212,10 @@ These vars are for local development, CI smoke tests, and contributor tooling. *
 | `BOSSRAID_DEV_SPAWN_PROVIDERS`           | When `true`, `pnpm dev` spawns local provider workers          |
 | `BOSSRAID_CALLBACK_BASE`                 | Provider callback URL in local dev                             |
 | `BOSSRAID_PROVIDER_STUB_MODE`            | `1` = stub upstream responses in `dev:providers`               |
+| `BOSSRAID_HARNESS_MODE`                  | `off` \| `codex` \| `grok` — agent tool loop in provider-agent |
+| `BOSSRAID_HARNESS_SKILLS`                | Comma skill ids (`id` or `id@version`); empty = fresh          |
+| `BOSSRAID_HARNESS_IMAGE_DIGEST`          | Optional worker image digest for harness profile               |
+| `BOSSRAID_HARNESS_MAX_STEPS`             | Max tool-loop steps (default 10)                               |
 | `BOSSRAID_BOUNTY_E2E_PROVIDER_ID`        | Bounty smoke provider override (default `bounty-e2e-provider`) |
 | `BOSSRAID_BOUNTY_E2E_PROVIDER_TOKEN`     | Bounty smoke bearer token (default `bossraid-bounty-e2e`)      |
 | `BOSSRAID_BOUNTY_E2E_REWARD_USD`         | Bounty smoke reward amount (default `0.5`)                     |

@@ -113,5 +113,6 @@ export type ProviderHealthViewResponse = {
   modelProvider?: string;
   model?: string | null;
   modelApiBase?: string;
+  harnessProfile?: ProviderViewResponse['harnessProfile'];
   error?: string;
 };
