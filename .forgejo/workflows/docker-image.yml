@@ -1,4 +1,5 @@
 # Build + push production images on spectre (native linux/amd64). Never QEMU on laptops.
+# Host label has Docker but not Node — avoid actions/checkout (needs node).
 name: Docker Image
 
 on:
@@ -13,7 +14,7 @@ on:
 jobs:
   publish:
     runs-on: spectre
-    timeout-minutes: 60
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -26,8 +27,21 @@ jobs:
             docker_target: evaluator-job
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout (shell)
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/src"
+          mkdir -p "$RUNNER_TEMP/src"
+          cd "$RUNNER_TEMP/src"
+          git init
+          git remote add origin "https://x-access-token:${REPO_TOKEN}@forgejo.phantasy.bot/${GITHUB_REPOSITORY}.git"
+          git fetch --depth 1 origin "$GITHUB_SHA"
+          git checkout --force FETCH_HEAD
+          echo "WORKSPACE=$PWD" >> "$GITHUB_ENV"
+          pwd
+          git rev-parse --short HEAD
 
       - name: Login to GHCR
         env:
@@ -41,36 +55,28 @@ jobs:
           fi
           echo "$GHCR_TOKEN" | docker login ghcr.io -u "${GHCR_USERNAME:-thomasjvu}" --password-stdin
 
-      - name: Derive tags
-        id: tags
-        run: |
-          set -euo pipefail
-          REF="${GITHUB_REF_NAME:-development}"
-          SHA="$(git rev-parse --short HEAD)"
-          IMAGE="ghcr.io/thomasjvu/${{ matrix.image_name }}"
-          TAGS="${IMAGE}:${REF}"
-          TAGS="${TAGS} ${IMAGE}:sha-${SHA}"
-          if [ "$REF" = "main" ]; then
-            TAGS="${TAGS} ${IMAGE}:latest"
-          fi
-          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
-          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
-          echo "Building ${IMAGE} from ref=${REF} sha=${SHA}"
-
       - name: Build and push (native amd64)
         run: |
           set -euo pipefail
-          IMAGE="${{ steps.tags.outputs.image }}"
+          cd "${WORKSPACE}"
+          REF="${GITHUB_REF_NAME:-development}"
+          SHA="$(git rev-parse --short HEAD)"
+          IMAGE="ghcr.io/thomasjvu/${{ matrix.image_name }}"
+          TAGS=("${IMAGE}:${REF}" "${IMAGE}:sha-${SHA}")
+          if [ "$REF" = "main" ]; then
+            TAGS+=("${IMAGE}:latest")
+          fi
           TAG_ARGS=()
-          for t in ${{ steps.tags.outputs.tags }}; do
+          for t in "${TAGS[@]}"; do
             TAG_ARGS+=(-t "$t")
           done
+          echo "Building ${IMAGE} target=${{ matrix.docker_target }} tags=${TAGS[*]}"
           docker build \
             --platform linux/amd64 \
             --target "${{ matrix.docker_target }}" \
             "${TAG_ARGS[@]}" \
             -f Dockerfile \
             .
-          for t in ${{ steps.tags.outputs.tags }}; do
+          for t in "${TAGS[@]}"; do
             docker push "$t"
           done
