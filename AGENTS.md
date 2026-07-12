@@ -20,6 +20,7 @@ Boss Raid is the platform. Mercenary is the orchestrator agent.
 - [content/docs/operators/architecture.md](/Users/area/repos/boss-raid/content/docs/operators/architecture.md)
 - [content/docs/reference/routes.md](/Users/area/repos/boss-raid/content/docs/reference/routes.md)
 - [content/docs/operators/runtime.md](/Users/area/repos/boss-raid/content/docs/operators/runtime.md)
+- [content/docs/operators/source-control.md](/Users/area/repos/boss-raid/content/docs/operators/source-control.md) — Forgejo canonical, GitHub mirror, spectre CI
 
 ## Rules
 
