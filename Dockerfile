@@ -11,7 +11,15 @@ ENV TURBO_CACHE_DIR=/tmp/turbo-cache
 
 COPY . .
 RUN pnpm install --frozen-lockfile
-RUN pnpm turbo run build --filter=@bossraid/api... --filter=@bossraid/evaluator... --filter=@bossraid/provider-agent... --filter=@bossraid/web... --filter=@bossraid/ops...
+# concurrency=1 avoids flaky mkdir races under qemu/buildx (linux/amd64 on arm hosts)
+ARG TURBO_CONCURRENCY=1
+RUN mkdir -p "$TURBO_CACHE_DIR" \
+  && pnpm turbo run build --concurrency="${TURBO_CONCURRENCY}" \
+    --filter=@bossraid/api... \
+    --filter=@bossraid/evaluator... \
+    --filter=@bossraid/provider-agent... \
+    --filter=@bossraid/web... \
+    --filter=@bossraid/ops...
 
 FROM docker:28-cli AS dockercli
 

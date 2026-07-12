@@ -7,6 +7,7 @@ plans
 skills
 .turbo
 node_modules
+.pnpm-store
 temp
 *.log
 .env
@@ -17,3 +18,4 @@ temp
 **/build
 coverage
 **/coverage
+.docker-build-stamp
