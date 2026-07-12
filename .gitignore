@@ -28,3 +28,4 @@ deploy/ops-local/
 tmp-*.png
 apps/web/public/boss-raid-pfp.png
 .private/
+.docker-build-stamp
