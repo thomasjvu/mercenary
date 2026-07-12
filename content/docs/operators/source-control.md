@@ -34,6 +34,8 @@ export GITHUB_TOKEN=…    # PAT with repo + write:packages if used for GHCR too
 node examples/campaigns/bossraid-development/scripts/setup-forgejo-ops.mjs
 ```
 
+If mirror sync fails with `Could not resolve host: github.com` inside the Forgejo container, pin DNS on the Compose service (`dns: [8.8.8.8, 1.1.1.1]`) and/or add a host entry for `github.com`. Spectre’s `~/forgejo/docker-compose.yml` should keep explicit DNS for the Coolify network.
+
 ## CI layout
 
 | Path                                                                                  | Runs where             | Purpose                               |
