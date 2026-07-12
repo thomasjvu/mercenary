@@ -1,46 +1,76 @@
+# Canonical CI on Forgejo (spectre act_runner). GitHub mirror keeps a parallel copy under .github/workflows.
 name: CI
-
-permissions:
-  contents: read
 
 on:
   push:
     branches: [main, development, staging]
   pull_request:
     branches: [main, development, staging]
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  forgejo-parity:
-    name: Forgejo Parity
+  verify:
+    # Prefer spectre self-hosted (native amd64). Falls back if label missing only after runner registers both.
     runs-on: ubuntu-latest
-    container:
-      options: --network host
+    timeout-minutes: 30
+
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-      - run: corepack enable
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm audit --audit-level=high
-      - run: pnpm check
-      - run: pnpm format:check
-      - run: pnpm lint
-      - run: pnpm build
-      - run: pnpm build:docs
-      - run: pnpm test:unit
-      - run: pnpm test:money-path
-      - run: pnpm test:attestation
-      - run: pnpm test:bounty-escrow:local
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Dependency audit
+        run: pnpm audit --audit-level=high
+
+      - name: Typecheck
+        run: pnpm check
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build
+        run: pnpm build
+
+      - name: OpenAPI drift check
+        run: pnpm --filter @bossraid/docs check:openapi
+
+      - name: Docs build
+        run: pnpm build:docs
+
+      - name: Unit tests
+        run: pnpm test:unit
+
+      - name: Money-path tests
+        run: pnpm test:money-path
+
+      - name: Attestation tests
+        run: pnpm test:attestation
+
+      - name: Bounty escrow smoke
+        run: pnpm test:bounty-escrow:local
         timeout-minutes: 15
-      - run: pnpm test:smoke:e2e
+
+      - name: E2E smoke
+        run: pnpm test:smoke:e2e
         timeout-minutes: 15
-      - run: NODE_ENV=production BOSSRAID_SETTLEMENT_MODE=onchain BOSSRAID_X402_ENABLED=true BOSSRAID_SETTLEMENT_FUND_JOBS=true BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS=true BOSSRAID_BOUNTY_ESCROW_ADDRESS=0x0000000000000000000000000000000000000201 BOSSRAID_ONESHOT_RELAYER_WEBHOOK_SECRET=ci-audit-secret BOSSRAID_SECRET_ENCRYPTION_KEY=ci-audit-encryption-key pnpm bossraid audit:production-env
+
+      - name: Production deploy env audit
+        run: NODE_ENV=production BOSSRAID_SETTLEMENT_MODE=onchain BOSSRAID_X402_ENABLED=true BOSSRAID_SETTLEMENT_FUND_JOBS=true BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS=true BOSSRAID_BOUNTY_ESCROW_ADDRESS=0x0000000000000000000000000000000000000201 BOSSRAID_ONESHOT_RELAYER_WEBHOOK_SECRET=ci-audit-secret BOSSRAID_SECRET_ENCRYPTION_KEY=ci-audit-encryption-key pnpm bossraid audit:production-env

@@ -1,0 +1,76 @@
+# Build + push production images on spectre (native linux/amd64). Never QEMU on laptops.
+name: Docker Image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - development
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: spectre
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image_name: boss-raid
+            docker_target: runtime
+          - image_name: boss-raid-evaluator
+            docker_target: evaluator-runtime
+          - image_name: boss-raid-evaluator-job
+            docker_target: evaluator-job
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GHCR_TOKEN:-}" ]; then
+            echo "GHCR_TOKEN secret missing — set a GitHub PAT with write:packages on the Forgejo repo."
+            exit 1
+          fi
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "${GHCR_USERNAME:-thomasjvu}" --password-stdin
+
+      - name: Derive tags
+        id: tags
+        run: |
+          set -euo pipefail
+          REF="${GITHUB_REF_NAME:-development}"
+          SHA="$(git rev-parse --short HEAD)"
+          IMAGE="ghcr.io/thomasjvu/${{ matrix.image_name }}"
+          TAGS="${IMAGE}:${REF}"
+          TAGS="${TAGS} ${IMAGE}:sha-${SHA}"
+          if [ "$REF" = "main" ]; then
+            TAGS="${TAGS} ${IMAGE}:latest"
+          fi
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "Building ${IMAGE} from ref=${REF} sha=${SHA}"
+
+      - name: Build and push (native amd64)
+        run: |
+          set -euo pipefail
+          IMAGE="${{ steps.tags.outputs.image }}"
+          TAG_ARGS=()
+          for t in ${{ steps.tags.outputs.tags }}; do
+            TAG_ARGS+=(-t "$t")
+          done
+          docker build \
+            --platform linux/amd64 \
+            --target "${{ matrix.docker_target }}" \
+            "${TAG_ARGS[@]}" \
+            -f Dockerfile \
+            .
+          for t in ${{ steps.tags.outputs.tags }}; do
+            docker push "$t"
+          done
