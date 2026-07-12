@@ -1,6 +1,6 @@
 # Spectre — Forgejo act_runner (native amd64)
 
-Spectre is the Boss Raid **build server**. Register one host runner so `.forgejo/workflows/docker-image.yml` can build without QEMU.
+Spectre is the Boss Raid **build server**. Register one **host** runner so `.forgejo/workflows/docker-image.yml` can build without QEMU.
 
 ## Prerequisites
 
@@ -14,45 +14,36 @@ docker exec -u git forgejo forgejo actions generate-runner-token
 
 Or Site Admin → Actions → Runners in the UI.
 
-## Install (Docker, recommended)
+## Install (host binary — preferred)
+
+Dockerized act-runner images often **lack the Docker CLI**. Label `*:host` then executes inside that container and `docker build` fails with exit 127. Prefer a **host binary** registered against **local** Forgejo (`http://127.0.0.1:3000`) so Cloudflare DNS outages do not break task polling.
 
 ```bash
-mkdir -p ~/bossraid-ops/act-runner/data
-cd ~/bossraid-ops/act-runner
+TOKEN=$(docker exec -u git forgejo forgejo actions generate-runner-token)
 
-# Pin a runner image compatible with Forgejo 1.21.x
-export RUNNER_IMAGE=code.forgejo.org/forgejo/runner:3.5.1
-export FORGEJO_INSTANCE_URL=https://forgejo.phantasy.bot
-export RUNNER_NAME=spectre
-# paste token once; do not commit
-export RUNNER_REGISTRATION_TOKEN=…
+mkdir -p ~/bossraid-ops/act-runner-host
+cd ~/bossraid-ops/act-runner-host
 
-docker run --rm -it \
-  -v "$PWD/data:/data" \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -e CONFIG_FILE=/data/config.yaml \
-  "$RUNNER_IMAGE" \
-  forgejo-runner register --no-interactive \
-    --instance "$FORGEJO_INSTANCE_URL" \
-    --token "$RUNNER_REGISTRATION_TOKEN" \
-    --name "$RUNNER_NAME" \
-    --labels "spectre:host,ubuntu-latest:docker://node:22-bookworm"
+# binary e.g. ~/forgejo/runner/forgejo-runner (amd64 release)
+forgejo-runner register --no-interactive \
+  --instance "http://127.0.0.1:3000" \
+  --token "$TOKEN" \
+  --name "spectre-host" \
+  --labels "spectre:host,ubuntu-latest:docker://node:22-bookworm"
 
-# daemon
-docker run -d --restart unless-stopped --name forgejo-act-runner \
-  -v "$PWD/data:/data" \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -e CONFIG_FILE=/data/config.yaml \
-  "$RUNNER_IMAGE" \
-  forgejo-runner daemon
+forgejo-runner generate-config > config.yaml
+nohup forgejo-runner daemon --config "$PWD/config.yaml" > runner.log 2>&1 &
+echo $! > runner.pid
 ```
+
+Keep a local checkout at `~/bossraid-ops/mercenary` so image jobs can `git clone --shared` instead of pulling the monorepo over Cloudflare.
 
 Labels:
 
-| Label           | Mode      | Use                                      |
-| --------------- | --------- | ---------------------------------------- |
-| `spectre`       | `host`    | Docker image builds (`runs-on: spectre`) |
-| `ubuntu-latest` | container | Node CI jobs                             |
+| Label           | Mode                      | Use                                      |
+| --------------- | ------------------------- | ---------------------------------------- |
+| `spectre`       | `host` (real host binary) | Docker image builds (`runs-on: spectre`) |
+| `ubuntu-latest` | container                 | Node CI jobs                             |
 
 ## Repo secrets for image push
 
@@ -64,7 +55,7 @@ On `bossraid/mercenary` (Forgejo):
 ## Health
 
 ```bash
-docker logs -f forgejo-act-runner
+tail -f ~/bossraid-ops/act-runner-host/runner.log
 # UI: https://forgejo.phantasy.bot/admin/actions/runners
 ```
 

@@ -1,5 +1,5 @@
 # Build + push production images on spectre (native linux/amd64). Never QEMU on laptops.
-# Host label has Docker but not Node — avoid actions/checkout (needs node).
+# runs-on: spectre must be a HOST runner (real /usr/bin/docker), not the dockerized act-runner image.
 name: Docker Image
 
 on:
@@ -27,21 +27,43 @@ jobs:
             docker_target: evaluator-job
 
     steps:
-      - name: Checkout (shell)
+      - name: Checkout (local-first)
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          rm -rf "$RUNNER_TEMP/src"
-          mkdir -p "$RUNNER_TEMP/src"
-          cd "$RUNNER_TEMP/src"
-          git init
-          git remote add origin "https://x-access-token:${REPO_TOKEN}@forgejo.phantasy.bot/${GITHUB_REPOSITORY}.git"
-          git fetch --depth 1 origin "$GITHUB_SHA"
-          git checkout --force FETCH_HEAD
+          WORK="${RUNNER_TEMP:-/tmp}/bossraid-src-$$"
+          rm -rf "$WORK"
+          mkdir -p "$WORK"
+          cd "$WORK"
+
+          LOCAL_MIRROR="${BOSSRAID_LOCAL_MIRROR:-$HOME/bossraid-ops/mercenary}"
+          if [ -d "$LOCAL_MIRROR/.git" ]; then
+            echo "Using local mirror: $LOCAL_MIRROR"
+            git clone --shared "$LOCAL_MIRROR" repo
+            cd repo
+            git fetch --all --tags --force || true
+            git checkout --force "$GITHUB_SHA" 2>/dev/null || git checkout --force "origin/$GITHUB_REF_NAME"
+          else
+            echo "Cloning via Forgejo (prefer loopback)"
+            # Host runner can hit local Forgejo without Cloudflare.
+            BASE="http://127.0.0.1:3000"
+            if ! curl -fsS --max-time 3 "$BASE/api/v1/version" >/dev/null 2>&1; then
+              BASE="${GITHUB_SERVER_URL}"
+            fi
+            git init repo
+            cd repo
+            git remote add origin "${BASE}/${GITHUB_REPOSITORY}.git"
+            # token auth for private repo when not using loopback anonymous (private needs token)
+            git -c "http.extraHeader=Authorization: token ${REPO_TOKEN}" \
+              fetch --depth 1 origin "$GITHUB_SHA"
+            git checkout --force FETCH_HEAD
+          fi
+
           echo "WORKSPACE=$PWD" >> "$GITHUB_ENV"
-          pwd
           git rev-parse --short HEAD
+          command -v docker
+          docker version --format '{{.Server.Os}}/{{.Server.Arch}}'
 
       - name: Login to GHCR
         env:
