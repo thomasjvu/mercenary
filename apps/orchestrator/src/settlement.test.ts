@@ -113,7 +113,7 @@ test('equal split settlement pays the full budget across successful providers on
   assert.equal(rewards.successfulProvidersPaid, 12);
 });
 
-test('computeRewards enforces minimum payout threshold', () => {
+test('computeRewards always credits equal split (threshold does not zero rewards)', () => {
   const ranked = [
     {
       submission: {
@@ -149,21 +149,22 @@ test('computeRewards enforces minimum payout threshold', () => {
     ranked,
     { splitStrategy: 'equal_success_only' },
     {
-      minimumPayoutThresholdUsd: 0.25,
+      minimumPayoutThresholdUsd: 1,
     }
   );
   assert.equal(aboveThreshold.payoutPerSuccessfulProvider, 0.5);
 
+  // Sub-threshold amounts still accrue; $1 floor only gates batch flush.
   const belowThreshold = computeRewards(
     0.1,
     ranked,
     { splitStrategy: 'equal_success_only' },
     {
-      minimumPayoutThresholdUsd: 0.25,
+      minimumPayoutThresholdUsd: 1,
     }
   );
-  assert.equal(belowThreshold.payoutPerSuccessfulProvider, 0);
-  assert.equal(belowThreshold.successfulProvidersPaid, 0);
+  assert.equal(belowThreshold.payoutPerSuccessfulProvider, 0.1);
+  assert.equal(belowThreshold.successfulProvidersPaid, 0.1);
 });
 
 test('settlement execution receives registered provider operator wallets', async () => {

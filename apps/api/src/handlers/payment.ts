@@ -120,11 +120,12 @@ export function createPaymentHandlers(
       const txHash =
         result.settlementExecution?.childJobs?.find((job) => job.providerId === providerId)
           ?.fundTxHash ?? result.settlementExecution?.finalizeTxHash;
+      // Accrue every success to the seller ledger; on-chain flush is separate (min $1 default).
       ctx.controlState.recordSellerPayout({
         providerId,
         raidId: input.raidId,
         grossUsd: payout,
-        status: result.status,
+        status: txHash ? 'settled' : 'accrued',
         txHash,
       });
     }

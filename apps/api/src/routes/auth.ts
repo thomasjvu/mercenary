@@ -207,14 +207,18 @@ export function registerAuthRoutes(
       }
       const input = ensureRecordInput(request.body, 'buyer_api_key');
       const name = ensureOptionalStringInput(input.name, 'buyer_api_key.name') ?? 'Default key';
+      const defaultLimit = Math.max(buyerKeyDefaultSpendLimitUsd ?? 25, 1);
       const requestedSpendLimit =
         input.spendLimitUsd == null && input.spend_limit_usd == null
-          ? Math.max(buyerKeyDefaultSpendLimitUsd ?? 1, 1)
-          : Math.max(
-              1,
-              ensurePositiveNumberInput(
-                input.spendLimitUsd ?? input.spend_limit_usd,
-                'buyer_api_key.spend_limit_usd'
+          ? defaultLimit
+          : Math.min(
+              defaultLimit,
+              Math.max(
+                1,
+                ensurePositiveNumberInput(
+                  input.spendLimitUsd ?? input.spend_limit_usd,
+                  'buyer_api_key.spend_limit_usd'
+                )
               )
             );
       const rawKey = `br_${randomBytes(24).toString('base64url')}`;

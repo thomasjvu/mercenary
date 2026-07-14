@@ -210,15 +210,28 @@ export function createApiControlStateFromStore(store: ApiControlStateStore) {
 
     getSellerStats(
       providerIds: string[],
-      nowMs = Date.now()
+      nowMs = Date.now(),
+      flushMinUsd = 1
     ): {
       grossUsd: number;
       payoutCount: number;
       routedRequests24h: number;
       earnings24hUsd: number;
+      pendingUsd: number;
+      settledUsd: number;
+      flushEligible: boolean;
+      flushMinUsd: number;
       payouts: SellerPayoutEntry[];
     } {
-      return sellerLedger.getSellerStats(ctx, providerIds, nowMs);
+      return sellerLedger.getSellerStats(ctx, providerIds, nowMs, flushMinUsd);
+    },
+
+    flushSellerPayouts(
+      providerIds: string[],
+      input: { txHash?: string; minUsd?: number } = {},
+      nowMs = Date.now()
+    ): { flushedCount: number; flushedUsd: number; payoutIds: string[] } {
+      return sellerLedger.flushSellerPayouts(ctx, providerIds, input, nowMs);
     },
 
     consumeRateLimit(

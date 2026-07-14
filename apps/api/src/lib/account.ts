@@ -121,12 +121,21 @@ export function enforceBuyerBudget(
     const account = controlState.readPublicAccount(auth.wallet);
     const spendCapOk =
       auth.spendLimitUsd == null || auth.spentUsd + requestBudgetUsd <= auth.spendLimitUsd;
+    // Production path: API keys must spend prepaid balance (no free treasury drain).
     const balanceOk = (account?.balanceUsd ?? 0) >= requestBudgetUsd;
-    if (!spendCapOk && !balanceOk) {
+    if (!balanceOk) {
+      return {
+        statusCode: 402,
+        error: 'insufficient_prepaid_balance',
+        message:
+          'Prepaid balance is required for API-key billing. Top up via POST /v1/buyer/balance/fund (x402 USDG) first.',
+      };
+    }
+    if (!spendCapOk) {
       return {
         statusCode: 402,
         error: 'api_key_spend_limit_exceeded',
-        message: 'API key spend limit or prepaid balance would be exceeded by this request.',
+        message: 'API key spend limit would be exceeded by this request.',
       };
     }
   }

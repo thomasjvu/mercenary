@@ -536,9 +536,13 @@ export function registerOpsRoutes(
         x402: {
           enabled: x402Config.enabled,
           facilitatorConfigured: Boolean(x402Config.facilitatorUrl),
-          payToConfigured: x402Config.payTo !== '0x0000000000000000000000000000000000000000',
+          payToConfigured:
+            Boolean(x402Config.payTo?.trim()) &&
+            x402Config.payTo.toLowerCase() !== '0x0000000000000000000000000000000000000000',
           network: x402Config.network,
           asset: x402Config.asset,
+          facilitatorUrl: x402Config.facilitatorUrl ?? null,
+          facilitatorApiKeyConfigured: Boolean(x402Config.facilitatorApiKey),
         },
         settlement: {
           mode: settlementMode,

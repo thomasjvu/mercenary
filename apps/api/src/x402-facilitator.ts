@@ -136,6 +136,19 @@ export async function facilitatorRequest<TResponse>(
     ).createAuthHeaders?.();
     const endpoint = path.replace(/^\/+/, '') === 'settle' ? 'settle' : 'verify';
     Object.assign(headers, authHeaders?.[endpoint] ?? {});
+  } else if (config.facilitatorApiKey) {
+    // Marian and other self-hosted facilitators (Surplus parity).
+    headers.authorization = `Bearer ${config.facilitatorApiKey}`;
+    headers['x-api-key'] = config.facilitatorApiKey;
+  }
+
+  // Production safety: refuse non-HTTPS facilitators except loopback dogfood.
+  const host = requestUrl.hostname;
+  const isLoopback = host === '127.0.0.1' || host === 'localhost' || host === '::1';
+  if (requestUrl.protocol !== 'https:' && !isLoopback) {
+    throw new Error(
+      `x402 facilitator URL must use HTTPS in production (got ${requestUrl.protocol}//${host}).`
+    );
   }
 
   const response = await fetch(requestUrl.toString(), {

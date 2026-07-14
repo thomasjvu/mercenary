@@ -78,14 +78,25 @@ export type BuyerPurchaseEntry = {
   createdAt: string;
 };
 
+/**
+ * Seller ledger row.
+ * - accrued: credited to seller, not yet on-chain flushed (Surplus-style pending)
+ * - settled: on-chain transfer completed (or file-mode flushed)
+ * - failed: payout failed
+ * Other strings kept for backwards compatibility with older rows.
+ */
+export type SellerPayoutStatus = 'accrued' | 'settled' | 'failed' | string;
+
 export type SellerPayoutEntry = {
   id: string;
   providerId: string;
   raidId: string;
   grossUsd: number;
-  status: string;
+  status: SellerPayoutStatus;
   txHash?: string;
   createdAt: string;
+  /** Set when batch flush marks the row settled. */
+  flushedAt?: string;
 };
 
 export type BuyerApiKeyEntry = {

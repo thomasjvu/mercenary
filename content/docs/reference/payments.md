@@ -48,7 +48,8 @@ Buyer setup: [buy.md](../buyers/buy.md). Mercenary wallet vs API key controls: [
 - **Inference ledger floor:** single-provider discount inference uses **$0.01** for automatic ledger credit (`INFERENCE_SETTLEMENT_MIN_PAYOUT_USD`).
 - **Settlement mode:** sync chat/inference responses wait for settlement when `BOSSRAID_SETTLEMENT_MODE` is `file` or `onchain`.
 
-Seller earnings: `GET /v1/seller/earnings`. Offer setup: [sell.md](../sellers/sell.md).
+Seller earnings: `GET /v1/seller/earnings` (includes `pendingUsd`, `settledUsd`, `flushEligible`).  
+Batch flush when pending ≥ floor: `POST /v1/seller/payouts/flush`. Offer setup: [sell.md](../sellers/sell.md).
 
 ## Rules
 

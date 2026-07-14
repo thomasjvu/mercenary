@@ -1,3 +1,4 @@
+import { ROBINHOOD_CHAIN_CAIP2, ROBINHOOD_USDG_ADDRESS } from '@bossraid/constants';
 import { type ApiContext } from '../api-context.js';
 import { readX402Config, type X402Config } from '../x402-config.js';
 
@@ -7,43 +8,67 @@ export function readX402ConfigForContext(
   ctx: Pick<ApiContext, 'env' | 'controlState'>
 ): X402Config {
   const config = readX402Config(ctx.env);
+  const enabled = ctx.controlState.readX402Enabled();
+  // Never inject PayAI when the rail is Robinhood USDG — ops must set Marian explicitly.
+  const isRobinhood =
+    config.network === ROBINHOOD_CHAIN_CAIP2 || config.network.startsWith('eip155:4663');
+  let facilitatorUrl = config.facilitatorUrl;
+  if (enabled && !facilitatorUrl && !isRobinhood) {
+    facilitatorUrl = 'https://facilitator.payai.network';
+  }
   return {
     ...config,
-    enabled: ctx.controlState.readX402Enabled(),
-    facilitatorUrl: ctx.controlState.readX402Enabled()
-      ? (config.facilitatorUrl ?? 'https://facilitator.payai.network')
-      : config.facilitatorUrl,
+    enabled,
+    facilitatorUrl,
   };
 }
 
 export function x402PayToConfigured(config: X402Config): boolean {
-  return config.payTo !== ZERO_PAY_TO;
+  const payTo = config.payTo?.trim() ?? '';
+  return payTo.length > 0 && payTo.toLowerCase() !== ZERO_PAY_TO;
 }
 
-function readFacilitatorHost(facilitatorUrl: string | undefined, enabled: boolean): string | null {
-  if (facilitatorUrl) {
-    try {
-      return new URL(facilitatorUrl).host;
-    } catch {
-      return facilitatorUrl;
-    }
-  }
+export function isRobinhoodUsdGRail(config: X402Config): boolean {
+  const networkOk =
+    config.network === ROBINHOOD_CHAIN_CAIP2 || config.network.startsWith('eip155:4663');
+  const asset = config.asset?.toLowerCase() ?? '';
+  const assetOk = asset === 'usdg' || asset === ROBINHOOD_USDG_ADDRESS.toLowerCase();
+  return networkOk && assetOk;
+}
 
-  return enabled ? 'facilitator.payai.network' : null;
+function readFacilitatorHost(facilitatorUrl: string | undefined): string | null {
+  if (!facilitatorUrl) {
+    return null;
+  }
+  try {
+    return new URL(facilitatorUrl).host;
+  } catch {
+    return facilitatorUrl;
+  }
 }
 
 export function buildX402SettingsView(ctx: Pick<ApiContext, 'env' | 'controlState'>) {
   const config = readX402Config(ctx.env);
   const enabled = ctx.controlState.readX402Enabled();
   const payToConfigured = x402PayToConfigured(config);
-  const facilitatorConfigured = Boolean(config.facilitatorUrl) || enabled;
+  const facilitatorConfigured = Boolean(config.facilitatorUrl);
+  const robinhoodRail = isRobinhoodUsdGRail(config);
   const blockers: string[] = [];
 
   if (!payToConfigured) {
-    blockers.push('Set BOSSRAID_X402_PAY_TO on the API host before enabling paid routes.');
+    blockers.push('Set BOSSRAID_X402_PAY_TO to a non-zero Robinhood treasury wallet.');
   }
-  if (enabled && !facilitatorConfigured) {
-    blockers.push('Configure BOSSRAID_X402_FACILITATOR_URL or PayAI merchant credentials.');
+  if (!facilitatorConfigured) {
+    blockers.push(
+      robinhoodRail
+        ? 'Set BOSSRAID_X402_FACILITATOR_URL to the Marian (Surplus) facilitator for eip155:4663 USDG.'
+        : 'Configure BOSSRAID_X402_FACILITATOR_URL (or legacy PayAI/Base credentials).'
+    );
+  }
+  if (enabled && robinhoodRail && !config.facilitatorApiKey) {
+    blockers.push(
+      'Set BOSSRAID_X402_FACILITATOR_API_KEY (Marian console key) for authenticated settle/verify.'
+    );
   }
 
   return {
@@ -53,8 +78,9 @@ export function buildX402SettingsView(ctx: Pick<ApiContext, 'env' | 'controlStat
     asset: config.asset,
     payToConfigured,
     facilitatorConfigured,
-    facilitator: readFacilitatorHost(config.facilitatorUrl, enabled),
-    canEnable: payToConfigured,
+    facilitator: readFacilitatorHost(config.facilitatorUrl),
+    robinhoodUsdG: robinhoodRail,
+    canEnable: payToConfigured && facilitatorConfigured,
     blockers,
     payTo: payToConfigured ? config.payTo : null,
   };

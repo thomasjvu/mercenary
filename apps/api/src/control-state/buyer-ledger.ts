@@ -129,20 +129,20 @@ export function reserveBuyerApiKeyLaunch(
       return;
     }
 
-    const balanceOk = account.balanceUsd >= charge;
+    // Always require prepaid balance — never reserve "spend-cap only" free capacity.
+    if (account.balanceUsd < charge) {
+      return;
+    }
+
     key.spentUsd += charge;
     key.lastUsedAt = new Date(nowMs).toISOString();
-    let useBalance = false;
-    if (balanceOk) {
-      account.balanceUsd -= charge;
-      account.updatedAt = new Date(nowMs).toISOString();
-      useBalance = true;
-    }
+    account.balanceUsd -= charge;
+    account.updatedAt = new Date(nowMs).toISOString();
     reservation = {
       apiKeyId,
       wallet: normalizedWallet,
       reservedUsd: charge,
-      useBalance,
+      useBalance: true,
     };
   }, nowMs);
   return reservation;

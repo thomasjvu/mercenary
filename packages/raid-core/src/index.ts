@@ -96,13 +96,17 @@ export function computeRewards(
   totalBudget: number,
   ranked: RankedSubmission[],
   _rewardPolicy: RewardPolicy,
-  options: { minimumPayoutThresholdUsd?: number } = {}
+  /**
+   * @deprecated threshold no longer zeros rewards. Ledger always credits equal split.
+   * On-chain batch flush uses BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD separately.
+   */
+  _options: { minimumPayoutThresholdUsd?: number } = {}
 ): RewardComputation {
   const successfulProviders = ranked.filter((item) => item.breakdown.valid);
-  const rawPayoutPerProvider =
+  // Always credit successful providers equally — never drop sub-threshold work.
+  // BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD gates on-chain flush only (seller ledger aggregate).
+  const payoutPerSuccessfulProvider =
     successfulProviders.length > 0 ? totalBudget / successfulProviders.length : 0;
-  const threshold = Math.max(0, options.minimumPayoutThresholdUsd ?? 0);
-  const payoutPerSuccessfulProvider = rawPayoutPerProvider >= threshold ? rawPayoutPerProvider : 0;
 
   return {
     successfulProviderCount: successfulProviders.length,

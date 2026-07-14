@@ -67,6 +67,8 @@ export interface X402Config {
   assetName?: string;
   assetVersion?: string;
   assetTransferMethod: X402AssetTransferMethod;
+  /** Marian / custom facilitator API key (Bearer or x-api-key). */
+  facilitatorApiKey?: string;
 }
 
 export type X402RouteName = 'raid' | 'chat' | 'inference' | 'balance' | 'bounty';
@@ -116,6 +118,12 @@ function resolveFacilitatorUrl(env: NodeJS.ProcessEnv, enabled: boolean): string
   const preset = resolveFacilitatorPreset(env);
   if (preset) {
     return METAMASK_X402_FACILITATORS[preset];
+  }
+
+  // Never default PayAI when production rail is Robinhood — require explicit Marian URL.
+  const network = env.BOSSRAID_X402_NETWORK?.trim() || ROBINHOOD_CHAIN_CAIP2;
+  if (network === ROBINHOOD_CHAIN_CAIP2 || network.startsWith('eip155:4663')) {
+    return undefined;
   }
 
   return enabled ? DEFAULT_PAYAI_FACILITATOR_URL : undefined;
@@ -189,7 +197,8 @@ export function readX402Config(env: NodeJS.ProcessEnv = process.env): X402Config
     // Override with Base sepolia/mainnet for legacy CI only.
     network: env.BOSSRAID_X402_NETWORK ?? ROBINHOOD_CHAIN_CAIP2,
     asset: env.BOSSRAID_X402_ASSET ?? 'usdg',
-    payTo: env.BOSSRAID_X402_PAY_TO ?? '0x0000000000000000000000000000000000000000',
+    // Empty string until configured — zero address is never a valid treasury.
+    payTo: env.BOSSRAID_X402_PAY_TO?.trim() || '',
     maxAmountRequired: env.BOSSRAID_X402_MAX_AMOUNT_REQUIRED,
     maxTimeoutSeconds: Math.max(
       1,
@@ -213,6 +222,10 @@ export function readX402Config(env: NodeJS.ProcessEnv = process.env): X402Config
     assetName: env.BOSSRAID_X402_ASSET_NAME,
     assetVersion: env.BOSSRAID_X402_ASSET_VERSION,
     assetTransferMethod: resolveAssetTransferMethod(env, facilitatorUrl),
+    facilitatorApiKey:
+      env.BOSSRAID_X402_FACILITATOR_API_KEY?.trim() ||
+      env.X402_FACILITATOR_API_KEY?.trim() ||
+      undefined,
   };
 }
 

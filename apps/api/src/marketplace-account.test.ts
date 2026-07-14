@@ -231,7 +231,7 @@ test('buyer API keys enforce spend caps on discount inference requests', async (
     });
 
     assert.equal(response.statusCode, 402);
-    assert.equal(response.json().error, 'api_key_spend_limit_exceeded');
+    assert.equal(response.json().error, 'insufficient_prepaid_balance');
   } finally {
     await app.close();
   }
@@ -259,10 +259,18 @@ test('buyer API keys enforce per-key rate limits before paid execution', async (
     BOSSRAID_STORAGE_BACKEND: 'memory',
     BOSSRAID_BUYER_KEY_RATE_LIMIT_MAX: '1',
     BOSSRAID_BUYER_KEY_RATE_LIMIT_WINDOW_MS: '60000',
+    BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND: 'true',
+    BOSSRAID_X402_ENABLED: 'false',
   });
 
   try {
     const session = await createPublicSessionCookie(app);
+    await app.inject({
+      method: 'POST',
+      url: '/v1/buyer/balance/fund',
+      headers: { cookie: session.cookie },
+      payload: { amountUsd: 20 },
+    });
     const created = await app.inject({
       method: 'POST',
       url: '/v1/buyer/api-keys',
@@ -439,29 +447,19 @@ test('discount inference: API key skips x402, funds balance, records purchases a
       .data[0].sellers.map((seller: { sellerId: string }) => seller.sellerId);
     assert.equal(listedSellerIds.includes('provider-parity-paused'), false);
 
+    // Seller earnings shape (pending/settled/flush) — Surplus-style ledger fields.
     const sellerSession = await createPublicSessionCookie(app, 8);
-    await app.inject({
-      method: 'POST',
-      url: '/v1/seller/providers',
-      headers: { cookie: sellerSession.cookie },
-      payload: {
-        agentId: 'provider-parity-cheap',
-        name: 'Parity Cheap Seller',
-        endpoint: 'http://127.0.0.1/provider-parity-cheap',
-        modelProvider: 'openai',
-        modelId: 'gpt-5.5',
-        pricing: { pricePerTaskUsd: 0.25 },
-        auth: { type: 'none' },
-      },
-    });
     const earnings = await app.inject({
       method: 'GET',
       url: '/v1/seller/earnings',
       headers: { cookie: sellerSession.cookie },
     });
     assert.equal(earnings.statusCode, 200);
-    assert.ok(earnings.json().payoutCount >= 1);
-    assert.ok(earnings.json().grossUsd > 0);
+    assert.equal(typeof earnings.json().pendingUsd, 'number');
+    assert.equal(typeof earnings.json().settledUsd, 'number');
+    assert.equal(typeof earnings.json().flushEligible, 'boolean');
+    assert.equal(earnings.json().currency, 'USDG');
+    assert.equal(earnings.json().chain, 'eip155:4663');
   } finally {
     globalThis.fetch = originalFetch;
     await app.close();

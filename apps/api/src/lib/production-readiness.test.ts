@@ -25,8 +25,10 @@ const baseInput = {
     enabled: true,
     facilitatorConfigured: true,
     payToConfigured: true,
-    network: 'base-sepolia',
-    asset: 'USDC',
+    network: 'eip155:4663',
+    asset: 'usdg',
+    facilitatorUrl: 'https://marian.example.com',
+    facilitatorApiKeyConfigured: true,
   },
   settlement: { mode: 'onchain', configured: true },
   tee: {

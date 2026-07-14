@@ -1,4 +1,9 @@
-import { UPSTREAM_PROVIDER_CONFIG, type UpstreamProviderId } from '@bossraid/constants';
+import {
+  ROBINHOOD_CHAIN_CAIP2,
+  ROBINHOOD_USDG_ADDRESS,
+  UPSTREAM_PROVIDER_CONFIG,
+  type UpstreamProviderId,
+} from '@bossraid/constants';
 import { type ProviderHealthStatus, type ProviderProfile } from '@bossraid/shared-types';
 import { readBooleanEnv } from './env.js';
 import { readPlatformUpstreamApiKey } from './upstream/credentials.js';
@@ -26,6 +31,8 @@ export function buildProductionReadinessReport(input: {
     payToConfigured: boolean;
     network: string;
     asset: string;
+    facilitatorUrl?: string | null;
+    facilitatorApiKeyConfigured?: boolean;
   };
   settlement: {
     mode: string;
@@ -118,17 +125,44 @@ export function buildProductionReadinessReport(input: {
     message: 'BOSSRAID_REGISTRY_TOKEN must be configured for authenticated registry operations.',
   });
 
+  const x402BasicsOk =
+    !input.x402.enabled || (input.x402.facilitatorConfigured && input.x402.payToConfigured);
   addCheck({
     id: 'x402_payment',
-    status:
-      !input.x402.enabled || (input.x402.facilitatorConfigured && input.x402.payToConfigured)
-        ? 'pass'
-        : 'fail',
+    status: x402BasicsOk ? 'pass' : 'fail',
     severity: 'blocking',
     message: input.x402.enabled
-      ? 'x402 must have facilitator and pay-to wallet configured.'
+      ? 'x402 must have facilitator URL and non-zero pay-to wallet configured.'
       : 'x402 is disabled; only use this for private rehearsal environments.',
     details: input.x402,
+  });
+
+  const rhNetwork =
+    input.x402.network === ROBINHOOD_CHAIN_CAIP2 || input.x402.network.startsWith('eip155:4663');
+  const assetLower = (input.x402.asset ?? '').toLowerCase();
+  const rhAsset = assetLower === 'usdg' || assetLower === ROBINHOOD_USDG_ADDRESS.toLowerCase();
+  const payaiHost =
+    typeof input.x402.facilitatorUrl === 'string' &&
+    input.x402.facilitatorUrl.includes('facilitator.payai.network');
+  addCheck({
+    id: 'x402_robinhood_usdg',
+    status:
+      !input.x402.enabled || !productionEnv
+        ? 'pass'
+        : rhNetwork && rhAsset && input.x402.facilitatorConfigured && !payaiHost
+          ? 'pass'
+          : 'fail',
+    severity: 'blocking',
+    message:
+      'Production x402 must use Robinhood Chain (eip155:4663) + USDG with Marian facilitator (not PayAI/Base).',
+    details: {
+      network: input.x402.network,
+      asset: input.x402.asset,
+      robinhoodNetwork: rhNetwork,
+      usdgAsset: rhAsset,
+      payaiFacilitator: payaiHost,
+      facilitatorApiKeyConfigured: Boolean(input.x402.facilitatorApiKeyConfigured),
+    },
   });
 
   addCheck({

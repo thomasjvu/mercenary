@@ -43,8 +43,8 @@ test('x402 can be enabled explicitly', () => {
   });
 
   assert.equal(config.enabled, true);
-  // Default facilitator URL still PayAI until Marian URL is set; network defaults to Robinhood.
-  assert.equal(config.facilitatorUrl, 'https://facilitator.payai.network');
+  // Robinhood default rail: no PayAI fallback — Marian URL must be set explicitly.
+  assert.equal(config.facilitatorUrl, undefined);
   assert.equal(config.network, 'eip155:4663');
   assert.equal(config.asset, 'usdg');
 });

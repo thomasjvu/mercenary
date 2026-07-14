@@ -1,12 +1,16 @@
 import { type FastifyInstance } from 'fastify';
 import { parseProviderRegistrationInput } from '@bossraid/api-contracts';
+import { readSettlementMinPayoutUsd } from '@bossraid/constants';
 import { assertProviderEndpointSafe, UnsafeProviderEndpointError } from '@bossraid/provider-sdk';
 import type { ProviderProfile } from '@bossraid/shared-types';
-import { buildSelfServeProviderRegistrationInput } from '../lib/account.js';
+import {
+  buildSelfServeProviderRegistrationInput,
+  ensureOptionalStringInput,
+  ensureRecordInput,
+} from '../lib/account.js';
 import { verifyProviderByHealthProbe } from '../lib/provider-verification.js';
 import { readPositiveInteger, readPositiveNumber } from '../lib/env.js';
 import { asSingleQueryValue } from '../lib/http.js';
-import { ensureRecordInput } from '../lib/account.js';
 import { serializeProviderHealth, serializeProviderProfile } from '../lib/serializers.js';
 import { computeSellerModelDemand } from '../marketplace-stats.js';
 import { type ApiContext } from '../api-context.js';
@@ -207,20 +211,65 @@ export function registerAccountRoutes(
       return session;
     }
     const account = controlState.readPublicAccount(session.wallet);
-    const stats = controlState.getSellerStats(account?.sellerProviderIds ?? []);
+    const flushMinUsd = readSettlementMinPayoutUsd(ctx.env);
+    const stats = controlState.getSellerStats(
+      account?.sellerProviderIds ?? [],
+      Date.now(),
+      flushMinUsd
+    );
     return {
       grossUsd: stats.grossUsd,
       payoutCount: stats.payoutCount,
       earnings24hUsd: stats.earnings24hUsd,
       routedRequests24h: stats.routedRequests24h,
+      pendingUsd: stats.pendingUsd,
+      settledUsd: stats.settledUsd,
+      flushEligible: stats.flushEligible,
+      flushMinUsd: stats.flushMinUsd,
+      currency: 'USDG',
+      chain: 'eip155:4663',
       payouts: stats.payouts.map((entry) => ({
         raidId: entry.raidId,
         providerId: entry.providerId,
         grossUsd: entry.grossUsd,
         status: entry.status,
         txHash: entry.txHash,
+        flushedAt: entry.flushedAt,
         createdAt: entry.createdAt,
       })),
+    };
+  });
+
+  /** Batch-flush accrued seller ledger when pending ≥ flush min (file mode / ops-assisted). */
+  app.post('/v1/seller/payouts/flush', async (request, reply) => {
+    const session = requirePublicSession(reply, request.headers);
+    if ('error' in session) {
+      return session;
+    }
+    const account = controlState.readPublicAccount(session.wallet);
+    const providerIds = account?.sellerProviderIds ?? [];
+    const flushMinUsd = readSettlementMinPayoutUsd(ctx.env);
+    const body = ensureRecordInput(request.body ?? {}, 'seller_payout_flush');
+    const txHash =
+      ensureOptionalStringInput(body.txHash, 'seller_payout_flush.txHash') ??
+      ensureOptionalStringInput(body.tx_hash, 'seller_payout_flush.tx_hash');
+    const result = controlState.flushSellerPayouts(providerIds, {
+      minUsd: flushMinUsd,
+      txHash,
+    });
+    if (result.flushedCount === 0) {
+      reply.code(409);
+      return {
+        error: 'flush_not_eligible',
+        message: `Accrued balance is below the on-chain flush floor of $${flushMinUsd.toFixed(2)} USDG.`,
+        flushMinUsd,
+      };
+    }
+    return {
+      ...result,
+      flushMinUsd,
+      currency: 'USDG',
+      chain: 'eip155:4663',
     };
   });
 
