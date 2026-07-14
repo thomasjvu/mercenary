@@ -2,7 +2,7 @@
 
 Verification, deploy, and operator workflows. Env tables: [reference/env.md](../reference/env.md). Local install and default URLs: [Local development](/dev-docs/operators/local-development) in dev-docs.
 
-**Source of truth is Forgejo** ([`bossraid/mercenary`](https://forgejo.phantasy.bot/bossraid/mercenary)); GitHub is a mirror. CI, image builds on spectre, and remotes: [source-control.md](source-control.md).
+**Source of truth is Forgejo** ([`bossraid/mercenary`](https://forgejo.thomasjvu.com/bossraid/mercenary)); GitHub is a mirror. CI, image builds on spectre, and remotes: [source-control.md](source-control.md).
 
 ## Operator path
 
