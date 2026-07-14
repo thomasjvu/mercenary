@@ -4,7 +4,7 @@
  *
  * Environment:
  *   FORGEJO_TOKEN        — Forgejo admin token (required)
- *   FORGEJO_BASE_URL     — default https://forgejo.phantasy.bot
+ *   FORGEJO_BASE_URL     — default https://forgejo.thomasjvu.com
  *   WORKSPACE_ENV_DIR    — default ~/bossraid-ops/workspaces/env
  *   ROTATE_TOKENS        — set to 1 to recreate access tokens for existing users
  */
@@ -13,7 +13,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
 
-const forgejoBase = (process.env.FORGEJO_BASE_URL || 'https://forgejo.phantasy.bot').replace(
+const forgejoBase = (process.env.FORGEJO_BASE_URL || 'https://forgejo.thomasjvu.com').replace(
   /\/$/,
   '',
 );

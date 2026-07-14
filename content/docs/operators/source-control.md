@@ -4,11 +4,11 @@ Boss Raid is **Forgejo-first**. GitHub is a public/operator mirror, not the cano
 
 ## Canonical hosts
 
-| Role                | Host                                    | Repo                                                                    |
-| ------------------- | --------------------------------------- | ----------------------------------------------------------------------- |
-| **Source of truth** | [Forgejo](https://forgejo.phantasy.bot) | [`bossraid/mercenary`](https://forgejo.phantasy.bot/bossraid/mercenary) |
-| **Mirror**          | GitHub                                  | [`thomasjvu/mercenary`](https://github.com/thomasjvu/mercenary)         |
-| **Build server**    | `spectre` (native `linux/amd64`)        | Forgejo Actions `act_runner` label `spectre`                            |
+| Role                | Host                                     | Repo                                                                     |
+| ------------------- | ---------------------------------------- | ------------------------------------------------------------------------ |
+| **Source of truth** | [Forgejo](https://forgejo.thomasjvu.com) | [`bossraid/mercenary`](https://forgejo.thomasjvu.com/bossraid/mercenary) |
+| **Mirror**          | GitHub                                   | [`thomasjvu/mercenary`](https://github.com/thomasjvu/mercenary)          |
+| **Build server**    | `spectre` (native `linux/amd64`)         | Forgejo Actions `act_runner` label `spectre`                             |
 
 Do **not** build production images with QEMU/buildx on Apple Silicon. Phala CVM pulls **amd64** only.
 
@@ -16,7 +16,7 @@ Do **not** build production images with QEMU/buildx on Apple Silicon. Phala CVM 
 
 ```bash
 # remotes (example)
-git remote add forgejo https://forgejo.phantasy.bot/bossraid/mercenary.git   # once
+git remote add forgejo https://forgejo.thomasjvu.com/bossraid/mercenary.git   # once
 git remote add github  git@github.com:thomasjvu/mercenary.git               # optional local name
 
 # develop on Forgejo

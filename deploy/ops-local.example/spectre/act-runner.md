@@ -56,7 +56,7 @@ On `bossraid/mercenary` (Forgejo):
 
 ```bash
 tail -f ~/bossraid-ops/act-runner-host/runner.log
-# UI: https://forgejo.phantasy.bot/admin/actions/runners
+# UI: https://forgejo.thomasjvu.com/admin/actions/runners
 ```
 
 ## Security

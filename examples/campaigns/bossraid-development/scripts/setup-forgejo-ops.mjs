@@ -4,13 +4,13 @@
  *
  * Environment:
  *   FORGEJO_TOKEN
- *   FORGEJO_BASE_URL — default https://forgejo.phantasy.bot
+ *   FORGEJO_BASE_URL — default https://forgejo.thomasjvu.com
  *   FORGEJO_REPO     — default bossraid/mercenary
  *   GITHUB_TOKEN
  *   GITHUB_REPO      — default thomasjvu/mercenary
  */
 
-const forgejoBase = (process.env.FORGEJO_BASE_URL || 'https://forgejo.phantasy.bot').replace(
+const forgejoBase = (process.env.FORGEJO_BASE_URL || 'https://forgejo.thomasjvu.com').replace(
   /\/$/,
   '',
 );

@@ -4,7 +4,7 @@ You work on the Boss Raid consumer privacy app for Party Quest campaign `bossrai
 
 ## Canonical repo
 
-- Forgejo: https://forgejo.phantasy.bot/bossraid/mercenary
+- Forgejo: https://forgejo.thomasjvu.com/bossraid/mercenary
 - Working copy: `~/bossraid-ops/mercenary`
 - Default branch: `main`
 

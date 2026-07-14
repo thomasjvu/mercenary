@@ -21,7 +21,7 @@
         "path": "~/bossraid-ops/mercenary",
         "questFile": "examples/campaigns/bossraid-development/.party-quest/campaign.json"
       },
-      "repoUrl": "https://forgejo.phantasy.bot/bossraid/mercenary"
+      "repoUrl": "https://forgejo.thomasjvu.com/bossraid/mercenary"
     }
   },
   "plugins": [],

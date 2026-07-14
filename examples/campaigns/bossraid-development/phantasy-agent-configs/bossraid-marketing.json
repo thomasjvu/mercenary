@@ -10,7 +10,7 @@
     "partyQuestFrameworkType": "phantasy",
     "partyQuestDemo": {
       "campaign": "bossraid-development",
-      "repoUrl": "https://forgejo.phantasy.bot/bossraid/mercenary"
+      "repoUrl": "https://forgejo.thomasjvu.com/bossraid/mercenary"
     }
   },
   "plugins": [],

@@ -16,7 +16,7 @@ One request in → Mercenary routes HTTP providers → one result out with recei
 
 Requires **Node.js >= 22.13** (built-in `node:sqlite` persistence).
 
-**Source of truth:** [Forgejo `bossraid/mercenary`](https://forgejo.phantasy.bot/bossraid/mercenary) (GitHub is a mirror). CI/CD and native amd64 image builds: [source-control.md](content/docs/operators/source-control.md).
+**Source of truth:** [Forgejo `bossraid/mercenary`](https://forgejo.thomasjvu.com/bossraid/mercenary) (GitHub is a mirror). CI/CD and native amd64 image builds: [source-control.md](content/docs/operators/source-control.md).
 
 ## Quick start
 
