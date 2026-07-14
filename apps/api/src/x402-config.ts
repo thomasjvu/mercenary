@@ -1,4 +1,4 @@
-import { NETWORK } from '@bossraid/constants';
+import { NETWORK, ROBINHOOD_CHAIN_CAIP2, X402_BUILTIN_ASSETS } from '@bossraid/constants';
 import {
   parseBoolean,
   readPositiveNumber,
@@ -185,8 +185,10 @@ export function readX402Config(env: NodeJS.ProcessEnv = process.env): X402Config
     resourceBaseUrl:
       env.BOSSRAID_X402_RESOURCE_BASE_URL ??
       `http://${NETWORK.LOCALHOST}:${NETWORK.LOCAL_API_PORT}`,
-    network: env.BOSSRAID_X402_NETWORK ?? 'eip155:84532',
-    asset: env.BOSSRAID_X402_ASSET ?? 'usdc',
+    // Production target: Robinhood Chain + USDG (Marian facilitator).
+    // Override with Base sepolia/mainnet for legacy CI only.
+    network: env.BOSSRAID_X402_NETWORK ?? ROBINHOOD_CHAIN_CAIP2,
+    asset: env.BOSSRAID_X402_ASSET ?? 'usdg',
     payTo: env.BOSSRAID_X402_PAY_TO ?? '0x0000000000000000000000000000000000000000',
     maxAmountRequired: env.BOSSRAID_X402_MAX_AMOUNT_REQUIRED,
     maxTimeoutSeconds: Math.max(
@@ -228,6 +230,8 @@ function formatPaymentRequirementNetwork(network: string): string {
     'eip155:8453': 'base',
     'eip155:84532': 'base-sepolia',
     'eip155:11155111': 'sepolia',
+    'eip155:4663': 'robinhood',
+    'eip155:46630': 'robinhood-testnet',
   };
 
   return v1Aliases[network] ?? network;
@@ -282,33 +286,19 @@ function resolveAssetConfig(config: X402Config): {
     };
   }
 
-  if (lowerAsset !== 'usdc') {
+  if (lowerAsset !== 'usdc' && lowerAsset !== 'usdg') {
     throw new Error(
-      "For EVM x402 routes, BOSSRAID_X402_ASSET must be 'usdc' or an ERC-20 token address."
+      "For EVM x402 routes, BOSSRAID_X402_ASSET must be 'usdg', 'usdc', or an ERC-20 token address."
     );
   }
 
-  const defaultUsdcByNetwork: Record<string, { asset: string; extra: Record<string, string> }> = {
-    'eip155:8453': {
-      asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-      extra: {
-        name: 'USD Coin',
-        version: '2',
-      },
-    },
-    'eip155:84532': {
-      asset: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
-      extra: {
-        name: 'USDC',
-        version: '2',
-      },
-    },
-  };
-
-  const resolved = defaultUsdcByNetwork[config.network];
+  const byNetwork = X402_BUILTIN_ASSETS[config.network];
+  const resolved = byNetwork?.[lowerAsset];
   if (!resolved) {
     throw new Error(
-      `No built-in x402 asset metadata is configured for ${config.network}. Set BOSSRAID_X402_ASSET to a token address and provide BOSSRAID_X402_ASSET_NAME/BOSSRAID_X402_ASSET_VERSION if needed.`
+      `No built-in x402 asset metadata for ${config.asset} on ${config.network}. ` +
+        `Set BOSSRAID_X402_ASSET to a token address and BOSSRAID_X402_ASSET_NAME/VERSION if needed. ` +
+        `Production: network=${ROBINHOOD_CHAIN_CAIP2} asset=usdg (Marian facilitator).`
     );
   }
 

@@ -43,13 +43,39 @@ test('x402 can be enabled explicitly', () => {
   });
 
   assert.equal(config.enabled, true);
+  // Default facilitator URL still PayAI until Marian URL is set; network defaults to Robinhood.
   assert.equal(config.facilitatorUrl, 'https://facilitator.payai.network');
+  assert.equal(config.network, 'eip155:4663');
+  assert.equal(config.asset, 'usdg');
+});
+
+test('x402 robinhood usdg resolves built-in Global Dollar metadata', () => {
+  const required = buildX402PaymentRequired({
+    route: 'inference',
+    budgetUsd: 0.05,
+    env: {
+      BOSSRAID_X402_ENABLED: 'true',
+      BOSSRAID_X402_NETWORK: 'eip155:4663',
+      BOSSRAID_X402_ASSET: 'usdg',
+      BOSSRAID_X402_PAY_TO: '0x1111111111111111111111111111111111111111',
+      BOSSRAID_X402_FACILITATOR_URL: 'http://127.0.0.1:4021',
+    },
+  });
+
+  const accept = required.accepts[0];
+  assert.ok(accept);
+  assert.equal(accept.asset.toLowerCase(), '0x5fc5360d0400a0fd4f2af552add042d716f1d168');
+  assert.equal((accept.extra as { name?: string } | undefined)?.name, 'Global Dollar');
+  assert.equal((accept.extra as { version?: string } | undefined)?.version, '1');
+  assert.equal(accept.network, 'robinhood');
 });
 
 test('x402 metamask preset enables erc7710 asset transfer method', () => {
   const config = readX402Config({
     BOSSRAID_X402_ENABLED: 'true',
     BOSSRAID_X402_FACILITATOR_PRESET: 'metamask_base_mainnet',
+    BOSSRAID_X402_NETWORK: 'eip155:8453',
+    BOSSRAID_X402_ASSET: 'usdc',
   });
 
   assert.equal(config.assetTransferMethod, 'erc7710');
@@ -59,6 +85,8 @@ test('x402 metamask preset enables erc7710 asset transfer method', () => {
     route: 'raid',
     env: {
       BOSSRAID_X402_FACILITATOR_PRESET: 'metamask_base_mainnet',
+      BOSSRAID_X402_NETWORK: 'eip155:8453',
+      BOSSRAID_X402_ASSET: 'usdc',
     },
   });
 
@@ -105,6 +133,7 @@ test('x402 payment requirements use v1 network aliases for evm chains', () => {
     route: 'raid',
     env: {
       BOSSRAID_X402_NETWORK: 'eip155:84532',
+      BOSSRAID_X402_ASSET: 'usdc',
     },
   });
 
@@ -152,6 +181,7 @@ test('CDP facilitator requests include bearer auth and EVM asset metadata', asyn
         BOSSRAID_X402_ENABLED: 'true',
         BOSSRAID_X402_FACILITATOR_URL: 'https://api.cdp.coinbase.com/platform/v2/x402',
         BOSSRAID_X402_NETWORK: 'eip155:84532',
+        BOSSRAID_X402_ASSET: 'usdc',
         BOSSRAID_X402_PAY_TO: '0xabc',
         CDP_API_KEY_ID: cdpApiKeyId,
         CDP_API_KEY_SECRET: cdpApiKeySecret,
@@ -242,6 +272,7 @@ test('PayAI facilitator is the default and uses merchant auth when keys are conf
       env: {
         BOSSRAID_X402_ENABLED: 'true',
         BOSSRAID_X402_NETWORK: 'eip155:84532',
+        BOSSRAID_X402_ASSET: 'usdc',
         BOSSRAID_X402_PAY_TO: '0xabc',
         PAYAI_API_KEY_ID: payaiApiKeyId,
         PAYAI_API_KEY_SECRET: payaiApiKeySecret,

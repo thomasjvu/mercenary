@@ -67,22 +67,23 @@ Bootstrap assembles `deploy/phala/.env` with compose defaults not stored in Infi
 
 ### x402
 
-| Variable                                       | Purpose                                                                                                      |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `BOSSRAID_X402_ENABLED`                        | Default `false`; ops toggle overrides live                                                                   |
-| `BOSSRAID_X402_PAY_TO`                         | Treasury wallet                                                                                              |
-| `BOSSRAID_X402_RAID_SURCHARGE_USD`             | Flat raid surcharge (default `0.01`)                                                                         |
-| `BOSSRAID_X402_CHAT_SURCHARGE_USD`             | Flat chat/inference surcharge (default `0.002`)                                                              |
-| `BOSSRAID_X402_PLATFORM_MARKUP_BPS`            | Platform markup (default `100` = 1%)                                                                         |
-| `BOSSRAID_X402_NETWORK`, `BOSSRAID_X402_ASSET` | Payment asset config                                                                                         |
-| `BOSSRAID_X402_FACILITATOR_PRESET`             | `metamask_base_mainnet` or `metamask_base_sepolia` for Base facilitator presets                              |
-| `BOSSRAID_X402_FACILITATOR_URL`                | Override facilitator URL (tx-sentinel or PayAI)                                                              |
-| `BOSSRAID_X402_ASSET_TRANSFER_METHOD`          | `permit2` (default) or `erc7710` for ERC-7710 delegation payments                                            |
-| `BOSSRAID_DELEGATION_MANAGER_ADDRESS`          | ERC-7710 delegation manager on Base; falls back to wallet permission `signerMeta` when omitted               |
-| `BOSSRAID_X402_BUYER_PRIVATE_KEY`              | Wallet smoke tests and MCP agent one-shot payments                                                           |
-| `BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND`       | **Test/dev only.** Never set in production. Allows unverified `POST /v1/buyer/balance/fund` when x402 is off |
-| `PAYAI_API_KEY_ID`, `PAYAI_API_KEY_SECRET`     | PayAI facilitator                                                                                            |
-| `CDP_API_KEY_*`                                | CDP fallback                                                                                                 |
+| Variable                                                  | Purpose                                                                                                      |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `BOSSRAID_X402_ENABLED`                                   | Default `false`; ops toggle overrides live                                                                   |
+| `BOSSRAID_X402_PAY_TO`                                    | Treasury wallet                                                                                              |
+| `BOSSRAID_X402_RAID_SURCHARGE_USD`                        | Flat raid surcharge (default `0.01`)                                                                         |
+| `BOSSRAID_X402_CHAT_SURCHARGE_USD`                        | Flat chat/inference surcharge (default `0.002`)                                                              |
+| `BOSSRAID_X402_PLATFORM_MARKUP_BPS`                       | Platform markup (default `100` = 1%)                                                                         |
+| `BOSSRAID_X402_NETWORK`, `BOSSRAID_X402_ASSET`            | Production: `eip155:4663` + `usdg` (Robinhood / USDG). Legacy: Base + `usdc`                                 |
+| `BOSSRAID_X402_ASSET_NAME`, `BOSSRAID_X402_ASSET_VERSION` | USDG EIP-712: `Global Dollar` / `1`                                                                          |
+| `BOSSRAID_X402_FACILITATOR_URL`                           | **Marian** facilitator URL (Surplus RH+USDG). Not PayAI for production                                       |
+| `BOSSRAID_X402_FACILITATOR_PRESET`                        | Legacy Base only: `metamask_base_mainnet` / `metamask_base_sepolia`                                          |
+| `BOSSRAID_X402_ASSET_TRANSFER_METHOD`                     | `permit2` (default) or `erc7710` (legacy Base delegation)                                                    |
+| `BOSSRAID_DELEGATION_MANAGER_ADDRESS`                     | ERC-7710 delegation manager on Base; falls back to wallet permission `signerMeta` when omitted               |
+| `BOSSRAID_X402_BUYER_PRIVATE_KEY`                         | Wallet smoke tests and MCP agent one-shot payments                                                           |
+| `BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND`                  | **Test/dev only.** Never set in production. Allows unverified `POST /v1/buyer/balance/fund` when x402 is off |
+| `PAYAI_API_KEY_ID`, `PAYAI_API_KEY_SECRET`                | PayAI facilitator                                                                                            |
+| `CDP_API_KEY_*`                                           | CDP fallback                                                                                                 |
 
 ### Agent payments & Mercenary upstream
 
@@ -104,7 +105,7 @@ Bootstrap assembles `deploy/phala/.env` with compose defaults not stored in Infi
 | `BOSSRAID_RPC_URL`, `BOSSRAID_CHAIN_ID`                                                                            | Chain config                                                                                |
 | `BOSSRAID_REGISTRY_ADDRESS`, `BOSSRAID_ESCROW_ADDRESS`, `BOSSRAID_BOUNTY_ESCROW_ADDRESS`, `BOSSRAID_TOKEN_ADDRESS` | Contracts                                                                                   |
 | `BOSSRAID_CLIENT_PRIVATE_KEY`                                                                                      | Client signer (raid + bounty relayer)                                                       |
-| `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD`                                                                               | Dust threshold (default `0.25`)                                                             |
+| `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD`                                                                               | On-chain transfer floor (default `1`); ledger still credits below this                      |
 | `BOSSRAID_SETTLEMENT_FUND_JOBS`                                                                                    | Fund successful child jobs onchain (`true` required in production onchain mode)             |
 | `BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS`                                                                        | Block parent settlement until child jobs are terminal (`true` required in production audit) |
 | `BOSSRAID_SETTLEMENT_RETRY_INTERVAL_MS`                                                                            | Orchestrator settlement retry worker interval (default `60000`; `0` disables)               |

@@ -72,9 +72,9 @@ Catalog models marked `e2ee` with `raid_policy.privacy_mode: "strict"` route thr
 
 ## Payment
 
-- **Public buyers**: x402/USDC when enabled (`BOSSRAID_X402_ENABLED=true` or ops toggle)
+- **Public buyers**: x402 **USDG on Robinhood Chain** (`eip155:4663`) when enabled (`BOSSRAID_X402_ENABLED=true` or ops toggle) via Marian facilitator
 - **Buyer API keys**: spend cap + optional prepaid balance (`GET /v1/buyer/balance`)
-- **Balance top-up** (`POST /v1/buyer/balance/fund`): requires verified x402 USDC from a connected wallet in production. No instant credit without payment.
+- **Balance top-up** (`POST /v1/buyer/balance/fund`): requires verified x402 USDG from a connected wallet in production. No instant credit without payment.
 
 **Fees:** charge = reserved seller rate + route surcharge + ~1% platform markup. API keys skip the x402 challenge but debit the same underlying charge. Full breakdown: [reference/payments.md](../reference/payments.md#fees-buyers).
 

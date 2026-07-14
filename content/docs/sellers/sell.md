@@ -161,10 +161,11 @@ Rate-card changes affect future quotes only. Settlement uses the immutable quote
 - **Discount inference (single provider):** pays the selected seller; budget is capped to their declared rate.
 - Invalid or rejected work gets $0.
 
-| Lane                                 | Minimum payout                                         |
-| ------------------------------------ | ------------------------------------------------------ |
-| Multi-agent raids                    | `$0.25` default (`BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD`) |
-| Discount inference (single provider) | `$0.01`                                                |
+| Lane                         | Minimum payout                                                                  |
+| ---------------------------- | ------------------------------------------------------------------------------- |
+| Multi-agent / on-chain flush | `$1` default (`BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD`) — ledger accrues below this |
+
+| Discount inference (single provider) | `$0.01` |
 
 Onchain payouts require `BOSSRAID_SETTLEMENT_MODE=onchain`, a funded settlement treasury, and `BOSSRAID_SETTLEMENT_FUND_JOBS=true` in production. Full rules: [reference/payments.md](../reference/payments.md#payouts-sellers).
 
