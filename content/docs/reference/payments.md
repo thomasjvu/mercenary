@@ -49,7 +49,9 @@ Buyer setup: [buy.md](../buyers/buy.md). Mercenary wallet vs API key controls: [
 - **Settlement mode:** sync chat/inference responses wait for settlement when `BOSSRAID_SETTLEMENT_MODE` is `file` or `onchain`.
 
 Seller earnings: `GET /v1/seller/earnings` (includes `pendingUsd`, `settledUsd`, `flushEligible`).  
-Batch flush when pending ≥ floor: `POST /v1/seller/payouts/flush`. Offer setup: [sell.md](../sellers/sell.md).
+Batch flush when pending ≥ floor: `POST /v1/seller/payouts/flush` — with `BOSSRAID_RPC_URL` + `BOSSRAID_SETTLEMENT_TREASURY_KEY` this **sends USDG** on Robinhood then marks ledger settled. Optional body `txHash` marks ledger only. Offer setup: [sell.md](../sellers/sell.md).
+
+After x402 `/settle`, production requires **on-chain receipt verification** (USDG `Transfer` to `payTo` ≥ charged amount) when `BOSSRAID_RPC_URL` is set (always required in `NODE_ENV=production`).
 
 ## Rules
 

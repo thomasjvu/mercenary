@@ -11,6 +11,7 @@ import {
   type X402SettlementResponse,
   type X402VerificationResponse,
 } from './x402-config.js';
+import { verifyX402SettlementOnchain } from './lib/x402-settle-verify.js';
 import { isVerificationSuccessful, settlePayment, verifyPayment } from './x402-verify.js';
 
 export type {
@@ -92,6 +93,24 @@ export async function requireX402Payment(input: {
       {
         ...paymentRequired,
         error: settlement.error ?? 'payment_settlement_failed',
+      },
+      402,
+      settlement
+    );
+  }
+
+  const onchain = await verifyX402SettlementOnchain({
+    config,
+    paymentRequired,
+    settlement,
+    env: input.env ?? process.env,
+  });
+  if (!onchain.ok) {
+    throw new X402ProtocolError(
+      onchain.reason,
+      {
+        ...paymentRequired,
+        error: 'payment_onchain_verify_failed',
       },
       402,
       settlement

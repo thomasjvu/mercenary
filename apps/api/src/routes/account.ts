@@ -240,7 +240,11 @@ export function registerAccountRoutes(
     };
   });
 
-  /** Batch-flush accrued seller ledger when pending ≥ flush min (file mode / ops-assisted). */
+  /**
+   * Batch-flush accrued seller ledger when pending ≥ flush min.
+   * With BOSSRAID_RPC_URL + treasury key: sends USDG on Robinhood then marks settled.
+   * Optional body.txHash marks ledger only (off-band payment proof).
+   */
   app.post('/v1/seller/payouts/flush', async (request, reply) => {
     const session = requirePublicSession(reply, request.headers);
     if ('error' in session) {
@@ -248,29 +252,29 @@ export function registerAccountRoutes(
     }
     const account = controlState.readPublicAccount(session.wallet);
     const providerIds = account?.sellerProviderIds ?? [];
-    const flushMinUsd = readSettlementMinPayoutUsd(ctx.env);
     const body = ensureRecordInput(request.body ?? {}, 'seller_payout_flush');
     const txHash =
       ensureOptionalStringInput(body.txHash, 'seller_payout_flush.txHash') ??
       ensureOptionalStringInput(body.tx_hash, 'seller_payout_flush.tx_hash');
-    const result = controlState.flushSellerPayouts(providerIds, {
-      minUsd: flushMinUsd,
-      txHash,
+    const payoutWallet =
+      ensureOptionalStringInput(body.payoutWallet, 'seller_payout_flush.payoutWallet') ??
+      ensureOptionalStringInput(body.payout_wallet, 'seller_payout_flush.payout_wallet') ??
+      session.wallet;
+
+    const { flushSellerTreasuryPayout } = await import('../lib/seller-treasury-flush.js');
+    const result = await flushSellerTreasuryPayout({
+      ctx,
+      providerIds,
+      sellerPayoutWallet: payoutWallet,
+      txHashOverride: txHash,
+      allowLedgerOnly: ctx.env.NODE_ENV !== 'production',
     });
-    if (result.flushedCount === 0) {
-      reply.code(409);
-      return {
-        error: 'flush_not_eligible',
-        message: `Accrued balance is below the on-chain flush floor of $${flushMinUsd.toFixed(2)} USDG.`,
-        flushMinUsd,
-      };
+
+    if (!result.ok) {
+      reply.code(result.error === 'flush_not_eligible' ? 409 : 503);
+      return result;
     }
-    return {
-      ...result,
-      flushMinUsd,
-      currency: 'USDG',
-      chain: 'eip155:4663',
-    };
+    return result;
   });
 
   app.get('/v1/seller/stats', async (request, reply) => {
