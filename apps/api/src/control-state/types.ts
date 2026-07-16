@@ -81,11 +81,12 @@ export type BuyerPurchaseEntry = {
 /**
  * Seller ledger row.
  * - accrued: credited to seller, not yet on-chain flushed (Surplus-style pending)
+ * - flushing: claimed for an in-flight treasury transfer (not re-claimable)
  * - settled: on-chain transfer completed (or file-mode flushed)
  * - failed: payout failed
  * Other strings kept for backwards compatibility with older rows.
  */
-export type SellerPayoutStatus = 'accrued' | 'settled' | 'failed' | string;
+export type SellerPayoutStatus = 'accrued' | 'flushing' | 'settled' | 'failed' | string;
 
 export type SellerPayoutEntry = {
   id: string;
@@ -97,6 +98,10 @@ export type SellerPayoutEntry = {
   createdAt: string;
   /** Set when batch flush marks the row settled. */
   flushedAt?: string;
+  /** Claim id while status is flushing (prevents concurrent double-pay). */
+  flushClaimId?: string;
+  /** ISO timestamp when the row was claimed for flush. */
+  flushingAt?: string;
 };
 
 export type BuyerApiKeyEntry = {

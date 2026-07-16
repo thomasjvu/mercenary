@@ -88,11 +88,23 @@ export function listSellerPayouts(
     .map((entry) => structuredClone(entry));
 }
 
+/** All store rows for the given providers (no UI list cap). */
+export function listAllSellerPayoutsForProviders(
+  ctx: ControlStateContext,
+  providerIds: string[],
+  nowMs = Date.now()
+): SellerPayoutEntry[] {
+  return listSellerPayouts(ctx, providerIds, SELLER_PAYOUT_STORE_LIMIT, nowMs);
+}
+
 function isAccruedPayout(entry: SellerPayoutEntry): boolean {
   if (entry.txHash || entry.flushedAt) {
     return false;
   }
   const status = entry.status.toLowerCase();
+  if (status === 'flushing') {
+    return false;
+  }
   return (
     status === 'accrued' || status === 'pending' || status === 'final' || status === 'complete'
   );
@@ -125,17 +137,20 @@ export function getSellerStats(
   flushMinUsd: number;
   payouts: SellerPayoutEntry[];
 } {
-  const payouts = listSellerPayouts(ctx, providerIds, 500, nowMs);
-  const metrics24h = computeSellerPayout24hMetrics(payouts, nowMs);
-  const pendingUsd = payouts
+  // Full store for money amounts; UI list cap stays on the returned `payouts` slice.
+  const allPayouts = listAllSellerPayoutsForProviders(ctx, providerIds, nowMs);
+  const displayLimit = DEFAULTS.SELLER_PAYOUT_LIST_LIMIT;
+  const payouts = allPayouts.slice(0, displayLimit);
+  const metrics24h = computeSellerPayout24hMetrics(allPayouts, nowMs);
+  const pendingUsd = allPayouts
     .filter((entry) => isAccruedPayout(entry))
     .reduce((sum, entry) => sum + entry.grossUsd, 0);
-  const settledUsd = payouts
+  const settledUsd = allPayouts
     .filter((entry) => isSettledPayout(entry))
     .reduce((sum, entry) => sum + entry.grossUsd, 0);
   return {
-    grossUsd: payouts.reduce((sum, entry) => sum + entry.grossUsd, 0),
-    payoutCount: payouts.length,
+    grossUsd: allPayouts.reduce((sum, entry) => sum + entry.grossUsd, 0),
+    payoutCount: allPayouts.length,
     routedRequests24h: metrics24h.routedRequests24h,
     earnings24hUsd: metrics24h.earnedBySellers24hUsd,
     pendingUsd,
@@ -146,23 +161,32 @@ export function getSellerStats(
   };
 }
 
+export type SellerFlushClaim = {
+  claimId: string;
+  claimedUsd: number;
+  payoutIds: string[];
+};
+
 /**
- * Mark accrued seller payouts as settled (batch flush).
- * Used for file-mode Surplus parity and ops-triggered flush after treasury transfer.
+ * Atomically mark all accrued rows for the providers as `flushing` for one claim.
+ * Concurrent second claim sees no accrued rows and returns empty payoutIds.
  */
-export function flushSellerPayouts(
+export function claimSellerPayoutsForFlush(
   ctx: ControlStateContext,
   providerIds: string[],
-  input: { txHash?: string; minUsd?: number } = {},
+  input: { minUsd?: number } = {},
   nowMs = Date.now()
-): { flushedCount: number; flushedUsd: number; payoutIds: string[] } {
+): SellerFlushClaim {
   const allowed = new Set(providerIds);
   const minUsd = Math.max(0, input.minUsd ?? 1);
-  const flushedIds: string[] = [];
-  let flushedUsd = 0;
+  const claimId = `flushclaim_${randomUUID()}`;
+  const payoutIds: string[] = [];
+  let claimedUsd = 0;
   const nowIso = new Date(nowMs).toISOString();
 
   ctx.mutateState((snapshot) => {
+    payoutIds.length = 0;
+    claimedUsd = 0;
     const pending = snapshot.sellerPayouts.filter(
       (entry) => allowed.has(entry.providerId) && isAccruedPayout(entry)
     );
@@ -171,11 +195,52 @@ export function flushSellerPayouts(
       return;
     }
     for (const entry of pending) {
+      entry.status = 'flushing';
+      entry.flushClaimId = claimId;
+      entry.flushingAt = nowIso;
+      payoutIds.push(entry.id);
+      claimedUsd += entry.grossUsd;
+    }
+  }, nowMs);
+
+  return {
+    claimId,
+    claimedUsd,
+    payoutIds: [...payoutIds],
+  };
+}
+
+/**
+ * Mark rows still in `flushing` for this claim as settled after a successful transfer.
+ */
+export function settleSellerPayoutClaim(
+  ctx: ControlStateContext,
+  claim: { claimId: string; payoutIds: string[] },
+  input: { txHash?: string } = {},
+  nowMs = Date.now()
+): { flushedCount: number; flushedUsd: number; payoutIds: string[] } {
+  const idSet = new Set(claim.payoutIds);
+  const flushedIds: string[] = [];
+  let flushedUsd = 0;
+  const nowIso = new Date(nowMs).toISOString();
+
+  ctx.mutateState((snapshot) => {
+    flushedIds.length = 0;
+    flushedUsd = 0;
+    for (const entry of snapshot.sellerPayouts) {
+      if (!idSet.has(entry.id)) {
+        continue;
+      }
+      if (entry.status.toLowerCase() !== 'flushing' || entry.flushClaimId !== claim.claimId) {
+        continue;
+      }
       entry.status = 'settled';
       entry.flushedAt = nowIso;
       if (input.txHash) {
         entry.txHash = input.txHash;
       }
+      delete entry.flushClaimId;
+      delete entry.flushingAt;
       flushedIds.push(entry.id);
       flushedUsd += entry.grossUsd;
     }
@@ -186,4 +251,57 @@ export function flushSellerPayouts(
     flushedUsd,
     payoutIds: flushedIds,
   };
+}
+
+/**
+ * Revert claimed rows back to accrued after a transfer failure (or aborted flush).
+ */
+export function releaseSellerPayoutClaim(
+  ctx: ControlStateContext,
+  claim: { claimId: string; payoutIds: string[] },
+  nowMs = Date.now()
+): { releasedCount: number } {
+  const idSet = new Set(claim.payoutIds);
+  let releasedCount = 0;
+
+  ctx.mutateState((snapshot) => {
+    releasedCount = 0;
+    for (const entry of snapshot.sellerPayouts) {
+      if (!idSet.has(entry.id)) {
+        continue;
+      }
+      if (entry.status.toLowerCase() !== 'flushing' || entry.flushClaimId !== claim.claimId) {
+        continue;
+      }
+      entry.status = 'accrued';
+      delete entry.flushClaimId;
+      delete entry.flushingAt;
+      releasedCount += 1;
+    }
+  }, nowMs);
+
+  return { releasedCount };
+}
+
+/**
+ * Mark accrued seller payouts as settled (batch flush).
+ * Claim-then-settle in one path so concurrent callers cannot double-settle.
+ * Used for file-mode Surplus parity and ops-triggered flush after treasury transfer.
+ */
+export function flushSellerPayouts(
+  ctx: ControlStateContext,
+  providerIds: string[],
+  input: { txHash?: string; minUsd?: number } = {},
+  nowMs = Date.now()
+): { flushedCount: number; flushedUsd: number; payoutIds: string[] } {
+  const claim = claimSellerPayoutsForFlush(ctx, providerIds, { minUsd: input.minUsd }, nowMs);
+  if (claim.payoutIds.length === 0) {
+    return { flushedCount: 0, flushedUsd: 0, payoutIds: [] };
+  }
+  return settleSellerPayoutClaim(
+    ctx,
+    { claimId: claim.claimId, payoutIds: claim.payoutIds },
+    { txHash: input.txHash },
+    nowMs
+  );
 }
