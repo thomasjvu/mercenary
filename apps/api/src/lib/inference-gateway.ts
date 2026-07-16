@@ -8,13 +8,14 @@ import {
 import { NETWORK, UPSTREAM_PROVIDER_CONFIG } from '@bossraid/constants';
 import type { UpstreamProviderId } from '@bossraid/constants';
 import { isUpstreamProviderId } from '@bossraid/constants';
-import type { BossRaidOrchestrator } from '@bossraid/orchestrator';
+import { buildProviderTaskPackage, type BossRaidOrchestrator } from '@bossraid/orchestrator';
 import { buildPrivacyAttestation } from '@bossraid/privacy-engine';
 import type {
   PrivacyFeatureKey,
   ProviderHealthStatus,
   ProviderProfile,
   ProviderTaskPackage,
+  RaidRecord,
 } from '@bossraid/shared-types';
 import type { ApiControlState } from '../control-state.js';
 import { buildInferenceReceipt, verifyUpstreamTee } from './attestation-service.js';
@@ -81,6 +82,28 @@ export function isHostedInferenceProvider(provider: ProviderProfile): boolean {
 
 export function isHostedHarnessProvider(provider: ProviderProfile): boolean {
   return provider.source?.type === 'harness_hosted';
+}
+
+/**
+ * Rebuild the authoritative provider task package from raid state.
+ * Gateway clients must not supply the executed task content.
+ * Mirrors orchestrator dispatch (`raid-provider-dispatch.ts`).
+ */
+export function rebuildGatewayTaskPackage(input: {
+  raid: Pick<RaidRecord, 'id' | 'task' | 'deadlineUnix' | 'contributionPlan' | 'selectedProviders'>;
+  providerId: string;
+  provider: ProviderProfile;
+}): ProviderTaskPackage {
+  const { raid, providerId, provider } = input;
+  return buildProviderTaskPackage(raid.id, raid.task, {
+    deadlineUnix: raid.deadlineUnix,
+    providerIndex:
+      raid.contributionPlan?.providerIndex ??
+      Math.max(raid.selectedProviders.indexOf(providerId), 0) + 1,
+    totalExperts: raid.contributionPlan?.totalExperts ?? Math.max(raid.selectedProviders.length, 1),
+    providerSpecializations: provider.specializations,
+    contributionPlan: raid.contributionPlan,
+  });
 }
 
 export function probeHostedInferenceProviderHealth(
