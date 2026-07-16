@@ -1,5 +1,6 @@
 import { type FastifyReply, type FastifyRequest } from 'fastify';
 import {
+  ApiContractError,
   buildBossRaidRequestFromChatCompletion,
   parseChatCompletionRequest,
   parseBossRaidRequest,
@@ -327,7 +328,12 @@ export async function deliverStreamingChatCompletion(
     onFailure: async (error, outcome) => {
       const billingCaptureFailed = Boolean(outcome) && !(error instanceof ChatTerminalWaitError);
       if (billingCaptureFailed) {
-        await releaseLaunchPaymentHold({ launchPayment: input.launchPayment });
+        // captureApiKeyBilling already releases the hold before throwing this message.
+        const holdAlreadyReleased =
+          error instanceof ApiContractError && error.message.includes('launch hold released');
+        if (!holdAlreadyReleased) {
+          await releaseLaunchPaymentHold({ launchPayment: input.launchPayment });
+        }
         return;
       }
 

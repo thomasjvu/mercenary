@@ -23,6 +23,8 @@ export interface ApiKeyBillingContext {
   wallet: string;
   reservedUsd: number;
   useBalance: boolean;
+  /** Set when the hold has been fully released; makes release idempotent. */
+  released?: boolean;
 }
 
 export interface LaunchPaymentContext {
