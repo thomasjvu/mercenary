@@ -7,6 +7,12 @@ import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import { buildApiServer } from './index.js';
 import {
+  ADMIN_RAID_LIST_DEFAULT_LIMIT,
+  ADMIN_RAID_LIST_MAX_LIMIT,
+  parseAdminRaidListPagination,
+} from './routes/raid.js';
+import {
+  buildTestApiServer,
   createTestApiServer,
   createProviderProfile,
   hashText,
@@ -18,6 +24,36 @@ import {
   TEST_MNEMONIC,
   tmpdir,
 } from './test/helpers.js';
+
+test('parseAdminRaidListPagination defaults, clamps max, and reads offset', () => {
+  assert.deepEqual(parseAdminRaidListPagination({}), {
+    limit: ADMIN_RAID_LIST_DEFAULT_LIMIT,
+    offset: 0,
+  });
+  assert.deepEqual(parseAdminRaidListPagination({ limit: '50', offset: '10' }), {
+    limit: 50,
+    offset: 10,
+  });
+  assert.deepEqual(parseAdminRaidListPagination({ limit: 25, offset: 2 }), {
+    limit: 25,
+    offset: 2,
+  });
+  assert.deepEqual(
+    parseAdminRaidListPagination({ limit: String(ADMIN_RAID_LIST_MAX_LIMIT + 99) }),
+    {
+      limit: ADMIN_RAID_LIST_MAX_LIMIT,
+      offset: 0,
+    }
+  );
+  assert.deepEqual(parseAdminRaidListPagination({ limit: '0', offset: '-3' }), {
+    limit: ADMIN_RAID_LIST_DEFAULT_LIMIT,
+    offset: 0,
+  });
+  assert.deepEqual(parseAdminRaidListPagination({ limit: 'not-a-number' }), {
+    limit: ADMIN_RAID_LIST_DEFAULT_LIMIT,
+    offset: 0,
+  });
+});
 
 test('admin control routes require the configured admin token', async () => {
   const app = createTestApiServer([], {
@@ -40,6 +76,7 @@ test('admin control routes require the configured admin token', async () => {
     });
     assert.equal(raidsAuthorized.statusCode, 200);
     assert.deepEqual(raidsAuthorized.json(), []);
+    assert.equal(raidsAuthorized.headers['x-total-count'], '0');
 
     const attestedUnauthorized = await app.inject({
       method: 'GET',
@@ -85,6 +122,64 @@ test('admin control routes require the configured admin token', async () => {
       },
     });
     assert.equal(replayAuthorized.statusCode, 404);
+  } finally {
+    await app.close();
+  }
+});
+
+test('admin GET /v1/raids paginates with limit and offset', async () => {
+  const orchestrator = new BossRaidOrchestrator([], {}, undefined, undefined, async (profile) =>
+    readyHealth(profile.providerId)
+  );
+
+  const now = Date.now();
+  const fixtures = Array.from({ length: 3 }, (_, index) => ({
+    id: `raid-list-${index}`,
+    createdAt: new Date(now - index * 1_000).toISOString(),
+    updatedAt: new Date(now - index * 1_000).toISOString(),
+    status: 'running',
+    bestCurrentScore: undefined,
+    firstValidSubmissionId: undefined,
+    primarySubmissionId: undefined,
+    rankedSubmissions: [],
+  }));
+
+  orchestrator.listRaids = () => fixtures as ReturnType<typeof orchestrator.listRaids>;
+
+  const app = buildTestApiServer(orchestrator, {
+    BOSSRAID_ADMIN_TOKEN: 'admin-secret',
+  });
+
+  try {
+    const full = await app.inject({
+      method: 'GET',
+      url: '/v1/raids',
+      headers: { authorization: 'Bearer admin-secret' },
+    });
+    assert.equal(full.statusCode, 200);
+    assert.equal(full.headers['x-total-count'], '3');
+    const fullBody = full.json() as Array<{ raidId: string }>;
+    assert.equal(fullBody.length, 3);
+    assert.equal(fullBody[0]?.raidId, 'raid-list-0');
+
+    const page = await app.inject({
+      method: 'GET',
+      url: '/v1/raids?limit=1&offset=1',
+      headers: { authorization: 'Bearer admin-secret' },
+    });
+    assert.equal(page.statusCode, 200);
+    assert.equal(page.headers['x-total-count'], '3');
+    const pageBody = page.json() as Array<{ raidId: string }>;
+    assert.equal(pageBody.length, 1);
+    assert.equal(pageBody[0]?.raidId, 'raid-list-1');
+
+    const clamped = await app.inject({
+      method: 'GET',
+      url: `/v1/raids?limit=${ADMIN_RAID_LIST_MAX_LIMIT + 50}`,
+      headers: { authorization: 'Bearer admin-secret' },
+    });
+    assert.equal(clamped.statusCode, 200);
+    assert.equal((clamped.json() as unknown[]).length, 3);
   } finally {
     await app.close();
   }
