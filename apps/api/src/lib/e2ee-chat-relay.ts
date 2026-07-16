@@ -147,20 +147,26 @@ export async function executeE2eeChatRelay(input: {
   inferenceReceiptStore: InferenceReceiptStore;
   env: NodeJS.ProcessEnv;
   created: number;
+  /** Platform Venice env key only after prepaid hold or admin escape hatch. */
+  allowPlatformKey?: boolean;
 }) {
   const provider = input.route.attestationVendor;
   if (!isUpstreamProviderId(provider)) {
     throw new Error(`Unsupported E2EE provider: ${provider}`);
   }
 
+  const allowPlatformKey = input.allowPlatformKey === true;
   const apiKey = resolveUpstreamApiKey({
     provider,
     env: input.env,
     request: input.request,
+    allowPlatformKey,
   });
   if (!apiKey) {
     throw new Error(
-      'Upstream API key required for strict E2EE. Pass X-BossRaid-Upstream-Api-Key or configure BOSSRAID_VENICE_API_KEY.'
+      allowPlatformKey
+        ? 'Upstream API key required for strict E2EE. Pass X-BossRaid-Upstream-Api-Key or configure BOSSRAID_VENICE_API_KEY.'
+        : 'Upstream API key required for strict E2EE. Pass X-BossRaid-Upstream-Api-Key, or use a prepaid buyer API key with the platform Venice key after payment authorization.'
     );
   }
 

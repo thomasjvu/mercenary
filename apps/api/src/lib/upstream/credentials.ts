@@ -34,12 +34,18 @@ export function resolveUpstreamApiKey(input: {
   env: NodeJS.ProcessEnv;
   request?: FastifyRequest;
   headerApiKey?: string;
+  /** When false, never fall back to BOSSRAID_*_API_KEY (E2EE paid/BYO gate). Default true. */
+  allowPlatformKey?: boolean;
 }): string | undefined {
   const headerKey =
     input.headerApiKey ??
     (input.request ? readUpstreamApiKeyFromHeaders(input.request.headers) : undefined);
   if (headerKey) {
     return headerKey;
+  }
+
+  if (input.allowPlatformKey === false) {
+    return undefined;
   }
 
   return readPlatformUpstreamApiKey(input.provider, input.env);
