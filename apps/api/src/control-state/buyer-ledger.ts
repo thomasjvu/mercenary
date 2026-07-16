@@ -103,6 +103,8 @@ export type BuyerApiKeyLaunchReservation = {
   wallet: string;
   reservedUsd: number;
   useBalance: boolean;
+  /** Set when the hold has been fully released; makes release idempotent for double-call paths. */
+  released?: boolean;
 };
 
 export function reserveBuyerApiKeyLaunch(
@@ -153,17 +155,26 @@ export function releaseBuyerApiKeyReservation(
   reservation: BuyerApiKeyLaunchReservation,
   nowMs = Date.now()
 ): void {
+  // Same in-request reservation object is passed to capture failure release and
+  // pipeline onFailure release — mutate a flag so double-release is a no-op.
+  if (reservation.released || reservation.reservedUsd <= 0) {
+    return;
+  }
+
+  const creditUsd = reservation.reservedUsd;
   ctx.mutateState((snapshot) => {
     const key = snapshot.buyerApiKeys.find((item) => item.id === reservation.apiKeyId);
     if (key) {
-      key.spentUsd = Math.max(0, key.spentUsd - reservation.reservedUsd);
+      key.spentUsd = Math.max(0, key.spentUsd - creditUsd);
     }
     if (reservation.useBalance) {
       const account = ensurePublicAccountInSnapshot(snapshot, reservation.wallet);
-      account.balanceUsd += reservation.reservedUsd;
+      account.balanceUsd += creditUsd;
       account.updatedAt = new Date(nowMs).toISOString();
     }
   }, nowMs);
+  reservation.released = true;
+  reservation.reservedUsd = 0;
 }
 
 export function captureBuyerApiKeyBillingWithPurchase(

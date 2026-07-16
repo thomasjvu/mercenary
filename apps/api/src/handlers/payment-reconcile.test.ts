@@ -101,6 +101,72 @@ test('reconcileLaunchPayment releases api-key reservation for raid route failure
   assert.equal(controlState.readPublicAccount(account.wallet)?.balanceUsd, 3);
 });
 
+test('captureApiKeyBilling failure then releaseLaunchPaymentHold credits prepaid balance once', async () => {
+  // Mirrors streaming capture failure: capture releases hold then throws; pipeline onFailure
+  // may call releaseLaunchPaymentHold again. Balance must return only once.
+  const controlState = createApiControlState({
+    ...process.env,
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+  });
+  const orchestrator = {
+    getRaidLaunchReservation: () => undefined,
+  } as unknown as BossRaidOrchestrator;
+
+  const ctx = {
+    controlState,
+    orchestrator,
+    apiMetrics: createApiMetrics(),
+    env: process.env,
+  } as unknown as ApiContext;
+
+  const auth = createAuthHandlers(ctx);
+  const manaBilling = createManaBillingHandlers(ctx);
+  const payment = createPaymentHandlers(ctx, auth, manaBilling);
+
+  const account = controlState.ensurePublicAccount('0xBuyer00000000000000000000000000000005');
+  controlState.creditBuyerBalance(account.wallet, 2);
+  const apiKey = controlState.createBuyerApiKey({
+    wallet: account.wallet,
+    name: 'double-release',
+    keyHash: 'hash_double_release',
+    prefix: 'br_dr',
+  });
+  const reservation = controlState.reserveBuyerApiKeyLaunch(apiKey.id, account.wallet, 2);
+  assert.ok(reservation);
+  assert.equal(controlState.readPublicAccount(account.wallet)?.balanceUsd, 0);
+
+  // Force a clean capture miss (no partial ledger mutation) — same as capture returning false.
+  const originalCapture = controlState.captureBuyerApiKeyBillingWithPurchase.bind(controlState);
+  controlState.captureBuyerApiKeyBillingWithPurchase = () => false;
+
+  try {
+    assert.throws(
+      () =>
+        payment.captureApiKeyBilling({
+          apiKeyBilling: reservation!,
+          actualCostUsd: 1,
+          route: 'chat',
+          raidId: 'raid-double-release',
+          modelId: 'mercenary-v1',
+        }),
+      (error: unknown) => error instanceof Error && error.message.includes('launch hold released')
+    );
+
+    assert.equal(controlState.readPublicAccount(account.wallet)?.balanceUsd, 2);
+    assert.equal(reservation!.released, true);
+    assert.equal(controlState.listBuyerApiKeys(account.wallet)[0]?.spentUsd, 0);
+
+    // Pipeline-style second release must not double-credit.
+    await payment.releaseLaunchPaymentHold({
+      launchPayment: { apiKeyBilling: reservation! },
+    });
+    assert.equal(controlState.readPublicAccount(account.wallet)?.balanceUsd, 2);
+    assert.equal(controlState.listBuyerApiKeys(account.wallet)[0]?.spentUsd, 0);
+  } finally {
+    controlState.captureBuyerApiKeyBillingWithPurchase = originalCapture;
+  }
+});
+
 test('reconcileLaunchPayment skips x402 refund when refundX402 is false', async () => {
   const controlState = createApiControlState({
     ...process.env,
