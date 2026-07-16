@@ -242,8 +242,8 @@ export function registerAccountRoutes(
 
   /**
    * Batch-flush accrued seller ledger when pending ≥ flush min.
-   * With BOSSRAID_RPC_URL + treasury key: sends USDG on Robinhood then marks settled.
-   * Optional body.txHash marks ledger only (off-band payment proof).
+   * With BOSSRAID_RPC_URL + treasury key: claim rows, send USDG on Robinhood, then settle.
+   * Optional body.txHash marks ledger only in non-production (never accepted in production).
    */
   app.post('/v1/seller/payouts/flush', async (request, reply) => {
     const session = requirePublicSession(reply, request.headers);
@@ -261,17 +261,35 @@ export function registerAccountRoutes(
       ensureOptionalStringInput(body.payout_wallet, 'seller_payout_flush.payout_wallet') ??
       session.wallet;
 
+    const isProduction = ctx.env.NODE_ENV === 'production';
+    if (txHash && isProduction) {
+      reply.code(400);
+      return {
+        ok: false,
+        error: 'tx_hash_not_allowed',
+        message:
+          'Client-supplied txHash is not accepted in production. Use treasury-backed flush or ops recovery.',
+      };
+    }
+
     const { flushSellerTreasuryPayout } = await import('../lib/seller-treasury-flush.js');
     const result = await flushSellerTreasuryPayout({
       ctx,
       providerIds,
       sellerPayoutWallet: payoutWallet,
-      txHashOverride: txHash,
-      allowLedgerOnly: ctx.env.NODE_ENV !== 'production',
+      // Non-production ledger-only mark only when no real treasury transfer is configured.
+      txHashOverride: isProduction ? undefined : txHash,
+      allowLedgerOnly: !isProduction,
     });
 
     if (!result.ok) {
-      reply.code(result.error === 'flush_not_eligible' ? 409 : 503);
+      if (result.error === 'flush_not_eligible') {
+        reply.code(409);
+      } else if (result.error === 'tx_hash_not_allowed') {
+        reply.code(400);
+      } else {
+        reply.code(503);
+      }
       return result;
     }
     return result;

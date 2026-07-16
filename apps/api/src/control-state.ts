@@ -234,6 +234,29 @@ export function createApiControlStateFromStore(store: ApiControlStateStore) {
       return sellerLedger.flushSellerPayouts(ctx, providerIds, input, nowMs);
     },
 
+    claimSellerPayoutsForFlush(
+      providerIds: string[],
+      input: { minUsd?: number } = {},
+      nowMs = Date.now()
+    ): sellerLedger.SellerFlushClaim {
+      return sellerLedger.claimSellerPayoutsForFlush(ctx, providerIds, input, nowMs);
+    },
+
+    settleSellerPayoutClaim(
+      claim: { claimId: string; payoutIds: string[] },
+      input: { txHash?: string } = {},
+      nowMs = Date.now()
+    ): { flushedCount: number; flushedUsd: number; payoutIds: string[] } {
+      return sellerLedger.settleSellerPayoutClaim(ctx, claim, input, nowMs);
+    },
+
+    releaseSellerPayoutClaim(
+      claim: { claimId: string; payoutIds: string[] },
+      nowMs = Date.now()
+    ): { releasedCount: number } {
+      return sellerLedger.releaseSellerPayoutClaim(ctx, claim, nowMs);
+    },
+
     consumeRateLimit(
       bucket: string,
       key: string,
