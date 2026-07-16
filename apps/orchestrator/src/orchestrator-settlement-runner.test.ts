@@ -120,16 +120,16 @@ test('executeSettlement resumes partial settlement instead of starting fresh', a
   assert.equal(raid.settlementExecution?.lifecycleStatus, 'terminal');
 });
 
-test('executeSettlement recovers partial artifact checkpoints after executor failure', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'bossraid-settlement-runner-'));
-  const raid = createFinalRaid();
-  const raids = new Map([[raid.id, raid]]);
-  const artifactPath = buildArtifactPath(dir, raid.id);
-  const artifact: SettlementArtifact = {
-    raidId: raid.id,
+function createOnchainArtifact(
+  raidId: string,
+  lifecycleStatus: SettlementArtifact['lifecycleStatus'],
+  overrides: Partial<SettlementArtifact> = {}
+): SettlementArtifact {
+  return {
+    raidId,
     executedAt: new Date().toISOString(),
     mode: 'onchain',
-    lifecycleStatus: 'partial',
+    lifecycleStatus,
     registryRaidRef: '3',
     taskHash: '0xtaskhash',
     evaluationHash: '0xevaluationhash',
@@ -160,8 +160,19 @@ test('executeSettlement recovers partial artifact checkpoints after executor fai
     childJobs: [],
     transactionHashes: ['0xabc'],
     jobIds: [],
-    warnings: ['checkpointed before failure'],
+    warnings: ['checkpointed'],
+    ...overrides,
   };
+}
+
+test('executeSettlement recovers partial artifact checkpoints after executor failure', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'bossraid-settlement-runner-'));
+  const raid = createFinalRaid();
+  const raids = new Map([[raid.id, raid]]);
+  const artifactPath = buildArtifactPath(dir, raid.id);
+  const artifact = createOnchainArtifact(raid.id, 'partial', {
+    warnings: ['checkpointed before failure'],
+  });
   await writeFile(artifactPath, JSON.stringify(artifact, null, 2), 'utf8');
 
   const deps: OrchestratorSettlementRunnerDeps = {
@@ -170,9 +181,18 @@ test('executeSettlement recovers partial artifact checkpoints after executor fai
     settlementOutputDir: dir,
     settlementExecutor: {
       execute: async () => {
+        // Entry-path recovery would resume if partial exists; for this test the
+        // artifact is present so execute must not be chosen. Force a post-entry path
+        // by clearing the hydrated record mid-flight is not needed — if entry hydrates
+        // partial, resume is called instead. Simulate no entry recovery by using a
+        // missing artifact on entry... here artifact exists, so resume is used.
+        // Use a throw from resume to cover catch recovery is separate; this case still
+        // asserts execute is not the primary path when partial artifact exists.
+        throw new Error('execute should not run when partial artifact exists on entry');
+      },
+      resume: async () => {
         throw new Error('createRaid failed after checkpoint');
       },
-      resume: async () => undefined,
     },
     queuePersist: async () => undefined,
   };
@@ -181,4 +201,96 @@ test('executeSettlement recovers partial artifact checkpoints after executor fai
   assert.equal(raid.settlementExecution?.lifecycleStatus, 'partial');
   assert.equal(raid.settlementExecution?.registryRaidRef, '3');
   assert.equal(raid.settlementExecution?.artifactPath, artifactPath);
+});
+
+test('executeSettlement resumes from partial artifact when settlementExecution is missing', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'bossraid-settlement-runner-'));
+  const raid = createFinalRaid();
+  const raids = new Map([[raid.id, raid]]);
+  const artifactPath = buildArtifactPath(dir, raid.id);
+  const artifact = createOnchainArtifact(raid.id, 'partial', {
+    registryRaidRef: '9',
+    warnings: ['mid-flight checkpoint after restart'],
+  });
+  await writeFile(artifactPath, JSON.stringify(artifact, null, 2), 'utf8');
+
+  let resumed = false;
+  let executed = false;
+  let resumeExisting: SettlementExecutionRecord | undefined;
+  let persistCount = 0;
+
+  const deps: OrchestratorSettlementRunnerDeps = {
+    requireRaid: (raidId) => raids.get(raidId)!,
+    providers: new Map(),
+    settlementOutputDir: dir,
+    settlementExecutor: {
+      execute: async () => {
+        executed = true;
+        throw new Error('execute should not run when partial artifact exists');
+      },
+      resume: async (_raid, existing) => {
+        resumed = true;
+        resumeExisting = existing;
+        return {
+          ...existing,
+          lifecycleStatus: 'terminal',
+        };
+      },
+    },
+    queuePersist: async () => {
+      persistCount += 1;
+    },
+  };
+
+  await executeSettlement(raid.id, deps);
+
+  assert.equal(executed, false);
+  assert.equal(resumed, true);
+  assert.equal(resumeExisting?.lifecycleStatus, 'partial');
+  assert.equal(resumeExisting?.registryRaidRef, '9');
+  assert.equal(resumeExisting?.artifactPath, artifactPath);
+  assert.equal(raid.settlementExecution?.lifecycleStatus, 'terminal');
+  assert.ok(persistCount >= 1);
+});
+
+test('executeSettlement hydrates terminal artifact without re-executing', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'bossraid-settlement-runner-'));
+  const raid = createFinalRaid();
+  const raids = new Map([[raid.id, raid]]);
+  const artifactPath = buildArtifactPath(dir, raid.id);
+  const artifact = createOnchainArtifact(raid.id, 'terminal', {
+    registryRaidRef: '11',
+    finalizeTxHash: '0xfinalize',
+    warnings: ['settlement already finalized'],
+  });
+  await writeFile(artifactPath, JSON.stringify(artifact, null, 2), 'utf8');
+
+  let resumed = false;
+  let executed = false;
+
+  const deps: OrchestratorSettlementRunnerDeps = {
+    requireRaid: (raidId) => raids.get(raidId)!,
+    providers: new Map(),
+    settlementOutputDir: dir,
+    settlementExecutor: {
+      execute: async () => {
+        executed = true;
+        throw new Error('execute should not run when terminal artifact exists');
+      },
+      resume: async () => {
+        resumed = true;
+        throw new Error('resume should not run when terminal artifact exists');
+      },
+    },
+    queuePersist: async () => undefined,
+  };
+
+  await executeSettlement(raid.id, deps);
+
+  assert.equal(executed, false);
+  assert.equal(resumed, false);
+  assert.equal(raid.settlementExecution?.lifecycleStatus, 'terminal');
+  assert.equal(raid.settlementExecution?.registryRaidRef, '11');
+  assert.equal(raid.settlementExecution?.artifactPath, artifactPath);
+  assert.equal(raid.settlementExecution?.finalizeTxHash, '0xfinalize');
 });

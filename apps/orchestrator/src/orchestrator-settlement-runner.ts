@@ -92,17 +92,39 @@ export async function executeSettlement(
     return;
   }
 
+  // Restart recovery: mid-flight artifacts may exist without raid.settlementExecution
+  // (only assigned after a full execute returns). Hydrate before execute/resume so
+  // we do not start a second onchain settlement.
+  if (!raid.settlementExecution?.lifecycleStatus) {
+    const recoveredOnEntry = await recoverSettlementRecordFromArtifact(raid, deps, {
+      includeTerminal: true,
+    });
+    if (recoveredOnEntry) {
+      raid.settlementExecution = recoveredOnEntry;
+      raid.updatedAt = new Date().toISOString();
+      await deps.queuePersist();
+
+      if (recoveredOnEntry.lifecycleStatus !== 'partial') {
+        return;
+      }
+    }
+  }
+
   const options = buildSettlementExecuteOptions(raid, deps);
   let record: SettlementExecutionRecord | undefined;
 
   try {
-    if (raid.settlementExecution?.lifecycleStatus === 'partial') {
+    // resume is onchain-only; file-mode executors may not implement real resume
+    if (
+      raid.settlementExecution?.lifecycleStatus === 'partial' &&
+      raid.settlementExecution.mode === 'onchain'
+    ) {
       record = await deps.settlementExecutor.resume(raid, raid.settlementExecution, options);
     } else {
       record = await deps.settlementExecutor.execute(raid, options);
     }
   } catch (error) {
-    const recovered = await recoverPartialSettlementRecord(raid, deps);
+    const recovered = await recoverSettlementRecordFromArtifact(raid, deps);
     if (recovered) {
       raid.settlementExecution = recovered;
       raid.updatedAt = new Date().toISOString();
@@ -113,7 +135,7 @@ export async function executeSettlement(
   }
 
   if (!record) {
-    const recovered = await recoverPartialSettlementRecord(raid, deps);
+    const recovered = await recoverSettlementRecordFromArtifact(raid, deps);
     if (recovered) {
       raid.settlementExecution = recovered;
       raid.updatedAt = new Date().toISOString();
@@ -130,9 +152,10 @@ export async function executeSettlement(
   await deps.queuePersist();
 }
 
-async function recoverPartialSettlementRecord(
+async function recoverSettlementRecordFromArtifact(
   raid: RaidRecord,
-  deps: OrchestratorSettlementRunnerDeps
+  deps: OrchestratorSettlementRunnerDeps,
+  options: { includeTerminal?: boolean } = {}
 ): Promise<SettlementExecutionRecord | undefined> {
   if (!deps.settlementOutputDir) {
     return undefined;
@@ -144,9 +167,25 @@ async function recoverPartialSettlementRecord(
   }
 
   const artifact = await readArtifactFile(artifactPath);
-  if (!artifact || artifact.lifecycleStatus === 'terminal') {
+  if (!artifact) {
     return undefined;
   }
 
-  return settlementRecordFromArtifact(artifact, artifactPath);
+  if (artifact.lifecycleStatus === 'terminal') {
+    return options.includeTerminal
+      ? settlementRecordFromArtifact(artifact, artifactPath)
+      : undefined;
+  }
+
+  // Catch/empty-record recovery only rehydrates non-terminal checkpoints (partial).
+  // Entry path may also hydrate synthetic/file completions via includeTerminal.
+  if (artifact.lifecycleStatus === 'partial') {
+    return settlementRecordFromArtifact(artifact, artifactPath);
+  }
+
+  if (options.includeTerminal && artifact.lifecycleStatus === 'synthetic') {
+    return settlementRecordFromArtifact(artifact, artifactPath);
+  }
+
+  return undefined;
 }
