@@ -17,9 +17,10 @@ import type {
 } from '@bossraid/shared-types';
 import { defaultApiChatHarnessProfile } from '@bossraid/shared-types';
 import { DEFAULTS } from '@bossraid/constants';
-import { assertProviderEndpointSafe } from './endpoint-safety.js';
+import { assertProviderEndpointResolvedSafe } from './endpoint-safety.js';
 
 export {
+  assertProviderEndpointResolvedSafe,
   assertProviderEndpointSafe,
   isBlockedMetadataHost,
   isPrivateOrSpecialIp,
@@ -264,7 +265,7 @@ async function postJson<TResponse>(
   path: string,
   payload: unknown
 ): Promise<TResponse> {
-  assertProviderEndpointSafe(profile.endpoint);
+  await assertProviderEndpointResolvedSafe(profile.endpoint);
   const body = JSON.stringify(payload);
   const endpoint = resolveProviderEndpointPath(profile, path);
   const startedAt = Date.now();
@@ -336,7 +337,7 @@ function readProviderAcceptTimeoutMs(env: NodeJS.ProcessEnv = process.env): numb
 
 export async function probeProviderHealth(profile: ProviderProfile): Promise<ProviderHealthStatus> {
   try {
-    assertProviderEndpointSafe(profile.endpoint);
+    await assertProviderEndpointResolvedSafe(profile.endpoint);
   } catch (error) {
     return {
       providerId: profile.providerId,

@@ -419,7 +419,7 @@ async function withMockedAcceptFetch<T>(responseDelayMs: number, fn: () => Promi
   globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
     const url =
       typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-    assert.equal(url, 'http://provider.test/v1/raid/accept');
+    assert.equal(url, 'http://127.0.0.1:19001/v1/raid/accept');
     await new Promise<void>((resolve, reject) => {
       const timer = setTimeout(resolve, responseDelayMs);
       const onAbort = () => {
@@ -454,7 +454,7 @@ function createTestProvider(): HttpRaidProvider {
     buildProviderProfileFromRegistration({
       agentId: 'probe-provider',
       name: 'Probe Provider',
-      endpoint: 'http://provider.test',
+      endpoint: 'http://127.0.0.1:19001',
       auth: {
         type: 'none',
       },

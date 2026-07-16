@@ -24,6 +24,41 @@ import {
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../handlers/index.js';
 
+/** Admin list default page size; keeps ops responses bounded under retention growth. */
+export const ADMIN_RAID_LIST_DEFAULT_LIMIT = 100;
+export const ADMIN_RAID_LIST_MAX_LIMIT = 500;
+
+function readPositiveIntQuery(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  const asString = asSingleQueryValue(value);
+  if (asString == null || asString === '') {
+    return undefined;
+  }
+  const parsed = Number(asString);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+export function parseAdminRaidListPagination(query: { limit?: unknown; offset?: unknown }): {
+  limit: number;
+  offset: number;
+} {
+  let limit = ADMIN_RAID_LIST_DEFAULT_LIMIT;
+  const parsedLimit = readPositiveIntQuery(query.limit);
+  if (parsedLimit != null && parsedLimit > 0) {
+    limit = Math.min(Math.floor(parsedLimit), ADMIN_RAID_LIST_MAX_LIMIT);
+  }
+
+  let offset = 0;
+  const parsedOffset = readPositiveIntQuery(query.offset);
+  if (parsedOffset != null && parsedOffset > 0) {
+    offset = Math.floor(parsedOffset);
+  }
+
+  return { limit, offset };
+}
+
 function registerRaidDetailRoutes(
   app: FastifyInstance,
   ctx: ApiContext,
@@ -220,6 +255,23 @@ export function registerRaidRoutes(
       schema: internalRouteSchema({
         tags: ['Raid'],
         summary: 'List raids (admin)',
+        querystring: {
+          type: 'object',
+          properties: {
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              default: ADMIN_RAID_LIST_DEFAULT_LIMIT,
+              description: `Max raids to return (default ${ADMIN_RAID_LIST_DEFAULT_LIMIT}; values above ${ADMIN_RAID_LIST_MAX_LIMIT} are clamped).`,
+            },
+            offset: {
+              type: 'integer',
+              minimum: 0,
+              default: 0,
+              description: 'Number of newest root raids to skip (createdAt desc).',
+            },
+          },
+        },
         response: {
           200: {
             type: 'array',
@@ -235,7 +287,12 @@ export function registerRaidRoutes(
         return adminError;
       }
 
-      return orchestrator.listRaids().map(toRaidListItemResponse);
+      const { limit, offset } = parseAdminRaidListPagination(
+        request.query as { limit?: unknown; offset?: unknown }
+      );
+      const raids = orchestrator.listRaids();
+      reply.header('x-total-count', String(raids.length));
+      return raids.slice(offset, offset + limit).map(toRaidListItemResponse);
     }
   );
 

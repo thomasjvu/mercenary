@@ -172,3 +172,91 @@ export function assertProviderEndpointSafe(
     throw new UnsafeProviderEndpointError('Provider endpoints must use HTTPS in production.');
   }
 }
+
+export type DnsLookupFn = (
+  hostname: string,
+  options: { all: true }
+) => Promise<Array<{ address: string; family: number }>>;
+
+/**
+ * Resolve the endpoint hostname and re-check every address for private/special
+ * ranges. Mitigates DNS-rebinding SSRF where a public hostname resolves to a
+ * link-local or private IP at request time.
+ *
+ * Residual TOCTOU: address is not pinned into the TCP connect; a rebinding
+ * race between lookup and fetch remains possible without a custom agent.
+ */
+export async function assertProviderEndpointResolvedSafe(
+  endpoint: string,
+  options: {
+    allowPrivateNetwork?: boolean;
+    env?: NodeJS.ProcessEnv;
+    lookup?: DnsLookupFn;
+  } = {}
+): Promise<void> {
+  assertProviderEndpointSafe(endpoint, options);
+
+  const env = options.env ?? process.env;
+  const allowPrivate = options.allowPrivateNetwork ?? shouldAllowPrivateProviderEndpoints(env);
+
+  let url: URL;
+  try {
+    url = new URL(endpoint);
+  } catch {
+    throw new UnsafeProviderEndpointError('Provider endpoint is not a valid URL.');
+  }
+
+  const hostname = stripBrackets(url.hostname).toLowerCase();
+  // Literal IPs already checked by assertProviderEndpointSafe.
+  if (isPrivateOrSpecialIp(hostname) || isLikelyIpLiteral(hostname)) {
+    return;
+  }
+
+  const lookup =
+    options.lookup ??
+    (async (host, opts) => {
+      const dns = await import('node:dns/promises');
+      return dns.lookup(host, opts);
+    });
+
+  let addresses: Array<{ address: string; family: number }>;
+  try {
+    addresses = await lookup(hostname, { all: true });
+  } catch (error) {
+    throw new UnsafeProviderEndpointError(
+      `Provider endpoint DNS lookup failed: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+
+  if (!addresses.length) {
+    throw new UnsafeProviderEndpointError('Provider endpoint DNS lookup returned no addresses.');
+  }
+
+  for (const { address } of addresses) {
+    if (isBlockedMetadataHost(address)) {
+      throw new UnsafeProviderEndpointError(
+        `Provider endpoint resolves to blocked metadata address ${address}.`
+      );
+    }
+    if (!allowPrivate && isPrivateOrSpecialIp(address)) {
+      throw new UnsafeProviderEndpointError(
+        `Provider endpoint resolves to private, loopback, or link-local address ${address}. Use a public HTTPS endpoint in production, or set BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS=1 for trusted private networks.`
+      );
+    }
+  }
+}
+
+function isLikelyIpLiteral(hostname: string): boolean {
+  const host = stripBrackets(hostname).toLowerCase();
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/u.test(host)) {
+    return true;
+  }
+  // Rough IPv6: contains ':' and only hex/colon chars
+  if (host.includes(':') && /^[0-9a-f:]+$/u.test(host)) {
+    return true;
+  }
+  if (/^\d+$/u.test(host)) {
+    return true;
+  }
+  return false;
+}

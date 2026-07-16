@@ -31,7 +31,7 @@ When no live seller exists for a catalog model, discovery still lists the model 
 1. **Discover** — `GET /v1/models`, `/v1/markets`, `/v1/prices` or `/marketplace`
 2. **Sign in** — wallet session via `/v1/auth/nonce` + `/v1/auth/verify`
 3. **API key** — `POST /v1/buyer/api-keys` → one-time `br_...` key (optional `spendLimitUsd`)
-4. **Fund** (optional) — `POST /v1/buyer/balance/fund` via verified x402 USDC from the session wallet (dev smoke may use `BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND=true`)
+4. **Fund** (optional) — `POST /v1/buyer/balance/fund` via verified x402 **USDG on Robinhood Chain** from the session wallet ([payments](../reference/payments.md); dev smoke may use `BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND=true`). Bounty escrow remains a separate Base USDC rail.
 5. **Call** — `POST /v1/inference/chat/completions` with `Authorization: Bearer br_...`
 
 Valid API keys skip x402 and debit spend caps and/or prepaid balance in the same request.
