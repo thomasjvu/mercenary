@@ -78,26 +78,48 @@ export class BountyStore {
   }
 
   claimDeliveredAwardForPayment(awardId: string): BountyAwardRecord | undefined {
-    const award = this.getAward(awardId);
-    if (!award || award.status !== 'delivered') {
-      return undefined;
-    }
-
+    this.db.exec('begin immediate');
     try {
-      this.db
-        .prepare('insert into bounty_award_payment_claims (award_id, claimed_at) values (?, ?)')
-        .run(awardId, new Date().toISOString());
+      const award = this.getAward(awardId);
+      if (!award || award.status !== 'delivered') {
+        this.db.exec('rollback');
+        return undefined;
+      }
+
+      const nowIso = new Date().toISOString();
+      const paying: BountyAwardRecord = {
+        ...award,
+        status: 'paying',
+        updatedAt: nowIso,
+      };
+
+      try {
+        this.db
+          .prepare('insert into bounty_award_payment_claims (award_id, claimed_at) values (?, ?)')
+          .run(awardId, nowIso);
+      } catch {
+        // Orphan recovery: claim row exists but award still delivered (crash after insert,
+        // before status update). Adopt the existing claim and finish the transition.
+        const claim = this.db
+          .prepare('select award_id from bounty_award_payment_claims where award_id = ?')
+          .get(awardId) as { award_id?: string } | undefined;
+        if (!claim?.award_id) {
+          this.db.exec('rollback');
+          return undefined;
+        }
+      }
+
+      this.saveAward(paying);
+      this.db.exec('commit');
+      return paying;
     } catch {
+      try {
+        this.db.exec('rollback');
+      } catch {
+        // ignore rollback failures when transaction already closed
+      }
       return undefined;
     }
-
-    const paying: BountyAwardRecord = {
-      ...award,
-      status: 'paying',
-      updatedAt: new Date().toISOString(),
-    };
-    this.saveAward(paying);
-    return paying;
   }
 
   releasePayingAward(awardId: string): void {
