@@ -7,6 +7,7 @@ interface IERC20Minimal {
 }
 
 /// @notice Multi-award bounty escrow with permissionless payout after accept deadline.
+/// @dev acceptAward is poster-only (or operator on behalf). After acceptDeadline anyone may claimPayout to provider.
 contract BossBountyEscrow {
     enum BountyStatus {
         Open,
@@ -37,6 +38,7 @@ contract BossBountyEscrow {
     }
 
     struct Award {
+        uint256 bountyId;
         address provider;
         uint256 amount;
         bytes32 deliveryHash;
@@ -61,6 +63,8 @@ contract BossBountyEscrow {
     event BountyRefunded(uint256 indexed bountyId, address indexed poster, uint256 amount);
 
     constructor(address token_, address operator_) {
+        require(token_ != address(0), "token required");
+        require(operator_ != address(0), "operator required");
         token = IERC20Minimal(token_);
         operator = operator_;
     }
@@ -95,10 +99,6 @@ contract BossBountyEscrow {
         uint256 acceptDeadline,
         string calldata metadataUri
     ) external returns (uint256 bountyId) {
-        require(totalBudget > 0, "budget required");
-        require(acceptDeadline > deliveryDeadline, "deadlines ordered");
-        require(deliveryDeadline > awardDeadline, "deadlines ordered");
-        require(awardDeadline > biddingDeadline, "deadlines ordered");
         bountyId = _createBounty(
             msg.sender,
             totalBudget,
@@ -158,9 +158,12 @@ contract BossBountyEscrow {
         _releaseAward(awardId, operator);
     }
 
+    /// @notice Poster-only early accept. After acceptDeadline use claimPayout (permissionless).
     function acceptAward(uint256 awardId) external {
         Award storage award = awards[awardId];
         require(award.status == AwardStatus.Delivered, "not delivered");
+        Bounty storage bounty = bounties[award.bountyId];
+        require(msg.sender == bounty.poster, "only poster");
         _releaseAward(awardId, msg.sender);
     }
 
@@ -168,8 +171,8 @@ contract BossBountyEscrow {
         Award storage award = awards[awardId];
         require(award.status == AwardStatus.Delivered, "not delivered");
 
-        uint256 bountyId = _findBountyForAward(awardId);
-        Bounty storage bounty = bounties[bountyId];
+        Bounty storage bounty = bounties[award.bountyId];
+        require(bounty.poster != address(0), "award not found");
         require(block.timestamp >= bounty.acceptDeadline, "accept window open");
         _releaseAward(awardId, msg.sender);
     }
@@ -248,6 +251,7 @@ contract BossBountyEscrow {
 
         awardId = ++nextAwardId;
         awards[awardId] = Award({
+            bountyId: bountyId,
             provider: provider,
             amount: amount,
             deliveryHash: bytes32(0),
@@ -266,6 +270,10 @@ contract BossBountyEscrow {
         require(award.status == AwardStatus.Pending, "not pending");
         require(deliveryHash != bytes32(0), "hash required");
 
+        Bounty storage bounty = bounties[award.bountyId];
+        require(bounty.poster != address(0), "award not found");
+        require(block.timestamp <= bounty.deliveryDeadline, "delivery window closed");
+
         award.deliveryHash = deliveryHash;
         award.status = AwardStatus.Delivered;
         award.deliveredAt = block.timestamp;
@@ -279,17 +287,5 @@ contract BossBountyEscrow {
         require(token.transfer(award.provider, amount), "payout failed");
         emit AwardAccepted(awardId, actor, amount);
         emit AwardClaimed(awardId, actor, amount);
-    }
-
-    function _findBountyForAward(uint256 awardId) private view returns (uint256) {
-        for (uint256 bountyId = 1; bountyId <= nextBountyId; bountyId++) {
-            uint256[] storage ids = bountyAwardIds[bountyId];
-            for (uint256 index = 0; index < ids.length; index++) {
-                if (ids[index] == awardId) {
-                    return bountyId;
-                }
-            }
-        }
-        revert("award not found");
     }
 }

@@ -11,7 +11,9 @@
     "deploy": "node dist/deploy.js",
     "bootstrap:settlement-env": "node dist/bootstrap-settlement-env.js",
     "bootstrap:onchain": "node dist/bootstrap-onchain.js",
-    "test": "node --import tsx --test 'src/**/*.test.ts'"
+    "test": "node --import tsx --test 'src/**/*.test.ts'",
+    "test:forge": "forge test -vv",
+    "test:all": "pnpm test && pnpm test:forge"
   },
   "dependencies": {
     "solc": "^0.8.30",

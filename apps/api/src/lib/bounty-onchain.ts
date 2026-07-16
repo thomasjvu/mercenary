@@ -299,7 +299,8 @@ export class BountyOnchainExecutor {
       functionName: 'awards',
       args: [BigInt(onchainAwardId)],
     });
-    return Number(award[3]);
+    // Award: bountyId, provider, amount, deliveryHash, status, deliveredAt
+    return Number(award[4]);
   }
 }
 

@@ -95,10 +95,18 @@ export const BOUNTY_ESCROW_ABI = [
   },
   {
     type: 'function',
+    name: 'acceptAward',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'awardId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
     name: 'awards',
     stateMutability: 'view',
     inputs: [{ name: 'awardId', type: 'uint256' }],
     outputs: [
+      { name: 'bountyId', type: 'uint256' },
       { name: 'provider', type: 'address' },
       { name: 'amount', type: 'uint256' },
       { name: 'deliveryHash', type: 'bytes32' },

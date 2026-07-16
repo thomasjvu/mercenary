@@ -87,18 +87,32 @@ pnpm bossraid bootstrap:onchain
 
 This deploys both contracts, writes the deployment manifest, writes the settlement env file, and prints the next manual step.
 
+## Security notes (audit 2026-07)
+
+Hardened in-repo contracts:
+
+- **BossJobEscrow**: `submit` / `complete` require `block.timestamp < expiresAt` (expiry is a hard stop; `claimRefund` after expiry).
+- **BossBountyEscrow**: `acceptAward` is **poster-only** (operator has `acceptAwardOnBehalf`); after `acceptDeadline`, `claimPayout` is permissionless to the provider. Awards store `bountyId`; delivery must be by `deliveryDeadline`.
+- **RaidRegistry**: `linkChildJob` reverts after finalize.
+- Constructors reject zero token / operator addresses.
+
+Redeploy is required for production bytecode after these changes.
+
+## Tests
+
+```bash
+cd packages/contracts
+forge test -vv          # or: pnpm test:forge
+pnpm test               # TypeScript deploy tests
+```
+
+Foundry suite covers expiry races, poster-only accept, delivery deadline, registry finalize immutability.
+
 ## Still Missing
 
-- contract tests
 - token allowance/bootstrap flow for funded jobs
-- deployment verification
+- deployment verification / address book
 - resume tooling for partially settled child-job batches
 - chain-specific config presets
-
-Future tests should cover:
-
-- client funding
-- provider submission
-- evaluator completion
-- rejection and refund flows
-- raid finalization and child-job linkage
+- SafeERC20 / fee-on-transfer token allowlist (document USDC/USDG-only for now)
+- operator key rotation (immutable operator is trust-rooted)

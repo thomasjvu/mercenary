@@ -42,6 +42,7 @@ contract BossJobEscrow {
     event Refunded(uint256 indexed jobId, address indexed client, uint256 amount);
 
     constructor(address token_) {
+        require(token_ != address(0), "token required");
         token = IERC20Minimal(token_);
     }
 
@@ -96,6 +97,7 @@ contract BossJobEscrow {
         require(job.budget > 0, "budget missing");
         require(job.provider != address(0), "provider missing");
         require(job.budget == expectedBudget, "budget changed");
+        require(block.timestamp < job.expiresAt, "expired");
         require(token.transferFrom(msg.sender, address(this), job.budget), "transfer failed");
 
         job.status = Status.Funded;
@@ -106,6 +108,7 @@ contract BossJobEscrow {
         Job storage job = jobs[jobId];
         require(msg.sender == job.provider, "only provider");
         require(job.status == Status.Funded, "not funded");
+        require(block.timestamp < job.expiresAt, "expired");
 
         job.deliverableHash = deliverableHash;
         job.status = Status.Submitted;
@@ -116,6 +119,8 @@ contract BossJobEscrow {
         Job storage job = jobs[jobId];
         require(msg.sender == job.evaluator, "only evaluator");
         require(job.status == Status.Submitted, "not submitted");
+        // Expiry is a hard stop: after expiresAt only claimRefund may move funds to client.
+        require(block.timestamp < job.expiresAt, "expired");
 
         job.status = Status.Completed;
         require(token.transfer(job.provider, job.budget), "payout failed");
@@ -134,7 +139,7 @@ contract BossJobEscrow {
 
         require(msg.sender == job.evaluator, "only evaluator");
         require(job.status == Status.Funded || job.status == Status.Submitted, "bad status");
-
+        // Evaluator may still refund client after expiry (safer than paying provider post-window).
         job.status = Status.Rejected;
         require(token.transfer(job.client, job.budget), "refund failed");
         emit JobRejected(jobId, msg.sender, reason);

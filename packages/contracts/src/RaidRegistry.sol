@@ -29,6 +29,7 @@ contract RaidRegistry {
     function linkChildJob(uint256 raidId, uint256 jobId) external {
         Raid storage raid = _requireRaid(raidId);
         require(msg.sender == raid.client, "only client");
+        require(!raid.finalized, "finalized");
         raid.childJobIds.push(jobId);
         emit RaidChildLinked(raidId, jobId);
     }
