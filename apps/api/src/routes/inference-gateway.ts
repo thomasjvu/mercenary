@@ -6,6 +6,7 @@ import {
   isHostedHarnessProvider,
   isHostedInferenceProvider,
   probeHostedInferenceProviderHealth,
+  rebuildGatewayTaskPackage,
   resolveHostedProviderUpstream,
   runHarnessGatewayJob,
   runInferenceGatewayJob,
@@ -15,7 +16,8 @@ import { type ApiContext } from '../api-context.js';
 type GatewayAcceptBody = {
   raidId: string;
   providerId: string;
-  task: ProviderTaskPackage;
+  /** Ignored for execution — task is rebuilt from raid state. */
+  task?: ProviderTaskPackage;
   deadlineUnix: number;
 };
 
@@ -92,13 +94,12 @@ export function registerInferenceGatewayRoutes(app: FastifyInstance, ctx: ApiCon
       typeof body.raidId !== 'string' ||
       typeof body.providerId !== 'string' ||
       body.providerId !== providerId ||
-      typeof body.deadlineUnix !== 'number' ||
-      !body.task
+      typeof body.deadlineUnix !== 'number'
     ) {
       reply.code(400);
       return {
         error: 'invalid_request',
-        message: 'raidId, providerId, task, and deadlineUnix are required.',
+        message: 'raidId, providerId, and deadlineUnix are required.',
       };
     }
 
@@ -124,6 +125,15 @@ export function registerInferenceGatewayRoutes(app: FastifyInstance, ctx: ApiCon
       };
     }
 
+    // Execute only the orchestrator-authoritative task package (ignore client body.task).
+    const task = rebuildGatewayTaskPackage({ raid, providerId, provider });
+    const jobBody = {
+      raidId: body.raidId,
+      providerId,
+      task,
+      deadlineUnix: raid.deadlineUnix,
+    };
+
     const providerRunId = createProviderRunId();
     const harnessSeat = isHostedHarnessProvider(provider);
 
@@ -132,7 +142,7 @@ export function registerInferenceGatewayRoutes(app: FastifyInstance, ctx: ApiCon
         orchestrator,
         controlState,
         provider,
-        body,
+        body: jobBody,
         providerRunId,
         env: ctx.env,
       });
@@ -142,7 +152,7 @@ export function registerInferenceGatewayRoutes(app: FastifyInstance, ctx: ApiCon
         controlState,
         inferenceReceiptStore: ctx.inferenceReceiptStore,
         provider,
-        body,
+        body: jobBody,
         providerRunId,
         env: ctx.env,
       });

@@ -62,6 +62,7 @@ import { findWorkspaceRoot, resolveWorkspacePath } from '@bossraid/constants/wor
 export { InvalidRaidLaunchReservationError, NoEligibleProvidersError } from './raid-launch.js';
 export { ProviderRegistrationConflictError } from './orchestrator-provider-registry.js';
 export { PersistenceUnavailableError } from './persistence-queue.js';
+export { buildProviderTaskPackage } from './task-package.js';
 export { UnknownRaidError };
 
 export class BossRaidOrchestrator {
