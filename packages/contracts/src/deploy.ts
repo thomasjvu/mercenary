@@ -134,19 +134,9 @@ export async function deployContracts(options: DeployContractsOptions): Promise<
     transport: http(options.rpcUrl),
   });
 
-  const registryDeployHash = await walletClient.deployContract({
-    abi: compiled.raidRegistry.abi,
-    bytecode: compiled.raidRegistry.bytecode,
-    account,
-  });
-  const registryReceipt = await publicClient.waitForTransactionReceipt({
-    hash: registryDeployHash,
-  });
-  if (registryReceipt.status !== 'success' || !registryReceipt.contractAddress) {
-    throw new Error('RaidRegistry deployment failed.');
-  }
-
   const tokenAddress = getAddress(options.tokenAddress);
+
+  // Job escrow first — RaidRegistry binds to it for child-job ownership checks (QS-08).
   const escrowDeployHash = await walletClient.deployContract({
     abi: compiled.bossJobEscrow.abi,
     bytecode: compiled.bossJobEscrow.bytecode,
@@ -156,6 +146,19 @@ export async function deployContracts(options: DeployContractsOptions): Promise<
   const escrowReceipt = await publicClient.waitForTransactionReceipt({ hash: escrowDeployHash });
   if (escrowReceipt.status !== 'success' || !escrowReceipt.contractAddress) {
     throw new Error('BossJobEscrow deployment failed.');
+  }
+
+  const registryDeployHash = await walletClient.deployContract({
+    abi: compiled.raidRegistry.abi,
+    bytecode: compiled.raidRegistry.bytecode,
+    args: [escrowReceipt.contractAddress],
+    account,
+  });
+  const registryReceipt = await publicClient.waitForTransactionReceipt({
+    hash: registryDeployHash,
+  });
+  if (registryReceipt.status !== 'success' || !registryReceipt.contractAddress) {
+    throw new Error('RaidRegistry deployment failed.');
   }
 
   const bountyEscrowDeployHash = await walletClient.deployContract({

@@ -95,6 +95,27 @@ export const BOUNTY_ESCROW_ABI = [
   },
   {
     type: 'function',
+    name: 'transferOperator',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'newOperator', type: 'address' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'acceptOperator',
+    stateMutability: 'nonpayable',
+    inputs: [],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'operator',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+  },
+  {
+    type: 'function',
     name: 'refundUnawarded',
     stateMutability: 'nonpayable',
     inputs: [{ name: 'bountyId', type: 'uint256' }],

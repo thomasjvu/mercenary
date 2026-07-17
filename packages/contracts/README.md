@@ -94,11 +94,12 @@ Hardened in-repo contracts:
 - **BossJobEscrow**: `submit` / `complete` require `block.timestamp < expiresAt` (expiry is a hard stop; `claimRefund` after expiry).
 - **Fund CEI**: status / remaining budget updated **before** token pull (blocks callback double-fund).
 - **TokenTransfer**: SafeERC20-style optional return + `pullExact` (rejects fee-on-transfer / amount mismatch).
-- **BossBountyEscrow**: `acceptAward` is **poster-only** (operator has `acceptAwardOnBehalf`); after `acceptDeadline`, `claimPayout` is permissionless to the provider. Awards store `bountyId`; delivery by `deliveryDeadline`; `forfeitAward` after delivery window for undelivered Pending awards.
-- **RaidRegistry**: `linkChildJob` reverts after finalize.
-- Constructors reject zero token / operator addresses.
+- **BossBountyEscrow**: `acceptAward` is **poster-only** (operator has `acceptAwardOnBehalf`); after `acceptDeadline`, `claimPayout` is permissionless to the provider. Awards store `bountyId`; delivery by `deliveryDeadline`; `forfeitAward` after delivery window for undelivered Pending awards. **Operator is rotatable** via `transferOperator` + `acceptOperator` (two-step; not immutable).
+- **BossJobEscrow roles**: evaluator must differ from client and provider (blocks trivial self-deal evaluator). Evaluator remains a trusted settlement role by product design — custody high-assurance keys.
+- **RaidRegistry**: constructed with `jobEscrow`; `linkChildJob` requires the job to exist on that escrow and `job.client == msg.sender`. `linkChildJob` reverts after finalize.
+- Constructors reject zero token / operator / escrow addresses.
 
-Designed for standard 1:1 ERC20 (USDG/USDC-class). Redeploy after bytecode changes.
+Designed for standard 1:1 ERC20 (USDG/USDC-class). Redeploy after bytecode changes. Deploy order: job escrow → registry(escrow) → bounty escrow.
 
 ## Tests
 

@@ -118,4 +118,24 @@ contract BossJobEscrowTest is Test {
         vm.expectRevert(bytes("amount mismatch"));
         fotEscrow.fund(jobId, 100e6);
     }
+
+    function test_createJob_rejects_evaluator_is_client() public {
+        vm.prank(client);
+        vm.expectRevert(bytes("evaluator is client"));
+        escrow.createJob(provider, client, block.timestamp + 1 days, "task");
+    }
+
+    function test_createJob_rejects_evaluator_is_provider() public {
+        vm.prank(client);
+        vm.expectRevert(bytes("evaluator is provider"));
+        escrow.createJob(evaluator, evaluator, block.timestamp + 1 days, "task");
+    }
+
+    function test_setProvider_rejects_evaluator() public {
+        vm.prank(client);
+        uint256 jobId = escrow.createJob(address(0), evaluator, block.timestamp + 1 days, "task");
+        vm.prank(client);
+        vm.expectRevert(bytes("evaluator is provider"));
+        escrow.setProvider(jobId, evaluator);
+    }
 }

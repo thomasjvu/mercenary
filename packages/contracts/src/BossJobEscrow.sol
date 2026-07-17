@@ -52,6 +52,10 @@ contract BossJobEscrow {
         string calldata description
     ) external returns (uint256 jobId) {
         require(evaluator != address(0), "evaluator required");
+        require(evaluator != msg.sender, "evaluator is client");
+        if (provider != address(0)) {
+            require(provider != evaluator, "evaluator is provider");
+        }
         require(expiresAt > block.timestamp, "expiry in future");
 
         jobId = ++nextJobId;
@@ -75,6 +79,7 @@ contract BossJobEscrow {
         require(job.status == Status.Open, "not open");
         require(job.provider == address(0), "provider set");
         require(provider != address(0), "bad provider");
+        require(provider != job.evaluator, "evaluator is provider");
 
         job.provider = provider;
         emit ProviderSet(jobId, provider);
@@ -98,12 +103,10 @@ contract BossJobEscrow {
         require(job.budget == expectedBudget, "budget changed");
         require(block.timestamp < job.expiresAt, "expired");
 
-        // Effects before interactions (CEI): block re-entrant double-fund.
         job.status = Status.Funded;
         uint256 amount = job.budget;
         emit JobFunded(jobId, amount);
 
-        // Exact pull rejects fee-on-transfer; safe call handles missing return values.
         token.pullExact(msg.sender, amount);
     }
 

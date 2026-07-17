@@ -5,6 +5,7 @@ import {IERC20Escrow, TokenTransfer} from "./TokenTransfer.sol";
 
 /// @notice Multi-award bounty escrow with permissionless payout after accept deadline.
 /// @dev acceptAward is poster-only (or operator on behalf). After acceptDeadline anyone may claimPayout to provider.
+/// @dev Operator is rotatable via two-step transfer (not immutable).
 contract BossBountyEscrow {
     using TokenTransfer for IERC20Escrow;
 
@@ -46,7 +47,8 @@ contract BossBountyEscrow {
     }
 
     IERC20Escrow public immutable token;
-    address public immutable operator;
+    address public operator;
+    address public pendingOperator;
     uint256 public nextBountyId;
     mapping(uint256 => Bounty) public bounties;
     mapping(uint256 => uint256[]) public bountyAwardIds;
@@ -61,12 +63,32 @@ contract BossBountyEscrow {
     event AwardClaimed(uint256 indexed awardId, address indexed claimant, uint256 amount);
     event AwardForfeited(uint256 indexed awardId, uint256 amount);
     event BountyRefunded(uint256 indexed bountyId, address indexed poster, uint256 amount);
+    event OperatorTransferStarted(address indexed current, address indexed pending);
+    event OperatorTransferAccepted(address indexed previous, address indexed current);
 
     constructor(address token_, address operator_) {
         require(token_ != address(0), "token required");
         require(operator_ != address(0), "operator required");
         token = IERC20Escrow(token_);
         operator = operator_;
+    }
+
+    /// @notice Start two-step operator rotation (QS-03).
+    function transferOperator(address newOperator) external {
+        require(msg.sender == operator, "only operator");
+        require(newOperator != address(0), "operator required");
+        require(newOperator != operator, "same operator");
+        pendingOperator = newOperator;
+        emit OperatorTransferStarted(operator, newOperator);
+    }
+
+    /// @notice Complete operator rotation; only the pending operator may accept.
+    function acceptOperator() external {
+        require(msg.sender == pendingOperator, "only pending");
+        address previous = operator;
+        operator = pendingOperator;
+        pendingOperator = address(0);
+        emit OperatorTransferAccepted(previous, operator);
     }
 
     function createBountyOnBehalf(
@@ -158,7 +180,6 @@ contract BossBountyEscrow {
         _releaseAward(awardId, operator);
     }
 
-    /// @notice Poster-only early accept. After acceptDeadline use claimPayout (permissionless).
     function acceptAward(uint256 awardId) external {
         Award storage award = awards[awardId];
         require(award.status == AwardStatus.Delivered, "not delivered");
@@ -177,7 +198,6 @@ contract BossBountyEscrow {
         _releaseAward(awardId, msg.sender);
     }
 
-    /// @notice Poster or operator: reclaim undelivered award budget after deliveryDeadline.
     function forfeitAward(uint256 awardId) external {
         Award storage award = awards[awardId];
         require(award.status == AwardStatus.Pending, "not pending");
@@ -248,7 +268,6 @@ contract BossBountyEscrow {
         require(bounty.status == BountyStatus.Open, "not open");
         uint256 amount = bounty.totalBudget;
 
-        // Effects before interactions (CEI).
         bounty.remainingBudget = amount;
         bounty.status = BountyStatus.Funded;
         emit BountyFunded(bountyId, amount);

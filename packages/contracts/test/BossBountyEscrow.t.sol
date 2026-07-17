@@ -187,4 +187,26 @@ contract BossBountyEscrowTest is Test {
         vm.expectRevert(bytes("amount mismatch"));
         fotEscrow.fundBounty(bountyId, 100e6);
     }
+
+    function test_operator_two_step_transfer() public {
+        address nextOp = address(0x0E);
+        vm.prank(operator);
+        escrow.transferOperator(nextOp);
+        assertEq(escrow.pendingOperator(), nextOp);
+        assertEq(escrow.operator(), operator);
+
+        vm.prank(stranger);
+        vm.expectRevert(bytes("only pending"));
+        escrow.acceptOperator();
+
+        vm.prank(nextOp);
+        escrow.acceptOperator();
+        assertEq(escrow.operator(), nextOp);
+        assertEq(escrow.pendingOperator(), address(0));
+
+        // Old operator loses rights
+        vm.prank(operator);
+        vm.expectRevert(bytes("only operator"));
+        escrow.transferOperator(operator);
+    }
 }
