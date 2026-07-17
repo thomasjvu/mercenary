@@ -161,25 +161,46 @@ export function evaluateHarnessProfileIntegrity(
     });
   }
 
-  // Optional allowlist (ops-controlled digests only for specialized seats).
-  if (profile.imageDigest?.trim() && typeof process !== 'undefined' && process.env) {
+  // Allowlist: specialized seats must pin ops digests when list is set or production requires it.
+  // Matches packages/agent-harness assertHarnessImageAllowed so registry gates and runtime agree.
+  if (typeof process !== 'undefined' && process.env) {
+    const specialized =
+      profile.installation === 'skill_augmented' || (profile.skills?.length ?? 0) > 0;
     const allowlistRaw = process.env.BOSSRAID_HARNESS_IMAGE_ALLOWLIST?.trim() ?? '';
-    if (allowlistRaw) {
-      const allowed = new Set(
-        allowlistRaw
-          .split(',')
-          .map((part) => part.trim().toLowerCase())
-          .filter(Boolean)
-          .map((part) => (part.startsWith('sha256:') ? part : `sha256:${part}`))
-      );
-      const digest = profile.imageDigest.trim().toLowerCase();
-      const normalized = digest.startsWith('sha256:') ? digest : `sha256:${digest}`;
-      if (!allowed.has(normalized) && !allowed.has(digest)) {
-        issues.push({
-          code: 'image_digest_not_allowlisted',
-          message: `imageDigest ${profile.imageDigest} is not on BOSSRAID_HARNESS_IMAGE_ALLOWLIST.`,
-        });
-      }
+    const requireAllowlist =
+      process.env.BOSSRAID_HARNESS_REQUIRE_IMAGE_ALLOWLIST === '1' ||
+      process.env.BOSSRAID_HARNESS_REQUIRE_IMAGE_ALLOWLIST === 'true' ||
+      process.env.NODE_ENV === 'production';
+    const allowed = new Set(
+      allowlistRaw
+        .split(',')
+        .map((part) => part.trim().toLowerCase())
+        .filter(Boolean)
+        .map((part) => (part.startsWith('sha256:') ? part : `sha256:${part}`))
+    );
+    const digestRaw = profile.imageDigest?.trim() ?? '';
+    const digest = digestRaw.toLowerCase();
+    const normalized = digest
+      ? digest.startsWith('sha256:')
+        ? digest
+        : /^[a-f0-9]{64}$/.test(digest)
+          ? `sha256:${digest}`
+          : digest
+      : '';
+
+    if (specialized && !normalized && skillsNeedDigest) {
+      // image_digest_required already recorded above when missing
+    } else if (specialized && normalized && allowed.size === 0 && requireAllowlist) {
+      issues.push({
+        code: 'image_allowlist_required',
+        message:
+          'Specialized harness requires BOSSRAID_HARNESS_IMAGE_ALLOWLIST with the pinned imageDigest in production.',
+      });
+    } else if (normalized && allowed.size > 0 && !allowed.has(normalized) && !allowed.has(digest)) {
+      issues.push({
+        code: 'image_digest_not_allowlisted',
+        message: `imageDigest ${profile.imageDigest} is not on BOSSRAID_HARNESS_IMAGE_ALLOWLIST.`,
+      });
     }
   }
 

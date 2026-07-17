@@ -81,24 +81,89 @@ test('evaluateHarnessProfileIntegrity requires digest for specialized agents', (
   assert.equal(specialized.ok, false);
   assert.ok(specialized.issues.some((issue) => issue.code === 'image_digest_required'));
 
-  const withDigest = evaluateHarnessProfileIntegrity({
-    lane: 'agent_harness',
-    installation: 'skill_augmented',
-    skills: [{ id: 'raid-pixel' }],
-    imageDigest: 'sha256:abc',
-    framework: 'claude_code',
-  });
-  assert.equal(withDigest.ok, true);
-  assert.equal(
-    harnessProfileQualifiesAsVerifiedAgent({
+  const prevAllowlist = process.env.BOSSRAID_HARNESS_IMAGE_ALLOWLIST;
+  const prevRequire = process.env.BOSSRAID_HARNESS_REQUIRE_IMAGE_ALLOWLIST;
+  const prevNodeEnv = process.env.NODE_ENV;
+  delete process.env.BOSSRAID_HARNESS_IMAGE_ALLOWLIST;
+  delete process.env.BOSSRAID_HARNESS_REQUIRE_IMAGE_ALLOWLIST;
+  process.env.NODE_ENV = 'test';
+  try {
+    const withDigest = evaluateHarnessProfileIntegrity({
       lane: 'agent_harness',
       installation: 'skill_augmented',
       skills: [{ id: 'raid-pixel' }],
       imageDigest: 'sha256:abc',
       framework: 'claude_code',
-    }),
-    true
-  );
+    });
+    assert.equal(withDigest.ok, true);
+    assert.equal(
+      harnessProfileQualifiesAsVerifiedAgent({
+        lane: 'agent_harness',
+        installation: 'skill_augmented',
+        skills: [{ id: 'raid-pixel' }],
+        imageDigest: 'sha256:abc',
+        framework: 'claude_code',
+      }),
+      true
+    );
+  } finally {
+    if (prevAllowlist === undefined) delete process.env.BOSSRAID_HARNESS_IMAGE_ALLOWLIST;
+    else process.env.BOSSRAID_HARNESS_IMAGE_ALLOWLIST = prevAllowlist;
+    if (prevRequire === undefined) delete process.env.BOSSRAID_HARNESS_REQUIRE_IMAGE_ALLOWLIST;
+    else process.env.BOSSRAID_HARNESS_REQUIRE_IMAGE_ALLOWLIST = prevRequire;
+    if (prevNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = prevNodeEnv;
+  }
+});
+
+test('evaluateHarnessProfileIntegrity enforces production allowlist for specialized digests', () => {
+  const prevAllowlist = process.env.BOSSRAID_HARNESS_IMAGE_ALLOWLIST;
+  const prevRequire = process.env.BOSSRAID_HARNESS_REQUIRE_IMAGE_ALLOWLIST;
+  const prevNodeEnv = process.env.NODE_ENV;
+  delete process.env.BOSSRAID_HARNESS_IMAGE_ALLOWLIST;
+  delete process.env.BOSSRAID_HARNESS_REQUIRE_IMAGE_ALLOWLIST;
+  process.env.NODE_ENV = 'production';
+  try {
+    const missingList = evaluateHarnessProfileIntegrity({
+      lane: 'agent_harness',
+      installation: 'skill_augmented',
+      skills: [{ id: 'raid-pixel' }],
+      imageDigest: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      framework: 'codex',
+    });
+    assert.equal(missingList.ok, false);
+    assert.ok(missingList.issues.some((issue) => issue.code === 'image_allowlist_required'));
+
+    process.env.BOSSRAID_HARNESS_IMAGE_ALLOWLIST =
+      'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const ok = evaluateHarnessProfileIntegrity({
+      lane: 'agent_harness',
+      installation: 'skill_augmented',
+      skills: [{ id: 'raid-pixel' }],
+      imageDigest: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      framework: 'codex',
+    });
+    assert.equal(ok.ok, true);
+
+    process.env.BOSSRAID_HARNESS_IMAGE_ALLOWLIST =
+      'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const notListed = evaluateHarnessProfileIntegrity({
+      lane: 'agent_harness',
+      installation: 'skill_augmented',
+      skills: [{ id: 'raid-pixel' }],
+      imageDigest: 'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      framework: 'codex',
+    });
+    assert.equal(notListed.ok, false);
+    assert.ok(notListed.issues.some((issue) => issue.code === 'image_digest_not_allowlisted'));
+  } finally {
+    if (prevAllowlist === undefined) delete process.env.BOSSRAID_HARNESS_IMAGE_ALLOWLIST;
+    else process.env.BOSSRAID_HARNESS_IMAGE_ALLOWLIST = prevAllowlist;
+    if (prevRequire === undefined) delete process.env.BOSSRAID_HARNESS_REQUIRE_IMAGE_ALLOWLIST;
+    else process.env.BOSSRAID_HARNESS_REQUIRE_IMAGE_ALLOWLIST = prevRequire;
+    if (prevNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = prevNodeEnv;
+  }
 });
 
 test('composition hash mismatch fails integrity', () => {

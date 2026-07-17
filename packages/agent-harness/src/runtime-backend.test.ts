@@ -66,3 +66,31 @@ test('assertHarnessImageAllowed requires digest for specialized seats', () => {
   );
   assert.equal(notOnList.ok, false);
 });
+
+test('assertHarnessImageAllowed fails specialized without allowlist in production', () => {
+  const digest = 'sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+  const productionEmpty = assertHarnessImageAllowed(
+    {
+      kind: 'codex',
+      installation: 'skill_augmented',
+      skills: [{ id: 'raid-pixel' }],
+      imageDigest: digest,
+    },
+    { NODE_ENV: 'production' }
+  );
+  assert.equal(productionEmpty.ok, false);
+
+  const devEmptyOk = assertHarnessImageAllowed(
+    {
+      kind: 'codex',
+      installation: 'skill_augmented',
+      skills: [{ id: 'raid-pixel' }],
+      imageDigest: digest,
+    },
+    { NODE_ENV: 'test' }
+  );
+  assert.equal(devEmptyOk.ok, true);
+  if (devEmptyOk.ok) {
+    assert.equal(devEmptyOk.mode, 'empty_allowlist_dev');
+  }
+});

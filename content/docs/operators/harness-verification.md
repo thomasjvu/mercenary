@@ -37,7 +37,7 @@ Env:
 | `BOSSRAID_HARNESS_REQUIRE_IMAGE_ALLOWLIST`           | `1` = fail specialized without allowlisted digest (also enforced in production)            |
 | `BOSSRAID_CLAUDE_CLI_BIN` / `BOSSRAID_CODEX_CLI_BIN` | Override CLI binary paths in SDK images                                                    |
 
-Specialized seats (`skill_augmented` or non-empty skills) **must** pin `imageDigest` and, when the allowlist is set, that digest must be listed. Unlisted seller images cannot run as verified specialized agents.
+Specialized seats (`skill_augmented` or non-empty skills) **must** pin `imageDigest`. Runtime (`assertHarnessImageAllowed`) and registry integrity (`evaluateHarnessProfileIntegrity`) share the same rules: production or `BOSSRAID_HARNESS_REQUIRE_IMAGE_ALLOWLIST=1` requires a non-empty allowlist that includes that digest; when an allowlist is set in any env, unlisted digests fail both paths.
 
 Grok remains `openai_tools` against `api.x.ai` (no separate Grok “agent SDK” package in-tree).
 
