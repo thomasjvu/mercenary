@@ -191,8 +191,8 @@ export function buildDeployDefaults(merged = {}) {
     BOSSRAID_X402_ASSET: 'usdg',
     BOSSRAID_X402_ASSET_NAME: 'Global Dollar',
     BOSSRAID_X402_ASSET_VERSION: '1',
-    // Override with live Marian URL in secrets.core (default placeholder for bootstrap docs).
-    BOSSRAID_X402_FACILITATOR_URL: 'http://127.0.0.1:4021',
+    // Live Marian (Surplus RH+USDG). Override in secrets.core if needed.
+    BOSSRAID_X402_FACILITATOR_URL: 'https://marian.maid.fyi',
     BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD: '1',
     BOSSRAID_CHAIN_ID: '4663',
     BOSSRAID_PUBLIC_RATE_LIMIT_MAX: '60',
@@ -200,7 +200,15 @@ export function buildDeployDefaults(merged = {}) {
     BOSSRAID_BUYER_KEY_RATE_LIMIT_MAX: '120',
     BOSSRAID_BUYER_KEY_RATE_LIMIT_WINDOW_MS: '60000',
     BOSSRAID_BUYER_KEY_DEFAULT_SPEND_LIMIT_USD: '25',
-    BOSSRAID_BUYER_MAX_REQUEST_BUDGET_USD: '5',
+    // Keep >= CHAT_DEFAULT_MAX_TOTAL_COST (compose default 5).
+    BOSSRAID_BUYER_MAX_REQUEST_BUDGET_USD: '25',
+    BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: '5',
+    BOSSRAID_INVITE_ACCEPT_MS: '15000',
+    BOSSRAID_FIRST_HEARTBEAT_MS: '30000',
+    BOSSRAID_HEARTBEAT_STALE_MS: '45000',
+    BOSSRAID_HARD_EXECUTION_MS: '180000',
+    BOSSRAID_RAID_ABSOLUTE_MS: '240000',
+    BOSSRAID_PROVIDER_FRESH_MS: '120000',
     BOSSRAID_METRICS_PUBLIC: 'false',
     BOSSRAID_OPERATOR_TERMS_ACK: 'true',
     BOSSRAID_INCIDENT_RESPONSE_ACK: 'true',

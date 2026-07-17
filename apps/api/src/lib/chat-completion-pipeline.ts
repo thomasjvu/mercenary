@@ -242,27 +242,30 @@ export function authorizeChatCompletionRequest(
   deps: ChatCompletionPipelineDeps,
   raidRequest: BossRaidSpawnInput
 ) {
-  const { requireBuyerApiKeyRateLimit, readPublicAuth } = deps.auth;
+  const { requireBuyerApiKeyRateLimit, readPublicAuth, adminIsAuthorized } = deps.auth;
   const publicAuth = readPublicAuth(request.headers);
   const apiKeyRateLimitError = requireBuyerApiKeyRateLimit(publicAuth, reply);
   if (apiKeyRateLimitError) {
     return { error: apiKeyRateLimitError };
   }
 
-  const budgetError = enforceBuyerBudget(
-    deps.ctx.controlState,
-    publicAuth,
-    raidRequest.constraints.maxBudgetUsd,
-    deps.ctx.buyerMaxRequestBudgetUsd
-  );
-  if (budgetError) {
-    reply.code(budgetError.statusCode);
-    return {
-      error: {
-        error: budgetError.error,
-        message: budgetError.message,
-      },
-    };
+  // Admin bearer already bypasses launch payment; do not apply the public beta budget ceiling.
+  if (!adminIsAuthorized(request.headers)) {
+    const budgetError = enforceBuyerBudget(
+      deps.ctx.controlState,
+      publicAuth,
+      raidRequest.constraints.maxBudgetUsd,
+      deps.ctx.buyerMaxRequestBudgetUsd
+    );
+    if (budgetError) {
+      reply.code(budgetError.statusCode);
+      return {
+        error: {
+          error: budgetError.error,
+          message: budgetError.message,
+        },
+      };
+    }
   }
 
   return { publicAuth };
