@@ -11,6 +11,7 @@ import {
   runHarnessGatewayJob,
   runInferenceGatewayJob,
 } from '../lib/inference-gateway.js';
+import { resolveHostedUpstreamApiKey } from '../lib/platform-liquidity.js';
 import { type ApiContext } from '../api-context.js';
 
 type GatewayAcceptBody = {
@@ -22,7 +23,7 @@ type GatewayAcceptBody = {
 };
 
 export function registerInferenceGatewayRoutes(app: FastifyInstance, ctx: ApiContext): void {
-  const { orchestrator, controlState } = ctx;
+  const { orchestrator, controlState, env } = ctx;
 
   app.get('/gateway/:providerId/health', async (request, reply) => {
     const { providerId } = request.params as { providerId: string };
@@ -78,8 +79,18 @@ export function registerInferenceGatewayRoutes(app: FastifyInstance, ctx: ApiCon
 
     const wallet = provider.source?.externalRef;
     const upstream = resolveHostedProviderUpstream(provider);
+    // Match health/job path: seller-stored key OR platform env key (BOSSRAID_*_API_KEY).
     const configured =
-      wallet && upstream ? Boolean(controlState.readSellerUpstreamConfig(wallet, upstream)) : false;
+      wallet && upstream
+        ? Boolean(
+            resolveHostedUpstreamApiKey({
+              controlState,
+              wallet,
+              upstream,
+              env,
+            })
+          )
+        : false;
     if (!configured) {
       reply.code(503);
       return {

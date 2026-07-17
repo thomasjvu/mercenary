@@ -134,15 +134,19 @@ export async function planMercenaryChatResponse(input: {
     // Fall through to plain Venice chat.
   }
 
-  const veniceClient = createVeniceRaidClient({ apiKey, model: modelId });
-  const plainResult = await veniceClient.chat({
-    system: PLANNER_SYSTEM_PROMPT,
-    user: plannerPrompt,
-    model: modelId,
-  });
-  const parsed = parsePlannerModelOutput(plainResult.content);
-  if (parsed) {
-    return parsed;
+  try {
+    const veniceClient = createVeniceRaidClient({ apiKey, model: modelId });
+    const plainResult = await veniceClient.chat({
+      system: PLANNER_SYSTEM_PROMPT,
+      user: plannerPrompt,
+      model: modelId,
+    });
+    const parsed = parsePlannerModelOutput(plainResult.content);
+    if (parsed) {
+      return parsed;
+    }
+  } catch {
+    // Planner is best-effort; fall back to heuristics when Venice is down/auth-failing.
   }
 
   return planMercenaryChatHeuristic(prompt);
