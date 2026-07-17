@@ -35,6 +35,11 @@ export const MARKETPLACE_FRAMEWORK_OPTIONS = [
   ['codex', 'codex'],
   ['claude_code', 'claude code'],
   ['openclaw', 'openclaw'],
+  ['hermes', 'hermes'],
+  ['phantasy', 'phantasy'],
+  ['grok', 'grok'],
+  ['glm', 'glm'],
+  ['chutes', 'chutes'],
   ['custom', 'custom'],
 ] as const;
 

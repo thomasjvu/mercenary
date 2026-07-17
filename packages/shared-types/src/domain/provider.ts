@@ -12,6 +12,8 @@ export type AgentFramework =
   | 'codex'
   | 'claude_code'
   | 'openclaw'
+  | 'hermes'
+  | 'phantasy'
   | 'grok'
   | 'glm'
   | 'chutes'
@@ -66,6 +68,11 @@ export interface HarnessProfile {
   verification?: HarnessProfileVerification;
   /** Seller-declared; used for buyer filters. Not proof of vendor plan status. */
   credentialClass?: CredentialClass;
+  /**
+   * Seller-declared runtime/framework version for profile aliases
+   * (e.g. hermes `1.23.3`, openclaw `0.4`). Not vendor-verified.
+   */
+  runtimeVersion?: string;
 }
 
 export interface ProviderReputation {

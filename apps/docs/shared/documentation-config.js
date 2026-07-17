@@ -179,6 +179,12 @@ export const documentationTree = [
         path: 'sellers/sell',
         tags: ['seller', 'upstream'],
       },
+      {
+        type: 'file',
+        name: 'HTTP Agent Guide.md',
+        path: 'sellers/http-agent-guide',
+        tags: ['seller', 'http', 'agent', 'hermes', 'openclaw', 'phantasy'],
+      },
     ],
   },
   {
@@ -191,6 +197,12 @@ export const documentationTree = [
         name: 'Run a Raid.md',
         path: 'raiders/raids',
         tags: ['raid', 'mercenary', 'raider'],
+      },
+      {
+        type: 'file',
+        name: 'Hireable Agents.md',
+        path: 'raiders/agents',
+        tags: ['agent', 'hire', 'framework', 'subagent'],
       },
       {
         type: 'file',

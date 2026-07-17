@@ -12,6 +12,9 @@ export type FrameworkFilter =
   | 'claude_code'
   | 'grok'
   | 'codex'
+  | 'openclaw'
+  | 'hermes'
+  | 'phantasy'
   | 'glm'
   | 'chutes'
   | 'custom';
@@ -43,6 +46,9 @@ export const FRAMEWORK_FILTER_OPTIONS: Array<{ key: FrameworkFilter; label: stri
   { key: 'claude_code', label: 'Claude Code' },
   { key: 'grok', label: 'Grok Build' },
   { key: 'codex', label: 'Codex' },
+  { key: 'openclaw', label: 'Openclaw' },
+  { key: 'hermes', label: 'Hermes' },
+  { key: 'phantasy', label: 'Phantasy' },
   { key: 'glm', label: 'GLM' },
   { key: 'chutes', label: 'Chutes' },
   { key: 'custom', label: 'custom' },

@@ -445,6 +445,10 @@ export function parseProviderRegistrationInput(value: unknown): ProviderRegistra
                 | 'plan_or_cli'
                 | 'unknown'
                 | undefined,
+              runtimeVersion: ensureOptionalString(
+                profile.runtimeVersion ?? profile.runtime_version,
+                'provider_registration.harness_profile.runtime_version'
+              ),
             };
           })(),
   };

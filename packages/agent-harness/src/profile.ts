@@ -24,6 +24,7 @@ export type HarnessRuntimeConfig = {
   allowShell: boolean;
   /** Seller-declared; api_key | plan_or_cli | unknown */
   credentialClass?: 'api_key' | 'plan_or_cli' | 'unknown';
+  runtimeVersion?: string;
 };
 
 export function normalizeHarnessKind(value: string | undefined): HarnessKind {
@@ -122,5 +123,6 @@ export function buildHarnessProfile(config: HarnessRuntimeConfig): HarnessProfil
     attestedAt: new Date().toISOString(),
     verification: config.imageDigest ? 'image_attested' : 'heartbeat_self_report',
     credentialClass: config.credentialClass ?? 'unknown',
+    runtimeVersion: config.runtimeVersion,
   };
 }

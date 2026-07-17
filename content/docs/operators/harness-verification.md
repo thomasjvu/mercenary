@@ -59,7 +59,7 @@ Grok remains `openai_tools` against `api.x.ai` (no separate Grok “agent SDK”
 ### Seller self-serve (product path)
 
 1. **Hosted chat:** `POST /v1/seller/upstream/:provider/connect` then `offers` with `lane: "chat"` (API keys only).
-2. **HTTP agent hire:** register a provider endpoint with `harnessProfile` (`agent_harness`, framework, fresh/skills, `credentialClass`). Seller runs Claude Code / Grok Build / Codex / custom on their machine. Vendor ToS risk is the seller’s when using consumer/CLI plans.
+2. **HTTP agent hire:** register a provider endpoint with `harnessProfile` (`agent_harness`, framework, fresh/skills, `credentialClass`, optional `runtimeVersion`). Seller runs Claude Code / Grok Build / Codex / Openclaw / Hermes / Phantasy / custom on their machine. Vendor ToS risk is the seller’s when using consumer/CLI plans. Guide: [http-agent-guide.md](../sellers/http-agent-guide.md).
 
 Platform `lane: "harness"` (shared gateway tool loop) remains available for ops but is **not** the primary seller UX.
 

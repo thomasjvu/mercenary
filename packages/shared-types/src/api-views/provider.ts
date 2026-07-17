@@ -25,7 +25,16 @@ export type ProviderViewResponse = {
   };
   status: string;
   modelFamily?: string;
-  agentFramework?: 'codex' | 'claude_code' | 'openclaw' | 'grok' | 'glm' | 'chutes' | 'custom';
+  agentFramework?:
+    | 'codex'
+    | 'claude_code'
+    | 'openclaw'
+    | 'hermes'
+    | 'phantasy'
+    | 'grok'
+    | 'glm'
+    | 'chutes'
+    | 'custom';
   modelProvider?: string;
   modelId?: string;
   outputTypes?: string[];
@@ -40,6 +49,7 @@ export type ProviderViewResponse = {
     attestedAt?: string;
     verification?: 'unverified' | 'heartbeat_self_report' | 'image_attested';
     credentialClass?: 'api_key' | 'plan_or_cli' | 'unknown';
+    runtimeVersion?: string;
   };
   lastSeenAt?: string;
   verification?: {
@@ -110,7 +120,16 @@ export type ProviderHealthViewResponse = {
   ready: boolean;
   statusCode?: number;
   missing?: string[];
-  agentFramework?: 'codex' | 'claude_code' | 'openclaw' | 'grok' | 'glm' | 'chutes' | 'custom';
+  agentFramework?:
+    | 'codex'
+    | 'claude_code'
+    | 'openclaw'
+    | 'hermes'
+    | 'phantasy'
+    | 'grok'
+    | 'glm'
+    | 'chutes'
+    | 'custom';
   modelProvider?: string;
   model?: string | null;
   modelApiBase?: string;

@@ -143,6 +143,7 @@ export function buildProviderConfig(env: NodeJS.ProcessEnv = process.env) {
     allowShell: readBoolean(env.BOSSRAID_HARNESS_ALLOW_SHELL),
     // Default plan_or_cli when harness mode is on and unset (CLI/sub workers are common).
     credentialClass: credentialClass ?? (harnessKind !== 'off' ? 'plan_or_cli' : undefined),
+    runtimeVersion: env.BOSSRAID_HARNESS_RUNTIME_VERSION?.trim() || undefined,
   };
   const harnessProfile = buildHarnessProfile(harness);
 

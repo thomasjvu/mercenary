@@ -43,6 +43,8 @@ export const AGENT_FRAMEWORKS = new Set<AgentFramework>([
   'codex',
   'claude_code',
   'openclaw',
+  'hermes',
+  'phantasy',
   'grok',
   'glm',
   'chutes',
