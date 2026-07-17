@@ -45,10 +45,14 @@ export type InferenceMarketView = {
   object: 'inference.market';
   modelId: string;
   modelProvider?: string;
+  /** Buyer privacy taxonomy: standard | anonymous_private | upstream_tee | e2ee */
+  privacyTier?: 'standard' | 'anonymous_private' | 'upstream_tee' | 'e2ee';
   providerCount: number;
   activeProviderCount: number;
   verifiedSellerCount: number;
   privateSellerCount: number;
+  teeSellerCount?: number;
+  anonymousSellerCount?: number;
   recentSuccessRate: number | null;
   p50LatencyMs: number | null;
   p95LatencyMs: number | null;

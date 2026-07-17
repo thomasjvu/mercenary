@@ -35,6 +35,14 @@ export {
 } from './upstream-providers.js';
 
 export {
+  HOST_TEE_PRIVACY_NOTE,
+  describeMarketplacePrivacyTier,
+  resolveMarketplacePrivacyTier,
+  type MarketplacePrivacyTier,
+  type MarketplacePrivacyTierInfo,
+} from './privacy-tier.js';
+
+export {
   CATALOG_BENCHMARK_TASK_USD,
   CATALOG_BENCHMARK_INPUT_PER_1M_USD,
   CATALOG_BENCHMARK_OUTPUT_PER_1M_USD,

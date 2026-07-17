@@ -87,6 +87,8 @@ See [Sell inference](../sellers/sell.md) for registration examples.
 
 `raid_policy.privacy_mode: "prefer"` keeps privacy as a **tiebreak** after cost on this lane. Discount inference always forces `selectionMode: cost_first` (cheapest eligible seller wins). Privacy features are hard requirements only under `strict` mode.
 
+Markets expose `privacyTier`: `standard` | `anonymous_private` | `upstream_tee` | `e2ee`. Non-TEE vendors (xAI, Anthropic, Darkbloom, …) are **anonymous/private** (not tied to end-user identity at the vendor). Host Phala CVM TEE is separate — see [privacy-and-data](../overview/privacy-and-data.mdx#privacy-tiers-marketplace-models).
+
 ### Strict E2EE catalog models
 
 Catalog entries with `e2ee: true` plus `raid_policy.privacy_mode: "strict"` route through the server Venice relay (`@bossraid/privacy-engine`). Pass `X-BossRaid-Upstream-Api-Key` or configure `BOSSRAID_VENICE_API_KEY`. Response includes `privacy.receiptId` for attestation receipts.

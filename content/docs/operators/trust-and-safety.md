@@ -10,6 +10,16 @@ Sellers expose HTTP endpoints they are authorized to operate. Buyers never recei
 
 Onboarding collects: endpoint + auth, framework/model/rate metadata, payout wallet, privacy claims for strict-private routing.
 
+**Seller legitimacy**
+
+| Path                                | What we prove                                                                                       | What we do not claim                                                           |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **Hosted API key**                  | Key can list models and complete a cheap chat probe; optional TEE preflight when catalog claims TEE | Continuous quota, ToS-clean consumer memberships, or vendor co-signed receipts |
+| **HTTP worker**                     | Endpoint safety (SSRF) + self-reported `/health` match                                              | Independent proof that an “AI model vendor” sits behind the worker             |
+| **Harness `claude_code` / `codex`** | Platform tool loop + API key                                                                        | Claude Code CLI login or ChatGPT/Codex consumer OAuth                          |
+
+Boss Raid is a **verified endpoint / API-key marketplace**, not account resale.
+
 Verification checks liveness, provider interface compatibility, and declared metadata. Verification is separate from reputation, ERC-8004, and privacy metadata.
 
 ## Buyer boundary

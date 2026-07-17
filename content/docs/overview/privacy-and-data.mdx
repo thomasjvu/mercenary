@@ -39,6 +39,33 @@ Boss Raid processes your prompts and task files to route requests and return res
 
 We do not use your prompts for advertising or unrelated profiling.
 
+## Privacy tiers (marketplace models)
+
+These labels describe **model / vendor** claims. They are **not** the same as host Phala CVM attestation.
+
+| Tier | Meaning | Examples |
+| ---- | ------- | -------- |
+| **Standard** | No special privacy claim | Some open proxies without policy labels |
+| **Anonymous / private** | End user is **not tied to a specific identity at the model vendor**. Traffic uses platform or seller upstream keys. **Not** hardware TEE. | xAI Grok, Anthropic, Darkbloom, Venice `anonymized`/`private` catalog rows |
+| **Upstream TEE** | Model is claimed (and optionally live-verified) to run in a hardware TEE at the **upstream** | Chutes TEE, NEAR Cloud TEE, Phala TEE catalogs, Redpill TEE rows |
+| **E2EE** | End-to-end encrypted path when `privacy_mode: strict` | Venice E2EE catalog models |
+
+### Host Phala CVM TEE (separate claim)
+
+`GET /v1/host/attestation` can prove **Boss Raid’s control plane** runs in a Phala TDX enclave when configured.
+
+That **does not** prove:
+
+- that `api.x.ai` (or any remote API) ran inference in TEE
+- that prompts never appear in operator logs (operational metadata may still be retained)
+- that a non-TEE vendor is TEE-private
+
+**Honest stack for non-TEE models (e.g. Grok via platform seats):**
+
+1. Buyer hits Boss Raid (not xAI with a personal key) → **anonymous at the vendor**
+2. Host CVM TEE (optional) → **where Boss Raid runs**
+3. Upstream remains a normal API privacy policy → **not TEE**
+
 ## On-chain data
 
 Wallet addresses and settlement transactions on public blockchains are visible to anyone. Boss Raid does not control that visibility.

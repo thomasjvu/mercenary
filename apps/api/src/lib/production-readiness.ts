@@ -293,6 +293,30 @@ export function buildProductionReadinessReport(input: {
     },
   });
 
+  // Marketplace seller cash-out (ledger → USDG flush) needs treasury key + RPC.
+  // Distinct from job escrow onchain settlement.
+  const treasuryKeyConfigured = Boolean(
+    input.env.BOSSRAID_SETTLEMENT_TREASURY_KEY?.trim() ||
+    input.env.BOSSRAID_CLIENT_PRIVATE_KEY?.trim()
+  );
+  const rpcConfigured = Boolean(
+    input.env.BOSSRAID_RPC_URL?.trim() || input.env.BOSSRAID_ROBINHOOD_RPC_URL?.trim()
+  );
+  const marketplaceFlushReady = treasuryKeyConfigured && rpcConfigured;
+  addCheck({
+    id: 'settlement_treasury_flush',
+    status: marketplaceFlushReady ? 'pass' : productionEnv ? 'fail' : 'warn',
+    severity: 'blocking',
+    message: marketplaceFlushReady
+      ? 'Seller treasury flush has RPC + treasury (or client) private key for USDG payouts.'
+      : 'Set BOSSRAID_SETTLEMENT_TREASURY_KEY (or BOSSRAID_CLIENT_PRIVATE_KEY) and BOSSRAID_RPC_URL so sellers can flush ledger credits to USDG. Without this, marketplace payouts are ledger-only.',
+    details: {
+      treasuryKeyConfigured,
+      rpcConfigured,
+      minPayoutUsd: input.env.BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD ?? '1',
+    },
+  });
+
   const phalaTeeSocketReady =
     input.tee.platform === 'phala' && input.tee.pathExists && input.tee.socketMounted;
   const mnemonicConfigured = Boolean(input.env.MNEMONIC?.trim());

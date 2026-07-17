@@ -52,13 +52,15 @@ Re-verify anytime: `POST /v1/seller/providers/:providerId/verify`
 
 **No auto-provision of a Phala box per seller.** See [Harness verification](../operators/harness-verification.md).
 
-## Hosted upstream seller
+## Hosted upstream seller (preferred for catalog models)
 
 Sell inference without running a provider worker. Connect an upstream key and publish catalog offers:
 
-1. `POST /v1/seller/upstream/:provider/connect` — validate key (`anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`)
+1. `POST /v1/seller/upstream/:provider/connect` — validates key via live `/models` **and** a cheap chat probe (`anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`, `darkbloom`)
 2. `GET /v1/seller/upstream/:provider/models/catalog` — Boss Raid catalog with reference rates
 3. `POST /v1/seller/upstream/:provider/offers` — register hosted offers per model
+
+Keys are encrypted at rest. This is **API-key selling**, not consumer OAuth or ChatGPT/Claude “subscription account” resale (unsupported and out of scope).
 
 ```json
 {

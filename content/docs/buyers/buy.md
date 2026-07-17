@@ -52,6 +52,30 @@ curl http://127.0.0.1:8787/v1/inference/chat/completions \
 
 With platform liquidity and the matching `BOSSRAID_*_API_KEY`, discount inference can route full catalogs for **Venice**, **Chutes**, **NEAR AI**, **Phala**, **Redpill**, and **Darkbloom** (plus curated xAI / Anthropic). Discover live offers with `GET /v1/markets?model_provider=venice` (or `chutes`, `near`, `phala`, `redpill`, `darkbloom`). Details: [discount-inference.md](discount-inference.md#platform-seats).
 
+### Choose provider + max price
+
+Discount inference always picks the **cheapest eligible** seller (`cost_first`). Pin an upstream family and cap spend:
+
+```bash
+curl http://127.0.0.1:8787/v1/inference/chat/completions \
+  -H "authorization: Bearer br_..." \
+  -H "content-type: application/json" \
+  -d '{
+    "model": "grok-4.5",
+    "provider": "xai",
+    "max_price_ratio": 0.5,
+    "messages": [{ "role": "user", "content": "Say ok" }]
+  }'
+```
+
+| Field             | Meaning                                                                              |
+| ----------------- | ------------------------------------------------------------------------------------ |
+| `provider`        | `auto` (default) or upstream id (`xai`, `venice`, `darkbloom`, …)                    |
+| `max_price_usd`   | Absolute max charge for this call                                                    |
+| `max_price_ratio` | Cap as fraction of catalog reference task price (0–1); fail closed if no seller fits |
+
+Equivalent `raid_policy.allowed_model_providers` / `max_total_cost` still work.
+
 ### xAI Grok + reasoning effort
 
 When a platform or seller seat offers an xAI model (`grok-4.5`, `grok-build-0.1`, …), pass OpenAI-compatible `reasoning_effort`:

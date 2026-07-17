@@ -16,6 +16,7 @@ import {
   fetchUpstreamModels,
   mergeUpstreamCatalogModelsForProvider,
   parseUpstreamProviderParam,
+  probeUpstreamChatCompletion,
 } from '../lib/upstream/index.js';
 import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import { verifyUpstreamTee } from '../lib/attestation-service.js';
@@ -96,6 +97,34 @@ export function registerSellerUpstreamRoutes(
         error: `invalid_${provider}_api_key`,
         message: error instanceof Error ? error.message : `${provider} API key validation failed.`,
       };
+    }
+
+    // Cheap live completion proves the key can actually run inference (not only list models).
+    const chatProbeModel =
+      INFERENCE_MODEL_CATALOG.find(
+        (entry) => entry.modelProvider === provider || entry.attestationVendor === provider
+      )?.upstreamModelId ??
+      INFERENCE_MODEL_CATALOG.find((entry) => entry.modelProvider === provider)?.modelId;
+    if (chatProbeModel) {
+      try {
+        await probeUpstreamChatCompletion({
+          provider,
+          apiKey,
+          modelId: chatProbeModel,
+          prompt: 'Reply with the single word: ok',
+          env,
+          chatOptions: { max_tokens: 8 },
+        });
+      } catch (error) {
+        reply.code(400);
+        return {
+          error: `invalid_${provider}_api_key`,
+          message:
+            error instanceof Error
+              ? `Key listed models but chat probe failed: ${error.message}`
+              : `${provider} chat probe failed.`,
+        };
+      }
     }
 
     // Only TEE-capable catalog models need preflight. Plan providers (xAI, Z.ai, Anthropic)

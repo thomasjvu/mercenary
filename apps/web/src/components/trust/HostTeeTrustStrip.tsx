@@ -63,8 +63,13 @@ export function HostTeeTrustStrip({ variant = 'strip' }: HostTeeTrustStripProps)
         ) : null}
       </div>
       <button className="host-tee-trust__link" onClick={() => openInspector()} type="button">
-        view attestation
+        view host attestation
       </button>
+      {variant === 'sidebar' ? (
+        <p className="host-tee-trust__note">
+          Host TEE proves where Boss Raid runs — not that remote models (e.g. xAI) are TEE.
+        </p>
+      ) : null}
     </section>
   );
 }

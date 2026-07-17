@@ -42,12 +42,20 @@ Discount inference responses carry the same proof in the `bossraid` metadata blo
 
 ## 4. Optional: TEE and signed envelopes
 
+Keep three claims separate (see also [privacy-and-data](privacy-and-data.mdx#privacy-tiers-marketplace-models)):
+
+| Claim                         | How to check                                                   | Proves                                                                   |
+| ----------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Host Phala CVM**            | `GET /v1/host/attestation`                                     | Where Boss Raid runs (not model vendor TEE)                              |
+| **Anonymous / private model** | Catalog `privacyTier: anonymous_private` / markets metadata    | End user not attributed at vendor via platform/seller keys — **not** TEE |
+| **Upstream TEE model**        | Catalog `teeAttested` + `POST /v1/marketplace/tee/attestation` | Model-side TEE quote when the vendor supports it                         |
+
 For strict-private or attested runs, add these checks:
 
 1. **Host TEE quote** — `GET /v1/host/attestation` returns Phala TDX quote + optional signed runtime envelope (`teeVerified` / `verified`)
 2. **Signed raid result** — `GET /v1/raid/:raidId/attested-result` with raid token (requires `MNEMONIC` on the host)
 3. **Inference receipt** — `GET /v1/inference/receipts/:receiptId/verify` for upstream attestation receipts
-4. **Upstream marketplace TEE** — `POST /v1/marketplace/tee/attestation` for hosted seller quotes
+4. **Upstream marketplace TEE** — `POST /v1/marketplace/tee/attestation` for hosted seller quotes (unsupported vendors return fail-closed)
 
 `signedRuntime` proves the host signed an envelope — it does not by itself prove TEE hardware. Cloud verification runs when `BOSSRAID_HOST_TEE_SKIP_CLOUD_VERIFY` is unset.
 

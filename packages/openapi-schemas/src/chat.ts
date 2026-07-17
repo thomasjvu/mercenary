@@ -24,6 +24,20 @@ export const chatCompletionBodySchema = {
       description:
         'OpenAI-compatible reasoning effort (xAI Grok / Grok Build). Passed through to the selected upstream when supported.',
     },
+    provider: {
+      type: 'string',
+      description:
+        'Discount inference: auto (default) or upstream id (venice, xai, darkbloom, …) → allowed_model_providers.',
+    },
+    max_price_usd: {
+      type: 'number',
+      description: 'Absolute max spend USD for this call (alias of raid_policy.max_total_cost).',
+    },
+    max_price_ratio: {
+      type: 'number',
+      description:
+        'Cap spend as a fraction of catalog reference task price (0–1). Fail closed if no seller within budget.',
+    },
   },
   required: ['messages'],
 } as const;

@@ -60,6 +60,24 @@ export function parseChatCompletionRequest(value: unknown): ChatCompletionReques
       input.reasoning_effort ?? input.reasoningEffort,
       'chat_completion_request.reasoning_effort'
     ),
+    provider: ensureOptionalString(
+      input.provider ?? input.model_provider ?? input.modelProvider,
+      'chat_completion_request.provider'
+    ),
+    max_price_usd:
+      input.max_price_usd == null && input.maxPriceUsd == null
+        ? undefined
+        : ensureFiniteNumberLike(
+            input.max_price_usd ?? input.maxPriceUsd,
+            'chat_completion_request.max_price_usd'
+          ),
+    max_price_ratio:
+      input.max_price_ratio == null && input.maxPriceRatio == null
+        ? undefined
+        : ensureFiniteNumberLike(
+            input.max_price_ratio ?? input.maxPriceRatio,
+            'chat_completion_request.max_price_ratio'
+          ),
     raidRequest:
       input.raidRequest == null && input.raid_request == null
         ? undefined

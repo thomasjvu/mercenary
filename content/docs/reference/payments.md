@@ -89,6 +89,20 @@ Route surcharges (not model price): `BOSSRAID_X402_RAID_SURCHARGE_USD`, `BOSSRAI
 
 x402 defaults to **off** until explicitly enabled.
 
+## Real paid traffic checklist (not a ledger demo)
+
+Without these, sellers only accrue **ledger credits** and cannot cash out USDG:
+
+1. Fund `BOSSRAID_X402_PAY_TO` with USDG on Robinhood (real Marian settles or verified top-ups)
+2. Enable x402 for public wallet buyers (or fund `br_` prepaid via verified x402)
+3. `BOSSRAID_RPC_URL` (Robinhood) for settle verify + flush
+4. `BOSSRAID_SETTLEMENT_TREASURY_KEY` (or client key) funded with USDG + gas
+5. `GET /v1/ops/production-readiness` → includes `settlement_treasury_flush: pass`
+6. Successful inference → `GET /v1/seller/earnings` shows `pendingUsd`
+7. `POST /v1/seller/payouts/flush` returns `mode: "onchain"` + real `txHash` (not `ledger_only`)
+
+`NODE_ENV=production` refuses client-supplied `txHash` and refuses flush without treasury config.
+
 ## Surplus Intelligence parity
 
 Alkahest (Surplus) uses Mana ledger + Reown top-ups in **USDG on Robinhood**, and Marian for agent x402. Boss Raid mirrors that **chain/asset** for marketplace payments: prepaid `br_` balance still works; wallet challenges settle USDG via Marian.

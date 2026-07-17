@@ -3,7 +3,9 @@ import {
   MARKETPLACE_BENCHMARK_PRICING,
   MARKETPLACE_REFERENCE_INPUT_TOKENS,
   MARKETPLACE_REFERENCE_OUTPUT_TOKENS,
+  resolveMarketplacePrivacyTier,
   type InferenceCatalogEntry,
+  type MarketplacePrivacyTier,
 } from '@bossraid/constants';
 import { providerMatchesMarketplaceConstraints } from '@bossraid/provider-registry';
 import { readProviderPricing } from '@bossraid/raid-core';
@@ -73,10 +75,16 @@ export interface InferenceMarket {
   object: 'inference.market';
   modelId: string;
   modelProvider?: string;
+  /** Buyer-facing privacy taxonomy (not host Phala CVM TEE). */
+  privacyTier?: MarketplacePrivacyTier;
   providerCount: number;
   activeProviderCount: number;
   verifiedSellerCount: number;
   privateSellerCount: number;
+  /** Sellers with upstream TEE claims */
+  teeSellerCount?: number;
+  /** Sellers with anonymous/private indirection (non-TEE privacy) */
+  anonymousSellerCount?: number;
   recentSuccessRate: number | null;
   p50LatencyMs: number | null;
   p95LatencyMs: number | null;
@@ -235,9 +243,29 @@ export function buildInferenceMarkets(providers: ProviderProfile[]): InferenceMa
         privateSellerCount: marketProviders.filter(
           (provider) =>
             provider.privacy?.teeAttested ||
+            provider.privacy?.e2ee ||
             provider.privacy?.signedOutputs ||
-            provider.privacy?.noDataRetention
+            provider.privacy?.noDataRetention ||
+            resolveMarketplacePrivacyTier({
+              teeAttested: provider.privacy?.teeAttested,
+              e2ee: provider.privacy?.e2ee,
+              modelProvider: provider.modelProvider,
+            }) !== 'standard'
         ).length,
+        teeSellerCount: marketProviders.filter((provider) => provider.privacy?.teeAttested).length,
+        anonymousSellerCount: marketProviders.filter((provider) => {
+          const tier = resolveMarketplacePrivacyTier({
+            teeAttested: provider.privacy?.teeAttested,
+            e2ee: provider.privacy?.e2ee,
+            modelProvider: provider.modelProvider,
+          });
+          return tier === 'anonymous_private' || tier === 'e2ee';
+        }).length,
+        privacyTier: resolveMarketplacePrivacyTier({
+          teeAttested: marketProviders.some((p) => p.privacy?.teeAttested),
+          e2ee: marketProviders.some((p) => p.privacy?.e2ee),
+          modelProvider: marketProviders.find((p) => p.modelProvider)?.modelProvider,
+        }),
         recentSuccessRate: totalRaids > 0 ? successfulRaids / totalRaids : null,
         p50LatencyMs: latencies[0] ?? null,
         p95LatencyMs: p95Latencies[p95Latencies.length - 1] ?? null,
@@ -285,14 +313,24 @@ function applyCatalogReferencePricing(
 
 function buildCatalogOnlyMarket(entry: InferenceCatalogEntry): InferenceMarket {
   const referenceRateUsd = estimateCatalogReferenceRateUsd(entry);
+  const privacyTier = resolveMarketplacePrivacyTier({
+    privacy: entry.privacy,
+    teeAttested: entry.teeAttested,
+    e2ee: entry.e2ee,
+    modelProvider: entry.modelProvider,
+  });
+  const isPrivateish = privacyTier !== 'standard';
   return {
     object: 'inference.market',
     modelId: entry.modelId,
     modelProvider: entry.modelProvider,
+    privacyTier,
     providerCount: 0,
     activeProviderCount: 0,
     verifiedSellerCount: 0,
-    privateSellerCount: entry.teeAttested || entry.e2ee ? 1 : 0,
+    privateSellerCount: isPrivateish ? 1 : 0,
+    teeSellerCount: entry.teeAttested ? 1 : 0,
+    anonymousSellerCount: privacyTier === 'anonymous_private' || privacyTier === 'e2ee' ? 1 : 0,
     recentSuccessRate: null,
     p50LatencyMs: null,
     p95LatencyMs: null,
@@ -434,9 +472,12 @@ export function buildOpenAiCompatibleModelEntry(market: InferenceMarket) {
       active_provider_count: market.activeProviderCount,
       verified_seller_count: market.verifiedSellerCount,
       private_seller_count: market.privateSellerCount,
+      privacy_tier: market.privacyTier,
+      tee_seller_count: market.teeSellerCount,
+      anonymous_seller_count: market.anonymousSellerCount,
       cheapest_rate_usd: market.cheapestRateUsd,
       catalog_only: market.providerCount === 0,
-      settlement_asset: 'USDC',
+      settlement_asset: 'USDG',
       route: '/v1/inference/chat/completions',
     },
   };
