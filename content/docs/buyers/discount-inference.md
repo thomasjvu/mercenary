@@ -116,20 +116,23 @@ Benchmark prices in `packages/constants/src/marketplace-benchmark.ts` drive `sav
 
 Operators publish **platform liquidity** seats (no in-CVM HTTP workers) when matching `BOSSRAID_*_API_KEY` values are set and bootstrap runs (`BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1` or `POST /v1/ops/platform-liquidity/bootstrap`).
 
-| Upstream      | Env key                      | Seat set                                                                                                                                                                                                        |
-| ------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Venice**    | `BOSSRAID_VENICE_API_KEY`    | **All** text models from the live Venice catalog ([docs](https://docs.venice.ai/models/overview)) — request `model` is the Venice id (e.g. `google-gemma-4-31b-it`, `openai-gpt-55`, `deepseek-v3.2`, `e2ee-*`) |
-| **Chutes**    | `BOSSRAID_CHUTES_API_KEY`    | **All** LLMs from `https://llm.chutes.ai/v1/models` ([browse](https://chutes.ai/models?type=llm)) — request `model` is `chutes-<slug>` (e.g. `chutes-deepseek-v3.2-tee`, `chutes-qwen3-32b-tee`)                |
-| **xAI**       | `BOSSRAID_XAI_API_KEY`       | Curated Grok / Grok Build ids (table below)                                                                                                                                                                     |
-| **Anthropic** | `BOSSRAID_ANTHROPIC_API_KEY` | `anthropic/claude-opus-4-5`, `anthropic/claude-sonnet-4-5`, `anthropic/claude-haiku-4-5`                                                                                                                        |
+| Upstream      | Env key                      | Seat set                                                                                                                                              |
+| ------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Venice**    | `BOSSRAID_VENICE_API_KEY`    | **All** text models ([docs](https://docs.venice.ai/models/overview)) — request `model` is the Venice id (`google-gemma-4-31b-it`, `openai-gpt-55`, …) |
+| **Chutes**    | `BOSSRAID_CHUTES_API_KEY`    | **All** LLMs from `llm.chutes.ai` ([browse](https://chutes.ai/models?type=llm)) — `chutes-<slug>`                                                     |
+| **NEAR AI**   | `BOSSRAID_NEAR_API_KEY`      | **All** text models from `cloud-api.near.ai` ([browse](https://cloud.near.ai/#models)) — `near/<upstream-id>`                                         |
+| **Phala**     | `BOSSRAID_PHALA_API_KEY`     | **All** TEE chat models ([browse](https://phala.com/models)) — `phala/<upstream-id>`                                                                  |
+| **Redpill**   | `BOSSRAID_REDPILL_API_KEY`   | **All** chat models from `api.redpill.ai` ([browse](https://redpill.ai/models)) — `redpill/<upstream-id>`                                             |
+| **xAI**       | `BOSSRAID_XAI_API_KEY`       | Curated Grok / Grok Build ids (table below)                                                                                                           |
+| **Anthropic** | `BOSSRAID_ANTHROPIC_API_KEY` | `anthropic/claude-opus-4-5`, `anthropic/claude-sonnet-4-5`, `anthropic/claude-haiku-4-5`                                                              |
 
-Refresh catalog rates and Chutes/Venice lists:
+Refresh live catalogs (Venice, Chutes, NEAR, Phala TEE, Redpill) and rates:
 
 ```bash
 pnpm bossraid sync:inference-catalog
 ```
 
-Live provider ids look like `platform-venice-google-gemma-4-31b-it` or `platform-chutes-chutes-qwen3-32b-tee`. Discover with `GET /v1/markets?model_provider=venice` (or `chutes` / `xai`) and `GET /v1/models`.
+Live provider ids look like `platform-venice-google-gemma-4-31b-it`, `platform-near-near-zai-org-glm-5-1-fp8`, `platform-phala-phala-gemma-4-26b-a4b-uncensored`. Discover with `GET /v1/markets?model_provider=venice` (or `near` / `phala` / `redpill` / `chutes` / `xai`) and `GET /v1/models`.
 
 Phala compose defaults to **platform-only** seed (`examples/inference/platform-only.providers.json`) and retires demo workers `dottie` / `riko` / `gamma`. Optional game-raid workers use compose profile `game-providers`.
 

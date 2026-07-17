@@ -29,13 +29,19 @@ export const PLATFORM_LIQUIDITY_FEATURED_MODEL_IDS = [
 
 /**
  * When BOSSRAID_<PROVIDER>_API_KEY is set, publish a platform seat for every
- * inference-catalog row from these upstreams (Venice text + Chutes LLMs).
+ * inference-catalog row from these upstreams.
  * @see https://docs.venice.ai/models/overview
  * @see https://chutes.ai/models?type=llm
+ * @see https://cloud.near.ai/#models
+ * @see https://phala.com/models
+ * @see https://redpill.ai/models
  */
 export const PLATFORM_LIQUIDITY_FULL_CATALOG_PROVIDERS = [
   'venice',
   'chutes',
+  'near',
+  'phala',
+  'redpill',
 ] as const satisfies readonly UpstreamProviderId[];
 
 /** Synthetic externalRef for platform-owned hosted seats (uses BOSSRAID_*_API_KEY). */

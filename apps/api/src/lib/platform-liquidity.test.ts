@@ -9,13 +9,22 @@ import {
   resolveHostedUpstreamApiKey,
 } from './platform-liquidity.js';
 
-test('listPlatformLiquidityModelIds includes full Venice + Chutes catalogs', () => {
+test('listPlatformLiquidityModelIds includes full marketplace catalogs', () => {
   const ids = listPlatformLiquidityModelIds();
   assert.ok(ids.includes('grok-4.5'));
   assert.ok(ids.includes('google-gemma-4-31b-it'));
   assert.ok(ids.some((id) => id.startsWith('chutes-')));
-  assert.ok(ids.length >= 50);
-  assert.deepEqual([...PLATFORM_LIQUIDITY_FULL_CATALOG_PROVIDERS].sort(), ['chutes', 'venice']);
+  assert.ok(ids.some((id) => id.startsWith('near/')));
+  assert.ok(ids.some((id) => id.startsWith('redpill/')));
+  assert.ok(ids.some((id) => id.startsWith('phala/')));
+  assert.ok(ids.length >= 100);
+  assert.deepEqual([...PLATFORM_LIQUIDITY_FULL_CATALOG_PROVIDERS].sort(), [
+    'chutes',
+    'near',
+    'phala',
+    'redpill',
+    'venice',
+  ]);
 });
 
 test('listPlatformLiquidityCandidates marks keys from env', () => {

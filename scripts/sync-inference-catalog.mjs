@@ -15,7 +15,7 @@ const FEATURED_LIVE_MODEL_IDS = new Set([
   'olafangensan-glm-4.7-flash-heretic',
   'e2ee-gemma-4-26b-a4b-uncensored-p',
   'openai-gpt-55',
-  'zai-org/GLM-5.1-FP8',
+  'near/zai-org/GLM-5.1-FP8',
   'tee-qwen3-5-122b-chutes',
   'grok-4.5',
   'grok-4-1-fast-reasoning',
@@ -27,9 +27,10 @@ const FEATURED_LIVE_MODEL_IDS = new Set([
   'chutes-glm-5.2-tee',
 ]);
 
-const REDPILL_MODELS = [
+/** Fallback when live Redpill /models is unreachable. */
+const REDPILL_MODELS_FALLBACK = [
   {
-    modelId: 'redpill/phala-gemma-4-26b-a4b-uncensored',
+    modelId: 'redpill/phala/gemma-4-26b-a4b-uncensored',
     displayName: 'Phala Gemma 4 26B Uncensored (Redpill)',
     modelProvider: 'redpill',
     attestationVendor: 'redpill',
@@ -45,9 +46,10 @@ const REDPILL_MODELS = [
   },
 ];
 
-const NEAR_MODELS = [
+/** Fallback when live NEAR Cloud /models is unreachable. */
+const NEAR_MODELS_FALLBACK = [
   {
-    modelId: 'zai-org/GLM-5.1-FP8',
+    modelId: 'near/zai-org/GLM-5.1-FP8',
     displayName: 'GLM 5.1 FP8 (NEAR AI)',
     modelProvider: 'near',
     attestationVendor: 'near',
@@ -197,7 +199,8 @@ async function fetchChutesLlmModels() {
     .sort((left, right) => left.modelId.localeCompare(right.modelId));
 }
 
-const PHALA_MODELS = [
+/** Fallback when Phala TEE list is unreachable. */
+const PHALA_MODELS_FALLBACK = [
   {
     modelId: 'phala/gemma-4-26b-a4b-uncensored',
     displayName: 'Phala Gemma 4 26B Uncensored',
@@ -214,6 +217,189 @@ const PHALA_MODELS = [
     noDataRetention: true,
   },
 ];
+
+/** Namespace catalog modelIds so multi-upstream open lists never collide. */
+function namespacedCatalogModelId(provider, upstreamId) {
+  const id = String(upstreamId);
+  if (id.startsWith(`${provider}/`)) {
+    return id;
+  }
+  return `${provider}/${id}`;
+}
+
+function hasTextOutput(model) {
+  const modalities =
+    model.output_modalities ??
+    model.architecture?.outputModalities ??
+    model.specs?.output_modalities ??
+    [];
+  if (!Array.isArray(modalities) || modalities.length === 0) {
+    return true;
+  }
+  return modalities.map(String).some((m) => m.toLowerCase() === 'text');
+}
+
+function isEmbeddingModel(model) {
+  const id = String(model.id ?? '').toLowerCase();
+  const name = String(model.name ?? model.displayName ?? '').toLowerCase();
+  return (
+    id.includes('embedding') ||
+    id.includes('minilm') ||
+    name.includes('embedding') ||
+    id.startsWith('sentence-transformers/')
+  );
+}
+
+function perTokenToPer1m(value, fallback) {
+  if (value == null || value === '') {
+    return fallback;
+  }
+  const n = Number(value);
+  if (!Number.isFinite(n)) {
+    return fallback;
+  }
+  // OpenRouter/Redpill style: USD per token (tiny). NEAR uses USD per 1M already when > 0.001.
+  if (n > 0 && n < 0.001) {
+    return Number((n * 1_000_000).toFixed(6));
+  }
+  return Number(n.toFixed(6));
+}
+
+/**
+ * NEAR AI Cloud text models. Source: https://cloud-api.near.ai/v1/models
+ * @see https://cloud.near.ai/#models
+ */
+async function fetchNearCloudModels() {
+  const base =
+    process.env.BOSSRAID_NEAR_API_BASE?.trim().replace(/\/+$/u, '') ||
+    'https://cloud-api.near.ai/v1';
+  const response = await fetch(`${base}/models`, {
+    headers: { accept: 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error(`NEAR models request failed: ${response.status}`);
+  }
+  const payload = await response.json();
+  return (payload.data ?? [])
+    .filter((model) => model?.id && hasTextOutput(model) && !isEmbeddingModel(model))
+    .filter((model) => !/flux|image|sdxl|wan2|diffusion/i.test(String(model.id)))
+    .map((model) => {
+      const pricing = model.pricing ?? {};
+      const inputPer1mUsd = perTokenToPer1m(pricing.input ?? pricing.prompt, 0.3);
+      const outputPer1mUsd = perTokenToPer1m(pricing.output ?? pricing.completion, 1.2);
+      const maxContextTokens = Number(model.context_length ?? 128_000) || 128_000;
+      return {
+        modelId: namespacedCatalogModelId('near', model.id),
+        displayName: `${model.name ?? model.id} (NEAR AI)`,
+        modelProvider: 'near',
+        attestationVendor: 'near',
+        upstreamModelId: model.id,
+        inputPer1mUsd,
+        outputPer1mUsd,
+        maxContextTokens,
+        privacy: 'tee',
+        teeAttested: true,
+        e2ee: /e2ee/i.test(String(model.id)),
+        signedOutputs: true,
+        noDataRetention: true,
+      };
+    })
+    .sort((left, right) => left.modelId.localeCompare(right.modelId));
+}
+
+/**
+ * Redpill chat models. Source: https://api.redpill.ai/v1/models
+ * @see https://redpill.ai/models
+ */
+async function fetchRedpillModels() {
+  const base =
+    process.env.BOSSRAID_REDPILL_API_BASE?.trim().replace(/\/+$/u, '') ||
+    'https://api.redpill.ai/v1';
+  const response = await fetch(`${base}/models`, {
+    headers: { accept: 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error(`Redpill models request failed: ${response.status}`);
+  }
+  const payload = await response.json();
+  return (payload.data ?? [])
+    .filter((model) => model?.id && hasTextOutput(model) && !isEmbeddingModel(model))
+    .map((model) => {
+      const pricing = model.pricing ?? {};
+      const inputPer1mUsd = perTokenToPer1m(pricing.prompt ?? pricing.input, 0.2);
+      const outputPer1mUsd = perTokenToPer1m(pricing.completion ?? pricing.output, 0.8);
+      const maxContextTokens = Number(model.context_length ?? 128_000) || 128_000;
+      const tee = model.is_tee === true || /tee|phala\//i.test(String(model.id));
+      return {
+        modelId: namespacedCatalogModelId('redpill', model.id),
+        displayName: `${model.name ?? model.id} (Redpill)`,
+        modelProvider: 'redpill',
+        attestationVendor: 'redpill',
+        upstreamModelId: model.id,
+        inputPer1mUsd,
+        outputPer1mUsd,
+        maxContextTokens,
+        privacy: tee ? 'tee' : 'standard',
+        teeAttested: tee,
+        e2ee: /e2ee/i.test(String(model.id)),
+        signedOutputs: true,
+        noDataRetention: true,
+      };
+    })
+    .sort((left, right) => left.modelId.localeCompare(right.modelId));
+}
+
+/**
+ * Phala TEE chat models (confidential GPU catalog).
+ * Public list: https://service.redpill.ai/api/models (Phala-served TEE deployments).
+ * Runtime calls still go to cloud-api.phala.network when BOSSRAID_PHALA_API_KEY is set.
+ * @see https://phala.com/models
+ */
+async function fetchPhalaTeeModels() {
+  const response = await fetch('https://service.redpill.ai/api/models', {
+    headers: { accept: 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error(`Phala/Redpill service models request failed: ${response.status}`);
+  }
+  const payload = await response.json();
+  const rows = payload.data ?? [];
+  return rows
+    .filter((model) => model?.id && hasTextOutput(model) && !isEmbeddingModel(model))
+    .filter((model) => {
+      const tee = model.is_tee === true || model.specs?.is_tee === true;
+      return tee || String(model.id).startsWith('phala/');
+    })
+    .map((model) => {
+      const specs = model.specs ?? {};
+      const inputPer1mUsd = perTokenToPer1m(
+        specs.input_cost_per_token ?? model.pricing?.prompt ?? model.pricing?.input,
+        0.2
+      );
+      const outputPer1mUsd = perTokenToPer1m(
+        specs.output_cost_per_token ?? model.pricing?.completion ?? model.pricing?.output,
+        0.8
+      );
+      const maxContextTokens =
+        Number(specs.context_length ?? model.context_length ?? 128_000) || 128_000;
+      return {
+        modelId: namespacedCatalogModelId('phala', model.id),
+        displayName: `${model.name ?? model.id} (Phala)`,
+        modelProvider: 'phala',
+        attestationVendor: 'phala',
+        upstreamModelId: model.id,
+        inputPer1mUsd,
+        outputPer1mUsd,
+        maxContextTokens,
+        privacy: 'tee',
+        teeAttested: true,
+        e2ee: /e2ee/i.test(String(model.id)) || String(model.id).includes('uncensored'),
+        signedOutputs: true,
+        noDataRetention: true,
+      };
+    })
+    .sort((left, right) => left.modelId.localeCompare(right.modelId));
+}
 
 /** Z.ai GLM Coding Plan — static rates (OpenAI-compatible coding endpoint). */
 const ZAI_MODELS = [
@@ -622,10 +808,10 @@ function writeCatalogPricingJson(catalog) {
     generatedAt: new Date().toISOString(),
     source: {
       venice: 'https://api.venice.ai/api/v1/models (public, no API key)',
-      redpill: 'scripts/sync-inference-catalog.mjs static rates',
-      near: 'scripts/sync-inference-catalog.mjs static rates',
+      redpill: 'https://api.redpill.ai/v1/models (public; fallback static)',
+      near: 'https://cloud-api.near.ai/v1/models (public; fallback static)',
       chutes: 'https://llm.chutes.ai/v1/models (public OpenAI list; fallback static)',
-      phala: 'scripts/sync-inference-catalog.mjs static rates',
+      phala: 'https://service.redpill.ai/api/models TEE list (Phala cloud; fallback static)',
       xai: 'scripts/sync-inference-catalog.mjs static rates (api.x.ai)',
       zai: 'scripts/sync-inference-catalog.mjs static rates (api.z.ai coding paas)',
       anthropic: 'scripts/sync-inference-catalog.mjs static rates (api.anthropic.com)',
@@ -705,21 +891,33 @@ function normalizeStaticModels(models) {
   }));
 }
 
-async function main() {
-  const veniceModels = await fetchVeniceTextModels();
-  const redpillModels = normalizeStaticModels(REDPILL_MODELS);
-  const nearModels = normalizeStaticModels(NEAR_MODELS);
-  let chutesModels;
+async function loadWithFallback(label, fetchFn, fallbackModels) {
   try {
-    chutesModels = await fetchChutesLlmModels();
-    console.log(`[catalog] fetched ${chutesModels.length} Chutes LLM models from llm.chutes.ai`);
+    const models = await fetchFn();
+    console.log(`[catalog] fetched ${models.length} ${label} models`);
+    return models;
   } catch (error) {
     console.warn(
-      `[catalog] Chutes live list failed (${error instanceof Error ? error.message : error}); using fallback`
+      `[catalog] ${label} live list failed (${error instanceof Error ? error.message : error}); using fallback`
     );
-    chutesModels = normalizeStaticModels(CHUTES_MODELS_FALLBACK);
+    return normalizeStaticModels(fallbackModels);
   }
-  const phalaModels = normalizeStaticModels(PHALA_MODELS);
+}
+
+async function main() {
+  const veniceModels = await fetchVeniceTextModels();
+  const redpillModels = await loadWithFallback(
+    'Redpill',
+    fetchRedpillModels,
+    REDPILL_MODELS_FALLBACK
+  );
+  const nearModels = await loadWithFallback('NEAR AI', fetchNearCloudModels, NEAR_MODELS_FALLBACK);
+  const chutesModels = await loadWithFallback(
+    'Chutes',
+    fetchChutesLlmModels,
+    CHUTES_MODELS_FALLBACK
+  );
+  const phalaModels = await loadWithFallback('Phala TEE', fetchPhalaTeeModels, PHALA_MODELS_FALLBACK);
   const xaiModels = normalizeStaticModels(XAI_MODELS);
   const zaiModels = normalizeStaticModels(ZAI_MODELS);
   const anthropicModels = normalizeStaticModels(ANTHROPIC_MODELS);

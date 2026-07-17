@@ -10,10 +10,15 @@ Verification, deploy, and operator workflows. Env tables: [reference/env.md](../
 2. **Readiness** — `GET /v1/ops/production-readiness` must return `ok: true` for full production.
 3. **Liquidity (platform seats)** — set platform `BOSSRAID_*_API_KEY` values:
    - `BOSSRAID_VENICE_API_KEY` → **all** Venice text models
-   - `BOSSRAID_CHUTES_API_KEY` → **all** Chutes LLMs (`llm.chutes.ai`)
+   - `BOSSRAID_CHUTES_API_KEY` → **all** Chutes LLMs
+   - `BOSSRAID_NEAR_API_KEY` → **all** NEAR AI Cloud text models
+   - `BOSSRAID_PHALA_API_KEY` → **all** Phala TEE chat models
+   - `BOSSRAID_REDPILL_API_KEY` → **all** Redpill chat models
    - `BOSSRAID_XAI_API_KEY` → curated Grok models
-   - optional Anthropic / others as documented in [discount-inference.md](../buyers/discount-inference.md#platform-seats)
-     Then `POST /v1/ops/platform-liquidity/bootstrap` with admin token (or `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1` on API start). Phala compose defaults to an empty provider seed (`platform-only.providers.json`) and retires demo workers `dottie` / `riko` / `gamma` via `BOSSRAID_DISABLED_PROVIDER_IDS`. Optional in-CVM game agents: `docker compose --profile game-providers up`.
+   - optional Anthropic as documented in [discount-inference.md](../buyers/discount-inference.md#platform-seats)
+
+   Then `POST /v1/ops/platform-liquidity/bootstrap` with admin token (or `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1` on API start). Phala compose defaults to an empty provider seed (`platform-only.providers.json`) and retires demo workers `dottie` / `riko` / `gamma` via `BOSSRAID_DISABLED_PROVIDER_IDS`. Optional in-CVM game agents: `docker compose --profile game-providers up`.
+
 4. **Ops UI** — authenticate with `BOSSRAID_ADMIN_TOKEN`, monitor raids, toggle x402.
 5. **Ship** — gateway (`pnpm bossraid serve:gateway`) or Cloudflare Pages deploy.
 
