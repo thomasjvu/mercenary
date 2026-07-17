@@ -6,6 +6,8 @@ export type RaidChatOptions = {
   max_tokens?: number;
   temperature?: number;
   reasoning_effort?: ChatReasoningEffort;
+  /** Full multi-turn transcript when present (preferred over single prompt). */
+  messages?: Array<{ role: string; content: string }>;
 };
 
 const CHAT_OPTIONS_PATH = '.bossraid/chat-options.json';
@@ -41,6 +43,25 @@ export function extractChatOptionsFromTask(task: {
         out.reasoning_effort = effort as ChatReasoningEffort;
       }
     }
+    if (Array.isArray(parsed.messages)) {
+      const messages = parsed.messages
+        .map((entry) => {
+          if (!entry || typeof entry !== 'object') {
+            return null;
+          }
+          const row = entry as Record<string, unknown>;
+          const role = typeof row.role === 'string' ? row.role.trim() : '';
+          const content = typeof row.content === 'string' ? row.content : '';
+          if (!role || !content.trim()) {
+            return null;
+          }
+          return { role, content: content.trim() };
+        })
+        .filter((row): row is { role: string; content: string } => row != null);
+      if (messages.length > 0) {
+        out.messages = messages;
+      }
+    }
 
     return out;
   } catch {
@@ -65,5 +86,19 @@ export function applyChatOptionsToBody(
   if (options.reasoning_effort) {
     body.reasoning_effort = options.reasoning_effort;
   }
+  if (options.messages && options.messages.length > 0) {
+    body.messages = options.messages;
+  }
   return body;
+}
+
+/** Prefer embedded multi-turn messages; else single user prompt. */
+export function resolveChatMessagesForUpstream(input: {
+  prompt?: string;
+  chatOptions?: RaidChatOptions;
+}): Array<{ role: string; content: string }> {
+  if (input.chatOptions?.messages && input.chatOptions.messages.length > 0) {
+    return input.chatOptions.messages;
+  }
+  return [{ role: 'user', content: input.prompt ?? 'Reply with the single word: ok' }];
 }

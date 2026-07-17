@@ -2,6 +2,30 @@
 
 How Boss Raid proves **who ran the work**, **which model**, and whether the install is **fresh vs skills** — and what is (and is not) hardware-attested.
 
+## How Grok / Codex / Claude Code relate (important)
+
+Boss Raid does **not** multi-tenant-sell consumer logins (ChatGPT Plus, Claude Pro, `grok login` OAuth for other people). Seller seats use **API keys** (or plan keys like Z.ai coding plan). Anthropic’s own Agent SDK docs forbid third parties offering claude.ai login rate limits.
+
+| Brand in Boss Raid      | What runs today                                                              | Auth for multi-tenant sell                       | Vendor “bare agent” product                                                                                                                                                                                                                |
+| ----------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Grok** harness        | Our OpenAI-compatible **tool loop** → `https://api.x.ai/v1/chat/completions` | `BOSSRAID_XAI_API_KEY` / seller xAI key          | Grok CLI headless (`grok -p`) uses **local** `XAI_API_KEY` or `grok login` on the operator’s machine — not a shared seller marketplace                                                                                                     |
+| **Codex** harness       | Same tool loop → `https://api.openai.com/v1`                                 | OpenAI **platform API key** (seller or platform) | [Codex SDK](https://learn.chatgpt.com/docs/codex-sdk) (`@openai/codex-sdk`) is a richer local/app-server agent; can be a future runtime backend, still not ChatGPT account resale                                                          |
+| **Claude Code** harness | Same tool loop → `https://api.anthropic.com/v1`                              | Anthropic **API key**                            | [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk/overview) (`@anthropic-ai/claude-agent-sdk`) is the real Claude Code agent-as-library; requires API key (or Bedrock/Vertex), **not** claude.ai OAuth for third-party products |
+
+So: **yes, we can use Codex / Claude as agents** in the marketplace sense by selling **API-key-backed harness seats**. That is already how Grok works for sellers (encrypted key → gateway tool loop), not “Grok OAuth multi-tenant.”
+
+**Buyer** side is different: you can point Grok CLI at Boss Raid as a custom model (`base_url` + `br_` / admin token) and use your own OAuth/API for other models — that does not mean Boss Raid resells your Grok login to others.
+
+### Future: native SDK runtimes (optional)
+
+A later upgrade can add harness backends:
+
+- `openai_tools` (current default for all kinds)
+- `codex_sdk` → `@openai/codex-sdk` with seller OpenAI/Codex credentials
+- `claude_agent_sdk` → `@anthropic-ai/claude-agent-sdk` with seller Anthropic key
+
+Until those land, harness kinds differ mainly by **API base + model defaults + branding**, not by spawning the desktop CLIs.
+
 ## Is harness hosted on our Phala?
 
 **Yes for platform fleet (Tier 1).** On production, harness work runs inside the same **always-on Phala CVM** stack as the API (or a dedicated harness CVM). **No new Phala box per raid or per seller** — each accept gets an ephemeral workspace that is wiped after submit.

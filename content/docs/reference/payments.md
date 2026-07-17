@@ -89,6 +89,16 @@ Route surcharges (not model price): `BOSSRAID_X402_RAID_SURCHARGE_USD`, `BOSSRAI
 
 x402 defaults to **off** until explicitly enabled.
 
+**Phala production env (bossraid-main):** deploy secrets already set Marian + Robinhood USDG when assembled correctly:
+
+- `BOSSRAID_X402_ENABLED=true`
+- `BOSSRAID_X402_NETWORK=eip155:4663`
+- `BOSSRAID_X402_ASSET=usdg`
+- `BOSSRAID_X402_FACILITATOR_URL=https://marian.maid.fyi` (or current Marian URL)
+- `BOSSRAID_X402_PAY_TO=<treasury>`
+
+Confirm with ops `GET /v1/ops/settings` / production-readiness after deploy — do not assume live without checking.
+
 ## Real paid traffic checklist (not a ledger demo)
 
 Without these, sellers only accrue **ledger credits** and cannot cash out USDG:

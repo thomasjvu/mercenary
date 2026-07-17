@@ -8,7 +8,11 @@ import {
 } from './adapter-helpers.js';
 import { fetchUpstreamJson } from './shared.js';
 import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
-import { applyChatOptionsToBody, type RaidChatOptions } from '../chat-options.js';
+import {
+  applyChatOptionsToBody,
+  resolveChatMessagesForUpstream,
+  type RaidChatOptions,
+} from '../chat-options.js';
 
 const PHALA_BASE = 'https://cloud-api.phala.network/api/v1';
 const PROVIDER = 'phala' satisfies UpstreamProviderId;
@@ -62,7 +66,10 @@ export async function probePhalaChatCompletion(input: {
     body: applyChatOptionsToBody(
       {
         model: input.modelId,
-        messages: [{ role: 'user', content: input.prompt ?? 'Reply with the single word: ok' }],
+        messages: resolveChatMessagesForUpstream({
+          prompt: input.prompt,
+          chatOptions: input.chatOptions,
+        }),
         max_tokens: 16,
       },
       input.chatOptions

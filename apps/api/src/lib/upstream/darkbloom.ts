@@ -1,5 +1,9 @@
 import type { UpstreamProviderId } from '@bossraid/constants';
-import { applyChatOptionsToBody, type RaidChatOptions } from '../chat-options.js';
+import {
+  applyChatOptionsToBody,
+  resolveChatMessagesForUpstream,
+  type RaidChatOptions,
+} from '../chat-options.js';
 import {
   fetchUpstreamModelsWithFallback,
   probeOpenAiStyleChatCompletion,
@@ -92,7 +96,10 @@ export async function probeDarkbloomChatCompletion(input: {
   const body = applyChatOptionsToBody(
     {
       model: input.modelId,
-      messages: [{ role: 'user', content: input.prompt ?? 'Reply with the single word: ok' }],
+      messages: resolveChatMessagesForUpstream({
+        prompt: input.prompt,
+        chatOptions: input.chatOptions,
+      }),
       max_tokens: 16,
     },
     input.chatOptions

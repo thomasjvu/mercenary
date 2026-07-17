@@ -162,6 +162,7 @@ export function buildBossRaidRequestFromChatCompletion(
             max_tokens: input.max_tokens,
             temperature: input.temperature,
             reasoning_effort: input.reasoning_effort,
+            messages: trimmedMessages,
           }),
           sha256: 'chat-options',
         },
@@ -180,6 +181,13 @@ export function buildBossRaidRequestFromChatCompletion(
       maxLatencySec,
       maxTotalCost,
       requiredCapabilities,
+      requiredProviderIds:
+        rawRaidPolicy?.requiredProviderIds == null && rawRaidPolicy?.required_provider_ids == null
+          ? undefined
+          : ensureStringArray(
+              rawRaidPolicy?.requiredProviderIds ?? rawRaidPolicy?.required_provider_ids,
+              'chat_completion_request.raid_policy.required_provider_ids'
+            ),
       minReputationScore:
         rawRaidPolicy?.minReputationScore == null && rawRaidPolicy?.min_reputation_score == null
           ? undefined

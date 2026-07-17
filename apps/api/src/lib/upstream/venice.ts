@@ -1,6 +1,10 @@
 import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import { TIMEOUTS } from '@bossraid/constants';
-import { applyChatOptionsToBody, type RaidChatOptions } from '../chat-options.js';
+import {
+  applyChatOptionsToBody,
+  resolveChatMessagesForUpstream,
+  type RaidChatOptions,
+} from '../chat-options.js';
 import { isProviderInferenceMock, isProviderTeeMock } from '../upstream-mock.js';
 import { buildMockVeniceTeeReport } from './adapter-helpers.js';
 import { fetchUpstreamJson, isE2eeModelId, isTeeModelId } from './shared.js';
@@ -58,18 +62,17 @@ export async function probeVeniceChatCompletion(input: {
   const body = applyChatOptionsToBody(
     {
       model: input.modelId,
-      messages: [
-        {
-          role: 'user',
-          content: input.prompt ?? 'Reply with the single word: ok',
-        },
-      ],
+      messages: resolveChatMessagesForUpstream({
+        prompt: input.prompt,
+        chatOptions: input.chatOptions,
+      }),
       max_completion_tokens: input.chatOptions?.max_tokens ?? 16,
     },
-    // Venice prefers max_completion_tokens; still pass temperature / reasoning_effort.
+    // Venice prefers max_completion_tokens; still pass temperature / reasoning_effort / messages.
     {
       temperature: input.chatOptions?.temperature,
       reasoning_effort: input.chatOptions?.reasoning_effort,
+      messages: input.chatOptions?.messages,
     }
   );
   // Prefer Venice field name when max_tokens was applied.

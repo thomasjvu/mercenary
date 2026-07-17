@@ -1,5 +1,9 @@
 import type { UpstreamProviderId } from '@bossraid/constants';
-import { applyChatOptionsToBody, type RaidChatOptions } from '../chat-options.js';
+import {
+  applyChatOptionsToBody,
+  resolveChatMessagesForUpstream,
+  type RaidChatOptions,
+} from '../chat-options.js';
 import {
   fetchUpstreamModelsWithFallback,
   probeOpenAiStyleChatCompletion,
@@ -81,7 +85,10 @@ export async function probeXaiChatCompletion(input: {
   const body = applyChatOptionsToBody(
     {
       model: input.modelId,
-      messages: [{ role: 'user', content: input.prompt ?? 'Reply with the single word: ok' }],
+      messages: resolveChatMessagesForUpstream({
+        prompt: input.prompt,
+        chatOptions: input.chatOptions,
+      }),
       // Probe default; real chat passes max_tokens via chatOptions.
       max_tokens: 16,
     },

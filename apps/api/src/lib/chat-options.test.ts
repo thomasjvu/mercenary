@@ -45,3 +45,23 @@ test('applyChatOptionsToBody merges OpenAI fields', () => {
   assert.equal(body.temperature, 0.1);
   assert.equal(body.reasoning_effort, 'low');
 });
+
+test('extractChatOptionsFromTask reads multi-turn messages', () => {
+  const options = extractChatOptionsFromTask({
+    files: [
+      {
+        path: '.bossraid/chat-options.json',
+        content: JSON.stringify({
+          messages: [
+            { role: 'system', content: 'Be brief.' },
+            { role: 'user', content: 'hi' },
+            { role: 'assistant', content: 'hello' },
+            { role: 'user', content: 'again' },
+          ],
+        }),
+      },
+    ],
+  });
+  assert.equal(options.messages?.length, 4);
+  assert.equal(options.messages?.[3]?.content, 'again');
+});

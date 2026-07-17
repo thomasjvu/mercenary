@@ -1,5 +1,9 @@
 import { UPSTREAM_PROVIDER_CONFIG, type UpstreamProviderId } from '@bossraid/constants';
-import { applyChatOptionsToBody, type RaidChatOptions } from '../chat-options.js';
+import {
+  applyChatOptionsToBody,
+  resolveChatMessagesForUpstream,
+  type RaidChatOptions,
+} from '../chat-options.js';
 import {
   buildMockChutesTeeEvidence,
   fetchUpstreamModelsWithFallback,
@@ -104,7 +108,10 @@ export async function probeChutesChatCompletion(input: {
 }): Promise<UpstreamChatResult> {
   const env = input.env ?? process.env;
   const llmBase = resolveChutesLlmBase(env);
-  const messages = [{ role: 'user', content: input.prompt ?? 'Reply with the single word: ok' }];
+  const messages = resolveChatMessagesForUpstream({
+    prompt: input.prompt,
+    chatOptions: input.chatOptions,
+  });
   const baseBody = applyChatOptionsToBody(
     {
       messages,

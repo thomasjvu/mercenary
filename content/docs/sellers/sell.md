@@ -62,6 +62,8 @@ Sell inference without running a provider worker. Connect an upstream key and pu
 
 Keys are encrypted at rest. This is **API-key selling**, not consumer OAuth or ChatGPT/Claude “subscription account” resale (unsupported and out of scope).
 
+**Harness seats** (`lane: "harness"`) for Grok / Claude / Codex brands run Boss Raid’s agent tool loop with that API key (same pattern as Grok via `api.x.ai`). Native Codex SDK / Claude Agent SDK are documented as future backends in [harness-verification.md](../operators/harness-verification.md) — still API-key (or plan-key) auth for multi-tenant sell, not shared `grok login` / claude.ai sessions.
+
 ```json
 {
   "modelIds": ["anthropic/claude-sonnet-4-5"],
