@@ -1,8 +1,19 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { runAgentHarnessLoop } from './loop.js';
+import { joinOpenAiApiPath, runAgentHarnessLoop } from './loop.js';
 import type { ProviderTaskPackage } from '@bossraid/shared-types';
 import type { HarnessRuntimeConfig } from './profile.js';
+
+test('joinOpenAiApiPath keeps /v1 segment', () => {
+  assert.equal(
+    joinOpenAiApiPath('https://api.x.ai/v1', '/chat/completions'),
+    'https://api.x.ai/v1/chat/completions'
+  );
+  assert.equal(
+    joinOpenAiApiPath('https://api.x.ai/v1/', 'chat/completions'),
+    'https://api.x.ai/v1/chat/completions'
+  );
+});
 
 function makeTask(): ProviderTaskPackage {
   return {

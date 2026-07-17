@@ -94,6 +94,13 @@ function parseToolCalls(
     .filter((call) => call.name);
 }
 
+/** Join OpenAI-compatible base (…/v1) with a relative path without dropping /v1. */
+export function joinOpenAiApiPath(apiBase: string, path: string): string {
+  const base = apiBase.trim().replace(/\/+$/, '');
+  const suffix = path.trim().replace(/^\/+/, '');
+  return `${base}/${suffix}`;
+}
+
 async function callChatCompletions(input: {
   apiBase: string;
   apiKey: string;
@@ -104,7 +111,9 @@ async function callChatCompletions(input: {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), input.timeoutMs);
   try {
-    const response = await fetch(new URL('/chat/completions', input.apiBase).toString(), {
+    // Do not use `new URL('/chat/completions', base)` — absolute paths drop /v1
+    // (https://api.x.ai/v1 + /chat/completions → https://api.x.ai/chat/completions → 404).
+    const response = await fetch(joinOpenAiApiPath(input.apiBase, 'chat/completions'), {
       method: 'POST',
       headers: {
         'content-type': 'application/json',

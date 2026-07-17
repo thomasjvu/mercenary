@@ -11,7 +11,7 @@ export {
   type HarnessKind,
   type HarnessRuntimeConfig,
 } from './profile.js';
-export { runAgentHarnessLoop } from './loop.js';
+export { joinOpenAiApiPath, runAgentHarnessLoop } from './loop.js';
 export { createHarnessWorkspace } from './workspace.js';
 export { HARNESS_TOOL_DEFINITIONS, executeHarnessTool } from './tools.js';
 export type { HarnessSubmission } from './types.js';
