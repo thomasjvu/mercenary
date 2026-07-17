@@ -8,12 +8,11 @@ import { buildHostedProviderRegistration } from './upstream-offers.js';
 import { resolveInferenceGatewayProviderEndpoint } from './inference-gateway.js';
 
 /**
- * Platform seats published when matching BOSSRAID_*_API_KEY is present.
- * xAI models: live Grok Build / api.x.ai chat IDs (plus catalog aliases).
- * Non-xAI entries stay for multi-upstream demos when those keys exist.
+ * Explicit platform seats (always considered when catalog row + key exist).
+ * xAI / Anthropic stay curated; Venice + Chutes use full catalog providers below.
  */
 export const PLATFORM_LIQUIDITY_FEATURED_MODEL_IDS = [
-  // xAI / Grok (primary dogfood path)
+  // xAI / Grok
   'grok-4.5',
   'grok-4.3',
   'grok-4.20-0309-reasoning',
@@ -22,12 +21,22 @@ export const PLATFORM_LIQUIDITY_FEATURED_MODEL_IDS = [
   'grok-build-0.1',
   'grok-4-1-fast-reasoning',
   'grok-4-1-fast-non-reasoning',
-  // Other upstreams (only publish when BOSSRAID_<PROVIDER>_API_KEY is set)
+  // Anthropic first-party (namespaced; Venice also lists unprefixed claude-*)
   'anthropic/claude-opus-4-5',
   'anthropic/claude-sonnet-4-5',
-  'openai-gpt-55',
-  'google-gemma-4-31b-it',
+  'anthropic/claude-haiku-4-5',
 ] as const;
+
+/**
+ * When BOSSRAID_<PROVIDER>_API_KEY is set, publish a platform seat for every
+ * inference-catalog row from these upstreams (Venice text + Chutes LLMs).
+ * @see https://docs.venice.ai/models/overview
+ * @see https://chutes.ai/models?type=llm
+ */
+export const PLATFORM_LIQUIDITY_FULL_CATALOG_PROVIDERS = [
+  'venice',
+  'chutes',
+] as const satisfies readonly UpstreamProviderId[];
 
 /** Synthetic externalRef for platform-owned hosted seats (uses BOSSRAID_*_API_KEY). */
 export const PLATFORM_LIQUIDITY_WALLET = 'platform';
@@ -40,13 +49,25 @@ export type PlatformLiquidityBootstrapResult = {
   removed: string[];
 };
 
+/** Stable ordered model ids for platform liquidity bootstrap. */
+export function listPlatformLiquidityModelIds(): string[] {
+  const ids = new Set<string>(PLATFORM_LIQUIDITY_FEATURED_MODEL_IDS);
+  const fullProviders = new Set<string>(PLATFORM_LIQUIDITY_FULL_CATALOG_PROVIDERS);
+  for (const entry of INFERENCE_MODEL_CATALOG) {
+    if (fullProviders.has(entry.modelProvider)) {
+      ids.add(entry.modelId);
+    }
+  }
+  return [...ids].sort((a, b) => a.localeCompare(b));
+}
+
 export function listPlatformLiquidityCandidates(env: NodeJS.ProcessEnv = process.env): Array<{
   modelId: string;
   upstream: UpstreamProviderId;
   hasPlatformKey: boolean;
 }> {
   const out: Array<{ modelId: string; upstream: UpstreamProviderId; hasPlatformKey: boolean }> = [];
-  for (const modelId of PLATFORM_LIQUIDITY_FEATURED_MODEL_IDS) {
+  for (const modelId of listPlatformLiquidityModelIds()) {
     const entry = INFERENCE_MODEL_CATALOG.find((row) => row.modelId === modelId);
     if (!entry || !isUpstreamProviderId(entry.modelProvider)) {
       continue;
@@ -61,8 +82,8 @@ export function listPlatformLiquidityCandidates(env: NodeJS.ProcessEnv = process
 }
 
 /**
- * Register chat-lane hosted offers for featured models when the matching platform
- * BOSSRAID_*_API_KEY is present. Gateway resolves keys via PLATFORM_LIQUIDITY_WALLET.
+ * Register chat-lane hosted offers when the matching platform BOSSRAID_*_API_KEY
+ * is present. Gateway resolves keys via PLATFORM_LIQUIDITY_WALLET.
  */
 export async function bootstrapPlatformLiquidity(input: {
   orchestrator: BossRaidOrchestrator;
@@ -73,8 +94,9 @@ export async function bootstrapPlatformLiquidity(input: {
   const discountPercent = input.discountPercent ?? 0;
   const published: PlatformLiquidityBootstrapResult['published'] = [];
   const skipped: PlatformLiquidityBootstrapResult['skipped'] = [];
+  const candidates = listPlatformLiquidityCandidates(env);
 
-  for (const candidate of listPlatformLiquidityCandidates(env)) {
+  for (const candidate of candidates) {
     if (!candidate.hasPlatformKey) {
       skipped.push({
         modelId: candidate.modelId,
@@ -131,7 +153,7 @@ export async function bootstrapPlatformLiquidity(input: {
 
   return {
     object: 'platform_liquidity_bootstrap',
-    attempted: PLATFORM_LIQUIDITY_FEATURED_MODEL_IDS.length,
+    attempted: candidates.length,
     published,
     skipped,
     removed,

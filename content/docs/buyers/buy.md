@@ -48,6 +48,10 @@ curl http://127.0.0.1:8787/v1/inference/chat/completions \
   }'
 ```
 
+### Venice + Chutes models
+
+With platform liquidity and `BOSSRAID_VENICE_API_KEY` / `BOSSRAID_CHUTES_API_KEY`, discount inference can route every Venice text model and every Chutes LLM. Discover live offers with `GET /v1/markets?model_provider=venice` or `model_provider=chutes`. Details: [discount-inference.md](discount-inference.md#platform-seats).
+
 ### xAI Grok + reasoning effort
 
 When a platform or seller seat offers an xAI model (`grok-4.5`, `grok-build-0.1`, …), pass OpenAI-compatible `reasoning_effort`:

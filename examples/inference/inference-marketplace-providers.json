@@ -1,68 +1,6 @@
 [
   {
     "spawnWorker": false,
-    "providerId": "market-aion-labs-aion-2-0",
-    "displayName": "Aion 2.0",
-    "endpointType": "http",
-    "endpoint": "http://127.0.0.1:9200",
-    "specializations": ["inference", "text"],
-    "supportedLanguages": ["text"],
-    "supportedFrameworks": ["openai_compatible"],
-    "modelFamily": "venice",
-    "modelProvider": "venice",
-    "modelId": "aion-labs-aion-2-0",
-    "outputTypes": ["text", "json"],
-    "agentFramework": "openai_compatible",
-    "marketplaceOfferStatus": "active",
-    "verification": {
-      "status": "verified",
-      "apiVerified": true,
-      "frameworkVerified": true,
-      "modelVerified": true,
-      "notes": ["catalog-synced inference seller"]
-    },
-    "privacy": {
-      "teeAttested": false,
-      "e2ee": false,
-      "teeVendor": "venice",
-      "signedOutputs": true,
-      "noDataRetention": false
-    },
-    "pricing": {
-      "mode": "token_metered",
-      "currency": "USD",
-      "pricePer1mInputTokensUsd": 1,
-      "pricePer1mOutputTokensUsd": 2,
-      "minimumChargeUsd": 0.01,
-      "rateCardVersion": "catalog-v1",
-      "upstreamModelId": "aion-labs-aion-2-0",
-      "maxContextTokens": 128000
-    },
-    "pricePerTaskUsd": 0.01,
-    "maxConcurrency": 4,
-    "status": "available",
-    "auth": {
-      "type": "bearer",
-      "token": "bossraid-market-market-aion-labs-aion-2-0"
-    },
-    "reputation": {
-      "globalScore": 0.84,
-      "responsivenessScore": 0.86,
-      "validityScore": 0.83,
-      "qualityScore": 0.85,
-      "timeoutRate": 0.04,
-      "duplicateRate": 0.01,
-      "specializationScores": {
-        "inference": 0.9
-      },
-      "p50LatencyMs": 2400,
-      "p95LatencyMs": 6500,
-      "totalRaids": 48,
-      "totalSuccessfulRaids": 44
-    }
-  },
-  {
-    "spawnWorker": false,
     "providerId": "market-aion-labs-aion-3-0",
     "displayName": "Aion 3.0",
     "endpointType": "http",
@@ -2791,6 +2729,68 @@
   },
   {
     "spawnWorker": false,
+    "providerId": "market-inkling",
+    "displayName": "Inkling",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "inkling",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "teeVendor": "venice",
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 2.3375,
+      "pricePer1mOutputTokensUsd": 5.85,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "inkling",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-inkling"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
     "providerId": "market-kimi-k2-5",
     "displayName": "Kimi K2.5",
     "endpointType": "http",
@@ -2958,6 +2958,68 @@
     "auth": {
       "type": "bearer",
       "token": "bossraid-market-market-kimi-k2-7-code"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-kimi-k3",
+    "displayName": "Kimi K3",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "venice",
+    "modelProvider": "venice",
+    "modelId": "kimi-k3",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "teeVendor": "venice",
+      "signedOutputs": true,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 3.75,
+      "pricePer1mOutputTokensUsd": 18.75,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "kimi-k3",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.0229,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-kimi-k3"
     },
     "reputation": {
       "globalScore": 0.84,
@@ -6325,72 +6387,10 @@
   },
   {
     "spawnWorker": true,
-    "providerId": "market-tee-qwen3-5-122b-chutes",
-    "displayName": "TEE Qwen3.5 122B (Chutes)",
-    "endpointType": "http",
-    "endpoint": "http://127.0.0.1:9110",
-    "specializations": ["inference", "text"],
-    "supportedLanguages": ["text"],
-    "supportedFrameworks": ["openai_compatible"],
-    "modelFamily": "chutes",
-    "modelProvider": "chutes",
-    "modelId": "tee-qwen3-5-122b-chutes",
-    "outputTypes": ["text", "json"],
-    "agentFramework": "openai_compatible",
-    "marketplaceOfferStatus": "active",
-    "verification": {
-      "status": "verified",
-      "apiVerified": true,
-      "frameworkVerified": true,
-      "modelVerified": true,
-      "notes": ["catalog-synced inference seller"]
-    },
-    "privacy": {
-      "teeAttested": true,
-      "e2ee": false,
-      "teeVendor": "chutes",
-      "signedOutputs": true,
-      "noDataRetention": true
-    },
-    "pricing": {
-      "mode": "token_metered",
-      "currency": "USD",
-      "pricePer1mInputTokensUsd": 0.4,
-      "pricePer1mOutputTokensUsd": 1.5,
-      "minimumChargeUsd": 0.01,
-      "rateCardVersion": "catalog-v1",
-      "upstreamModelId": "tee-qwen3-5-122b-chutes",
-      "maxContextTokens": 128000
-    },
-    "pricePerTaskUsd": 0.01,
-    "maxConcurrency": 4,
-    "status": "available",
-    "auth": {
-      "type": "bearer",
-      "token": "bossraid-market-market-tee-qwen3-5-122b-chutes"
-    },
-    "reputation": {
-      "globalScore": 0.84,
-      "responsivenessScore": 0.86,
-      "validityScore": 0.83,
-      "qualityScore": 0.85,
-      "timeoutRate": 0.04,
-      "duplicateRate": 0.01,
-      "specializationScores": {
-        "inference": 0.9
-      },
-      "p50LatencyMs": 2400,
-      "p95LatencyMs": 6500,
-      "totalRaids": 48,
-      "totalSuccessfulRaids": 44
-    }
-  },
-  {
-    "spawnWorker": true,
     "providerId": "market-chutes-deepseek-v3-2-tee",
     "displayName": "DeepSeek V3.2 TEE (Chutes)",
     "endpointType": "http",
-    "endpoint": "http://127.0.0.1:9111",
+    "endpoint": "http://127.0.0.1:9110",
     "specializations": ["inference", "text"],
     "supportedLanguages": ["text"],
     "supportedFrameworks": ["openai_compatible"],
@@ -6417,12 +6417,12 @@
     "pricing": {
       "mode": "token_metered",
       "currency": "USD",
-      "pricePer1mInputTokensUsd": 0.3,
-      "pricePer1mOutputTokensUsd": 1.2,
+      "pricePer1mInputTokensUsd": 1,
+      "pricePer1mOutputTokensUsd": 1,
       "minimumChargeUsd": 0.01,
       "rateCardVersion": "catalog-v1",
       "upstreamModelId": "chutes-deepseek-v3.2-tee",
-      "maxContextTokens": 128000
+      "maxContextTokens": 131072
     },
     "pricePerTaskUsd": 0.01,
     "maxConcurrency": 4,
@@ -6448,11 +6448,197 @@
     }
   },
   {
+    "spawnWorker": false,
+    "providerId": "market-chutes-gemma-4-31b-turbo-tee",
+    "displayName": "gemma 4 31B turbo TEE (Chutes)",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "chutes",
+    "modelProvider": "chutes",
+    "modelId": "chutes-gemma-4-31b-turbo-tee",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": false,
+      "teeVendor": "chutes",
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.12,
+      "pricePer1mOutputTokensUsd": 0.37,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "chutes-gemma-4-31b-turbo-tee",
+      "maxContextTokens": 262144
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-chutes-gemma-4-31b-turbo-tee"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-chutes-glm-5-tee",
+    "displayName": "GLM 5 TEE (Chutes)",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "chutes",
+    "modelProvider": "chutes",
+    "modelId": "chutes-glm-5-tee",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": false,
+      "teeVendor": "chutes",
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.95,
+      "pricePer1mOutputTokensUsd": 2.55,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "chutes-glm-5-tee",
+      "maxContextTokens": 202752
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-chutes-glm-5-tee"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-chutes-glm-5-1-tee",
+    "displayName": "GLM 5.1 TEE (Chutes)",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "chutes",
+    "modelProvider": "chutes",
+    "modelId": "chutes-glm-5.1-tee",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": false,
+      "teeVendor": "chutes",
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.98,
+      "pricePer1mOutputTokensUsd": 3.08,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "chutes-glm-5.1-tee",
+      "maxContextTokens": 202752
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-chutes-glm-5-1-tee"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
     "spawnWorker": true,
     "providerId": "market-chutes-glm-5-2-tee",
     "displayName": "GLM 5.2 TEE (Chutes)",
     "endpointType": "http",
-    "endpoint": "http://127.0.0.1:9112",
+    "endpoint": "http://127.0.0.1:9111",
     "specializations": ["inference", "text"],
     "supportedLanguages": ["text"],
     "supportedFrameworks": ["openai_compatible"],
@@ -6479,12 +6665,12 @@
     "pricing": {
       "mode": "token_metered",
       "currency": "USD",
-      "pricePer1mInputTokensUsd": 0.35,
-      "pricePer1mOutputTokensUsd": 1.4,
+      "pricePer1mInputTokensUsd": 1.4,
+      "pricePer1mOutputTokensUsd": 4.4,
       "minimumChargeUsd": 0.01,
       "rateCardVersion": "catalog-v1",
       "upstreamModelId": "chutes-glm-5.2-tee",
-      "maxContextTokens": 200000
+      "maxContextTokens": 1048576
     },
     "pricePerTaskUsd": 0.01,
     "maxConcurrency": 4,
@@ -6492,6 +6678,130 @@
     "auth": {
       "type": "bearer",
       "token": "bossraid-market-market-chutes-glm-5-2-tee"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-chutes-kimi-k2-5-tee",
+    "displayName": "Kimi K2.5 TEE (Chutes)",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "chutes",
+    "modelProvider": "chutes",
+    "modelId": "chutes-kimi-k2.5-tee",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": false,
+      "teeVendor": "chutes",
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.44,
+      "pricePer1mOutputTokensUsd": 2,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "chutes-kimi-k2.5-tee",
+      "maxContextTokens": 262144
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-chutes-kimi-k2-5-tee"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-chutes-kimi-k2-6-tee",
+    "displayName": "Kimi K2.6 TEE (Chutes)",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "chutes",
+    "modelProvider": "chutes",
+    "modelId": "chutes-kimi-k2.6-tee",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": false,
+      "teeVendor": "chutes",
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.66,
+      "pricePer1mOutputTokensUsd": 3.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "chutes-kimi-k2.6-tee",
+      "maxContextTokens": 262144
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-chutes-kimi-k2-6-tee"
     },
     "reputation": {
       "globalScore": 0.84,
@@ -6541,12 +6851,12 @@
     "pricing": {
       "mode": "token_metered",
       "currency": "USD",
-      "pricePer1mInputTokensUsd": 0.25,
-      "pricePer1mOutputTokensUsd": 1,
+      "pricePer1mInputTokensUsd": 0.15,
+      "pricePer1mOutputTokensUsd": 1.2,
       "minimumChargeUsd": 0.01,
       "rateCardVersion": "catalog-v1",
       "upstreamModelId": "chutes-minimax-m2.5-tee",
-      "maxContextTokens": 128000
+      "maxContextTokens": 196608
     },
     "pricePerTaskUsd": 0.01,
     "maxConcurrency": 4,
@@ -6572,11 +6882,321 @@
     }
   },
   {
+    "spawnWorker": false,
+    "providerId": "market-chutes-mistral-nemo-instruct-2407-tee",
+    "displayName": "Mistral Nemo Instruct 2407 TEE (Chutes)",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "chutes",
+    "modelProvider": "chutes",
+    "modelId": "chutes-mistral-nemo-instruct-2407-tee",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": false,
+      "teeVendor": "chutes",
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.0245,
+      "pricePer1mOutputTokensUsd": 0.0978,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "chutes-mistral-nemo-instruct-2407-tee",
+      "maxContextTokens": 131072
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-chutes-mistral-nemo-instruct-2407-tee"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-chutes-qwen3-235b-a22b-thinking-2507-tee",
+    "displayName": "Qwen3 235B A22B Thinking 2507 TEE (Chutes)",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "chutes",
+    "modelProvider": "chutes",
+    "modelId": "chutes-qwen3-235b-a22b-thinking-2507-tee",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": false,
+      "teeVendor": "chutes",
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.2989,
+      "pricePer1mOutputTokensUsd": 1.1957,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "chutes-qwen3-235b-a22b-thinking-2507-tee",
+      "maxContextTokens": 262144
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-chutes-qwen3-235b-a22b-thinking-2507-tee"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-chutes-qwen3-32b-tee",
+    "displayName": "Qwen3 32B TEE (Chutes)",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "chutes",
+    "modelProvider": "chutes",
+    "modelId": "chutes-qwen3-32b-tee",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": false,
+      "teeVendor": "chutes",
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.104,
+      "pricePer1mOutputTokensUsd": 0.416,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "chutes-qwen3-32b-tee",
+      "maxContextTokens": 40960
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-chutes-qwen3-32b-tee"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-chutes-qwen3-5-397b-a17b-tee",
+    "displayName": "Qwen3.5 397B A17B TEE (Chutes)",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "chutes",
+    "modelProvider": "chutes",
+    "modelId": "chutes-qwen3.5-397b-a17b-tee",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": false,
+      "teeVendor": "chutes",
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.45,
+      "pricePer1mOutputTokensUsd": 3,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "chutes-qwen3.5-397b-a17b-tee",
+      "maxContextTokens": 262144
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-chutes-qwen3-5-397b-a17b-tee"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-chutes-qwen3-6-27b-tee",
+    "displayName": "Qwen3.6 27B TEE (Chutes)",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "chutes",
+    "modelProvider": "chutes",
+    "modelId": "chutes-qwen3.6-27b-tee",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": true,
+      "e2ee": false,
+      "teeVendor": "chutes",
+      "signedOutputs": true,
+      "noDataRetention": true
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 0.3,
+      "pricePer1mOutputTokensUsd": 2,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "chutes-qwen3.6-27b-tee",
+      "maxContextTokens": 262144
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-chutes-qwen3-6-27b-tee"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
     "spawnWorker": true,
     "providerId": "market-phala-gemma-4-26b-a4b-uncensored",
     "displayName": "Phala Gemma 4 26B Uncensored",
     "endpointType": "http",
-    "endpoint": "http://127.0.0.1:9113",
+    "endpoint": "http://127.0.0.1:9112",
     "specializations": ["inference", "text"],
     "supportedLanguages": ["text"],
     "supportedFrameworks": ["openai_compatible"],
@@ -6638,7 +7258,7 @@
     "providerId": "market-grok-4-5",
     "displayName": "Grok 4.5",
     "endpointType": "http",
-    "endpoint": "http://127.0.0.1:9114",
+    "endpoint": "http://127.0.0.1:9113",
     "specializations": ["inference", "text"],
     "supportedLanguages": ["text"],
     "supportedFrameworks": ["openai_compatible"],
@@ -6696,11 +7316,321 @@
     }
   },
   {
+    "spawnWorker": false,
+    "providerId": "market-grok-4-3",
+    "displayName": "Grok 4.3",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "xai",
+    "modelProvider": "xai",
+    "modelId": "grok-4.3",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "teeVendor": "xai",
+      "signedOutputs": false,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1.5,
+      "pricePer1mOutputTokensUsd": 4.5,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "grok-4.3",
+      "maxContextTokens": 1000000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-grok-4-3"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-grok-4-20-0309-reasoning",
+    "displayName": "Grok 4.20 Reasoning",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "xai",
+    "modelProvider": "xai",
+    "modelId": "grok-4.20-0309-reasoning",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "teeVendor": "xai",
+      "signedOutputs": false,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1.42,
+      "pricePer1mOutputTokensUsd": 2.83,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "grok-4.20-0309-reasoning",
+      "maxContextTokens": 2000000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-grok-4-20-0309-reasoning"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-grok-4-20-0309-non-reasoning",
+    "displayName": "Grok 4.20",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "xai",
+    "modelProvider": "xai",
+    "modelId": "grok-4.20-0309-non-reasoning",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "teeVendor": "xai",
+      "signedOutputs": false,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1.42,
+      "pricePer1mOutputTokensUsd": 2.83,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "grok-4.20-0309-non-reasoning",
+      "maxContextTokens": 2000000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-grok-4-20-0309-non-reasoning"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-grok-4-20-multi-agent-0309",
+    "displayName": "Grok 4.20 Multi-Agent",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "xai",
+    "modelProvider": "xai",
+    "modelId": "grok-4.20-multi-agent-0309",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "teeVendor": "xai",
+      "signedOutputs": false,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1.42,
+      "pricePer1mOutputTokensUsd": 2.83,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "grok-4.20-multi-agent-0309",
+      "maxContextTokens": 2000000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-grok-4-20-multi-agent-0309"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
+    "spawnWorker": false,
+    "providerId": "market-grok-build-0-1",
+    "displayName": "Grok Build 0.1",
+    "endpointType": "http",
+    "endpoint": "http://127.0.0.1:9200",
+    "specializations": ["inference", "text"],
+    "supportedLanguages": ["text"],
+    "supportedFrameworks": ["openai_compatible"],
+    "modelFamily": "xai",
+    "modelProvider": "xai",
+    "modelId": "grok-build-0.1",
+    "outputTypes": ["text", "json"],
+    "agentFramework": "openai_compatible",
+    "marketplaceOfferStatus": "active",
+    "verification": {
+      "status": "verified",
+      "apiVerified": true,
+      "frameworkVerified": true,
+      "modelVerified": true,
+      "notes": ["catalog-synced inference seller"]
+    },
+    "privacy": {
+      "teeAttested": false,
+      "e2ee": false,
+      "teeVendor": "xai",
+      "signedOutputs": false,
+      "noDataRetention": false
+    },
+    "pricing": {
+      "mode": "token_metered",
+      "currency": "USD",
+      "pricePer1mInputTokensUsd": 1,
+      "pricePer1mOutputTokensUsd": 2,
+      "minimumChargeUsd": 0.01,
+      "rateCardVersion": "catalog-v1",
+      "upstreamModelId": "grok-build-0.1",
+      "maxContextTokens": 500000
+    },
+    "pricePerTaskUsd": 0.01,
+    "maxConcurrency": 4,
+    "status": "available",
+    "auth": {
+      "type": "bearer",
+      "token": "bossraid-market-market-grok-build-0-1"
+    },
+    "reputation": {
+      "globalScore": 0.84,
+      "responsivenessScore": 0.86,
+      "validityScore": 0.83,
+      "qualityScore": 0.85,
+      "timeoutRate": 0.04,
+      "duplicateRate": 0.01,
+      "specializationScores": {
+        "inference": 0.9
+      },
+      "p50LatencyMs": 2400,
+      "p95LatencyMs": 6500,
+      "totalRaids": 48,
+      "totalSuccessfulRaids": 44
+    }
+  },
+  {
     "spawnWorker": true,
     "providerId": "market-grok-4-1-fast-reasoning",
     "displayName": "Grok 4.1 Fast Reasoning",
     "endpointType": "http",
-    "endpoint": "http://127.0.0.1:9115",
+    "endpoint": "http://127.0.0.1:9114",
     "specializations": ["inference", "text"],
     "supportedLanguages": ["text"],
     "supportedFrameworks": ["openai_compatible"],
@@ -6824,7 +7754,7 @@
     "providerId": "market-glm-4-7",
     "displayName": "GLM 4.7 (Z.ai Coding Plan)",
     "endpointType": "http",
-    "endpoint": "http://127.0.0.1:9116",
+    "endpoint": "http://127.0.0.1:9115",
     "specializations": ["inference", "text"],
     "supportedLanguages": ["text"],
     "supportedFrameworks": ["openai_compatible"],
@@ -6886,7 +7816,7 @@
     "providerId": "market-glm-5-turbo",
     "displayName": "GLM 5 Turbo (Z.ai Coding Plan)",
     "endpointType": "http",
-    "endpoint": "http://127.0.0.1:9117",
+    "endpoint": "http://127.0.0.1:9116",
     "specializations": ["inference", "text"],
     "supportedLanguages": ["text"],
     "supportedFrameworks": ["openai_compatible"],
@@ -7010,7 +7940,7 @@
     "providerId": "market-anthropic-claude-opus-4-5",
     "displayName": "Claude Opus 4.5 (Anthropic)",
     "endpointType": "http",
-    "endpoint": "http://127.0.0.1:9118",
+    "endpoint": "http://127.0.0.1:9117",
     "specializations": ["inference", "text"],
     "supportedLanguages": ["text"],
     "supportedFrameworks": ["openai_compatible"],
@@ -7072,7 +8002,7 @@
     "providerId": "market-anthropic-claude-sonnet-4-5",
     "displayName": "Claude Sonnet 4.5 (Anthropic)",
     "endpointType": "http",
-    "endpoint": "http://127.0.0.1:9119",
+    "endpoint": "http://127.0.0.1:9118",
     "specializations": ["inference", "text"],
     "supportedLanguages": ["text"],
     "supportedFrameworks": ["openai_compatible"],

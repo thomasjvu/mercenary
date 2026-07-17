@@ -112,11 +112,28 @@ pnpm bossraid sync:inference-catalog
 
 Benchmark prices in `packages/constants/src/marketplace-benchmark.ts` drive `savings_usd` and marketplace discount displays. Catalog-only rows fill discovery when no seller is live.
 
-## Platform seats (xAI / Grok)
+## Platform seats
 
-Operators can publish **platform liquidity** seats (no in-CVM HTTP workers) when `BOSSRAID_XAI_API_KEY` is set and bootstrap runs (`BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1` or `POST /v1/ops/platform-liquidity/bootstrap`).
+Operators publish **platform liquidity** seats (no in-CVM HTTP workers) when matching `BOSSRAID_*_API_KEY` values are set and bootstrap runs (`BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1` or `POST /v1/ops/platform-liquidity/bootstrap`).
 
-Default featured xAI model ids (wire id = request `model`):
+| Upstream      | Env key                      | Seat set                                                                                                                                                                                                        |
+| ------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Venice**    | `BOSSRAID_VENICE_API_KEY`    | **All** text models from the live Venice catalog ([docs](https://docs.venice.ai/models/overview)) — request `model` is the Venice id (e.g. `google-gemma-4-31b-it`, `openai-gpt-55`, `deepseek-v3.2`, `e2ee-*`) |
+| **Chutes**    | `BOSSRAID_CHUTES_API_KEY`    | **All** LLMs from `https://llm.chutes.ai/v1/models` ([browse](https://chutes.ai/models?type=llm)) — request `model` is `chutes-<slug>` (e.g. `chutes-deepseek-v3.2-tee`, `chutes-qwen3-32b-tee`)                |
+| **xAI**       | `BOSSRAID_XAI_API_KEY`       | Curated Grok / Grok Build ids (table below)                                                                                                                                                                     |
+| **Anthropic** | `BOSSRAID_ANTHROPIC_API_KEY` | `anthropic/claude-opus-4-5`, `anthropic/claude-sonnet-4-5`, `anthropic/claude-haiku-4-5`                                                                                                                        |
+
+Refresh catalog rates and Chutes/Venice lists:
+
+```bash
+pnpm bossraid sync:inference-catalog
+```
+
+Live provider ids look like `platform-venice-google-gemma-4-31b-it` or `platform-chutes-chutes-qwen3-32b-tee`. Discover with `GET /v1/markets?model_provider=venice` (or `chutes` / `xai`) and `GET /v1/models`.
+
+Phala compose defaults to **platform-only** seed (`examples/inference/platform-only.providers.json`) and retires demo workers `dottie` / `riko` / `gamma`. Optional game-raid workers use compose profile `game-providers`.
+
+### xAI / Grok model ids
 
 | Model id                       | Notes                   |
 | ------------------------------ | ----------------------- |
@@ -128,10 +145,6 @@ Default featured xAI model ids (wire id = request `model`):
 | `grok-build-0.1`               | Grok Build coding model |
 | `grok-4-1-fast-reasoning`      | Fast reasoning          |
 | `grok-4-1-fast-non-reasoning`  | Fast non-reasoning      |
-
-Live provider ids look like `platform-xai-grok-4-5` (slug of model id). List them with `GET /v1/providers` or marketplace discovery.
-
-Phala compose defaults to **platform-only** seed (`examples/inference/platform-only.providers.json`) and retires demo workers `dottie` / `riko` / `gamma`. Optional game-raid workers use compose profile `game-providers`.
 
 ### Reasoning effort
 

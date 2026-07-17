@@ -1,11 +1,22 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  PLATFORM_LIQUIDITY_FULL_CATALOG_PROVIDERS,
   PLATFORM_LIQUIDITY_WALLET,
   bootstrapPlatformLiquidity,
   listPlatformLiquidityCandidates,
+  listPlatformLiquidityModelIds,
   resolveHostedUpstreamApiKey,
 } from './platform-liquidity.js';
+
+test('listPlatformLiquidityModelIds includes full Venice + Chutes catalogs', () => {
+  const ids = listPlatformLiquidityModelIds();
+  assert.ok(ids.includes('grok-4.5'));
+  assert.ok(ids.includes('google-gemma-4-31b-it'));
+  assert.ok(ids.some((id) => id.startsWith('chutes-')));
+  assert.ok(ids.length >= 50);
+  assert.deepEqual([...PLATFORM_LIQUIDITY_FULL_CATALOG_PROVIDERS].sort(), ['chutes', 'venice']);
+});
 
 test('listPlatformLiquidityCandidates marks keys from env', () => {
   const candidates = listPlatformLiquidityCandidates({
@@ -14,10 +25,12 @@ test('listPlatformLiquidityCandidates marks keys from env', () => {
   const anthropic = candidates.filter((entry) => entry.upstream === 'anthropic');
   assert.ok(anthropic.length >= 1);
   assert.ok(anthropic.every((entry) => entry.hasPlatformKey));
-  const venice = candidates.find((entry) => entry.upstream === 'venice');
-  if (venice) {
-    assert.equal(venice.hasPlatformKey, false);
-  }
+  const venice = candidates.filter((entry) => entry.upstream === 'venice');
+  assert.ok(venice.length >= 50);
+  assert.ok(venice.every((entry) => entry.hasPlatformKey === false));
+  const chutes = candidates.filter((entry) => entry.upstream === 'chutes');
+  assert.ok(chutes.length >= 1);
+  assert.ok(chutes.every((entry) => entry.hasPlatformKey === false));
 });
 
 test('resolveHostedUpstreamApiKey falls back to platform env key', () => {
@@ -41,6 +54,9 @@ test('bootstrapPlatformLiquidity skips models without platform keys', async () =
         upserted.push(id);
         return { providerId: id };
       },
+      async removeRegisteredProvider() {
+        return false;
+      },
     } as never,
     env: {},
   });
@@ -58,13 +74,19 @@ test('bootstrapPlatformLiquidity publishes when platform keys present', async ()
         upserted.push(id);
         return { providerId: id };
       },
+      async removeRegisteredProvider() {
+        return false;
+      },
     } as never,
     env: {
       BOSSRAID_ANTHROPIC_API_KEY: 'sk-ant-test',
       BOSSRAID_VENICE_API_KEY: 'vn_test',
+      BOSSRAID_CHUTES_API_KEY: 'ch_test',
     },
   });
-  assert.ok(result.published.length >= 1);
+  assert.ok(result.published.length >= 50);
   assert.ok(result.published.every((entry) => entry.providerId.startsWith('platform-')));
-  assert.ok(upserted.length >= 1);
+  assert.ok(result.published.some((entry) => entry.upstream === 'venice'));
+  assert.ok(result.published.some((entry) => entry.upstream === 'chutes'));
+  assert.ok(upserted.length >= 50);
 });

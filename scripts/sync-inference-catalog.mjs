@@ -63,7 +63,11 @@ const NEAR_MODELS = [
   },
 ];
 
-const CHUTES_MODELS = [
+/**
+ * Fallback Chutes LLM seats when https://llm.chutes.ai/v1/models is unreachable.
+ * Live sync prefers the OpenAI-compatible list (see fetchChutesLlmModels).
+ */
+const CHUTES_MODELS_FALLBACK = [
   {
     modelId: 'tee-qwen3-5-122b-chutes',
     displayName: 'TEE Qwen3.5 122B (Chutes)',
@@ -125,6 +129,73 @@ const CHUTES_MODELS = [
     noDataRetention: true,
   },
 ];
+
+/** Boss Raid catalog id for a Chutes upstream model path (org/name). */
+function chutesCatalogModelId(upstreamId) {
+  const leaf = String(upstreamId).split('/').pop() || String(upstreamId);
+  const slug = leaf
+    .toLowerCase()
+    .replace(/[^a-z0-9.]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return `chutes-${slug}`;
+}
+
+function chutesDisplayName(upstreamId) {
+  const leaf = String(upstreamId).split('/').pop() || String(upstreamId);
+  return `${leaf.replace(/-/g, ' ')} (Chutes)`;
+}
+
+/**
+ * Live Chutes OpenAI model list (LLM chat). Source: https://llm.chutes.ai/v1/models
+ * @see https://chutes.ai/models?type=llm
+ */
+async function fetchChutesLlmModels() {
+  const base =
+    process.env.BOSSRAID_CHUTES_LLM_BASE?.trim().replace(/\/+$/u, '') || 'https://llm.chutes.ai/v1';
+  const response = await fetch(`${base}/models`, {
+    headers: { accept: 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error(`Chutes models request failed: ${response.status}`);
+  }
+  const payload = await response.json();
+  const rows = payload.data ?? [];
+  return rows
+    .map((model) => {
+      const upstream = model.id;
+      if (!upstream || typeof upstream !== 'string') {
+        return null;
+      }
+      const price = model.price ?? {};
+      const pricing = model.pricing ?? {};
+      const inputPer1mUsd =
+        Number(price.input?.usd ?? pricing.prompt ?? pricing.input ?? 0.3) || 0.3;
+      const outputPer1mUsd =
+        Number(price.output?.usd ?? pricing.completion ?? pricing.output ?? 1.2) || 1.2;
+      const maxContextTokens =
+        Number(model.max_model_len ?? model.context_len ?? model.context_length ?? 128_000) ||
+        128_000;
+      const tee = /tee/i.test(upstream);
+      return {
+        modelId: chutesCatalogModelId(upstream),
+        displayName: chutesDisplayName(upstream),
+        modelProvider: 'chutes',
+        attestationVendor: 'chutes',
+        upstreamModelId: upstream,
+        inputPer1mUsd,
+        outputPer1mUsd,
+        maxContextTokens,
+        privacy: tee ? 'tee' : 'standard',
+        teeAttested: tee,
+        e2ee: false,
+        signedOutputs: true,
+        noDataRetention: true,
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => left.modelId.localeCompare(right.modelId));
+}
 
 const PHALA_MODELS = [
   {
@@ -255,6 +326,81 @@ const XAI_MODELS = [
     upstream: 'grok-4.5',
     inputPer1mUsd: 2,
     outputPer1mUsd: 6,
+    maxContextTokens: 500_000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+    signedOutputs: false,
+    noDataRetention: false,
+  },
+  {
+    modelId: 'grok-4.3',
+    displayName: 'Grok 4.3',
+    modelProvider: 'xai',
+    attestationVendor: 'xai',
+    upstream: 'grok-4.3',
+    inputPer1mUsd: 1.5,
+    outputPer1mUsd: 4.5,
+    maxContextTokens: 1_000_000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+    signedOutputs: false,
+    noDataRetention: false,
+  },
+  {
+    modelId: 'grok-4.20-0309-reasoning',
+    displayName: 'Grok 4.20 Reasoning',
+    modelProvider: 'xai',
+    attestationVendor: 'xai',
+    upstream: 'grok-4.20-0309-reasoning',
+    inputPer1mUsd: 1.42,
+    outputPer1mUsd: 2.83,
+    maxContextTokens: 2_000_000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+    signedOutputs: false,
+    noDataRetention: false,
+  },
+  {
+    modelId: 'grok-4.20-0309-non-reasoning',
+    displayName: 'Grok 4.20',
+    modelProvider: 'xai',
+    attestationVendor: 'xai',
+    upstream: 'grok-4.20-0309-non-reasoning',
+    inputPer1mUsd: 1.42,
+    outputPer1mUsd: 2.83,
+    maxContextTokens: 2_000_000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+    signedOutputs: false,
+    noDataRetention: false,
+  },
+  {
+    modelId: 'grok-4.20-multi-agent-0309',
+    displayName: 'Grok 4.20 Multi-Agent',
+    modelProvider: 'xai',
+    attestationVendor: 'xai',
+    upstream: 'grok-4.20-multi-agent-0309',
+    inputPer1mUsd: 1.42,
+    outputPer1mUsd: 2.83,
+    maxContextTokens: 2_000_000,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+    signedOutputs: false,
+    noDataRetention: false,
+  },
+  {
+    modelId: 'grok-build-0.1',
+    displayName: 'Grok Build 0.1',
+    modelProvider: 'xai',
+    attestationVendor: 'xai',
+    upstream: 'grok-build-0.1',
+    inputPer1mUsd: 1,
+    outputPer1mUsd: 2,
     maxContextTokens: 500_000,
     privacy: 'standard',
     teeAttested: false,
@@ -478,7 +624,7 @@ function writeCatalogPricingJson(catalog) {
       venice: 'https://api.venice.ai/api/v1/models (public, no API key)',
       redpill: 'scripts/sync-inference-catalog.mjs static rates',
       near: 'scripts/sync-inference-catalog.mjs static rates',
-      chutes: 'scripts/sync-inference-catalog.mjs static rates (llm.chutes.ai)',
+      chutes: 'https://llm.chutes.ai/v1/models (public OpenAI list; fallback static)',
       phala: 'scripts/sync-inference-catalog.mjs static rates',
       xai: 'scripts/sync-inference-catalog.mjs static rates (api.x.ai)',
       zai: 'scripts/sync-inference-catalog.mjs static rates (api.z.ai coding paas)',
@@ -563,7 +709,16 @@ async function main() {
   const veniceModels = await fetchVeniceTextModels();
   const redpillModels = normalizeStaticModels(REDPILL_MODELS);
   const nearModels = normalizeStaticModels(NEAR_MODELS);
-  const chutesModels = normalizeStaticModels(CHUTES_MODELS);
+  let chutesModels;
+  try {
+    chutesModels = await fetchChutesLlmModels();
+    console.log(`[catalog] fetched ${chutesModels.length} Chutes LLM models from llm.chutes.ai`);
+  } catch (error) {
+    console.warn(
+      `[catalog] Chutes live list failed (${error instanceof Error ? error.message : error}); using fallback`
+    );
+    chutesModels = normalizeStaticModels(CHUTES_MODELS_FALLBACK);
+  }
   const phalaModels = normalizeStaticModels(PHALA_MODELS);
   const xaiModels = normalizeStaticModels(XAI_MODELS);
   const zaiModels = normalizeStaticModels(ZAI_MODELS);
