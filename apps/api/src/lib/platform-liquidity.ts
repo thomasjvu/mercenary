@@ -35,6 +35,7 @@ export const PLATFORM_LIQUIDITY_FEATURED_MODEL_IDS = [
  * @see https://cloud.near.ai/#models
  * @see https://phala.com/models
  * @see https://redpill.ai/models
+ * @see https://www.darkbloom.dev/#api
  */
 export const PLATFORM_LIQUIDITY_FULL_CATALOG_PROVIDERS = [
   'venice',
@@ -42,6 +43,7 @@ export const PLATFORM_LIQUIDITY_FULL_CATALOG_PROVIDERS = [
   'near',
   'phala',
   'redpill',
+  'darkbloom',
 ] as const satisfies readonly UpstreamProviderId[];
 
 /** Synthetic externalRef for platform-owned hosted seats (uses BOSSRAID_*_API_KEY). */

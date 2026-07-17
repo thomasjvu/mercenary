@@ -18,6 +18,8 @@ const PROVIDER_BRANDS: Record<string, ProviderBrand> = {
   zai: { icon: 'simple-icons:openai', label: 'Z.ai' },
   glm: { icon: 'simple-icons:openai', label: 'GLM' },
   chutes: { icon: 'simple-icons:openstack', label: 'Chutes' },
+  darkbloom: { icon: 'simple-icons:apple', label: 'Darkbloom' },
+  near: { icon: 'simple-icons:near', label: 'NEAR AI' },
   deepseek: { icon: 'simple-icons:deepseek', label: 'DeepSeek' },
   qwen: { icon: 'simple-icons:alibabacloud', label: 'Qwen' },
   groq: { icon: 'simple-icons:meta', label: 'Groq' },

@@ -17,9 +17,11 @@ test('listPlatformLiquidityModelIds includes full marketplace catalogs', () => {
   assert.ok(ids.some((id) => id.startsWith('near/')));
   assert.ok(ids.some((id) => id.startsWith('redpill/')));
   assert.ok(ids.some((id) => id.startsWith('phala/')));
+  assert.ok(ids.some((id) => id.startsWith('darkbloom/')));
   assert.ok(ids.length >= 100);
   assert.deepEqual([...PLATFORM_LIQUIDITY_FULL_CATALOG_PROVIDERS].sort(), [
     'chutes',
+    'darkbloom',
     'near',
     'phala',
     'redpill',

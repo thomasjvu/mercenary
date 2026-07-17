@@ -6,7 +6,8 @@ export type UpstreamTeeVendor =
   | 'phala'
   | 'xai'
   | 'zai'
-  | 'anthropic';
+  | 'anthropic'
+  | 'darkbloom';
 
 export type UpstreamTeeCheck = {
   id: string;

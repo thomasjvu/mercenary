@@ -7,6 +7,7 @@ export const UPSTREAM_PROVIDER_IDS = [
   'xai',
   'zai',
   'anthropic',
+  'darkbloom',
 ] as const;
 
 export type UpstreamProviderId = (typeof UPSTREAM_PROVIDER_IDS)[number];
@@ -78,6 +79,15 @@ export const UPSTREAM_PROVIDER_CONFIG: Record<UpstreamProviderId, UpstreamProvid
     // OpenAI-compatible surface for Claude models (Messages API also available).
     upstreamBase: 'https://api.anthropic.com/v1',
     attestationVendor: 'anthropic',
+    supportsE2ee: false,
+  },
+  darkbloom: {
+    id: 'darkbloom',
+    displayName: 'Darkbloom',
+    // Private inference on verified Apple Silicon. OpenAI-compatible.
+    // @see https://www.darkbloom.dev/#api
+    upstreamBase: 'https://api.darkbloom.dev/v1',
+    attestationVendor: 'darkbloom',
     supportsE2ee: false,
   },
 };

@@ -123,16 +123,17 @@ Operators publish **platform liquidity** seats (no in-CVM HTTP workers) when mat
 | **NEAR AI**   | `BOSSRAID_NEAR_API_KEY`      | **All** text models from `cloud-api.near.ai` ([browse](https://cloud.near.ai/#models)) — `near/<upstream-id>`                                         |
 | **Phala**     | `BOSSRAID_PHALA_API_KEY`     | **All** TEE chat models ([browse](https://phala.com/models)) — `phala/<upstream-id>`                                                                  |
 | **Redpill**   | `BOSSRAID_REDPILL_API_KEY`   | **All** chat models from `api.redpill.ai` ([browse](https://redpill.ai/models)) — `redpill/<upstream-id>`                                             |
+| **Darkbloom** | `BOSSRAID_DARKBLOOM_API_KEY` | **All** chat models from `api.darkbloom.dev` ([API](https://www.darkbloom.dev/#api)) — `darkbloom/<id>` (e.g. `darkbloom/gemma-4-26b`)                |
 | **xAI**       | `BOSSRAID_XAI_API_KEY`       | Curated Grok / Grok Build ids (table below)                                                                                                           |
 | **Anthropic** | `BOSSRAID_ANTHROPIC_API_KEY` | `anthropic/claude-opus-4-5`, `anthropic/claude-sonnet-4-5`, `anthropic/claude-haiku-4-5`                                                              |
 
-Refresh live catalogs (Venice, Chutes, NEAR, Phala TEE, Redpill) and rates:
+Refresh live catalogs (Venice, Chutes, NEAR, Phala TEE, Redpill, Darkbloom) and rates:
 
 ```bash
 pnpm bossraid sync:inference-catalog
 ```
 
-Live provider ids look like `platform-venice-google-gemma-4-31b-it`, `platform-near-near-zai-org-glm-5-1-fp8`, `platform-phala-phala-gemma-4-26b-a4b-uncensored`. Discover with `GET /v1/markets?model_provider=venice` (or `near` / `phala` / `redpill` / `chutes` / `xai`) and `GET /v1/models`.
+Live provider ids look like `platform-venice-google-gemma-4-31b-it`, `platform-darkbloom-darkbloom-gemma-4-26b`. Discover with `GET /v1/markets?model_provider=venice` (or `near` / `phala` / `redpill` / `chutes` / `darkbloom` / `xai`) and `GET /v1/models`.
 
 Phala compose defaults to **platform-only** seed (`examples/inference/platform-only.providers.json`) and retires demo workers `dottie` / `riko` / `gamma`. Optional game-raid workers use compose profile `game-providers`.
 

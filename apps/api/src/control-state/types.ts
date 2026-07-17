@@ -136,7 +136,8 @@ export type UpstreamProviderKind =
   | 'phala'
   | 'xai'
   | 'zai'
-  | 'anthropic';
+  | 'anthropic'
+  | 'darkbloom';
 
 export type SellerUpstreamConfigEntry = {
   configId: string;

@@ -3,7 +3,16 @@
 export type InferenceCatalogEntry = {
   modelId: string;
   displayName: string;
-  modelProvider: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai' | 'zai' | 'anthropic';
+  modelProvider:
+    | 'venice'
+    | 'phala'
+    | 'redpill'
+    | 'near'
+    | 'chutes'
+    | 'xai'
+    | 'zai'
+    | 'anthropic'
+    | 'darkbloom';
   attestationVendor:
     | 'venice'
     | 'phala'
@@ -12,7 +21,8 @@ export type InferenceCatalogEntry = {
     | 'chutes'
     | 'xai'
     | 'zai'
-    | 'anthropic';
+    | 'anthropic'
+    | 'darkbloom';
   upstreamModelId: string;
   inputPer1mUsd: number;
   outputPer1mUsd: number;
@@ -3310,6 +3320,58 @@ export const INFERENCE_MODEL_CATALOG: InferenceCatalogEntry[] = [
     maxContextTokens: 1048576,
     privacy: 'tee',
     teeAttested: true,
+    e2ee: false,
+  },
+  {
+    modelId: 'darkbloom/gemma-4-26b',
+    displayName: 'Gemma 4 26B (Darkbloom)',
+    modelProvider: 'darkbloom',
+    attestationVendor: 'darkbloom',
+    upstreamModelId: 'gemma-4-26b',
+    inputPer1mUsd: 0.03,
+    outputPer1mUsd: 0.165,
+    maxContextTokens: 131072,
+    privacy: 'private',
+    teeAttested: false,
+    e2ee: false,
+  },
+  {
+    modelId: 'darkbloom/gemma-4-26b-8bit',
+    displayName: 'Gemma 4 26B 8-bit (rollback) (Darkbloom)',
+    modelProvider: 'darkbloom',
+    attestationVendor: 'darkbloom',
+    upstreamModelId: 'gemma-4-26b-8bit',
+    inputPer1mUsd: 0.03,
+    outputPer1mUsd: 0.165,
+    maxContextTokens: 131072,
+    privacy: 'private',
+    teeAttested: false,
+    e2ee: false,
+  },
+  {
+    modelId: 'darkbloom/gemma-4-26b-qat-4bit',
+    displayName: 'Gemma 4 26B (Darkbloom)',
+    modelProvider: 'darkbloom',
+    attestationVendor: 'darkbloom',
+    upstreamModelId: 'gemma-4-26b-qat-4bit',
+    inputPer1mUsd: 0.03,
+    outputPer1mUsd: 0.165,
+    maxContextTokens: 131072,
+    privacy: 'private',
+    teeAttested: false,
+    e2ee: false,
+  },
+  {
+    modelId: 'darkbloom/gpt-oss-20b',
+    displayName: 'GPT-OSS 20B (Darkbloom)',
+    modelProvider: 'darkbloom',
+    attestationVendor: 'darkbloom',
+    upstreamModelId: 'gpt-oss-20b',
+    inputPer1mUsd: 0.015,
+    outputPer1mUsd: 0.07,
+    maxContextTokens: 131072,
+    privacy: 'private',
+    teeAttested: false,
     e2ee: false,
   },
   {

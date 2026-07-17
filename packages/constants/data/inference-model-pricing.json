@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-17T15:51:35.718Z",
+  "generatedAt": "2026-07-17T16:05:42.772Z",
   "source": {
     "venice": "https://api.venice.ai/api/v1/models (public, no API key)",
     "redpill": "https://api.redpill.ai/v1/models (public; fallback static)",
@@ -8,7 +8,8 @@
     "phala": "https://service.redpill.ai/api/models TEE list (Phala cloud; fallback static)",
     "xai": "scripts/sync-inference-catalog.mjs static rates (api.x.ai)",
     "zai": "scripts/sync-inference-catalog.mjs static rates (api.z.ai coding paas)",
-    "anthropic": "scripts/sync-inference-catalog.mjs static rates (api.anthropic.com)"
+    "anthropic": "scripts/sync-inference-catalog.mjs static rates (api.anthropic.com)",
+    "darkbloom": "https://api.darkbloom.dev/v1/models/catalog (public; list rates from darkbloom.dev)"
   },
   "providers": {
     "venice": {
@@ -2819,6 +2820,55 @@
         }
       ]
     },
+    "darkbloom": {
+      "modelCount": 4,
+      "models": [
+        {
+          "modelId": "darkbloom/gemma-4-26b",
+          "displayName": "Gemma 4 26B (Darkbloom)",
+          "upstreamModelId": "gemma-4-26b",
+          "inputPer1mUsd": 0.03,
+          "outputPer1mUsd": 0.165,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 131072,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "darkbloom/gemma-4-26b-8bit",
+          "displayName": "Gemma 4 26B 8-bit (rollback) (Darkbloom)",
+          "upstreamModelId": "gemma-4-26b-8bit",
+          "inputPer1mUsd": 0.03,
+          "outputPer1mUsd": 0.165,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 131072,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "darkbloom/gemma-4-26b-qat-4bit",
+          "displayName": "Gemma 4 26B (Darkbloom)",
+          "upstreamModelId": "gemma-4-26b-qat-4bit",
+          "inputPer1mUsd": 0.03,
+          "outputPer1mUsd": 0.165,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 131072,
+          "teeAttested": false,
+          "e2ee": false
+        },
+        {
+          "modelId": "darkbloom/gpt-oss-20b",
+          "displayName": "GPT-OSS 20B (Darkbloom)",
+          "upstreamModelId": "gpt-oss-20b",
+          "inputPer1mUsd": 0.015,
+          "outputPer1mUsd": 0.07,
+          "referenceTaskUsd": 0.01,
+          "maxContextTokens": 131072,
+          "teeAttested": false,
+          "e2ee": false
+        }
+      ]
+    },
     "xai": {
       "modelCount": 8,
       "models": [
@@ -3269,6 +3319,46 @@
       "outputPer1mUsd": 15,
       "referenceTaskUsd": 0.0184,
       "maxContextTokens": 1000000
+    },
+    {
+      "modelId": "darkbloom/gemma-4-26b",
+      "modelProvider": "darkbloom",
+      "displayName": "Gemma 4 26B (Darkbloom)",
+      "upstreamModelId": "gemma-4-26b",
+      "inputPer1mUsd": 0.03,
+      "outputPer1mUsd": 0.165,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 131072
+    },
+    {
+      "modelId": "darkbloom/gemma-4-26b-8bit",
+      "modelProvider": "darkbloom",
+      "displayName": "Gemma 4 26B 8-bit (rollback) (Darkbloom)",
+      "upstreamModelId": "gemma-4-26b-8bit",
+      "inputPer1mUsd": 0.03,
+      "outputPer1mUsd": 0.165,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 131072
+    },
+    {
+      "modelId": "darkbloom/gemma-4-26b-qat-4bit",
+      "modelProvider": "darkbloom",
+      "displayName": "Gemma 4 26B (Darkbloom)",
+      "upstreamModelId": "gemma-4-26b-qat-4bit",
+      "inputPer1mUsd": 0.03,
+      "outputPer1mUsd": 0.165,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 131072
+    },
+    {
+      "modelId": "darkbloom/gpt-oss-20b",
+      "modelProvider": "darkbloom",
+      "displayName": "GPT-OSS 20B (Darkbloom)",
+      "upstreamModelId": "gpt-oss-20b",
+      "inputPer1mUsd": 0.015,
+      "outputPer1mUsd": 0.07,
+      "referenceTaskUsd": 0.01,
+      "maxContextTokens": 131072
     },
     {
       "modelId": "deepseek-v3.2",

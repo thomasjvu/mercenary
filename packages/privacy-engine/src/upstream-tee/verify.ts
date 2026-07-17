@@ -236,6 +236,22 @@ export function verifyUpstreamAttestationReport(
           },
         ],
       };
+    case 'darkbloom':
+      return {
+        valid: false,
+        vendor: 'darkbloom',
+        modelId: input.modelId,
+        nonce: input.nonce,
+        verifiedAt: new Date().toISOString(),
+        checks: [
+          {
+            id: 'darkbloom_tee_unsupported',
+            passed: false,
+            detail:
+              'Darkbloom network attestation is not yet ingested as Boss Raid upstream TEE reports.',
+          },
+        ],
+      };
   }
 }
 

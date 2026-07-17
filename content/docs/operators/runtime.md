@@ -14,6 +14,7 @@ Verification, deploy, and operator workflows. Env tables: [reference/env.md](../
    - `BOSSRAID_NEAR_API_KEY` → **all** NEAR AI Cloud text models
    - `BOSSRAID_PHALA_API_KEY` → **all** Phala TEE chat models
    - `BOSSRAID_REDPILL_API_KEY` → **all** Redpill chat models
+   - `BOSSRAID_DARKBLOOM_API_KEY` → **all** Darkbloom chat models (Apple Silicon private inference)
    - `BOSSRAID_XAI_API_KEY` → curated Grok models
    - optional Anthropic as documented in [discount-inference.md](../buyers/discount-inference.md#platform-seats)
 

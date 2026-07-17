@@ -14,6 +14,7 @@ const KEY_PREFIX_BY_PROVIDER: Record<UpstreamProviderId, string> = {
   xai: 'xa',
   zai: 'za',
   anthropic: 'an',
+  darkbloom: 'db',
 };
 
 export function buildUpstreamKeyPrefix(provider: UpstreamProviderId, apiKey: string): string {

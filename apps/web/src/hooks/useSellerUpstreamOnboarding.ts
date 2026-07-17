@@ -25,13 +25,17 @@ export const SELLER_PROVIDER_ORDER: UpstreamProviderId[] = [
   'redpill',
   'near',
   'phala',
+  'darkbloom',
 ];
 
 const PLAN_PROVIDERS = new Set<UpstreamProviderId>(['anthropic', 'xai', 'zai', 'chutes']);
+const PRIVATE_NETWORK_PROVIDERS = new Set<UpstreamProviderId>(['darkbloom']);
 
 export function sellerProviderOptionLabel(provider: UpstreamProviderId): string {
   const name = UPSTREAM_PROVIDER_CONFIG[provider].displayName;
-  return PLAN_PROVIDERS.has(provider) ? `${name} · plan` : `${name} · TEE market`;
+  if (PLAN_PROVIDERS.has(provider)) return `${name} · plan`;
+  if (PRIVATE_NETWORK_PROVIDERS.has(provider)) return `${name} · private network`;
+  return `${name} · TEE market`;
 }
 
 export type SellerOfferLane = 'chat' | 'harness';

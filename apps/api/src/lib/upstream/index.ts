@@ -40,6 +40,11 @@ import {
   fetchZaiUpstreamModels,
   probeZaiChatCompletion,
 } from './zai.js';
+import {
+  fetchDarkbloomAttestationReport,
+  fetchDarkbloomUpstreamModels,
+  probeDarkbloomChatCompletion,
+} from './darkbloom.js';
 import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
 
 export type {
@@ -75,6 +80,8 @@ export async function fetchUpstreamModels(
       return fetchZaiUpstreamModels(apiKey);
     case 'anthropic':
       return fetchAnthropicUpstreamModels(apiKey);
+    case 'darkbloom':
+      return fetchDarkbloomUpstreamModels(apiKey);
   }
 }
 
@@ -108,6 +115,8 @@ export async function probeUpstreamChatCompletion(input: {
       return probeZaiChatCompletion(input);
     case 'anthropic':
       return probeAnthropicChatCompletion(input);
+    case 'darkbloom':
+      return probeDarkbloomChatCompletion(input);
   }
 }
 
@@ -143,5 +152,7 @@ export async function fetchUpstreamAttestationReport(input: {
       return fetchZaiAttestationReport(input);
     case 'anthropic':
       return fetchAnthropicAttestationReport(input);
+    case 'darkbloom':
+      return fetchDarkbloomAttestationReport(input);
   }
 }

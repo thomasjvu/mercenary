@@ -158,12 +158,13 @@ export function harnessKindForUpstream(provider: UpstreamProviderId): HarnessKin
   if (provider === 'zai') return 'glm';
   if (provider === 'chutes') return 'chutes';
   if (provider === 'anthropic') return 'claude_code';
-  // OpenAI-compatible hosted keys (redpill/near/phala/venice) use codex-style tool loop.
+  // OpenAI-compatible hosted keys use codex-style tool loop.
   if (
     provider === 'venice' ||
     provider === 'redpill' ||
     provider === 'near' ||
-    provider === 'phala'
+    provider === 'phala' ||
+    provider === 'darkbloom'
   ) {
     return 'codex';
   }
@@ -181,7 +182,8 @@ function resolveAgentFrameworkForUpstream(
     provider === 'venice' ||
     provider === 'redpill' ||
     provider === 'near' ||
-    provider === 'phala'
+    provider === 'phala' ||
+    provider === 'darkbloom'
   ) {
     return 'codex';
   }

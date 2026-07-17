@@ -132,6 +132,7 @@ export function isValidSellerUpstreamConfigEntry(
       provider === 'phala' ||
       provider === 'xai' ||
       provider === 'zai' ||
-      provider === 'anthropic')
+      provider === 'anthropic' ||
+      provider === 'darkbloom')
   );
 }

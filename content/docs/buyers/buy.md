@@ -50,7 +50,7 @@ curl http://127.0.0.1:8787/v1/inference/chat/completions \
 
 ### Full marketplace model catalogs
 
-With platform liquidity and the matching `BOSSRAID_*_API_KEY`, discount inference can route full catalogs for **Venice**, **Chutes**, **NEAR AI**, **Phala**, and **Redpill** (plus curated xAI / Anthropic). Discover live offers with `GET /v1/markets?model_provider=venice` (or `chutes`, `near`, `phala`, `redpill`). Details: [discount-inference.md](discount-inference.md#platform-seats).
+With platform liquidity and the matching `BOSSRAID_*_API_KEY`, discount inference can route full catalogs for **Venice**, **Chutes**, **NEAR AI**, **Phala**, **Redpill**, and **Darkbloom** (plus curated xAI / Anthropic). Discover live offers with `GET /v1/markets?model_provider=venice` (or `chutes`, `near`, `phala`, `redpill`, `darkbloom`). Details: [discount-inference.md](discount-inference.md#platform-seats).
 
 ### xAI Grok + reasoning effort
 
