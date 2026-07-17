@@ -87,16 +87,18 @@ pnpm bossraid bootstrap:onchain
 
 This deploys both contracts, writes the deployment manifest, writes the settlement env file, and prints the next manual step.
 
-## Security notes (audit 2026-07)
+## Security notes (audit 2026-07 + QuillShield)
 
 Hardened in-repo contracts:
 
 - **BossJobEscrow**: `submit` / `complete` require `block.timestamp < expiresAt` (expiry is a hard stop; `claimRefund` after expiry).
-- **BossBountyEscrow**: `acceptAward` is **poster-only** (operator has `acceptAwardOnBehalf`); after `acceptDeadline`, `claimPayout` is permissionless to the provider. Awards store `bountyId`; delivery must be by `deliveryDeadline`.
+- **Fund CEI**: status / remaining budget updated **before** token pull (blocks callback double-fund).
+- **TokenTransfer**: SafeERC20-style optional return + `pullExact` (rejects fee-on-transfer / amount mismatch).
+- **BossBountyEscrow**: `acceptAward` is **poster-only** (operator has `acceptAwardOnBehalf`); after `acceptDeadline`, `claimPayout` is permissionless to the provider. Awards store `bountyId`; delivery by `deliveryDeadline`; `forfeitAward` after delivery window for undelivered Pending awards.
 - **RaidRegistry**: `linkChildJob` reverts after finalize.
 - Constructors reject zero token / operator addresses.
 
-Redeploy is required for production bytecode after these changes.
+Designed for standard 1:1 ERC20 (USDG/USDC-class). Redeploy after bytecode changes.
 
 ## Tests
 

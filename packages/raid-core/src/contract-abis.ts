@@ -88,6 +88,13 @@ export const BOUNTY_ESCROW_ABI = [
   },
   {
     type: 'function',
+    name: 'forfeitAward',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'awardId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
     name: 'refundUnawarded',
     stateMutability: 'nonpayable',
     inputs: [{ name: 'bountyId', type: 'uint256' }],

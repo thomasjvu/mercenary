@@ -39,11 +39,13 @@ function normalizePrivateKey(value: string): Hex {
 }
 
 async function compileContracts(projectRoot: string): Promise<ContractsOutput> {
-  const [raidRegistrySource, bossJobEscrowSource, bossBountyEscrowSource] = await Promise.all([
-    readFile(resolve(projectRoot, 'src/RaidRegistry.sol'), 'utf8'),
-    readFile(resolve(projectRoot, 'src/BossJobEscrow.sol'), 'utf8'),
-    readFile(resolve(projectRoot, 'src/BossBountyEscrow.sol'), 'utf8'),
-  ]);
+  const [raidRegistrySource, bossJobEscrowSource, bossBountyEscrowSource, tokenTransferSource] =
+    await Promise.all([
+      readFile(resolve(projectRoot, 'src/RaidRegistry.sol'), 'utf8'),
+      readFile(resolve(projectRoot, 'src/BossJobEscrow.sol'), 'utf8'),
+      readFile(resolve(projectRoot, 'src/BossBountyEscrow.sol'), 'utf8'),
+      readFile(resolve(projectRoot, 'src/TokenTransfer.sol'), 'utf8'),
+    ]);
 
   const input = {
     language: 'Solidity',
@@ -51,6 +53,7 @@ async function compileContracts(projectRoot: string): Promise<ContractsOutput> {
       'RaidRegistry.sol': { content: raidRegistrySource },
       'BossJobEscrow.sol': { content: bossJobEscrowSource },
       'BossBountyEscrow.sol': { content: bossBountyEscrowSource },
+      'TokenTransfer.sol': { content: tokenTransferSource },
     },
     settings: {
       outputSelection: {

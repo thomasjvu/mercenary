@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-interface IERC20Minimal {
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
-    function transfer(address to, uint256 value) external returns (bool);
-}
+import {IERC20Escrow, TokenTransfer} from "./TokenTransfer.sol";
 
 contract BossJobEscrow {
+    using TokenTransfer for IERC20Escrow;
+
     enum Status {
         Open,
         Funded,
@@ -27,7 +26,7 @@ contract BossJobEscrow {
         string description;
     }
 
-    IERC20Minimal public immutable token;
+    IERC20Escrow public immutable token;
     uint256 public nextJobId;
     mapping(uint256 => Job) public jobs;
 
@@ -43,7 +42,7 @@ contract BossJobEscrow {
 
     constructor(address token_) {
         require(token_ != address(0), "token required");
-        token = IERC20Minimal(token_);
+        token = IERC20Escrow(token_);
     }
 
     function createJob(
@@ -98,10 +97,14 @@ contract BossJobEscrow {
         require(job.provider != address(0), "provider missing");
         require(job.budget == expectedBudget, "budget changed");
         require(block.timestamp < job.expiresAt, "expired");
-        require(token.transferFrom(msg.sender, address(this), job.budget), "transfer failed");
 
+        // Effects before interactions (CEI): block re-entrant double-fund.
         job.status = Status.Funded;
-        emit JobFunded(jobId, job.budget);
+        uint256 amount = job.budget;
+        emit JobFunded(jobId, amount);
+
+        // Exact pull rejects fee-on-transfer; safe call handles missing return values.
+        token.pullExact(msg.sender, amount);
     }
 
     function submit(uint256 jobId, bytes32 deliverableHash) external {
@@ -119,13 +122,13 @@ contract BossJobEscrow {
         Job storage job = jobs[jobId];
         require(msg.sender == job.evaluator, "only evaluator");
         require(job.status == Status.Submitted, "not submitted");
-        // Expiry is a hard stop: after expiresAt only claimRefund may move funds to client.
         require(block.timestamp < job.expiresAt, "expired");
 
+        uint256 amount = job.budget;
         job.status = Status.Completed;
-        require(token.transfer(job.provider, job.budget), "payout failed");
+        token.safeTransfer(job.provider, amount);
         emit JobCompleted(jobId, msg.sender, reason);
-        emit PaymentReleased(jobId, job.provider, job.budget);
+        emit PaymentReleased(jobId, job.provider, amount);
     }
 
     function reject(uint256 jobId, bytes32 reason) external {
@@ -139,11 +142,12 @@ contract BossJobEscrow {
 
         require(msg.sender == job.evaluator, "only evaluator");
         require(job.status == Status.Funded || job.status == Status.Submitted, "bad status");
-        // Evaluator may still refund client after expiry (safer than paying provider post-window).
+
+        uint256 amount = job.budget;
         job.status = Status.Rejected;
-        require(token.transfer(job.client, job.budget), "refund failed");
+        token.safeTransfer(job.client, amount);
         emit JobRejected(jobId, msg.sender, reason);
-        emit Refunded(jobId, job.client, job.budget);
+        emit Refunded(jobId, job.client, amount);
     }
 
     function claimRefund(uint256 jobId) external {
@@ -151,10 +155,11 @@ contract BossJobEscrow {
         require(block.timestamp >= job.expiresAt, "not expired");
         require(job.status == Status.Funded || job.status == Status.Submitted, "bad status");
 
+        uint256 amount = job.budget;
         job.status = Status.Expired;
-        if (job.budget > 0) {
-            require(token.transfer(job.client, job.budget), "refund failed");
-            emit Refunded(jobId, job.client, job.budget);
+        if (amount > 0) {
+            token.safeTransfer(job.client, amount);
+            emit Refunded(jobId, job.client, amount);
         }
     }
 }

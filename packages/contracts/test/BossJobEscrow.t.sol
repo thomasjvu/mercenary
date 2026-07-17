@@ -4,6 +4,8 @@ pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 import {BossJobEscrow} from "../src/BossJobEscrow.sol";
 import {MockERC20} from "./MockERC20.sol";
+import {ReentrantToken} from "./ReentrantToken.sol";
+import {FeeOnTransferToken} from "./FeeOnTransferToken.sol";
 
 contract BossJobEscrowTest is Test {
     MockERC20 token;
@@ -73,5 +75,47 @@ contract BossJobEscrowTest is Test {
     function test_constructor_rejects_zero_token() public {
         vm.expectRevert(bytes("token required"));
         new BossJobEscrow(address(0));
+    }
+
+    function test_fund_cei_blocks_reentrant_double_pull() public {
+        ReentrantToken reToken = new ReentrantToken();
+        BossJobEscrow reEscrow = new BossJobEscrow(address(reToken));
+        reToken.mint(client, 1_000_000e6);
+        vm.prank(client);
+        reToken.approve(address(reEscrow), type(uint256).max);
+
+        uint256 budget = 100e6;
+        vm.prank(client);
+        uint256 jobId = reEscrow.createJob(provider, evaluator, block.timestamp + 1 days, "task");
+        vm.prank(client);
+        reEscrow.setBudget(jobId, budget);
+        reToken.configureReenter(reEscrow, jobId, budget);
+
+        uint256 clientBefore = reToken.balanceOf(client);
+        vm.prank(client);
+        reEscrow.fund(jobId, budget);
+
+        // Only one pull: re-entrant fund hits "not open" / not Funded path and is swallowed.
+        assertEq(reToken.balanceOf(client), clientBefore - budget);
+        assertEq(reToken.balanceOf(address(reEscrow)), budget);
+        (, , , uint256 storedBudget, , , BossJobEscrow.Status status, ) = reEscrow.jobs(jobId);
+        assertEq(uint256(status), uint256(BossJobEscrow.Status.Funded));
+        assertEq(storedBudget, budget);
+    }
+
+    function test_fund_rejects_fee_on_transfer() public {
+        FeeOnTransferToken fot = new FeeOnTransferToken();
+        BossJobEscrow fotEscrow = new BossJobEscrow(address(fot));
+        fot.mint(client, 1_000_000e6);
+        vm.prank(client);
+        fot.approve(address(fotEscrow), type(uint256).max);
+
+        vm.prank(client);
+        uint256 jobId = fotEscrow.createJob(provider, evaluator, block.timestamp + 1 days, "task");
+        vm.prank(client);
+        fotEscrow.setBudget(jobId, 100e6);
+        vm.prank(client);
+        vm.expectRevert(bytes("amount mismatch"));
+        fotEscrow.fund(jobId, 100e6);
     }
 }

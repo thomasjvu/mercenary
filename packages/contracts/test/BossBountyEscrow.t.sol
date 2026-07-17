@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 import {BossBountyEscrow} from "../src/BossBountyEscrow.sol";
 import {MockERC20} from "./MockERC20.sol";
+import {FeeOnTransferToken} from "./FeeOnTransferToken.sol";
 
 contract BossBountyEscrowTest is Test {
     MockERC20 token;
@@ -117,5 +118,73 @@ contract BossBountyEscrowTest is Test {
         new BossBountyEscrow(address(0), operator);
         vm.expectRevert(bytes("operator required"));
         new BossBountyEscrow(address(token), address(0));
+    }
+
+    function test_forfeit_undelivered_after_delivery_deadline() public {
+        vm.prank(poster);
+        uint256 bountyId = escrow.createBounty(
+            100e6,
+            biddingDeadline,
+            awardDeadline,
+            deliveryDeadline,
+            acceptDeadline,
+            "meta"
+        );
+        vm.prank(poster);
+        escrow.fundBounty(bountyId, 100e6);
+        vm.prank(poster);
+        uint256 awardId = escrow.createAward(bountyId, provider, 40e6);
+
+        (, , uint256 remainingBefore, , , , , , ) = escrow.bounties(bountyId);
+        assertEq(remainingBefore, 60e6);
+
+        vm.warp(deliveryDeadline + 1);
+        vm.prank(poster);
+        escrow.forfeitAward(awardId);
+
+        (, , , , BossBountyEscrow.AwardStatus status, ) = escrow.awards(awardId);
+        assertEq(uint256(status), uint256(BossBountyEscrow.AwardStatus.Forfeited));
+        (, , uint256 remainingAfter, , , , , , ) = escrow.bounties(bountyId);
+        assertEq(remainingAfter, 100e6);
+    }
+
+    function test_forfeit_before_deadline_reverts() public {
+        vm.prank(poster);
+        uint256 bountyId = escrow.createBounty(
+            50e6,
+            biddingDeadline,
+            awardDeadline,
+            deliveryDeadline,
+            acceptDeadline,
+            "meta"
+        );
+        vm.prank(poster);
+        escrow.fundBounty(bountyId, 50e6);
+        vm.prank(poster);
+        uint256 awardId = escrow.createAward(bountyId, provider, 50e6);
+        vm.prank(poster);
+        vm.expectRevert(bytes("delivery open"));
+        escrow.forfeitAward(awardId);
+    }
+
+    function test_fund_rejects_fee_on_transfer() public {
+        FeeOnTransferToken fot = new FeeOnTransferToken();
+        BossBountyEscrow fotEscrow = new BossBountyEscrow(address(fot), operator);
+        fot.mint(poster, 1_000_000e6);
+        vm.prank(poster);
+        fot.approve(address(fotEscrow), type(uint256).max);
+
+        vm.prank(poster);
+        uint256 bountyId = fotEscrow.createBounty(
+            100e6,
+            biddingDeadline,
+            awardDeadline,
+            deliveryDeadline,
+            acceptDeadline,
+            "meta"
+        );
+        vm.prank(poster);
+        vm.expectRevert(bytes("amount mismatch"));
+        fotEscrow.fundBounty(bountyId, 100e6);
     }
 }

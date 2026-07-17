@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-interface IERC20Minimal {
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
-    function transfer(address to, uint256 value) external returns (bool);
-}
+import {IERC20Escrow, TokenTransfer} from "./TokenTransfer.sol";
 
 /// @notice Multi-award bounty escrow with permissionless payout after accept deadline.
 /// @dev acceptAward is poster-only (or operator on behalf). After acceptDeadline anyone may claimPayout to provider.
 contract BossBountyEscrow {
+    using TokenTransfer for IERC20Escrow;
+
     enum BountyStatus {
         Open,
         Funded,
@@ -46,7 +45,7 @@ contract BossBountyEscrow {
         uint256 deliveredAt;
     }
 
-    IERC20Minimal public immutable token;
+    IERC20Escrow public immutable token;
     address public immutable operator;
     uint256 public nextBountyId;
     mapping(uint256 => Bounty) public bounties;
@@ -60,12 +59,13 @@ contract BossBountyEscrow {
     event DeliverySubmitted(uint256 indexed awardId, bytes32 deliveryHash);
     event AwardAccepted(uint256 indexed awardId, address indexed payer, uint256 amount);
     event AwardClaimed(uint256 indexed awardId, address indexed claimant, uint256 amount);
+    event AwardForfeited(uint256 indexed awardId, uint256 amount);
     event BountyRefunded(uint256 indexed bountyId, address indexed poster, uint256 amount);
 
     constructor(address token_, address operator_) {
         require(token_ != address(0), "token required");
         require(operator_ != address(0), "operator required");
-        token = IERC20Minimal(token_);
+        token = IERC20Escrow(token_);
         operator = operator_;
     }
 
@@ -177,6 +177,25 @@ contract BossBountyEscrow {
         _releaseAward(awardId, msg.sender);
     }
 
+    /// @notice Poster or operator: reclaim undelivered award budget after deliveryDeadline.
+    function forfeitAward(uint256 awardId) external {
+        Award storage award = awards[awardId];
+        require(award.status == AwardStatus.Pending, "not pending");
+
+        Bounty storage bounty = bounties[award.bountyId];
+        require(bounty.poster != address(0), "award not found");
+        require(msg.sender == bounty.poster || msg.sender == operator, "not allowed");
+        require(block.timestamp > bounty.deliveryDeadline, "delivery open");
+
+        uint256 amount = award.amount;
+        award.status = AwardStatus.Forfeited;
+        bounty.remainingBudget += amount;
+        if (bounty.status == BountyStatus.Awarded && bounty.remainingBudget == bounty.totalBudget) {
+            bounty.status = BountyStatus.Funded;
+        }
+        emit AwardForfeited(awardId, amount);
+    }
+
     function refundUnawarded(uint256 bountyId) external {
         Bounty storage bounty = bounties[bountyId];
         require(
@@ -189,7 +208,7 @@ contract BossBountyEscrow {
         uint256 amount = bounty.remainingBudget;
         bounty.remainingBudget = 0;
         bounty.status = BountyStatus.Refunded;
-        require(token.transfer(bounty.poster, amount), "refund failed");
+        token.safeTransfer(bounty.poster, amount);
         emit BountyRefunded(bountyId, bounty.poster, amount);
     }
 
@@ -228,11 +247,13 @@ contract BossBountyEscrow {
         Bounty storage bounty = bounties[bountyId];
         require(bounty.status == BountyStatus.Open, "not open");
         uint256 amount = bounty.totalBudget;
-        require(token.transferFrom(payer, address(this), amount), "transfer failed");
 
+        // Effects before interactions (CEI).
         bounty.remainingBudget = amount;
         bounty.status = BountyStatus.Funded;
         emit BountyFunded(bountyId, amount);
+
+        token.pullExact(payer, amount);
     }
 
     function _createAward(
@@ -284,7 +305,7 @@ contract BossBountyEscrow {
         Award storage award = awards[awardId];
         uint256 amount = award.amount;
         award.status = AwardStatus.Paid;
-        require(token.transfer(award.provider, amount), "payout failed");
+        token.safeTransfer(award.provider, amount);
         emit AwardAccepted(awardId, actor, amount);
         emit AwardClaimed(awardId, actor, amount);
     }
