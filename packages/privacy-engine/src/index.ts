@@ -52,12 +52,15 @@ export {
 
 export {
   computeHarnessCompositionHash,
+  evaluateHarnessProfileIntegrity,
   harnessFreshClaimIsConsistent,
   harnessModelHost,
+  harnessProfileQualifiesAsVerifiedAgent,
   parseHarnessSkills,
   recomputeHarnessCompositionHash,
   resolveHarnessInstallation,
   type HarnessCompositionInput,
+  type HarnessIntegrityIssue,
 } from './harness-composition.js';
 
 export {

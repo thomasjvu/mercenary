@@ -97,3 +97,115 @@ export function harnessFreshClaimIsConsistent(
   }
   return (profile.skills?.length ?? 0) === 0;
 }
+
+export type HarnessIntegrityIssue = {
+  code: string;
+  message: string;
+};
+
+/**
+ * Fail-closed honesty checks for agent harness profiles.
+ * Used when marking providers verified / routing "verified agent" seats.
+ */
+export function evaluateHarnessProfileIntegrity(
+  profile: Pick<
+    HarnessProfile,
+    | 'lane'
+    | 'installation'
+    | 'skills'
+    | 'imageDigest'
+    | 'compositionHash'
+    | 'framework'
+    | 'planProvider'
+    | 'verification'
+  > & {
+    kind?: string;
+    modelId?: string;
+    modelApiBase?: string;
+  },
+  options: {
+    /** When true, agent_harness must pin imageDigest to reach integrity ok for specialized seats */
+    requireImageDigestForSkills?: boolean;
+    /** When true, agent_harness always requires imageDigest for integrity ok */
+    requireImageDigest?: boolean;
+  } = {}
+): { ok: boolean; issues: HarnessIntegrityIssue[] } {
+  const issues: HarnessIntegrityIssue[] = [];
+  if (profile.lane !== 'agent_harness') {
+    return { ok: true, issues };
+  }
+
+  if (!harnessFreshClaimIsConsistent(profile)) {
+    issues.push({
+      code: 'fresh_skills_mismatch',
+      message: 'installation=fresh cannot declare skills.',
+    });
+  }
+
+  if (profile.installation === 'skill_augmented' && (profile.skills?.length ?? 0) === 0) {
+    issues.push({
+      code: 'skill_augmented_empty',
+      message: 'installation=skill_augmented requires at least one skill.',
+    });
+  }
+
+  const skillsNeedDigest =
+    options.requireImageDigest === true ||
+    (options.requireImageDigestForSkills !== false &&
+      (profile.installation === 'skill_augmented' || (profile.skills?.length ?? 0) > 0));
+  if (skillsNeedDigest && !profile.imageDigest?.trim()) {
+    issues.push({
+      code: 'image_digest_required',
+      message:
+        'Specialized agent harness seats require imageDigest so buyers can pin a known docker image.',
+    });
+  }
+
+  if (profile.compositionHash?.trim()) {
+    const recomputed = recomputeHarnessCompositionHash(profile);
+    // Profile may have been hashed without modelApiBase; accept either host null or provided base.
+    const recomputedNullHost = recomputeHarnessCompositionHash({
+      ...profile,
+      modelApiBase: undefined,
+    });
+    if (recomputed !== profile.compositionHash && recomputedNullHost !== profile.compositionHash) {
+      issues.push({
+        code: 'composition_hash_mismatch',
+        message: 'Published compositionHash does not match recomputed harness composition.',
+      });
+    }
+  }
+
+  return { ok: issues.length === 0, issues };
+}
+
+/** True when harness can claim verified agent marketplace status. */
+export function harnessProfileQualifiesAsVerifiedAgent(
+  profile: Pick<
+    HarnessProfile,
+    | 'lane'
+    | 'installation'
+    | 'skills'
+    | 'imageDigest'
+    | 'compositionHash'
+    | 'framework'
+    | 'planProvider'
+    | 'verification'
+  >
+): boolean {
+  if (profile.lane !== 'agent_harness') {
+    return false;
+  }
+  const integrity = evaluateHarnessProfileIntegrity(profile, {
+    requireImageDigestForSkills: true,
+  });
+  if (!integrity.ok) {
+    return false;
+  }
+  // Vanilla (fresh, no skills) may use platform image without digest in dev;
+  // specialized always needs digest. Prefer image_attested when digest present.
+  if ((profile.skills?.length ?? 0) > 0 || profile.installation === 'skill_augmented') {
+    return Boolean(profile.imageDigest?.trim()) && integrity.ok;
+  }
+  return integrity.ok;
+}

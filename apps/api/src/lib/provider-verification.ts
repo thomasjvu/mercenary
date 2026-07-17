@@ -1,4 +1,5 @@
 import type { BossRaidOrchestrator } from '@bossraid/orchestrator';
+import { evaluateHarnessProfileIntegrity } from '@bossraid/privacy-engine';
 import { probeProviderHealth } from '@bossraid/provider-sdk';
 import type {
   ProviderHealthStatus,
@@ -21,7 +22,22 @@ export function buildProviderVerificationFromHealth(
   const modelProviderVerified =
     provider.modelProvider == null || health.modelProvider === provider.modelProvider;
   const modelVerified = provider.modelId == null || health.model === provider.modelId;
-  const verified = apiVerified && frameworkVerified && modelProviderVerified && modelVerified;
+
+  const harnessProfile = health.harnessProfile ?? provider.harnessProfile;
+  const harnessIntegrity =
+    harnessProfile?.lane === 'agent_harness'
+      ? evaluateHarnessProfileIntegrity({
+          ...harnessProfile,
+          modelId: provider.modelId ?? undefined,
+        })
+      : { ok: true, issues: [] as Array<{ code: string; message: string }> };
+
+  const verified =
+    apiVerified &&
+    frameworkVerified &&
+    modelProviderVerified &&
+    modelVerified &&
+    harnessIntegrity.ok;
   const notes = [
     apiVerified ? 'health_ready' : 'health_not_ready',
     provider.agentFramework && health.agentFramework == null ? 'framework_not_reported' : null,
@@ -31,6 +47,12 @@ export function buildProviderVerificationFromHealth(
     modelProviderVerified ? null : 'model_provider_mismatch',
     modelVerified ? null : 'model_mismatch',
     health.error ? `health_error:${health.error}` : null,
+    ...harnessIntegrity.issues.map((issue) => `harness_${issue.code}`),
+    harnessProfile?.lane === 'agent_harness' && harnessIntegrity.ok
+      ? harnessProfile.imageDigest
+        ? 'harness_image_attested'
+        : 'harness_integrity_ok'
+      : null,
   ].filter((note): note is string => Boolean(note));
 
   return {

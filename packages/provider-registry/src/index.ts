@@ -230,6 +230,8 @@ export function providerMatchesHarnessConstraints(
   constraints: {
     allowedInstallations?: HarnessInstallation[];
     requiredSkills?: string[];
+    /** When true, only agent seats with imageDigest + honest composition */
+    requireVerifiedAgent?: boolean;
   }
 ): boolean {
   const profile = resolveHarnessProfile(provider);
@@ -241,6 +243,21 @@ export function providerMatchesHarnessConstraints(
   if (constraints.requiredSkills?.length) {
     const skillIds = new Set(profile.skills.map((skill) => skill.id));
     if (!constraints.requiredSkills.every((skillId) => skillIds.has(skillId))) {
+      return false;
+    }
+  }
+  if (constraints.requireVerifiedAgent) {
+    if (profile.lane !== 'agent_harness') {
+      return false;
+    }
+    // Specialized: must pin image. Vanilla fresh may pass without digest.
+    if (
+      (profile.installation === 'skill_augmented' || profile.skills.length > 0) &&
+      !profile.imageDigest?.trim()
+    ) {
+      return false;
+    }
+    if (profile.verification === 'unverified') {
       return false;
     }
   }

@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   computeHarnessCompositionHash,
+  evaluateHarnessProfileIntegrity,
   harnessFreshClaimIsConsistent,
+  harnessProfileQualifiesAsVerifiedAgent,
   parseHarnessSkills,
   recomputeHarnessCompositionHash,
   resolveHarnessInstallation,
@@ -67,4 +69,46 @@ test('fresh claim rejects non-empty skills', () => {
     }),
     false
   );
+});
+
+test('evaluateHarnessProfileIntegrity requires digest for specialized agents', () => {
+  const specialized = evaluateHarnessProfileIntegrity({
+    lane: 'agent_harness',
+    installation: 'skill_augmented',
+    skills: [{ id: 'raid-pixel' }],
+    framework: 'claude_code',
+  });
+  assert.equal(specialized.ok, false);
+  assert.ok(specialized.issues.some((issue) => issue.code === 'image_digest_required'));
+
+  const withDigest = evaluateHarnessProfileIntegrity({
+    lane: 'agent_harness',
+    installation: 'skill_augmented',
+    skills: [{ id: 'raid-pixel' }],
+    imageDigest: 'sha256:abc',
+    framework: 'claude_code',
+  });
+  assert.equal(withDigest.ok, true);
+  assert.equal(
+    harnessProfileQualifiesAsVerifiedAgent({
+      lane: 'agent_harness',
+      installation: 'skill_augmented',
+      skills: [{ id: 'raid-pixel' }],
+      imageDigest: 'sha256:abc',
+      framework: 'claude_code',
+    }),
+    true
+  );
+});
+
+test('composition hash mismatch fails integrity', () => {
+  const result = evaluateHarnessProfileIntegrity({
+    lane: 'agent_harness',
+    installation: 'fresh',
+    skills: [],
+    framework: 'codex',
+    compositionHash: 'deadbeef',
+  });
+  assert.equal(result.ok, false);
+  assert.ok(result.issues.some((issue) => issue.code === 'composition_hash_mismatch'));
 });

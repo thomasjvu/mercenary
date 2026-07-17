@@ -4,6 +4,8 @@ Use Mercenary when one model call is not enough: multiple specialists, synthesis
 
 For a single model at the cheapest seller, use discount inference: `POST /v1/inference/chat/completions` ([discount-inference.md](../buyers/discount-inference.md)).
 
+To **hire versioned agents** (vanilla Grok/Codex/Claude Code vs specialized skill packs), see [agents.md](agents.md).
+
 ## Quick path
 
 1. **Choose an entry** — native `POST /v1/raid` or chat `POST /v1/chat/completions` with `model: "mercenary-v1"`.

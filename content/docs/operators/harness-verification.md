@@ -116,7 +116,19 @@ Buyers filter with raid policy:
 
 Raid result / receipt includes selected providers, model ids, and settlement. Agent log records tool-loop steps at the orchestration level.
 
-### 5. What is **not** proven today
+### 5. Integrity gates (enforced on verify)
+
+When a provider reports `harnessProfile.lane=agent_harness`, verification runs `evaluateHarnessProfileIntegrity`:
+
+- `installation=fresh` ⇒ skills must be empty
+- `skill_augmented` ⇒ skills non-empty **and** `imageDigest` required
+- if `compositionHash` is published, it must match a recompute
+
+Failed integrity ⇒ verification `status: failed` with notes like `harness_image_digest_required`. Specialized agents cannot become marketplace-`verified` without a pinned image.
+
+Buyers who need only attested specialized seats should set `requiredVerificationStatus: verified` plus `required_skills` / `allowed_installations`.
+
+### 6. What is **not** proven today
 
 - OpenAI / xAI do **not** co-sign Boss Raid receipts. Model identity is whatever the harness was configured to call (`BOSSRAID_MODEL` + `BOSSRAID_MODEL_API_BASE`) and what the worker reported.
 - Skill packs are **declared** and hashed for disclosure; untrusted seller skill code is not yet sandboxed for multi-tenant execution inside platform fleet.
