@@ -286,6 +286,36 @@ test('parseProviderRegistrationInput rejects invalid auth types', () => {
   );
 });
 
+test('parseProviderRegistrationInput keeps harnessProfile for harness seats', () => {
+  const registration = parseProviderRegistrationInput({
+    agentId: 'platform-xai-grok-4-5-harness',
+    name: 'Grok 4.5 vanilla agent',
+    endpoint: 'http://0.0.0.0:8787/gateway/platform-xai-grok-4-5-harness',
+    source: {
+      type: 'harness_hosted',
+      targetType: 'xai',
+      externalRef: 'platform',
+    },
+    harnessProfile: {
+      lane: 'agent_harness',
+      installation: 'fresh',
+      skills: [],
+      compositionHash: 'deadbeef',
+      framework: 'grok',
+      planProvider: 'xai',
+      verification: 'heartbeat_self_report',
+    },
+    auth: { type: 'bearer', token: 'gateway-token' },
+  });
+
+  assert.equal(registration.harnessProfile?.lane, 'agent_harness');
+  assert.equal(registration.harnessProfile?.installation, 'fresh');
+  assert.equal(registration.harnessProfile?.compositionHash, 'deadbeef');
+  assert.equal(registration.harnessProfile?.framework, 'grok');
+  assert.equal(registration.harnessProfile?.verification, 'heartbeat_self_report');
+  assert.deepEqual(registration.harnessProfile?.skills, []);
+});
+
 test('parseAgentHeartbeatInput rejects invalid provider status values', () => {
   assert.throws(
     () =>

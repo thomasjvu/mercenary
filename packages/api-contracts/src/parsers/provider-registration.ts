@@ -319,5 +319,114 @@ export function parseProviderRegistrationInput(value: unknown): ProviderRegistra
             input.marketplaceOfferStatus ?? input.marketplace_offer_status,
             'provider_registration.marketplace_offer_status'
           ),
+    harnessProfile:
+      input.harnessProfile == null && input.harness_profile == null
+        ? undefined
+        : (() => {
+            const profile = ensureRecord(
+              input.harnessProfile ?? input.harness_profile,
+              'provider_registration.harness_profile'
+            );
+            const laneRaw = ensureString(
+              profile.lane,
+              'provider_registration.harness_profile.lane'
+            );
+            if (laneRaw !== 'api_chat' && laneRaw !== 'agent_harness') {
+              throw new Error(
+                'provider_registration.harness_profile.lane must be api_chat or agent_harness'
+              );
+            }
+            const installationRaw = ensureString(
+              profile.installation,
+              'provider_registration.harness_profile.installation'
+            );
+            if (
+              installationRaw !== 'fresh' &&
+              installationRaw !== 'skill_augmented' &&
+              installationRaw !== 'unknown'
+            ) {
+              throw new Error(
+                'provider_registration.harness_profile.installation must be fresh, skill_augmented, or unknown'
+              );
+            }
+            const skillsRaw =
+              profile.skills == null
+                ? []
+                : Array.isArray(profile.skills)
+                  ? profile.skills
+                  : (() => {
+                      throw new Error(
+                        'provider_registration.harness_profile.skills must be an array'
+                      );
+                    })();
+            const skills = skillsRaw.map((skill, index) => {
+              const entry = ensureRecord(
+                skill,
+                `provider_registration.harness_profile.skills[${index}]`
+              );
+              return {
+                id: ensureString(
+                  entry.id,
+                  `provider_registration.harness_profile.skills[${index}].id`
+                ),
+                name: ensureOptionalString(
+                  entry.name,
+                  `provider_registration.harness_profile.skills[${index}].name`
+                ),
+                version: ensureOptionalString(
+                  entry.version,
+                  `provider_registration.harness_profile.skills[${index}].version`
+                ),
+                contentHash: ensureOptionalString(
+                  entry.contentHash ?? entry.content_hash,
+                  `provider_registration.harness_profile.skills[${index}].content_hash`
+                ),
+              };
+            });
+            const verificationRaw = ensureOptionalString(
+              profile.verification,
+              'provider_registration.harness_profile.verification'
+            );
+            if (
+              verificationRaw != null &&
+              verificationRaw !== 'unverified' &&
+              verificationRaw !== 'heartbeat_self_report' &&
+              verificationRaw !== 'image_attested'
+            ) {
+              throw new Error(
+                'provider_registration.harness_profile.verification must be unverified, heartbeat_self_report, or image_attested'
+              );
+            }
+            return {
+              lane: laneRaw,
+              installation: installationRaw,
+              skills,
+              imageDigest: ensureOptionalString(
+                profile.imageDigest ?? profile.image_digest,
+                'provider_registration.harness_profile.image_digest'
+              ),
+              compositionHash: ensureOptionalString(
+                profile.compositionHash ?? profile.composition_hash,
+                'provider_registration.harness_profile.composition_hash'
+              ),
+              framework: ensureOptionalString(
+                profile.framework,
+                'provider_registration.harness_profile.framework'
+              ),
+              planProvider: ensureOptionalString(
+                profile.planProvider ?? profile.plan_provider,
+                'provider_registration.harness_profile.plan_provider'
+              ),
+              attestedAt: ensureOptionalString(
+                profile.attestedAt ?? profile.attested_at,
+                'provider_registration.harness_profile.attested_at'
+              ),
+              verification: verificationRaw as
+                | 'unverified'
+                | 'heartbeat_self_report'
+                | 'image_attested'
+                | undefined,
+            };
+          })(),
   };
 }
