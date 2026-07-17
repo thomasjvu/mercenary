@@ -134,6 +134,10 @@ export class RaidLifecycleCoordinator {
     return this.deps.providerRegistry.upsertRegisteredProvider(input, options);
   }
 
+  async removeRegisteredProvider(providerId: string): Promise<boolean> {
+    return this.deps.providerRegistry.removeRegisteredProvider(providerId);
+  }
+
   async recordAgentHeartbeat(input: AgentHeartbeatInput): Promise<ProviderProfile | undefined> {
     return this.deps.providerRegistry.recordAgentHeartbeat(input);
   }

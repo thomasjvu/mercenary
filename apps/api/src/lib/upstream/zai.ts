@@ -5,6 +5,7 @@ import {
 } from './adapter-helpers.js';
 import { fetchUpstreamJson } from './shared.js';
 import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
+import { applyChatOptionsToBody, type RaidChatOptions } from '../chat-options.js';
 
 const PROVIDER = 'zai' satisfies UpstreamProviderId;
 const ZAI_BASE = UPSTREAM_PROVIDER_CONFIG.zai.upstreamBase;
@@ -60,6 +61,7 @@ export async function probeZaiChatCompletion(input: {
   modelId: string;
   prompt?: string;
   env?: NodeJS.ProcessEnv;
+  chatOptions?: RaidChatOptions;
 }): Promise<UpstreamChatResult> {
   const env = input.env ?? process.env;
   const base = env.BOSSRAID_ZAI_API_BASE?.trim().replace(/\/+$/u, '') || ZAI_BASE;
@@ -69,11 +71,14 @@ export async function probeZaiChatCompletion(input: {
     url: `${base}/chat/completions`,
     env,
     mockContent: `mock-zai-response:${input.modelId}`,
-    body: {
-      model: input.modelId,
-      messages: [{ role: 'user', content: input.prompt ?? 'Reply with the single word: ok' }],
-      max_tokens: 16,
-    },
+    body: applyChatOptionsToBody(
+      {
+        model: input.modelId,
+        messages: [{ role: 'user', content: input.prompt ?? 'Reply with the single word: ok' }],
+        max_tokens: 16,
+      },
+      input.chatOptions
+    ),
   });
 }
 

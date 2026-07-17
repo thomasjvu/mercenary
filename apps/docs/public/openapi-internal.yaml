@@ -12,6 +12,23 @@ paths:
       tags:
         - Raid
         - Ops
+      parameters:
+        - schema:
+            type: integer
+            minimum: 1
+            default: 100
+          in: query
+          name: limit
+          required: false
+          description: Max raids to return (default 100; values above 500 are clamped).
+        - schema:
+            type: integer
+            minimum: 0
+            default: 0
+          in: query
+          name: offset
+          required: false
+          description: Number of newest root raids to skip (createdAt desc).
       x-bossraid-audience: internal
       responses:
         "200":

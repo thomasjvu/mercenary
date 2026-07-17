@@ -1,5 +1,6 @@
 import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import { TIMEOUTS } from '@bossraid/constants';
+import { applyChatOptionsToBody, type RaidChatOptions } from '../chat-options.js';
 import { isProviderInferenceMock, isProviderTeeMock } from '../upstream-mock.js';
 import { buildMockVeniceTeeReport } from './adapter-helpers.js';
 import { fetchUpstreamJson, isE2eeModelId, isTeeModelId } from './shared.js';
@@ -45,6 +46,7 @@ export async function probeVeniceChatCompletion(input: {
   prompt?: string;
   timeoutMs?: number;
   env?: NodeJS.ProcessEnv;
+  chatOptions?: RaidChatOptions;
 }): Promise<UpstreamChatResult> {
   const env = input.env ?? process.env;
   if (isProviderInferenceMock('venice', env)) {
@@ -53,6 +55,28 @@ export async function probeVeniceChatCompletion(input: {
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), input.timeoutMs ?? TIMEOUTS.VENICE_TIMEOUT);
+  const body = applyChatOptionsToBody(
+    {
+      model: input.modelId,
+      messages: [
+        {
+          role: 'user',
+          content: input.prompt ?? 'Reply with the single word: ok',
+        },
+      ],
+      max_completion_tokens: input.chatOptions?.max_tokens ?? 16,
+    },
+    // Venice prefers max_completion_tokens; still pass temperature / reasoning_effort.
+    {
+      temperature: input.chatOptions?.temperature,
+      reasoning_effort: input.chatOptions?.reasoning_effort,
+    }
+  );
+  // Prefer Venice field name when max_tokens was applied.
+  if (typeof body.max_tokens === 'number') {
+    body.max_completion_tokens = body.max_tokens;
+    delete body.max_tokens;
+  }
 
   try {
     const response = await fetch(`${VENICE_BASE}/chat/completions`, {
@@ -61,16 +85,7 @@ export async function probeVeniceChatCompletion(input: {
         authorization: `Bearer ${input.apiKey.trim()}`,
         'content-type': 'application/json',
       },
-      body: JSON.stringify({
-        model: input.modelId,
-        messages: [
-          {
-            role: 'user',
-            content: input.prompt ?? 'Reply with the single word: ok',
-          },
-        ],
-        max_completion_tokens: 16,
-      }),
+      body: JSON.stringify(body),
       signal: controller.signal,
     });
 

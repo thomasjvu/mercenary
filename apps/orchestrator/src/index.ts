@@ -113,6 +113,10 @@ export class BossRaidOrchestrator {
     return this.raidLifecycle.upsertRegisteredProvider(input, options);
   }
 
+  async removeRegisteredProvider(providerId: string): Promise<boolean> {
+    return this.raidLifecycle.removeRegisteredProvider(providerId);
+  }
+
   async recordAgentHeartbeat(input: AgentHeartbeatInput): Promise<ProviderProfile | undefined> {
     return this.raidLifecycle.recordAgentHeartbeat(input);
   }
@@ -386,9 +390,12 @@ export async function createDefaultOrchestrator(
   }
 
   const profiles = await loadProviderProfilesFromFiles(providerFiles);
-  if (profiles.length === 0) {
+  const allowEmptySeed =
+    process.env.BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY === '1' ||
+    process.env.BOSSRAID_ALLOW_EMPTY_PROVIDERS === '1';
+  if (profiles.length === 0 && !allowEmptySeed) {
     throw new Error(
-      `No providers found in ${providerFiles.join(', ')}. Configure at least one HTTP provider.`
+      `No providers found in ${providerFiles.join(', ')}. Configure at least one HTTP provider, or set BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1 for platform seats only.`
     );
   }
 

@@ -8,6 +8,7 @@ import {
 } from './adapter-helpers.js';
 import { fetchUpstreamJson } from './shared.js';
 import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
+import { applyChatOptionsToBody, type RaidChatOptions } from '../chat-options.js';
 
 const REDPILL_BASE = 'https://api.redpill.ai/v1';
 const PROVIDER = 'redpill' satisfies UpstreamProviderId;
@@ -50,6 +51,7 @@ export async function probeRedpillChatCompletion(input: {
   modelId: string;
   prompt?: string;
   env?: NodeJS.ProcessEnv;
+  chatOptions?: RaidChatOptions;
 }): Promise<UpstreamChatResult> {
   return probeOpenAiStyleChatCompletion({
     provider: PROVIDER,
@@ -57,11 +59,14 @@ export async function probeRedpillChatCompletion(input: {
     url: `${REDPILL_BASE}/chat/completions`,
     env: input.env,
     mockContent: `mock-redpill-response:${input.modelId}`,
-    body: {
-      model: input.modelId,
-      messages: [{ role: 'user', content: input.prompt ?? 'Reply with the single word: ok' }],
-      max_tokens: 16,
-    },
+    body: applyChatOptionsToBody(
+      {
+        model: input.modelId,
+        messages: [{ role: 'user', content: input.prompt ?? 'Reply with the single word: ok' }],
+        max_tokens: 16,
+      },
+      input.chatOptions
+    ),
   });
 }
 

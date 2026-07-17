@@ -247,6 +247,25 @@ export class ProviderRegistryCoordinator {
     }
   }
 
+  /** Drop a provider from the live registry (and persist). Used to retire seed workers. */
+  async removeRegisteredProvider(providerId: string): Promise<boolean> {
+    const profile = this.providers.get(providerId);
+    if (!profile) {
+      return false;
+    }
+    this.deps.assertPersistenceWritable();
+    const agentId = profile.agentId ?? providerId;
+    this.providers.delete(providerId);
+    this.providerRuntimes.delete(providerId);
+    this.providerHealthCache.delete(providerId);
+    this.seededProviderIds.delete(providerId);
+    if (this.providerIdsByAgentId.get(agentId) === providerId) {
+      this.providerIdsByAgentId.delete(agentId);
+    }
+    await this.deps.queuePersist();
+    return true;
+  }
+
   updateProviderProfile(providerId: string, update: (profile: ProviderProfile) => void): void {
     const profile = this.providers.get(providerId);
     if (!profile) {

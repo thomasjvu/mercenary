@@ -48,6 +48,26 @@ curl http://127.0.0.1:8787/v1/inference/chat/completions \
   }'
 ```
 
+### xAI Grok + reasoning effort
+
+When a platform or seller seat offers an xAI model (`grok-4.5`, `grok-build-0.1`, …), pass OpenAI-compatible `reasoning_effort`:
+
+```bash
+curl http://127.0.0.1:8787/v1/inference/chat/completions \
+  -H "authorization: Bearer br_..." \
+  -H "content-type: application/json" \
+  -d '{
+    "model": "grok-4.5",
+    "messages": [
+      { "role": "user", "content": "Outline a migration plan." }
+    ],
+    "reasoning_effort": "high",
+    "max_tokens": 2048
+  }'
+```
+
+Allowed values: `low` | `medium` | `high` | `xhigh`. Grok CLI maps `/effort` and `--effort` onto the same field. Full model list and CLI config: [discount-inference.md](discount-inference.md#platform-seats-xai--grok).
+
 Each call is independent: include prior turns in `messages` if you want multi-turn context. Boss Raid does not store chat threads for you.
 
 **Playground first success:** open `/playground`, leave **live offers only** on, paste a `br_...` key (create under Buy onboarding if needed), pick a model with live sellers, run. Empty live markets mean no sellers yet — try another model or [sell](../sellers/sell.md).

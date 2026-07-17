@@ -11,13 +11,19 @@ Production Phala secrets are **tiered** in Infisical and assembled locally befor
 | `secrets.core.env`                  | no      | Local core secrets → `prod:/bossraid/phala/core`    |
 | `secrets.onchain.env`               | no      | Local onchain keys → `prod:/bossraid/phala/onchain` |
 | `.env`                              | no      | Assembled compose env passed to `phala deploy -e`   |
-| `docker-compose.yml`                | yes     | Full stack (API + evaluator + 3 providers)          |
-| `providers-only.docker-compose.yml` | yes     | Provider workers only                               |
+| `docker-compose.yml`                | yes     | API + evaluator; platform seats by default          |
+| `providers-only.docker-compose.yml` | yes     | Optional game-raid HTTP workers only                |
 | `providers-only.env.example`        | yes     | Env for provider-only slice                         |
 | `acp-sellers.docker-compose.yml`    | yes     | ACP seller sidecars (separate env)                  |
 | `acp-sellers.env.example`           | yes     | ACP seller credentials                              |
 
-Compose defaults (provider ids `dottie` / `riko` / `gamma`, x402 network, rate limits) live in
+**Default ready providers** are platform liquidity seats (e.g. `platform-xai-grok-4-5`), not in-CVM
+demo agents. Compose seeds `examples/inference/platform-only.providers.json` (empty array), sets
+`BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1`, and removes `dottie` / `riko` / `gamma` via
+`BOSSRAID_DISABLED_PROVIDER_IDS`. Demo HTTP workers (`provider-a/b/c`) are under compose profile
+`game-providers` only.
+
+Other compose defaults (x402 network, rate limits) live in
 [`scripts/lib/phala-secret-tiers.mjs`](../../scripts/lib/phala-secret-tiers.mjs) and are written into
 `.env` by bootstrap — not stored in Infisical.
 

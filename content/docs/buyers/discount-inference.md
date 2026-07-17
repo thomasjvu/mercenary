@@ -112,6 +112,74 @@ pnpm bossraid sync:inference-catalog
 
 Benchmark prices in `packages/constants/src/marketplace-benchmark.ts` drive `savings_usd` and marketplace discount displays. Catalog-only rows fill discovery when no seller is live.
 
+## Platform seats (xAI / Grok)
+
+Operators can publish **platform liquidity** seats (no in-CVM HTTP workers) when `BOSSRAID_XAI_API_KEY` is set and bootstrap runs (`BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1` or `POST /v1/ops/platform-liquidity/bootstrap`).
+
+Default featured xAI model ids (wire id = request `model`):
+
+| Model id                       | Notes                   |
+| ------------------------------ | ----------------------- |
+| `grok-4.5`                     | Flagship Grok           |
+| `grok-4.3`                     | Prior flagship          |
+| `grok-4.20-0309-reasoning`     | Reasoning variant       |
+| `grok-4.20-0309-non-reasoning` | Non-reasoning variant   |
+| `grok-4.20-multi-agent-0309`   | Multi-agent             |
+| `grok-build-0.1`               | Grok Build coding model |
+| `grok-4-1-fast-reasoning`      | Fast reasoning          |
+| `grok-4-1-fast-non-reasoning`  | Fast non-reasoning      |
+
+Live provider ids look like `platform-xai-grok-4-5` (slug of model id). List them with `GET /v1/providers` or marketplace discovery.
+
+Phala compose defaults to **platform-only** seed (`examples/inference/platform-only.providers.json`) and retires demo workers `dottie` / `riko` / `gamma`. Optional game-raid workers use compose profile `game-providers`.
+
+### Reasoning effort
+
+OpenAI-compatible field on both chat routes:
+
+```json
+{
+  "model": "grok-4.5",
+  "messages": [{ "role": "user", "content": "Plan a refactor." }],
+  "reasoning_effort": "high"
+}
+```
+
+| Value    | Meaning                           |
+| -------- | --------------------------------- |
+| `low`    | Minimal reasoning                 |
+| `medium` | Default-balanced                  |
+| `high`   | Deeper reasoning                  |
+| `xhigh`  | Maximum (alias of Grok CLI `max`) |
+
+Boss Raid embeds options in the raid task and the hosted gateway forwards `reasoning_effort`, `max_tokens`, and `temperature` to xAI when present. Unsupported upstreams ignore unknown fields safely where the provider allows.
+
+Grok CLI:
+
+```bash
+# headless
+grok -m bossraid-grok-4.5 --effort high -p "Say ok"
+
+# TUI
+/model bossraid-grok-4.5 high
+/effort high
+```
+
+Config snippet (`~/.grok/config.toml`) — one custom model per catalog id, all pointed at discount inference:
+
+```toml
+[model."bossraid-grok-4.5"]
+model = "grok-4.5"
+base_url = "https://<your-cvm-host>/api/v1/inference"
+name = "Boss Raid · Grok 4.5"
+env_key = "BOSSRAID_ADMIN_TOKEN"   # or buyer br_ key via BOSSRAID_BUYER_API_KEY
+api_backend = "chat_completions"
+context_window = 1000000
+max_completion_tokens = 8192
+```
+
+Repeat the `[model."bossraid-…"]` block for each model id above (quote table keys that contain dots). Set `[models] default = "bossraid-grok-4.5"`. Use a buyer `br_…` key for production traffic; admin bearer is for operator dogfood only.
+
 ## Related docs
 
 - [Buy inference](buy.md) — buyer setup and curl examples

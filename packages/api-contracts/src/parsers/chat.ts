@@ -20,6 +20,20 @@ import {
   ensureStringArray,
 } from '../validation.js';
 import { parseBossRaidRequest } from './raid.js';
+import type { ChatReasoningEffort } from '@bossraid/shared-types';
+
+const REASONING_EFFORTS = new Set<ChatReasoningEffort>(['low', 'medium', 'high', 'xhigh']);
+
+function parseReasoningEffort(value: unknown, field: string): ChatReasoningEffort | undefined {
+  if (value == null) {
+    return undefined;
+  }
+  const raw = ensureString(value, field).trim().toLowerCase();
+  if (!REASONING_EFFORTS.has(raw as ChatReasoningEffort)) {
+    throw new Error(`Expected reasoning_effort one of low|medium|high|xhigh for ${field}.`);
+  }
+  return raw as ChatReasoningEffort;
+}
 
 export function parseChatCompletionRequest(value: unknown): ChatCompletionRequest {
   const input = ensureRecord(value, 'chat_completion_request');
@@ -42,6 +56,10 @@ export function parseChatCompletionRequest(value: unknown): ChatCompletionReques
         ? undefined
         : ensureFiniteNumberLike(input.temperature, 'chat_completion_request.temperature'),
     user: ensureOptionalString(input.user, 'chat_completion_request.user'),
+    reasoning_effort: parseReasoningEffort(
+      input.reasoning_effort ?? input.reasoningEffort,
+      'chat_completion_request.reasoning_effort'
+    ),
     raidRequest:
       input.raidRequest == null && input.raid_request == null
         ? undefined
@@ -118,7 +136,18 @@ export function buildBossRaidRequestFromChatCompletion(
           .map((message) => `${formatChatRoleLabel(message.role)}:\n${message.content}`)
           .join('\n\n') || primaryPrompt,
       language: 'text',
-      files: [],
+      files: [
+        {
+          path: '.bossraid/chat-options.json',
+          content: JSON.stringify({
+            model: input.model,
+            max_tokens: input.max_tokens,
+            temperature: input.temperature,
+            reasoning_effort: input.reasoning_effort,
+          }),
+          sha256: 'chat-options',
+        },
+      ],
       failingSignals: {
         errors: [],
         expectedBehavior: primaryPrompt,

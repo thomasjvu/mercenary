@@ -1,4 +1,5 @@
 import { UPSTREAM_PROVIDER_CONFIG, type UpstreamProviderId } from '@bossraid/constants';
+import { applyChatOptionsToBody, type RaidChatOptions } from '../chat-options.js';
 import {
   buildMockChutesTeeEvidence,
   fetchUpstreamModelsWithFallback,
@@ -99,10 +100,19 @@ export async function probeChutesChatCompletion(input: {
   modelId: string;
   prompt?: string;
   env?: NodeJS.ProcessEnv;
+  chatOptions?: RaidChatOptions;
 }): Promise<UpstreamChatResult> {
   const env = input.env ?? process.env;
   const llmBase = resolveChutesLlmBase(env);
   const messages = [{ role: 'user', content: input.prompt ?? 'Reply with the single word: ok' }];
+  const baseBody = applyChatOptionsToBody(
+    {
+      messages,
+      max_tokens: 16,
+      stream: false,
+    },
+    input.chatOptions
+  );
 
   // Prefer unified OpenAI path (tool-calling / agents)
   try {
@@ -114,10 +124,8 @@ export async function probeChutesChatCompletion(input: {
       mockContent: `mock-chutes-response:${input.modelId}`,
       mockExtras: { instanceId: 'mock-instance' },
       body: {
+        ...baseBody,
         model: input.modelId,
-        messages,
-        max_tokens: 16,
-        stream: false,
       },
     });
     return { ...result, instanceId: result.instanceId ?? result.requestId };
@@ -135,11 +143,7 @@ export async function probeChutesChatCompletion(input: {
     env,
     mockContent: `mock-chutes-response:${input.modelId}`,
     mockExtras: { instanceId: 'mock-instance' },
-    body: {
-      messages,
-      max_tokens: 16,
-      stream: false,
-    },
+    body: baseBody,
   });
   return { ...result, instanceId: result.instanceId ?? result.requestId };
 }

@@ -23,28 +23,30 @@ Bootstrap assembles `deploy/phala/.env` with compose defaults not stored in Infi
 
 ## Tier 1 — Core runtime
 
-| Variable                                 | Values / notes                                            |
-| ---------------------------------------- | --------------------------------------------------------- |
-| `BOSSRAID_STORAGE_BACKEND`               | `sqlite` (default), `memory`, or `postgres`               |
-| `BOSSRAID_DATABASE_URL` / `DATABASE_URL` | Postgres connection string when backend is `postgres`     |
-| `BOSSRAID_SQLITE_FILE`                   | SQLite path for orchestrator + API state                  |
-| `BOSSRAID_INFERENCE_RECEIPTS_FILE`       | Optional SQLite path for inference attestation receipts   |
-| `BOSSRAID_BOUNTY_SQLITE_FILE`            | SQLite path for bounty marketplace state                  |
-| `BOSSRAID_BOUNTY_DEADLINE_INTERVAL_MS`   | Bounty auto-award / claim worker interval (default 60000) |
-| `BOSSRAID_BOUNTY_DEFAULT_BIDDING_DAYS`   | Default bidding window (default 7)                        |
-| `BOSSRAID_BOUNTY_DEFAULT_AWARD_DAYS`     | Default award window after bidding (default 3)            |
-| `BOSSRAID_BOUNTY_DEFAULT_DELIVERY_DAYS`  | Default delivery window (default 14)                      |
-| `BOSSRAID_BOUNTY_DEFAULT_ACCEPT_DAYS`    | Permissionless claim window (default 7)                   |
-| `BOSSRAID_BOUNTY_AUTO_AWARD_MAX`         | Max bids auto-awarded (default 3)                         |
-| `BOSSRAID_PROVIDERS_FILE`                | Provider seed file(s), comma-separated                    |
-| `BOSSRAID_PROVIDER_FRESH_MS`             | Routing freshness window                                  |
-| `BOSSRAID_INVITE_ACCEPT_MS`              | Invite timeout; chat settle grace (5s–30s)                |
-| `BOSSRAID_FIRST_HEARTBEAT_MS`            | First heartbeat deadline                                  |
-| `BOSSRAID_HEARTBEAT_STALE_MS`            | Stale heartbeat timeout                                   |
-| `BOSSRAID_HARD_EXECUTION_MS`             | Hard execution cap                                        |
-| `BOSSRAID_RAID_ABSOLUTE_MS`              | Absolute raid deadline                                    |
-| `PORT`                                   | Process listen port                                       |
-| `BOSSRAID_DEPLOY_TARGET`                 | Label in attestation proof                                |
+| Variable                                 | Values / notes                                                                  |
+| ---------------------------------------- | ------------------------------------------------------------------------------- |
+| `BOSSRAID_STORAGE_BACKEND`               | `sqlite` (default), `memory`, or `postgres`                                     |
+| `BOSSRAID_DATABASE_URL` / `DATABASE_URL` | Postgres connection string when backend is `postgres`                           |
+| `BOSSRAID_SQLITE_FILE`                   | SQLite path for orchestrator + API state                                        |
+| `BOSSRAID_INFERENCE_RECEIPTS_FILE`       | Optional SQLite path for inference attestation receipts                         |
+| `BOSSRAID_BOUNTY_SQLITE_FILE`            | SQLite path for bounty marketplace state                                        |
+| `BOSSRAID_BOUNTY_DEADLINE_INTERVAL_MS`   | Bounty auto-award / claim worker interval (default 60000)                       |
+| `BOSSRAID_BOUNTY_DEFAULT_BIDDING_DAYS`   | Default bidding window (default 7)                                              |
+| `BOSSRAID_BOUNTY_DEFAULT_AWARD_DAYS`     | Default award window after bidding (default 3)                                  |
+| `BOSSRAID_BOUNTY_DEFAULT_DELIVERY_DAYS`  | Default delivery window (default 14)                                            |
+| `BOSSRAID_BOUNTY_DEFAULT_ACCEPT_DAYS`    | Permissionless claim window (default 7)                                         |
+| `BOSSRAID_BOUNTY_AUTO_AWARD_MAX`         | Max bids auto-awarded (default 3)                                               |
+| `BOSSRAID_PROVIDERS_FILE`                | Provider seed file(s), comma-separated                                          |
+| `BOSSRAID_DISABLED_PROVIDER_IDS`         | Comma ids removed on platform-liquidity bootstrap (default `dottie,riko,gamma`) |
+| `BOSSRAID_ALLOW_EMPTY_PROVIDERS`         | `1` = allow empty seed file (platform seats only)                               |
+| `BOSSRAID_PROVIDER_FRESH_MS`             | Routing freshness window                                                        |
+| `BOSSRAID_INVITE_ACCEPT_MS`              | Invite timeout; chat settle grace (5s–30s)                                      |
+| `BOSSRAID_FIRST_HEARTBEAT_MS`            | First heartbeat deadline                                                        |
+| `BOSSRAID_HEARTBEAT_STALE_MS`            | Stale heartbeat timeout                                                         |
+| `BOSSRAID_HARD_EXECUTION_MS`             | Hard execution cap                                                              |
+| `BOSSRAID_RAID_ABSOLUTE_MS`              | Absolute raid deadline                                                          |
+| `PORT`                                   | Process listen port                                                             |
+| `BOSSRAID_DEPLOY_TARGET`                 | Label in attestation proof                                                      |
 
 ## Tier 2 — API auth, limits, gateway
 
@@ -200,41 +202,42 @@ Outside `NODE_ENV=production`, `node_env_production`, `onchain_settlement`, and 
 
 ### Settlement / operator extras (commonly needed)
 
-| Variable                                         | Purpose                                                                                  |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| `BOSSRAID_SETTLEMENT_TREASURY_KEY`               | Signs onchain settlement fund txs                                                        |
-| `BOSSRAID_EVALUATOR_ADDRESS`                     | Onchain evaluator address for job complete/reject                                        |
-| `BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY`      | Optional evaluator signer for onchain complete                                           |
-| `BOSSRAID_SETTLEMENT_PROVIDER_PRIVATE_KEYS_JSON` | Optional map of provider wallets for onchain job steps                                   |
-| `BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS`      | `1` = allow private/loopback provider URLs in production (trusted compose networks only) |
-| `BOSSRAID_TRUSTED_CLIENT_KEY`                    | Alias for trusted-client bearer (with `BOSSRAID_API_KEY`)                                |
-| `BOSSRAID_RAID_RETENTION_TTL_SEC`                | Raid record retention window                                                             |
-| `BOSSRAID_X402_RECONCILIATION_INTERVAL_MS`       | x402 refund/reconcile worker interval                                                    |
+| Variable                                         | Purpose                                                                                                     |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `BOSSRAID_SETTLEMENT_TREASURY_KEY`               | Signs onchain settlement fund txs                                                                           |
+| `BOSSRAID_EVALUATOR_ADDRESS`                     | Onchain evaluator address for job complete/reject                                                           |
+| `BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY`      | Optional evaluator signer for onchain complete                                                              |
+| `BOSSRAID_SETTLEMENT_PROVIDER_PRIVATE_KEYS_JSON` | Optional map of provider wallets for onchain job steps                                                      |
+| `BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS`      | `1` = allow private/loopback provider URLs in production (trusted compose networks only)                    |
+| `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY`          | `1` = on API start, register featured platform chat offers when `BOSSRAID_*_API_KEY` exists (Phala default) |
+| `BOSSRAID_TRUSTED_CLIENT_KEY`                    | Alias for trusted-client bearer (with `BOSSRAID_API_KEY`)                                                   |
+| `BOSSRAID_RAID_RETENTION_TTL_SEC`                | Raid record retention window                                                                                |
+| `BOSSRAID_X402_RECONCILIATION_INTERVAL_MS`       | x402 refund/reconcile worker interval                                                                       |
 
 ## Dev & smoke only
 
 These vars are for local development, CI smoke tests, and contributor tooling. **Do not set in production.**
 
-| Variable                                 | Purpose                                                                    |
-| ---------------------------------------- | -------------------------------------------------------------------------- |
-| `BOSSRAID_DEV_SPAWN_PROVIDERS`           | When `true`, `pnpm dev` spawns local provider workers                      |
-| `BOSSRAID_CALLBACK_BASE`                 | Provider callback URL in local dev                                         |
-| `BOSSRAID_PROVIDER_STUB_MODE`            | `1` = stub upstream responses in `dev:providers`                           |
-| `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY`  | `1` = on API start, register featured platform chat offers when keys exist |
-| `BOSSRAID_HARNESS_MODE`                  | `off` \| `codex` \| `grok` \| `glm` \| `chutes` \| `claude_code`           |
-| `BOSSRAID_CHUTES_LLM_BASE`               | Override Chutes OpenAI base (default `https://llm.chutes.ai/v1`)           |
-| `BOSSRAID_HARNESS_SKILLS`                | Comma skill ids (`id` or `id@version`); empty = fresh                      |
-| `BOSSRAID_HARNESS_IMAGE_DIGEST`          | Optional worker image digest for harness profile                           |
-| `BOSSRAID_HARNESS_MAX_STEPS`             | Max tool-loop steps (default 10)                                           |
-| `BOSSRAID_BOUNTY_E2E_PROVIDER_ID`        | Bounty smoke provider override (default `bounty-e2e-provider`)             |
-| `BOSSRAID_BOUNTY_E2E_PROVIDER_TOKEN`     | Bounty smoke bearer token (default `bossraid-bounty-e2e`)                  |
-| `BOSSRAID_BOUNTY_E2E_REWARD_USD`         | Bounty smoke reward amount (default `0.5`)                                 |
-| `BOSSRAID_BOUNTY_E2E_MODE`               | `mock`, `wallet`, or `unverified` for bounty smoke                         |
-| `BOSSRAID_BOUNTY_E2E_POSTER_PRIVATE_KEY` | Poster wallet for bounty smoke (`wallet` mode)                             |
-| `BOSSRAID_SMOKE_TIMEOUT_MS`              | Party quest smoke timeout (default `600000`)                               |
-| `BOSSRAID_SMOKE_PAYLOAD_FILE`            | Optional raid payload JSON for party quest smoke                           |
-| `BOSSRAID_SMOKE_MAX_TOTAL_COST`          | Max raid cost for party quest smoke (default `1`)                          |
-| `VENICE_API_KEY`                         | Brand asset gen in `.private/.env` (untracked)                             |
-| `VENICE_VIDEO_MODEL`                     | Video model override for optional clip workflows                           |
+| Variable                       | Purpose                                               |
+| ------------------------------ | ----------------------------------------------------- |
+| `BOSSRAID_DEV_SPAWN_PROVIDERS` | When `true`, `pnpm dev` spawns local provider workers |
+| `BOSSRAID_CALLBACK_BASE`       | Provider callback URL in local dev                    |
+| `BOSSRAID_PROVIDER_STUB_MODE`  | `1` = stub upstream responses in `dev:providers`      |
+
+| `BOSSRAID_HARNESS_MODE` | `off` \| `codex` \| `grok` \| `glm` \| `chutes` \| `claude_code` |
+| `BOSSRAID_CHUTES_LLM_BASE` | Override Chutes OpenAI base (default `https://llm.chutes.ai/v1`) |
+| `BOSSRAID_HARNESS_SKILLS` | Comma skill ids (`id` or `id@version`); empty = fresh |
+| `BOSSRAID_HARNESS_IMAGE_DIGEST` | Optional worker image digest for harness profile |
+| `BOSSRAID_HARNESS_MAX_STEPS` | Max tool-loop steps (default 10) |
+| `BOSSRAID_BOUNTY_E2E_PROVIDER_ID` | Bounty smoke provider override (default `bounty-e2e-provider`) |
+| `BOSSRAID_BOUNTY_E2E_PROVIDER_TOKEN` | Bounty smoke bearer token (default `bossraid-bounty-e2e`) |
+| `BOSSRAID_BOUNTY_E2E_REWARD_USD` | Bounty smoke reward amount (default `0.5`) |
+| `BOSSRAID_BOUNTY_E2E_MODE` | `mock`, `wallet`, or `unverified` for bounty smoke |
+| `BOSSRAID_BOUNTY_E2E_POSTER_PRIVATE_KEY` | Poster wallet for bounty smoke (`wallet` mode) |
+| `BOSSRAID_SMOKE_TIMEOUT_MS` | Party quest smoke timeout (default `600000`) |
+| `BOSSRAID_SMOKE_PAYLOAD_FILE` | Optional raid payload JSON for party quest smoke |
+| `BOSSRAID_SMOKE_MAX_TOTAL_COST` | Max raid cost for party quest smoke (default `1`) |
+| `VENICE_API_KEY` | Brand asset gen in `.private/.env` (untracked) |
+| `VENICE_VIDEO_MODEL` | Video model override for optional clip workflows |
 
 Used by `pnpm bossraid test:mcp:e2e`, bounty e2e scripts, party quest smoke, and `pnpm bossraid generate:pfp` / `generate:landing-hero`.

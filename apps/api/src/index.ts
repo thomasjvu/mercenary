@@ -195,6 +195,7 @@ async function main() {
       {
         published: result.published.length,
         skipped: result.skipped.length,
+        removed: result.removed.length,
       },
       'platform liquidity bootstrap complete'
     );

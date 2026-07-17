@@ -443,6 +443,11 @@ paths:
       responses:
         "200":
           description: Default Response
+  /v1/seller/payouts/flush:
+    post:
+      responses:
+        "200":
+          description: Default Response
   /v1/seller/stats:
     get:
       responses:
@@ -1101,6 +1106,15 @@ paths:
                   type: integer
                 temperature:
                   type: number
+                reasoning_effort:
+                  type: string
+                  enum:
+                    - low
+                    - medium
+                    - high
+                    - xhigh
+                  description: OpenAI-compatible reasoning effort (xAI Grok / Grok Build). Passed
+                    through to the selected upstream when supported.
               required:
                 - messages
       x-bossraid-audience: public
@@ -1245,6 +1259,15 @@ paths:
                   type: integer
                 temperature:
                   type: number
+                reasoning_effort:
+                  type: string
+                  enum:
+                    - low
+                    - medium
+                    - high
+                    - xhigh
+                  description: OpenAI-compatible reasoning effort (xAI Grok / Grok Build). Passed
+                    through to the selected upstream when supported.
               required:
                 - messages
       x-bossraid-audience: public

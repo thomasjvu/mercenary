@@ -18,6 +18,12 @@ export const chatCompletionBodySchema = {
     stream: { type: 'boolean' },
     max_tokens: { type: 'integer' },
     temperature: { type: 'number' },
+    reasoning_effort: {
+      type: 'string',
+      enum: ['low', 'medium', 'high', 'xhigh'],
+      description:
+        'OpenAI-compatible reasoning effort (xAI Grok / Grok Build). Passed through to the selected upstream when supported.',
+    },
   },
   required: ['messages'],
 } as const;

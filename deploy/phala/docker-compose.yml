@@ -59,7 +59,10 @@ services:
       BOSSRAID_SQLITE_FILE: '/data/bossraid-state.sqlite'
       # In-CVM compose providers (provider-a/b/c) use private Docker DNS + HTTP.
       BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS: '${BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS:-1}'
-      BOSSRAID_PROVIDERS_FILE: '${BOSSRAID_PROVIDERS_FILE:-/app/examples/inference/inference-marketplace-providers.json}'
+      # Platform seats only by default (bootstrap via BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY).
+      # Game-raid HTTP workers (dottie/riko/gamma) live under compose profile `game-providers`.
+      BOSSRAID_PROVIDERS_FILE: '${BOSSRAID_PROVIDERS_FILE:-/app/examples/inference/platform-only.providers.json}'
+      BOSSRAID_DISABLED_PROVIDER_IDS: '${BOSSRAID_DISABLED_PROVIDER_IDS:-dottie,riko,gamma}'
       BOSSRAID_SECRET_ENCRYPTION_KEY: '${BOSSRAID_SECRET_ENCRYPTION_KEY}'
       BOSSRAID_SECRET_ENCRYPTION_KEY_ID: '${BOSSRAID_SECRET_ENCRYPTION_KEY_ID:-phala-current}'
       BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS: '${BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS:-}'
@@ -158,12 +161,6 @@ services:
     depends_on:
       evaluator:
         condition: service_healthy
-      provider-a:
-        condition: service_healthy
-      provider-b:
-        condition: service_healthy
-      provider-c:
-        condition: service_healthy
     networks:
       - bossraid-edge
     healthcheck:
@@ -234,7 +231,10 @@ services:
       retries: 3
       start_period: 20s
 
+  # Optional game-raid demo workers. Enable with:
+  #   docker compose --profile game-providers up
   provider-a:
+    profiles: ['game-providers']
     image: ${BOSSRAID_IMAGE}
     pull_policy: always
     restart: unless-stopped
@@ -278,6 +278,7 @@ services:
       start_period: 20s
 
   provider-b:
+    profiles: ['game-providers']
     image: ${BOSSRAID_IMAGE}
     pull_policy: always
     restart: unless-stopped
@@ -321,6 +322,7 @@ services:
       start_period: 20s
 
   provider-c:
+    profiles: ['game-providers']
     image: ${BOSSRAID_IMAGE}
     pull_policy: always
     restart: unless-stopped

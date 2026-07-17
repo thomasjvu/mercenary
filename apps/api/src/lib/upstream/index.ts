@@ -84,6 +84,12 @@ export async function probeUpstreamChatCompletion(input: {
   modelId: string;
   prompt?: string;
   env?: NodeJS.ProcessEnv;
+  /** From `.bossraid/chat-options.json` (max_tokens, temperature, reasoning_effort). */
+  chatOptions?: {
+    max_tokens?: number;
+    temperature?: number;
+    reasoning_effort?: 'low' | 'medium' | 'high' | 'xhigh';
+  };
 }): Promise<UpstreamChatResult> {
   switch (input.provider) {
     case 'venice':

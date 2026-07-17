@@ -41,6 +41,9 @@ export interface ChatCompletionMessage {
   content: string;
 }
 
+/** OpenAI-compatible reasoning effort (xAI Grok / Grok Build). */
+export type ChatReasoningEffort = 'low' | 'medium' | 'high' | 'xhigh';
+
 export interface ChatCompletionRequest {
   model: string;
   messages: ChatCompletionMessage[];
@@ -48,6 +51,8 @@ export interface ChatCompletionRequest {
   max_tokens?: number;
   temperature?: number;
   user?: string;
+  /** Passed through to xAI when supported (Grok CLI: /model … high|medium|low). */
+  reasoning_effort?: ChatReasoningEffort;
   raidRequest?: BossRaidSpawnInput;
   raidPolicy?: BossRaidRequest['raidPolicy'];
 }

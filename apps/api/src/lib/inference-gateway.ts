@@ -20,6 +20,7 @@ import type {
 import type { ApiControlState } from '../control-state.js';
 import { buildInferenceReceipt, verifyUpstreamTee } from './attestation-service.js';
 import type { InferenceReceiptStore } from './inference-receipt-store.js';
+import { extractChatOptionsFromTask } from './chat-options.js';
 import { extractInferencePromptFromTask } from './task-prompt.js';
 import { generateAttestationNonce, probeUpstreamChatCompletion } from './upstream/index.js';
 import { resolveHostedUpstreamApiKey } from './platform-liquidity.js';
@@ -187,6 +188,10 @@ export async function runInferenceGatewayJob(input: {
     }
 
     const prompt = extractInferencePromptFromTask(input.body.task.task);
+    // Chat options are embedded as a task file by parseChatCompletion → raid spawn.
+    const chatOptions = extractChatOptionsFromTask({
+      files: input.body.task.artifacts?.files,
+    });
     const chatResult =
       upstream === 'venice' && input.provider.privacy?.e2ee === true
         ? await probeVeniceE2eeChatCompletion({
@@ -201,6 +206,7 @@ export async function runInferenceGatewayJob(input: {
             modelId: upstreamModelId,
             prompt,
             env: input.env,
+            chatOptions,
           });
 
     const providerClaimsE2ee = input.provider.privacy?.e2ee === true;
