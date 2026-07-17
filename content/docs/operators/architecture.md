@@ -70,7 +70,7 @@ Full production requires `GET /v1/ops/production-readiness` → `ok: true` (onch
 
 ## Packages
 
-Full stack map: [Tech Stack](/dev-docs/operators/tech-stack) in dev-docs. Core groups: foundation (`shared-types`, `constants`, `api-contracts`, `openapi-schemas`), raid stack (`raid-core`, `provider-registry`, `provider-sdk`, `evaluation`, `scoring`, `sandbox-runner`), storage (`persistence`, `persistence-sqlite`), UI/proof (`ui`, `proof-ui`), integrations (`privacy-engine`, `smart-pay`, `venice-client`, `oneshot-relayer`, `http-client`, `logger`), deploy/test (`contracts`, `test-fixtures`).
+Full stack map: [Tech Stack](/dev-docs/operators/tech-stack) in dev-docs. Core groups: foundation (`shared-types`, `constants`, `api-contracts`, `openapi-schemas`), raid stack (`raid-core`, `provider-registry`, `provider-sdk`, `evaluation`, `scoring`, `sandbox-runner`), storage (`persistence`, `persistence-sqlite`, `persistence-postgres`), UI/proof (`ui`, `proof-ui`), integrations (`privacy-engine`, `smart-pay`, `venice-client`, `oneshot-relayer`, `http-client`, `logger`), deploy/test (`contracts`, `test-fixtures`).
 
 ## Attestation & proof
 

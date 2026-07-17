@@ -10,7 +10,10 @@ import * as x402Reconciliations from './control-state/x402-reconciliations.js';
 import * as x402SettledPayments from './control-state/x402-settled-payments.js';
 import * as sessions from './control-state/sessions.js';
 import { ControlStateContext } from './control-state/state-context.js';
-import { createApiControlStateStore } from './control-state/store.js';
+import {
+  createApiControlStateStore,
+  createApiControlStateStoreAsync,
+} from './control-state/store.js';
 import type {
   AgentPaymentSessionEntry,
   ApiControlStateStore,
@@ -419,6 +422,15 @@ export type ApiControlState = ReturnType<typeof createApiControlStateFromStore>;
 
 export function createApiControlState(env: NodeJS.ProcessEnv = process.env): ApiControlState {
   const controlState = createApiControlStateFromStore(createApiControlStateStore(env));
+  controlState.ensureRuntimeSettingsSeeded(env);
+  return controlState;
+}
+
+/** Prefer this when BOSSRAID_STORAGE_BACKEND may be postgres. */
+export async function createApiControlStateAsync(
+  env: NodeJS.ProcessEnv = process.env
+): Promise<ApiControlState> {
+  const controlState = createApiControlStateFromStore(await createApiControlStateStoreAsync(env));
   controlState.ensureRuntimeSettingsSeeded(env);
   return controlState;
 }

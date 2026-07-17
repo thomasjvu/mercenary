@@ -16,7 +16,7 @@ import logger from '@bossraid/logger';
 import { mapContractErrorCode } from './lib/contract-errors.js';
 import { isX402ProtocolError } from './x402.js';
 import { sendX402Required } from './lib/x402-route-response.js';
-import { createApiContext } from './api-context.js';
+import { createApiContext, createApiContextAsync } from './api-context.js';
 import { createApiHandlers } from './handlers/index.js';
 import { registerHealthRoutes } from './routes/health.js';
 import { registerHostAttestationRoutes } from './routes/host-attestation.js';
@@ -178,7 +178,7 @@ export async function prepareApiServer(
   orchestrator: BossRaidOrchestrator,
   env: NodeJS.ProcessEnv = process.env
 ) {
-  const ctx = createApiContext(orchestrator, env);
+  const ctx = await createApiContextAsync(orchestrator, env);
   const handlers = createApiHandlers(ctx);
   await registerOpenApi(ctx.app);
   wireApiServer(ctx.app, ctx, handlers);

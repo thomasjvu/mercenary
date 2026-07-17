@@ -2,9 +2,14 @@ import { createHash } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { readStorageBackend } from '@bossraid/constants';
+import { readDatabaseUrl, readStorageBackend } from '@bossraid/constants';
 import { findWorkspaceRoot, resolveWorkspacePath } from '@bossraid/constants/workspace';
 import { createSecretCipher, createStorageBackend, type SecretCipher } from '@bossraid/persistence';
+import {
+  API_CONTROL_STATE_SCHEMA_SQL,
+  createPostgresPool,
+  type PostgresPool,
+} from '@bossraid/persistence-postgres';
 import {
   createEmptyApiControlState,
   decryptApiControlStateSnapshot,
@@ -138,6 +143,105 @@ class SqliteApiControlStateStore implements ApiControlStateStore {
   }
 }
 
+/**
+ * Postgres-backed control state with an in-memory working copy.
+ * Call `await store.ready()` (or use createApiControlStateStoreAsync) before serving traffic.
+ * Durable writes are serialized; designed for single API process (or sticky single-writer).
+ * Multi-writer API replicas should not share this without a later async control-state refactor.
+ */
+export class PostgresApiControlStateStore implements ApiControlStateStore {
+  private readonly pool: PostgresPool;
+  private snapshot = createEmptyApiControlState();
+  private lastPersistedRevision?: string;
+  private writeChain: Promise<void> = Promise.resolve();
+  private schemaReady?: Promise<void>;
+  private loaded = false;
+
+  constructor(
+    databaseUrl: string,
+    private readonly cipher: SecretCipher
+  ) {
+    this.pool = createPostgresPool(databaseUrl);
+  }
+
+  async ready(): Promise<void> {
+    if (this.loaded) {
+      return;
+    }
+    await this.ensureSchema();
+    const result = await this.pool.query<{ version: number; snapshot_json: string }>(
+      'select version, snapshot_json from bossraid_api_control_state where key = $1',
+      [SNAPSHOT_KEY]
+    );
+    const row = result.rows[0];
+    if (row?.snapshot_json) {
+      const snapshot = normalizeApiControlState(
+        decryptApiControlStateSnapshot(
+          JSON.parse(row.snapshot_json) as Partial<ApiControlStateSnapshot>,
+          this.cipher
+        )
+      );
+      snapshot.version = row.version ?? snapshot.version;
+      this.snapshot = snapshot;
+      this.lastPersistedRevision = snapshotPersistRevision(snapshot);
+    }
+    this.loaded = true;
+  }
+
+  loadState(): ApiControlStateSnapshot {
+    if (!this.loaded) {
+      throw new Error(
+        'PostgresApiControlStateStore not ready; await createApiControlStateStoreAsync() before use.'
+      );
+    }
+    return structuredClone(this.snapshot);
+  }
+
+  saveState(snapshot: ApiControlStateSnapshot): void {
+    if (!this.loaded) {
+      throw new Error(
+        'PostgresApiControlStateStore not ready; await createApiControlStateStoreAsync() before use.'
+      );
+    }
+    const revision = snapshotPersistRevision(snapshot);
+    if (revision === this.lastPersistedRevision) {
+      return;
+    }
+    snapshot.version += 1;
+    snapshot.savedAt = new Date().toISOString();
+    this.snapshot = structuredClone(snapshot);
+    this.lastPersistedRevision = snapshotPersistRevision(snapshot);
+    const toPersist = structuredClone(snapshot);
+    this.writeChain = this.writeChain
+      .then(() => this.persistDurable(toPersist))
+      .catch((error) => {
+        // Keep chain alive; surface via process logging.
+        console.error('[control-state] postgres durable write failed', error);
+      });
+  }
+
+  private async persistDurable(snapshot: ApiControlStateSnapshot): Promise<void> {
+    await this.ensureSchema();
+    const encryptedJson = JSON.stringify(encryptApiControlStateSnapshot(snapshot, this.cipher));
+    await this.pool.query(
+      [
+        'insert into bossraid_api_control_state (key, version, saved_at, snapshot_json)',
+        'values ($1, $2, $3, $4)',
+        'on conflict (key) do update set',
+        '  version = excluded.version,',
+        '  saved_at = excluded.saved_at,',
+        '  snapshot_json = excluded.snapshot_json',
+      ].join(' '),
+      [SNAPSHOT_KEY, snapshot.version, snapshot.savedAt, encryptedJson]
+    );
+  }
+
+  private async ensureSchema(): Promise<void> {
+    this.schemaReady ??= this.pool.query(API_CONTROL_STATE_SCHEMA_SQL).then(() => undefined);
+    await this.schemaReady;
+  }
+}
+
 export function createApiControlStateStore(env: NodeJS.ProcessEnv): ApiControlStateStore {
   const workspaceCwd = findWorkspaceRoot(process.env.INIT_CWD ?? process.cwd());
   const storageBackend = readStorageBackend(env, {
@@ -145,18 +249,44 @@ export function createApiControlStateStore(env: NodeJS.ProcessEnv): ApiControlSt
     isolateNonProcessEnv: true,
   });
   const cipher = createSecretCipher(env);
+  const sqliteFile = resolveWorkspacePath(
+    env.BOSSRAID_SQLITE_FILE ?? './temp/bossraid-state.sqlite',
+    workspaceCwd
+  );
+
+  if (storageBackend === 'postgres') {
+    throw new Error(
+      'Use createApiControlStateStoreAsync() when BOSSRAID_STORAGE_BACKEND=postgres (requires await ready).'
+    );
+  }
 
   return createStorageBackend<ApiControlStateStore>(
     storageBackend,
     {
       memory: () => new InMemoryApiControlStateStore(),
-      sqlite: (sqliteFile) => new SqliteApiControlStateStore(sqliteFile, cipher),
+      sqlite: (file) => new SqliteApiControlStateStore(file, cipher),
     },
-    {
-      sqliteFile: resolveWorkspacePath(
-        env.BOSSRAID_SQLITE_FILE ?? './temp/bossraid-state.sqlite',
-        workspaceCwd
-      ),
-    }
+    { sqliteFile }
   );
+}
+
+/** Async factory — required for postgres; works for all backends. */
+export async function createApiControlStateStoreAsync(
+  env: NodeJS.ProcessEnv
+): Promise<ApiControlStateStore> {
+  const storageBackend = readStorageBackend(env, {
+    strict: true,
+    isolateNonProcessEnv: true,
+  });
+  if (storageBackend !== 'postgres') {
+    return createApiControlStateStore(env);
+  }
+  const databaseUrl = readDatabaseUrl(env);
+  if (!databaseUrl) {
+    throw new Error('BOSSRAID_DATABASE_URL is required when BOSSRAID_STORAGE_BACKEND=postgres.');
+  }
+  const cipher = createSecretCipher(env);
+  const store = new PostgresApiControlStateStore(databaseUrl, cipher);
+  await store.ready();
+  return store;
 }

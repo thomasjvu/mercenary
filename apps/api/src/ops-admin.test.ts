@@ -144,7 +144,7 @@ test('admin GET /v1/raids paginates with limit and offset', async () => {
     rankedSubmissions: [],
   }));
 
-  orchestrator.listRaids = () => fixtures as ReturnType<typeof orchestrator.listRaids>;
+  orchestrator.listRaids = () => fixtures as unknown as ReturnType<typeof orchestrator.listRaids>;
 
   const app = buildTestApiServer(orchestrator, {
     BOSSRAID_ADMIN_TOKEN: 'admin-secret',

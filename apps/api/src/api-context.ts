@@ -59,6 +59,23 @@ export function createApiContext(
   orchestrator: BossRaidOrchestrator,
   env: NodeJS.ProcessEnv = process.env
 ): ApiContext {
+  return createApiContextWithControlState(orchestrator, env, createApiControlState(env));
+}
+
+export async function createApiContextAsync(
+  orchestrator: BossRaidOrchestrator,
+  env: NodeJS.ProcessEnv = process.env
+): Promise<ApiContext> {
+  const { createApiControlStateAsync } = await import('./control-state.js');
+  const controlState = await createApiControlStateAsync(env);
+  return createApiContextWithControlState(orchestrator, env, controlState);
+}
+
+function createApiContextWithControlState(
+  orchestrator: BossRaidOrchestrator,
+  env: NodeJS.ProcessEnv,
+  controlState: ApiControlState
+): ApiContext {
   const adminToken = env.BOSSRAID_ADMIN_TOKEN;
   const apiBodyLimitBytes = readPositiveInteger(
     env.BOSSRAID_API_BODY_LIMIT_BYTES,
@@ -130,7 +147,6 @@ export function createApiContext(
   });
   const erc8004Verifier = createErc8004Verifier(env);
   const settlementProofRefresher = createSettlementProofRefresher(env);
-  const controlState = createApiControlState(env);
   const workspaceCwd = findWorkspaceRoot(process.env.INIT_CWD ?? process.cwd());
   const receiptDbPath = resolveWorkspacePath(
     env.BOSSRAID_INFERENCE_RECEIPTS_FILE ??

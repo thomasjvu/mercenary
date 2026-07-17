@@ -21,7 +21,7 @@ interface ProductionReadinessCheck {
 
 export function buildProductionReadinessReport(input: {
   env: NodeJS.ProcessEnv;
-  storageBackend: 'sqlite' | 'memory';
+  storageBackend: 'sqlite' | 'memory' | 'postgres';
   persistenceHealthy: boolean;
   providers: ProviderProfile[];
   providerHealth: ProviderHealthStatus[];
@@ -76,15 +76,23 @@ export function buildProductionReadinessReport(input: {
       : 'Set NODE_ENV=production before public paid traffic.',
   });
 
+  const storageStatus =
+    input.storageBackend === 'memory' || !input.persistenceHealthy
+      ? 'fail'
+      : input.storageBackend === 'postgres'
+        ? 'pass'
+        : 'warn';
   addCheck({
     id: 'storage_backend',
-    status: input.storageBackend === 'memory' || !input.persistenceHealthy ? 'fail' : 'warn',
+    status: storageStatus,
     severity:
       input.storageBackend === 'memory' || !input.persistenceHealthy ? 'blocking' : 'warning',
     message:
       input.storageBackend === 'memory'
         ? 'Memory storage is not acceptable for production.'
-        : 'SQLite is acceptable for v1 controlled launch (single API process). Multi-replica / HA production needs a Postgres adapter (not Convex), plus backups and restore drills.',
+        : input.storageBackend === 'postgres'
+          ? 'Postgres storage is configured (BOSSRAID_DATABASE_URL). Prefer managed backups and a single API writer for control-state until multi-writer async control plane ships.'
+          : 'SQLite is acceptable for v1 controlled launch (single API process). Set BOSSRAID_STORAGE_BACKEND=postgres with BOSSRAID_DATABASE_URL for managed durable storage.',
     details: {
       backend: input.storageBackend,
       healthy: input.persistenceHealthy,

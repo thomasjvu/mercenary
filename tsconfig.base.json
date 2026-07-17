@@ -11,6 +11,7 @@
       "@bossraid/api-contracts": ["packages/api-contracts/src/index.ts"],
       "@bossraid/persistence": ["packages/persistence/src/index.ts"],
       "@bossraid/persistence-sqlite": ["packages/persistence-sqlite/src/index.ts"],
+      "@bossraid/persistence-postgres": ["packages/persistence-postgres/src/index.ts"],
       "@bossraid/evaluation": ["packages/evaluation/src/index.ts"],
       "@bossraid/provider-registry": ["packages/provider-registry/src/index.ts"],
       "@bossraid/raid-core": ["packages/raid-core/src/index.ts"],

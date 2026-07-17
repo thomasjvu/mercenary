@@ -1,6 +1,7 @@
+import { readStorageBackend } from '@bossraid/constants';
+import { findWorkspaceRoot, resolveWorkspacePath } from '@bossraid/constants/workspace';
 import { createSettlementExecutor } from './settlement-executor.js';
 import { createPersistenceBackend } from './persistence-backend.js';
-import { findWorkspaceRoot, resolveWorkspacePath } from '@bossraid/constants/workspace';
 
 type CliArgs = {
   raidId?: string;
@@ -147,8 +148,10 @@ function createCliPersistence(args: CliArgs, workspaceRoot: string) {
     workspaceRoot
   );
 
+  const storageBackend = readStorageBackend(process.env, { strict: true });
   return createPersistenceBackend({
-    storageBackend: 'sqlite',
+    storageBackend,
     sqliteFile,
+    databaseUrl: process.env.BOSSRAID_DATABASE_URL ?? process.env.DATABASE_URL,
   });
 }

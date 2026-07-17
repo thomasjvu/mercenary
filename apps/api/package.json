@@ -27,6 +27,7 @@
     "@bossraid/orchestrator": "workspace:*",
     "@bossraid/privacy-engine": "workspace:*",
     "@bossraid/persistence": "workspace:*",
+    "@bossraid/persistence-postgres": "workspace:*",
     "@bossraid/provider-registry": "workspace:*",
     "@bossraid/provider-sdk": "workspace:*",
     "@bossraid/sandbox-runner": "workspace:*",

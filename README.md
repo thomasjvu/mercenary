@@ -69,7 +69,7 @@ Full guide: **[content/README.md](content/README.md)**
 | ------------- | ------------------------------------------------------------------------------------------- |
 | Foundation    | `shared-types`, `constants`, `api-contracts`, `openapi-schemas`                             |
 | Raid stack    | `raid-core`, `provider-registry`, `provider-sdk`, `evaluation`, `scoring`, `sandbox-runner` |
-| Storage       | `persistence`, `persistence-sqlite`                                                         |
+| Storage       | `persistence`, `persistence-sqlite`, `persistence-postgres`                                 |
 | UI / proof    | `proof-ui` (headless), `ui` (React)                                                         |
 | Integrations  | `privacy-engine`, `smart-pay`, `venice-client`, `oneshot-relayer`, `http-client`, `logger`  |
 | Deploy / test | `contracts` (Solidity bootstrap), `test-fixtures` (dev/test only)                           |

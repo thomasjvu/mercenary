@@ -133,6 +133,16 @@ test('production readiness allows attestation bypass flags outside production', 
   );
 });
 
+test('production readiness passes storage check for postgres backend', () => {
+  const report = buildProductionReadinessReport({
+    ...baseInput,
+    storageBackend: 'postgres',
+  });
+  const check = report.checks.find((entry) => entry.id === 'storage_backend');
+  assert.equal(check?.status, 'pass');
+  assert.match(check?.message ?? '', /Postgres storage is configured/);
+});
+
 test('production readiness warns on infra gates outside production', () => {
   const report = buildProductionReadinessReport({
     ...baseInput,

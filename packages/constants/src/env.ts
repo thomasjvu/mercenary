@@ -33,7 +33,7 @@ export function readPositiveNumber(
   return fallback;
 }
 
-export type StorageBackend = 'sqlite' | 'memory';
+export type StorageBackend = 'sqlite' | 'memory' | 'postgres';
 
 export type ReadStorageBackendOptions = {
   strict?: boolean;
@@ -46,16 +46,16 @@ export function readStorageBackend(
 ): StorageBackend {
   const { strict = false, isolateNonProcessEnv = false } = options;
   const configured = env.BOSSRAID_STORAGE_BACKEND;
-  if (configured === 'sqlite' || configured === 'memory') {
+  if (configured === 'sqlite' || configured === 'memory' || configured === 'postgres') {
     return configured;
   }
 
   if (configured === 'file') {
-    throw new Error('BOSSRAID_STORAGE_BACKEND=file was removed. Use sqlite or memory.');
+    throw new Error('BOSSRAID_STORAGE_BACKEND=file was removed. Use sqlite, memory, or postgres.');
   }
 
   if (configured != null && strict) {
-    throw new Error('BOSSRAID_STORAGE_BACKEND must be sqlite or memory.');
+    throw new Error('BOSSRAID_STORAGE_BACKEND must be sqlite, memory, or postgres.');
   }
 
   if (isolateNonProcessEnv && env !== process.env) {
@@ -63,4 +63,10 @@ export function readStorageBackend(
   }
 
   return 'sqlite';
+}
+
+/** Postgres connection URL when BOSSRAID_STORAGE_BACKEND=postgres. */
+export function readDatabaseUrl(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  const raw = env.BOSSRAID_DATABASE_URL?.trim() || env.DATABASE_URL?.trim();
+  return raw || undefined;
 }

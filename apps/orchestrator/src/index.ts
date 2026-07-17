@@ -375,6 +375,7 @@ export async function createDefaultOrchestrator(
   const persistence = createPersistenceBackend({
     storageBackend,
     sqliteFile,
+    databaseUrl: process.env.BOSSRAID_DATABASE_URL ?? process.env.DATABASE_URL,
   });
   const snapshot = await persistence.loadState();
 

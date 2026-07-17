@@ -1,25 +1,27 @@
 # Data Storage
 
-Boss Raid persistence is **SQLite or in-memory** — no separate user-profile service. State is split across a few files and JSON snapshot tables.
+Boss Raid persistence is **SQLite, Postgres, or in-memory** — no separate user-profile service. State is split across SQLite files or a Postgres database with the same JSON snapshot tables.
 
 Product-facing summary: [Privacy & data](/docs/overview/privacy-and-data).
 
 ## v1 posture
 
-| Mode                        | Backend                    | When                                                                                                                                |
-| --------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **OSS / controlled launch** | SQLite (default)           | Single API process on Phala CVM or local disk; production-readiness allows SQLite with a **storage warning**                        |
-| **Full multi-replica HA**   | Postgres (planned adapter) | Multiple API instances, managed backups, connection pooling — **not Convex** (wrong trust boundary for TEE secrets + money ledgers) |
-| **Tests**                   | `memory`                   | Ephemeral only                                                                                                                      |
+| Mode                        | Backend                                         | When                                                                                                  |
+| --------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **OSS / controlled launch** | SQLite (default)                                | Single API process; production-readiness **warns** on SQLite                                          |
+| **Managed durable**         | **Postgres** (`@bossraid/persistence-postgres`) | `BOSSRAID_STORAGE_BACKEND=postgres` + `BOSSRAID_DATABASE_URL` — raids + control-state; **not Convex** |
+| **Tests**                   | `memory`                                        | Ephemeral only                                                                                        |
 
-SQLite is not a “shim”: it is the intentional v1 default. The gap is **horizontal scale**, not correctness for single-tenant launch.
+SQLite remains the intentional OSS default. Postgres is for managed backups / larger single-tenant deploys. Control-state on Postgres uses an in-memory working copy with durable write-through (prefer **one API writer** until multi-writer async control plane).
 
 ## Backends
 
-| Env                        | Default  | Behavior                  |
-| -------------------------- | -------- | ------------------------- |
-| `BOSSRAID_STORAGE_BACKEND` | `sqlite` | Durable local files       |
-| `memory`                   | —        | Ephemeral; dev/tests only |
+| Env                        | Default  | Behavior                                             |
+| -------------------------- | -------- | ---------------------------------------------------- |
+| `BOSSRAID_STORAGE_BACKEND` | `sqlite` | Durable local files                                  |
+| `postgres`                 | —        | Requires `BOSSRAID_DATABASE_URL` (or `DATABASE_URL`) |
+| `memory`                   | —        | Ephemeral; dev/tests only                            |
+| `BOSSRAID_DATABASE_URL`    | —        | Postgres URL when backend is `postgres`              |
 
 ## SQLite files
 
@@ -41,6 +43,31 @@ Single-row meta plus JSON payload rows:
 | `launch_reservation_records` | `reservation_id` | Pre-spawn billing reservations                                     |
 
 Implementation: `packages/persistence-sqlite/src/index.ts`.
+
+## Postgres (`packages/persistence-postgres`)
+
+Same table names and JSON payload shape as SQLite. Set:
+
+```bash
+BOSSRAID_STORAGE_BACKEND=postgres
+BOSSRAID_DATABASE_URL=postgres://user:pass@host:5432/bossraid
+# DATABASE_URL is accepted as a fallback
+```
+
+| Surface                                       | Package / class                | Notes                                                                                                                        |
+| --------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| Orchestrator raids / providers / reservations | `PostgresBossRaidPersistence`  | Async load/save; shared with SQLite schema                                                                                   |
+| API control state                             | `PostgresApiControlStateStore` | Load once at boot via `createApiControlStateStoreAsync`; sync mutate path keeps an in-memory copy and write-through persists |
+
+Prefer **one API process** as the control-state writer. Multi-replica API + shared Postgres control-state needs a later async control plane.
+
+Live adapter test (optional):
+
+```bash
+BOSSRAID_DATABASE_URL=postgres://... pnpm --filter @bossraid/persistence-postgres test
+```
+
+Implementation: `packages/persistence-postgres/src/index.ts`.
 
 ## API control state (`apps/api/src/control-state/store.ts`)
 
@@ -100,7 +127,7 @@ Served at `GET /v1/inference/receipts/:receiptId`.
 
 - Session and nonce entries expire by TTL and are pruned on read (`readPrunedState`).
 - Raid records persist for receipts, ops, and settlement — no automatic user-triggered wipe in the open-source stack.
-- Operators control disk retention by backup policy and SQLite file rotation in deploy.
+- Operators control retention via SQLite file rotation or managed Postgres backups.
 
 ## Related
 

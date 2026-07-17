@@ -54,17 +54,18 @@ gateway (serve-gateway.mjs)
 | ------------- | ------------------------------------------------------------------------------------------- |
 | Foundation    | `shared-types`, `constants`, `api-contracts`, `openapi-schemas`                             |
 | Raid stack    | `raid-core`, `provider-registry`, `provider-sdk`, `evaluation`, `scoring`, `sandbox-runner` |
-| Storage       | `persistence`, `persistence-sqlite`                                                         |
+| Storage       | `persistence`, `persistence-sqlite`, `persistence-postgres`                                 |
 | UI / proof    | `proof-ui` (headless), `ui` (React)                                                         |
 | Integrations  | `privacy-engine`, `smart-pay`, `venice-client`, `oneshot-relayer`, `http-client`, `logger`  |
 | Deploy / test | `contracts` (Solidity bootstrap), `test-fixtures` (dev/test only)                           |
 
 ## Persistence
 
-| Backend | Env                                         | Notes                                             |
-| ------- | ------------------------------------------- | ------------------------------------------------- |
-| SQLite  | `BOSSRAID_STORAGE_BACKEND=sqlite` (default) | `node:sqlite` `DatabaseSync` — not better-sqlite3 |
-| Memory  | `memory`                                    | Ephemeral; tests and dev only                     |
+| Backend  | Env                                         | Notes                                                                 |
+| -------- | ------------------------------------------- | --------------------------------------------------------------------- |
+| SQLite   | `BOSSRAID_STORAGE_BACKEND=sqlite` (default) | `node:sqlite` `DatabaseSync` — not better-sqlite3                     |
+| Postgres | `postgres` + `BOSSRAID_DATABASE_URL`        | `@bossraid/persistence-postgres` (`pg`); managed durable / HA deploys |
+| Memory   | `memory`                                    | Ephemeral; tests and dev only                                         |
 
 `BOSSRAID_STORAGE_BACKEND=file` was removed. Detail: [Data Storage](data-storage.md).
 

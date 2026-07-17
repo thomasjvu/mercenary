@@ -59,7 +59,7 @@ Operator and deploy workflows use `pnpm bossraid <command>` (`pnpm bossraid help
 ## Current Constraints
 
 - provider workers are HTTP only
-- persistence is sqlite or memory (not file-backed)
+- persistence is sqlite, memory, or postgres (`@bossraid/persistence-postgres`; not file-backed)
 - public API is raid-oriented by design
 - x402 and OpenAI-compatible chat endpoints are built
 - privacy engine library gates strict-private raids; attestation proof surfaces are documented in [content/docs/overview/proof.md](/Users/area/repos/boss-raid/content/docs/overview/proof.md) and [content/docs/operators/architecture.md](/Users/area/repos/boss-raid/content/docs/operators/architecture.md#attestation--proof) (raid telemetry still partial)

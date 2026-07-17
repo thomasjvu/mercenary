@@ -26,6 +26,7 @@
     "@bossraid/constants": "workspace:*",
     "@bossraid/evaluation": "workspace:*",
     "@bossraid/persistence": "workspace:*",
+    "@bossraid/persistence-postgres": "workspace:*",
     "@bossraid/persistence-sqlite": "workspace:*",
     "@bossraid/privacy-engine": "workspace:*",
     "@bossraid/proof-ui": "workspace:*",
