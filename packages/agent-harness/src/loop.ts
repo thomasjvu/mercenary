@@ -1,5 +1,8 @@
 import type { ProviderTaskPackage } from '@bossraid/shared-types';
+import { runNativeSdkHarness } from './backends/native-sdk.js';
+import { assertHarnessImageAllowed } from './image-allowlist.js';
 import type { HarnessRuntimeConfig } from './profile.js';
+import { nativeSdkRequired, resolveHarnessRuntimeBackend } from './runtime-backend.js';
 import {
   executeHarnessTool,
   HARNESS_TOOL_DEFINITIONS,
@@ -135,8 +138,9 @@ function toolResultsToMessages(results: ToolResult[]): ChatMessage[] {
 }
 
 /**
- * Multi-step agent tool loop for Codex, Grok, GLM, and Chutes (OpenAI-compatible tools).
- * Workspace is ephemeral and disposed after the run.
+ * Multi-step agent harness entrypoint.
+ * Default: OpenAI-compatible tool loop. Optional native backends for codex/claude_code
+ * when BOSSRAID_HARNESS_NATIVE_SDK=1|require (SDK package or CLI in image).
  */
 export async function runAgentHarnessLoop(input: {
   task: ProviderTaskPackage;
@@ -146,9 +150,41 @@ export async function runAgentHarnessLoop(input: {
   model: string;
   timeoutMs: number;
   onProgress?: (message: string, progress: number) => void;
+  env?: NodeJS.ProcessEnv;
 }): Promise<HarnessSubmission> {
   if (input.config.kind === 'off') {
     throw new Error('Harness mode is off.');
+  }
+
+  const env = input.env ?? process.env;
+  const imageGate = assertHarnessImageAllowed(input.config, env);
+  if (!imageGate.ok) {
+    throw new Error(imageGate.reason);
+  }
+
+  const backend = resolveHarnessRuntimeBackend(input.config.kind, env);
+  if (backend === 'claude_agent_sdk' || backend === 'codex_sdk') {
+    try {
+      return await runNativeSdkHarness({
+        backend,
+        task: input.task,
+        config: input.config,
+        apiKey: input.apiKey,
+        model: input.model,
+        timeoutMs: input.timeoutMs,
+        onProgress: input.onProgress,
+      });
+    } catch (error) {
+      if (nativeSdkRequired(env)) {
+        throw error instanceof Error
+          ? error
+          : new Error(`Native harness ${backend} required but failed: ${String(error)}`);
+      }
+      input.onProgress?.(
+        `Native ${backend} unavailable (${error instanceof Error ? error.message : String(error)}); falling back to openai_tools`,
+        0.12
+      );
+    }
   }
 
   const workspace = await createHarnessWorkspace(input.task);

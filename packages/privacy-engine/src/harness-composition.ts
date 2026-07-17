@@ -161,6 +161,28 @@ export function evaluateHarnessProfileIntegrity(
     });
   }
 
+  // Optional allowlist (ops-controlled digests only for specialized seats).
+  if (profile.imageDigest?.trim() && typeof process !== 'undefined' && process.env) {
+    const allowlistRaw = process.env.BOSSRAID_HARNESS_IMAGE_ALLOWLIST?.trim() ?? '';
+    if (allowlistRaw) {
+      const allowed = new Set(
+        allowlistRaw
+          .split(',')
+          .map((part) => part.trim().toLowerCase())
+          .filter(Boolean)
+          .map((part) => (part.startsWith('sha256:') ? part : `sha256:${part}`))
+      );
+      const digest = profile.imageDigest.trim().toLowerCase();
+      const normalized = digest.startsWith('sha256:') ? digest : `sha256:${digest}`;
+      if (!allowed.has(normalized) && !allowed.has(digest)) {
+        issues.push({
+          code: 'image_digest_not_allowlisted',
+          message: `imageDigest ${profile.imageDigest} is not on BOSSRAID_HARNESS_IMAGE_ALLOWLIST.`,
+        });
+      }
+    }
+  }
+
   if (profile.compositionHash?.trim()) {
     const recomputed = recomputeHarnessCompositionHash(profile);
     // Profile may have been hashed without modelApiBase; accept either host null or provided base.

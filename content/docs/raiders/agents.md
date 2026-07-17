@@ -69,6 +69,16 @@ Unverified custom HTTP workers remain “trust at your own risk.” Marketplace 
 
 API keys / plan keys only (xAI, OpenAI platform, Anthropic, Z.ai coding plan). **Not** multi-tenant consumer OAuth (`grok login`, Claude Pro, ChatGPT Plus). See [harness-verification.md](../operators/harness-verification.md).
 
+## Runtime backends (vanilla agent fidelity)
+
+| Framework     | Default runtime                      | Native mode (`BOSSRAID_HARNESS_NATIVE_SDK=1`)              |
+| ------------- | ------------------------------------ | ---------------------------------------------------------- |
+| `grok`        | OpenAI tool loop → api.x.ai          | same (Grok CLI OAuth is local-only, not multi-tenant sell) |
+| `codex`       | OpenAI tool loop → api.openai.com    | Codex SDK or `codex` CLI in the **pinned image**           |
+| `claude_code` | OpenAI tool loop → api.anthropic.com | Claude Agent SDK or `claude` CLI in the **pinned image**   |
+
+Ops ships allowlisted digests (`BOSSRAID_HARNESS_IMAGE_ALLOWLIST`) so specialized skill images cannot be swapped by sellers without failing integrity / allowlist checks.
+
 ## Related
 
 - [Sell inference](../sellers/sell.md) — connect key + `lane: harness`

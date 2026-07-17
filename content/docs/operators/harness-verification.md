@@ -16,15 +16,30 @@ So: **yes, we can use Codex / Claude as agents** in the marketplace sense by sel
 
 **Buyer** side is different: you can point Grok CLI at Boss Raid as a custom model (`base_url` + `br_` / admin token) and use your own OAuth/API for other models — that does not mean Boss Raid resells your Grok login to others.
 
-### Future: native SDK runtimes (optional)
+### Native SDK runtimes (Phase 3)
 
-A later upgrade can add harness backends:
+Harness execution backend is selected at runtime:
 
-- `openai_tools` (current default for all kinds)
-- `codex_sdk` → `@openai/codex-sdk` with seller OpenAI/Codex credentials
-- `claude_agent_sdk` → `@anthropic-ai/claude-agent-sdk` with seller Anthropic key
+| Backend                  | When                            | What runs                                                          |
+| ------------------------ | ------------------------------- | ------------------------------------------------------------------ |
+| `openai_tools` (default) | Always available                | Boss Raid tool loop → vendor `chat/completions`                    |
+| `claude_agent_sdk`       | `claude_code` + native SDK mode | Claude Agent SDK if installed in image, else `claude` CLI headless |
+| `codex_sdk`              | `codex` + native SDK mode       | Codex SDK if installed, else `codex` CLI                           |
 
-Until those land, harness kinds differ mainly by **API base + model defaults + branding**, not by spawning the desktop CLIs.
+Env:
+
+| Variable                                             | Purpose                                                                                    |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `BOSSRAID_HARNESS_RUNTIME_BACKEND`                   | `auto` (default), `openai_tools`, `claude_agent_sdk`, `codex_sdk`                          |
+| `BOSSRAID_HARNESS_NATIVE_SDK`                        | `0` / `1` / `require` — `auto` uses native backends for codex/claude when `1` or `require` |
+| `BOSSRAID_HARNESS_IMAGE_DIGEST`                      | Platform default image digest for harness seats                                            |
+| `BOSSRAID_HARNESS_IMAGE_ALLOWLIST`                   | Comma-separated digests allowed for specialized (and optional vanilla) seats               |
+| `BOSSRAID_HARNESS_REQUIRE_IMAGE_ALLOWLIST`           | `1` = fail specialized without allowlisted digest (also enforced in production)            |
+| `BOSSRAID_CLAUDE_CLI_BIN` / `BOSSRAID_CODEX_CLI_BIN` | Override CLI binary paths in SDK images                                                    |
+
+Specialized seats (`skill_augmented` or non-empty skills) **must** pin `imageDigest` and, when the allowlist is set, that digest must be listed. Unlisted seller images cannot run as verified specialized agents.
+
+Grok remains `openai_tools` against `api.x.ai` (no separate Grok “agent SDK” package in-tree).
 
 ## Is harness hosted on our Phala?
 

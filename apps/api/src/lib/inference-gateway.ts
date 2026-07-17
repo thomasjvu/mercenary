@@ -367,7 +367,10 @@ export async function runHarnessGatewayJob(input: {
       kind,
       installation: input.provider.harnessProfile?.installation ?? 'fresh',
       skills: input.provider.harnessProfile?.skills ?? [],
-      imageDigest: input.provider.harnessProfile?.imageDigest,
+      imageDigest:
+        input.provider.harnessProfile?.imageDigest?.trim() ||
+        env.BOSSRAID_HARNESS_IMAGE_DIGEST?.trim() ||
+        undefined,
       modelId,
       modelApiBase: apiBase,
       planProvider: input.provider.harnessProfile?.planProvider ?? upstream,
@@ -383,6 +386,7 @@ export async function runHarnessGatewayJob(input: {
       apiKey: resolvedApiKey,
       model: modelId,
       timeoutMs: timeRemainingMs,
+      env,
       onProgress: (message, progress) => {
         void input.orchestrator.recordProviderHeartbeat(
           input.body.raidId,

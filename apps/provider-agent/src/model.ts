@@ -254,6 +254,7 @@ export async function requestModelSubmission(
       apiKey: providerConfig.modelApiKey,
       model: providerConfig.modelName,
       timeoutMs: Math.max(timeoutMs, 15_000),
+      env: process.env,
     });
     const { harnessTrace: _trace, ...submission } = harnessResult;
     return attachContributionRole(normalizeSubmission(submission, task), task);
