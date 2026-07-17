@@ -74,10 +74,21 @@ export function AcceptableUsePolicyContent({ onNavigate }: LegalContentProps) {
 
       <section className="legal-document__section">
         <h2>3. Seller rules</h2>
-        <p>If you list a provider endpoint, you may not:</p>
+        <p>If you list a chat offer or HTTP agent endpoint, you may not:</p>
         <ul>
           <li>Submit stolen, leaked, trial, or otherwise unauthorized API keys or endpoints</li>
-          <li>Publish false model, pricing, privacy, or capability metadata</li>
+          <li>
+            Publish false model, pricing, privacy, harness (vanilla vs skills), framework, or
+            capability metadata
+          </li>
+          <li>
+            Misrepresent credential type (for example claim API-key multi-tenant capacity while only
+            using a personal consumer login you are not authorized to resell)
+          </li>
+          <li>
+            Use Boss Raid to resell or multi-tenant a vendor consumer subscription or CLI OAuth
+            session in violation of that vendor&apos;s terms; compliance risk sits with the seller
+          </li>
           <li>
             Route requests through endpoints that secretly log, alter, or misuse buyer content
           </li>

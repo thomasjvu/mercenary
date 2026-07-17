@@ -26,8 +26,11 @@ export function PrivacyPolicyContent({ onNavigate }: LegalContentProps) {
         <p>
           <strong>Information you provide.</strong> This includes your wallet address, optional
           email or profile details you choose to add, support messages, buyer API key metadata,
-          seller endpoint details, pricing, payout wallet, and encrypted seller credentials needed
-          to route work.
+          seller endpoint details, pricing, payout wallet, harness profile metadata (framework,
+          fresh vs skills, seller-declared credential class), and — for hosted chat offers —
+          encrypted upstream API credentials needed to route work. HTTP agent workers keep their
+          model/CLI credentials on the seller&apos;s infrastructure; we store the endpoint, auth
+          token for our provider contract, and published profile fields.
         </p>
         <p>
           <strong>Payment information.</strong> If you buy prepaid balance or pay through a card or

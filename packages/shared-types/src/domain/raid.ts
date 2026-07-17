@@ -105,6 +105,8 @@ export interface RaidConstraints {
   allowedInstallations?: HarnessInstallation[];
   /** Require every listed skill id on the provider harness profile. */
   requiredSkills?: string[];
+  /** Seller-declared credential class filter (`api_key` | `plan_or_cli` | `unknown`). */
+  allowedCredentialClasses?: Array<'api_key' | 'plan_or_cli' | 'unknown'>;
 }
 
 export interface RewardPolicy {

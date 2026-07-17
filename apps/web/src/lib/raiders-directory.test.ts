@@ -82,6 +82,44 @@ test('hasActiveRaidersDirectory detects non-default state', () => {
     hasActiveRaidersDirectory({ ...RAIDERS_DIRECTORY_DEFAULTS, maxPriceUsd: 0.25 }),
     true
   );
+  assert.equal(
+    hasActiveRaidersDirectory({ ...RAIDERS_DIRECTORY_DEFAULTS, frameworkFilter: 'grok' }),
+    true
+  );
+});
+
+test('filterAndSortRaiders applies framework and credential class filters', () => {
+  const grok = buildFixture({
+    providerId: 'grok-agent',
+    agentFramework: 'grok',
+    harnessProfile: {
+      lane: 'agent_harness',
+      installation: 'fresh',
+      skills: [],
+      framework: 'grok',
+      credentialClass: 'plan_or_cli',
+    },
+  } as Partial<Provider>);
+  const chat = buildFixture({
+    providerId: 'chat-seat',
+    agentFramework: 'custom',
+    harnessProfile: {
+      lane: 'api_chat',
+      installation: 'fresh',
+      skills: [],
+      credentialClass: 'api_key',
+    },
+  } as Partial<Provider>);
+
+  const filtered = filterAndSortRaiders([grok, chat], {
+    ...RAIDERS_DIRECTORY_DEFAULTS,
+    frameworkFilter: 'grok',
+    credentialClassFilter: 'plan_or_cli',
+  });
+  assert.deepEqual(
+    filtered.map((raider) => raider.provider.providerId),
+    ['grok-agent']
+  );
 });
 
 test('filterAndSortRaiders applies max price ceiling and sorts by price', () => {

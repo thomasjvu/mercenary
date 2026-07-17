@@ -39,6 +39,7 @@ export type ProviderViewResponse = {
     planProvider?: string;
     attestedAt?: string;
     verification?: 'unverified' | 'heartbeat_self_report' | 'image_attested';
+    credentialClass?: 'api_key' | 'plan_or_cli' | 'unknown';
   };
   lastSeenAt?: string;
   verification?: {

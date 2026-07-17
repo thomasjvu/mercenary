@@ -85,7 +85,7 @@ export async function publishSellerUpstreamOffers(
     modelIds: string[];
     discountPercent: number;
     payoutWallet?: string;
-    /** chat = single completion (default); harness = multi-step tool loop on platform seats */
+    /** Product UI publishes chat only. Agent hire uses HTTP workers, not platform harness lane. */
     lane?: 'chat' | 'harness';
   }
 ) {

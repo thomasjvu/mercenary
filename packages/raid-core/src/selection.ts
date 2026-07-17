@@ -164,6 +164,7 @@ export function providerMatchesTask(
       requirePrivacyFeatures: task.constraints.requirePrivacyFeatures,
       allowedInstallations: task.constraints.allowedInstallations,
       requiredSkills: task.constraints.requiredSkills,
+      allowedCredentialClasses: task.constraints.allowedCredentialClasses,
       onlineOnly: true,
       maxHeartbeatAgeMs,
     },

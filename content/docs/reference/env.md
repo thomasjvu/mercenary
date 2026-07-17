@@ -232,6 +232,7 @@ These vars are for local development, CI smoke tests, and contributor tooling. *
 | `BOSSRAID_HARNESS_REQUIRE_IMAGE_ALLOWLIST` | `1` = fail specialized without allowlisted digest |
 | `BOSSRAID_HARNESS_RUNTIME_BACKEND` | `auto` \| `openai_tools` \| `claude_agent_sdk` \| `codex_sdk` |
 | `BOSSRAID_HARNESS_NATIVE_SDK` | `0` \| `1` \| `require` — native Codex/Claude backends |
+| `BOSSRAID_HARNESS_CREDENTIAL_CLASS` | `api_key` \| `plan_or_cli` \| `unknown` — seller-declared purchase type for buyer filters (HTTP workers) |
 | `BOSSRAID_HARNESS_MAX_STEPS` | Max tool-loop steps (default 10) |
 | `BOSSRAID_BOUNTY_E2E_PROVIDER_ID` | Bounty smoke provider override (default `bounty-e2e-provider`) |
 | `BOSSRAID_BOUNTY_E2E_PROVIDER_TOKEN` | Bounty smoke bearer token (default `bossraid-bounty-e2e`) |

@@ -63,6 +63,7 @@ export interface RaidPolicyFields {
   selectionMode: unknown;
   allowedInstallations: unknown;
   requiredSkills: unknown;
+  allowedCredentialClasses: unknown;
 }
 
 export interface RaidConstraintsFields {
@@ -85,6 +86,7 @@ export interface RaidConstraintsFields {
   selectionMode: unknown;
   allowedInstallations: unknown;
   requiredSkills: unknown;
+  allowedCredentialClasses: unknown;
 }
 
 export interface RaidConstraintsOverrides {
@@ -116,6 +118,7 @@ export interface RaidConstraintsFieldLabels {
   selectionMode: string;
   allowedInstallations: string;
   requiredSkills: string;
+  allowedCredentialClasses: string;
 }
 
 export function raidConstraintsFieldLabels(
@@ -141,6 +144,7 @@ export function raidConstraintsFieldLabels(
     selectionMode: `${prefix}.selection_mode`,
     allowedInstallations: `${prefix}.allowed_installations`,
     requiredSkills: `${prefix}.required_skills`,
+    allowedCredentialClasses: `${prefix}.allowed_credential_classes`,
   };
 }
 
@@ -168,6 +172,7 @@ export function readRaidConstraintsFields(source: Record<string, unknown>): Raid
     selectionMode: read('selectionMode', 'selection_mode'),
     allowedInstallations: read('allowedInstallations', 'allowed_installations'),
     requiredSkills: read('requiredSkills', 'required_skills'),
+    allowedCredentialClasses: read('allowedCredentialClasses', 'allowed_credential_classes'),
   };
 }
 
@@ -194,6 +199,7 @@ export function raidPolicyFieldsToConstraintFields(
     selectionMode: fields.selectionMode,
     allowedInstallations: fields.allowedInstallations,
     requiredSkills: fields.requiredSkills,
+    allowedCredentialClasses: fields.allowedCredentialClasses,
   };
 }
 
@@ -290,7 +296,27 @@ export function buildRaidConstraintsFromFields(
       fields.requiredSkills == null
         ? undefined
         : ensureStringArray(fields.requiredSkills, labels.requiredSkills),
+    allowedCredentialClasses:
+      fields.allowedCredentialClasses == null
+        ? undefined
+        : ensureCredentialClassArray(
+            fields.allowedCredentialClasses,
+            labels.allowedCredentialClasses
+          ),
   };
+}
+
+function ensureCredentialClassArray(
+  value: unknown,
+  label: string
+): Array<'api_key' | 'plan_or_cli' | 'unknown'> {
+  const items = ensureStringArray(value, label);
+  return items.map((item, index) => {
+    if (item === 'api_key' || item === 'plan_or_cli' || item === 'unknown') {
+      return item;
+    }
+    throw new Error(`${label}[${index}] must be api_key, plan_or_cli, or unknown`);
+  });
 }
 
 function ensureHarnessInstallationArray(
@@ -340,6 +366,7 @@ export function readRaidPolicyFields(source: Record<string, unknown>): RaidPolic
     selectionMode: read('selectionMode', 'selection_mode'),
     allowedInstallations: read('allowedInstallations', 'allowed_installations'),
     requiredSkills: read('requiredSkills', 'required_skills'),
+    allowedCredentialClasses: read('allowedCredentialClasses', 'allowed_credential_classes'),
   };
 }
 

@@ -1,68 +1,76 @@
 # Sell Inference
 
-Register a clean HTTP endpoint. Boss Raid verifies it, routes buyers to you, and pays your wallet when your work is approved.
+Boss Raid has **two primary seller SKUs**:
 
-Sellers run their own endpoints. Buyers never receive your upstream credentials.
+| SKU             | What buyers get                                    | You run                                                   | Credentials                                       |
+| --------------- | -------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------- |
+| **Hosted chat** | OpenAI-compatible single completion (Venice-style) | Nothing — paste upstream API key                          | **API keys only**                                 |
+| **HTTP agent**  | Hireable task-completion / subagent seat           | Your HTTP worker (Claude Code, Grok Build, Codex, custom) | API key **or** local plan/CLI on **your** machine |
 
-Overview of discount inference: [discount-inference.md](../buyers/discount-inference.md).
+Buyers never receive your upstream credentials.
 
-## Quick path
+Overview of discount inference: [discount-inference.md](../buyers/discount-inference.md).  
+Agent hire filters: [agents.md](../raiders/agents.md).
+
+## Compliance (read this)
+
+- **Hosted chat** stores encrypted **upstream API keys** on Boss Raid so we can complete requests on shared infrastructure. Do not paste consumer CLI OAuth sessions as multi-tenant platform secrets.
+- **HTTP agents** keep model/CLI logins on **your** endpoint. You may use Claude Code, Grok Build, Codex, or similar subscriptions on your worker **at your own risk**. Serving marketplace buyers from a consumer/CLI plan may violate that vendor’s terms. Boss Raid does not verify plan entitlements; compliance is **seller + vendor**.
+- Published **credential class** (`api_key` \| `plan_or_cli` \| `unknown`) is seller-declared for buyer filters, not a warranty of vendor approval.
+- Legal: [Terms of Service](/terms-of-service) §6, [Acceptable Use Policy](/acceptable-use-policy) §3.
+
+## Quick path — HTTP agent (hireable subagent)
 
 1. **Register** — `POST /v1/seller/providers` (wallet session) or `POST /agents/register` (registry token).
 2. **Verify** — `POST /v1/seller/providers/:providerId/verify` or admin probe.
 3. **Set pricing** — task or token-metered rate card.
-4. **Go live** — buyers route via discount inference; track earnings at `/account`.
+4. **Publish harness profile** — framework (`claude_code` / `grok` / `codex` / …), `installation` (`fresh` or `skill_augmented`), skills, optional `credentialClass`.
+5. **Go live** — buyers hire via raids / marketplace filters; track earnings at `/account`.
 
-## Self-serve (wallet)
+### Self-serve HTTP agent (wallet)
 
 ```bash
 curl -X POST http://127.0.0.1:8787/v1/seller/providers \
   -H "cookie: bossraid_session=..." \
   -H "content-type: application/json" \
   -d '{
-    "name": "Codex GPT-5.5 Seller",
+    "name": "Vanilla Grok Build",
     "endpoint": "https://seller.example.com/bossraid",
-    "agentFramework": "codex",
-    "modelProvider": "openai",
-    "modelId": "gpt-5.5",
+    "agentFramework": "grok",
+    "modelProvider": "xai",
+    "modelId": "grok-4.5",
     "pricing": {
-      "mode": "token_metered",
-      "pricePer1mInputTokensUsd": 0.08,
-      "pricePer1mOutputTokensUsd": 0.16,
-      "minimumChargeUsd": 0.01,
+      "mode": "task",
+      "pricePerTaskUsd": 0.25,
       "currency": "USD"
     },
     "payoutWallet": "0xSellerWallet",
-    "outputTypes": ["text", "json"],
-    "auth": { "type": "bearer", "token": "seller-ingress-token" }
+    "outputTypes": ["text", "json", "patch"],
+    "auth": { "type": "bearer", "token": "seller-ingress-token" },
+    "harnessProfile": {
+      "lane": "agent_harness",
+      "installation": "fresh",
+      "skills": [],
+      "framework": "grok",
+      "planProvider": "xai",
+      "credentialClass": "plan_or_cli"
+    }
   }'
 ```
 
 Re-verify anytime: `POST /v1/seller/providers/:providerId/verify`
 
-## Seller paths (friction)
+Worker env: see `examples/providers/harness-*.env.example`. Set `BOSSRAID_HARNESS_CREDENTIAL_CLASS=plan_or_cli` or `api_key`.
 
-| Path                                  | You run                             | Best for                           |
-| ------------------------------------- | ----------------------------------- | ---------------------------------- |
-| **Hosted chat (default)**             | Paste API key                       | Discount inference                 |
-| **Platform harness seat**             | Paste key + `lane: "harness"`       | Agent tool loops (shared Phala)    |
-| **HTTP provider-agent**               | Your worker endpoint                | Custom agents                      |
-| **Ops harness worker**                | Ops `BOSSRAID_HARNESS_MODE` process | Platform keys / dedicated capacity |
-| **BYO Phala (advanced, not default)** | Your own CVM                        | Exclusive capacity only            |
+## Hosted chat (catalog / discount inference)
 
-**No auto-provision of a Phala box per seller.** See [Harness verification](../operators/harness-verification.md).
+Sell model completions without running a worker:
 
-## Hosted upstream seller (preferred for catalog models)
+1. `POST /v1/seller/upstream/:provider/connect` — validates key via live `/models` **and** a cheap chat probe
+2. `GET /v1/seller/upstream/:provider/models/catalog` — catalog + reference rates
+3. `POST /v1/seller/upstream/:provider/offers` — publish chat offers (`lane: "chat"` only in product UI)
 
-Sell inference without running a provider worker. Connect an upstream key and publish catalog offers:
-
-1. `POST /v1/seller/upstream/:provider/connect` — validates key via live `/models` **and** a cheap chat probe (`anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`, `darkbloom`)
-2. `GET /v1/seller/upstream/:provider/models/catalog` — Boss Raid catalog with reference rates
-3. `POST /v1/seller/upstream/:provider/offers` — register hosted offers per model
-
-Keys are encrypted at rest. This is **API-key selling**, not consumer OAuth or ChatGPT/Claude “subscription account” resale (unsupported and out of scope).
-
-**Harness seats** (`lane: "harness"`) for Grok / Claude / Codex brands run Boss Raid’s agent tool loop with that API key (same pattern as Grok via `api.x.ai`). Native Codex SDK / Claude Agent SDK are documented as future backends in [harness-verification.md](../operators/harness-verification.md) — still API-key (or plan-key) auth for multi-tenant sell, not shared `grok login` / claude.ai sessions.
+Keys are encrypted at rest. This is **API-key selling** for single-shot completions.
 
 ```json
 {
@@ -72,113 +80,50 @@ Keys are encrypted at rest. This is **API-key selling**, not consumer OAuth or C
 }
 ```
 
-- `lane: "chat"` (default) → `inference_hosted` single-shot completion (`harnessProfile.lane=api_chat`)
-- `lane: "harness"` → `harness_hosted` multi-step tool loop on the **platform** gateway (`agent_harness`, fresh by default)
+Web UI: `/onboarding/seller` → connect key → discount → publish **chat** offers.
 
-| Upstream  | Chat framework | Harness kind (`lane: "harness"`) |
-| --------- | -------------- | -------------------------------- |
-| Anthropic | `claude_code`  | `claude_code` (Claude Code seat) |
-| xAI       | `grok`         | `grok`                           |
-| Z.ai      | `glm`          | `glm`                            |
-| Chutes    | `chutes`       | `chutes`                         |
-| Venice/…  | `codex`        | `codex`-style tool loop          |
+Platform-hosted multi-step harness seats (`lane: "harness"`) are **legacy / ops-only** and not the primary agent-hire path. Prefer HTTP workers for Claude Code / Grok Build / Codex agent profiles.
 
-Claude Code on Boss Raid is **Claude models + the platform tool loop** (not a shell-out to the Claude Code CLI on a CVM).
+## Threads & multi-turn
 
-Boss Raid routes to `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`. Keys stay encrypted; no per-seller Phala box.
+| Surface              | Who owns history                            | Server role              |
+| -------------------- | ------------------------------------------- | ------------------------ |
+| Discount chat        | Client sends full `messages[]` each request | Stateless completion     |
+| Mercenary UI threads | Browser `localStorage`                      | Raid state via raid APIs |
+| HTTP agent jobs      | Ephemeral workspace on the seller worker    | Submit then discard      |
 
-Web UI: `/onboarding/seller` → connect key → pick **Chat** vs **Harness** → publish. Manage offers shows a chat/harness badge per listing.
+## Harness profile (HTTP agents)
 
-## Threads & multi-turn (seller / provider)
+| Field             | Meaning                                                              |
+| ----------------- | -------------------------------------------------------------------- |
+| `lane`            | `agent_harness` for hireable agents; `api_chat` for pure completions |
+| `installation`    | `fresh` (vanilla) or `skill_augmented`                               |
+| `skills[]`        | Declared skill ids when augmented                                    |
+| `framework`       | `claude_code` · `grok` · `codex` · `glm` · `chutes` · …              |
+| `credentialClass` | `api_key` · `plan_or_cli` · `unknown` (buyer filter)                 |
 
-**You do not persist buyer chat threads as the inference provider.**
-
-| Surface                                | Who owns history                                        | Server role                           |
-| -------------------------------------- | ------------------------------------------------------- | ------------------------------------- |
-| Discount chat (`/v1/chat/completions`) | Client sends full `messages[]` each request             | Stateless completion; no thread store |
-| Mercenary UI threads                   | Browser `localStorage` (`bossraid.mercenary.threads.*`) | Raid state via raid APIs only         |
-| Harness seat jobs                      | Ephemeral workspace per accept                          | Workspace discarded after submit/fail |
-
-Implication: multi-turn context is the client's job. Buyers (or apps) must resend prior turns. Do not assume the gateway remembers conversation IDs.
-
-## Harness profile (fresh vs skills)
-
-Every provider may publish a `harnessProfile` so buyers know whether they get a pure install:
-
-| Field          | Meaning                                                         |
-| -------------- | --------------------------------------------------------------- |
-| `lane`         | `api_chat` (chat completion) or `agent_harness` (CLI/tool loop) |
-| `installation` | `fresh` (stock), `skill_augmented`, or `unknown`                |
-| `skills[]`     | Declared skill ids/versions/hashes when augmented               |
-
-Buyers can constrain raids with `allowedInstallations: ["fresh"]` or `requiredSkills: [...]`.
-
-## Registry bootstrap (admin token)
-
-```bash
-curl http://127.0.0.1:8787/agents/register \
-  -H "authorization: Bearer $BOSSRAID_REGISTRY_TOKEN" \
-  -H "content-type: application/json" \
-  -d '{
-    "agentId": "seller-codex-gpt55",
-    "name": "Codex GPT-5.5 Seller",
-    "endpoint": "https://seller.example.com/bossraid",
-    "agentFramework": "codex",
-    "modelProvider": "openai",
-    "modelId": "gpt-5.5",
-    "pricing": { "mode": "task", "pricePerTaskUsd": 0.25, "currency": "USD" },
-    "auth": { "type": "bearer", "token": "seller-ingress-token" }
-  }'
-```
-
-Probe: `POST /agents/:providerId/verify` with the registry token.
-
-## Provider interface
-
-Your endpoint must implement the Boss Raid provider HTTP contract: health, accept, heartbeat, submit, failure callbacks. Auth: bearer or HMAC.
+Buyers filter with raid policy: `allowedAgentFrameworks`, `allowedInstallations`, `requiredSkills`, `allowedCredentialClasses`.
 
 ## Metadata fields (keep separate)
 
-| Field            | Purpose                                          |
-| ---------------- | ------------------------------------------------ |
-| `verification`   | Endpoint/API/framework/model checks              |
-| `privacy`        | TEE, signed outputs, retention **feature flags** |
-| `erc8004`        | Onchain identity refs                            |
-| `trust`          | Derived from ERC-8004 evidence (not self-scored) |
-| `reputation`     | Observed performance                             |
-| `harnessProfile` | Fresh vs skill-augmented agent/API install       |
+| Field            | Purpose                                        |
+| ---------------- | ---------------------------------------------- |
+| `verification`   | Endpoint/API/framework/model checks            |
+| `privacy`        | TEE, signed outputs, retention flags           |
+| `erc8004`        | Onchain identity refs                          |
+| `trust`          | Derived from ERC-8004 evidence                 |
+| `reputation`     | Observed performance                           |
+| `harnessProfile` | Vanilla vs skills, framework, credential class |
 
-Do not merge these. Client-supplied numeric `privacy.score` / `trust.score` are ignored for routing. Buyers filter on the combination they need.
+## Payouts
 
-Self-serve endpoints must be **public HTTPS** in production (private/loopback targets are blocked to prevent SSRF). Local compose uses private endpoints automatically when `NODE_ENV !== production`, or set `BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS=1`.
+- **Discount inference (single provider):** pays the selected seller; budget capped to their rate.
+- **Raids:** equal split among successful providers (no winner-takes-all).
 
-## Pricing modes
-
-- **task** — flat `pricePerTaskUsd` per raid contribution
-- **token_metered** — `pricePer1mInputTokensUsd`, `pricePer1mOutputTokensUsd`, `minimumChargeUsd`
-
-Rate-card changes affect future quotes only. Settlement uses the immutable quote snapshot.
-
-## Payout
-
-- **Multi-agent raids:** successful providers split escrow **equally**. No winner/runner-up logic.
-- **Discount inference (single provider):** pays the selected seller; budget is capped to their declared rate.
-- Invalid or rejected work gets $0.
-
-| Lane                         | Minimum payout                                                                  |
-| ---------------------------- | ------------------------------------------------------------------------------- |
-| Multi-agent / on-chain flush | `$1` default (`BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD`) — ledger accrues below this |
-
-| Discount inference (single provider) | `$0.01` |
-
-Onchain payouts require `BOSSRAID_SETTLEMENT_MODE=onchain`, a funded settlement treasury, and `BOSSRAID_SETTLEMENT_FUND_JOBS=true` in production. Full rules: [reference/payments.md](../reference/payments.md#payouts-sellers).
+Onchain payouts require settlement mode onchain and a funded treasury. Rules: [reference/payments.md](../reference/payments.md#payouts-sellers).
 
 Track earnings: `GET /v1/seller/earnings`, dashboard at `/account`.
 
-## Pause an offer
+`PATCH /v1/seller/providers/:providerId` with `marketplaceOfferStatus: "paused"` excludes you from routing.
 
-`PATCH /v1/seller/providers/:providerId` with `marketplaceOfferStatus: "paused"`. Paused sellers are excluded from routing and order books.
-
-## Routing cooldown
-
-Providers that fail dispatch enter a 5-minute routing cooldown. They stay registered but are excluded from `cost_first` selection until the cooldown expires.
+Providers that fail dispatch enter a 5-minute routing cooldown.

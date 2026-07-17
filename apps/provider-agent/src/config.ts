@@ -123,6 +123,14 @@ export function buildProviderConfig(env: NodeJS.ProcessEnv = process.env) {
       ? (defaultModelName ?? 'gpt-5.5')
       : defaultModelName);
 
+  const credentialClassRaw = env.BOSSRAID_HARNESS_CREDENTIAL_CLASS?.trim().toLowerCase();
+  const credentialClass =
+    credentialClassRaw === 'api_key' ||
+    credentialClassRaw === 'plan_or_cli' ||
+    credentialClassRaw === 'unknown'
+      ? credentialClassRaw
+      : undefined;
+
   const harness: HarnessRuntimeConfig = {
     kind: harnessKind,
     installation: resolveInstallation(harnessSkills),
@@ -133,6 +141,8 @@ export function buildProviderConfig(env: NodeJS.ProcessEnv = process.env) {
     planProvider: env.BOSSRAID_HARNESS_PLAN_PROVIDER ?? planProviderForHarness(harnessKind),
     maxSteps: Math.max(1, Math.min(32, Number(env.BOSSRAID_HARNESS_MAX_STEPS ?? '10'))),
     allowShell: readBoolean(env.BOSSRAID_HARNESS_ALLOW_SHELL),
+    // Default plan_or_cli when harness mode is on and unset (CLI/sub workers are common).
+    credentialClass: credentialClass ?? (harnessKind !== 'off' ? 'plan_or_cli' : undefined),
   };
   const harnessProfile = buildHarnessProfile(harness);
 

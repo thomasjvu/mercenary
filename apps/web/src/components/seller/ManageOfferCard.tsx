@@ -14,7 +14,8 @@ function resolveOfferLaneBadge(provider: Provider): { label: string; tone: 'chat
     provider.source?.type === 'harness_hosted' ||
     provider.harnessProfile?.lane === 'agent_harness'
   ) {
-    return { label: 'harness', tone: 'harness' };
+    // Legacy platform harness seats still display; primary agent path is HTTP workers.
+    return { label: 'agent (legacy platform)', tone: 'harness' };
   }
   return { label: 'chat', tone: 'chat' };
 }

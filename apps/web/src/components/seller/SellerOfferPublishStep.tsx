@@ -11,13 +11,12 @@ export function SellerOfferPublishStep({ state }: SellerOfferPublishStepProps) {
     connectWallet,
     pending,
     selectedModelIds,
-    offerLane,
     handlePublish,
     publishResult,
     status,
   } = state;
 
-  const publishLabel = offerLane === 'harness' ? 'publish harness seats' : 'publish chat offers';
+  const publishLabel = 'publish chat offers';
 
   return (
     <div className="sell-form-row sell-form-row--publish">

@@ -83,6 +83,32 @@ test('providerMatchesHarnessConstraints filters by installation and skills', () 
     false
   );
   assert.equal(
+    providerMatchesHarnessConstraints(
+      {
+        ...fresh,
+        harnessProfile: {
+          ...fresh.harnessProfile!,
+          credentialClass: 'plan_or_cli',
+        },
+      },
+      { allowedCredentialClasses: ['api_key'] }
+    ),
+    false
+  );
+  assert.equal(
+    providerMatchesHarnessConstraints(
+      {
+        ...fresh,
+        harnessProfile: {
+          ...fresh.harnessProfile!,
+          credentialClass: 'plan_or_cli',
+        },
+      },
+      { allowedCredentialClasses: ['plan_or_cli', 'unknown'] }
+    ),
+    true
+  );
+  assert.equal(
     providerMatchesHarnessConstraints(skilled, { requiredSkills: ['unity-debug'] }),
     true
   );

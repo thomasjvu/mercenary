@@ -84,6 +84,36 @@ export function parseProviderDiscoveryQuery(value: unknown): ProviderDiscoveryQu
               `provider_discovery_query.require_privacy_features[${index}]`
             )
           ),
+    allowedInstallations:
+      input.allowedInstallations == null && input.allowed_installations == null
+        ? undefined
+        : splitCommaSeparatedStrings(input.allowedInstallations ?? input.allowed_installations).map(
+            (item, index) => {
+              if (item === 'fresh' || item === 'skill_augmented' || item === 'unknown') {
+                return item;
+              }
+              throw new Error(
+                `provider_discovery_query.allowed_installations[${index}] must be fresh, skill_augmented, or unknown`
+              );
+            }
+          ),
+    requiredSkills:
+      input.requiredSkills == null && input.required_skills == null
+        ? undefined
+        : splitCommaSeparatedStrings(input.requiredSkills ?? input.required_skills),
+    allowedCredentialClasses:
+      input.allowedCredentialClasses == null && input.allowed_credential_classes == null
+        ? undefined
+        : splitCommaSeparatedStrings(
+            input.allowedCredentialClasses ?? input.allowed_credential_classes
+          ).map((item, index) => {
+            if (item === 'api_key' || item === 'plan_or_cli' || item === 'unknown') {
+              return item;
+            }
+            throw new Error(
+              `provider_discovery_query.allowed_credential_classes[${index}] must be api_key, plan_or_cli, or unknown`
+            );
+          }),
     requireErc8004:
       input.requireErc8004 == null && input.require_erc8004 == null
         ? undefined

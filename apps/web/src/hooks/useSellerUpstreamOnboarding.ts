@@ -38,7 +38,8 @@ export function sellerProviderOptionLabel(provider: UpstreamProviderId): string 
   return `${name} · TEE market`;
 }
 
-export type SellerOfferLane = 'chat' | 'harness';
+/** Upstream offers are chat-only in the product path. Agent hire uses HTTP workers. */
+export type SellerOfferLane = 'chat';
 
 export function useSellerUpstreamOnboarding() {
   const { session, status, setStatus, connectWallet, isAuthenticated } = useWalletAuth(
@@ -62,7 +63,7 @@ export function useSellerUpstreamOnboarding() {
   const [models, setModels] = useState<UpstreamCatalogModel[]>([]);
   const [selectedModelIds, setSelectedModelIds] = useState<string[]>([]);
   const [discountPercent, setDiscountPercent] = useState('40');
-  const [offerLane, setOfferLane] = useState<SellerOfferLane>('chat');
+  const [offerLane] = useState<SellerOfferLane>('chat');
   const [payoutWallet, setPayoutWallet] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -134,7 +135,7 @@ export function useSellerUpstreamOnboarding() {
         payoutWallet: payoutWallet.trim() || session?.wallet,
         lane: offerLane,
       });
-      const laneLabel = offerLane === 'harness' ? 'harness (tool loop)' : 'chat (single-shot)';
+      const laneLabel = 'chat (single-shot)';
       setPublishResult(
         `Published ${result.providers.length} ${laneLabel} offer${result.providers.length === 1 ? '' : 's'}.`
       );
@@ -150,7 +151,6 @@ export function useSellerUpstreamOnboarding() {
   function handleProviderChange(nextProvider: UpstreamProviderId) {
     setProvider(nextProvider);
     setSelectedModelIds([]);
-    setOfferLane('chat');
   }
 
   return {
@@ -172,7 +172,6 @@ export function useSellerUpstreamOnboarding() {
     discountPercent,
     setDiscountPercent,
     offerLane,
-    setOfferLane,
     payoutWallet,
     setPayoutWallet,
     pickerOpen,

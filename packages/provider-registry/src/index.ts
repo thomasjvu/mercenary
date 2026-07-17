@@ -211,6 +211,7 @@ export type ProviderMarketplaceConstraints = {
   requirePrivacyFeatures?: PrivacyFeatureKey[];
   allowedInstallations?: HarnessInstallation[];
   requiredSkills?: string[];
+  allowedCredentialClasses?: Array<'api_key' | 'plan_or_cli' | 'unknown'>;
   onlineOnly?: boolean;
   maxHeartbeatAgeMs?: number;
 };
@@ -230,6 +231,7 @@ export function providerMatchesHarnessConstraints(
   constraints: {
     allowedInstallations?: HarnessInstallation[];
     requiredSkills?: string[];
+    allowedCredentialClasses?: Array<'api_key' | 'plan_or_cli' | 'unknown'>;
     /** When true, only agent seats with imageDigest + honest composition */
     requireVerifiedAgent?: boolean;
   }
@@ -243,6 +245,12 @@ export function providerMatchesHarnessConstraints(
   if (constraints.requiredSkills?.length) {
     const skillIds = new Set(profile.skills.map((skill) => skill.id));
     if (!constraints.requiredSkills.every((skillId) => skillIds.has(skillId))) {
+      return false;
+    }
+  }
+  if (constraints.allowedCredentialClasses?.length) {
+    const credentialClass = profile.credentialClass ?? 'unknown';
+    if (!constraints.allowedCredentialClasses.includes(credentialClass)) {
       return false;
     }
   }
@@ -398,6 +406,7 @@ export function providerMatchesMarketplaceConstraints(
     !providerMatchesHarnessConstraints(provider, {
       allowedInstallations: constraints.allowedInstallations,
       requiredSkills: constraints.requiredSkills,
+      allowedCredentialClasses: constraints.allowedCredentialClasses,
     })
   ) {
     return false;
@@ -479,6 +488,9 @@ export function providerMatchesDiscoveryQuery(
       minReputationScore: query.minReputationScore,
       privacyMode: query.privacyMode,
       requirePrivacyFeatures: query.requirePrivacyFeatures,
+      allowedInstallations: query.allowedInstallations,
+      requiredSkills: query.requiredSkills,
+      allowedCredentialClasses: query.allowedCredentialClasses,
       onlineOnly: query.onlineOnly,
       maxHeartbeatAgeMs: query.maxHeartbeatAgeMs ?? defaultMaxHeartbeatAgeMs,
     },
@@ -500,5 +512,8 @@ export function buildDiscoveryQueryFromTask(task: RaidTaskSpec): ProviderDiscove
     minTrustScore: task.constraints.minTrustScore,
     requiredVerificationStatus: task.constraints.requiredVerificationStatus,
     minReputationScore: clamp01(task.constraints.minReputation) * 100,
+    allowedInstallations: task.constraints.allowedInstallations,
+    requiredSkills: task.constraints.requiredSkills,
+    allowedCredentialClasses: task.constraints.allowedCredentialClasses,
   };
 }

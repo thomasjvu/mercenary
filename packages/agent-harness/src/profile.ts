@@ -22,6 +22,8 @@ export type HarnessRuntimeConfig = {
   planProvider?: string;
   maxSteps: number;
   allowShell: boolean;
+  /** Seller-declared; api_key | plan_or_cli | unknown */
+  credentialClass?: 'api_key' | 'plan_or_cli' | 'unknown';
 };
 
 export function normalizeHarnessKind(value: string | undefined): HarnessKind {
@@ -119,5 +121,6 @@ export function buildHarnessProfile(config: HarnessRuntimeConfig): HarnessProfil
     planProvider: config.planProvider ?? planProviderForHarness(config.kind),
     attestedAt: new Date().toISOString(),
     verification: config.imageDigest ? 'image_attested' : 'heartbeat_self_report',
+    credentialClass: config.credentialClass ?? 'unknown',
   };
 }

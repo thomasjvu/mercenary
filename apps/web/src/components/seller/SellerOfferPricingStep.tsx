@@ -9,8 +9,6 @@ export function SellerOfferPricingStep({ state }: SellerOfferPricingStepProps) {
   const {
     discountPercent,
     setDiscountPercent,
-    offerLane,
-    setOfferLane,
     buyerPercent,
     payoutWallet,
     setPayoutWallet,
@@ -41,36 +39,15 @@ export function SellerOfferPricingStep({ state }: SellerOfferPricingStepProps) {
         />
       </div>
       <p className="quiet-note">
-        Buyers pay {buyerPercent}% of reference at {discountPercent}% discount. Default is{' '}
-        <strong>chat</strong> (single completion) — best first publish.
+        This path publishes <strong>chat</strong> seats (single OpenAI-compatible completion), like
+        a Venice-style model API through Boss Raid. Buyers pay {buyerPercent}% of reference at{' '}
+        {discountPercent}% discount.
       </p>
-      <details className="sell-advanced" open={offerLane === 'harness'}>
-        <summary>Agent seat (advanced)</summary>
-        <div className="sell-lane-toggle" role="group" aria-label="Offer lane">
-          <button
-            className={`sell-lane-toggle__btn${offerLane === 'chat' ? ' is-active' : ''}`}
-            onClick={() => setOfferLane('chat')}
-            type="button"
-          >
-            <span className="sell-lane-toggle__title">Chat</span>
-            <span className="sell-lane-toggle__hint">Single completion · discount inference</span>
-          </button>
-          <button
-            className={`sell-lane-toggle__btn${offerLane === 'harness' ? ' is-active' : ''}`}
-            onClick={() => setOfferLane('harness')}
-            type="button"
-          >
-            <span className="sell-lane-toggle__title">Harness</span>
-            <span className="sell-lane-toggle__hint">
-              Multi-step tool loop · platform seat (no personal Phala box)
-            </span>
-          </button>
-        </div>
-        <p className="quiet-note">
-          Harness seats share platform capacity. Buyers do not get a dedicated Phala box per seller.
-          Multi-turn chat history is owned by the client — each request is independent.
-        </p>
-      </details>
+      <p className="quiet-note">
+        To sell hireable agents (vanilla Claude Code / Grok Build / Codex, with or without skills),
+        run an <strong>HTTP provider worker</strong> and register it — see seller docs. Do not paste
+        consumer CLI OAuth into platform seats for multi-tenant buyers.
+      </p>
     </div>
   );
 }

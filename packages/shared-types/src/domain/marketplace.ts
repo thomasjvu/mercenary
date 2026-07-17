@@ -88,6 +88,9 @@ export interface ProviderDiscoveryQuery {
   maxHeartbeatAgeMs?: number;
   sourceType?: string;
   supportedFramework?: string;
+  allowedInstallations?: Array<'fresh' | 'skill_augmented' | 'unknown'>;
+  requiredSkills?: string[];
+  allowedCredentialClasses?: Array<'api_key' | 'plan_or_cli' | 'unknown'>;
 }
 
 export interface ReservedSelectedProviders {

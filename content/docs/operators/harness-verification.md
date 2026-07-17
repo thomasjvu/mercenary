@@ -49,29 +49,25 @@ Grok remains `openai_tools` against `api.x.ai` (no separate Grok “agent SDK”
 
 **No (default).** Auto-provision is slow, expensive, and unnecessary for marketplace volume.
 
-| Option                              | When                                                                                                     |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| **Shared platform seats (default)** | Seller pastes key → `source.type=harness_hosted` → gateway injects key and runs tool loop on shared host |
-| **Ops-run worker**                  | `BOSSRAID_HARNESS_MODE=codex\|grok\|glm\|chutes\|claude_code` process with platform keys                 |
-| **BYO Phala CVM**                   | Power seller needs exclusive capacity / custom skills image — manual Tier 2                              |
+| Option                          | When                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------------- |
+| **HTTP agent worker (primary)** | Seller runs Claude Code / Grok Build / Codex / custom; registers HTTP endpoint + `harnessProfile` |
+| **Hosted chat**                 | Seller pastes API key for single-shot completions (not agent hire)                                |
+| **Ops-run / platform harness**  | Ops-only shared tool loop; not the primary third-party seller product path                        |
+| **BYO Phala CVM**               | Power seller needs exclusive capacity / custom skills image — manual                              |
 
-### Seller self-serve (implemented)
+### Seller self-serve (product path)
 
-1. Connect key: `POST /v1/seller/upstream/:provider/connect` (`zai`, `xai`, `chutes`, …)
-2. Publish **chat** offers (default) or **harness seats**:
+1. **Hosted chat:** `POST /v1/seller/upstream/:provider/connect` then `offers` with `lane: "chat"` (API keys only).
+2. **HTTP agent hire:** register a provider endpoint with `harnessProfile` (`agent_harness`, framework, fresh/skills, `credentialClass`). Seller runs Claude Code / Grok Build / Codex / custom on their machine. Vendor ToS risk is the seller’s when using consumer/CLI plans.
 
-```bash
-POST /v1/seller/upstream/zai/offers
-{ "modelIds": ["glm-4.7"], "discountPercent": 20, "lane": "harness" }
-```
+Platform `lane: "harness"` (shared gateway tool loop) remains available for ops but is **not** the primary seller UX.
 
-`lane: "harness"` registers a `harness_hosted` provider on the platform gateway. Buyers route as usual; on accept the API runs the agent tool loop with **that seller’s encrypted key**. Still one shared Phala — not a private CVM.
-
-| Layer              | Runs where                                                    | Seller friction                                       |
-| ------------------ | ------------------------------------------------------------- | ----------------------------------------------------- |
-| Tier 0 chat        | Platform Phala API gateway                                    | Paste upstream key                                    |
-| **Tier 1 harness** | Platform Phala provider-agent (`codex`/`grok`/`glm`/`chutes`) | Ops deploys worker; keys in env / future seller vault |
-| Tier 2 BYO         | Seller Phala template                                         | Seller deploys exclusive seat                         |
+| Layer                | Runs where       | Seller friction                                    |
+| -------------------- | ---------------- | -------------------------------------------------- |
+| Hosted chat          | Platform gateway | Paste upstream API key                             |
+| HTTP agent           | Seller worker    | Endpoint + profile; optional plan/CLI on their box |
+| Ops platform harness | Shared Phala     | Ops only                                           |
 
 ## What buyers can verify
 

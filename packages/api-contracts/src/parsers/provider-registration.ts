@@ -397,6 +397,20 @@ export function parseProviderRegistrationInput(value: unknown): ProviderRegistra
                 'provider_registration.harness_profile.verification must be unverified, heartbeat_self_report, or image_attested'
               );
             }
+            const credentialClassRaw = ensureOptionalString(
+              profile.credentialClass ?? profile.credential_class,
+              'provider_registration.harness_profile.credential_class'
+            );
+            if (
+              credentialClassRaw != null &&
+              credentialClassRaw !== 'api_key' &&
+              credentialClassRaw !== 'plan_or_cli' &&
+              credentialClassRaw !== 'unknown'
+            ) {
+              throw new Error(
+                'provider_registration.harness_profile.credential_class must be api_key, plan_or_cli, or unknown'
+              );
+            }
             return {
               lane: laneRaw,
               installation: installationRaw,
@@ -425,6 +439,11 @@ export function parseProviderRegistrationInput(value: unknown): ProviderRegistra
                 | 'unverified'
                 | 'heartbeat_self_report'
                 | 'image_attested'
+                | undefined,
+              credentialClass: credentialClassRaw as
+                | 'api_key'
+                | 'plan_or_cli'
+                | 'unknown'
                 | undefined,
             };
           })(),

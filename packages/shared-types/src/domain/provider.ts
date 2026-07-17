@@ -35,6 +35,13 @@ export type HarnessLane = 'api_chat' | 'agent_harness';
 /** Whether the harness image is stock or has skills installed. */
 export type HarnessInstallation = 'fresh' | 'skill_augmented' | 'unknown';
 export type HarnessProfileVerification = 'unverified' | 'heartbeat_self_report' | 'image_attested';
+/**
+ * Seller-declared credential class for buyer filters (not vendor-verified).
+ * - api_key: platform/upstream API key intended for multi-tenant apps
+ * - plan_or_cli: consumer/CLI/subscription login on the seller worker (seller owns ToS risk)
+ * - unknown: not disclosed
+ */
+export type CredentialClass = 'api_key' | 'plan_or_cli' | 'unknown';
 
 export interface HarnessSkillRef {
   id: string;
@@ -57,6 +64,8 @@ export interface HarnessProfile {
   planProvider?: string;
   attestedAt?: string;
   verification?: HarnessProfileVerification;
+  /** Seller-declared; used for buyer filters. Not proof of vendor plan status. */
+  credentialClass?: CredentialClass;
 }
 
 export interface ProviderReputation {
@@ -285,6 +294,7 @@ export function defaultApiChatHarnessProfile(
     installation: 'fresh',
     skills: [],
     verification: 'unverified',
+    credentialClass: 'api_key',
     ...overrides,
   };
 }

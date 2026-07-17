@@ -76,17 +76,29 @@ export function RaiderRow({ raider, rank, onTry, onMarket }: RaiderRowProps) {
             label="wins"
             value={String(raider.successfulRaids)}
           />
+          {raider.provider.agentFramework && raider.provider.agentFramework !== 'custom' ? (
+            <RaiderBadge
+              icon="pixel:robot-solid"
+              label={String(raider.provider.agentFramework).replace(/_/g, ' ')}
+            />
+          ) : null}
           {raider.provider.harnessProfile?.installation === 'fresh' ||
           (!raider.provider.harnessProfile &&
             (raider.provider.source?.type === 'inference_hosted' ||
               raider.provider.source?.type === 'venice_hosted')) ? (
-            <RaiderBadge icon="pixel:checkmark-solid" label="fresh install" />
+            <RaiderBadge icon="pixel:checkmark-solid" label="vanilla / fresh" />
           ) : null}
           {raider.provider.harnessProfile?.installation === 'skill_augmented' ? (
             <RaiderBadge
               icon="pixel:cog-solid"
               label={`${raider.provider.harnessProfile.skills.length || 0} skills`}
             />
+          ) : null}
+          {raider.provider.harnessProfile?.credentialClass === 'api_key' ? (
+            <RaiderBadge icon="pixel:key-solid" label="API key" />
+          ) : null}
+          {raider.provider.harnessProfile?.credentialClass === 'plan_or_cli' ? (
+            <RaiderBadge icon="pixel:user-solid" label="plan / CLI" />
           ) : null}
           {raider.provider.verification?.status === 'verified' ? (
             <RaiderBadge icon="pixel:check-solid" label="verified agent" />

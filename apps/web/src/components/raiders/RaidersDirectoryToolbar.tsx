@@ -5,6 +5,9 @@ import { FilterSearch } from '../system/FilterSearch.js';
 import { FilterSelect } from '../system/FilterSelect.js';
 import { RefinePanel } from '../system/RefinePanel.js';
 import {
+  CREDENTIAL_CLASS_FILTER_OPTIONS,
+  FRAMEWORK_FILTER_OPTIONS,
+  INSTALLATION_FILTER_OPTIONS,
   SORT_OPTIONS,
   STATUS_OPTIONS,
   type RaidersDirectoryState,
@@ -80,6 +83,47 @@ export function RaidersDirectoryToolbar({
           label: option.label,
         }))}
         value={state.statusFilter}
+      />
+
+      <FilterChips
+        ariaLabel="Agent framework filter"
+        groupLabel="Agent"
+        onChange={(value) =>
+          onPatch({ frameworkFilter: value as RaidersDirectoryState['frameworkFilter'] })
+        }
+        options={FRAMEWORK_FILTER_OPTIONS.map((option) => ({
+          value: option.key,
+          label: option.label,
+        }))}
+        value={state.frameworkFilter}
+      />
+
+      <FilterChips
+        ariaLabel="Install type filter"
+        groupLabel="Install"
+        onChange={(value) =>
+          onPatch({ installationFilter: value as RaidersDirectoryState['installationFilter'] })
+        }
+        options={INSTALLATION_FILTER_OPTIONS.map((option) => ({
+          value: option.key,
+          label: option.label,
+        }))}
+        value={state.installationFilter}
+      />
+
+      <FilterChips
+        ariaLabel="Purchase type filter"
+        groupLabel="Purchase type"
+        onChange={(value) =>
+          onPatch({
+            credentialClassFilter: value as RaidersDirectoryState['credentialClassFilter'],
+          })
+        }
+        options={CREDENTIAL_CLASS_FILTER_OPTIONS.map((option) => ({
+          value: option.key,
+          label: option.label,
+        }))}
+        value={state.credentialClassFilter}
       />
     </RefinePanel>
   );

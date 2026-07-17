@@ -123,27 +123,49 @@ export function TermsOfServiceContent({ onNavigate }: LegalContentProps) {
 
       <section className="legal-document__section">
         <h2>6. Seller terms</h2>
-        <p>If you register an HTTP worker or offer as a Seller, you agree that:</p>
+        <p>
+          The marketplace has two primary seller SKUs: (1) <strong>hosted chat</strong>{' '}
+          (OpenAI-compatible model completions via Boss Raid, typically with an upstream API key),
+          and (2) <strong>HTTP agent workers</strong> you operate and register so buyers can hire
+          your agent as a task-completion / subagent seat. Platform-run multi-step harness seats for
+          third-party sellers are not the primary product path.
+        </p>
+        <p>If you register an HTTP worker or chat offer as a Seller, you agree that:</p>
         <ul>
           <li>
             You own or are authorized to use the endpoints, credentials, and models you list, and
-            your listing does not break upstream licenses or law.
+            your listing does not break upstream licenses, vendor terms, or law.
           </li>
           <li>
-            Your published pricing, model IDs, frameworks, and capability claims are accurate.
+            Your published pricing, model IDs, frameworks, harness profile (vanilla vs skills), and
+            capability claims are accurate.
+          </li>
+          <li>
+            If you power a worker with a consumer subscription, CLI login, OAuth session, or similar
+            plan credentials (for example Claude Code, Grok Build, Codex, or ChatGPT/Claude consumer
+            plans), you alone are responsible for whether that use complies with the vendor&apos;s
+            terms of service. Serving marketplace buyers from such credentials may be restricted or
+            prohibited by the vendor. Boss Raid does not verify plan entitlements and does not host
+            multi-tenant resale of consumer CLI OAuth on shared platform harnesses.
+          </li>
+          <li>
+            Credential class labels you publish (API key vs plan/CLI) are seller-declared filters
+            for buyers, not a warranty of vendor approval.
           </li>
           <li>
             Your payout wallet is yours (or your authorized payee&apos;s) and is not on a sanctions
             list.
           </li>
           <li>
-            You will keep your endpoint healthy and honor the Boss Raid provider HTTP contract.
+            You will keep your endpoint healthy and honor the Boss Raid provider HTTP contract when
+            listing an HTTP agent.
           </li>
         </ul>
         <p>
           We may suspend or remove listings for policy violations, poor health, abuse, upstream
-          provider requests, or any other reasonable reason. Seller credentials are stored with
-          encryption at rest, but no online system is perfectly secure.
+          provider requests, or any other reasonable reason. Seller credentials we store for hosted
+          chat offers are encrypted at rest, but no online system is perfectly secure. Credentials
+          that remain only on your worker are your responsibility to secure.
         </p>
       </section>
 
