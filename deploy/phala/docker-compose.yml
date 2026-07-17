@@ -57,6 +57,8 @@ services:
       BOSSRAID_API_HOST: '0.0.0.0'
       BOSSRAID_STORAGE_BACKEND: 'sqlite'
       BOSSRAID_SQLITE_FILE: '/data/bossraid-state.sqlite'
+      # In-CVM compose providers (provider-a/b/c) use private Docker DNS + HTTP.
+      BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS: '${BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS:-1}'
       BOSSRAID_PROVIDERS_FILE: '${BOSSRAID_PROVIDERS_FILE:-/app/examples/inference/inference-marketplace-providers.json}'
       BOSSRAID_SECRET_ENCRYPTION_KEY: '${BOSSRAID_SECRET_ENCRYPTION_KEY}'
       BOSSRAID_SECRET_ENCRYPTION_KEY_ID: '${BOSSRAID_SECRET_ENCRYPTION_KEY_ID:-phala-current}'
