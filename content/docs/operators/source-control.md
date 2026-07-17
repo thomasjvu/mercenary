@@ -58,10 +58,10 @@ Host: `spectre.thomasjvu.com` (native x86_64 Docker).
 
 ```bash
 # on spectre — see deploy/ops-local.example/spectre/act-runner.md
-# registers labels: spectre (host), ubuntu-latest (container)
+# registers labels: spectre:host, ubuntu-latest:docker://node:22-bookworm
 ```
 
-Jobs with `runs-on: spectre` use the host Docker daemon — correct for Phala-bound images.
+Jobs with `runs-on: spectre` must use **`spectre:host`** so steps run on the host Docker daemon (required for Phala-bound amd64 images). If the runner is registered as `spectre:docker://…`, image builds fail — re-register per the act-runner runbook.
 
 ## Branch model
 

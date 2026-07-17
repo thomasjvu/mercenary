@@ -45,6 +45,56 @@ Labels:
 | `spectre`       | `host` (real host binary) | Docker image builds (`runs-on: spectre`) |
 | `ubuntu-latest` | container                 | Node CI jobs                             |
 
+**Required:** `spectre` must be `spectre:host`, never `spectre:docker://…`.  
+Image jobs run `docker build` / `docker push` on the host. A dockerized label runs steps inside a container without a usable host Docker CLI (exit 127 or silent queue stall).
+
+Pin the same labels in `config.yaml` so restarts do not fall back to a stale `.runner` file:
+
+```yaml
+runner:
+  labels:
+    - 'spectre:host'
+    - 'ubuntu-latest:docker://node:22-bookworm'
+```
+
+### Verify
+
+After start, the daemon log must include host labels, e.g.:
+
+```text
+runner: spectre-host, with labels: [spectre ubuntu-latest]
+```
+
+Local check (no secrets):
+
+```bash
+python3 -c "import json; print(json.load(open('$HOME/bossraid-ops/act-runner-host/.runner'))['labels'])"
+# expect: ['spectre:host', 'ubuntu-latest:docker://node:22-bookworm']
+```
+
+### Repair wrong labels
+
+If `.runner` shows `spectre:docker://…`:
+
+```bash
+cd ~/bossraid-ops/act-runner-host
+kill "$(cat runner.pid)" 2>/dev/null || true
+cp -a .runner ".runner.bak.$(date +%Y%m%d%H%M%S)"
+TOKEN=$(docker exec -u git forgejo forgejo actions generate-runner-token)
+rm -f .runner
+forgejo-runner register --no-interactive \
+  --instance "http://127.0.0.1:3000" \
+  --token "$TOKEN" \
+  --name "spectre-host" \
+  --labels "spectre:host,ubuntu-latest:docker://node:22-bookworm"
+# ensure config.yaml runner.labels matches (see pin above)
+nohup forgejo-runner daemon --config "$PWD/config.yaml" > runner.log 2>&1 &
+echo $! > runner.pid
+tail -20 runner.log
+```
+
+Old offline runner rows may remain in Forgejo Admin → Actions → Runners; delete them when convenient.
+
 ## Repo secrets for image push
 
 On `bossraid/mercenary` (Forgejo):
