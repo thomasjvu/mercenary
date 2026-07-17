@@ -72,11 +72,16 @@ export function prepareChatCompletionRequest(
 ) {
   const parsedChatRequest = parseChatCompletionRequest(request.body);
   const strictAlkahestLane = readTrustedAlkahestStrictLane(request.headers, deps.ctx.env);
-  const discountDefaultMaxTotalCost = options.discountInference
+  // Cheapest seller rate alone is too tight for agent CLIs (large system/tool prompts).
+  // Floor with chatDefaultMaxTotalCost so token-metered selection stays eligible.
+  const discountCheapestRate = options.discountInference
     ? resolveDiscountInferenceDefaultMaxTotalCost(
         parsedChatRequest,
         deps.ctx.orchestrator.listProviders()
       )
+    : undefined;
+  const discountDefaultMaxTotalCost = options.discountInference
+    ? Math.max(discountCheapestRate ?? 0.01, deps.ctx.chatDefaultMaxTotalCost ?? 0.01, 1)
     : undefined;
   const chatRequest = options.discountInference
     ? forceDiscountInferenceChatPolicy(parsedChatRequest, {
