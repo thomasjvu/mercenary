@@ -9,7 +9,7 @@ import {
 } from './lib/bounty-onchain.js';
 import type { BountyRecord } from '@bossraid/shared-types';
 
-test('usdToAtomic converts USD to USDC atomic units', () => {
+test('usdToAtomic converts USD to USDG atomic units', () => {
   assert.equal(usdToAtomic(1), 1_000_000n);
   assert.equal(usdToAtomic(0.25), 250_000n);
 });
@@ -39,7 +39,7 @@ test('isBountyOnchainConfigured requires onchain mode and bounty escrow env', ()
       BOSSRAID_BOUNTY_ESCROW_ADDRESS: '0x0000000000000000000000000000000000000001',
       BOSSRAID_TOKEN_ADDRESS: '0x0000000000000000000000000000000000000002',
       BOSSRAID_RPC_URL: 'http://localhost',
-      BOSSRAID_CHAIN_ID: '84532',
+      BOSSRAID_CHAIN_ID: '4663',
       BOSSRAID_CLIENT_PRIVATE_KEY: '0x11',
     }),
     false
@@ -50,7 +50,7 @@ test('isBountyOnchainConfigured requires onchain mode and bounty escrow env', ()
       BOSSRAID_BOUNTY_ESCROW_ADDRESS: '0x0000000000000000000000000000000000000001',
       BOSSRAID_TOKEN_ADDRESS: '0x0000000000000000000000000000000000000002',
       BOSSRAID_RPC_URL: 'http://localhost',
-      BOSSRAID_CHAIN_ID: '84532',
+      BOSSRAID_CHAIN_ID: '4663',
       BOSSRAID_CLIENT_PRIVATE_KEY: '0x11',
     }),
     true

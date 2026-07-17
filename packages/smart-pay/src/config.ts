@@ -1,13 +1,18 @@
-export const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as const;
-export const USDC_BASE_SEPOLIA = '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as const;
+import { ROBINHOOD_CHAIN_ID, ROBINHOOD_USDG_ADDRESS } from '@bossraid/constants';
 
-export const METAMASK_X402_FACILITATORS = {
-  base_mainnet: 'https://tx-sentinel-base-mainnet.dev-api.cx.metamask.io/platform/v2/x402',
-  base_sepolia: 'https://tx-sentinel-base-sepolia.dev-api.cx.metamask.io/platform/v2/x402',
-} as const;
+/** Production settlement / x402 chain (Robinhood). */
+export const ROBINHOOD_CHAIN_ID_NUM = ROBINHOOD_CHAIN_ID;
+export const USDG_ROBINHOOD = ROBINHOOD_USDG_ADDRESS;
 
-export const BASE_CHAIN_ID = 8453;
-export const BASE_SEPOLIA_CHAIN_ID = 84532;
+/** @deprecated Use ROBINHOOD_CHAIN_ID_NUM — kept as alias for callers mid-migration. */
+export const BASE_CHAIN_ID = ROBINHOOD_CHAIN_ID;
+/** @deprecated Robinhood-only rail; sepolia alias removed. */
+export const BASE_SEPOLIA_CHAIN_ID = ROBINHOOD_CHAIN_ID;
+
+/** @deprecated */
+export const USDC_BASE = ROBINHOOD_USDG_ADDRESS;
+/** @deprecated */
+export const USDC_BASE_SEPOLIA = ROBINHOOD_USDG_ADDRESS;
 
 export const DEFAULT_WEEKLY_BUDGET_USD = 10;
 export const DEFAULT_SUBSCRIPTION_PERIOD_SECONDS = 604_800;

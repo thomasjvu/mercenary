@@ -1,4 +1,9 @@
-import { NETWORK, ROBINHOOD_CHAIN_CAIP2, X402_BUILTIN_ASSETS } from '@bossraid/constants';
+import {
+  isRobinhoodPaymentNetwork,
+  NETWORK,
+  ROBINHOOD_CHAIN_CAIP2,
+  X402_BUILTIN_ASSETS,
+} from '@bossraid/constants';
 import {
   parseBoolean,
   readPositiveNumber,
@@ -80,7 +85,6 @@ export const METAMASK_X402_FACILITATORS = {
 
 export type X402FacilitatorPreset = keyof typeof METAMASK_X402_FACILITATORS | 'payai';
 
-const DEFAULT_PAYAI_FACILITATOR_URL = 'https://facilitator.payai.network';
 const DEFAULT_RAID_SURCHARGE_USD = 0.01;
 const DEFAULT_CHAT_SURCHARGE_USD = 0.002;
 const DEFAULT_PLATFORM_MARKUP_BPS = 100;
@@ -97,52 +101,49 @@ export function isMetaMaskFacilitator(facilitatorUrl: string | undefined): boole
   );
 }
 
-function resolveFacilitatorPreset(
-  env: NodeJS.ProcessEnv
-): keyof typeof METAMASK_X402_FACILITATORS | undefined {
-  const preset = env.BOSSRAID_X402_FACILITATOR_PRESET?.trim().toLowerCase();
-  if (preset === 'metamask_base_mainnet' || preset === 'base_mainnet') {
-    return 'base_mainnet';
+export function isPayAiFacilitator(facilitatorUrl: string | undefined): boolean {
+  if (!facilitatorUrl) {
+    return false;
   }
-  if (preset === 'metamask_base_sepolia' || preset === 'base_sepolia') {
-    return 'base_sepolia';
+  return facilitatorUrl.includes('facilitator.payai.network');
+}
+
+function resolveFacilitatorUrl(env: NodeJS.ProcessEnv, _enabled: boolean): string | undefined {
+  // Robinhood-only: require explicit Marian (or custom) facilitator URL. No PayAI/Base presets.
+  if (env.BOSSRAID_X402_FACILITATOR_URL?.trim()) {
+    return env.BOSSRAID_X402_FACILITATOR_URL.trim();
   }
   return undefined;
 }
 
-function resolveFacilitatorUrl(env: NodeJS.ProcessEnv, enabled: boolean): string | undefined {
-  if (env.BOSSRAID_X402_FACILITATOR_URL) {
-    return env.BOSSRAID_X402_FACILITATOR_URL;
-  }
-
-  const preset = resolveFacilitatorPreset(env);
-  if (preset) {
-    return METAMASK_X402_FACILITATORS[preset];
-  }
-
-  // Never default PayAI when production rail is Robinhood — require explicit Marian URL.
-  const network = env.BOSSRAID_X402_NETWORK?.trim() || ROBINHOOD_CHAIN_CAIP2;
-  if (network === ROBINHOOD_CHAIN_CAIP2 || network.startsWith('eip155:4663')) {
-    return undefined;
-  }
-
-  return enabled ? DEFAULT_PAYAI_FACILITATOR_URL : undefined;
-}
-
-function resolveAssetTransferMethod(
-  env: NodeJS.ProcessEnv,
-  facilitatorUrl: string | undefined
-): X402AssetTransferMethod {
+function resolveAssetTransferMethod(env: NodeJS.ProcessEnv): X402AssetTransferMethod {
   const explicit = env.BOSSRAID_X402_ASSET_TRANSFER_METHOD?.trim().toLowerCase();
-  if (explicit === 'permit2' || explicit === 'erc7710') {
-    return explicit;
+  if (explicit === 'permit2') {
+    return 'permit2';
   }
-
-  if (isMetaMaskFacilitator(facilitatorUrl)) {
+  // erc7710 retained only for optional agent-session paths; never auto-selected for Base.
+  if (explicit === 'erc7710') {
     return 'erc7710';
   }
-
   return 'permit2';
+}
+
+function assertRobinhoodRail(
+  config: Pick<X402Config, 'enabled' | 'network' | 'facilitatorUrl'>
+): void {
+  if (!config.enabled) {
+    return;
+  }
+  if (!isRobinhoodPaymentNetwork(config.network)) {
+    throw new Error(
+      `x402 network must be Robinhood (${ROBINHOOD_CHAIN_CAIP2}); got ${config.network}. Base/USDC is not supported.`
+    );
+  }
+  if (isPayAiFacilitator(config.facilitatorUrl) || isMetaMaskFacilitator(config.facilitatorUrl)) {
+    throw new Error(
+      'x402 facilitator must be Marian (or a Robinhood-capable URL), not PayAI or MetaMask Base tx-sentinel.'
+    );
+  }
 }
 
 function formatUsdPrice(amountUsd: number): string {
@@ -187,14 +188,12 @@ export function readX402Config(env: NodeJS.ProcessEnv = process.env): X402Config
 
   const facilitatorUrl = resolveFacilitatorUrl(env, enabled);
 
-  return {
+  const config: X402Config = {
     enabled,
     facilitatorUrl,
     resourceBaseUrl:
       env.BOSSRAID_X402_RESOURCE_BASE_URL ??
       `http://${NETWORK.LOCALHOST}:${NETWORK.LOCAL_API_PORT}`,
-    // Production target: Robinhood Chain + USDG (Marian facilitator).
-    // Override with Base sepolia/mainnet for legacy CI only.
     network: env.BOSSRAID_X402_NETWORK ?? ROBINHOOD_CHAIN_CAIP2,
     asset: env.BOSSRAID_X402_ASSET ?? 'usdg',
     // Empty string until configured — zero address is never a valid treasury.
@@ -214,19 +213,18 @@ export function readX402Config(env: NodeJS.ProcessEnv = process.env): X402Config
       balance: 0,
       bounty: 0,
     },
-    cdpApiKeyId: env.CDP_API_KEY_ID,
-    cdpApiKeySecret: env.CDP_API_KEY_SECRET,
-    payaiApiKeyId: env.PAYAI_API_KEY_ID,
-    payaiApiKeySecret: env.PAYAI_API_KEY_SECRET,
-    facilitatorFallback: parseBoolean(env.BOSSRAID_X402_FACILITATOR_FALLBACK),
+    facilitatorFallback: false,
     assetName: env.BOSSRAID_X402_ASSET_NAME,
     assetVersion: env.BOSSRAID_X402_ASSET_VERSION,
-    assetTransferMethod: resolveAssetTransferMethod(env, facilitatorUrl),
+    assetTransferMethod: resolveAssetTransferMethod(env),
     facilitatorApiKey:
       env.BOSSRAID_X402_FACILITATOR_API_KEY?.trim() ||
       env.X402_FACILITATOR_API_KEY?.trim() ||
       undefined,
   };
+
+  assertRobinhoodRail(config);
+  return config;
 }
 
 function buildResourceUrl(resourceBaseUrl: string, resourcePath: string): string {
@@ -239,10 +237,6 @@ function buildResourceUrl(resourceBaseUrl: string, resourcePath: string): string
 
 function formatPaymentRequirementNetwork(network: string): string {
   const v1Aliases: Record<string, string> = {
-    'eip155:1': 'ethereum',
-    'eip155:8453': 'base',
-    'eip155:84532': 'base-sepolia',
-    'eip155:11155111': 'sepolia',
     'eip155:4663': 'robinhood',
     'eip155:46630': 'robinhood-testnet',
   };

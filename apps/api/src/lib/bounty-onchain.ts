@@ -15,7 +15,9 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { BOUNTY_ESCROW_ABI, ERC20_MINIMAL_ABI } from '@bossraid/raid-core';
 import { resolveApiSettlementMode } from './settlement-mode.js';
 
+/** USDG and USDC both use 6 decimals; name kept for test compatibility. */
 export const USDC_ATOMIC_MULTIPLIER = 1_000_000n;
+export const USDG_ATOMIC_MULTIPLIER = USDC_ATOMIC_MULTIPLIER;
 
 export const erc20MinimalAbi = ERC20_MINIMAL_ABI;
 
@@ -123,7 +125,7 @@ export class BountyOnchainExecutor {
     });
     if (balance < required) {
       throw new BountyOnchainError(
-        'Operator wallet does not hold enough USDC to fund bounty escrow.',
+        'Operator wallet does not hold enough USDG to fund bounty escrow.',
         'insufficient_operator_balance'
       );
     }

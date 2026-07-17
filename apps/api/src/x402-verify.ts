@@ -5,11 +5,7 @@ import {
   type X402SettlementResponse,
   type X402VerificationResponse,
 } from './x402-config.js';
-import {
-  DEFAULT_CDP_FACILITATOR_URL,
-  facilitatorRequest,
-  isPayAIFacilitator,
-} from './x402-facilitator.js';
+import { facilitatorRequest } from './x402-facilitator.js';
 
 type RawHeaders = Record<string, string | string[] | undefined>;
 
@@ -91,24 +87,7 @@ export async function settlePayment(
     paymentRequirements: paymentRequired.accepts[0],
   };
 
-  try {
-    return await facilitatorRequest<X402SettlementResponse>(config, '/settle', settleRequest);
-  } catch (payaiError) {
-    if (
-      config.facilitatorFallback &&
-      isPayAIFacilitator(config) &&
-      config.cdpApiKeyId &&
-      config.cdpApiKeySecret
-    ) {
-      const cdpConfig: X402Config = {
-        ...config,
-        facilitatorUrl: DEFAULT_CDP_FACILITATOR_URL,
-      };
-      return facilitatorRequest<X402SettlementResponse>(cdpConfig, '/settle', settleRequest);
-    }
-
-    throw payaiError;
-  }
+  return facilitatorRequest<X402SettlementResponse>(config, '/settle', settleRequest);
 }
 
 export function applyX402Headers(

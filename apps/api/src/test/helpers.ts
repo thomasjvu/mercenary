@@ -91,7 +91,7 @@ export function installMockX402Facilitator(options?: { payer?: string }) {
     requests.push({ url, body });
     const payload = url.endsWith('/verify')
       ? { isValid: true, payer }
-      : { success: true, transaction: '0xsettled', network: 'eip155:84532', payer };
+      : { success: true, transaction: '0xsettled', network: 'eip155:4663', payer };
     return new Response(JSON.stringify(payload), {
       status: 200,
       headers: {

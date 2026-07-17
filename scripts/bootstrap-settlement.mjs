@@ -25,7 +25,7 @@ async function main() {
   const keysOutput = run("node", ["scripts/generate-settlement-keys.mjs"], "generate_keys");
   const keysData = JSON.parse(keysOutput);
 
-  console.log(JSON.stringify({ step: "deploy_contracts", chain: "Base Sepolia (testnet)" }, null, 2));
+  console.log(JSON.stringify({ step: "deploy_contracts", chain: "Robinhood Chain" }, null, 2));
   const deployOutput = run(
     "pnpm",
     ["--filter", "@bossraid/contracts", "exec", "--", "node", "src/deploy.js"],
@@ -76,7 +76,7 @@ async function main() {
       token: deployment.tokenAddress,
     },
     yourTasks: [
-      `Fund ${keysData.addresses.client} with USDC on ${deployment.chainId === 8453 ? "Base mainnet" : "Base Sepolia"} for escrow`,
+      `Fund ${keysData.addresses.client} with USDG on Robinhood Chain for escrow`,
       `Fund provider wallets with ETH for gas: ${keysData.addresses.gamma}, ${keysData.addresses.riko}, ${keysData.addresses.dottie}`,
       `Source temp/settlement-bootstrap.env + temp/settlement-keys.env before starting API`,
       `Merge both: source temp/settlement-keys.env && source temp/settlement-bootstrap.env`,

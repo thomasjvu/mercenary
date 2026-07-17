@@ -75,7 +75,7 @@ function main() {
       dottie: dottie.address,
     },
     next: [
-      `1. Fund ${client.address} with USDC on Base mainnet for escrow funding (~$10-50 worth)`,
+      `1. Fund ${client.address} with USDG on Robinhood Chain for escrow funding (~$10-50 worth)`,
       `2. Deploy settlement contracts: pnpm deploy:contracts`,
       `3. Update temp/settlement-keys.env with BOSSRAID_REGISTRY_ADDRESS and BOSSRAID_ESCROW_ADDRESS`,
       `4. Source temp/settlement-keys.env and start the API`,

@@ -17,16 +17,10 @@ export type BossRaidDeployment = {
   deployedAt: string;
 };
 
-export const BASE_MAINNET = {
-  chainId: 8453,
-  name: 'Base',
-  rpcUrl: 'https://mainnet.base.org',
-  usdc: '0x833589fCD6eDb6B08d2E354A1d9441D5b2AaE4a5',
-} as const;
-
-export const BASE_SEPOLIA = {
-  chainId: 84532,
-  name: 'Base Sepolia',
-  rpcUrl: 'https://sepolia.base.org',
-  usdc: '0x036aD0eCA8CfD8d82fC6aF12DDesA150D6DfE12e',
+/** Robinhood Chain + USDG (production settlement rail). */
+export const ROBINHOOD_MAINNET = {
+  chainId: 4663,
+  name: 'Robinhood',
+  rpcUrl: 'https://rpc.robinhood.xyz',
+  usdg: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168',
 } as const;

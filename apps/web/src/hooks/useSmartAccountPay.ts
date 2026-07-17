@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  BASE_CHAIN_ID,
+  ROBINHOOD_CHAIN_ID_NUM,
   createPaidFetch,
   DEFAULT_WEEKLY_BUDGET_USD,
   encodeDelegationChain,
@@ -30,12 +30,12 @@ function agentGrantToSubscription(grant: AgentSessionGrant): RaidSubscriptionGra
   };
 }
 
-export function useSmartAccountPay(chainId = BASE_CHAIN_ID) {
+export function useSmartAccountPay(chainId = ROBINHOOD_CHAIN_ID_NUM) {
   const [walletClient, setWalletClient] = useState<SmartAccountWalletClient | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<RaidSubscriptionGrant | null>(null);
   const [status, setStatus] = useState(
-    'Connect MetaMask to authorize weekly USDC spend for paid inference and raids.'
+    'Connect MetaMask to authorize weekly USDG spend for paid inference and raids.'
   );
   const [busy, setBusy] = useState(false);
 

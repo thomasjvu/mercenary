@@ -15,9 +15,9 @@ export const PHALA_CORE_KEYS = [
   'BOSSRAID_PROVIDER_B_TOKEN',
   'BOSSRAID_PROVIDER_C_TOKEN',
   'BOSSRAID_VENICE_API_KEY',
-  'PAYAI_API_KEY_ID',
-  'PAYAI_API_KEY_SECRET',
+
   'BOSSRAID_X402_PAY_TO',
+  'BOSSRAID_X402_FACILITATOR_URL',
 ];
 
 /** Optional platform plan keys (not required for deploy preflight). */
@@ -254,10 +254,11 @@ export function assembleDeployEnv(core = {}, onchain = {}, options = {}) {
     : 'file';
 
   if (merged.BOSSRAID_SETTLEMENT_MODE === 'onchain') {
-    merged.BOSSRAID_RPC_URL = onchain.BOSSRAID_RPC_URL ?? 'https://mainnet.base.org';
-    merged.BOSSRAID_CHAIN_ID = onchain.BOSSRAID_CHAIN_ID ?? '8453';
+    merged.BOSSRAID_RPC_URL =
+      onchain.BOSSRAID_RPC_URL ?? onchain.BOSSRAID_ROBINHOOD_RPC_URL ?? 'https://rpc.robinhood.xyz';
+    merged.BOSSRAID_CHAIN_ID = onchain.BOSSRAID_CHAIN_ID ?? '4663';
     merged.BOSSRAID_TOKEN_ADDRESS =
-      onchain.BOSSRAID_TOKEN_ADDRESS ?? '0x833589fCD6eDb6B08d2E354A1d9441D5b2AaE4a5';
+      onchain.BOSSRAID_TOKEN_ADDRESS ?? '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168';
   }
 
   const veniceApiKey = resolveVeniceApiKey(merged);

@@ -9,17 +9,10 @@ export function readX402ConfigForContext(
 ): X402Config {
   const config = readX402Config(ctx.env);
   const enabled = ctx.controlState.readX402Enabled();
-  // Never inject PayAI when the rail is Robinhood USDG — ops must set Marian explicitly.
-  const isRobinhood =
-    config.network === ROBINHOOD_CHAIN_CAIP2 || config.network.startsWith('eip155:4663');
-  let facilitatorUrl = config.facilitatorUrl;
-  if (enabled && !facilitatorUrl && !isRobinhood) {
-    facilitatorUrl = 'https://facilitator.payai.network';
-  }
+  // Marian URL must be set explicitly — no PayAI/Base fallback.
   return {
     ...config,
     enabled,
-    facilitatorUrl,
   };
 }
 
@@ -60,10 +53,11 @@ export function buildX402SettingsView(ctx: Pick<ApiContext, 'env' | 'controlStat
   }
   if (!facilitatorConfigured) {
     blockers.push(
-      robinhoodRail
-        ? 'Set BOSSRAID_X402_FACILITATOR_URL to the Marian (Surplus) facilitator for eip155:4663 USDG.'
-        : 'Configure BOSSRAID_X402_FACILITATOR_URL (or legacy PayAI/Base credentials).'
+      'Set BOSSRAID_X402_FACILITATOR_URL to the Marian (Surplus) facilitator for eip155:4663 USDG.'
     );
+  }
+  if (enabled && !robinhoodRail) {
+    blockers.push('x402 network/asset must be Robinhood + USDG (Base USDC is not supported).');
   }
   if (enabled && robinhoodRail && !config.facilitatorApiKey) {
     blockers.push(

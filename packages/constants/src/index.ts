@@ -58,10 +58,7 @@ export {
 } from './settlement.js';
 
 export {
-  BASE_MAINNET_CAIP2,
-  BASE_SEPOLIA_CAIP2,
-  BASE_USDC_MAINNET,
-  BASE_USDC_SEPOLIA,
+  isRobinhoodPaymentNetwork,
   ROBINHOOD_CHAIN_CAIP2,
   ROBINHOOD_CHAIN_ID,
   ROBINHOOD_CHAIN_TESTNET_CAIP2,

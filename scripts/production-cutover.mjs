@@ -73,7 +73,7 @@ function main() {
       BOSSRAID_DEPLOYER_PRIVATE_KEY: deployerKey.trim(),
       BOSSRAID_CLIENT_PRIVATE_KEY: clientKey?.trim(),
       BOSSRAID_RPC_URL: process.env.BOSSRAID_RPC_URL ?? 'https://mainnet.base.org',
-      BOSSRAID_CHAIN_ID: process.env.BOSSRAID_CHAIN_ID ?? '8453',
+      BOSSRAID_CHAIN_ID: process.env.BOSSRAID_CHAIN_ID ?? '4663',
       BOSSRAID_TOKEN_ADDRESS:
         process.env.BOSSRAID_TOKEN_ADDRESS ?? '0x833589fCD6eDb6B08d2E354A1d9441D5b2AaE4a5',
     };
@@ -105,7 +105,7 @@ function main() {
       BOSSRAID_ESCROW_ADDRESS: deployment.escrowAddress,
       BOSSRAID_BOUNTY_ESCROW_ADDRESS: deployment.bountyEscrowAddress,
       BOSSRAID_RPC_URL: deployment.rpcUrl,
-      BOSSRAID_CHAIN_ID: deployment.chainId ? String(deployment.chainId) : '8453',
+      BOSSRAID_CHAIN_ID: deployment.chainId ? String(deployment.chainId) : '4663',
       BOSSRAID_TOKEN_ADDRESS: deployment.tokenAddress,
     });
   } else {

@@ -2,7 +2,7 @@
 
 x402 in, escrow out, equal split to successful providers.
 
-**Production rail:** **Robinhood Chain** (`eip155:4663`) + **USDG** via the **Marian** x402 facilitator (Surplus / Alkahest). Base USDC is legacy/CI only.
+**Single money rail:** **Robinhood Chain** (`eip155:4663`) + **USDG** via the **Marian** x402 facilitator (Surplus / Alkahest). Base USDC / PayAI are not supported.
 
 Follow the flow diagram first, then use the fee and payout tables when wiring billing or seller expectations.
 
@@ -22,7 +22,7 @@ Client → x402 USDG on Robinhood (budget + surcharge + markup) or buyer API key
 | ----------- | ------------------------------------------------- | ------------------------------------------ |
 | Network     | `eip155:4663`                                     | Testnet `eip155:46630` optional            |
 | Asset       | USDG `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` | EIP-712 name `Global Dollar` / version `1` |
-| Facilitator | Marian URL (`BOSSRAID_X402_FACILITATOR_URL`)      | Not PayAI (Base-only)                      |
+| Facilitator | Marian URL (`BOSSRAID_X402_FACILITATOR_URL`)      | Required when x402 is enabled              |
 
 ## Fees (buyers)
 
@@ -55,7 +55,7 @@ After x402 `/settle`, production requires **on-chain receipt verification** (USD
 
 ## Rules
 
-- Clients pay via Marian facilitator (USDG on Robinhood). No PayAI/Base required for production.
+- Clients pay via Marian facilitator (USDG on Robinhood).
 - Buyer API keys (`br_...`) skip x402 and debit spend caps / prepaid balance in the same request.
 - Platform markup defaults to 1% (`BOSSRAID_X402_PLATFORM_MARKUP_BPS=100`).
 - Successful providers split escrow equally. Invalid work gets $0.
@@ -92,10 +92,6 @@ x402 defaults to **off** until explicitly enabled.
 ## Surplus Intelligence parity
 
 Alkahest (Surplus) uses Mana ledger + Reown top-ups in **USDG on Robinhood**, and Marian for agent x402. Boss Raid mirrors that **chain/asset** for marketplace payments: prepaid `br_` balance still works; wallet challenges settle USDG via Marian.
-
-## Legacy: Base + ERC-7710
-
-Base USDC / MetaMask tx-sentinel remains available for CI and migration only (`eip155:8453` + `usdc`). Not the production rail.
 
 ## Buyer API keys
 

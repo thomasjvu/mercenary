@@ -29,7 +29,7 @@ const server = http.createServer(async (req, res) => {
       JSON.stringify({
         success: true,
         transaction: '0xmocksettlement',
-        network: 'eip155:84532',
+        network: 'eip155:4663',
         payer,
       })
     );
@@ -42,7 +42,7 @@ const server = http.createServer(async (req, res) => {
       JSON.stringify({
         success: true,
         transaction: '0xmockrefund',
-        network: 'eip155:84532',
+        network: 'eip155:4663',
         payer,
       })
     );

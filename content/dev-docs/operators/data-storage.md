@@ -4,6 +4,16 @@ Boss Raid persistence is **SQLite or in-memory** — no separate user-profile se
 
 Product-facing summary: [Privacy & data](/docs/overview/privacy-and-data).
 
+## v1 posture
+
+| Mode                        | Backend                    | When                                                                                                                                |
+| --------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **OSS / controlled launch** | SQLite (default)           | Single API process on Phala CVM or local disk; production-readiness allows SQLite with a **storage warning**                        |
+| **Full multi-replica HA**   | Postgres (planned adapter) | Multiple API instances, managed backups, connection pooling — **not Convex** (wrong trust boundary for TEE secrets + money ledgers) |
+| **Tests**                   | `memory`                   | Ephemeral only                                                                                                                      |
+
+SQLite is not a “shim”: it is the intentional v1 default. The gap is **horizontal scale**, not correctness for single-tenant launch.
+
 ## Backends
 
 | Env                        | Default  | Behavior                  |

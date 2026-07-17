@@ -1,6 +1,6 @@
 # Environment Variables
 
-Boss Raid reads env vars across the API, orchestrator, provider workers, and deploy scripts. **Production operators only need the Phala core tier** (15 Infisical secrets). Everything else is tuning, feature flags, or local dev.
+Boss Raid reads env vars across the API, orchestrator, provider workers, and deploy scripts. **Production operators only need the Phala core tier** (core Infisical secrets). Everything else is tuning, feature flags, or local dev.
 
 Defaults and workflows: [operators/runtime.md](../operators/runtime.md). Local setup: [dev-docs/operators/local-development](/dev-docs/operators/local-development).
 
@@ -74,19 +74,19 @@ Bootstrap assembles `deploy/phala/.env` with compose defaults not stored in Infi
 | `BOSSRAID_X402_RAID_SURCHARGE_USD`                        | Flat raid surcharge (default `0.01`)                                                                         |
 | `BOSSRAID_X402_CHAT_SURCHARGE_USD`                        | Flat chat/inference surcharge (default `0.002`)                                                              |
 | `BOSSRAID_X402_PLATFORM_MARKUP_BPS`                       | Platform markup (default `100` = 1%)                                                                         |
-| `BOSSRAID_X402_NETWORK`, `BOSSRAID_X402_ASSET`            | Production: `eip155:4663` + `usdg` (Robinhood / USDG). Legacy: Base + `usdc`                                 |
+| `BOSSRAID_X402_NETWORK`, `BOSSRAID_X402_ASSET`            | **Required rail:** `eip155:4663` + `usdg` (Robinhood / USDG) only                                            |
 | `BOSSRAID_X402_ASSET_NAME`, `BOSSRAID_X402_ASSET_VERSION` | USDG EIP-712: `Global Dollar` / `1`                                                                          |
-| `BOSSRAID_X402_FACILITATOR_URL`                           | **Marian** facilitator URL (Surplus RH+USDG). Not PayAI for production                                       |
+| `BOSSRAID_X402_FACILITATOR_URL`                           | **Marian** facilitator URL (Surplus RH+USDG) — required when x402 is enabled                                 |
 | `BOSSRAID_X402_FACILITATOR_API_KEY`                       | Marian console API key for verify/settle                                                                     |
 | `BOSSRAID_X402_REQUIRE_ONCHAIN_VERIFY`                    | Force receipt verify outside production (`1`/`true`); production always requires RPC + tx                    |
 | `BOSSRAID_RPC_URL` / `BOSSRAID_ROBINHOOD_RPC_URL`         | Robinhood RPC for settle verify + seller USDG treasury flush                                                 |
 | `BOSSRAID_SETTLEMENT_TREASURY_KEY`                        | Hot wallet for automatic seller USDG batch transfers (fallback: `BOSSRAID_CLIENT_PRIVATE_KEY`)               |
-| `BOSSRAID_X402_FACILITATOR_PRESET`                        | Legacy Base only: `metamask_base_mainnet` / `metamask_base_sepolia`                                          |
-| `BOSSRAID_X402_ASSET_TRANSFER_METHOD`                     | `permit2` (default) or `erc7710` (legacy Base delegation)                                                    |
+| `BOSSRAID_X402_FACILITATOR_PRESET`                        | Removed — set `BOSSRAID_X402_FACILITATOR_URL` (Marian) explicitly                                            |
+| `BOSSRAID_X402_ASSET_TRANSFER_METHOD`                     | `permit2` (default); `erc7710` only for optional agent-session grants                                        |
 | `BOSSRAID_DELEGATION_MANAGER_ADDRESS`                     | ERC-7710 delegation manager on Base; falls back to wallet permission `signerMeta` when omitted               |
 | `BOSSRAID_X402_BUYER_PRIVATE_KEY`                         | Wallet smoke tests and MCP agent one-shot payments                                                           |
 | `BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND`                  | **Test/dev only.** Never set in production. Allows unverified `POST /v1/buyer/balance/fund` when x402 is off |
-| `PAYAI_API_KEY_ID`, `PAYAI_API_KEY_SECRET`                | PayAI facilitator (legacy Base)                                                                              |
+| ~~`PAYAI_*` / CDP\_\*~~                                   | Removed from production rail                                                                                 |
 | `CDP_API_KEY_*`                                           | CDP fallback (legacy)                                                                                        |
 
 ### Agent payments & Mercenary upstream

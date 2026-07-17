@@ -1,11 +1,10 @@
 import type { DelegationChainEntry } from '@bossraid/shared-types';
 import { parseUnits } from 'viem';
 import {
-  BASE_CHAIN_ID,
   DEFAULT_SUBSCRIPTION_PERIOD_SECONDS,
   DEFAULT_WEEKLY_BUDGET_USD,
-  USDC_BASE,
-  USDC_BASE_SEPOLIA,
+  ROBINHOOD_CHAIN_ID_NUM,
+  USDG_ROBINHOOD,
 } from './config.js';
 import type { RaidSubscriptionGrant } from './types.js';
 import type { SmartAccountWalletClient } from './wallet.js';
@@ -21,11 +20,11 @@ export async function requestRaidSubscription(
     expiryUnix?: number;
   }
 ): Promise<RaidSubscriptionGrant> {
-  const chain = resolveChain(options.chainId ?? BASE_CHAIN_ID);
+  const chain = resolveChain(options.chainId ?? ROBINHOOD_CHAIN_ID_NUM);
   const weeklyBudgetUsd = options.weeklyBudgetUsd ?? DEFAULT_WEEKLY_BUDGET_USD;
   const currentTime = Math.floor(Date.now() / 1_000);
   const expiry = options.expiryUnix ?? currentTime + 60 * 60 * 24 * 30;
-  const tokenAddress = chain.id === BASE_CHAIN_ID ? USDC_BASE : USDC_BASE_SEPOLIA;
+  const tokenAddress = USDG_ROBINHOOD;
 
   const accounts = await walletClient.getAddresses();
   const wallet = accounts[0];
@@ -51,7 +50,7 @@ export async function requestRaidSubscription(
           periodAmount: parseUnits(String(weeklyBudgetUsd), 6),
           periodDuration: options.periodSeconds ?? DEFAULT_SUBSCRIPTION_PERIOD_SECONDS,
           startTime: currentTime,
-          justification: `Boss Raid account credit: up to ${weeklyBudgetUsd} USDC per week for inference and raid spend.`,
+          justification: `Boss Raid account credit: up to ${weeklyBudgetUsd} USDG per week for inference and raid spend.`,
         },
       },
     },
@@ -74,7 +73,7 @@ export async function requestRaidSubscription(
       at: grantedAt,
       from: wallet,
       to: options.sessionAccount,
-      summary: `Granted ${weeklyBudgetUsd} USDC weekly account credit to session account.`,
+      summary: `Granted ${weeklyBudgetUsd} USDG weekly account credit to session account.`,
       data: {
         weeklyBudgetUsd,
         periodSeconds: options.periodSeconds ?? DEFAULT_SUBSCRIPTION_PERIOD_SECONDS,

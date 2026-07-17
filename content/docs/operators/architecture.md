@@ -56,7 +56,7 @@ Buyers still use `POST /v1/inference/chat/completions`. The static inference cat
 
 ### Production readiness (honest)
 
-Full production requires `GET /v1/ops/production-readiness` → `ok: true` (onchain settlement, Phala TEE + `MNEMONIC`, container eval, strong secrets, no mocks, operator acks). SQLite is allowed with a storage warning for controlled launch. x402 may stay off for private rehearsal. Feature code can be ready while a specific host is still blocked by ops gates.
+Full production requires `GET /v1/ops/production-readiness` → `ok: true` (onchain settlement, Phala TEE + `MNEMONIC`, container eval, strong secrets, no mocks, operator acks). **Money rail is Robinhood + USDG only** (Marian facilitator). SQLite is allowed with a storage warning for **v1 controlled launch** (single API process); multi-replica HA needs a future Postgres adapter — not Convex. x402 may stay off for private rehearsal. Feature code can be ready while a specific host is still blocked by ops gates.
 
 ## Apps
 
