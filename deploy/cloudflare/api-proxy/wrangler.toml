@@ -1,0 +1,12 @@
+name = "raid-quest-api-proxy"
+main = "src/index.js"
+compatibility_date = "2026-07-01"
+account_id = "6db98f8dda871156612f54b3fd35bc2d"
+workers_dev = false
+
+[vars]
+ORIGIN_HOST = "870d7950bb7929df5f4cd30ba37c8d20604e14be-8080.dstack-pha-prod5.phala.network"
+
+[[routes]]
+pattern = "api.raid.quest/*"
+zone_name = "raid.quest"

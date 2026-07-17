@@ -84,7 +84,7 @@ Mercenary and inference launches from the public web require a wallet session co
 Point local web at a hosted API:
 
 ```bash
-BOSSRAID_API_ORIGIN=https://bossraid-web.pages.dev/api pnpm --filter @bossraid/web dev
+BOSSRAID_API_ORIGIN=https://api.raid.quest/api pnpm --filter @bossraid/web dev
 ```
 
 ## Core commands
@@ -105,15 +105,25 @@ pnpm bossraid verify:attestation
 pnpm bossraid deploy:web:cloudflare
 ```
 
-Cloudflare Pages deploy (requires Wrangler auth):
+Cloudflare Pages deploy (raid.quest account; requires Wrangler OAuth or `CLOUDFLARE_API_TOKEN`):
 
 ```bash
-BOSSRAID_CLOUDFLARE_PAGES_PROJECT=bossraid-web \
-BOSSRAID_API_ORIGIN=https://<your-phala-or-public-api-host>/api \
+export CLOUDFLARE_ACCOUNT_ID=6db98f8dda871156612f54b3fd35bc2d
+export BOSSRAID_CLOUDFLARE_PAGES_PROJECT=raid-quest
+export BOSSRAID_API_ORIGIN=https://api.raid.quest/api
 pnpm bossraid deploy:web:cloudflare
 ```
 
-Set the Cloudflare Pages secret `BOSSRAID_API_ORIGIN` to your public API host (Phala CVM), not a self-referential `pages.dev/api` loop. The API host must have `BOSSRAID_X402_ENABLED=true` before wallet top-ups work.
+Public surfaces:
+
+| Host                      | Target                           |
+| ------------------------- | -------------------------------- |
+| `https://raid.quest`      | Pages project `raid-quest`       |
+| `https://www.raid.quest`  | same                             |
+| `https://api.raid.quest`  | Worker proxy → Phala CVM gateway |
+| `https://docs.raid.quest` | Pages project `raid-quest-docs`  |
+
+Set the Cloudflare Pages secret `BOSSRAID_API_ORIGIN` to `https://api.raid.quest/api` (not a self-referential `pages.dev/api` loop). Operator CF tokens: `CLOUDFLARE_ADDITIONAL_TOKEN` (create tokens) and `CLOUDFLARE_API_TOKEN` (scoped ops). The API host must have `BOSSRAID_X402_ENABLED=true` before wallet top-ups work.
 
 ## Host attestation
 
