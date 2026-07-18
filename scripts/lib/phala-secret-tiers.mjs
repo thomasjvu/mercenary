@@ -268,7 +268,9 @@ export function assembleDeployEnv(core = {}, onchain = {}, options = {}) {
 
   if (merged.BOSSRAID_SETTLEMENT_MODE === 'onchain') {
     merged.BOSSRAID_RPC_URL =
-      onchain.BOSSRAID_RPC_URL ?? onchain.BOSSRAID_ROBINHOOD_RPC_URL ?? 'https://rpc.robinhood.xyz';
+      onchain.BOSSRAID_RPC_URL ??
+      onchain.BOSSRAID_ROBINHOOD_RPC_URL ??
+      'https://rpc.mainnet.chain.robinhood.com';
     merged.BOSSRAID_CHAIN_ID = onchain.BOSSRAID_CHAIN_ID ?? '4663';
     merged.BOSSRAID_TOKEN_ADDRESS =
       onchain.BOSSRAID_TOKEN_ADDRESS ?? '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168';

@@ -9,7 +9,7 @@ function robinhoodChain() {
   const rpc =
     (typeof process !== 'undefined' &&
       (process.env.BOSSRAID_ROBINHOOD_RPC_URL || process.env.BOSSRAID_RPC_URL)?.trim()) ||
-    'https://rpc.robinhood.xyz';
+    'https://rpc.mainnet.chain.robinhood.com';
   return defineChain({
     id: ROBINHOOD_CHAIN_ID,
     name: 'Robinhood',
