@@ -65,6 +65,10 @@ This deploys `TestUSDG`, mints 1_000_000 tUSDG (6 decimals) to the deployer, the
 
 **Never** copy testnet addresses into production Phala env. After smoke, redeploy escrows on mainnet with real USDG.
 
+### Testnet rehearsal status (2026-07)
+
+Rehearsed on Robinhood testnet `46630` with adversarial forge suite (**87 tests**) and live red-team (double-claim / double-refund / forfeit-after-pay all revert; conservation holds). Manifest pattern: `temp/contracts/deployment.testnet.json` (local only). Mainnet deploy uses the **same escrow source** + real USDG — separate manifest `temp/contracts/deployment.mainnet.json`.
+
 Role definitions:
 
 - `BOSSRAID_DEPLOYER_PRIVATE_KEY`: hot wallet used only for contract deployment txs

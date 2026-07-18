@@ -94,9 +94,10 @@ Known gaps: attestation telemetry on raid timelines is still partial. `MNEMONIC`
 - `POST /v1/raid` is the native public action route.
 - x402 is opt-in (ops toggle).
 - ERC-8004 identity via Virtuals ACP; Boss Raid consumes and optionally verifies refs.
-- ERC-8183 settlement needs `BOSSRAID_SETTLEMENT_MODE=onchain` plus funded signers.
+- ERC-8183 settlement needs `BOSSRAID_SETTLEMENT_MODE=onchain` plus funded signers on **Robinhood + USDG**.
+- Escrow contracts: `BossJobEscrow`, `RaidRegistry`, `BossBountyEscrow` (`packages/contracts`). Permissionless recovery after deadlines (forfeit, leftover refund, claim payout, job claimRefund).
 - Privacy engine gates strict-private raids; privacy scoring ≠ reputation scoring.
-- Hosted TEE runtime: Phala CVM (EigenCompute optional for judging lanes).
+- Hosted TEE runtime: Phala CVM (EigenCompute optional for judging lanes). Public host: **raid.quest** / **api.raid.quest**.
 
 ## Repo layout
 

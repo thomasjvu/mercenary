@@ -56,10 +56,16 @@ Buyers can run work two ways:
 
 Discount inference covers API-key billing, prepaid balance, purchase history, seller earnings, benchmark savings, and instant sub-dollar settlement.
 
+## Money rail
+
+Buyers and bounty posters pay in **USDG on Robinhood Chain** (Marian x402). Sellers flush earnings the same rail. Settlement can run as `file` (ledger) or `onchain` (escrow contracts). Details: [reference/payments.md](../reference/payments.md).
+
 ## Reference
 
 - **API routes** → [reference/routes.md](../reference/routes.md)
-- **Operators** → [operators/runtime.md](../operators/runtime.md)
+- **Payments / USDG** → [reference/payments.md](../reference/payments.md)
+- **Bounties** → [buyers/bounties.md](../buyers/bounties.md)
+- **Operators / deploy** → [operators/runtime.md](../operators/runtime.md)
 - **Agent skill** → `/skill.md` (install page: `/skill` on docs)
 - **MCP tools** → [raiders/mcp.md](../raiders/mcp.md) (local IDE agents)
 - **Privacy & data** → [overview/privacy-and-data.md](privacy-and-data.md)

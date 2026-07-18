@@ -158,9 +158,22 @@ pnpm bossraid infisical:phala:push
 pnpm bossraid infisical:phala:prune-legacy
 ```
 
-`production:cutover` normalizes provider settlement IDs (`dottie` / `riko` / `gamma`), deploys Base contracts when `BOSSRAID_DEPLOYER_PRIVATE_KEY` is funded, merges addresses into `deploy/phala/secrets.onchain.env`, and reassembles `deploy/phala/.env`. Use `--skip-deploy` when contract addresses are already in `temp/contracts/deployment.json`.
+`production:cutover` normalizes provider settlement IDs, deploys **Robinhood** settlement contracts when `BOSSRAID_DEPLOYER_PRIVATE_KEY` is funded, merges addresses into `deploy/phala/secrets.onchain.env`, and reassembles `deploy/phala/.env`. Use `--skip-deploy` when addresses are already in `temp/contracts/deployment.json` (or `deployment.mainnet.json`).
 
-Active hosted stack: Phala CVM. EigenCompute stays in-repo for optional judging/attestation lanes.
+Active hosted stack: Phala CVM on **raid.quest**. EigenCompute stays in-repo for optional judging/attestation lanes.
+
+## Money rail (production)
+
+| Field                    | Value                                                             |
+| ------------------------ | ----------------------------------------------------------------- |
+| Chain                    | Robinhood mainnet **4663** (`eip155:4663`)                        |
+| RPC                      | `https://rpc.mainnet.chain.robinhood.com`                         |
+| Gas                      | ETH on Robinhood                                                  |
+| Settlement token         | **USDG** `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`             |
+| x402 facilitator         | Marian (Surplus)                                                  |
+| Testnet (rehearsal only) | Chain **46630**; mintable TestUSDG — never copy addresses to prod |
+
+Contracts package: [`packages/contracts/README.md`](../../../packages/contracts/README.md). Payments: [reference/payments.md](../reference/payments.md).
 
 ## Deploy checklist
 
@@ -170,33 +183,43 @@ Active hosted stack: Phala CVM. EigenCompute stays in-repo for optional judging/
 2. Fill `examples/onboarding/virtuals-acp-capture-sheet.md`
 3. Map ERC-8004 fields into `deploy/phala/secrets.onchain.env` (see `secrets.onchain.env.example`)
 
-### 2. Settlement keys
+### 2. Settlement keys + contracts
 
 ```bash
-pnpm bossraid generate:settlement-keys
-pnpm bossraid deploy:contracts   # needs BOSSRAID_RPC_URL, BOSSRAID_DEPLOYER_PRIVATE_KEY
-pnpm bossraid bootstrap:settlement
+pnpm bossraid generate:settlement-keys   # if keys not already in Infisical
+# Prefer testnet first:
+pnpm bossraid deploy:contracts:testnet   # chain 46630 + TestUSDG
+# Mainnet (after fund gas + USDG on operator wallet):
+export BOSSRAID_RPC_URL=https://rpc.mainnet.chain.robinhood.com
+export BOSSRAID_CHAIN_ID=4663
+export BOSSRAID_TOKEN_ADDRESS=0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168
+export BOSSRAID_DEPLOYER_PRIVATE_KEY=…   # usually BOSSRAID_CLIENT_PRIVATE_KEY
+export BOSSRAID_CLIENT_PRIVATE_KEY=…
+export BOSSRAID_CONTRACTS_OUT=temp/contracts/deployment.mainnet.json
+pnpm bossraid deploy:contracts
+pnpm bossraid bootstrap:settlement-env -- --manifest temp/contracts/deployment.mainnet.json
 ```
 
-Fund client wallet (USDC for escrow), provider wallets (~0.01 ETH gas each).
+Fund **operator** wallet (`BOSSRAID_CLIENT_PRIVATE_KEY`):
+
+- **ETH** on Robinhood for deploy + relayer gas
+- **USDG** for bounty/job escrow funding (`fundBountyOnBehalf` / job `fund`)
+- ERC-20 allowance to `BossBountyEscrow` / `BossJobEscrow` (API approves when low)
 
 ### 2b. Bounty escrow (onchain)
 
-`pnpm bossraid bootstrap:settlement` writes `BOSSRAID_BOUNTY_ESCROW_ADDRESS` alongside raid escrow addresses. Production onchain mode requires it; `GET /v1/ops/production-readiness` reports `bounty_escrow_configured`.
-
-Operator wallet (`BOSSRAID_CLIENT_PRIVATE_KEY`) must hold:
-
-- USDC on Base for raid escrow, bounty escrow funding, and gas
-- An ERC-20 allowance to `BossBountyEscrow` (the API calls `approve` before each fund when allowance is low)
+`bootstrap:settlement` / deployment manifest writes `BOSSRAID_BOUNTY_ESCROW_ADDRESS` with raid escrow + registry. Production onchain mode requires it; `GET /v1/ops/production-readiness` reports `bounty_escrow_configured`.
 
 Buyer flow:
 
 1. Poster signs in with wallet session (`POST /v1/bounties`)
-2. `POST /v1/bounties/:id/fund` returns x402 `402` with `payment-required`
-3. Poster pays USDC via x402; settlement payer must match the poster wallet
+2. `POST /v1/bounties/:id/fund` returns x402 `402` with `payment-required` when x402 is on
+3. Poster pays **USDG on Robinhood** via Marian; settlement payer must match the poster wallet
 4. API relayer calls `createBountyOnBehalf` + `fundBountyOnBehalf` on `BossBountyEscrow`
 
-`BOSSRAID_X402_PAY_TO` is the platform receive wallet for raid/inference charges. Bounty poster USDC is settled through x402, then moved into onchain escrow by the client signer — not left in `payTo`.
+`BOSSRAID_X402_PAY_TO` is the platform receive wallet for raid/inference charges. Bounty poster USDG is settled through x402, then moved into onchain escrow by the client/operator signer — not left in `payTo`.
+
+**Recovery (permissionless after deadlines):** undelivered awards → `forfeitAward`; leftover budget → `refundUnawarded`; delivered unpaid → `claimPayout` (pays provider). Hourly API deadline worker runs forfeit + leftover refund. See contracts README recovery matrix.
 
 Dev-only bypass: `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND=true` (forbidden in production audit). Smoke tests:
 
@@ -212,7 +235,7 @@ pnpm bossraid test:bounty-escrow:production          # wallet mode; caps reward 
 
 ```bash
 cp deploy/phala/secrets.core.env.example deploy/phala/secrets.core.env
-# optional: deploy/phala/secrets.onchain.env after pnpm bossraid bootstrap:settlement
+# merge secrets.onchain.env after mainnet deploy (SETTLEMENT_MODE=onchain + addresses)
 pnpm bossraid bootstrap:phala:env
 pnpm bossraid phala:secrets:check deploy/phala/.env
 pnpm bossraid infisical:phala:push
@@ -230,10 +253,12 @@ Secret rotation: `phala envs update bossraid-main -e deploy/phala/.env`. Infisic
 ### 4. Verify
 
 ```bash
-curl https://<api>/health | jq
-curl https://<api>/ready | jq
+curl https://api.raid.quest/health | jq
+curl https://api.raid.quest/ready | jq
 curl -H "Authorization: Bearer $BOSSRAID_ADMIN_TOKEN" \
-  https://<api>/v1/ops/production-readiness | jq
+  https://api.raid.quest/v1/ops/production-readiness | jq
+curl -H "Authorization: Bearer $BOSSRAID_ADMIN_TOKEN" \
+  https://api.raid.quest/v1/ops/settlement/status | jq
 ```
 
 Production gate: `ok: true` on `GET /v1/ops/production-readiness` before unrestricted paid traffic. `GET /ready` also enforces production-only checks when `NODE_ENV=production` (onchain settlement configured, upstream mocks disabled, unverified balance fund disabled). Static deploy audit (matches CI):
@@ -262,14 +287,13 @@ Ops UI (`/ops/`) surfaces the same admin routes after login:
 
 ## Defaults
 
-- Persistence: SQLite locally; raids fail closed when storage is unavailable.
+- Persistence: SQLite for controlled single-writer launch; raids fail closed when storage is unavailable.
 - Native write route: `POST /v1/raid` (`raid_request` body).
 - x402 off until ops toggle or `BOSSRAID_X402_ENABLED=true` on boot.
-- ERC-7710 delegation lane: set `BOSSRAID_X402_FACILITATOR_PRESET=metamask_base_mainnet`, `BOSSRAID_X402_ASSET_TRANSFER_METHOD=erc7710`, and a funded wallet on `/mercenary` (paid mode) or via MCP `bossraid_grant_session` + `POST /v1/raid`.
-- ERC-7710 delegation manager: use `BOSSRAID_DELEGATION_MANAGER_ADDRESS` when the wallet grant does not return `signerMeta.delegationManager` from ERC-7715 permissions.
+- Public surfaces: **raid.quest** (web) + **api.raid.quest** (API Worker proxy).
 - 1Shot relayer: configure `BOSSRAID_ONESHOT_RELAYER_URL`; API exposes `/v1/relayer/*` (capabilities, fee-data, estimate, send, status, webhook) for agent relay proofs.
 - Prometheus: `/metrics` is admin-only unless `BOSSRAID_METRICS_PUBLIC=true`.
 - Mana billing: reservations use `BOSSRAID_MANA_CORE_APP_ID` (default `bossraid`) when Mana Core headers are present on paid routes.
-- Settlement: `file` by default; `onchain` only with funded signers and contract env.
+- Settlement: `file` by default until mainnet contracts are wired; `onchain` only with funded signers and contract env.
 - Successful providers split payout equally.
 - Browser API traffic stays same-origin via `/api/*` (gateway or Cloudflare Pages proxy).

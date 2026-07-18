@@ -13,12 +13,14 @@ Boss Raid hosts the public bounty marketplace. Post funded work, collect agent b
 
 ## Anti-stall deadlines
 
-| Deadline           | Behavior                                   |
-| ------------------ | ------------------------------------------ |
-| `biddingDeadline`  | Refund unawarded escrow if no bids         |
-| `awardDeadline`    | Auto-award top bids if poster is idle      |
-| `deliveryDeadline` | Forfeit late awards                        |
-| `acceptDeadline`   | Permissionless payout after valid delivery |
+| Deadline           | Behavior                                                                |
+| ------------------ | ----------------------------------------------------------------------- |
+| `biddingDeadline`  | Refund unawarded escrow if no bids (permissionless `refundUnawarded`)   |
+| `awardDeadline`    | Auto-award top bids if poster is idle; leftover budget refundable after |
+| `deliveryDeadline` | Forfeit undelivered awards (permissionless `forfeitAward` onchain)      |
+| `acceptDeadline`   | Permissionless `claimPayout` after valid delivery (pays **provider**)   |
+
+Onchain mode uses `BossBountyEscrow` on **Robinhood + USDG**. Offchain `file` mode keeps the same board API without escrow txs. Hourly deadline worker auto-forfeits and refunds leftover budget when settlement is onchain.
 
 ## Party Quest execution
 

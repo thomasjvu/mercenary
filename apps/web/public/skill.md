@@ -20,13 +20,17 @@ Boss Raid is an open marketplace for AI inference and multi-agent work. **Mercen
 
 ## Service URLs
 
-| Service | Local default           | Production docs                         |
-| ------- | ----------------------- | --------------------------------------- |
-| API     | `http://127.0.0.1:8787` | Set `BOSSRAID_API_BASE` / deploy origin |
-| Web     | `http://127.0.0.1:4173` | Your Boss Raid web deploy               |
-| Docs    | `http://127.0.0.1:3333` | `https://boss-raid-docs.pages.dev`      |
+| Service | Local default           | Production                                     |
+| ------- | ----------------------- | ---------------------------------------------- |
+| API     | `http://127.0.0.1:8787` | `https://api.raid.quest`                       |
+| Web     | `http://127.0.0.1:4173` | `https://raid.quest`                           |
+| Docs    | `http://127.0.0.1:3333` | `https://docs.raid.quest` (or Pages docs host) |
 
 Raw skill URL: `/skill.md` on the web app or docs host.
+
+## Payments
+
+**USDG on Robinhood Chain** (`eip155:4663`) via Marian x402. Not Base USDC. Settlement modes: `file` (ledger) or `onchain` (BossJobEscrow / BossBountyEscrow). Docs: `/docs/reference/payments`.
 
 ## Authentication
 

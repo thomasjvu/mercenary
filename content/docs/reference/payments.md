@@ -18,11 +18,15 @@ Client → x402 USDG on Robinhood (budget + surcharge + markup) or buyer API key
 
 ## Chain
 
-| Field       | Production                                        | Notes                                      |
-| ----------- | ------------------------------------------------- | ------------------------------------------ |
-| Network     | `eip155:4663`                                     | Testnet `eip155:46630` optional            |
-| Asset       | USDG `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` | EIP-712 name `Global Dollar` / version `1` |
-| Facilitator | Marian URL (`BOSSRAID_X402_FACILITATOR_URL`)      | Required when x402 is enabled              |
+| Field       | Production                                        | Notes                                                               |
+| ----------- | ------------------------------------------------- | ------------------------------------------------------------------- |
+| Network     | `eip155:4663` (Robinhood mainnet)                 | Testnet `eip155:46630` for contract rehearsal only                  |
+| RPC         | `https://rpc.mainnet.chain.robinhood.com`         | Public rate-limited; Alchemy optional for prod throughput           |
+| Asset       | USDG `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` | EIP-712 name `Global Dollar` / version `1`; 6 decimals              |
+| Facilitator | Marian URL (`BOSSRAID_X402_FACILITATOR_URL`)      | Required when x402 is enabled                                       |
+| Escrow      | `BossJobEscrow` + `BossBountyEscrow` + registry   | Deploy via `pnpm bossraid deploy:contracts`; see packages/contracts |
+
+Testnet has **no official USDG** — use `pnpm bossraid deploy:contracts:testnet` (mintable TestUSDG). Never copy testnet addresses into production.
 
 ## Fees (buyers)
 
