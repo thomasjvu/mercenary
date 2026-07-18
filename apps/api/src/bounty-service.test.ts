@@ -351,6 +351,28 @@ test('processDeadlines auto-forfeits past delivery and leftover-refunds partial 
   assert.equal(after.status, 'refunded');
 });
 
+test('createBounty rejects inverted deadline order (onchain-compatible)', async () => {
+  const { service } = await createTestBountyService({
+    prefix: 'bossraid-bounty-deadline-order-',
+  });
+  const now = Date.now();
+  assert.throws(
+    () =>
+      service.createBounty('0xPoster0000000000000000000000000000000b', {
+        title: 'Bad deadlines',
+        description: 'Test',
+        requirements: 'Test',
+        rewardAmountUsd: 1,
+        biddingDeadlineAt: new Date(now + 60_000).toISOString(),
+        awardDeadlineAt: new Date(now + 120_000).toISOString(),
+        // delivery before award — invalid for BossBountyEscrow
+        deliveryDeadlineAt: new Date(now + 30_000).toISOString(),
+        acceptDeadlineAt: new Date(now + 180_000).toISOString(),
+      }),
+    /bidding < award < delivery < accept/
+  );
+});
+
 test('leftover refund blocked before award deadline when awards exist', async () => {
   const { service } = await createTestBountyService({
     prefix: 'bossraid-bounty-leftover-gate-',

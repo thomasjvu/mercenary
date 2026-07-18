@@ -54,6 +54,7 @@ export class BountyService {
     const now = new Date();
     const nowIso = now.toISOString();
     const deadlines = buildDeadlines(now, input, this.config);
+    assertStrictDeadlineOrder(deadlines, now.getTime());
     const record: BountyRecord = {
       id: this.store.createId('bty'),
       posterWallet: posterWallet.toLowerCase(),
@@ -86,6 +87,8 @@ export class BountyService {
     if (!['draft', 'funded'].includes(bounty.status)) {
       throw new BountyServiceError('Only draft or funded bounties can be funded.', 409);
     }
+    // Re-check before onchain fund (BUG-003): chain requires bidding < award < delivery < accept.
+    assertStrictDeadlineOrder(bounty.deadlines, Date.now());
     const nowIso = new Date().toISOString();
     const updated: BountyRecord = {
       ...bounty,
@@ -461,7 +464,16 @@ export class BountyService {
     }
 
     if (this.onchain && award.onchainAwardId) {
-      await this.runOnchain(() => this.onchain!.executor.forfeitAward(award.onchainAwardId!));
+      try {
+        await this.runOnchain(() => this.onchain!.executor.forfeitAward(award.onchainAwardId!));
+      } catch (error) {
+        // Idempotent board sync (BUG-001): chain may already be Forfeited after a direct tx.
+        const onchainStatus = await this.onchain.executor.readAwardStatus(award.onchainAwardId);
+        // AwardStatus: Pending=0, Delivered=1, Paid=2, Forfeited=3
+        if (onchainStatus !== 3) {
+          throw error;
+        }
+      }
     }
 
     const nowIso = new Date().toISOString();
@@ -738,6 +750,29 @@ function buildDeadlines(
     deliveryDeadlineAt: deliveryAt.toISOString(),
     acceptDeadlineAt: acceptAt.toISOString(),
   };
+}
+
+/**
+ * Match BossBountyEscrow: accept > delivery > award > bidding > now (strict).
+ * Exposed for unit tests (BUG-003).
+ */
+export function assertStrictDeadlineOrder(
+  deadlines: BountyRecord['deadlines'],
+  nowMs = Date.now()
+): void {
+  const bid = Date.parse(deadlines.biddingDeadlineAt);
+  const award = Date.parse(deadlines.awardDeadlineAt);
+  const delivery = Date.parse(deadlines.deliveryDeadlineAt);
+  const accept = Date.parse(deadlines.acceptDeadlineAt);
+  if (![bid, award, delivery, accept].every((value) => Number.isFinite(value))) {
+    throw new BountyServiceError('Invalid bounty deadline timestamps.', 400);
+  }
+  if (!(bid > nowMs && award > bid && delivery > award && accept > delivery)) {
+    throw new BountyServiceError(
+      'Bounty deadlines must satisfy bidding < award < delivery < accept, all strictly in the future (onchain escrow order).',
+      400
+    );
+  }
 }
 
 function isActiveBountyAward(award: BountyAwardRecord): boolean {

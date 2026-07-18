@@ -146,6 +146,20 @@ export function registerBountyRoutes(
   };
   scheduleBountyDeadlineWorker(ctx.env, runDeadlinePass);
 
+  // BUG-002: ops can force a deadline pass (forfeit undelivered + leftover refund) without waiting hourly.
+  app.post('/v1/ops/bounties/process-deadlines', async (request, reply) => {
+    const adminError = handlers.auth.requireAdmin(reply, request.headers);
+    if (adminError) {
+      return adminError;
+    }
+    try {
+      const messages = await service.processDeadlines(new Date());
+      return { ok: true, messages, count: messages.length };
+    } catch (error) {
+      return mapBountyError(reply, error);
+    }
+  });
+
   app.post('/v1/bounties', async (request, reply) => {
     const access = requireMercenaryAccess(
       reply,

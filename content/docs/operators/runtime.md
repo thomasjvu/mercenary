@@ -219,7 +219,7 @@ Buyer flow:
 
 `BOSSRAID_X402_PAY_TO` is the platform receive wallet for raid/inference charges. Bounty poster USDG is settled through x402, then moved into onchain escrow by the client/operator signer — not left in `payTo`.
 
-**Recovery (permissionless after deadlines):** undelivered awards → `forfeitAward`; leftover budget → `refundUnawarded`; delivered unpaid → `claimPayout` (pays provider). Hourly API deadline worker runs forfeit + leftover refund. See contracts README recovery matrix.
+**Recovery (permissionless after deadlines):** undelivered awards → `forfeitAward`; leftover budget → `refundUnawarded`; delivered unpaid → `claimPayout` (pays provider). Hourly API deadline worker runs forfeit + leftover refund. Ops can force a pass: `POST /v1/ops/bounties/process-deadlines` (admin token). Create/fund require deadline order `bidding < award < delivery < accept`. See contracts README recovery matrix.
 
 Dev-only bypass: `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND=true` (forbidden in production audit). Smoke tests:
 
