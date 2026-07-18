@@ -1,7 +1,7 @@
 {
-  "workspaceId": "5d94a3f6-78e6-433e-b4f4-c0099a5f49de",
-  "organizationId": "6cbdc8e5-c7d6-4677-809f-1e367ea06d16",
-  "defaultEnvironment": "dev",
+  "workspaceId": "37240754-d0d5-4bd3-8ddd-fe6b6301f109",
+  "organizationId": "475a34a5-a449-4089-b94f-1e20b99b3cd1",
+  "defaultEnvironment": "prod",
   "gitBranchToEnvironmentMapping": {
     "main": "prod",
     "staging": "staging",
