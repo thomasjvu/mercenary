@@ -49,6 +49,67 @@ function bountyStoreForEnv(env: NodeJS.ProcessEnv): BountyStore {
   return new BountyStore(path);
 }
 
+const HOUR_MS = 3_600_000;
+
+/** Milliseconds until the next clock hour (:00:00.000). */
+export function msUntilNextHour(now = new Date()): number {
+  const next = new Date(now.getTime());
+  next.setMinutes(0, 0, 0);
+  next.setMilliseconds(0);
+  next.setHours(next.getHours() + 1);
+  return Math.max(1, next.getTime() - now.getTime());
+}
+
+/**
+ * Schedule bounty deadline processing.
+ * - default / `hourly`: fire at next top-of-hour, then every hour
+ * - numeric `BOSSRAID_BOUNTY_DEADLINE_INTERVAL_MS`: fixed interval (for tests)
+ * - `0`: disabled
+ */
+export function scheduleBountyDeadlineWorker(
+  env: NodeJS.ProcessEnv,
+  run: () => void,
+  timers: {
+    setTimeout: typeof setTimeout;
+    setInterval: typeof setInterval;
+  } = globalThis
+): { mode: 'hourly' | 'interval' | 'off' } {
+  const raw = env.BOSSRAID_BOUNTY_DEADLINE_INTERVAL_MS?.trim();
+  if (raw === '0') {
+    return { mode: 'off' };
+  }
+  if (raw && raw !== 'hourly') {
+    const intervalMs = Number(raw);
+    if (Number.isFinite(intervalMs) && intervalMs > 0) {
+      const handle = timers.setInterval(run, intervalMs);
+      handle.unref?.();
+      return { mode: 'interval' };
+    }
+  }
+
+  // Default: top of each hour
+  const armHourly = () => {
+    const handle = timers.setTimeout(() => {
+      run();
+      armHourly();
+    }, msUntilNextHour());
+    handle.unref?.();
+  };
+  armHourly();
+  return { mode: 'hourly' };
+}
+
+function readBountyDeadlineLockTtlMs(env: NodeJS.ProcessEnv): number {
+  const raw = env.BOSSRAID_BOUNTY_DEADLINE_INTERVAL_MS?.trim();
+  if (raw && raw !== 'hourly' && raw !== '0') {
+    const intervalMs = Number(raw);
+    if (Number.isFinite(intervalMs) && intervalMs > 0) {
+      return intervalMs * 2;
+    }
+  }
+  return HOUR_MS * 2;
+}
+
 export function registerBountyRoutes(
   app: FastifyInstance,
   ctx: ApiContext,
@@ -64,24 +125,26 @@ export function registerBountyRoutes(
   );
   const { providerIsAuthorized } = handlers.auth;
 
-  const deadlineIntervalMs = Number(ctx.env.BOSSRAID_BOUNTY_DEADLINE_INTERVAL_MS ?? '60000');
+  // Default: process bounty deadlines at the top of each hour (not a 60s poll).
+  // Override with BOSSRAID_BOUNTY_DEADLINE_INTERVAL_MS for fixed-interval runs (tests/dev).
+  // Set to 0 to disable the worker.
   const deadlineWorkerId = `bounty-deadline-${randomUUID()}`;
-  if (Number.isFinite(deadlineIntervalMs) && deadlineIntervalMs > 0) {
-    setInterval(() => {
-      if (!store.tryAcquireDeadlineWorkerLock(deadlineWorkerId, deadlineIntervalMs * 2)) {
-        return;
-      }
-      void service
-        .processDeadlines()
-        .catch((error: unknown) => {
-          logger.warn(
-            { error: error instanceof Error ? error.message : String(error) },
-            'bounty deadline worker failed'
-          );
-        })
-        .finally(() => store.releaseDeadlineWorkerLock(deadlineWorkerId));
-    }, deadlineIntervalMs).unref?.();
-  }
+  const runDeadlinePass = () => {
+    const lockTtlMs = Math.max(readBountyDeadlineLockTtlMs(ctx.env), 120_000);
+    if (!store.tryAcquireDeadlineWorkerLock(deadlineWorkerId, lockTtlMs)) {
+      return;
+    }
+    void service
+      .processDeadlines()
+      .catch((error: unknown) => {
+        logger.warn(
+          { error: error instanceof Error ? error.message : String(error) },
+          'bounty deadline worker failed'
+        );
+      })
+      .finally(() => store.releaseDeadlineWorkerLock(deadlineWorkerId));
+  };
+  scheduleBountyDeadlineWorker(ctx.env, runDeadlinePass);
 
   app.post('/v1/bounties', async (request, reply) => {
     const access = requireMercenaryAccess(
