@@ -9,6 +9,7 @@
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
     "deploy": "node dist/deploy.js",
+    "deploy:testnet": "node dist/deploy-testnet.js",
     "bootstrap:settlement-env": "node dist/bootstrap-settlement-env.js",
     "bootstrap:onchain": "node dist/bootstrap-onchain.js",
     "test": "node --import tsx --test 'src/**/*.test.ts'",

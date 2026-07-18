@@ -40,6 +40,31 @@ pnpm bossraid deploy:contracts
 
 The deploy script compiles the Solidity with `solc-js`, deploys both contracts, writes a manifest, and prints env lines for the orchestrator settlement path.
 
+### Robinhood testnet first (recommended)
+
+There is **no official USDG on Robinhood testnet** (chain `46630`). Mainnet USDG `0x5fc5…` has no code there. Rehearse with a mintable mock:
+
+|          | Testnet                                   | Mainnet                                                |
+| -------- | ----------------------------------------- | ------------------------------------------------------ |
+| Chain ID | `46630`                                   | `4663`                                                 |
+| RPC      | `https://rpc.testnet.chain.robinhood.com` | `https://rpc.mainnet.chain.robinhood.com`              |
+| Token    | **TestUSDG** (deployed by script)         | real USDG `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` |
+
+```bash
+# Fund deployer with testnet ETH: https://faucet.testnet.chain.robinhood.com/
+export BOSSRAID_RPC_URL=https://rpc.testnet.chain.robinhood.com
+export BOSSRAID_CHAIN_ID=46630
+export BOSSRAID_DEPLOYER_PRIVATE_KEY=0x…   # key holding testnet ETH
+export BOSSRAID_CLIENT_PRIVATE_KEY=$BOSSRAID_DEPLOYER_PRIVATE_KEY
+export BOSSRAID_CONTRACTS_OUT=temp/contracts/deployment.testnet.json
+
+pnpm bossraid deploy:contracts:testnet
+```
+
+This deploys `TestUSDG`, mints 1_000_000 tUSDG (6 decimals) to the deployer, then deploys JobEscrow → Registry → BountyEscrow. Manifest is written to `temp/contracts/deployment.testnet.json`.
+
+**Never** copy testnet addresses into production Phala env. After smoke, redeploy escrows on mainnet with real USDG.
+
 Role definitions:
 
 - `BOSSRAID_DEPLOYER_PRIVATE_KEY`: hot wallet used only for contract deployment txs

@@ -251,6 +251,16 @@ const COMMANDS = {
       return runPnpm(['--filter', '@bossraid/contracts', 'run', 'deploy']);
     },
   },
+  'deploy:contracts:testnet': {
+    category: 'settlement',
+    description:
+      'Robinhood testnet (46630): deploy mintable TestUSDG + settlement contracts (not for production)',
+    run: () => {
+      const build = runPnpm(['build']);
+      if (build !== 0) return build;
+      return runPnpm(['--filter', '@bossraid/contracts', 'run', 'deploy:testnet']);
+    },
+  },
 
   // Deploy
   'deploy:web:cloudflare': {
