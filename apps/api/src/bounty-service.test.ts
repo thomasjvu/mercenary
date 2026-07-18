@@ -264,3 +264,118 @@ test('claim is blocked before accept deadline', async () => {
   });
   await assert.rejects(() => service.claimAward(delivered.id), /Accept deadline has not passed/);
 });
+
+test('forfeits undelivered award after delivery deadline', async () => {
+  const { service, store } = await createTestBountyService({
+    prefix: 'bossraid-bounty-forfeit-',
+  });
+  const bounty = service.createBounty('0xPoster00000000000000000000000000000008', {
+    title: 'Forfeit',
+    description: 'Test',
+    requirements: 'Test',
+    rewardAmountUsd: 8,
+  });
+  service.fundBounty(bounty.id, bounty.posterWallet, { openNow: true });
+  const provider = {
+    providerId: 'pqf_forfeit',
+    scores: { reputationScore: 10 },
+  } as ProviderProfile;
+  const bid = service.submitBid(
+    bounty.id,
+    { providerId: 'pqf_forfeit', priceUsd: 8, etaHours: 1, pitch: 'slow' },
+    provider
+  );
+  const awarded = await service.awardBids(bounty.id, bounty.posterWallet, { bidIds: [bid.id] });
+  const awardId = awarded.awards[0]!.id;
+
+  await assert.rejects(() => service.forfeitAward(awardId), /Delivery deadline has not passed/);
+
+  const stored = store.getBounty(bounty.id)!;
+  store.saveBounty({
+    ...stored,
+    deadlines: {
+      ...stored.deadlines,
+      deliveryDeadlineAt: new Date(Date.now() - 60_000).toISOString(),
+    },
+  });
+
+  const forfeited = await service.forfeitAward(awardId);
+  assert.equal(forfeited.status, 'forfeited');
+});
+
+test('processDeadlines auto-forfeits past delivery and leftover-refunds partial awards', async () => {
+  const { service, store } = await createTestBountyService({
+    prefix: 'bossraid-bounty-deadline-forfeit-',
+    env: {
+      ...process.env,
+      BOSSRAID_BOUNTY_AUTO_AWARD_MAX: '2',
+    },
+  });
+
+  const bounty = service.createBounty('0xPoster00000000000000000000000000000009', {
+    title: 'Partial leftover',
+    description: 'Test',
+    requirements: 'Test',
+    rewardAmountUsd: 20,
+    maxAwards: 2,
+  });
+  service.fundBounty(bounty.id, bounty.posterWallet, { openNow: true });
+  const provider = {
+    providerId: 'pqf_partial',
+    scores: { reputationScore: 10 },
+  } as ProviderProfile;
+  const bid = service.submitBid(
+    bounty.id,
+    { providerId: 'pqf_partial', priceUsd: 8, etaHours: 1, pitch: 'partial' },
+    provider
+  );
+  await service.awardBids(bounty.id, bounty.posterWallet, { bidIds: [bid.id], amountsUsd: [8] });
+
+  const stored = store.getBounty(bounty.id)!;
+  store.saveBounty({
+    ...stored,
+    deadlines: {
+      ...stored.deadlines,
+      awardDeadlineAt: new Date(Date.now() - 120_000).toISOString(),
+      deliveryDeadlineAt: new Date(Date.now() - 60_000).toISOString(),
+    },
+  });
+
+  const messages = await service.processDeadlines(new Date());
+  assert.ok(messages.some((entry) => entry.startsWith('auto_forfeited:')));
+  assert.ok(messages.some((entry) => entry.startsWith('leftover_refunded:')));
+
+  const awards = store.listAwardsForBounty(bounty.id);
+  assert.equal(awards[0]!.status, 'forfeited');
+  const after = store.getBounty(bounty.id)!;
+  assert.equal(after.status, 'refunded');
+});
+
+test('leftover refund blocked before award deadline when awards exist', async () => {
+  const { service } = await createTestBountyService({
+    prefix: 'bossraid-bounty-leftover-gate-',
+    env: {
+      ...process.env,
+      BOSSRAID_BOUNTY_AUTO_AWARD_MAX: '2',
+    },
+  });
+  const bounty = service.createBounty('0xPoster0000000000000000000000000000000a', {
+    title: 'Leftover gate',
+    description: 'Test',
+    requirements: 'Test',
+    rewardAmountUsd: 15,
+    maxAwards: 2,
+  });
+  service.fundBounty(bounty.id, bounty.posterWallet, { openNow: true });
+  const provider = { providerId: 'pqf_gate', scores: { reputationScore: 1 } } as ProviderProfile;
+  const bid = service.submitBid(
+    bounty.id,
+    { providerId: 'pqf_gate', priceUsd: 5, etaHours: 1, pitch: 'x' },
+    provider
+  );
+  await service.awardBids(bounty.id, bounty.posterWallet, { bidIds: [bid.id], amountsUsd: [5] });
+  await assert.rejects(
+    () => service.refundBounty(bounty.id, bounty.posterWallet),
+    /Award deadline has not passed/
+  );
+});

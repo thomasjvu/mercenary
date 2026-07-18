@@ -75,4 +75,24 @@ contract RaidRegistryTest is Test {
         vm.expectRevert(bytes("escrow required"));
         new RaidRegistry(address(0));
     }
+
+    function test_linkChildJob_allows_duplicate_job_id() public {
+        // Metadata-only; duplicate links are allowed (L-4 accepted).
+        vm.prank(client);
+        uint256 jobId = escrow.createJob(provider, evaluator, block.timestamp + 1 days, "task");
+        vm.prank(client);
+        uint256 raidId = registry.createRaid(bytes32(uint256(1)));
+        vm.prank(client);
+        registry.linkChildJob(raidId, jobId);
+        vm.prank(client);
+        registry.linkChildJob(raidId, jobId);
+    }
+
+    function test_only_client_finalizes() public {
+        vm.prank(client);
+        uint256 raidId = registry.createRaid(bytes32(uint256(1)));
+        vm.prank(other);
+        vm.expectRevert(bytes("only client"));
+        registry.finalizeRaid(raidId, bytes32(uint256(2)));
+    }
 }

@@ -325,6 +325,40 @@ export class BountyStore {
     return rows.map((row) => JSON.parse(row.payload_json) as BountyAwardRecord);
   }
 
+  /** Pending/in_progress awards past delivery deadline (F-7 recovery candidates). */
+  listPendingAwardsPastDeliveryDeadline(nowIso: string): BountyAwardRecord[] {
+    const rows = this.db
+      .prepare(
+        [
+          'select award.payload_json as payload_json',
+          'from bounty_award_records award',
+          'inner join bounty_records bounty on bounty.bounty_id = award.bounty_id',
+          "where json_extract(award.payload_json, '$.status') in ('pending', 'in_progress')",
+          "and json_extract(bounty.payload_json, '$.deadlines.deliveryDeadlineAt') <= ?",
+          'order by award.updated_at asc',
+          'limit 200',
+        ].join(' ')
+      )
+      .all(nowIso) as Row[];
+    return rows.map((row) => JSON.parse(row.payload_json) as BountyAwardRecord);
+  }
+
+  /** Bounties that may still hold unallocated escrow after the award window. */
+  listBountiesPastAwardDeadlineForLeftover(nowIso: string): BountyRecord[] {
+    const rows = this.db
+      .prepare(
+        [
+          'select payload_json from bounty_records',
+          "where json_extract(payload_json, '$.status') in ('open', 'funded', 'awarded', 'in_progress', 'delivered')",
+          "and json_extract(payload_json, '$.deadlines.awardDeadlineAt') <= ?",
+          'order by updated_at desc',
+          'limit 200',
+        ].join(' ')
+      )
+      .all(nowIso) as Row[];
+    return rows.map((row) => JSON.parse(row.payload_json) as BountyRecord);
+  }
+
   private readOne<T>(sql: string, id: string): T | undefined {
     const row = this.db.prepare(sql).get(id) as Row | undefined;
     if (!row?.payload_json) {

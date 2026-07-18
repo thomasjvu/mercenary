@@ -2,98 +2,106 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://boss-raid-docs.pages.dev/docs/overview/introduction</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/docs/overview/proof</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/docs/overview/privacy-and-data</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/docs/buyers/discount-inference</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/docs/buyers/buy</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/docs/sellers/sell</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
+  </url>
+  <url>
+    <loc>https://boss-raid-docs.pages.dev/docs/sellers/http-agent-guide</loc>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/docs/raiders/raids</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
+  </url>
+  <url>
+    <loc>https://boss-raid-docs.pages.dev/docs/raiders/agents</loc>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/docs/raiders/mcp</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/docs/reference/routes</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/docs/reference/env</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/docs/reference/payments</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/docs/skill</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/docs/operators/runtime</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/docs/operators/architecture</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/docs/operators/trust-and-safety</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/docs/llms</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/dev-docs/operators/tech-stack</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/dev-docs/operators/local-development</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/dev-docs/operators/infisical</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/dev-docs/operators/data-storage</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/dev-docs/brand/rx-78-design-system</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/dev-docs/brand/landing-hero-art</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/api</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
   <url>
     <loc>https://boss-raid-docs.pages.dev/api/internal</loc>
-    <lastmod>2026-07-11T07:02:10.008Z</lastmod>
+    <lastmod>2026-07-17T23:38:44.960Z</lastmod>
   </url>
 </urlset>

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-25T00:26:23.959Z",
+  "generated": "2026-07-17T23:38:39.653Z",
   "paths": [
     "overview/introduction",
     "overview/proof",
@@ -7,7 +7,9 @@
     "buyers/discount-inference",
     "buyers/buy",
     "sellers/sell",
+    "sellers/http-agent-guide",
     "raiders/raids",
+    "raiders/agents",
     "raiders/mcp",
     "reference/routes",
     "reference/env",
@@ -18,7 +20,7 @@
     "operators/trust-and-safety",
     "llms"
   ],
-  "count": 16,
+  "count": 18,
   "titles": {
     "overview/introduction": "Introduction",
     "overview/proof": "Proof & Receipts",
@@ -26,7 +28,9 @@
     "buyers/discount-inference": "Discount inference",
     "buyers/buy": "Buy Inference",
     "sellers/sell": "Sell Inference",
+    "sellers/http-agent-guide": "HTTP agent guide (hireable subagents)",
     "raiders/raids": "Run a Raid",
+    "raiders/agents": "Hireable agents (vanilla vs specialized)",
     "raiders/mcp": "MCP tools",
     "reference/routes": "Routes",
     "reference/env": "Environment Variables",

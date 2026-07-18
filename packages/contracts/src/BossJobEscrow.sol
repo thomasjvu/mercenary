@@ -88,7 +88,8 @@ contract BossJobEscrow {
     function setBudget(uint256 jobId, uint256 amount) external {
         Job storage job = jobs[jobId];
         require(job.status == Status.Open, "not open");
-        require(msg.sender == job.client || msg.sender == job.provider, "not allowed");
+        require(msg.sender == job.client, "only client");
+        require(amount > 0, "budget required");
 
         job.budget = amount;
         emit BudgetSet(jobId, amount);
@@ -115,6 +116,7 @@ contract BossJobEscrow {
         require(msg.sender == job.provider, "only provider");
         require(job.status == Status.Funded, "not funded");
         require(block.timestamp < job.expiresAt, "expired");
+        require(deliverableHash != bytes32(0), "hash required");
 
         job.deliverableHash = deliverableHash;
         job.status = Status.Submitted;

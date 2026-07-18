@@ -1115,6 +1115,18 @@ paths:
                     - xhigh
                   description: OpenAI-compatible reasoning effort (xAI Grok / Grok Build). Passed
                     through to the selected upstream when supported.
+                provider:
+                  type: string
+                  description: "Discount inference: auto (default) or upstream id (venice, xai,
+                    darkbloom, …) → allowed_model_providers."
+                max_price_usd:
+                  type: number
+                  description: Absolute max spend USD for this call (alias of
+                    raid_policy.max_total_cost).
+                max_price_ratio:
+                  type: number
+                  description: Cap spend as a fraction of catalog reference task price (0–1). Fail
+                    closed if no seller within budget.
               required:
                 - messages
       x-bossraid-audience: public
@@ -1268,6 +1280,18 @@ paths:
                     - xhigh
                   description: OpenAI-compatible reasoning effort (xAI Grok / Grok Build). Passed
                     through to the selected upstream when supported.
+                provider:
+                  type: string
+                  description: "Discount inference: auto (default) or upstream id (venice, xai,
+                    darkbloom, …) → allowed_model_providers."
+                max_price_usd:
+                  type: number
+                  description: Absolute max spend USD for this call (alias of
+                    raid_policy.max_total_cost).
+                max_price_ratio:
+                  type: number
+                  description: Cap spend as a fraction of catalog reference task price (0–1). Fail
+                    closed if no seller within budget.
               required:
                 - messages
       x-bossraid-audience: public
@@ -1755,6 +1779,42 @@ paths:
         "200":
           description: Default Response
   /v1/seller/upstream/anthropic/offers/{modelId}:
+    delete:
+      parameters:
+        - schema:
+            type: string
+          in: path
+          name: modelId
+          required: true
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/darkbloom/connect:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/darkbloom/models/catalog:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/darkbloom/models:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/darkbloom/offers:
+    post:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/darkbloom/config:
+    get:
+      responses:
+        "200":
+          description: Default Response
+  /v1/seller/upstream/darkbloom/offers/{modelId}:
     delete:
       parameters:
         - schema:

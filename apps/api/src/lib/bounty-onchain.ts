@@ -285,6 +285,19 @@ export class BountyOnchainExecutor {
     return txHash;
   }
 
+  async forfeitAward(onchainAwardId: string): Promise<Hash> {
+    const txHash = await this.operatorClient.writeContract({
+      chain: this.chain,
+      address: this.config.bountyEscrowAddress,
+      abi: bountyEscrowAbi,
+      functionName: 'forfeitAward',
+      args: [BigInt(onchainAwardId)],
+      account: this.operatorAccount,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash: txHash });
+    return txHash;
+  }
+
   async readTokenBalance(address: Address): Promise<bigint> {
     return this.publicClient.readContract({
       address: this.config.tokenAddress,

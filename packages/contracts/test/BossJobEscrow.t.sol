@@ -138,4 +138,117 @@ contract BossJobEscrowTest is Test {
         vm.expectRevert(bytes("evaluator is provider"));
         escrow.setProvider(jobId, evaluator);
     }
+
+    /// @dev F-3: provider cannot grief client by rewriting budget before fund.
+    function test_setBudget_provider_reverts() public {
+        vm.prank(client);
+        uint256 jobId = escrow.createJob(provider, evaluator, block.timestamp + 1 days, "task");
+        vm.prank(provider);
+        vm.expectRevert(bytes("only client"));
+        escrow.setBudget(jobId, 1e6);
+    }
+
+    function test_setBudget_client_ok() public {
+        vm.prank(client);
+        uint256 jobId = escrow.createJob(provider, evaluator, block.timestamp + 1 days, "task");
+        vm.prank(client);
+        escrow.setBudget(jobId, 25e6);
+        (, , , uint256 budget, , , , ) = escrow.jobs(jobId);
+        assertEq(budget, 25e6);
+    }
+
+    function test_setBudget_zero_reverts() public {
+        vm.prank(client);
+        uint256 jobId = escrow.createJob(provider, evaluator, block.timestamp + 1 days, "task");
+        vm.prank(client);
+        vm.expectRevert(bytes("budget required"));
+        escrow.setBudget(jobId, 0);
+    }
+
+    function test_submit_zero_hash_reverts() public {
+        vm.prank(client);
+        uint256 jobId = escrow.createJob(provider, evaluator, block.timestamp + 1 days, "task");
+        vm.prank(client);
+        escrow.setBudget(jobId, 10e6);
+        vm.prank(client);
+        escrow.fund(jobId, 10e6);
+        vm.prank(provider);
+        vm.expectRevert(bytes("hash required"));
+        escrow.submit(jobId, bytes32(0));
+    }
+
+    function test_complete_at_exact_expiry_reverts_claimRefund_ok() public {
+        uint256 expiresAt = block.timestamp + 1 hours;
+        uint256 jobId = _fundedSubmittedJob(100e6, expiresAt);
+        vm.warp(expiresAt);
+        vm.prank(evaluator);
+        vm.expectRevert(bytes("expired"));
+        escrow.complete(jobId, bytes32(uint256(1)));
+
+        uint256 before = token.balanceOf(client);
+        escrow.claimRefund(jobId);
+        assertEq(token.balanceOf(client), before + 100e6);
+    }
+
+    function test_reject_funded_refunds_client() public {
+        vm.prank(client);
+        uint256 jobId = escrow.createJob(provider, evaluator, block.timestamp + 1 days, "task");
+        vm.prank(client);
+        escrow.setBudget(jobId, 75e6);
+        vm.prank(client);
+        escrow.fund(jobId, 75e6);
+        uint256 before = token.balanceOf(client);
+        vm.prank(evaluator);
+        escrow.reject(jobId, bytes32(uint256(9)));
+        assertEq(token.balanceOf(client), before + 75e6);
+        (, , , , , , BossJobEscrow.Status status, ) = escrow.jobs(jobId);
+        assertEq(uint256(status), uint256(BossJobEscrow.Status.Rejected));
+    }
+
+    function test_reject_open_by_client() public {
+        vm.prank(client);
+        uint256 jobId = escrow.createJob(provider, evaluator, block.timestamp + 1 days, "task");
+        vm.prank(client);
+        escrow.reject(jobId, bytes32(uint256(1)));
+        (, , , , , , BossJobEscrow.Status status, ) = escrow.jobs(jobId);
+        assertEq(uint256(status), uint256(BossJobEscrow.Status.Rejected));
+        assertEq(token.balanceOf(address(escrow)), 0);
+    }
+
+    function test_double_complete_reverts() public {
+        uint256 jobId = _fundedSubmittedJob(100e6, block.timestamp + 1 days);
+        vm.prank(evaluator);
+        escrow.complete(jobId, bytes32(uint256(1)));
+        vm.prank(evaluator);
+        vm.expectRevert(bytes("not submitted"));
+        escrow.complete(jobId, bytes32(uint256(2)));
+    }
+
+    function test_client_as_provider_pays_provider() public {
+        vm.prank(client);
+        uint256 jobId = escrow.createJob(client, evaluator, block.timestamp + 1 days, "self");
+        vm.prank(client);
+        escrow.setBudget(jobId, 20e6);
+        vm.prank(client);
+        escrow.fund(jobId, 20e6);
+        vm.prank(client);
+        escrow.submit(jobId, bytes32(uint256(3)));
+        uint256 before = token.balanceOf(client);
+        vm.prank(evaluator);
+        escrow.complete(jobId, bytes32(uint256(4)));
+        assertEq(token.balanceOf(client), before + 20e6);
+    }
+
+    function test_claimRefund_before_expiry_reverts() public {
+        uint256 jobId = _fundedSubmittedJob(50e6, block.timestamp + 1 days);
+        vm.expectRevert(bytes("not expired"));
+        escrow.claimRefund(jobId);
+    }
+
+    function test_non_evaluator_complete_reverts() public {
+        uint256 jobId = _fundedSubmittedJob(50e6, block.timestamp + 1 days);
+        vm.prank(client);
+        vm.expectRevert(bytes("only evaluator"));
+        escrow.complete(jobId, bytes32(uint256(1)));
+    }
 }

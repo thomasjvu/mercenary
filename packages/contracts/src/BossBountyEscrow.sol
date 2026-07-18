@@ -198,13 +198,15 @@ contract BossBountyEscrow {
         _releaseAward(awardId, msg.sender);
     }
 
+    /// @notice Return undelivered award amount to remainingBudget after deliveryDeadline.
+    /// @dev Permissionless (F-7): anyone may unstick Pending awards once the delivery window closes.
+    ///      Funds move to remainingBudget; use refundUnawarded to return unallocated budget to poster.
     function forfeitAward(uint256 awardId) external {
         Award storage award = awards[awardId];
         require(award.status == AwardStatus.Pending, "not pending");
 
         Bounty storage bounty = bounties[award.bountyId];
         require(bounty.poster != address(0), "award not found");
-        require(msg.sender == bounty.poster || msg.sender == operator, "not allowed");
         require(block.timestamp > bounty.deliveryDeadline, "delivery open");
 
         uint256 amount = award.amount;
@@ -216,18 +218,31 @@ contract BossBountyEscrow {
         emit AwardForfeited(awardId, amount);
     }
 
+    /// @notice Refund unallocated remainingBudget to the poster.
+    /// @dev Safe while awards are outstanding: remainingBudget excludes locked award amounts.
+    ///      Funded/Open: after biddingDeadline (no awards yet). Awarded: after awardDeadline (leftover only).
+    ///      Status becomes Refunded only when fully uncommitted (Funded/Open); Awarded stays Awarded.
     function refundUnawarded(uint256 bountyId) external {
         Bounty storage bounty = bounties[bountyId];
         require(
-            bounty.status == BountyStatus.Funded || bounty.status == BountyStatus.Open,
+            bounty.status == BountyStatus.Funded ||
+                bounty.status == BountyStatus.Open ||
+                bounty.status == BountyStatus.Awarded,
             "not refundable"
         );
-        require(block.timestamp > bounty.biddingDeadline, "bidding open");
         require(bounty.remainingBudget > 0, "nothing to refund");
+
+        if (bounty.status == BountyStatus.Awarded) {
+            require(block.timestamp > bounty.awardDeadline, "award window open");
+        } else {
+            require(block.timestamp > bounty.biddingDeadline, "bidding open");
+        }
 
         uint256 amount = bounty.remainingBudget;
         bounty.remainingBudget = 0;
-        bounty.status = BountyStatus.Refunded;
+        if (bounty.status != BountyStatus.Awarded) {
+            bounty.status = BountyStatus.Refunded;
+        }
         token.safeTransfer(bounty.poster, amount);
         emit BountyRefunded(bountyId, bounty.poster, amount);
     }

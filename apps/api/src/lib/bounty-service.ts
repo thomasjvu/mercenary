@@ -397,18 +397,34 @@ export class BountyService {
     return this.markPaid(award, bounty, 'award.accepted');
   }
 
+  /**
+   * Refund unallocated escrow to the poster.
+   * - No awards: after biddingDeadline (full pot).
+   * - With awards: after awardDeadline (leftover remainingBudget only; F-1).
+   */
   async refundBounty(bountyId: string, posterWallet: string): Promise<BountyRecord> {
     const bounty = this.requireBounty(bountyId);
     this.requirePoster(bounty, posterWallet);
-    if (!['open', 'funded', 'expired'].includes(bounty.status)) {
+    if (['refunded', 'cancelled', 'paid'].includes(bounty.status)) {
       throw new BountyServiceError('Bounty is not refundable.', 409);
     }
-    if (Date.now() <= Date.parse(bounty.deadlines.biddingDeadlineAt)) {
-      throw new BountyServiceError('Bidding deadline has not passed yet.', 409);
-    }
+
     const awards = this.store.listAwardsForBounty(bountyId);
-    if (awards.length > 0) {
-      throw new BountyServiceError('Cannot refund a bounty that already has awards.', 409);
+    const liveAwards = awards.filter((award) =>
+      ['pending', 'in_progress', 'delivered', 'paying'].includes(award.status)
+    );
+
+    if (awards.length === 0) {
+      if (!['open', 'funded', 'expired', 'draft'].includes(bounty.status)) {
+        throw new BountyServiceError('Bounty is not refundable.', 409);
+      }
+      if (Date.now() <= Date.parse(bounty.deadlines.biddingDeadlineAt)) {
+        throw new BountyServiceError('Bidding deadline has not passed yet.', 409);
+      }
+    } else {
+      if (Date.now() <= Date.parse(bounty.deadlines.awardDeadlineAt)) {
+        throw new BountyServiceError('Award deadline has not passed yet for leftover refund.', 409);
+      }
     }
 
     if (this.onchain && bounty.escrowJobId) {
@@ -416,13 +432,46 @@ export class BountyService {
     }
 
     const nowIso = new Date().toISOString();
+    // Full terminal refund only when nothing live remains; leftover with live awards keeps status.
     const updated: BountyRecord = {
       ...bounty,
-      status: 'refunded',
+      status: liveAwards.length > 0 ? bounty.status : 'refunded',
       updatedAt: nowIso,
     };
     this.store.saveBounty(updated);
-    this.appendEvent(bountyId, 'bounty.refunded', 'Unawarded bounty escrow refunded');
+    this.appendEvent(
+      bountyId,
+      liveAwards.length > 0 ? 'bounty.leftover_refunded' : 'bounty.refunded',
+      liveAwards.length > 0
+        ? 'Unallocated leftover escrow refunded to poster'
+        : 'Unawarded bounty escrow refunded'
+    );
+    return updated;
+  }
+
+  /** Forfeit undelivered award after deliveryDeadline (onchain permissionless; API marks forfeited). */
+  async forfeitAward(awardId: string): Promise<BountyAwardRecord> {
+    const award = this.requireAward(awardId);
+    if (!['pending', 'in_progress'].includes(award.status)) {
+      throw new BountyServiceError('Only pending awards can be forfeited.', 409);
+    }
+    const bounty = this.requireBounty(award.bountyId);
+    if (Date.now() <= Date.parse(bounty.deadlines.deliveryDeadlineAt)) {
+      throw new BountyServiceError('Delivery deadline has not passed yet.', 409);
+    }
+
+    if (this.onchain && award.onchainAwardId) {
+      await this.runOnchain(() => this.onchain!.executor.forfeitAward(award.onchainAwardId!));
+    }
+
+    const nowIso = new Date().toISOString();
+    const updated: BountyAwardRecord = {
+      ...award,
+      status: 'forfeited',
+      updatedAt: nowIso,
+    };
+    this.store.saveAward(updated);
+    this.appendEvent(bounty.id, 'award.forfeited', `Forfeited undelivered award ${awardId}`);
     return updated;
   }
 
@@ -499,6 +548,44 @@ export class BountyService {
         messages.push(
           `auto_claim_failed:${award.id}:${error instanceof Error ? error.message : String(error)}`
         );
+      }
+    }
+
+    // F-7: undelivered Pending awards after deliveryDeadline → forfeit (permissionless onchain).
+    for (const award of this.store.listPendingAwardsPastDeliveryDeadline(nowIso)) {
+      try {
+        await this.forfeitAward(award.id);
+        messages.push(`auto_forfeited:${award.id}`);
+      } catch (error) {
+        messages.push(
+          `auto_forfeit_failed:${award.id}:${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+
+    // F-1: reclaim unallocated remainingBudget after awardDeadline (leftover or post-forfeit).
+    for (const bounty of this.store.listBountiesPastAwardDeadlineForLeftover(nowIso)) {
+      const awards = this.store.listAwardsForBounty(bounty.id);
+      const committedUsd = awards
+        .filter((a) => !['forfeited', 'refunded'].includes(a.status))
+        .reduce((sum, a) => sum + a.amountUsd, 0);
+      // Skip when every dollar is still committed to a non-forfeited award (no leftover expected).
+      if (awards.length > 0 && committedUsd >= bounty.rewardAmountUsd) {
+        continue;
+      }
+      // No awards: full refund is handled earlier in this worker when bidding passed.
+      if (awards.length === 0) {
+        continue;
+      }
+      try {
+        await this.refundBounty(bounty.id, bounty.posterWallet);
+        messages.push(`leftover_refunded:${bounty.id}`);
+      } catch (error) {
+        // Nothing to refund / not refundable is expected when remaining is already zero onchain.
+        const msg = error instanceof Error ? error.message : String(error);
+        if (!/nothing to refund|not refundable|Award deadline|amount mismatch/i.test(msg)) {
+          messages.push(`leftover_refund_failed:${bounty.id}:${msg}`);
+        }
       }
     }
 

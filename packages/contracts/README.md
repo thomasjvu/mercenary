@@ -87,19 +87,40 @@ pnpm bossraid bootstrap:onchain
 
 This deploys both contracts, writes the deployment manifest, writes the settlement env file, and prints the next manual step.
 
-## Security notes (audit 2026-07 + QuillShield)
+## Security notes (full pre-deploy audit)
 
 Hardened in-repo contracts:
 
-- **BossJobEscrow**: `submit` / `complete` require `block.timestamp < expiresAt` (expiry is a hard stop; `claimRefund` after expiry).
+- **BossJobEscrow**: `submit` / `complete` require `block.timestamp < expiresAt` (expiry is a hard stop; `claimRefund` after expiry). `submit` requires non-zero deliverable hash; `setBudget` requires amount > 0 and **client-only**.
 - **Fund CEI**: status / remaining budget updated **before** token pull (blocks callback double-fund).
 - **TokenTransfer**: SafeERC20-style optional return + `pullExact` (rejects fee-on-transfer / amount mismatch).
-- **BossBountyEscrow**: `acceptAward` is **poster-only** (operator has `acceptAwardOnBehalf`); after `acceptDeadline`, `claimPayout` is permissionless to the provider. Awards store `bountyId`; delivery by `deliveryDeadline`; `forfeitAward` after delivery window for undelivered Pending awards. **Operator is rotatable** via `transferOperator` + `acceptOperator` (two-step; not immutable).
-- **BossJobEscrow roles**: evaluator must differ from client and provider (blocks trivial self-deal evaluator). Evaluator remains a trusted settlement role by product design — custody high-assurance keys.
-- **RaidRegistry**: constructed with `jobEscrow`; `linkChildJob` requires the job to exist on that escrow and `job.client == msg.sender`. `linkChildJob` reverts after finalize.
+- **BossBountyEscrow**: `acceptAward` is **poster-only** (operator has `acceptAwardOnBehalf`); after `acceptDeadline`, `claimPayout` is permissionless to the provider. **`forfeitAward` is permissionless after `deliveryDeadline`** (F-7). Operator rotatable via two-step transfer.
+- **Leftover refund (F-1)**: `refundUnawarded` returns only `remainingBudget` (unallocated). Funded after `biddingDeadline`; Awarded after `awardDeadline` (status stays Awarded while awards outstanding).
+- **BossJobEscrow roles**: evaluator must differ from client and provider. Evaluator is a trusted settlement role — custody high-assurance keys.
+- **RaidRegistry**: constructed with `jobEscrow`; `linkChildJob` requires the job to exist on that escrow and `job.client == msg.sender`. Finalize is one-shot.
 - Constructors reject zero token / operator / escrow addresses.
 
-Designed for standard 1:1 ERC20 (USDG/USDC-class). Redeploy after bytecode changes. Deploy order: job escrow → registry(escrow) → bounty escrow.
+**Token constraint:** standard 1:1 ERC-20 only (USDG/USDC-class). Not FoT, not rebasing, not ERC-777. Redeploy after bytecode changes. Deploy order: job escrow → registry(escrow) → bounty escrow(token, operator).
+
+### Trust model (by design, not bugs)
+
+| Role              | Power                                                 | Custody                     |
+| ----------------- | ----------------------------------------------------- | --------------------------- |
+| Bounty `operator` | create/fund/award/deliver/accept on behalf            | TEE/HSM; two-step rotation  |
+| Job `evaluator`   | complete (pay provider) or reject (refund client)     | TEE/HSM                     |
+| Token blacklist   | transfer to blacklisted address reverts → funds stuck | Accept v1 (no admin rescue) |
+
+### Recovery matrix (permissionless unstick paths)
+
+| Stuck state                                            | Who    | Function                                               |
+| ------------------------------------------------------ | ------ | ------------------------------------------------------ |
+| Job Funded/Submitted past expiry                       | Anyone | `claimRefund` → client                                 |
+| Bounty Funded, no awards, past bidding                 | Anyone | `refundUnawarded` → poster                             |
+| Bounty Awarded, leftover remaining, past awardDeadline | Anyone | `refundUnawarded` → poster                             |
+| Award Delivered, past acceptDeadline                   | Anyone | `claimPayout` → provider                               |
+| Award Pending, past deliveryDeadline                   | Anyone | `forfeitAward` → remainingBudget; then leftover refund |
+
+After full forfeit, status returns to Funded but award window is closed — cannot re-award; must `refundUnawarded`.
 
 ## Tests
 
@@ -109,7 +130,7 @@ forge test -vv          # or: pnpm test:forge
 pnpm test               # TypeScript deploy tests
 ```
 
-Foundry suite covers expiry races, poster-only accept, delivery deadline, registry finalize immutability.
+Foundry suite covers CEI reentrancy, FoT rejection, leftover refund, permissionless forfeit, expiry races, poster-only accept, registry finalize.
 
 ## Still Missing
 
@@ -117,5 +138,4 @@ Foundry suite covers expiry races, poster-only accept, delivery deadline, regist
 - deployment verification / address book
 - resume tooling for partially settled child-job batches
 - chain-specific config presets
-- SafeERC20 / fee-on-transfer token allowlist (document USDC/USDG-only for now)
-- operator key rotation (immutable operator is trust-rooted)
+- multi-token allowlist (document USDC/USDG-only; FoT rejected at pull)
