@@ -241,23 +241,23 @@ export function registerBountyRoutes(
 
       let escrowReceiptJson = fundBody.escrowReceiptJson;
       let escrowJobId = fundBody.escrowJobId;
-      if (readX402ConfigForContext(ctx).enabled) {
-        const paymentResult = await prepareBountyFundPayment({
-          ctx,
-          bountyId: params.bountyId,
-          posterWallet: access.wallet,
-          draft,
-          headers: request.headers,
-          onchainExecutor,
-          reply,
-        });
-        if (!paymentResult.ok) {
-          reply.code(paymentResult.statusCode);
-          return paymentResult.body;
-        }
-        escrowReceiptJson = paymentResult.prepared.escrowReceiptJson ?? escrowReceiptJson;
-        escrowJobId = paymentResult.prepared.escrowJobId ?? escrowJobId;
+      // x402 path and unverified+onchain dogfood path both go through prepareBountyFundPayment
+      // (when x402 off + onchain executor + ALLOW_UNVERIFIED_BOUNTY_FUND, still createAndFund).
+      const paymentResult = await prepareBountyFundPayment({
+        ctx,
+        bountyId: params.bountyId,
+        posterWallet: access.wallet,
+        draft,
+        headers: request.headers,
+        onchainExecutor,
+        reply,
+      });
+      if (!paymentResult.ok) {
+        reply.code(paymentResult.statusCode);
+        return paymentResult.body;
       }
+      escrowReceiptJson = paymentResult.prepared.escrowReceiptJson ?? escrowReceiptJson;
+      escrowJobId = paymentResult.prepared.escrowJobId ?? escrowJobId;
 
       const bounty = service.fundBounty(params.bountyId, access.wallet, {
         escrowReceiptJson,

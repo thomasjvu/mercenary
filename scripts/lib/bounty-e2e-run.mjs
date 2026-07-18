@@ -309,6 +309,7 @@ async function verifyOnchainAwardIfConfigured(onchainAwardId, onchainVerify) {
         stateMutability: 'view',
         inputs: [{ name: 'awardId', type: 'uint256' }],
         outputs: [
+          { name: 'bountyId', type: 'uint256' },
           { name: 'provider', type: 'address' },
           { name: 'amount', type: 'uint256' },
           { name: 'deliveryHash', type: 'bytes32' },
@@ -320,9 +321,10 @@ async function verifyOnchainAwardIfConfigured(onchainAwardId, onchainVerify) {
     functionName: 'awards',
     args: [BigInt(onchainAwardId)],
   });
-  const status = Number(award[3]);
-  if (status !== 3) {
-    throw new Error(`Expected onchain award status Paid (3), got ${status}.`);
+  // AwardStatus: Pending=0, Delivered=1, Paid=2, Forfeited=3
+  const status = Number(award[4]);
+  if (status !== 2) {
+    throw new Error(`Expected onchain award status Paid (2), got ${status}.`);
   }
   console.log(JSON.stringify({ step: 'onchain_award_paid', onchainAwardId, status }, null, 2));
 }

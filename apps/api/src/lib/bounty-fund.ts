@@ -108,6 +108,69 @@ export function paymentsDisabledForBountyFund(
   };
 }
 
+/**
+ * When x402 is off but onchain escrow is configured (testnet dogfood), still lock funds
+ * via operator createAndFundBounty. Production must use x402 (ALLOW_UNVERIFIED blocked there).
+ */
+export async function prepareUnverifiedOnchainBountyFund(input: {
+  ctx: ApiContext;
+  bountyId: string;
+  posterWallet: string;
+  draft: BountyRecord;
+  onchainExecutor: BountyOnchainExecutor | undefined;
+}): Promise<
+  | { ok: true; prepared: PreparedBountyFund }
+  | { ok: false; statusCode: number; body: Record<string, unknown> }
+> {
+  if (!input.onchainExecutor) {
+    return { ok: true, prepared: {} };
+  }
+  if (!allowUnverifiedFundInDev(input.ctx.env, 'BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND')) {
+    return { ok: true, prepared: {} };
+  }
+  if (input.draft.escrowJobId) {
+    return {
+      ok: false,
+      statusCode: 409,
+      body: { error: 'already_funded', message: 'Bounty escrow is already funded.' },
+    };
+  }
+  try {
+    const onchain = await input.onchainExecutor.createAndFundBounty({
+      posterWallet: input.posterWallet,
+      bounty: input.draft,
+    });
+    return {
+      ok: true,
+      prepared: {
+        escrowJobId: onchain.onchainBountyId,
+        escrowReceiptJson: JSON.stringify({
+          route: 'bounty',
+          mode: 'unverified_onchain',
+          onchain: {
+            bountyId: onchain.onchainBountyId,
+            fundTxHash: onchain.fundTxHash,
+          },
+        }),
+      },
+    };
+  } catch (error) {
+    logger.error(
+      {
+        bountyId: input.bountyId,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      'bounty unverified onchain fund failed'
+    );
+    const mapped = mapBountyOnchainError(error);
+    return {
+      ok: false,
+      statusCode: mapped.code === 'insufficient_operator_balance' ? 503 : 502,
+      body: { error: mapped.code, message: mapped.message },
+    };
+  }
+}
+
 export async function prepareBountyFundPayment(input: {
   ctx: ApiContext;
   bountyId: string;
@@ -122,7 +185,13 @@ export async function prepareBountyFundPayment(input: {
 > {
   const x402Config = readX402ConfigForContext(input.ctx);
   if (!x402Config.enabled) {
-    return { ok: true, prepared: {} };
+    return prepareUnverifiedOnchainBountyFund({
+      ctx: input.ctx,
+      bountyId: input.bountyId,
+      posterWallet: input.posterWallet,
+      draft: input.draft,
+      onchainExecutor: input.onchainExecutor,
+    });
   }
 
   if (input.draft.escrowJobId) {
