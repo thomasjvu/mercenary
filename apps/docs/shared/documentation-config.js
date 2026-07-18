@@ -166,6 +166,12 @@ export const documentationTree = [
         path: 'buyers/buy',
         tags: ['buyer', 'api-keys'],
       },
+      {
+        type: 'file',
+        name: 'Bounties.md',
+        path: 'buyers/bounties',
+        tags: ['buyer', 'bounty', 'escrow', 'usdg'],
+      },
     ],
   },
   {
@@ -184,6 +190,12 @@ export const documentationTree = [
         name: 'HTTP Agent Guide.md',
         path: 'sellers/http-agent-guide',
         tags: ['seller', 'http', 'agent', 'hermes', 'openclaw', 'phantasy'],
+      },
+      {
+        type: 'file',
+        name: 'Bounties.md',
+        path: 'sellers/bounties',
+        tags: ['seller', 'bounty', 'bid', 'delivery'],
       },
     ],
   },

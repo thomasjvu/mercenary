@@ -2,106 +2,114 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://docs.raid.quest/docs/overview/introduction</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/docs/overview/proof</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/docs/overview/privacy-and-data</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/docs/buyers/discount-inference</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/docs/buyers/buy</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
+  </url>
+  <url>
+    <loc>https://docs.raid.quest/docs/buyers/bounties</loc>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/docs/sellers/sell</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/docs/sellers/http-agent-guide</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
+  </url>
+  <url>
+    <loc>https://docs.raid.quest/docs/sellers/bounties</loc>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/docs/raiders/raids</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/docs/raiders/agents</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/docs/raiders/mcp</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/docs/reference/routes</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/docs/reference/env</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/docs/reference/payments</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/docs/skill</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/docs/operators/runtime</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/docs/operators/architecture</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/docs/operators/trust-and-safety</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/docs/llms</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/dev-docs/operators/tech-stack</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/dev-docs/operators/local-development</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/dev-docs/operators/infisical</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/dev-docs/operators/data-storage</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/dev-docs/brand/rx-78-design-system</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/dev-docs/brand/landing-hero-art</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/api</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
   <url>
     <loc>https://docs.raid.quest/api/internal</loc>
-    <lastmod>2026-07-18T05:18:45.977Z</lastmod>
+    <lastmod>2026-07-18T05:19:23.481Z</lastmod>
   </url>
 </urlset>
