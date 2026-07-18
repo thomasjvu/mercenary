@@ -408,8 +408,18 @@ export class BountyService {
   async refundBounty(bountyId: string, posterWallet: string): Promise<BountyRecord> {
     const bounty = this.requireBounty(bountyId);
     this.requirePoster(bounty, posterWallet);
-    if (['refunded', 'cancelled', 'paid'].includes(bounty.status)) {
+    // Allow leftover reclaim after partial pay while status is still awarded/paid-with-remainder.
+    if (['refunded', 'cancelled'].includes(bounty.status)) {
       throw new BountyServiceError('Bounty is not refundable.', 409);
+    }
+    if (bounty.status === 'paid') {
+      const awards = this.store.listAwardsForBounty(bountyId);
+      const awardedUsd = awards
+        .filter((a) => !['forfeited', 'refunded'].includes(a.status))
+        .reduce((sum, a) => sum + a.amountUsd, 0);
+      if (awardedUsd + 1e-9 >= bounty.rewardAmountUsd) {
+        throw new BountyServiceError('Bounty is not refundable.', 409);
+      }
     }
 
     const awards = this.store.listAwardsForBounty(bountyId);
@@ -638,12 +648,21 @@ export class BountyService {
       }
     }
     this.store.saveAward(updated);
-    const awards = this.store.listAwardsForBounty(bounty.id);
-    const allPaid = awards.every((entry) => entry.id === award.id || entry.status === 'paid');
+    const awards = this.store
+      .listAwardsForBounty(bounty.id)
+      .map((entry) => (entry.id === award.id ? updated : entry));
+    // Only mark bounty fully paid when every award is paid AND budget is fully allocated
+    // (maxAwards filled or sum(award amounts) covers reward). Partial multi-award leaves
+    // leftover budget refundable after awardDeadline (scale dogfood / F-1).
+    const everyAwardPaid = awards.every((entry) => entry.status === 'paid');
+    const awardedUsd = awards.reduce((sum, entry) => sum + entry.amountUsd, 0);
+    const fullyAllocated =
+      awards.length >= bounty.maxAwards || awardedUsd + 1e-9 >= bounty.rewardAmountUsd;
+    const fullyPaid = everyAwardPaid && fullyAllocated;
     this.store.saveBounty({
       ...bounty,
-      status: allPaid ? 'paid' : bounty.status,
-      paidAt: allPaid ? nowIso : bounty.paidAt,
+      status: fullyPaid ? 'paid' : bounty.status === 'paid' ? bounty.status : 'awarded',
+      paidAt: fullyPaid ? nowIso : bounty.paidAt,
       updatedAt: nowIso,
     });
     this.appendEvent(bounty.id, eventType, `Paid award ${award.id}`);

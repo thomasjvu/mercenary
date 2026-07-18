@@ -349,7 +349,9 @@ export class BountyStore {
       .prepare(
         [
           'select payload_json from bounty_records',
-          "where json_extract(payload_json, '$.status') in ('open', 'funded', 'awarded', 'in_progress', 'delivered')",
+          // Include awarded/delivered (and paid only if still escrowed — filtered in service by committedUsd).
+          "where json_extract(payload_json, '$.status') in ('open', 'funded', 'awarded', 'in_progress', 'delivered', 'paid')",
+          "and json_extract(payload_json, '$.status') != 'refunded'",
           "and json_extract(payload_json, '$.deadlines.awardDeadlineAt') <= ?",
           'order by updated_at desc',
           'limit 200',
