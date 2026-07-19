@@ -213,3 +213,129 @@ test('captureRaidLaunchBilling reconciles when terminal wait times out', async (
   assert.equal(wasReconcileCalled(), true);
   assert.equal(controlState.readPublicAccount(account.wallet)?.balanceUsd, 5);
 });
+
+function buildZeroSuccessOrchestrator(): BossRaidOrchestrator {
+  const status: BossRaidStatusOutput = {
+    raidId: 'raid-zero',
+    status: 'final',
+    experts: [],
+    firstValidAvailable: false,
+    sanitization: {
+      redactedSecrets: 0,
+      redactedIdentifiers: 0,
+      removedUrls: 0,
+      trimmedFiles: 0,
+      unsafeContentDetected: false,
+      riskTier: 'safe',
+      issues: [],
+    },
+  };
+  const result: BossRaidResultOutput = {
+    raidId: 'raid-zero',
+    status: 'final',
+    approvedSubmissions: [],
+    rankedSubmissions: [],
+    settlement: {
+      successfulProvidersPaid: 0,
+      escrowFundingUsd: 2,
+      payoutPerSuccessfulProvider: 0,
+      successfulProviderCount: 0,
+      platformMarkupUsd: 0,
+      minimumPayoutThresholdUsd: 0,
+      approvedProviderCount: 0,
+    },
+  };
+  return {
+    getStatus: () => status,
+    getResult: () => result,
+    getRaid: () => ({ settlementExecution: { id: 'settle-zero' } }),
+  } as unknown as BossRaidOrchestrator;
+}
+
+function buildCancelledOrchestrator(): BossRaidOrchestrator {
+  const status: BossRaidStatusOutput = {
+    raidId: 'raid-cancel',
+    status: 'cancelled',
+    experts: [],
+    firstValidAvailable: false,
+    sanitization: {
+      redactedSecrets: 0,
+      redactedIdentifiers: 0,
+      removedUrls: 0,
+      trimmedFiles: 0,
+      unsafeContentDetected: false,
+      riskTier: 'safe',
+      issues: [],
+    },
+  };
+  const result: BossRaidResultOutput = {
+    raidId: 'raid-cancel',
+    status: 'cancelled',
+    approvedSubmissions: [],
+    rankedSubmissions: [],
+  };
+  return {
+    getStatus: () => status,
+    getResult: () => result,
+    getRaid: () => ({}),
+  } as unknown as BossRaidOrchestrator;
+}
+
+test('captureRaidLaunchBilling refunds api-key hold on zero successful providers', async () => {
+  const accountWallet = '0xBuyer00000000000000000000000000000003';
+  const { controlState, deps, wasReconcileCalled } = buildBillingDeps({
+    orchestrator: buildZeroSuccessOrchestrator(),
+  });
+
+  const account = controlState.ensurePublicAccount(accountWallet);
+  controlState.creditBuyerBalance(account.wallet, 5);
+  const apiKey = controlState.createBuyerApiKey({
+    wallet: account.wallet,
+    name: 'raid-zero',
+    keyHash: 'hash_raid_zero',
+    prefix: 'br_rz',
+  });
+  const reservation = controlState.reserveBuyerApiKeyLaunch(apiKey.id, account.wallet, 2);
+  assert.ok(reservation);
+  assert.equal(controlState.readPublicAccount(account.wallet)?.balanceUsd, 3);
+
+  await captureRaidLaunchBilling({
+    deps,
+    request: { headers: {} } as FastifyRequest,
+    raidRequest: createSpawnInput(),
+    raidId: 'raid-zero',
+    launchPayment: { apiKeyBilling: reservation! },
+  });
+
+  assert.equal(wasReconcileCalled(), true);
+  assert.equal(controlState.readPublicAccount(account.wallet)?.balanceUsd, 5);
+});
+
+test('captureRaidLaunchBilling refunds api-key hold when raid is cancelled', async () => {
+  const accountWallet = '0xBuyer00000000000000000000000000000004';
+  const { controlState, deps, wasReconcileCalled } = buildBillingDeps({
+    orchestrator: buildCancelledOrchestrator(),
+  });
+
+  const account = controlState.ensurePublicAccount(accountWallet);
+  controlState.creditBuyerBalance(account.wallet, 5);
+  const apiKey = controlState.createBuyerApiKey({
+    wallet: account.wallet,
+    name: 'raid-cancel',
+    keyHash: 'hash_raid_cancel',
+    prefix: 'br_rc',
+  });
+  const reservation = controlState.reserveBuyerApiKeyLaunch(apiKey.id, account.wallet, 2);
+  assert.ok(reservation);
+
+  await captureRaidLaunchBilling({
+    deps,
+    request: { headers: {} } as FastifyRequest,
+    raidRequest: createSpawnInput(),
+    raidId: 'raid-cancel',
+    launchPayment: { apiKeyBilling: reservation! },
+  });
+
+  assert.equal(wasReconcileCalled(), true);
+  assert.equal(controlState.readPublicAccount(account.wallet)?.balanceUsd, 5);
+});

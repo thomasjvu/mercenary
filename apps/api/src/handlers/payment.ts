@@ -141,7 +141,12 @@ export function createPaymentHandlers(
     modelId?: string;
     sellerId?: string;
   }): void {
-    if (!input.apiKeyBilling || input.actualCostUsd <= 0) {
+    if (!input.apiKeyBilling) {
+      return;
+    }
+    // Zero / negative actual → full release of launch hold (zero-success, abort, unknown settlement).
+    if (input.actualCostUsd <= 0) {
+      ctx.controlState.releaseBuyerApiKeyReservation(input.apiKeyBilling);
       return;
     }
     const benchmarkPriceUsd = estimateBenchmarkPriceUsd({

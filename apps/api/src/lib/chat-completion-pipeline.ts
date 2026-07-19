@@ -516,6 +516,28 @@ export async function deliverBufferedChatCompletion(
     throw error;
   }
 
+  // Cancelled / zero successful payouts → full refund of launch hold / x402 / mana.
+  const paid = outcome.result.settlement?.successfulProvidersPaid;
+  if (outcome.status.status === 'cancelled' || (typeof paid === 'number' && paid <= 0)) {
+    await refundManaBilling({
+      manaBilling: input.launchPayment.manaBilling,
+      reason: outcome.status.status === 'cancelled' ? 'raid_aborted' : 'zero_success_refund',
+      raidId: input.spawn.raidId,
+    });
+    await reconcileLaunchPayment({
+      route: input.paymentRoute,
+      request: input.request,
+      raidRequest: input.raidRequest,
+      launchPayment: input.launchPayment,
+      reason: outcome.status.status === 'cancelled' ? 'raid_aborted' : 'zero_success_refund',
+      raidId: input.spawn.raidId,
+    });
+    applyX402Headers(input.reply, {
+      settlement: input.launchPayment.settlement,
+    });
+    return buildChatCompletionResponse(input.chatRequest, input.spawn, outcome, input.created);
+  }
+
   const response = buildChatCompletionResponse(
     input.chatRequest,
     input.spawn,

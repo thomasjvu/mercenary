@@ -15,6 +15,12 @@ type RaidLaunchBillingDeps = {
   payment: ReturnType<typeof createPaymentHandlers>;
 };
 
+function launchPaymentNeedsBillingCapture(launchPayment: LaunchPaymentContext): boolean {
+  return Boolean(
+    launchPayment.apiKeyBilling || launchPayment.manaBilling || launchPayment.settlement?.success
+  );
+}
+
 export function scheduleRaidLaunchBillingCapture(input: {
   deps: RaidLaunchBillingDeps;
   request: FastifyRequest;
@@ -22,7 +28,8 @@ export function scheduleRaidLaunchBillingCapture(input: {
   raidId: string;
   launchPayment: LaunchPaymentContext;
 }): void {
-  if (!input.launchPayment.apiKeyBilling) {
+  // API-key holds, mana reservations, and settled x402 all need terminal capture / refund.
+  if (!launchPaymentNeedsBillingCapture(input.launchPayment)) {
     return;
   }
 
@@ -32,7 +39,7 @@ export function scheduleRaidLaunchBillingCapture(input: {
         raidId: input.raidId,
         error: error instanceof Error ? error.message : String(error),
       },
-      'raid launch API-key billing capture failed'
+      'raid launch billing capture failed'
     );
   });
 }
@@ -56,13 +63,60 @@ export async function captureRaidLaunchBilling(input: {
       ctx.chatTerminalSettleGraceMs,
       ctx.settlementMode
     );
-    const publicAuth = auth.readPublicAuth(input.request.headers);
+
+    // Abort / cancel: full refund of launch hold and x402 when present.
+    if (outcome.status.status === 'cancelled') {
+      await reconcileLaunchPayment({
+        route: 'raid',
+        request: input.request,
+        raidRequest: input.raidRequest,
+        launchPayment: input.launchPayment,
+        reason: 'raid_aborted',
+        raidId: input.raidId,
+      });
+      return;
+    }
+
+    const successfulProvidersPaid = outcome.result.settlement?.successfulProvidersPaid;
     const capturedCostUsd = resolveApiKeyCaptureCostUsd({
       apiKeyBilling: input.launchPayment.apiKeyBilling,
       escrowFundingUsd: input.launchPayment.escrowFundingUsd,
-      successfulProvidersPaid: outcome.result.settlement?.successfulProvidersPaid,
+      successfulProvidersPaid,
       maxBudgetUsd: input.raidRequest.constraints.maxBudgetUsd,
     });
+
+    // Zero successful work: release API-key hold and refund x402/mana — do not keep budget.
+    if (
+      (typeof successfulProvidersPaid === 'number' && successfulProvidersPaid <= 0) ||
+      (input.launchPayment.apiKeyBilling && capturedCostUsd <= 0)
+    ) {
+      await reconcileLaunchPayment({
+        route: 'raid',
+        request: input.request,
+        raidRequest: input.raidRequest,
+        launchPayment: input.launchPayment,
+        reason: 'zero_success_refund',
+        raidId: input.raidId,
+      });
+      return;
+    }
+
+    // x402 already settled at payTo; only book seller ledger (no second buyer debit).
+    if (!input.launchPayment.apiKeyBilling) {
+      if (capturedCostUsd > 0 || (successfulProvidersPaid ?? 0) > 0) {
+        const publicAuth = auth.readPublicAuth(input.request.headers);
+        recordMarketplaceLedgersFromRaid({
+          raidId: input.raidId,
+          route: 'raid',
+          buyerWallet: publicAuth?.wallet,
+          costUsd: successfulProvidersPaid ?? capturedCostUsd,
+          skipBuyerPurchase: true,
+        });
+      }
+      return;
+    }
+
+    const publicAuth = auth.readPublicAuth(input.request.headers);
     const selectedSeller =
       outcome.result.synthesizedOutput?.baseSubmissionProviderId ??
       outcome.result.approvedSubmissions?.[0]?.submission.providerId;
@@ -103,7 +157,7 @@ export async function captureRaidLaunchBilling(input: {
           raidId: input.raidId,
           error: error instanceof Error ? error.message : String(error),
         },
-        'raid launch API-key billing capture failed after finalize'
+        'raid launch billing capture failed after finalize'
       );
     }
     throw error;

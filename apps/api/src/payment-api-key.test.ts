@@ -8,6 +8,8 @@ test('reserveBuyerApiKeyLaunch rejects second reservation beyond spend cap', () 
     BOSSRAID_STORAGE_BACKEND: 'memory',
   });
   const account = controlState.ensurePublicAccount('0xBuyer00000000000000000000000000000001');
+  // Prepaid is required for every reserve — spend cap alone is not free capacity.
+  controlState.creditBuyerBalance(account.wallet, 20);
   const apiKey = controlState.createBuyerApiKey({
     wallet: account.wallet,
     name: 'test',

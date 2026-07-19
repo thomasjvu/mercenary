@@ -94,6 +94,12 @@ function isSettlementReady(
     return true;
   }
 
+  // Cancelled raids never run settlement; treat as ready so waiters can refund immediately.
+  const status = orchestrator.getStatus(raidId)?.status;
+  if (status === 'cancelled') {
+    return true;
+  }
+
   return orchestrator.getRaid(raidId)?.settlementExecution != null;
 }
 

@@ -63,10 +63,12 @@ After x402 `/settle`, production requires **on-chain receipt verification** (USD
 - Buyer API keys (`br_...`) skip x402 and debit spend caps / prepaid balance in the same request.
 - Platform markup defaults to 1% (`BOSSRAID_X402_PLATFORM_MARKUP_BPS=100`).
 - Successful providers split escrow equally. Invalid work gets $0.
+- **Closed-loop refund policy:** abort / cancel before terminal, spawn failure, and **zero successful providers** release the API-key hold and attempt x402/mana refund. Buyer is charged only for successful provider payouts (capped by reserved escrow). Platform markup is retained only on captured success, not on failed work.
 - On-chain payout floor: `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD` (default **`1`**). Ledger accrues below that.
 - Single-provider discount inference uses a `0.01` **ledger** floor so marketplace calls still settle automatically in books.
 - Settlement uses paid escrow, not requested budget cap.
 - Sync chat/inference responses wait for settlement execution when `BOSSRAID_SETTLEMENT_MODE` is `file` or `onchain`.
+- Client disconnect mid-stream does not yet auto-abort (known gap); prefer explicit abort or short `maxLatencySec`.
 
 ## Key env
 
