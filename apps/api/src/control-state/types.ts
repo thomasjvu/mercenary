@@ -64,6 +64,15 @@ export type PublicAccountEntry = {
   sellerProviderIds: string[];
 };
 
+/**
+ * Buyer money activity row (charges, hold releases, refunds).
+ * - charged: work succeeded; costUsd kept
+ * - hold_released: reserved prepaid/spend released (abort, zero-success, timeout)
+ * - refunded: x402/mana refund completed or queued visibility
+ * Older rows without status are treated as charged.
+ */
+export type BuyerPurchaseStatus = 'charged' | 'hold_released' | 'refunded';
+
 export type BuyerPurchaseEntry = {
   id: string;
   wallet: string;
@@ -72,9 +81,15 @@ export type BuyerPurchaseEntry = {
   modelId?: string;
   sellerId?: string;
   costUsd: number;
+  /** Amount that was reserved before capture/release (when known). */
+  reservedUsd?: number;
   benchmarkPriceUsd?: number;
   savingsUsd?: number;
-  route: 'raid' | 'chat' | 'inference';
+  route: 'raid' | 'chat' | 'inference' | 'balance' | 'bounty';
+  /** Defaults to charged when missing (legacy rows). */
+  status?: BuyerPurchaseStatus;
+  /** Human/machine reason: zero_success_refund, raid_aborted, terminal_wait_timeout, … */
+  reason?: string;
   createdAt: string;
 };
 

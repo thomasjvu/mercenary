@@ -112,7 +112,7 @@ The `bossraid` field on successful responses includes:
 - `receipt_path` — verification link
 - `routing_proof` — privacy and verification gates applied
 
-Purchase history: `GET /v1/buyer/purchases`.
+Purchase / billing activity: `GET /v1/buyer/purchases` (includes `charged`, `hold_released`, and `refunded` rows). What happens if a job is cancelled or fails: [payments-faq.md](payments-faq.md).
 
 ## Strict E2EE models
 

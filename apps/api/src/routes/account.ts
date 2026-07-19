@@ -339,13 +339,27 @@ export function registerAccountRoutes(
     const query = request.query as { limit?: unknown };
     const limit = readPositiveInteger(asSingleQueryValue(query.limit), 100);
     const purchases = controlState.listBuyerPurchases(session.wallet, limit);
-    const totalSpentUsd = purchases.reduce((sum, entry) => sum + entry.costUsd, 0);
-    const totalSavingsUsd = purchases.reduce((sum, entry) => sum + (entry.savingsUsd ?? 0), 0);
+    const withStatus = purchases.map((entry) => ({
+      ...entry,
+      status: entry.status ?? 'charged',
+    }));
+    const charged = withStatus.filter((entry) => entry.status === 'charged');
+    const released = withStatus.filter((entry) => entry.status === 'hold_released');
+    const refunded = withStatus.filter((entry) => entry.status === 'refunded');
+    const totalSpentUsd = charged.reduce((sum, entry) => sum + entry.costUsd, 0);
+    const totalSavingsUsd = charged.reduce((sum, entry) => sum + (entry.savingsUsd ?? 0), 0);
+    const totalRefundedOrReleasedUsd =
+      released.reduce((sum, entry) => sum + (entry.reservedUsd ?? 0), 0) +
+      refunded.reduce((sum, entry) => sum + (entry.costUsd || entry.reservedUsd || 0), 0);
     return {
       object: 'list',
       totalSpentUsd,
       totalSavingsUsd,
-      data: purchases,
+      totalRefundedOrReleasedUsd,
+      chargedCount: charged.length,
+      releasedCount: released.length,
+      refundedCount: refunded.length,
+      data: withStatus,
     };
   });
 

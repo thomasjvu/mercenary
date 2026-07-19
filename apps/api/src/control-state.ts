@@ -189,6 +189,13 @@ export function createApiControlStateFromStore(store: ApiControlStateStore) {
       return buyerLedger.recordBuyerPurchase(ctx, input);
     },
 
+    recordBuyerHoldReleaseOrRefund(
+      input: Parameters<typeof buyerLedger.recordBuyerHoldReleaseOrRefund>[1],
+      nowMs = Date.now()
+    ): BuyerPurchaseEntry {
+      return buyerLedger.recordBuyerHoldReleaseOrRefund(ctx, input, nowMs);
+    },
+
     listBuyerPurchases(
       wallet: string,
       limit = DEFAULTS.BUYER_PURCHASE_LIST_LIMIT,

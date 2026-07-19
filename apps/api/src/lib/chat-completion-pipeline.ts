@@ -376,6 +376,7 @@ export async function deliverStreamingChatCompletion(
   });
 
   await streamChatCompletionResponse(input.reply, deps.ctx.orchestrator, {
+    request: input.request,
     chatRequest: input.chatRequest,
     raidRequest: input.raidRequest,
     spawn: input.spawn,
@@ -440,7 +441,12 @@ export async function deliverStreamingChatCompletion(
           }
         : undefined,
     onFailure: async (error, outcome) => {
-      const billingCaptureFailed = Boolean(outcome) && !(error instanceof ChatTerminalWaitError);
+      const message = error instanceof Error ? error.message : String(error);
+      const billingCaptureFailed =
+        Boolean(outcome) &&
+        !(error instanceof ChatTerminalWaitError) &&
+        message !== 'client_disconnect_or_abort' &&
+        message !== 'zero_success_refund';
       if (billingCaptureFailed) {
         // captureApiKeyBilling already releases the hold before throwing this message.
         const holdAlreadyReleased =
@@ -452,7 +458,13 @@ export async function deliverStreamingChatCompletion(
       }
 
       const reason =
-        error instanceof ChatTerminalWaitError ? 'terminal_wait_timeout' : 'terminal_output_failed';
+        error instanceof ChatTerminalWaitError
+          ? 'terminal_wait_timeout'
+          : message === 'client_disconnect_or_abort'
+            ? 'raid_aborted'
+            : message === 'zero_success_refund'
+              ? 'zero_success_refund'
+              : 'terminal_output_failed';
       await refundManaBilling({
         manaBilling: input.launchPayment.manaBilling,
         reason,

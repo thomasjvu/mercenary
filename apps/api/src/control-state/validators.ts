@@ -67,6 +67,8 @@ export function isValidPublicAccountEntry(value: unknown): value is PublicAccoun
 }
 
 export function isValidBuyerPurchaseEntry(value: unknown): value is BuyerPurchaseEntry {
+  const route = (value as BuyerPurchaseEntry)?.route;
+  const status = (value as BuyerPurchaseEntry)?.status;
   return (
     Boolean(value) &&
     typeof value === 'object' &&
@@ -74,9 +76,15 @@ export function isValidBuyerPurchaseEntry(value: unknown): value is BuyerPurchas
     typeof (value as BuyerPurchaseEntry).wallet === 'string' &&
     typeof (value as BuyerPurchaseEntry).raidId === 'string' &&
     typeof (value as BuyerPurchaseEntry).costUsd === 'number' &&
-    ((value as BuyerPurchaseEntry).route === 'raid' ||
-      (value as BuyerPurchaseEntry).route === 'chat' ||
-      (value as BuyerPurchaseEntry).route === 'inference') &&
+    (route === 'raid' ||
+      route === 'chat' ||
+      route === 'inference' ||
+      route === 'balance' ||
+      route === 'bounty') &&
+    (status === undefined ||
+      status === 'charged' ||
+      status === 'hold_released' ||
+      status === 'refunded') &&
     typeof (value as BuyerPurchaseEntry).createdAt === 'string'
   );
 }

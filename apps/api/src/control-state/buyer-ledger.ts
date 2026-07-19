@@ -231,9 +231,11 @@ export function captureBuyerApiKeyBillingWithPurchase(
         modelId: input.modelId,
         sellerId: input.sellerId,
         costUsd: actual,
+        reservedUsd: reservation.reservedUsd,
         benchmarkPriceUsd: input.benchmarkPriceUsd,
         savingsUsd: input.savingsUsd,
         route: input.route,
+        status: 'charged',
         createdAt: new Date(nowMs).toISOString(),
       };
       snapshot.buyerPurchases.unshift(entry);
@@ -364,9 +366,12 @@ export function recordBuyerPurchase(
       modelId: input.modelId,
       sellerId: input.sellerId,
       costUsd: Math.max(0, input.costUsd),
+      reservedUsd: input.reservedUsd,
       benchmarkPriceUsd: input.benchmarkPriceUsd,
       savingsUsd: input.savingsUsd,
       route: input.route,
+      status: input.status ?? 'charged',
+      reason: input.reason,
       createdAt: input.createdAt ?? new Date(nowMs).toISOString(),
     };
     snapshot.buyerPurchases.unshift(entry);
@@ -374,6 +379,37 @@ export function recordBuyerPurchase(
     recorded = structuredClone(entry);
   }, nowMs);
   return recorded!;
+}
+
+/**
+ * Visible activity when a launch hold is released or a payment is refunded
+ * (abort, zero-success, timeout, x402 refund). Buyers see these on GET /v1/buyer/purchases.
+ */
+export function recordBuyerHoldReleaseOrRefund(
+  ctx: ControlStateContext,
+  input: {
+    wallet: string;
+    raidId?: string;
+    apiKeyId?: string;
+    route: BuyerPurchaseEntry['route'];
+    status: 'hold_released' | 'refunded';
+    reason: string;
+    reservedUsd?: number;
+    costUsd?: number;
+  },
+  nowMs = Date.now()
+): BuyerPurchaseEntry {
+  return recordBuyerPurchase(ctx, {
+    wallet: input.wallet,
+    apiKeyId: input.apiKeyId,
+    raidId: input.raidId ?? `billing_${input.status}`,
+    route: input.route,
+    costUsd: input.costUsd ?? 0,
+    reservedUsd: input.reservedUsd,
+    status: input.status,
+    reason: input.reason,
+    createdAt: new Date(nowMs).toISOString(),
+  });
 }
 
 export function listBuyerPurchases(

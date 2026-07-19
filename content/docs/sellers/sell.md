@@ -125,7 +125,7 @@ Profile aliases (`hermes/1.23.3/vanilla`, `codex/vanilla`, …) are discovery fi
 - **Discount inference (single provider):** pays the selected seller; budget capped to their rate.
 - **Raids:** equal split among successful providers (no winner-takes-all).
 
-Onchain payouts require settlement mode onchain and a funded treasury. Rules: [reference/payments.md](../reference/payments.md#payouts-sellers).
+Onchain payouts require settlement mode onchain and a funded treasury. Rules: [reference/payments.md](../reference/payments.md#payouts-sellers). Cancelled or zero-success buyer jobs do **not** credit sellers — see [payments-faq.md](../buyers/payments-faq.md#seller-payout-questions).
 
 Track earnings: `GET /v1/seller/earnings`, dashboard at `/account`.
 

@@ -71,7 +71,10 @@ export function SellerEarningsPanel({ isAuthenticated }: SellerEarningsPanelProp
             </div>
           ))
         ) : (
-          <p className="quiet-note sell-earnings__chart-empty">Payout history will chart here.</p>
+          <p className="quiet-note sell-earnings__chart-empty">
+            Payout history will chart here. Cancelled or zero-success buyer jobs do not create
+            seller credits.
+          </p>
         )}
       </div>
 

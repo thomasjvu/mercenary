@@ -119,9 +119,13 @@ export type BuyerPurchaseView = {
   modelId?: string;
   sellerId?: string;
   costUsd: number;
+  reservedUsd?: number;
   benchmarkPriceUsd?: number;
   savingsUsd?: number;
-  route: 'raid' | 'chat' | 'inference';
+  route: 'raid' | 'chat' | 'inference' | 'balance' | 'bounty';
+  /** charged | hold_released | refunded — missing treated as charged */
+  status?: 'charged' | 'hold_released' | 'refunded';
+  reason?: string;
   createdAt: string;
 };
 
@@ -129,6 +133,10 @@ export type BuyerPurchasesResponseView = {
   object: 'list';
   totalSpentUsd: number;
   totalSavingsUsd: number;
+  totalRefundedOrReleasedUsd?: number;
+  chargedCount?: number;
+  releasedCount?: number;
+  refundedCount?: number;
   data: BuyerPurchaseView[];
 };
 

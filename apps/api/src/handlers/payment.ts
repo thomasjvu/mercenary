@@ -140,13 +140,29 @@ export function createPaymentHandlers(
     raidId: string;
     modelId?: string;
     sellerId?: string;
+    reason?: string;
   }): void {
     if (!input.apiKeyBilling) {
       return;
     }
     // Zero / negative actual → full release of launch hold (zero-success, abort, unknown settlement).
     if (input.actualCostUsd <= 0) {
+      const reservedUsd = input.apiKeyBilling.reservedUsd;
+      const alreadyReleased = Boolean(input.apiKeyBilling.released);
       ctx.controlState.releaseBuyerApiKeyReservation(input.apiKeyBilling);
+      // Log once for buyers; skip if hold was already reconciled/released.
+      if (!alreadyReleased && reservedUsd > 0) {
+        ctx.controlState.recordBuyerHoldReleaseOrRefund({
+          wallet: input.apiKeyBilling.wallet,
+          apiKeyId: input.apiKeyBilling.apiKeyId,
+          raidId: input.raidId,
+          route: input.route,
+          status: 'hold_released',
+          reason: input.reason ?? 'zero_or_unknown_capture',
+          reservedUsd,
+          costUsd: 0,
+        });
+      }
       return;
     }
     const benchmarkPriceUsd = estimateBenchmarkPriceUsd({
@@ -191,7 +207,24 @@ export function createPaymentHandlers(
       raidId: input.raidId,
     });
 
+    const apiKeyBilling = input.launchPayment.apiKeyBilling;
+    const reservedBeforeRelease = apiKeyBilling?.reservedUsd ?? 0;
+    const alreadyReleased = Boolean(apiKeyBilling?.released);
     await releaseLaunchPaymentHold({ launchPayment: input.launchPayment });
+
+    // Visible activity for buyers: prepaid hold returned (skip if capture already logged release).
+    if (apiKeyBilling && !alreadyReleased && reservedBeforeRelease > 0) {
+      ctx.controlState.recordBuyerHoldReleaseOrRefund({
+        wallet: apiKeyBilling.wallet,
+        apiKeyId: apiKeyBilling.apiKeyId,
+        raidId: input.raidId,
+        route: input.route,
+        status: 'hold_released',
+        reason: input.reason,
+        reservedUsd: reservedBeforeRelease,
+        costUsd: 0,
+      });
+    }
 
     if (input.refundX402 === false || !input.launchPayment.settlement?.success) {
       return;
@@ -254,6 +287,29 @@ export function createPaymentHandlers(
     });
     if (!refundResult.refunded) {
       ctx.apiMetrics.increment('x402.spawn_reconciliation_failed');
+    }
+
+    // Activity row so buyers can see x402 refund / queued refund next to purchases.
+    const payerWallet =
+      (typeof input.launchPayment.settlement?.payer === 'string'
+        ? input.launchPayment.settlement.payer
+        : undefined) ?? readBuyerApiKey(input.request.headers)?.wallet;
+    if (payerWallet) {
+      const paidUsd =
+        input.launchPayment.escrowFundingUsd ??
+        reservation.escrowFundingUsd ??
+        reservation.sanitized.constraints.maxBudgetUsd;
+      ctx.controlState.recordBuyerHoldReleaseOrRefund({
+        wallet: payerWallet,
+        raidId: input.raidId,
+        route: input.route,
+        status: 'refunded',
+        reason: refundResult.refunded
+          ? input.reason
+          : `${input.reason}:queued:${refundResult.reconciliationId ?? 'pending'}`,
+        reservedUsd: typeof paidUsd === 'number' ? paidUsd : undefined,
+        costUsd: typeof paidUsd === 'number' ? paidUsd : 0,
+      });
     }
   }
 

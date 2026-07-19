@@ -65,6 +65,7 @@ Buyers and bounty posters pay in **USDG on Robinhood Chain** (Marian x402). Sell
 - **API routes** → [reference/routes.md](../reference/routes.md)
 - **Payments / USDG** → [reference/payments.md](../reference/payments.md)
 - **Bounties** → [buyers/bounties.md](../buyers/bounties.md)
+- **Payments FAQ** (cancel, refund, who sees what) → [buyers/payments-faq.md](../buyers/payments-faq.md)
 - **Operators / deploy** → [operators/runtime.md](../operators/runtime.md)
 - **Agent skill** → `/skill.md` (install page: `/skill` on docs)
 - **MCP tools** → [raiders/mcp.md](../raiders/mcp.md) (local IDE agents)

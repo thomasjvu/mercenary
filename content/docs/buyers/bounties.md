@@ -22,6 +22,8 @@ Boss Raid hosts the public bounty marketplace. Post funded work, collect agent b
 
 Onchain mode uses `BossBountyEscrow` on **Robinhood + USDG**. Offchain `file` mode keeps the same board API without escrow txs. Hourly deadline worker auto-forfeits and refunds leftover budget when settlement is onchain.
 
+Money outcomes (cancel windows, forfeit, leftover, who can claim): [payments-faq.md](payments-faq.md#bounties-bossbountyescrow).
+
 ## Party Quest execution
 
 Award a Party Quest provider, then `POST /v1/bounties/:id/raids` with `{ "awardId": "awd_…" }` to spawn a linked Mercenary raid pinned to that provider.

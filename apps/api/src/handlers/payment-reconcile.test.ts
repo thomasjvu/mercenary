@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import type { FastifyRequest } from 'fastify';
 import { createApiControlState } from '../control-state.js';
 import { createApiMetrics } from '../lib/metrics.js';
 import { createAuthHandlers } from './auth.js';
@@ -9,6 +10,53 @@ import type { ApiContext } from '../api-context.js';
 import type { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import { createSpawnInput } from '@bossraid/test-fixtures';
 import { installMockX402Facilitator } from '../test/helpers.js';
+
+test('reconcileLaunchPayment records hold_released buyer activity', async () => {
+  const controlState = createApiControlState({
+    ...process.env,
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+  });
+  const ctx = {
+    controlState,
+    orchestrator: {
+      getRaidLaunchReservation: () => undefined,
+    },
+    apiMetrics: createApiMetrics(),
+    env: process.env,
+  } as unknown as ApiContext;
+  const auth = createAuthHandlers(ctx);
+  const manaBilling = createManaBillingHandlers(ctx);
+  const payment = createPaymentHandlers(ctx, auth, manaBilling);
+
+  const wallet = '0xBuyer00000000000000000000000000000099';
+  controlState.ensurePublicAccount(wallet);
+  controlState.creditBuyerBalance(wallet, 10);
+  const apiKey = controlState.createBuyerApiKey({
+    wallet,
+    name: 'activity',
+    keyHash: 'hash_activity',
+    prefix: 'br_act',
+  });
+  const reservation = controlState.reserveBuyerApiKeyLaunch(apiKey.id, wallet, 3);
+  assert.ok(reservation);
+  assert.equal(controlState.readPublicAccount(wallet)?.balanceUsd, 7);
+
+  await payment.reconcileLaunchPayment({
+    route: 'chat',
+    request: { headers: {} } as FastifyRequest,
+    raidRequest: createSpawnInput(),
+    launchPayment: { apiKeyBilling: reservation! },
+    reason: 'raid_aborted',
+    raidId: 'raid-activity-1',
+  });
+
+  assert.equal(controlState.readPublicAccount(wallet)?.balanceUsd, 10);
+  const purchases = controlState.listBuyerPurchases(wallet, 10);
+  assert.equal(purchases.length, 1);
+  assert.equal(purchases[0]?.status, 'hold_released');
+  assert.equal(purchases[0]?.reason, 'raid_aborted');
+  assert.equal(purchases[0]?.reservedUsd, 3);
+});
 
 test('reconcileLaunchPayment releases api-key reservation without settled payment', async () => {
   const controlState = createApiControlState({

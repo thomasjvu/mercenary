@@ -78,23 +78,44 @@ export function AccountBuyerPanel({ state }: AccountBuyerPanelProps) {
       </article>
 
       <article className="flow-card">
-        <p className="eyebrow">recent purchases</p>
+        <p className="eyebrow">billing activity</p>
+        <p className="quiet-note">
+          Charges, hold releases (abort / zero-success), and refunds for this wallet.
+        </p>
         {state.purchaseRows.length === 0 ? (
-          <p className="quiet-note">No inference purchases yet.</p>
+          <p className="quiet-note">No billing activity yet.</p>
         ) : (
           <div className="table-list">
-            {state.purchaseRows.map((purchase) => (
-              <div className="table-row" key={purchase.id}>
-                <span>{purchase.modelId ?? 'model n/a'}</span>
-                <span>${purchase.costUsd.toFixed(3)}</span>
-                <span>{new Date(purchase.createdAt).toLocaleDateString()}</span>
-              </div>
-            ))}
+            {state.purchaseRows.map((purchase) => {
+              const status = purchase.status ?? 'charged';
+              const amountLabel =
+                status === 'charged'
+                  ? `$${purchase.costUsd.toFixed(3)}`
+                  : status === 'refunded'
+                    ? `refund $${(purchase.costUsd || purchase.reservedUsd || 0).toFixed(3)}`
+                    : `released $${(purchase.reservedUsd ?? 0).toFixed(3)}`;
+              return (
+                <div className="table-row" key={purchase.id}>
+                  <span>{purchase.modelId ?? purchase.route}</span>
+                  <span>{status.replace('_', ' ')}</span>
+                  <span>{amountLabel}</span>
+                  <span title={purchase.reason ?? purchase.raidId}>
+                    {new Date(purchase.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         )}
-        {(state.purchases.data?.totalSavingsUsd ?? 0) > 0 ? (
+        {(state.purchases.data?.totalSpentUsd ?? 0) > 0 ? (
           <p className="quiet-note">
-            ${state.purchases.data?.totalSavingsUsd.toFixed(2)} total benchmark savings
+            ${state.purchases.data?.totalSpentUsd.toFixed(2)} charged
+            {(state.purchases.data?.totalRefundedOrReleasedUsd ?? 0) > 0
+              ? ` · $${state.purchases.data?.totalRefundedOrReleasedUsd?.toFixed(2)} released/refunded`
+              : ''}
+            {(state.purchases.data?.totalSavingsUsd ?? 0) > 0
+              ? ` · $${state.purchases.data?.totalSavingsUsd.toFixed(2)} benchmark savings`
+              : ''}
           </p>
         ) : null}
       </article>
