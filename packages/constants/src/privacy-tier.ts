@@ -61,7 +61,8 @@ export function resolveMarketplacePrivacyTier(input: {
     provider === 'xai' ||
     provider === 'anthropic' ||
     provider === 'darkbloom' ||
-    provider === 'zai'
+    provider === 'zai' ||
+    provider === 'openai'
   ) {
     return 'anonymous_private';
   }

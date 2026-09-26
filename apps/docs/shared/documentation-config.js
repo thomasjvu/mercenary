@@ -136,6 +136,12 @@ export const documentationTree = [
       },
       {
         type: 'file',
+        name: 'Positioning.md',
+        path: 'overview/positioning',
+        tags: ['marketplace', 'bounty', 'comparison'],
+      },
+      {
+        type: 'file',
         name: 'Proof and Receipts.md',
         path: 'overview/proof',
         tags: ['receipt', 'attestation', 'proof'],
@@ -246,6 +252,12 @@ export const documentationTree = [
     path: 'operators',
     children: [
       { type: 'file', name: 'Runtime.md', path: 'operators/runtime', tags: ['runtime', 'deploy'] },
+      {
+        type: 'file',
+        name: 'Marketplace Operations.md',
+        path: 'operators/marketplace-operations',
+        tags: ['marketplace', 'api', 'operations'],
+      },
       {
         type: 'file',
         name: 'Architecture.md',

@@ -26,6 +26,7 @@ async function main() {
       openapiConfig,
       rootDir,
       contentRoot: docsContentRoot,
+      frameworkContentRoot: path.join(rootDir, 'src/docs/content'),
     });
     console.log(`Resolved ${resolvedFileCount}/${expectedFileCount} documentation source file(s)`);
 

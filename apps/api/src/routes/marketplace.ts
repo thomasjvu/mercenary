@@ -1,4 +1,5 @@
 import { type FastifyInstance } from 'fastify';
+import { ROBINHOOD_CHAIN_CAIP2, ROBINHOOD_USDG_SYMBOL } from '@bossraid/constants';
 import { marketplaceStatsSchema, openAiModelListSchema } from '@bossraid/openapi-schemas';
 import { publicRouteSchema } from '../openapi/audience.js';
 import {
@@ -6,6 +7,7 @@ import {
   countLiveMarketplaceModels,
   buildOpenAiCompatibleModelEntry,
   buildInferencePriceEntry,
+  resolveProviderMarketModelId,
 } from '../lib/inference-marketplace.js';
 import { parseMarketplaceQuery } from '../lib/marketplace-query.js';
 import {
@@ -21,7 +23,9 @@ function buildPublicMarketplaceStats(
 ) {
   const activeOffers = providers.filter(
     (provider) =>
-      (provider.marketplaceOfferStatus ?? 'active') === 'active' && provider.status !== 'offline'
+      (provider.marketplaceOfferStatus ?? 'active') === 'active' &&
+      provider.status === 'available' &&
+      Boolean(resolveProviderMarketModelId(provider))
   ).length;
   const sellerPayouts = controlState.listSellerPayouts(
     providers.map((provider) => provider.providerId),
@@ -125,13 +129,13 @@ export function registerMarketplaceRoutes(
         object: 'list',
         stats: {
           activeOffers: stats.activeOffers,
-          modelsLive: marketData.length,
+          modelsLive: stats.modelsLive,
           routedRequests24h: stats.routedRequests24h,
           earnedBySellers24hUsd: stats.earnedBySellers24hUsd,
         },
         settlement: {
-          asset: 'USDC',
-          network: env.BOSSRAID_X402_NETWORK ?? 'base-sepolia',
+          asset: ROBINHOOD_USDG_SYMBOL,
+          network: env.BOSSRAID_X402_NETWORK ?? ROBINHOOD_CHAIN_CAIP2,
           rule: 'single-provider inference pays the selected successful seller its declared rate; multi-agent raids split successful payouts equally.',
         },
         custody: {

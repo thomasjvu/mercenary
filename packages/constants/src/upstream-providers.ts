@@ -8,6 +8,8 @@ export const UPSTREAM_PROVIDER_IDS = [
   'zai',
   'anthropic',
   'darkbloom',
+  'nebius',
+  'openai',
 ] as const;
 
 export type UpstreamProviderId = (typeof UPSTREAM_PROVIDER_IDS)[number];
@@ -88,6 +90,21 @@ export const UPSTREAM_PROVIDER_CONFIG: Record<UpstreamProviderId, UpstreamProvid
     // @see https://www.darkbloom.dev/#api
     upstreamBase: 'https://api.darkbloom.dev/v1',
     attestationVendor: 'darkbloom',
+    supportsE2ee: false,
+  },
+  nebius: {
+    id: 'nebius',
+    displayName: 'Nebius Token Factory',
+    // Nebius Token Factory's OpenAI-compatible inference API.
+    upstreamBase: 'https://api.tokenfactory.nebius.com/v1',
+    attestationVendor: 'nebius',
+    supportsE2ee: false,
+  },
+  openai: {
+    id: 'openai',
+    displayName: 'OpenAI',
+    upstreamBase: 'https://api.openai.com/v1',
+    attestationVendor: 'openai',
     supportsE2ee: false,
   },
 };

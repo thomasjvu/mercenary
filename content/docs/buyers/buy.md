@@ -50,7 +50,7 @@ curl http://127.0.0.1:8787/v1/inference/chat/completions \
 
 ### Full marketplace model catalogs
 
-With platform liquidity and the matching `BOSSRAID_*_API_KEY`, discount inference can route full catalogs for **Venice**, **Chutes**, **NEAR AI**, **Phala**, **Redpill**, and **Darkbloom** (plus curated xAI / Anthropic). Discover live offers with `GET /v1/markets?model_provider=venice` (or `chutes`, `near`, `phala`, `redpill`, `darkbloom`). Details: [discount-inference.md](discount-inference.md#platform-seats).
+With platform liquidity and the matching `BOSSRAID_*_API_KEY`, discount inference can route every priced chat model in the catalog for **Venice**, **Chutes**, **NEAR AI**, **Phala**, **Redpill**, **Darkbloom**, **Nebius Token Factory**, and **OpenAI**. xAI, Z.ai, and Anthropic expose their priced catalog models. Discover live offers with `GET /v1/markets?model_provider=openai` (or another provider id). Details: [discount-inference.md](discount-inference.md#platform-seats).
 
 ### Choose provider + max price
 
@@ -70,7 +70,7 @@ curl http://127.0.0.1:8787/v1/inference/chat/completions \
 
 | Field             | Meaning                                                                              |
 | ----------------- | ------------------------------------------------------------------------------------ |
-| `provider`        | `auto` (default) or upstream id (`xai`, `venice`, `darkbloom`, …)                    |
+| `provider`        | `auto` (default) or upstream id (`xai`, `venice`, `darkbloom`, `nebius`, …)          |
 | `max_price_usd`   | Absolute max charge for this call                                                    |
 | `max_price_ratio` | Cap as fraction of catalog reference task price (0–1); fail closed if no seller fits |
 

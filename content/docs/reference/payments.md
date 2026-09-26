@@ -121,7 +121,9 @@ Without these, sellers only accrue **ledger credits** and cannot cash out USDG:
 
 ## Surplus Intelligence parity
 
-Alkahest (Surplus) uses Mana ledger + Reown top-ups in **USDG on Robinhood**, and Marian for agent x402. Boss Raid mirrors that **chain/asset** for marketplace payments: prepaid `br_` balance still works; wallet challenges settle USDG via Marian.
+Boss Raid's production x402 integration uses Marian for **USDG on Robinhood**. That payment facilitator relationship is separate from the Surplus Intelligence inference marketplace. Surplus Intelligence's current public docs describe seller inference settlement in **USDC on Base**, plus x402, prefunded/fiat credits, and an MPP (Tempo) agent path. The products do not share a chain, token, API, order book, or settlement account.
+
+Boss Raid does share the broad marketplace shape: buyers make OpenAI-compatible inference requests, and the router selects among seller offers. Boss Raid also has Mercenary multi-agent raids and a separate task bounty escrow flow. See [product comparison](../overview/positioning.md) for the scope differences. Verify the live routes and payment network from `/v1/markets`; do not infer the active rail from catalog rows.
 
 ## Buyer API keys
 

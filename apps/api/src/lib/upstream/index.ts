@@ -45,6 +45,16 @@ import {
   fetchDarkbloomUpstreamModels,
   probeDarkbloomChatCompletion,
 } from './darkbloom.js';
+import {
+  fetchNebiusAttestationReport,
+  fetchNebiusUpstreamModels,
+  probeNebiusChatCompletion,
+} from './nebius.js';
+import {
+  fetchOpenAIAttestationReport,
+  fetchOpenAIUpstreamModels,
+  probeOpenAIChatCompletion,
+} from './openai.js';
 import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
 
 export type {
@@ -61,27 +71,32 @@ export function parseUpstreamProviderParam(provider: string): UpstreamProviderId
 
 export async function fetchUpstreamModels(
   provider: UpstreamProviderId,
-  apiKey: string
+  apiKey: string,
+  options: { env?: NodeJS.ProcessEnv } = {}
 ): Promise<UpstreamModelRecord[]> {
   switch (provider) {
     case 'venice':
-      return fetchVeniceUpstreamModels(apiKey);
+      return fetchVeniceUpstreamModels(apiKey, options);
     case 'redpill':
-      return fetchRedpillUpstreamModels(apiKey);
+      return fetchRedpillUpstreamModels(apiKey, options);
     case 'near':
-      return fetchNearUpstreamModels(apiKey);
+      return fetchNearUpstreamModels(apiKey, options);
     case 'chutes':
-      return fetchChutesUpstreamModels(apiKey);
+      return fetchChutesUpstreamModels(apiKey, options);
     case 'phala':
-      return fetchPhalaUpstreamModels(apiKey);
+      return fetchPhalaUpstreamModels(apiKey, options);
     case 'xai':
-      return fetchXaiUpstreamModels(apiKey);
+      return fetchXaiUpstreamModels(apiKey, options);
     case 'zai':
-      return fetchZaiUpstreamModels(apiKey);
+      return fetchZaiUpstreamModels(apiKey, options);
     case 'anthropic':
-      return fetchAnthropicUpstreamModels(apiKey);
+      return fetchAnthropicUpstreamModels(apiKey, options);
     case 'darkbloom':
-      return fetchDarkbloomUpstreamModels(apiKey);
+      return fetchDarkbloomUpstreamModels(apiKey, options);
+    case 'nebius':
+      return fetchNebiusUpstreamModels(apiKey, options);
+    case 'openai':
+      return fetchOpenAIUpstreamModels(apiKey, options);
   }
 }
 
@@ -117,6 +132,10 @@ export async function probeUpstreamChatCompletion(input: {
       return probeAnthropicChatCompletion(input);
     case 'darkbloom':
       return probeDarkbloomChatCompletion(input);
+    case 'nebius':
+      return probeNebiusChatCompletion(input);
+    case 'openai':
+      return probeOpenAIChatCompletion(input);
   }
 }
 
@@ -154,5 +173,9 @@ export async function fetchUpstreamAttestationReport(input: {
       return fetchAnthropicAttestationReport(input);
     case 'darkbloom':
       return fetchDarkbloomAttestationReport(input);
+    case 'nebius':
+      return fetchNebiusAttestationReport(input);
+    case 'openai':
+      return fetchOpenAIAttestationReport(input);
   }
 }

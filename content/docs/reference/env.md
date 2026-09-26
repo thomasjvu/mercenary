@@ -139,19 +139,21 @@ Onchain overlay template: `deploy/phala/secrets.onchain.env.example`.
 
 ### Mocks (non-production)
 
-| Variable                                | Purpose                                              |
-| --------------------------------------- | ---------------------------------------------------- |
-| `BOSSRAID_VENICE_MOCK`                  | `1` = mock Venice upstream for local/tests           |
-| `BOSSRAID_XAI_MOCK`                     | `1` = mock xAI/Grok upstream for local/tests         |
-| `BOSSRAID_ZAI_MOCK`                     | `1` = mock Z.ai/GLM upstream for local/tests         |
-| `BOSSRAID_ANTHROPIC_MOCK`               | `1` = mock Anthropic/Claude upstream for local/tests |
-| `BOSSRAID_UPSTREAM_MOCK`                | `1` = mock all hosted upstreams including Anthropic  |
-| `BOSSRAID_UPSTREAM_TEE_MOCK`            | `1` = mock upstream TEE attestation verification     |
-| `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND` | Dev-only: fund bounties without x402 (default off)   |
+| Variable                                | Purpose                                                  |
+| --------------------------------------- | -------------------------------------------------------- |
+| `BOSSRAID_VENICE_MOCK`                  | `1` = mock Venice upstream for local/tests               |
+| `BOSSRAID_XAI_MOCK`                     | `1` = mock xAI/Grok upstream for local/tests             |
+| `BOSSRAID_ZAI_MOCK`                     | `1` = mock Z.ai/GLM upstream for local/tests             |
+| `BOSSRAID_ANTHROPIC_MOCK`               | `1` = mock Anthropic/Claude upstream for local/tests     |
+| `BOSSRAID_NEBIUS_MOCK`                  | `1` = mock Nebius Token Factory upstream for local/tests |
+| `BOSSRAID_OPENAI_MOCK`                  | `1` = mock OpenAI upstream for local/tests               |
+| `BOSSRAID_UPSTREAM_MOCK`                | `1` = mock all hosted upstreams                          |
+| `BOSSRAID_UPSTREAM_TEE_MOCK`            | `1` = mock upstream TEE attestation verification         |
+| `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND` | Dev-only: fund bounties without x402 (default off)       |
 
-### Catalog TEE platform keys (optional)
+### Catalog upstream platform keys (optional)
 
-`BOSSRAID_VENICE_API_KEY`, `BOSSRAID_REDPILL_API_KEY`, `BOSSRAID_NEAR_API_KEY`, `BOSSRAID_CHUTES_API_KEY`, `BOSSRAID_PHALA_API_KEY`, `BOSSRAID_XAI_API_KEY`, `BOSSRAID_ZAI_API_KEY`, `BOSSRAID_ANTHROPIC_API_KEY`, `BOSSRAID_DARKBLOOM_API_KEY` — platform keys for catalog inference/TEE when sellers do not supply their own. Optional `BOSSRAID_ZAI_API_BASE` / `BOSSRAID_ANTHROPIC_API_BASE` override default OpenAI-compatible base URLs.
+`BOSSRAID_VENICE_API_KEY`, `BOSSRAID_REDPILL_API_KEY`, `BOSSRAID_NEAR_API_KEY`, `BOSSRAID_CHUTES_API_KEY`, `BOSSRAID_PHALA_API_KEY`, `BOSSRAID_XAI_API_KEY`, `BOSSRAID_ZAI_API_KEY`, `BOSSRAID_ANTHROPIC_API_KEY`, `BOSSRAID_DARKBLOOM_API_KEY`, `BOSSRAID_NEBIUS_API_KEY`, `BOSSRAID_OPENAI_API_KEY` — platform keys for catalog inference when sellers do not supply their own. TEE preflight is available only for supported upstreams. Optional `BOSSRAID_ZAI_API_BASE`, `BOSSRAID_ANTHROPIC_API_BASE`, `BOSSRAID_NEBIUS_API_BASE`, or `BOSSRAID_OPENAI_API_BASE` override default OpenAI-compatible base URLs. Nebius defaults to `https://api.tokenfactory.nebius.com/v1`; OpenAI defaults to `https://api.openai.com/v1`.
 
 ### Evaluator
 

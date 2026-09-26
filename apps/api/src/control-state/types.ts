@@ -152,7 +152,9 @@ export type UpstreamProviderKind =
   | 'xai'
   | 'zai'
   | 'anthropic'
-  | 'darkbloom';
+  | 'darkbloom'
+  | 'nebius'
+  | 'openai';
 
 export type SellerUpstreamConfigEntry = {
   configId: string;

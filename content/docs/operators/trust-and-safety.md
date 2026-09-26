@@ -22,6 +22,8 @@ Boss Raid is a **verified endpoint / API-key marketplace**, not account resale.
 
 Verification checks liveness, provider interface compatibility, and declared metadata. Verification is separate from reputation, ERC-8004, and privacy metadata.
 
+Outbound HTTP provider calls resolve and screen every DNS result, then pin the connection to one of those screened addresses while preserving the provider hostname for HTTP Host and TLS certificate verification. Redirects are rejected. This prevents a DNS rebind between validation and the socket connect; metadata and unsafe private addresses remain blocked by policy.
+
 ## Buyer boundary
 
 Buyers use wallet sessions or `br_` API keys (hashed, encrypted at rest, spend caps).

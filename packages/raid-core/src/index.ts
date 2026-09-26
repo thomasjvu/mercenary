@@ -28,6 +28,7 @@ export {
 } from './utils.js';
 
 export { BOUNTY_ESCROW_ABI, ERC20_MINIMAL_ABI } from './contract-abis.js';
+export { withWalletTransactionLock } from './wallet-transaction-lock.js';
 
 export {
   normalizePrice,

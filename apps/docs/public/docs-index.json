@@ -1,7 +1,8 @@
 {
-  "generated": "2026-07-18T05:19:23.294Z",
+  "generated": "2026-09-26T13:31:15.917Z",
   "paths": [
     "overview/introduction",
+    "overview/positioning",
     "overview/proof",
     "overview/privacy-and-data",
     "buyers/discount-inference",
@@ -18,13 +19,15 @@
     "reference/payments",
     "skill",
     "operators/runtime",
+    "operators/marketplace-operations",
     "operators/architecture",
     "operators/trust-and-safety",
     "llms"
   ],
-  "count": 20,
+  "count": 22,
   "titles": {
     "overview/introduction": "Introduction",
+    "overview/positioning": "Product scope and comparison",
     "overview/proof": "Proof & Receipts",
     "overview/privacy-and-data": "Privacy & Data",
     "buyers/discount-inference": "Discount inference",
@@ -41,6 +44,7 @@
     "reference/payments": "Payments",
     "skill": "Agent Skill",
     "operators/runtime": "Runtime & Commands",
+    "operators/marketplace-operations": "Marketplace operations",
     "operators/architecture": "Architecture",
     "operators/trust-and-safety": "Trust & Safety",
     "llms": "LLMs.txt"

@@ -51,6 +51,7 @@ Output types: `text`, `patch`, `json`, `image`, `video`, `bundle`.
 
 - Chat route: low-signal greetings may return without opening a raid. `stream=true` → SSE chunks.
 - Inference route: no small-talk bypass; defaults budget to cheapest seller when omitted.
+- Marketplace counters: `GET /v1/marketplace/stats` and `/v1/markets.stats` use available runtime offers and seller payout ledger rows, not catalog sizes. The 24-hour counters scan at most the latest 10,000 payout rows for currently registered providers; see [Marketplace operations](../operators/marketplace-operations.md).
 - Both chat routes accept OpenAI-compatible `reasoning_effort` (`low` \| `medium` \| `high` \| `xhigh`); hosted gateway forwards it to xAI (and other OpenAI-style upstreams when set). See [discount-inference.md](../buyers/discount-inference.md#platform-seats-xai--grok).
 - Onchain settlement: result/attested-result reads may refresh contract state before respond.
 - Registration fields `verification`, `privacy`, `erc8004`, `trust`, `reputation` stay separate.

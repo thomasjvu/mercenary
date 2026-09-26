@@ -14,7 +14,7 @@ paths:
         - Health
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
@@ -35,7 +35,7 @@ paths:
                   - providers
                   - readyProviders
                   - raids
-        "503":
+        '503':
           description: Default Response
           content:
             application/json:
@@ -57,7 +57,7 @@ paths:
         - Health
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
@@ -89,7 +89,7 @@ paths:
                 required:
                   - ok
                   - gates
-        "503":
+        '503':
           description: Default Response
           content:
             application/json:
@@ -111,13 +111,13 @@ paths:
         - Health
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
               schema:
                 type: string
-        "401":
+        '401':
           description: Default Response
           content:
             application/json:
@@ -135,7 +135,7 @@ paths:
   /v1/host/attestation:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/auth/nonce:
     post:
@@ -155,7 +155,7 @@ paths:
                   description: Optional wallet address to bind the nonce.
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
@@ -174,7 +174,7 @@ paths:
                   - nonce
                   - message
                   - expiresAt
-        "400":
+        '400':
           description: Default Response
           content:
             application/json:
@@ -211,7 +211,7 @@ paths:
                 - signature
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
@@ -233,7 +233,7 @@ paths:
                   - authenticated
                   - wallet
                   - expiresAt
-        "400":
+        '400':
           description: Default Response
           content:
             application/json:
@@ -248,7 +248,7 @@ paths:
                 required:
                   - error
                   - message
-        "401":
+        '401':
           description: Default Response
           content:
             application/json:
@@ -270,7 +270,7 @@ paths:
         - Auth
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
@@ -296,7 +296,7 @@ paths:
         - Auth
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
@@ -323,14 +323,14 @@ paths:
         - Auth
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
               schema:
                 type: object
                 additionalProperties: true
-        "401":
+        '401':
           description: Default Response
           content:
             application/json:
@@ -351,14 +351,14 @@ paths:
         - Auth
       x-bossraid-audience: public
       responses:
-        "201":
+        '201':
           description: Default Response
           content:
             application/json:
               schema:
                 type: object
                 additionalProperties: true
-        "401":
+        '401':
           description: Default Response
           content:
             application/json:
@@ -382,7 +382,7 @@ paths:
           name: keyId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
     patch:
       parameters:
@@ -392,29 +392,29 @@ paths:
           name: keyId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/auth/agent-session:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
     delete:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/providers:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/providers/{providerId}:
     patch:
@@ -425,7 +425,7 @@ paths:
           name: providerId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/providers/{providerId}/verify:
     post:
@@ -436,37 +436,37 @@ paths:
           name: providerId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/earnings:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/payouts/flush:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/stats:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/buyer/purchases:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/buyer/balance:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/buyer/balance/fund:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/models:
     get:
@@ -475,7 +475,7 @@ paths:
         - Marketplace
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
@@ -502,7 +502,7 @@ paths:
         - Marketplace
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
@@ -529,7 +529,7 @@ paths:
         - Marketplace
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
@@ -545,14 +545,23 @@ paths:
                     properties:
                       activeOffers:
                         type: integer
+                        description: Available active offers with a recognized inference model.
                       sellerOffersActive:
                         type: integer
+                        description: Provider profiles declaring an active offer, including unavailable profiles.
                       modelsLive:
                         type: integer
+                        description: Distinct models with at least one available active offer.
                       routedRequests24h:
                         type: integer
+                        description: >-
+                          Distinct raid IDs in the last 24 hours among the latest 10,000 seller payout rows for
+                          currently registered providers; a multi-provider raid counts once.
                       earnedBySellers24hUsd:
                         type: number
+                        description: >-
+                          Sum of seller payout ledger rows in the last 24 hours for currently registered providers,
+                          based on the latest 10,000 rows rather than chain indexing.
                   data:
                     type: array
                     items:
@@ -565,7 +574,7 @@ paths:
         - Marketplace
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
@@ -575,14 +584,23 @@ paths:
                 properties:
                   activeOffers:
                     type: integer
+                    description: Available active offers with a recognized inference model.
                   sellerOffersActive:
                     type: integer
+                    description: Provider profiles declaring an active offer, including unavailable profiles.
                   modelsLive:
                     type: integer
+                    description: Distinct models with at least one available active offer.
                   routedRequests24h:
                     type: integer
+                    description: >-
+                      Distinct raid IDs in the last 24 hours among the latest 10,000 seller payout rows for
+                      currently registered providers; a multi-provider raid counts once.
                   earnedBySellers24hUsd:
                     type: number
+                    description: >-
+                      Sum of seller payout ledger rows in the last 24 hours for currently registered providers,
+                      based on the latest 10,000 rows rather than chain indexing.
   /v1/raid:
     post:
       summary: Spawn a Mercenary raid
@@ -640,7 +658,7 @@ paths:
                 - task
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
@@ -663,7 +681,7 @@ paths:
                 required:
                   - raidId
                   - status
-        "400":
+        '400':
           description: Default Response
           content:
             application/json:
@@ -678,7 +696,7 @@ paths:
                 required:
                   - error
                   - message
-        "401":
+        '401':
           description: Default Response
           content:
             application/json:
@@ -693,7 +711,7 @@ paths:
                 required:
                   - error
                   - message
-        "402":
+        '402':
           description: Default Response
           content:
             application/json:
@@ -708,7 +726,7 @@ paths:
                 required:
                   - error
                   - message
-        "409":
+        '409':
           description: Default Response
           content:
             application/json:
@@ -723,7 +741,7 @@ paths:
                 required:
                   - error
                   - message
-        "503":
+        '503':
           description: Default Response
           content:
             application/json:
@@ -752,7 +770,7 @@ paths:
           description: Raid identifier.
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
@@ -775,7 +793,7 @@ paths:
                 required:
                   - raidId
                   - status
-        "401":
+        '401':
           description: Default Response
           content:
             application/json:
@@ -790,7 +808,7 @@ paths:
                 required:
                   - error
                   - message
-        "404":
+        '404':
           description: Default Response
           content:
             application/json:
@@ -819,7 +837,7 @@ paths:
           description: Raid identifier.
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
@@ -845,7 +863,7 @@ paths:
                 required:
                   - raidId
                   - status
-        "401":
+        '401':
           description: Default Response
           content:
             application/json:
@@ -860,7 +878,7 @@ paths:
                 required:
                   - error
                   - message
-        "404":
+        '404':
           description: Default Response
           content:
             application/json:
@@ -889,14 +907,14 @@ paths:
           description: Raid identifier.
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
               schema:
                 type: object
                 additionalProperties: true
-        "401":
+        '401':
           description: Default Response
           content:
             application/json:
@@ -911,7 +929,7 @@ paths:
                 required:
                   - error
                   - message
-        "404":
+        '404':
           description: Default Response
           content:
             application/json:
@@ -940,14 +958,14 @@ paths:
           description: Raid identifier.
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
               schema:
                 type: object
                 additionalProperties: true
-        "401":
+        '401':
           description: Default Response
           content:
             application/json:
@@ -962,7 +980,7 @@ paths:
                 required:
                   - error
                   - message
-        "404":
+        '404':
           description: Default Response
           content:
             application/json:
@@ -977,7 +995,7 @@ paths:
                 required:
                   - error
                   - message
-        "503":
+        '503':
           description: Default Response
           content:
             application/json:
@@ -1016,14 +1034,14 @@ paths:
           description: Raid identifier.
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
               schema:
                 type: object
                 additionalProperties: true
-        "400":
+        '400':
           description: Default Response
           content:
             application/json:
@@ -1038,7 +1056,7 @@ paths:
                 required:
                   - error
                   - message
-        "401":
+        '401':
           description: Default Response
           content:
             application/json:
@@ -1053,7 +1071,7 @@ paths:
                 required:
                   - error
                   - message
-        "404":
+        '404':
           description: Default Response
           content:
             application/json:
@@ -1117,8 +1135,8 @@ paths:
                     through to the selected upstream when supported.
                 provider:
                   type: string
-                  description: "Discount inference: auto (default) or upstream id (venice, xai,
-                    darkbloom, …) → allowed_model_providers."
+                  description: 'Discount inference: auto (default) or upstream id (venice, xai,
+                    darkbloom, …) → allowed_model_providers.'
                 max_price_usd:
                   type: number
                   description: Absolute max spend USD for this call (alias of
@@ -1131,7 +1149,7 @@ paths:
                 - messages
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
@@ -1159,7 +1177,7 @@ paths:
                   - id
                   - object
                   - choices
-        "400":
+        '400':
           description: Default Response
           content:
             application/json:
@@ -1174,7 +1192,7 @@ paths:
                 required:
                   - error
                   - message
-        "401":
+        '401':
           description: Default Response
           content:
             application/json:
@@ -1189,7 +1207,7 @@ paths:
                 required:
                   - error
                   - message
-        "402":
+        '402':
           description: Default Response
           content:
             application/json:
@@ -1204,7 +1222,7 @@ paths:
                 required:
                   - error
                   - message
-        "409":
+        '409':
           description: Default Response
           content:
             application/json:
@@ -1219,7 +1237,7 @@ paths:
                 required:
                   - error
                   - message
-        "503":
+        '503':
           description: Default Response
           content:
             application/json:
@@ -1282,8 +1300,8 @@ paths:
                     through to the selected upstream when supported.
                 provider:
                   type: string
-                  description: "Discount inference: auto (default) or upstream id (venice, xai,
-                    darkbloom, …) → allowed_model_providers."
+                  description: 'Discount inference: auto (default) or upstream id (venice, xai,
+                    darkbloom, …) → allowed_model_providers.'
                 max_price_usd:
                   type: number
                   description: Absolute max spend USD for this call (alias of
@@ -1296,7 +1314,7 @@ paths:
                 - messages
       x-bossraid-audience: public
       responses:
-        "200":
+        '200':
           description: Default Response
           content:
             application/json:
@@ -1324,7 +1342,7 @@ paths:
                   - id
                   - object
                   - choices
-        "400":
+        '400':
           description: Default Response
           content:
             application/json:
@@ -1339,7 +1357,7 @@ paths:
                 required:
                   - error
                   - message
-        "401":
+        '401':
           description: Default Response
           content:
             application/json:
@@ -1354,7 +1372,7 @@ paths:
                 required:
                   - error
                   - message
-        "402":
+        '402':
           description: Default Response
           content:
             application/json:
@@ -1369,7 +1387,7 @@ paths:
                 required:
                   - error
                   - message
-        "409":
+        '409':
           description: Default Response
           content:
             application/json:
@@ -1384,7 +1402,7 @@ paths:
                 required:
                   - error
                   - message
-        "503":
+        '503':
           description: Default Response
           content:
             application/json:
@@ -1408,7 +1426,7 @@ paths:
           name: providerId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/providers/{providerId}/submit:
     post:
@@ -1419,7 +1437,7 @@ paths:
           name: providerId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/providers/{providerId}/failure:
     post:
@@ -1430,17 +1448,17 @@ paths:
           name: providerId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/providers:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/providers/health:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/providers/{providerId}/stats:
     get:
@@ -1451,12 +1469,12 @@ paths:
           name: providerId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /agents/register:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /agents/{providerId}/verify:
     post:
@@ -1467,17 +1485,17 @@ paths:
           name: providerId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /agents/heartbeat:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /agents/discover:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /gateway/{providerId}/health:
     get:
@@ -1488,7 +1506,7 @@ paths:
           name: providerId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /gateway/{providerId}/v1/raid/accept:
     post:
@@ -1499,32 +1517,32 @@ paths:
           name: providerId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/venice/connect:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/venice/models/catalog:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/venice/models:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/venice/offers:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/venice/config:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/venice/offers/{modelId}:
     delete:
@@ -1535,32 +1553,32 @@ paths:
           name: modelId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/redpill/connect:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/redpill/models/catalog:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/redpill/models:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/redpill/offers:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/redpill/config:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/redpill/offers/{modelId}:
     delete:
@@ -1571,32 +1589,32 @@ paths:
           name: modelId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/near/connect:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/near/models/catalog:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/near/models:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/near/offers:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/near/config:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/near/offers/{modelId}:
     delete:
@@ -1607,32 +1625,32 @@ paths:
           name: modelId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/chutes/connect:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/chutes/models/catalog:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/chutes/models:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/chutes/offers:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/chutes/config:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/chutes/offers/{modelId}:
     delete:
@@ -1643,32 +1661,32 @@ paths:
           name: modelId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/phala/connect:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/phala/models/catalog:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/phala/models:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/phala/offers:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/phala/config:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/phala/offers/{modelId}:
     delete:
@@ -1679,32 +1697,32 @@ paths:
           name: modelId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/xai/connect:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/xai/models/catalog:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/xai/models:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/xai/offers:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/xai/config:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/xai/offers/{modelId}:
     delete:
@@ -1715,32 +1733,32 @@ paths:
           name: modelId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/zai/connect:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/zai/models/catalog:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/zai/models:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/zai/offers:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/zai/config:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/zai/offers/{modelId}:
     delete:
@@ -1751,32 +1769,32 @@ paths:
           name: modelId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/anthropic/connect:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/anthropic/models/catalog:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/anthropic/models:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/anthropic/offers:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/anthropic/config:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/anthropic/offers/{modelId}:
     delete:
@@ -1787,32 +1805,32 @@ paths:
           name: modelId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/darkbloom/connect:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/darkbloom/models/catalog:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/darkbloom/models:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/darkbloom/offers:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/darkbloom/config:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/darkbloom/offers/{modelId}:
     delete:
@@ -1823,17 +1841,17 @@ paths:
           name: modelId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/seller/upstream/status:
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/marketplace/tee/attestation:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/marketplace/models/{modelId}/tee:
     get:
@@ -1844,12 +1862,12 @@ paths:
           name: modelId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/marketplace/tee/attestation/preflight:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/inference/receipts/{receiptId}:
     get:
@@ -1860,7 +1878,7 @@ paths:
           name: receiptId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/inference/receipts/{receiptId}/verify:
     get:
@@ -1871,7 +1889,7 @@ paths:
           name: receiptId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/relayer/capabilities/{chainId}:
     get:
@@ -1882,22 +1900,22 @@ paths:
           name: chainId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/relayer/fee-data:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/relayer/estimate:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/relayer/send:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/relayer/status/{taskId}:
     get:
@@ -1908,21 +1926,21 @@ paths:
           name: taskId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/relayer/webhook:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/bounties:
     post:
       responses:
-        "200":
+        '200':
           description: Default Response
     get:
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/bounties/{bountyId}/fund:
     post:
@@ -1933,7 +1951,7 @@ paths:
           name: bountyId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/bounties/{bountyId}:
     get:
@@ -1944,7 +1962,7 @@ paths:
           name: bountyId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/bounties/{bountyId}/bids:
     post:
@@ -1955,7 +1973,7 @@ paths:
           name: bountyId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/bounties/{bountyId}/award:
     post:
@@ -1966,7 +1984,7 @@ paths:
           name: bountyId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/bounties/{bountyId}/awards/{awardId}/deliver:
     post:
@@ -1982,7 +2000,7 @@ paths:
           name: awardId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/bounties/{bountyId}/awards/{awardId}/accept:
     post:
@@ -1998,7 +2016,7 @@ paths:
           name: awardId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/bounties/{bountyId}/awards/{awardId}/claim:
     post:
@@ -2014,7 +2032,7 @@ paths:
           name: awardId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/bounties/{bountyId}/refund:
     post:
@@ -2025,7 +2043,7 @@ paths:
           name: bountyId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
   /v1/bounties/{bountyId}/raids:
     post:
@@ -2036,7 +2054,7 @@ paths:
           name: bountyId
           required: true
       responses:
-        "200":
+        '200':
           description: Default Response
 servers:
   - url: http://localhost:8787

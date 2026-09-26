@@ -15,6 +15,7 @@ import {
   type Hex,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
+import { withWalletTransactionLock } from '@bossraid/raid-core';
 import type { ApiContext } from '../api-context.js';
 import { usdToAtomicUsdg } from './x402-settle-verify.js';
 
@@ -287,31 +288,33 @@ export async function flushSellerTreasuryPayout(input: {
       balanceHolder = live.treasuryAddress;
     }
 
-    const treasuryBalance = await clients.readBalance(token, balanceHolder);
-    if (treasuryBalance < amountAtomic) {
-      releaseClaim();
+    return await withWalletTransactionLock(balanceHolder, async () => {
+      const treasuryBalance = await clients.readBalance(token, balanceHolder);
+      if (treasuryBalance < amountAtomic) {
+        releaseClaim();
+        return {
+          ok: false,
+          error: 'insufficient_treasury_balance',
+          message: `Treasury USDG balance ${treasuryBalance.toString()} atomic is below required ${amountAtomic.toString()}.`,
+          flushMinUsd,
+          pendingUsd: claim.claimedUsd,
+        };
+      }
+
+      const txHash = await clients.transfer({
+        token,
+        to,
+        amount: amountAtomic,
+      });
+      await clients.waitForReceipt(txHash);
+
+      const settled = settleClaim(txHash);
       return {
-        ok: false,
-        error: 'insufficient_treasury_balance',
-        message: `Treasury USDG balance ${treasuryBalance.toString()} atomic is below required ${amountAtomic.toString()}.`,
-        flushMinUsd,
-        pendingUsd: claim.claimedUsd,
+        ...settled,
+        mode: 'onchain',
+        txHash,
       };
-    }
-
-    const txHash = await clients.transfer({
-      token,
-      to,
-      amount: amountAtomic,
     });
-    await clients.waitForReceipt(txHash);
-
-    const settled = settleClaim(txHash);
-    return {
-      ...settled,
-      mode: 'onchain',
-      txHash,
-    };
   } catch (error) {
     releaseClaim();
     const message = error instanceof Error ? error.message : 'Treasury transfer failed.';

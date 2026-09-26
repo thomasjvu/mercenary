@@ -1,3 +1,5 @@
+import { isIP } from 'node:net';
+
 export class UnsafeProviderEndpointError extends Error {
   readonly code = 'unsafe_provider_endpoint';
 
@@ -27,14 +29,75 @@ function stripBrackets(hostname: string): string {
   return hostname;
 }
 
+function decodeIpv4MappedIpv6(hostname: string): string | undefined {
+  let host = stripBrackets(hostname).toLowerCase();
+  if (!host.includes(':')) {
+    return undefined;
+  }
+
+  const embeddedIpv4 = host.match(/(?:^|:)(\d{1,3}(?:\.\d{1,3}){3})$/u)?.[1];
+  if (embeddedIpv4) {
+    const octets = embeddedIpv4.split('.').map(Number);
+    if (octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)) {
+      return undefined;
+    }
+    const prefix = host.slice(0, host.lastIndexOf(':') + 1);
+    const high = ((octets[0] ?? 0) << 8) | (octets[1] ?? 0);
+    const low = ((octets[2] ?? 0) << 8) | (octets[3] ?? 0);
+    host = `${prefix}${high.toString(16)}:${low.toString(16)}`;
+  }
+
+  const halves = host.split('::');
+  if (halves.length > 2) {
+    return undefined;
+  }
+  const left = halves[0] ? halves[0]!.split(':') : [];
+  const right = halves.length === 2 && halves[1] ? halves[1].split(':') : [];
+  const zeroCount = halves.length === 2 ? 8 - left.length - right.length : 0;
+  if (zeroCount < 0 || (halves.length === 1 && left.length !== 8)) {
+    return undefined;
+  }
+  const segments = [...left, ...Array.from({ length: zeroCount }, () => '0'), ...right].map(
+    (segment) => Number.parseInt(segment || '0', 16)
+  );
+  if (
+    segments.length !== 8 ||
+    segments.some((segment) => !Number.isInteger(segment) || segment < 0 || segment > 0xffff) ||
+    segments.slice(0, 5).some((segment) => segment !== 0) ||
+    segments[5] !== 0xffff
+  ) {
+    return undefined;
+  }
+
+  const high = segments[6] ?? 0;
+  const low = segments[7] ?? 0;
+  return [high >> 8, high & 255, low >> 8, low & 255].join('.');
+}
+
 /** Cloud metadata / link-local probing targets — never valid seller endpoints. */
 export function isBlockedMetadataHost(hostname: string): boolean {
   const host = stripBrackets(hostname).toLowerCase();
   if (BLOCKED_HOSTNAMES.has(host) || host.endsWith('.metadata.google.internal')) {
     return true;
   }
+
+  const mappedIpv4 = decodeIpv4MappedIpv6(host);
+  if (mappedIpv4) {
+    return isBlockedMetadataHost(mappedIpv4);
+  }
+
+  const decodedIpv4 = decodeNumericIpv4(host);
+  if (decodedIpv4) {
+    return isBlockedMetadataHost(decodedIpv4);
+  }
+
   // IPv4 link-local (includes 169.254.169.254 metadata)
-  if (/^169\.254\./u.test(host)) {
+  if (
+    /^169\.254\./u.test(host) ||
+    host.startsWith('fe80:') ||
+    host === 'fd00:ec2::254' ||
+    host === 'fd20:ce::254'
+  ) {
     return true;
   }
   return false;
@@ -64,9 +127,9 @@ export function isPrivateOrSpecialIp(hostname: string): boolean {
     return true;
   }
 
-  const v4Mapped = host.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/u);
-  if (v4Mapped?.[1]) {
-    return isPrivateOrSpecialIp(v4Mapped[1]);
+  const mappedIpv4 = decodeIpv4MappedIpv6(host);
+  if (mappedIpv4) {
+    return isPrivateOrSpecialIp(mappedIpv4);
   }
 
   const decoded = decodeNumericIpv4(host);
@@ -178,22 +241,27 @@ export type DnsLookupFn = (
   options: { all: true }
 ) => Promise<Array<{ address: string; family: number }>>;
 
+export type ProviderEndpointResolution = {
+  hostname: string;
+  addresses: Array<{ address: string; family: number }>;
+};
+
 /**
  * Resolve the endpoint hostname and re-check every address for private/special
  * ranges. Mitigates DNS-rebinding SSRF where a public hostname resolves to a
  * link-local or private IP at request time.
  *
- * Residual TOCTOU: address is not pinned into the TCP connect; a rebinding
- * race between lookup and fetch remains possible without a custom agent.
+ * The returned addresses must be pinned by the caller's HTTP connector. A
+ * second independent DNS lookup would reintroduce the rebinding race.
  */
-export async function assertProviderEndpointResolvedSafe(
+export async function resolveProviderEndpointSafe(
   endpoint: string,
   options: {
     allowPrivateNetwork?: boolean;
     env?: NodeJS.ProcessEnv;
     lookup?: DnsLookupFn;
   } = {}
-): Promise<void> {
+): Promise<ProviderEndpointResolution> {
   assertProviderEndpointSafe(endpoint, options);
 
   const env = options.env ?? process.env;
@@ -207,9 +275,15 @@ export async function assertProviderEndpointResolvedSafe(
   }
 
   const hostname = stripBrackets(url.hostname).toLowerCase();
-  // Literal IPs already checked by assertProviderEndpointSafe.
-  if (isPrivateOrSpecialIp(hostname) || isLikelyIpLiteral(hostname)) {
-    return;
+  // Literal IPs already checked by assertProviderEndpointSafe. Preserve the
+  // literal as the dial target instead of asking the resolver again.
+  if (isIP(hostname) > 0) {
+    return { hostname, addresses: [{ address: hostname, family: isIP(hostname) }] };
+  }
+
+  const numericIpv4 = decodeNumericIpv4(hostname);
+  if (numericIpv4) {
+    return { hostname, addresses: [{ address: numericIpv4, family: 4 }] };
   }
 
   const lookup =
@@ -244,19 +318,21 @@ export async function assertProviderEndpointResolvedSafe(
       );
     }
   }
+
+  return {
+    hostname,
+    addresses: addresses.map(({ address, family }) => ({ address, family })),
+  };
 }
 
-function isLikelyIpLiteral(hostname: string): boolean {
-  const host = stripBrackets(hostname).toLowerCase();
-  if (/^\d{1,3}(?:\.\d{1,3}){3}$/u.test(host)) {
-    return true;
-  }
-  // Rough IPv6: contains ':' and only hex/colon chars
-  if (host.includes(':') && /^[0-9a-f:]+$/u.test(host)) {
-    return true;
-  }
-  if (/^\d+$/u.test(host)) {
-    return true;
-  }
-  return false;
+/** Validate provider endpoint DNS before use without changing the old API. */
+export async function assertProviderEndpointResolvedSafe(
+  endpoint: string,
+  options: {
+    allowPrivateNetwork?: boolean;
+    env?: NodeJS.ProcessEnv;
+    lookup?: DnsLookupFn;
+  } = {}
+): Promise<void> {
+  await resolveProviderEndpointSafe(endpoint, options);
 }

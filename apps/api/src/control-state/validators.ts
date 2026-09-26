@@ -141,6 +141,8 @@ export function isValidSellerUpstreamConfigEntry(
       provider === 'xai' ||
       provider === 'zai' ||
       provider === 'anthropic' ||
-      provider === 'darkbloom')
+      provider === 'darkbloom' ||
+      provider === 'nebius' ||
+      provider === 'openai')
   );
 }

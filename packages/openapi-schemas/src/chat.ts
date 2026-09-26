@@ -27,7 +27,7 @@ export const chatCompletionBodySchema = {
     provider: {
       type: 'string',
       description:
-        'Discount inference: auto (default) or upstream id (venice, xai, darkbloom, …) → allowed_model_providers.',
+        'Discount inference: auto (default) or upstream id (venice, xai, darkbloom, nebius, openai, …) → allowed_model_providers.',
     },
     max_price_usd: {
       type: 'number',

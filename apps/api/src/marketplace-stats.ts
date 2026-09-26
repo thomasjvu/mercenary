@@ -15,7 +15,8 @@ export function computeSellerPayout24hMetrics(
   const since24h = nowMs - MARKETPLACE_STATS_WINDOW_MS;
   const recent = payouts.filter((entry) => Date.parse(entry.createdAt) >= since24h);
   return {
-    routedRequests24h: recent.length,
+    // One raid can pay several providers; count the buyer work unit once.
+    routedRequests24h: new Set(recent.map((entry) => entry.raidId)).size,
     earnedBySellers24hUsd: recent.reduce((sum, entry) => sum + entry.grossUsd, 0),
   };
 }
@@ -43,6 +44,7 @@ export function computeSellerModelDemand(input: {
   const since24h = nowMs - MARKETPLACE_STATS_WINDOW_MS;
   const catalogById = new Map(INFERENCE_MODEL_CATALOG.map((entry) => [entry.modelId, entry]));
   const providerById = new Map(input.providers.map((entry) => [entry.providerId, entry]));
+  const routedRaidsByModel = new Map<string, Set<string>>();
   const byModel = new Map<
     string,
     {
@@ -85,9 +87,13 @@ export function computeSellerModelDemand(input: {
     if (!existing) {
       continue;
     }
+    const routedRaids = routedRaidsByModel.get(modelId) ?? new Set<string>();
+    const isNewRaid = !routedRaids.has(payout.raidId);
+    routedRaids.add(payout.raidId);
+    routedRaidsByModel.set(modelId, routedRaids);
     byModel.set(modelId, {
       ...existing,
-      routedRequests24h: existing.routedRequests24h + 1,
+      routedRequests24h: existing.routedRequests24h + Number(isNewRaid),
       routedValue24hUsd: Number((existing.routedValue24hUsd + payout.grossUsd).toFixed(6)),
     });
   }

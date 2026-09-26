@@ -40,23 +40,23 @@ Single-provider marketplace lane. API normalizes every request to `maxAgents: 1`
 7. Receipt, `agent_log.json`, and attestation routes expose proof. Onchain mode can refresh settlement state at read time.
 8. On restart, nonterminal raids resume from persisted state.
 
-## Hosted Venice sellers
+## Hosted upstream sellers
 
 Self-serve sellers connect a Venice API key in the web UI. The API stores the key encrypted in control state, materializes one provider profile per selected model, and routes inference through an embedded hosted gateway:
 
-1. Seller `POST /v1/seller/upstream/:provider/connect` validates the key against upstream `GET /models` (`anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`).
+1. Seller `POST /v1/seller/upstream/:provider/connect` validates the key against upstream `GET /models` (`openai`, `anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`, `darkbloom`, `nebius`).
 2. Seller `POST /v1/seller/upstream/:provider/offers` registers offers with `lane: "chat"` (`inference_hosted`) or `lane: "harness"` (`harness_hosted`) and `source.targetType = :provider`.
 3. Each offer endpoint is `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`.
 4. Gateway `POST /v1/raid/accept` proxies the raid task to the upstream chat API (or platform agent-harness tool loop), verifies TEE attestation when privacy features are claimed, and records the provider submission in-process.
 5. Buyers and sellers verify upstream TEE via `POST /v1/marketplace/tee/attestation` (provider-specific nonce + Intel/NVIDIA evidence; explorer link to proof.t16z.com).
 
-**Platform liquidity:** ops can seed featured chat offers with `POST /v1/ops/platform-liquidity/bootstrap` (admin token) when matching `BOSSRAID_*_API_KEY` values are set. Optional startup: `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1`. Platform seats use `source.externalRef = "platform"` and fall back to platform keys (no per-seller Phala). Phala defaults to platform seats only (empty seed + purge of demo workers `dottie` / `riko` / `gamma`). Featured xAI models and `reasoning_effort` pass-through: [discount-inference.md](../buyers/discount-inference.md#platform-seats-xai--grok).
+**Platform liquidity:** ops can seed chat offers for catalog models with `POST /v1/ops/platform-liquidity/bootstrap` (admin token) when matching `BOSSRAID_*_API_KEY` values are set. Optional startup: `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1`. Platform seats use `source.externalRef = "platform"` and fall back to platform keys (no per-seller Phala). Phala defaults to platform seats only (empty seed + purge of demo workers `dottie` / `riko` / `gamma`). Provider coverage: [discount-inference.md](../buyers/discount-inference.md#platform-seats).
 
 Buyers still use `POST /v1/inference/chat/completions`. The static inference catalog fills discovery gaps when no live seller exists for a model. Chat is **stateless** — clients own multi-turn history.
 
 ### Production readiness (honest)
 
-Full production requires `GET /v1/ops/production-readiness` → `ok: true` (onchain settlement, Phala TEE + `MNEMONIC`, container eval, strong secrets, no mocks, operator acks). **Money rail is Robinhood + USDG only** (Marian facilitator). SQLite is allowed with a storage warning for **v1 controlled launch** (single API process); multi-replica HA needs a future Postgres adapter — not Convex. x402 may stay off for private rehearsal. Feature code can be ready while a specific host is still blocked by ops gates.
+Full production requires `GET /v1/ops/production-readiness` → `ok: true` (onchain settlement, Phala TEE + `MNEMONIC`, container eval, strong secrets, no mocks, operator acks). **Money rail is Robinhood + USDG only** (Marian facilitator). SQLite is allowed with a storage warning for **v1 controlled launch** (single API process). A Postgres adapter exists, but the API control-state store is currently designed for a single writer; multi-replica writes still need a distributed consistency refactor. Onchain transactions from the same wallet are serialized inside one API process, including seller flushes and escrow funding. x402 may stay off for private rehearsal. Feature code can be ready while a specific host is still blocked by ops gates.
 
 ## Apps
 

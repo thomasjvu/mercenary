@@ -8,26 +8,6 @@ import { buildHostedProviderRegistration } from './upstream-offers.js';
 import { resolveInferenceGatewayProviderEndpoint } from './inference-gateway.js';
 
 /**
- * Explicit platform seats (always considered when catalog row + key exist).
- * xAI / Anthropic stay curated; Venice + Chutes use full catalog providers below.
- */
-export const PLATFORM_LIQUIDITY_FEATURED_MODEL_IDS = [
-  // xAI / Grok
-  'grok-4.5',
-  'grok-4.3',
-  'grok-4.20-0309-reasoning',
-  'grok-4.20-0309-non-reasoning',
-  'grok-4.20-multi-agent-0309',
-  'grok-build-0.1',
-  'grok-4-1-fast-reasoning',
-  'grok-4-1-fast-non-reasoning',
-  // Anthropic first-party (namespaced; Venice also lists unprefixed claude-*)
-  'anthropic/claude-opus-4-5',
-  'anthropic/claude-sonnet-4-5',
-  'anthropic/claude-haiku-4-5',
-] as const;
-
-/**
  * When BOSSRAID_<PROVIDER>_API_KEY is set, publish a platform seat for every
  * inference-catalog row from these upstreams.
  * @see https://docs.venice.ai/models/overview
@@ -36,6 +16,8 @@ export const PLATFORM_LIQUIDITY_FEATURED_MODEL_IDS = [
  * @see https://phala.com/models
  * @see https://redpill.ai/models
  * @see https://www.darkbloom.dev/#api
+ * @see https://docs.x.ai/developers/pricing
+ * @see https://claude.com/pricing
  */
 export const PLATFORM_LIQUIDITY_FULL_CATALOG_PROVIDERS = [
   'venice',
@@ -44,6 +26,11 @@ export const PLATFORM_LIQUIDITY_FULL_CATALOG_PROVIDERS = [
   'phala',
   'redpill',
   'darkbloom',
+  'nebius',
+  'openai',
+  'xai',
+  'zai',
+  'anthropic',
 ] as const satisfies readonly UpstreamProviderId[];
 
 /** Synthetic externalRef for platform-owned hosted seats (uses BOSSRAID_*_API_KEY). */
@@ -59,7 +46,7 @@ export type PlatformLiquidityBootstrapResult = {
 
 /** Stable ordered model ids for platform liquidity bootstrap. */
 export function listPlatformLiquidityModelIds(): string[] {
-  const ids = new Set<string>(PLATFORM_LIQUIDITY_FEATURED_MODEL_IDS);
+  const ids = new Set<string>();
   const fullProviders = new Set<string>(PLATFORM_LIQUIDITY_FULL_CATALOG_PROVIDERS);
   for (const entry of INFERENCE_MODEL_CATALOG) {
     if (fullProviders.has(entry.modelProvider)) {

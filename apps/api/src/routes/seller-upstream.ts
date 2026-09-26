@@ -90,7 +90,7 @@ export function registerSellerUpstreamRoutes(
     );
 
     try {
-      await fetchUpstreamModels(provider, apiKey);
+      await fetchUpstreamModels(provider, apiKey, { env });
     } catch (error) {
       reply.code(400);
       return {
@@ -222,7 +222,7 @@ export function registerSellerUpstreamRoutes(
     }
 
     try {
-      const upstreamModels = await fetchUpstreamModels(provider, apiKey);
+      const upstreamModels = await fetchUpstreamModels(provider, apiKey, { env });
       const models = mergeUpstreamCatalogModelsForProvider(provider, upstreamModels);
       const supportedCount = models.filter((model) => model.supported).length;
       const upstreamFoundCount = models.filter((model) => model.upstreamFound).length;

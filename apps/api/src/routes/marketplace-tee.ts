@@ -56,7 +56,7 @@ export function registerMarketplaceTeeRoutes(
       return {
         error: 'invalid_provider',
         message:
-          'provider must be a supported upstream (venice, redpill, near, chutes, phala, xai, zai, anthropic, darkbloom).',
+          'provider must be a supported upstream (venice, redpill, near, chutes, phala, xai, zai, anthropic, darkbloom, nebius, openai).',
       };
     }
 

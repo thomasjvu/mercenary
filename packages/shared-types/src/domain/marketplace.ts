@@ -55,7 +55,7 @@ export interface ChatCompletionRequest {
   reasoning_effort?: ChatReasoningEffort;
   /**
    * Discount-inference ergonomic filter: `auto` (default) or upstream id
-   * (`venice` | `xai` | `darkbloom` | …) → raid_policy.allowed_model_providers.
+   * (`venice` | `xai` | `darkbloom` | `nebius` | `openai` | …) → raid_policy.allowed_model_providers.
    */
   provider?: string;
   /** Absolute max spend USD for this call (alias for raid_policy.max_total_cost). */

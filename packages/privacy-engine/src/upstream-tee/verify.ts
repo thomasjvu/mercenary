@@ -252,6 +252,36 @@ export function verifyUpstreamAttestationReport(
           },
         ],
       };
+    case 'nebius':
+      return {
+        valid: false,
+        vendor: 'nebius',
+        modelId: input.modelId,
+        nonce: input.nonce,
+        verifiedAt: new Date().toISOString(),
+        checks: [
+          {
+            id: 'nebius_tee_unsupported',
+            passed: false,
+            detail: 'Nebius Token Factory does not publish upstream TEE attestation reports.',
+          },
+        ],
+      };
+    case 'openai':
+      return {
+        valid: false,
+        vendor: 'openai',
+        modelId: input.modelId,
+        nonce: input.nonce,
+        verifiedAt: new Date().toISOString(),
+        checks: [
+          {
+            id: 'openai_tee_unsupported',
+            passed: false,
+            detail: 'OpenAI does not publish upstream TEE attestation reports.',
+          },
+        ],
+      };
   }
 }
 

@@ -4,6 +4,8 @@ Verification, deploy, and operator workflows. Env tables: [reference/env.md](../
 
 **Source of truth is Forgejo** ([`bossraid/mercenary`](https://forgejo.thomasjvu.com/bossraid/mercenary)); GitHub is a mirror. CI, image builds on spectre, and remotes: [source-control.md](source-control.md).
 
+Live offer counts, API health, and the Cloudflare 525 recovery procedure: [Marketplace operations](marketplace-operations.md).
+
 ## Operator path
 
 1. **Local or Phala** — `pnpm dev` for local stack; Phala bootstrap via [Infisical](/dev-docs/operators/infisical).
@@ -15,6 +17,8 @@ Verification, deploy, and operator workflows. Env tables: [reference/env.md](../
    - `BOSSRAID_PHALA_API_KEY` → **all** Phala TEE chat models
    - `BOSSRAID_REDPILL_API_KEY` → **all** Redpill chat models
    - `BOSSRAID_DARKBLOOM_API_KEY` → **all** Darkbloom chat models (Apple Silicon private inference)
+   - `BOSSRAID_NEBIUS_API_KEY` → all priced Nebius Token Factory text-to-text models in the catalog
+   - `BOSSRAID_OPENAI_API_KEY` → OpenAI GPT-6 Astra, Sol, and Luna
    - `BOSSRAID_XAI_API_KEY` → curated Grok models
    - optional Anthropic as documented in [discount-inference.md](../buyers/discount-inference.md#platform-seats)
 
@@ -22,6 +26,13 @@ Verification, deploy, and operator workflows. Env tables: [reference/env.md](../
 
 4. **Ops UI** — authenticate with `BOSSRAID_ADMIN_TOKEN`, monitor raids, toggle x402.
 5. **Ship** — gateway (`pnpm bossraid serve:gateway`) or Cloudflare Pages deploy.
+
+## Remaining production work
+
+- The public API returned Cloudflare 525 during the 2026-09-26 audit; see [Marketplace operations](marketplace-operations.md) for the observed state and recovery checks. No live seller counts were available from that request.
+- Mainnet escrow deployment and the Phala `SETTLEMENT_MODE=onchain` cutover remain operator actions; testnet artifacts are not production contracts.
+- Complete and record a live Marian x402 transaction, confirm funded settlement balances and at least one ready seller, and require `GET /v1/ops/production-readiness` → `ok: true` before unrestricted paid traffic.
+- The shared-wallet transaction queue prevents overlap only among callers in the same Node process. It does not coordinate API replicas or standalone settlement commands; the control-state store remains single-writer and multi-process writes are unsupported.
 
 Contributor scripts (`check`, `build`, `dev`, `test:*`) live in root `package.json`. Operator, deploy, and integration commands use `pnpm bossraid <command>` — run `pnpm bossraid help` for the full list.
 
@@ -39,7 +50,7 @@ Refresh inference catalog + reference pricing JSON:
 pnpm bossraid sync:inference-catalog
 ```
 
-Writes `packages/constants/src/inference-catalog.ts` and `packages/constants/data/inference-model-pricing.json` (Venice rates from public `/models`; Redpill, NEAR, Chutes, Phala, xAI, Z.ai, Anthropic from static script rates).
+Writes `packages/constants/src/inference-catalog.ts` and `packages/constants/data/inference-model-pricing.json`. Providers with public price metadata sync their live model lists; other providers use published rates and model ids maintained in the script. Nebius includes its published base-flavor text-to-text models; OpenAI includes its current general chat models. Models are offerable only when they have published input and output token rates.
 
 Regenerate brand assets (Venice; requires `VENICE_API_KEY` in `.private/.env`):
 

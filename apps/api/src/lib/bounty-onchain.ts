@@ -12,7 +12,11 @@ import {
   type Hex,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { BOUNTY_ESCROW_ABI, ERC20_MINIMAL_ABI } from '@bossraid/raid-core';
+import {
+  BOUNTY_ESCROW_ABI,
+  ERC20_MINIMAL_ABI,
+  withWalletTransactionLock,
+} from '@bossraid/raid-core';
 import { resolveApiSettlementMode } from './settlement-mode.js';
 
 /** USDG and USDC both use 6 decimals; name kept for test compatibility. */
@@ -131,7 +135,7 @@ export class BountyOnchainExecutor {
     }
   }
 
-  async ensureTokenAllowance(requiredAmount: bigint): Promise<void> {
+  private async ensureTokenAllowance(requiredAmount: bigint): Promise<void> {
     const allowance = await this.publicClient.readContract({
       address: this.config.tokenAddress,
       abi: erc20MinimalAbi,
@@ -157,54 +161,56 @@ export class BountyOnchainExecutor {
     posterWallet: string;
     bounty: BountyRecord;
   }): Promise<{ onchainBountyId: string; fundTxHash: Hash }> {
-    await this.preflightFundBounty(input.bounty);
-    const totalBudget = usdToAtomic(input.bounty.rewardAmountUsd);
-    await this.ensureTokenAllowance(totalBudget);
+    return withWalletTransactionLock(this.operatorAccount.address, async () => {
+      await this.preflightFundBounty(input.bounty);
+      const totalBudget = usdToAtomic(input.bounty.rewardAmountUsd);
+      await this.ensureTokenAllowance(totalBudget);
 
-    const poster = getAddress(input.posterWallet);
-    const deadlines = deadlineUnix(input.bounty);
+      const poster = getAddress(input.posterWallet);
+      const deadlines = deadlineUnix(input.bounty);
 
-    const createHash = await this.operatorClient.writeContract({
-      chain: this.chain,
-      address: this.config.bountyEscrowAddress,
-      abi: bountyEscrowAbi,
-      functionName: 'createBountyOnBehalf',
-      args: [
-        poster,
-        totalBudget,
-        deadlines.bidding,
-        deadlines.award,
-        deadlines.delivery,
-        deadlines.accept,
-        `bossraid:${input.bounty.id}`,
-      ],
-      account: this.operatorAccount,
-    });
-    const createReceipt = await this.publicClient.waitForTransactionReceipt({ hash: createHash });
-    const onchainBountyId = extractUintEventArg(
-      parseEventLogs({
+      const createHash = await this.operatorClient.writeContract({
+        chain: this.chain,
+        address: this.config.bountyEscrowAddress,
         abi: bountyEscrowAbi,
-        logs: createReceipt.logs,
-        eventName: 'BountyCreated',
-      }),
-      'bountyId',
-      'BountyCreated'
-    );
+        functionName: 'createBountyOnBehalf',
+        args: [
+          poster,
+          totalBudget,
+          deadlines.bidding,
+          deadlines.award,
+          deadlines.delivery,
+          deadlines.accept,
+          `bossraid:${input.bounty.id}`,
+        ],
+        account: this.operatorAccount,
+      });
+      const createReceipt = await this.publicClient.waitForTransactionReceipt({ hash: createHash });
+      const onchainBountyId = extractUintEventArg(
+        parseEventLogs({
+          abi: bountyEscrowAbi,
+          logs: createReceipt.logs,
+          eventName: 'BountyCreated',
+        }),
+        'bountyId',
+        'BountyCreated'
+      );
 
-    const fundHash = await this.operatorClient.writeContract({
-      chain: this.chain,
-      address: this.config.bountyEscrowAddress,
-      abi: bountyEscrowAbi,
-      functionName: 'fundBountyOnBehalf',
-      args: [onchainBountyId],
-      account: this.operatorAccount,
+      const fundHash = await this.operatorClient.writeContract({
+        chain: this.chain,
+        address: this.config.bountyEscrowAddress,
+        abi: bountyEscrowAbi,
+        functionName: 'fundBountyOnBehalf',
+        args: [onchainBountyId],
+        account: this.operatorAccount,
+      });
+      await this.publicClient.waitForTransactionReceipt({ hash: fundHash });
+
+      return {
+        onchainBountyId: onchainBountyId.toString(),
+        fundTxHash: fundHash,
+      };
     });
-    await this.publicClient.waitForTransactionReceipt({ hash: fundHash });
-
-    return {
-      onchainBountyId: onchainBountyId.toString(),
-      fundTxHash: fundHash,
-    };
   }
 
   async createAward(input: {
@@ -212,15 +218,17 @@ export class BountyOnchainExecutor {
     providerAddress: Address;
     amountUsd: number;
   }): Promise<{ onchainAwardId: string; txHash: Hash }> {
-    const txHash = await this.operatorClient.writeContract({
-      chain: this.chain,
-      address: this.config.bountyEscrowAddress,
-      abi: bountyEscrowAbi,
-      functionName: 'createAwardOnBehalf',
-      args: [BigInt(input.onchainBountyId), input.providerAddress, usdToAtomic(input.amountUsd)],
-      account: this.operatorAccount,
-    });
-    const receipt = await this.publicClient.waitForTransactionReceipt({ hash: txHash });
+    const txHash = await this.writeOperatorTransaction(() =>
+      this.operatorClient.writeContract({
+        chain: this.chain,
+        address: this.config.bountyEscrowAddress,
+        abi: bountyEscrowAbi,
+        functionName: 'createAwardOnBehalf',
+        args: [BigInt(input.onchainBountyId), input.providerAddress, usdToAtomic(input.amountUsd)],
+        account: this.operatorAccount,
+      })
+    );
+    const receipt = await this.publicClient.getTransactionReceipt({ hash: txHash });
     const onchainAwardId = extractUintEventArg(
       parseEventLogs({
         abi: bountyEscrowAbi,
@@ -234,68 +242,68 @@ export class BountyOnchainExecutor {
   }
 
   async submitDelivery(input: { onchainAwardId: string; deliveryHashHex: string }): Promise<Hash> {
-    const txHash = await this.operatorClient.writeContract({
-      chain: this.chain,
-      address: this.config.bountyEscrowAddress,
-      abi: bountyEscrowAbi,
-      functionName: 'submitDeliveryOnBehalf',
-      args: [BigInt(input.onchainAwardId), hexToBytes32(input.deliveryHashHex)],
-      account: this.operatorAccount,
-    });
-    await this.publicClient.waitForTransactionReceipt({ hash: txHash });
-    return txHash;
+    return this.writeOperatorTransaction(() =>
+      this.operatorClient.writeContract({
+        chain: this.chain,
+        address: this.config.bountyEscrowAddress,
+        abi: bountyEscrowAbi,
+        functionName: 'submitDeliveryOnBehalf',
+        args: [BigInt(input.onchainAwardId), hexToBytes32(input.deliveryHashHex)],
+        account: this.operatorAccount,
+      })
+    );
   }
 
   async acceptAward(onchainAwardId: string): Promise<Hash> {
-    const txHash = await this.operatorClient.writeContract({
-      chain: this.chain,
-      address: this.config.bountyEscrowAddress,
-      abi: bountyEscrowAbi,
-      functionName: 'acceptAwardOnBehalf',
-      args: [BigInt(onchainAwardId)],
-      account: this.operatorAccount,
-    });
-    await this.publicClient.waitForTransactionReceipt({ hash: txHash });
-    return txHash;
+    return this.writeOperatorTransaction(() =>
+      this.operatorClient.writeContract({
+        chain: this.chain,
+        address: this.config.bountyEscrowAddress,
+        abi: bountyEscrowAbi,
+        functionName: 'acceptAwardOnBehalf',
+        args: [BigInt(onchainAwardId)],
+        account: this.operatorAccount,
+      })
+    );
   }
 
   async claimPayout(onchainAwardId: string): Promise<Hash> {
-    const txHash = await this.operatorClient.writeContract({
-      chain: this.chain,
-      address: this.config.bountyEscrowAddress,
-      abi: bountyEscrowAbi,
-      functionName: 'claimPayout',
-      args: [BigInt(onchainAwardId)],
-      account: this.operatorAccount,
-    });
-    await this.publicClient.waitForTransactionReceipt({ hash: txHash });
-    return txHash;
+    return this.writeOperatorTransaction(() =>
+      this.operatorClient.writeContract({
+        chain: this.chain,
+        address: this.config.bountyEscrowAddress,
+        abi: bountyEscrowAbi,
+        functionName: 'claimPayout',
+        args: [BigInt(onchainAwardId)],
+        account: this.operatorAccount,
+      })
+    );
   }
 
   async refundUnawarded(onchainBountyId: string): Promise<Hash> {
-    const txHash = await this.operatorClient.writeContract({
-      chain: this.chain,
-      address: this.config.bountyEscrowAddress,
-      abi: bountyEscrowAbi,
-      functionName: 'refundUnawarded',
-      args: [BigInt(onchainBountyId)],
-      account: this.operatorAccount,
-    });
-    await this.publicClient.waitForTransactionReceipt({ hash: txHash });
-    return txHash;
+    return this.writeOperatorTransaction(() =>
+      this.operatorClient.writeContract({
+        chain: this.chain,
+        address: this.config.bountyEscrowAddress,
+        abi: bountyEscrowAbi,
+        functionName: 'refundUnawarded',
+        args: [BigInt(onchainBountyId)],
+        account: this.operatorAccount,
+      })
+    );
   }
 
   async forfeitAward(onchainAwardId: string): Promise<Hash> {
-    const txHash = await this.operatorClient.writeContract({
-      chain: this.chain,
-      address: this.config.bountyEscrowAddress,
-      abi: bountyEscrowAbi,
-      functionName: 'forfeitAward',
-      args: [BigInt(onchainAwardId)],
-      account: this.operatorAccount,
-    });
-    await this.publicClient.waitForTransactionReceipt({ hash: txHash });
-    return txHash;
+    return this.writeOperatorTransaction(() =>
+      this.operatorClient.writeContract({
+        chain: this.chain,
+        address: this.config.bountyEscrowAddress,
+        abi: bountyEscrowAbi,
+        functionName: 'forfeitAward',
+        args: [BigInt(onchainAwardId)],
+        account: this.operatorAccount,
+      })
+    );
   }
 
   async readTokenBalance(address: Address): Promise<bigint> {
@@ -304,6 +312,14 @@ export class BountyOnchainExecutor {
       abi: erc20MinimalAbi,
       functionName: 'balanceOf',
       args: [address],
+    });
+  }
+
+  private writeOperatorTransaction(write: () => Promise<Hash>): Promise<Hash> {
+    return withWalletTransactionLock(this.operatorAccount.address, async () => {
+      const hash = await write();
+      await this.publicClient.waitForTransactionReceipt({ hash });
+      return hash;
     });
   }
 

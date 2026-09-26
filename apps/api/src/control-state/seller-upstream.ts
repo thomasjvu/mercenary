@@ -15,6 +15,8 @@ const KEY_PREFIX_BY_PROVIDER: Record<UpstreamProviderId, string> = {
   zai: 'za',
   anthropic: 'an',
   darkbloom: 'db',
+  nebius: 'nb',
+  openai: 'oa',
 };
 
 export function buildUpstreamKeyPrefix(provider: UpstreamProviderId, apiKey: string): string {

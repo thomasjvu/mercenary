@@ -11,7 +11,11 @@ export function MarketplacePage({ onOpenModel }: { onOpenModel: (modelId: string
 
   return (
     <section className="page-shell page-flat market-page">
-      <MarketStatsRibbon isLoading={state.markets.isLoading} markets={state.markets.data} />
+      <MarketStatsRibbon
+        isError={Boolean(state.markets.error)}
+        isLoading={state.markets.isLoading}
+        markets={state.markets.data}
+      />
 
       <div className="market-page__spotlight">
         <div className="market-page__spotlight-main">

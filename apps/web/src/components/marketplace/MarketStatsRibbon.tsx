@@ -5,9 +5,14 @@ import { formatUsd } from '@bossraid/proof-ui';
 type MarketStatsRibbonProps = {
   markets?: MarketsResponse;
   isLoading?: boolean;
+  isError?: boolean;
 };
 
-export function MarketStatsRibbon({ markets, isLoading = false }: MarketStatsRibbonProps) {
+export function MarketStatsRibbon({
+  markets,
+  isLoading = false,
+  isError = false,
+}: MarketStatsRibbonProps) {
   const stats = markets?.stats;
 
   if (isLoading && !markets) {
@@ -20,12 +25,31 @@ export function MarketStatsRibbon({ markets, isLoading = false }: MarketStatsRib
 
   return (
     <section aria-label="Marketplace statistics" className="market-stats-ribbon">
-      <Stat label="models live" value={String(stats?.modelsLive ?? 0)} />
-      <Stat label="active offers" value={String(stats?.activeOffers ?? 0)} />
-      <Stat label="routed 24h" value={String(stats?.routedRequests24h ?? 0)} />
-      <Stat label="seller volume 24h" value={formatUsd(stats?.earnedBySellers24hUsd ?? 0, 2)} />
-      <Stat label="settlement" value={markets?.settlement.asset ?? 'USDC'} />
-      <Stat label="network" value={markets?.settlement.network ?? 'n/a'} />
+      {isError ? (
+        <p aria-live="polite" className="market-stats-ribbon__status">
+          {markets
+            ? 'API refresh failed; showing the last successful snapshot.'
+            : 'Live API unavailable; live counts are unknown.'}
+        </p>
+      ) : null}
+      <Stat
+        label="models live"
+        value={isError && !markets ? '—' : String(stats?.modelsLive ?? '—')}
+      />
+      <Stat
+        label="active offers"
+        value={isError && !markets ? '—' : String(stats?.activeOffers ?? '—')}
+      />
+      <Stat
+        label="routed 24h"
+        value={isError && !markets ? '—' : String(stats?.routedRequests24h ?? '—')}
+      />
+      <Stat
+        label="seller volume 24h"
+        value={isError && !markets ? '—' : stats ? formatUsd(stats.earnedBySellers24hUsd, 2) : '—'}
+      />
+      <Stat label="settlement" value={markets?.settlement.asset ?? '—'} />
+      <Stat label="network" value={markets?.settlement.network ?? '—'} />
     </section>
   );
 }

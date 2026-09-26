@@ -1,4 +1,4 @@
-import type { UpstreamProviderId } from '@bossraid/constants';
+import { INFERENCE_MODEL_CATALOG, type UpstreamProviderId } from '@bossraid/constants';
 import {
   applyChatOptionsToBody,
   resolveChatMessagesForUpstream,
@@ -15,41 +15,15 @@ const XAI_BASE = 'https://api.x.ai/v1';
 const PROVIDER = 'xai' satisfies UpstreamProviderId;
 
 /** Static fallback when live /models is unavailable (local mock / non-prod failure). */
-const MOCK_XAI_MODELS: UpstreamModelRecord[] = [
-  { id: 'grok-4.5', displayName: 'Grok 4.5', teeAttested: false, e2ee: false },
-  { id: 'grok-4.3', displayName: 'Grok 4.3', teeAttested: false, e2ee: false },
-  {
-    id: 'grok-4.20-0309-reasoning',
-    displayName: 'Grok 4.20 Reasoning',
-    teeAttested: false,
-    e2ee: false,
-  },
-  {
-    id: 'grok-4.20-0309-non-reasoning',
-    displayName: 'Grok 4.20',
-    teeAttested: false,
-    e2ee: false,
-  },
-  {
-    id: 'grok-4.20-multi-agent-0309',
-    displayName: 'Grok 4.20 Multi-Agent',
-    teeAttested: false,
-    e2ee: false,
-  },
-  { id: 'grok-build-0.1', displayName: 'Grok Build 0.1', teeAttested: false, e2ee: false },
-  {
-    id: 'grok-4-1-fast-reasoning',
-    displayName: 'Grok 4.1 Fast Reasoning',
-    teeAttested: false,
-    e2ee: false,
-  },
-  {
-    id: 'grok-4-1-fast-non-reasoning',
-    displayName: 'Grok 4.1 Fast',
-    teeAttested: false,
-    e2ee: false,
-  },
-];
+const MOCK_XAI_MODELS: UpstreamModelRecord[] = INFERENCE_MODEL_CATALOG.filter(
+  (model) => model.modelProvider === PROVIDER
+).map((model) => ({
+  id: model.upstreamModelId,
+  displayName: model.displayName,
+  teeAttested: model.teeAttested,
+  e2ee: model.e2ee,
+  maxContextTokens: model.maxContextTokens,
+}));
 
 export async function fetchXaiUpstreamModels(
   apiKey: string,

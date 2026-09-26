@@ -17,6 +17,7 @@ import { useWalletAuth } from './useWalletAuth.js';
 
 /** Plans first (paste key → sell), then TEE marketplaces. */
 export const SELLER_PROVIDER_ORDER: UpstreamProviderId[] = [
+  'openai',
   'anthropic',
   'xai',
   'zai',
@@ -26,15 +27,18 @@ export const SELLER_PROVIDER_ORDER: UpstreamProviderId[] = [
   'near',
   'phala',
   'darkbloom',
+  'nebius',
 ];
 
 const PLAN_PROVIDERS = new Set<UpstreamProviderId>(['anthropic', 'xai', 'zai', 'chutes']);
 const PRIVATE_NETWORK_PROVIDERS = new Set<UpstreamProviderId>(['darkbloom']);
+const API_KEY_PROVIDERS = new Set<UpstreamProviderId>(['nebius', 'openai']);
 
 export function sellerProviderOptionLabel(provider: UpstreamProviderId): string {
   const name = UPSTREAM_PROVIDER_CONFIG[provider].displayName;
   if (PLAN_PROVIDERS.has(provider)) return `${name} · plan`;
   if (PRIVATE_NETWORK_PROVIDERS.has(provider)) return `${name} · private network`;
+  if (API_KEY_PROVIDERS.has(provider)) return `${name} · API key`;
   return `${name} · TEE market`;
 }
 

@@ -1,4 +1,8 @@
-import { UPSTREAM_PROVIDER_CONFIG, type UpstreamProviderId } from '@bossraid/constants';
+import {
+  INFERENCE_MODEL_CATALOG,
+  UPSTREAM_PROVIDER_CONFIG,
+  type UpstreamProviderId,
+} from '@bossraid/constants';
 import {
   fetchUpstreamModelsWithFallback,
   probeOpenAiStyleChatCompletion,
@@ -14,26 +18,15 @@ import {
 const PROVIDER = 'anthropic' satisfies UpstreamProviderId;
 const ANTHROPIC_BASE = UPSTREAM_PROVIDER_CONFIG.anthropic.upstreamBase;
 
-const MOCK_ANTHROPIC_MODELS: UpstreamModelRecord[] = [
-  {
-    id: 'claude-opus-4-5',
-    displayName: 'Claude Opus 4.5',
-    teeAttested: false,
-    e2ee: false,
-  },
-  {
-    id: 'claude-sonnet-4-5',
-    displayName: 'Claude Sonnet 4.5',
-    teeAttested: false,
-    e2ee: false,
-  },
-  {
-    id: 'claude-haiku-4-5',
-    displayName: 'Claude Haiku 4.5',
-    teeAttested: false,
-    e2ee: false,
-  },
-];
+const MOCK_ANTHROPIC_MODELS: UpstreamModelRecord[] = INFERENCE_MODEL_CATALOG.filter(
+  (model) => model.modelProvider === PROVIDER
+).map((model) => ({
+  id: model.upstreamModelId,
+  displayName: model.displayName,
+  teeAttested: model.teeAttested,
+  e2ee: model.e2ee,
+  maxContextTokens: model.maxContextTokens,
+}));
 
 // Catalog modelIds are anthropic/*; live /models returns bare Anthropic ids (matched via catalog-merge).
 

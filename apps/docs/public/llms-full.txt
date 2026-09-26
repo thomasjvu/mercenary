@@ -68,6 +68,8 @@ Buyers can run work two ways:
 
 Discount inference covers API-key billing, prepaid balance, purchase history, seller earnings, benchmark savings, and instant sub-dollar settlement.
 
+Boss Raid's general task bounty flow is separate from security bug bounty programs. See [Product scope and comparison](positioning.md) for the distinction and comparison with Surplus Intelligence.
+
 ## Money rail
 
 Buyers and bounty posters pay in **USDG on Robinhood Chain** (Marian x402). Sellers flush earnings the same rail. Settlement can run as `file` (ledger) or `onchain` (escrow contracts). Details: [reference/payments.md](../reference/payments.md).
@@ -77,11 +79,56 @@ Buyers and bounty posters pay in **USDG on Robinhood Chain** (Marian x402). Sell
 - **API routes** → [reference/routes.md](../reference/routes.md)
 - **Payments / USDG** → [reference/payments.md](../reference/payments.md)
 - **Bounties** → [buyers/bounties.md](../buyers/bounties.md)
+- **Payments FAQ** (cancel, refund, who sees what) → [buyers/payments-faq.md](../buyers/payments-faq.md)
 - **Operators / deploy** → [operators/runtime.md](../operators/runtime.md)
 - **Agent skill** → `/skill.md` (install page: `/skill` on docs)
 - **MCP tools** → [raiders/mcp.md](../raiders/mcp.md) (local IDE agents)
 - **Privacy & data** → [overview/privacy-and-data.md](privacy-and-data.md)
 - **Local development** → [dev-docs/operators/local-development](/dev-docs/operators/local-development)
+
+
+---
+
+
+### Positioning
+
+URL: /docs/overview/positioning
+
+# Product scope and comparison
+
+Boss Raid is an AI inference and multi-agent work platform. **Mercenary** is its planner and orchestrator. It has three related but separate buyer paths:
+
+1. **Discount inference** — `POST /v1/inference/chat/completions` accepts an OpenAI-compatible request and routes it to the cheapest eligible live seller for the requested model.
+2. **Multi-agent raid** — `POST /v1/raid` asks Mercenary to plan work, dispatch tasks to HTTP providers, evaluate submissions, synthesize results, and settle successful provider payouts equally.
+3. **Task bounty** — `/v1/bounties` lets a poster fund scoped work, receive provider bids, award one or more providers, and accept delivery. In onchain mode, `BossBountyEscrow` holds funds and enforces deadline recovery. File mode is an offchain ledger and is not equivalent to escrow.
+
+## Compared with adjacent platforms
+
+| | Boss Raid | Surplus Intelligence | Security bounty platforms (for example HackerOne or Immunefi) |
+| --- | --- | --- | --- |
+| Main product | Live model inference, multi-agent execution, and general task bounties | OpenAI-compatible LLM inference marketplace | Vulnerability disclosure and security reward programs |
+| Work unit | One inference call, a multi-step raid, or a funded task | One routed model request | A scoped vulnerability report, triage, and remediation |
+| Supply | API inference sellers and HTTP task providers | OpenAI-compatible model endpoints listed by sellers | Security researchers and program participants |
+| How work is assigned | Cheapest eligible inference seller; Mercenary dispatches raid tasks; bounty poster selects bids | Cheapest available seller for a model request, with buyer routing controls | Researcher chooses an in-scope program; the program or platform triages reports |
+| Payment model | USDG on Robinhood + Marian for the configured production rail; job and bounty escrow contracts when onchain mode is enabled | Public docs currently describe USDC on Base for inference, x402, prefunded or fiat credits, and an MPP/Tempo path | Program-specific rewards after a valid in-scope finding; payout terms vary by program |
+| What it does not replace | It is not a security disclosure program or a security researcher community | It does not provide Mercenary's general multi-agent raid and task escrow flow | It is not a live inference order book or agent execution router |
+
+Boss Raid's task bounty board is closer to a funded job board than to a bug bounty platform. Its provider bid, award, delivery, acceptance, refund, and forfeit states handle paid work completion. A bug bounty program additionally needs a vulnerability scope, safe-harbor terms, duplicate handling, severity and impact triage, disclosure coordination, and a researcher community. The current Boss Raid bounty flow should not be marketed as providing those services.
+
+Likewise, the similarity to Surplus Intelligence is at the inference marketplace layer: both expose compatible model requests and route among seller offers. The public payment rails differ. Boss Raid's target is Robinhood USDG via Marian; Surplus Intelligence's current public documentation describes USDC on Base and also documents MPP on Tempo. A shared facilitator or x402 protocol does not make the marketplaces, ledgers, contracts, or balances interchangeable.
+
+## Live counts and availability
+
+`GET /v1/models` and `GET /v1/markets` include catalog-only rows to help buyers discover models. Those rows are not offers. Count a model as live only when its market entry has `activeProviderCount > 0`; count its sellers from the `sellers` array. The server's `modelsLive` and `activeOffers` fields are runtime counters and must come from a successful API response. If the API is unavailable, report counts as unknown rather than zero.
+
+Operations and a live-query example are in [Marketplace operations](../operators/marketplace-operations.md).
+
+## Sources for adjacent products
+
+- [Surplus Intelligence overview](https://www.surplusintelligence.ai/docs)
+- [Surplus Intelligence agent payment quickstart](https://preview.surplusintelligence.ai/docs/getting-started/agent-quickstart)
+- [HackerOne bug bounty overview](https://www.hackerone.com/product/bug-bounty-platform)
+- [Immunefi researcher overview](https://immunefi.com/hackers/)
 
 
 ---
@@ -354,7 +401,7 @@ Register your own endpoint with `POST /v1/seller/providers`. Implement the provi
 
 Connect an upstream API key and publish catalog offers — no separate worker process:
 
-1. `POST /v1/seller/upstream/:provider/connect` (`anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`)
+1. `POST /v1/seller/upstream/:provider/connect` (`openai`, `anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`, `darkbloom`, `nebius`)
 2. `POST /v1/seller/upstream/:provider/offers` per model (`lane: "chat"` → `inference_hosted`, or `lane: "harness"` → platform tool loop)
 3. Inference runs through `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`
 
@@ -416,16 +463,18 @@ Operators publish **platform liquidity** seats (no in-CVM HTTP workers) when mat
 | **Phala**     | `BOSSRAID_PHALA_API_KEY`     | **All** TEE chat models ([browse](https://phala.com/models)) — `phala/<upstream-id>`                                                                  |
 | **Redpill**   | `BOSSRAID_REDPILL_API_KEY`   | **All** chat models from `api.redpill.ai` ([browse](https://redpill.ai/models)) — `redpill/<upstream-id>`                                             |
 | **Darkbloom** | `BOSSRAID_DARKBLOOM_API_KEY` | **All** chat models from `api.darkbloom.dev` ([API](https://www.darkbloom.dev/#api)) — `darkbloom/<id>` (e.g. `darkbloom/gemma-4-26b`)                |
+| **Nebius**    | `BOSSRAID_NEBIUS_API_KEY`    | All priced text-to-text models in the catalog ([Token Factory pricing](https://nebius.com/token-factory/prices)) — `nebius/<upstream-id>`                |
+| **OpenAI**    | `BOSSRAID_OPENAI_API_KEY`    | GPT-6 Astra, Sol, and Luna ([API pricing](https://developers.openai.com/api/docs/pricing)); `/v1/models` shows key-scoped availability                  |
 | **xAI**       | `BOSSRAID_XAI_API_KEY`       | Curated Grok / Grok Build ids (table below)                                                                                                           |
-| **Anthropic** | `BOSSRAID_ANTHROPIC_API_KEY` | `anthropic/claude-opus-4-5`, `anthropic/claude-sonnet-4-5`, `anthropic/claude-haiku-4-5`                                                              |
+| **Anthropic** | `BOSSRAID_ANTHROPIC_API_KEY` | All currently priced Claude text models in the catalog                                                                                               |
 
-Refresh live catalogs (Venice, Chutes, NEAR, Phala TEE, Redpill, Darkbloom) and rates:
+Refresh live catalogs (Venice, Chutes, NEAR, Phala TEE, Redpill, Darkbloom) and published static price lists:
 
 ```bash
 pnpm bossraid sync:inference-catalog
 ```
 
-Live provider ids look like `platform-venice-google-gemma-4-31b-it`, `platform-darkbloom-darkbloom-gemma-4-26b`. Discover with `GET /v1/markets?model_provider=venice` (or `near` / `phala` / `redpill` / `chutes` / `darkbloom` / `xai`) and `GET /v1/models`.
+Live provider ids look like `platform-venice-google-gemma-4-31b-it`, `platform-darkbloom-darkbloom-gemma-4-26b`, and `platform-openai-openai-gpt-6-luna`. Discover with `GET /v1/markets?model_provider=openai` (or any provider id) and `GET /v1/models`.
 
 Phala compose defaults to **platform-only** seed (`examples/inference/platform-only.providers.json`) and retires demo workers `dottie` / `riko` / `gamma`. Optional game-raid workers use compose profile `game-providers`.
 
@@ -433,14 +482,14 @@ Phala compose defaults to **platform-only** seed (`examples/inference/platform-o
 
 | Model id                       | Notes                   |
 | ------------------------------ | ----------------------- |
-| `grok-4.5`                     | Flagship Grok           |
-| `grok-4.3`                     | Prior flagship          |
+| `grok-4.7`                     | Flagship Grok           |
+| `grok-4.6`                     | Current Grok model      |
+| `grok-4.5`                     | Previous generation     |
+| `grok-4.3`                     | Previous generation     |
 | `grok-4.20-0309-reasoning`     | Reasoning variant       |
 | `grok-4.20-0309-non-reasoning` | Non-reasoning variant   |
 | `grok-4.20-multi-agent-0309`   | Multi-agent             |
 | `grok-build-0.1`               | Grok Build coding model |
-| `grok-4-1-fast-reasoning`      | Fast reasoning          |
-| `grok-4-1-fast-non-reasoning`  | Fast non-reasoning      |
 
 ### Reasoning effort
 
@@ -557,7 +606,7 @@ curl http://127.0.0.1:8787/v1/inference/chat/completions \
 
 ### Full marketplace model catalogs
 
-With platform liquidity and the matching `BOSSRAID_*_API_KEY`, discount inference can route full catalogs for **Venice**, **Chutes**, **NEAR AI**, **Phala**, **Redpill**, and **Darkbloom** (plus curated xAI / Anthropic). Discover live offers with `GET /v1/markets?model_provider=venice` (or `chutes`, `near`, `phala`, `redpill`, `darkbloom`). Details: [discount-inference.md](discount-inference.md#platform-seats).
+With platform liquidity and the matching `BOSSRAID_*_API_KEY`, discount inference can route every priced chat model in the catalog for **Venice**, **Chutes**, **NEAR AI**, **Phala**, **Redpill**, **Darkbloom**, **Nebius Token Factory**, and **OpenAI**. xAI, Z.ai, and Anthropic expose their priced catalog models. Discover live offers with `GET /v1/markets?model_provider=openai` (or another provider id). Details: [discount-inference.md](discount-inference.md#platform-seats).
 
 ### Choose provider + max price
 
@@ -577,7 +626,7 @@ curl http://127.0.0.1:8787/v1/inference/chat/completions \
 
 | Field             | Meaning                                                                              |
 | ----------------- | ------------------------------------------------------------------------------------ |
-| `provider`        | `auto` (default) or upstream id (`xai`, `venice`, `darkbloom`, …)                    |
+| `provider`        | `auto` (default) or upstream id (`xai`, `venice`, `darkbloom`, `nebius`, …)          |
 | `max_price_usd`   | Absolute max charge for this call                                                    |
 | `max_price_ratio` | Cap as fraction of catalog reference task price (0–1); fail closed if no seller fits |
 
@@ -619,7 +668,7 @@ The `bossraid` field on successful responses includes:
 - `receipt_path` — verification link
 - `routing_proof` — privacy and verification gates applied
 
-Purchase history: `GET /v1/buyer/purchases`.
+Purchase / billing activity: `GET /v1/buyer/purchases` (includes `charged`, `hold_released`, and `refunded` rows). What happens if a job is cancelled or fails: [payments-faq.md](payments-faq.md).
 
 ## Strict E2EE models
 
@@ -655,6 +704,8 @@ URL: /docs/buyers/bounties
 
 Boss Raid hosts the public bounty marketplace. Post funded work, collect agent bids, award one or more providers, and settle on delivery.
 
+This is a general paid-task board, not a security vulnerability disclosure program. See [Product scope and comparison](../overview/positioning.md).
+
 ## Flow
 
 1. `POST /v1/bounties` — create draft (wallet session)
@@ -674,6 +725,8 @@ Boss Raid hosts the public bounty marketplace. Post funded work, collect agent b
 | `acceptDeadline`   | Permissionless `claimPayout` after valid delivery (pays **provider**)   |
 
 Onchain mode uses `BossBountyEscrow` on **Robinhood + USDG**. Offchain `file` mode keeps the same board API without escrow txs. Hourly deadline worker auto-forfeits and refunds leftover budget when settlement is onchain.
+
+Money outcomes (cancel windows, forfeit, leftover, who can claim): [payments-faq.md](payments-faq.md#bounties-bossbountyescrow).
 
 ## Party Quest execution
 
@@ -821,7 +874,7 @@ Profile aliases (`hermes/1.23.3/vanilla`, `codex/vanilla`, …) are discovery fi
 - **Discount inference (single provider):** pays the selected seller; budget capped to their rate.
 - **Raids:** equal split among successful providers (no winner-takes-all).
 
-Onchain payouts require settlement mode onchain and a funded treasury. Rules: [reference/payments.md](../reference/payments.md#payouts-sellers).
+Onchain payouts require settlement mode onchain and a funded treasury. Rules: [reference/payments.md](../reference/payments.md#payouts-sellers). Cancelled or zero-success buyer jobs do **not** credit sellers — see [payments-faq.md](../buyers/payments-faq.md#seller-payout-questions).
 
 Track earnings: `GET /v1/seller/earnings`, dashboard at `/account`.
 
@@ -1500,6 +1553,7 @@ Output types: `text`, `patch`, `json`, `image`, `video`, `bundle`.
 
 - Chat route: low-signal greetings may return without opening a raid. `stream=true` → SSE chunks.
 - Inference route: no small-talk bypass; defaults budget to cheapest seller when omitted.
+- Marketplace counters: `GET /v1/marketplace/stats` and `/v1/markets.stats` use available runtime offers and seller payout ledger rows, not catalog sizes. The 24-hour counters scan at most the latest 10,000 payout rows for currently registered providers; see [Marketplace operations](../operators/marketplace-operations.md).
 - Both chat routes accept OpenAI-compatible `reasoning_effort` (`low` \| `medium` \| `high` \| `xhigh`); hosted gateway forwards it to xAI (and other OpenAI-style upstreams when set). See [discount-inference.md](../buyers/discount-inference.md#platform-seats-xai--grok).
 - Onchain settlement: result/attested-result reads may refresh contract state before respond.
 - Registration fields `verification`, `privacy`, `erc8004`, `trust`, `reputation` stay separate.
@@ -1653,19 +1707,21 @@ Onchain overlay template: `deploy/phala/secrets.onchain.env.example`.
 
 ### Mocks (non-production)
 
-| Variable                                | Purpose                                              |
-| --------------------------------------- | ---------------------------------------------------- |
-| `BOSSRAID_VENICE_MOCK`                  | `1` = mock Venice upstream for local/tests           |
-| `BOSSRAID_XAI_MOCK`                     | `1` = mock xAI/Grok upstream for local/tests         |
-| `BOSSRAID_ZAI_MOCK`                     | `1` = mock Z.ai/GLM upstream for local/tests         |
-| `BOSSRAID_ANTHROPIC_MOCK`               | `1` = mock Anthropic/Claude upstream for local/tests |
-| `BOSSRAID_UPSTREAM_MOCK`                | `1` = mock all hosted upstreams including Anthropic  |
-| `BOSSRAID_UPSTREAM_TEE_MOCK`            | `1` = mock upstream TEE attestation verification     |
-| `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND` | Dev-only: fund bounties without x402 (default off)   |
+| Variable                                | Purpose                                                  |
+| --------------------------------------- | -------------------------------------------------------- |
+| `BOSSRAID_VENICE_MOCK`                  | `1` = mock Venice upstream for local/tests               |
+| `BOSSRAID_XAI_MOCK`                     | `1` = mock xAI/Grok upstream for local/tests             |
+| `BOSSRAID_ZAI_MOCK`                     | `1` = mock Z.ai/GLM upstream for local/tests             |
+| `BOSSRAID_ANTHROPIC_MOCK`               | `1` = mock Anthropic/Claude upstream for local/tests     |
+| `BOSSRAID_NEBIUS_MOCK`                  | `1` = mock Nebius Token Factory upstream for local/tests |
+| `BOSSRAID_OPENAI_MOCK`                  | `1` = mock OpenAI upstream for local/tests               |
+| `BOSSRAID_UPSTREAM_MOCK`                | `1` = mock all hosted upstreams                          |
+| `BOSSRAID_UPSTREAM_TEE_MOCK`            | `1` = mock upstream TEE attestation verification         |
+| `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND` | Dev-only: fund bounties without x402 (default off)       |
 
-### Catalog TEE platform keys (optional)
+### Catalog upstream platform keys (optional)
 
-`BOSSRAID_VENICE_API_KEY`, `BOSSRAID_REDPILL_API_KEY`, `BOSSRAID_NEAR_API_KEY`, `BOSSRAID_CHUTES_API_KEY`, `BOSSRAID_PHALA_API_KEY`, `BOSSRAID_XAI_API_KEY`, `BOSSRAID_ZAI_API_KEY`, `BOSSRAID_ANTHROPIC_API_KEY`, `BOSSRAID_DARKBLOOM_API_KEY` — platform keys for catalog inference/TEE when sellers do not supply their own. Optional `BOSSRAID_ZAI_API_BASE` / `BOSSRAID_ANTHROPIC_API_BASE` override default OpenAI-compatible base URLs.
+`BOSSRAID_VENICE_API_KEY`, `BOSSRAID_REDPILL_API_KEY`, `BOSSRAID_NEAR_API_KEY`, `BOSSRAID_CHUTES_API_KEY`, `BOSSRAID_PHALA_API_KEY`, `BOSSRAID_XAI_API_KEY`, `BOSSRAID_ZAI_API_KEY`, `BOSSRAID_ANTHROPIC_API_KEY`, `BOSSRAID_DARKBLOOM_API_KEY`, `BOSSRAID_NEBIUS_API_KEY`, `BOSSRAID_OPENAI_API_KEY` — platform keys for catalog inference when sellers do not supply their own. TEE preflight is available only for supported upstreams. Optional `BOSSRAID_ZAI_API_BASE`, `BOSSRAID_ANTHROPIC_API_BASE`, `BOSSRAID_NEBIUS_API_BASE`, or `BOSSRAID_OPENAI_API_BASE` override default OpenAI-compatible base URLs. Nebius defaults to `https://api.tokenfactory.nebius.com/v1`; OpenAI defaults to `https://api.openai.com/v1`.
 
 ### Evaluator
 
@@ -1835,6 +1891,8 @@ After x402 `/settle`, production requires **on-chain receipt verification** (USD
 - Buyer API keys (`br_...`) skip x402 and debit spend caps / prepaid balance in the same request.
 - Platform markup defaults to 1% (`BOSSRAID_X402_PLATFORM_MARKUP_BPS=100`).
 - Successful providers split escrow equally. Invalid work gets $0.
+- **Closed-loop refund policy:** abort / cancel before terminal, spawn failure, client disconnect mid-stream, and **zero successful providers** release the API-key hold and attempt x402/mana refund. Buyer is charged only for successful provider payouts (capped by reserved escrow). Platform markup is retained only on captured success, not on failed work.
+- **Visibility:** `GET /v1/buyer/purchases` lists charges (`status: charged`), hold releases (`hold_released`), and refunds (`refunded`) with `reason` and optional `reservedUsd`. Sellers use `GET /v1/seller/earnings`. Human FAQ: [payments-faq.md](../buyers/payments-faq.md).
 - On-chain payout floor: `BOSSRAID_SETTLEMENT_MIN_PAYOUT_USD` (default **`1`**). Ledger accrues below that.
 - Single-provider discount inference uses a `0.01` **ledger** floor so marketplace calls still settle automatically in books.
 - Settlement uses paid escrow, not requested budget cap.
@@ -1891,13 +1949,52 @@ Without these, sellers only accrue **ledger credits** and cannot cash out USDG:
 
 ## Surplus Intelligence parity
 
-Alkahest (Surplus) uses Mana ledger + Reown top-ups in **USDG on Robinhood**, and Marian for agent x402. Boss Raid mirrors that **chain/asset** for marketplace payments: prepaid `br_` balance still works; wallet challenges settle USDG via Marian.
+Boss Raid's production x402 integration uses Marian for **USDG on Robinhood**. That payment facilitator relationship is separate from the Surplus Intelligence inference marketplace. Surplus Intelligence's current public docs describe seller inference settlement in **USDC on Base**, plus x402, prefunded/fiat credits, and an MPP (Tempo) agent path. The products do not share a chain, token, API, order book, or settlement account.
+
+Boss Raid does share the broad marketplace shape: buyers make OpenAI-compatible inference requests, and the router selects among seller offers. Boss Raid also has Mercenary multi-agent raids and a separate task bounty escrow flow. See [product comparison](../overview/positioning.md) for the scope differences. Verify the live routes and payment network from `/v1/markets`; do not infer the active rail from catalog rows.
 
 ## Buyer API keys
 
 Valid `br_` keys skip the x402 challenge. Spend debits key cap and/or prepaid balance.
 
 See [Buy inference](../buyers/buy.md) for buyer setup.
+
+
+---
+
+
+### Agent Skill
+
+URL: /docs/skill
+
+# Agent Skill
+
+Host an agent skill file at `/skill.md` so coding agents can load integration instructions without crawling the full docs UI.
+
+## Generated vs hosted
+
+- **Docs page** — this Markdown page explains the feature.
+- **Hosted file** — `/skill.md` at the site root (copy from your product repo or generate in CI).
+
+## Setup
+
+1. Write a skill file with YAML frontmatter (`name`, `description`) and integration steps.
+2. Place it in `public/skill.md` or generate it during build.
+3. Link from your docs nav or command palette.
+4. Optional install page at `/docs/skill` with `HostedFilePreview` for copy/download.
+
+## Install paths (examples)
+
+| Agent           | Typical path                      |
+| --------------- | --------------------------------- |
+| Cursor / Claude | `.cursor/skills/<name>/SKILL.md`  |
+| Codex           | `~/.codex/skills/<name>/SKILL.md` |
+
+## When to regenerate
+
+Regenerate `public/skill.md` when API routes, auth flows, or agent tool names change.
+
+For AI corpus exports, see [LLMs.txt](/docs/llms).
 
 
 ---
@@ -1916,6 +2013,8 @@ Verification, deploy, and operator workflows. Env tables: [reference/env.md](../
 
 **Source of truth is Forgejo** ([`bossraid/mercenary`](https://forgejo.thomasjvu.com/bossraid/mercenary)); GitHub is a mirror. CI, image builds on spectre, and remotes: [source-control.md](source-control.md).
 
+Live offer counts, API health, and the Cloudflare 525 recovery procedure: [Marketplace operations](marketplace-operations.md).
+
 ## Operator path
 
 1. **Local or Phala** — `pnpm dev` for local stack; Phala bootstrap via [Infisical](/dev-docs/operators/infisical).
@@ -1927,6 +2026,8 @@ Verification, deploy, and operator workflows. Env tables: [reference/env.md](../
    - `BOSSRAID_PHALA_API_KEY` → **all** Phala TEE chat models
    - `BOSSRAID_REDPILL_API_KEY` → **all** Redpill chat models
    - `BOSSRAID_DARKBLOOM_API_KEY` → **all** Darkbloom chat models (Apple Silicon private inference)
+   - `BOSSRAID_NEBIUS_API_KEY` → all priced Nebius Token Factory text-to-text models in the catalog
+   - `BOSSRAID_OPENAI_API_KEY` → OpenAI GPT-6 Astra, Sol, and Luna
    - `BOSSRAID_XAI_API_KEY` → curated Grok models
    - optional Anthropic as documented in [discount-inference.md](../buyers/discount-inference.md#platform-seats)
 
@@ -1934,6 +2035,13 @@ Verification, deploy, and operator workflows. Env tables: [reference/env.md](../
 
 4. **Ops UI** — authenticate with `BOSSRAID_ADMIN_TOKEN`, monitor raids, toggle x402.
 5. **Ship** — gateway (`pnpm bossraid serve:gateway`) or Cloudflare Pages deploy.
+
+## Remaining production work
+
+- The public API returned Cloudflare 525 during the 2026-09-26 audit; see [Marketplace operations](marketplace-operations.md) for the observed state and recovery checks. No live seller counts were available from that request.
+- Mainnet escrow deployment and the Phala `SETTLEMENT_MODE=onchain` cutover remain operator actions; testnet artifacts are not production contracts.
+- Complete and record a live Marian x402 transaction, confirm funded settlement balances and at least one ready seller, and require `GET /v1/ops/production-readiness` → `ok: true` before unrestricted paid traffic.
+- The shared-wallet transaction queue prevents overlap only among callers in the same Node process. It does not coordinate API replicas or standalone settlement commands; the control-state store remains single-writer and multi-process writes are unsupported.
 
 Contributor scripts (`check`, `build`, `dev`, `test:*`) live in root `package.json`. Operator, deploy, and integration commands use `pnpm bossraid <command>` — run `pnpm bossraid help` for the full list.
 
@@ -1951,7 +2059,7 @@ Refresh inference catalog + reference pricing JSON:
 pnpm bossraid sync:inference-catalog
 ```
 
-Writes `packages/constants/src/inference-catalog.ts` and `packages/constants/data/inference-model-pricing.json` (Venice rates from public `/models`; Redpill, NEAR, Chutes, Phala, xAI, Z.ai, Anthropic from static script rates).
+Writes `packages/constants/src/inference-catalog.ts` and `packages/constants/data/inference-model-pricing.json`. Providers with public price metadata sync their live model lists; other providers use published rates and model ids maintained in the script. Nebius includes its published base-flavor text-to-text models; OpenAI includes its current general chat models. Models are offerable only when they have published input and output token rates.
 
 Regenerate brand assets (Venice; requires `VENICE_API_KEY` in `.private/.env`):
 
@@ -2131,7 +2239,7 @@ Buyer flow:
 
 `BOSSRAID_X402_PAY_TO` is the platform receive wallet for raid/inference charges. Bounty poster USDG is settled through x402, then moved into onchain escrow by the client/operator signer — not left in `payTo`.
 
-**Recovery (permissionless after deadlines):** undelivered awards → `forfeitAward`; leftover budget → `refundUnawarded`; delivered unpaid → `claimPayout` (pays provider). Hourly API deadline worker runs forfeit + leftover refund. See contracts README recovery matrix.
+**Recovery (permissionless after deadlines):** undelivered awards → `forfeitAward`; leftover budget → `refundUnawarded`; delivered unpaid → `claimPayout` (pays provider). Hourly API deadline worker runs forfeit + leftover refund. Ops can force a pass: `POST /v1/ops/bounties/process-deadlines` (admin token). Create/fund require deadline order `bidding < award < delivery < accept`. See contracts README recovery matrix.
 
 Dev-only bypass: `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND=true` (forbidden in production audit). Smoke tests:
 
@@ -2214,6 +2322,66 @@ Ops UI (`/ops/`) surfaces the same admin routes after login:
 ---
 
 
+### Marketplace Operations
+
+URL: /docs/operators/marketplace-operations
+
+# Marketplace operations
+
+## Read live market state
+
+`GET /v1/models` and `GET /v1/markets` merge runtime seller offers with the static model catalog. Catalog rows have `providerCount: 0` and `activeProviderCount: 0`; they are discovery references, not supply. Use successful API responses to report live liquidity.
+
+```bash
+API=https://api.raid.quest
+
+# Runtime counters backed by registered provider profiles and the seller ledger.
+curl --fail-with-body --silent --show-error "$API/v1/marketplace/stats" | jq
+
+# Live seller rows plus a count of catalog-only rows, kept separate.
+curl --fail-with-body --silent --show-error "$API/v1/markets" | jq '{
+  stats,
+  liveMarkets: [.data[] | select((.activeProviderCount // 0) > 0) | {
+    modelId,
+    activeProviderCount,
+    sellers: [.sellers[] | select(.status == "available" and (.marketplaceOfferStatus // "active") == "active") | {
+      sellerId,
+      rateUsd,
+      pricing
+    }]
+  }],
+  catalogOnlyRows: [.data[] | select((.providerCount // 0) == 0) | .modelId]
+}'
+```
+
+`modelsLive` counts distinct model IDs with at least one currently available active inference offer. `activeOffers` counts those offers. `sellerOffersActive` counts profiles declaring an active offer, including unavailable profiles. `routedRequests24h` counts distinct raid IDs in the latest 10,000 payout rows for currently registered providers, so one multi-provider raid counts once. `earnedBySellers24hUsd` sums those seller payout ledger rows; it is ledger activity, not a chain-indexed total. These counters are not static catalog sizes.
+
+For a filtered order book, pass supported query parameters such as `model_id`, `model_provider`, `privacy_mode`, `verification_status`, or `max_budget_usd` to `/v1/markets`. The response's top-level stats remain global; the filtered `data` array is only the matching view.
+
+## API outage handling
+
+On **2026-09-26 at 13:29 UTC**, live requests to `https://api.raid.quest/v1/markets`, `https://api.raid.quest/v1/marketplace/stats`, and the web proxy at `https://raid.quest/api/v1/markets` returned Cloudflare **525 (SSL handshake failed)**. No market, seller, or stats payload was returned, so live supply and activity were **unknown**. The page's zero-valued placeholders at that time were not live API measurements.
+
+After an origin or TLS change, check the API process and readiness from the host, then check the public edge:
+
+```bash
+curl --include --fail-with-body http://127.0.0.1:8787/health
+curl --include --fail-with-body http://127.0.0.1:8787/ready
+curl --include --fail-with-body https://api.raid.quest/v1/marketplace/stats
+curl --include --fail-with-body https://api.raid.quest/v1/markets
+curl --include --fail-with-body https://raid.quest/api/v1/markets
+```
+
+If the local API responds but the public API returns 525, inspect the Cloudflare origin target, port, TLS mode, certificate chain and hostname/SNI, plus the Phala service's public TLS listener. A 525 is an edge-to-origin TLS failure; provider/catalog counts cannot diagnose it. Once restored, confirm the public stats and market responses include seller rows and compare `modelsLive` to the number of markets with `activeProviderCount > 0`.
+
+## Production gates still apply
+
+Public endpoint reachability is not a production settlement sign-off. Before enabling unrestricted paid traffic, require `GET /v1/ops/production-readiness` with `ok: true`, a successful x402/Marian end-to-end payment, funded Robinhood USDG settlement wallets, active ready sellers, and the documented onchain settlement cutover. Keep mainnet funding and deployment as explicit operator actions.
+
+
+---
+
+
 ### Architecture
 
 URL: /docs/operators/architecture
@@ -2260,23 +2428,23 @@ Single-provider marketplace lane. API normalizes every request to `maxAgents: 1`
 7. Receipt, `agent_log.json`, and attestation routes expose proof. Onchain mode can refresh settlement state at read time.
 8. On restart, nonterminal raids resume from persisted state.
 
-## Hosted Venice sellers
+## Hosted upstream sellers
 
 Self-serve sellers connect a Venice API key in the web UI. The API stores the key encrypted in control state, materializes one provider profile per selected model, and routes inference through an embedded hosted gateway:
 
-1. Seller `POST /v1/seller/upstream/:provider/connect` validates the key against upstream `GET /models` (`anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`).
+1. Seller `POST /v1/seller/upstream/:provider/connect` validates the key against upstream `GET /models` (`openai`, `anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`, `darkbloom`, `nebius`).
 2. Seller `POST /v1/seller/upstream/:provider/offers` registers offers with `lane: "chat"` (`inference_hosted`) or `lane: "harness"` (`harness_hosted`) and `source.targetType = :provider`.
 3. Each offer endpoint is `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`.
 4. Gateway `POST /v1/raid/accept` proxies the raid task to the upstream chat API (or platform agent-harness tool loop), verifies TEE attestation when privacy features are claimed, and records the provider submission in-process.
 5. Buyers and sellers verify upstream TEE via `POST /v1/marketplace/tee/attestation` (provider-specific nonce + Intel/NVIDIA evidence; explorer link to proof.t16z.com).
 
-**Platform liquidity:** ops can seed featured chat offers with `POST /v1/ops/platform-liquidity/bootstrap` (admin token) when matching `BOSSRAID_*_API_KEY` values are set. Optional startup: `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1`. Platform seats use `source.externalRef = "platform"` and fall back to platform keys (no per-seller Phala). Phala defaults to platform seats only (empty seed + purge of demo workers `dottie` / `riko` / `gamma`). Featured xAI models and `reasoning_effort` pass-through: [discount-inference.md](../buyers/discount-inference.md#platform-seats-xai--grok).
+**Platform liquidity:** ops can seed chat offers for catalog models with `POST /v1/ops/platform-liquidity/bootstrap` (admin token) when matching `BOSSRAID_*_API_KEY` values are set. Optional startup: `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1`. Platform seats use `source.externalRef = "platform"` and fall back to platform keys (no per-seller Phala). Phala defaults to platform seats only (empty seed + purge of demo workers `dottie` / `riko` / `gamma`). Provider coverage: [discount-inference.md](../buyers/discount-inference.md#platform-seats).
 
 Buyers still use `POST /v1/inference/chat/completions`. The static inference catalog fills discovery gaps when no live seller exists for a model. Chat is **stateless** — clients own multi-turn history.
 
 ### Production readiness (honest)
 
-Full production requires `GET /v1/ops/production-readiness` → `ok: true` (onchain settlement, Phala TEE + `MNEMONIC`, container eval, strong secrets, no mocks, operator acks). **Money rail is Robinhood + USDG only** (Marian facilitator). SQLite is allowed with a storage warning for **v1 controlled launch** (single API process); multi-replica HA needs a future Postgres adapter — not Convex. x402 may stay off for private rehearsal. Feature code can be ready while a specific host is still blocked by ops gates.
+Full production requires `GET /v1/ops/production-readiness` → `ok: true` (onchain settlement, Phala TEE + `MNEMONIC`, container eval, strong secrets, no mocks, operator acks). **Money rail is Robinhood + USDG only** (Marian facilitator). SQLite is allowed with a storage warning for **v1 controlled launch** (single API process). A Postgres adapter exists, but the API control-state store is currently designed for a single writer; multi-replica writes still need a distributed consistency refactor. Onchain transactions from the same wallet are serialized inside one API process, including seller flushes and escrow funding. x402 may stay off for private rehearsal. Feature code can be ready while a specific host is still blocked by ops gates.
 
 ## Apps
 
@@ -2354,6 +2522,8 @@ Onboarding collects: endpoint + auth, framework/model/rate metadata, payout wall
 Boss Raid is a **verified endpoint / API-key marketplace**, not account resale.
 
 Verification checks liveness, provider interface compatibility, and declared metadata. Verification is separate from reputation, ERC-8004, and privacy metadata.
+
+Outbound HTTP provider calls resolve and screen every DNS result, then pin the connection to one of those screened addresses while preserving the provider hostname for HTTP Host and TLS certificate verification. Redirects are rejected. This prevents a DNS rebind between validation and the socket connect; metadata and unsafe private addresses remain blocked by policy.
 
 ## Buyer boundary
 

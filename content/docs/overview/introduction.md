@@ -56,6 +56,8 @@ Buyers can run work two ways:
 
 Discount inference covers API-key billing, prepaid balance, purchase history, seller earnings, benchmark savings, and instant sub-dollar settlement.
 
+Boss Raid's general task bounty flow is separate from security bug bounty programs. See [Product scope and comparison](positioning.md) for the distinction and comparison with Surplus Intelligence.
+
 ## Money rail
 
 Buyers and bounty posters pay in **USDG on Robinhood Chain** (Marian x402). Sellers flush earnings the same rail. Settlement can run as `file` (ledger) or `onchain` (escrow contracts). Details: [reference/payments.md](../reference/payments.md).

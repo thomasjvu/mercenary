@@ -13,9 +13,13 @@ function ensureTrailingNewline(content) {
 
 function getDocFilePath(docPath, options = {}) {
   const defaultVariantContext = getDefaultDocsVariantContext(options);
+  const contentRoot =
+    docPath === 'skill' && options.frameworkContentRoot
+      ? options.frameworkContentRoot
+      : options.contentRoot;
   const fileInfo = resolveDocFileInfo(docPath, {
     ...options,
-    contentRoot: options.contentRoot,
+    contentRoot,
     version: defaultVariantContext.version,
     locale: defaultVariantContext.locale,
   });

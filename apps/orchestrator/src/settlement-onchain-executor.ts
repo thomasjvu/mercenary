@@ -1,5 +1,9 @@
 import { DEFAULTS } from '@bossraid/constants';
-import { buildChildJobNextAction, isTerminalChildJobStatus } from '@bossraid/raid-core';
+import {
+  buildChildJobNextAction,
+  isTerminalChildJobStatus,
+  withWalletTransactionLock,
+} from '@bossraid/raid-core';
 import type { RaidRecord, SettlementExecutionRecord } from '@bossraid/shared-types';
 import {
   defineChain,
@@ -142,17 +146,22 @@ export class OnchainSettlementExecutor {
     }
 
     const transactionHashes: Hash[] = [];
-    const createRaidHash = await this.clientActor.client.writeContract({
-      chain: this.chain,
-      address: this.config.registryAddress,
-      abi: registryAbi,
-      functionName: 'createRaid',
-      args: [payload.taskHash],
-      account: this.clientActor.account,
-    });
+    const { hash: createRaidHash, receipt: createRaidReceipt } = await withWalletTransactionLock(
+      this.clientAddress,
+      async () => {
+        const hash = await this.clientActor.client.writeContract({
+          chain: this.chain,
+          address: this.config.registryAddress,
+          abi: registryAbi,
+          functionName: 'createRaid',
+          args: [payload.taskHash],
+          account: this.clientActor.account,
+        });
+        return { hash, receipt: await this.waitForReceipt(hash) };
+      }
+    );
     transactionHashes.push(createRaidHash);
 
-    const createRaidReceipt = await this.waitForReceipt(createRaidHash);
     const raidId = extractUintEventArg(
       parseEventLogs({
         abi: registryAbi,
@@ -267,16 +276,19 @@ export class OnchainSettlementExecutor {
     );
 
     if (!state.finalizeTxHash && (allChildJobsTerminal || !this.requireTerminalJobs)) {
-      const finalizeTxHash = await this.clientActor.client.writeContract({
-        chain: this.chain,
-        address: this.config.registryAddress,
-        abi: registryAbi,
-        functionName: 'finalizeRaid',
-        args: [state.raidId, state.payload.evaluationHash],
-        account: this.clientActor.account,
+      const finalizeTxHash = await withWalletTransactionLock(this.clientAddress, async () => {
+        const hash = await this.clientActor.client.writeContract({
+          chain: this.chain,
+          address: this.config.registryAddress,
+          abi: registryAbi,
+          functionName: 'finalizeRaid',
+          args: [state.raidId, state.payload.evaluationHash],
+          account: this.clientActor.account,
+        });
+        await this.waitForReceipt(hash);
+        return hash;
       });
       state.transactionHashes.push(finalizeTxHash);
-      await this.waitForReceipt(finalizeTxHash);
       state.finalizeTxHash = finalizeTxHash;
     } else if (!state.finalizeTxHash) {
       state.warnings.push(
@@ -375,26 +387,29 @@ export class OnchainSettlementExecutor {
       jobId = BigInt(existingChildJob.jobId);
     } else {
       const expiresAt = BigInt(Math.floor(Date.now() / 1000) + this.jobExpirySec);
-      createJobHash = await this.clientActor.client.writeContract({
-        chain: this.chain,
-        address: this.config.escrowAddress,
-        abi: escrowAbi,
-        functionName: 'createJob',
-        args: [
-          providerAddress,
-          this.config.evaluatorAddress,
-          expiresAt,
-          `${state.raidRecordId}:${allocation.providerId}:${allocation.role}`,
-        ],
-        account: this.clientActor.account,
+      const createdJob = await withWalletTransactionLock(this.clientAddress, async () => {
+        const hash = await this.clientActor.client.writeContract({
+          chain: this.chain,
+          address: this.config.escrowAddress,
+          abi: escrowAbi,
+          functionName: 'createJob',
+          args: [
+            providerAddress,
+            this.config.evaluatorAddress,
+            expiresAt,
+            `${state.raidRecordId}:${allocation.providerId}:${allocation.role}`,
+          ],
+          account: this.clientActor.account,
+        });
+        return { hash, receipt: await this.waitForReceipt(hash) };
       });
+      createJobHash = createdJob.hash;
       state.transactionHashes.push(createJobHash);
 
-      const createJobReceipt = await this.waitForReceipt(createJobHash);
       jobId = extractUintEventArg(
         parseEventLogs({
           abi: escrowAbi,
-          logs: createJobReceipt.logs,
+          logs: createdJob.receipt.logs,
           eventName: 'JobCreated',
         }),
         'jobId',
@@ -431,61 +446,73 @@ export class OnchainSettlementExecutor {
 
     if (allocation.status === 'complete' && budgetAtomic > 0n) {
       if (!childJob.budgetTxHash) {
-        const budgetTxHash = await this.clientActor.client.writeContract({
-          chain: this.chain,
-          address: this.config.escrowAddress,
-          abi: escrowAbi,
-          functionName: 'setBudget',
-          args: [jobId, budgetAtomic],
-          account: this.clientActor.account,
+        const budgetTxHash = await withWalletTransactionLock(this.clientAddress, async () => {
+          const hash = await this.clientActor.client.writeContract({
+            chain: this.chain,
+            address: this.config.escrowAddress,
+            abi: escrowAbi,
+            functionName: 'setBudget',
+            args: [jobId, budgetAtomic],
+            account: this.clientActor.account,
+          });
+          await this.waitForReceipt(hash);
+          return hash;
         });
         state.transactionHashes.push(budgetTxHash);
-        await this.waitForReceipt(budgetTxHash);
         childJob.budgetTxHash = budgetTxHash;
       }
 
       if (this.fundJobs && providerAddress !== zeroAddress && !childJob.fundTxHash) {
-        await this.ensureTokenAllowance(budgetAtomic);
-        const fundTxHash = await this.clientActor.client.writeContract({
-          chain: this.chain,
-          address: this.config.escrowAddress,
-          abi: escrowAbi,
-          functionName: 'fund',
-          args: [jobId, budgetAtomic],
-          account: this.clientActor.account,
+        const fundTxHash = await withWalletTransactionLock(this.clientAddress, async () => {
+          await this.ensureTokenAllowance(budgetAtomic);
+          const hash = await this.clientActor.client.writeContract({
+            chain: this.chain,
+            address: this.config.escrowAddress,
+            abi: escrowAbi,
+            functionName: 'fund',
+            args: [jobId, budgetAtomic],
+            account: this.clientActor.account,
+          });
+          await this.waitForReceipt(hash);
+          return hash;
         });
         state.transactionHashes.push(fundTxHash);
-        await this.waitForReceipt(fundTxHash);
         childJob.fundTxHash = fundTxHash;
         childJob.lifecycleStatus = 'funded';
       }
     }
 
     if (!childJob.linkTxHash) {
-      const linkTxHash = await this.clientActor.client.writeContract({
-        chain: this.chain,
-        address: this.config.registryAddress,
-        abi: registryAbi,
-        functionName: 'linkChildJob',
-        args: [state.raidId, jobId],
-        account: this.clientActor.account,
+      const linkTxHash = await withWalletTransactionLock(this.clientAddress, async () => {
+        const hash = await this.clientActor.client.writeContract({
+          chain: this.chain,
+          address: this.config.registryAddress,
+          abi: registryAbi,
+          functionName: 'linkChildJob',
+          args: [state.raidId, jobId],
+          account: this.clientActor.account,
+        });
+        await this.waitForReceipt(hash);
+        return hash;
       });
       state.transactionHashes.push(linkTxHash);
-      await this.waitForReceipt(linkTxHash);
       childJob.linkTxHash = linkTxHash;
     }
 
     if (allocation.status === 'reject' && !childJob.rejectTxHash) {
-      const rejectTxHash = await this.clientActor.client.writeContract({
-        chain: this.chain,
-        address: this.config.escrowAddress,
-        abi: escrowAbi,
-        functionName: 'reject',
-        args: [jobId, state.payload.evaluationHash],
-        account: this.clientActor.account,
+      const rejectTxHash = await withWalletTransactionLock(this.clientAddress, async () => {
+        const hash = await this.clientActor.client.writeContract({
+          chain: this.chain,
+          address: this.config.escrowAddress,
+          abi: escrowAbi,
+          functionName: 'reject',
+          args: [jobId, state.payload.evaluationHash],
+          account: this.clientActor.account,
+        });
+        await this.waitForReceipt(hash);
+        return hash;
       });
       state.transactionHashes.push(rejectTxHash);
-      await this.waitForReceipt(rejectTxHash);
       childJob.rejectTxHash = rejectTxHash;
       childJob.lifecycleStatus = 'rejected';
       return childJob;
@@ -535,21 +562,24 @@ export class OnchainSettlementExecutor {
         return childJob;
       }
 
-      const submitTxHash = await providerActor.client.writeContract({
-        chain: this.chain,
-        address: this.config.escrowAddress,
-        abi: escrowAbi,
-        functionName: 'submit',
-        args: [
-          jobId,
-          allocation.deliverableHash
-            ? toBytes32(allocation.deliverableHash)
-            : state.payload.evaluationHash,
-        ],
-        account: providerActor.account,
+      const submitTxHash = await withWalletTransactionLock(providerActor.address, async () => {
+        const hash = await providerActor.client.writeContract({
+          chain: this.chain,
+          address: this.config.escrowAddress,
+          abi: escrowAbi,
+          functionName: 'submit',
+          args: [
+            jobId,
+            allocation.deliverableHash
+              ? toBytes32(allocation.deliverableHash)
+              : state.payload.evaluationHash,
+          ],
+          account: providerActor.account,
+        });
+        await this.waitForReceipt(hash);
+        return hash;
       });
       state.transactionHashes.push(submitTxHash);
-      await this.waitForReceipt(submitTxHash);
       childJob.submitTxHash = submitTxHash;
       childJob.lifecycleStatus = 'submitted';
     }
@@ -563,16 +593,22 @@ export class OnchainSettlementExecutor {
         return childJob;
       }
 
-      const completeTxHash = await this.evaluatorActor.client.writeContract({
-        chain: this.chain,
-        address: this.config.escrowAddress,
-        abi: escrowAbi,
-        functionName: 'complete',
-        args: [jobId, state.payload.evaluationHash],
-        account: this.evaluatorActor.account,
-      });
+      const completeTxHash = await withWalletTransactionLock(
+        this.evaluatorActor.address,
+        async () => {
+          const hash = await this.evaluatorActor!.client.writeContract({
+            chain: this.chain,
+            address: this.config.escrowAddress,
+            abi: escrowAbi,
+            functionName: 'complete',
+            args: [jobId, state.payload.evaluationHash],
+            account: this.evaluatorActor!.account,
+          });
+          await this.waitForReceipt(hash);
+          return hash;
+        }
+      );
       state.transactionHashes.push(completeTxHash);
-      await this.waitForReceipt(completeTxHash);
       childJob.completeTxHash = completeTxHash;
       childJob.lifecycleStatus = 'completed';
     }

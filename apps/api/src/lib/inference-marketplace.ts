@@ -168,8 +168,7 @@ export function resolveDiscountInferenceDefaultMaxTotalCost(
           allowedModelProviders: modelProviders,
           allowedAgentFrameworks: agentFrameworks,
           requiredVerificationStatus: requiredVerificationStatus as
-            | ProviderVerificationStatus
-            | undefined,
+            ProviderVerificationStatus | undefined,
           privacyMode: privacyMode === 'strict' ? 'strict' : undefined,
           requirePrivacyFeatures:
             privacyMode === 'strict' ? [...STRICT_PRIVATE_PRIVACY_FEATURES] : undefined,
@@ -396,18 +395,19 @@ export function mergeInferenceCatalogMarkets(liveMarkets: InferenceMarket[]): In
   });
 }
 
-/** Distinct live model ids among active sellers — avoids full catalog merge for stats. */
+/** Distinct currently routable model ids — excludes catalog-only and unavailable offers. */
 export function countLiveMarketplaceModels(providers: ProviderProfile[]): number {
   const ids = new Set<string>();
   for (const provider of providers) {
     if ((provider.marketplaceOfferStatus ?? 'active') !== 'active') {
       continue;
     }
-    if (provider.status === 'offline') {
+    if (provider.status !== 'available') {
       continue;
     }
-    if (provider.modelId) {
-      ids.add(provider.modelId);
+    const modelId = resolveProviderMarketModelId(provider);
+    if (modelId) {
+      ids.add(modelId);
     }
   }
   return ids.size;

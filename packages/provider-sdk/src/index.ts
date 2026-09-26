@@ -1,5 +1,8 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { request as requestHttp, type RequestOptions as HttpRequestOptions } from 'node:http';
+import { request as requestHttps } from 'node:https';
+import type { LookupAddress } from 'node:dns';
 import { refreshProviderScores } from '@bossraid/provider-registry';
 import { buildRateCardHash } from '@bossraid/raid-core';
 import type {
@@ -17,16 +20,18 @@ import type {
 } from '@bossraid/shared-types';
 import { defaultApiChatHarnessProfile } from '@bossraid/shared-types';
 import { DEFAULTS } from '@bossraid/constants';
-import { assertProviderEndpointResolvedSafe } from './endpoint-safety.js';
+import { resolveProviderEndpointSafe, type ProviderEndpointResolution } from './endpoint-safety.js';
 
 export {
   assertProviderEndpointResolvedSafe,
   assertProviderEndpointSafe,
   isBlockedMetadataHost,
   isPrivateOrSpecialIp,
+  resolveProviderEndpointSafe,
   shouldAllowPrivateProviderEndpoints,
   UnsafeProviderEndpointError,
 } from './endpoint-safety.js';
+export type { ProviderEndpointResolution } from './endpoint-safety.js';
 
 /** Client-supplied numeric privacy scores are ignored; features drive routing scores. */
 function stripClientPrivacyScore(
@@ -265,7 +270,7 @@ async function postJson<TResponse>(
   path: string,
   payload: unknown
 ): Promise<TResponse> {
-  await assertProviderEndpointResolvedSafe(profile.endpoint);
+  const resolution = await resolveProviderEndpointSafe(profile.endpoint);
   const body = JSON.stringify(payload);
   const endpoint = resolveProviderEndpointPath(profile, path);
   const startedAt = Date.now();
@@ -276,7 +281,9 @@ async function postJson<TResponse>(
   console.info(`[provider-http] ${profile.providerId} POST ${path} start`);
 
   try {
-    const response = await fetch(endpoint.url, {
+    const response = await requestProviderEndpoint({
+      url: endpoint.url,
+      resolution,
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -289,8 +296,6 @@ async function postJson<TResponse>(
         ),
       },
       body,
-      // Do not follow redirects — a 3xx to loopback/metadata bypasses hostname checks.
-      redirect: 'manual',
       signal: controller.signal,
     });
 
@@ -304,11 +309,11 @@ async function postJson<TResponse>(
       `[provider-http] ${profile.providerId} POST ${path} status=${response.status} elapsed_ms=${Date.now() - startedAt}`
     );
 
-    if (!response.ok) {
+    if (response.status < 200 || response.status >= 300) {
       throw new Error(`${profile.providerId} request failed: ${response.status}`);
     }
 
-    return response.json() as Promise<TResponse>;
+    return JSON.parse(response.body) as TResponse;
   } catch (error) {
     const message =
       error instanceof Error && error.name === 'AbortError'
@@ -336,8 +341,9 @@ function readProviderAcceptTimeoutMs(env: NodeJS.ProcessEnv = process.env): numb
 }
 
 export async function probeProviderHealth(profile: ProviderProfile): Promise<ProviderHealthStatus> {
+  let resolution: ProviderEndpointResolution;
   try {
-    await assertProviderEndpointResolvedSafe(profile.endpoint);
+    resolution = await resolveProviderEndpointSafe(profile.endpoint);
   } catch (error) {
     return {
       providerId: profile.providerId,
@@ -354,9 +360,11 @@ export async function probeProviderHealth(profile: ProviderProfile): Promise<Pro
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch(resolveProviderEndpointPath(profile, '/health').url, {
+    const response = await requestProviderEndpoint({
+      url: resolveProviderEndpointPath(profile, '/health').url,
+      resolution,
       method: 'GET',
-      redirect: 'manual',
+      headers: {},
       signal: controller.signal,
     });
 
@@ -373,7 +381,7 @@ export async function probeProviderHealth(profile: ProviderProfile): Promise<Pro
 
     let payload: Record<string, unknown> = {};
     try {
-      payload = (await response.json()) as Record<string, unknown>;
+      payload = JSON.parse(response.body) as Record<string, unknown>;
     } catch {
       payload = {};
     }
@@ -383,8 +391,8 @@ export async function probeProviderHealth(profile: ProviderProfile): Promise<Pro
       providerName:
         typeof payload.providerName === 'string' ? payload.providerName : profile.displayName,
       endpoint: profile.endpoint,
-      reachable: response.ok,
-      ready: response.ok && payload.ready === true,
+      reachable: response.status >= 200 && response.status < 300,
+      ready: response.status >= 200 && response.status < 300 && payload.ready === true,
       statusCode: response.status,
       missing: Array.isArray(payload.missing)
         ? payload.missing.filter((item): item is string => typeof item === 'string')
@@ -407,7 +415,10 @@ export async function probeProviderHealth(profile: ProviderProfile): Promise<Pro
         payload.harnessProfile && typeof payload.harnessProfile === 'object'
           ? (payload.harnessProfile as import('@bossraid/shared-types').HarnessProfile)
           : undefined,
-      error: response.ok ? undefined : `health check failed (${response.status})`,
+      error:
+        response.status >= 200 && response.status < 300
+          ? undefined
+          : `health check failed (${response.status})`,
     };
   } catch (error) {
     const timedOut =
@@ -428,6 +439,91 @@ export async function probeProviderHealth(profile: ProviderProfile): Promise<Pro
   } finally {
     clearTimeout(timeout);
   }
+}
+
+type PinnedProviderRequest = {
+  url: string;
+  resolution: Awaited<ReturnType<typeof resolveProviderEndpointSafe>>;
+  method: 'GET' | 'POST';
+  headers: Record<string, string>;
+  body?: string;
+  signal: AbortSignal;
+};
+
+/** Make the socket connector use only the addresses already vetted by DNS safety. */
+function requestProviderEndpoint(
+  input: PinnedProviderRequest
+): Promise<{ status: number; body: string }> {
+  const url = new URL(input.url);
+  const addresses = input.resolution.addresses;
+  if (addresses.length === 0) {
+    return Promise.reject(new Error('Provider endpoint has no safe resolved address.'));
+  }
+
+  const lookup: NonNullable<HttpRequestOptions['lookup']> = (_hostname, options, callback) => {
+    const requestedFamily = typeof options === 'number' ? options : options?.family;
+    const candidates = addresses.filter(
+      (entry) => !requestedFamily || requestedFamily === 0 || entry.family === requestedFamily
+    );
+    if (candidates.length === 0) {
+      callback(
+        Object.assign(new Error('No pinned provider address matches the requested family.'), {
+          code: 'ENOTFOUND',
+        })
+      );
+      return;
+    }
+
+    if (typeof options === 'object' && options?.all) {
+      callback(
+        null,
+        candidates.map(({ address, family }) => ({ address, family })) as LookupAddress[]
+      );
+      return;
+    }
+
+    const candidate = candidates[0];
+    if (candidate) {
+      callback(null, candidate.address, candidate.family);
+    }
+  };
+
+  const requestOptions: HttpRequestOptions = {
+    protocol: url.protocol,
+    hostname: url.hostname.replace(/^\[|\]$/gu, ''),
+    port: url.port || undefined,
+    path: `${url.pathname}${url.search}`,
+    method: input.method,
+    headers: input.headers,
+    signal: input.signal,
+    lookup,
+  };
+
+  return new Promise((resolve, reject) => {
+    const onResponse = (response: import('node:http').IncomingMessage) => {
+      const chunks: Buffer[] = [];
+      response.on('data', (chunk: Buffer | string) => {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      });
+      response.once('error', reject);
+      response.once('end', () => {
+        resolve({
+          status: response.statusCode ?? 0,
+          body: Buffer.concat(chunks).toString('utf8'),
+        });
+      });
+    };
+
+    const request =
+      url.protocol === 'https:'
+        ? requestHttps(requestOptions, onResponse)
+        : requestHttp(requestOptions, onResponse);
+    request.once('error', reject);
+    if (input.body !== undefined) {
+      request.write(input.body);
+    }
+    request.end();
+  });
 }
 
 function normalizeHealthAgentFramework(value: unknown): ProviderProfile['agentFramework'] {

@@ -64,7 +64,7 @@ Register your own endpoint with `POST /v1/seller/providers`. Implement the provi
 
 Connect an upstream API key and publish catalog offers — no separate worker process:
 
-1. `POST /v1/seller/upstream/:provider/connect` (`anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`)
+1. `POST /v1/seller/upstream/:provider/connect` (`openai`, `anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`, `darkbloom`, `nebius`)
 2. `POST /v1/seller/upstream/:provider/offers` per model (`lane: "chat"` → `inference_hosted`, or `lane: "harness"` → platform tool loop)
 3. Inference runs through `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`
 
@@ -126,16 +126,18 @@ Operators publish **platform liquidity** seats (no in-CVM HTTP workers) when mat
 | **Phala**     | `BOSSRAID_PHALA_API_KEY`     | **All** TEE chat models ([browse](https://phala.com/models)) — `phala/<upstream-id>`                                                                  |
 | **Redpill**   | `BOSSRAID_REDPILL_API_KEY`   | **All** chat models from `api.redpill.ai` ([browse](https://redpill.ai/models)) — `redpill/<upstream-id>`                                             |
 | **Darkbloom** | `BOSSRAID_DARKBLOOM_API_KEY` | **All** chat models from `api.darkbloom.dev` ([API](https://www.darkbloom.dev/#api)) — `darkbloom/<id>` (e.g. `darkbloom/gemma-4-26b`)                |
+| **Nebius**    | `BOSSRAID_NEBIUS_API_KEY`    | All priced text-to-text models in the catalog ([Token Factory pricing](https://nebius.com/token-factory/prices)) — `nebius/<upstream-id>`             |
+| **OpenAI**    | `BOSSRAID_OPENAI_API_KEY`    | GPT-6 Astra, Sol, and Luna ([API pricing](https://developers.openai.com/api/docs/pricing)); `/v1/models` shows key-scoped availability                |
 | **xAI**       | `BOSSRAID_XAI_API_KEY`       | Curated Grok / Grok Build ids (table below)                                                                                                           |
-| **Anthropic** | `BOSSRAID_ANTHROPIC_API_KEY` | `anthropic/claude-opus-4-5`, `anthropic/claude-sonnet-4-5`, `anthropic/claude-haiku-4-5`                                                              |
+| **Anthropic** | `BOSSRAID_ANTHROPIC_API_KEY` | All currently priced Claude text models in the catalog                                                                                                |
 
-Refresh live catalogs (Venice, Chutes, NEAR, Phala TEE, Redpill, Darkbloom) and rates:
+Refresh live catalogs (Venice, Chutes, NEAR, Phala TEE, Redpill, Darkbloom) and published static price lists:
 
 ```bash
 pnpm bossraid sync:inference-catalog
 ```
 
-Live provider ids look like `platform-venice-google-gemma-4-31b-it`, `platform-darkbloom-darkbloom-gemma-4-26b`. Discover with `GET /v1/markets?model_provider=venice` (or `near` / `phala` / `redpill` / `chutes` / `darkbloom` / `xai`) and `GET /v1/models`.
+Live provider ids look like `platform-venice-google-gemma-4-31b-it`, `platform-darkbloom-darkbloom-gemma-4-26b`, and `platform-openai-openai-gpt-6-luna`. Discover with `GET /v1/markets?model_provider=openai` (or any provider id) and `GET /v1/models`.
 
 Phala compose defaults to **platform-only** seed (`examples/inference/platform-only.providers.json`) and retires demo workers `dottie` / `riko` / `gamma`. Optional game-raid workers use compose profile `game-providers`.
 
@@ -143,14 +145,14 @@ Phala compose defaults to **platform-only** seed (`examples/inference/platform-o
 
 | Model id                       | Notes                   |
 | ------------------------------ | ----------------------- |
-| `grok-4.5`                     | Flagship Grok           |
-| `grok-4.3`                     | Prior flagship          |
+| `grok-4.7`                     | Flagship Grok           |
+| `grok-4.6`                     | Current Grok model      |
+| `grok-4.5`                     | Previous generation     |
+| `grok-4.3`                     | Previous generation     |
 | `grok-4.20-0309-reasoning`     | Reasoning variant       |
 | `grok-4.20-0309-non-reasoning` | Non-reasoning variant   |
 | `grok-4.20-multi-agent-0309`   | Multi-agent             |
 | `grok-build-0.1`               | Grok Build coding model |
-| `grok-4-1-fast-reasoning`      | Fast reasoning          |
-| `grok-4-1-fast-non-reasoning`  | Fast non-reasoning      |
 
 ### Reasoning effort
 

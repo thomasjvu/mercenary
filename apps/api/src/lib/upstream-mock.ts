@@ -10,6 +10,8 @@ const PROVIDER_INFERENCE_MOCK_KEYS: Record<UpstreamProviderId, string> = {
   zai: 'BOSSRAID_ZAI_MOCK',
   anthropic: 'BOSSRAID_ANTHROPIC_MOCK',
   darkbloom: 'BOSSRAID_DARKBLOOM_MOCK',
+  nebius: 'BOSSRAID_NEBIUS_MOCK',
+  openai: 'BOSSRAID_OPENAI_MOCK',
 };
 
 export function isProviderInferenceMock(

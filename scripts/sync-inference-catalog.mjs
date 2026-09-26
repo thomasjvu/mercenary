@@ -450,181 +450,61 @@ const ZAI_MODELS = [
   },
 ];
 
-/**
- * Anthropic first-party Claude — catalog modelIds are namespaced (Venice already lists
- * unprefixed claude-* via their marketplace). upstream is the Anthropic API model string.
- */
+/** Active, publicly priced Anthropic text models; 200k cap keeps long-context pricing separate. */
 const ANTHROPIC_MODELS = [
-  {
-    modelId: 'anthropic/claude-opus-4-5',
-    displayName: 'Claude Opus 4.5 (Anthropic)',
-    modelProvider: 'anthropic',
-    attestationVendor: 'anthropic',
-    upstream: 'claude-opus-4-5',
-    inputPer1mUsd: 15,
-    outputPer1mUsd: 75,
-    maxContextTokens: 200_000,
-    privacy: 'standard',
-    teeAttested: false,
-    e2ee: false,
-    signedOutputs: false,
-    noDataRetention: false,
-  },
-  {
-    modelId: 'anthropic/claude-sonnet-4-5',
-    displayName: 'Claude Sonnet 4.5 (Anthropic)',
-    modelProvider: 'anthropic',
-    attestationVendor: 'anthropic',
-    upstream: 'claude-sonnet-4-5',
-    inputPer1mUsd: 3,
-    outputPer1mUsd: 15,
-    maxContextTokens: 200_000,
-    privacy: 'standard',
-    teeAttested: false,
-    e2ee: false,
-    signedOutputs: false,
-    noDataRetention: false,
-  },
-  {
-    modelId: 'anthropic/claude-haiku-4-5',
-    displayName: 'Claude Haiku 4.5 (Anthropic)',
-    modelProvider: 'anthropic',
-    attestationVendor: 'anthropic',
-    upstream: 'claude-haiku-4-5',
-    inputPer1mUsd: 1,
-    outputPer1mUsd: 5,
-    maxContextTokens: 200_000,
-    privacy: 'standard',
-    teeAttested: false,
-    e2ee: false,
-    signedOutputs: false,
-    noDataRetention: false,
-  },
-];
+  ['claude-opus-5-5', 'Claude Opus 5.5', 'claude-opus-5-5', 4, 20],
+  ['claude-fable-5-1', 'Claude Fable 5.1', 'claude-fable-5-1', 10, 50],
+  ['claude-fable-5', 'Claude Fable 5', 'claude-fable-5', 10, 50],
+  ['claude-opus-5', 'Claude Opus 5', 'claude-opus-5', 5, 25],
+  ['claude-opus-4-8', 'Claude Opus 4.8', 'claude-opus-4-8', 5, 25],
+  ['claude-opus-4-7', 'Claude Opus 4.7', 'claude-opus-4-7', 5, 25],
+  ['claude-opus-4-6', 'Claude Opus 4.6', 'claude-opus-4-6', 5, 25],
+  ['claude-opus-4-5', 'Claude Opus 4.5', 'claude-opus-4-5-20251101', 5, 25],
+  ['claude-sonnet-5', 'Claude Sonnet 5', 'claude-sonnet-5', 2, 10],
+  ['claude-sonnet-4-6', 'Claude Sonnet 4.6', 'claude-sonnet-4-6', 3, 15],
+  ['claude-sonnet-4-5', 'Claude Sonnet 4.5', 'claude-sonnet-4-5-20250929', 3, 15],
+  ['claude-haiku-4-5', 'Claude Haiku 4.5', 'claude-haiku-4-5-20251001', 1, 5],
+].map(([slug, name, upstream, inputPer1mUsd, outputPer1mUsd]) => ({
+  modelId: `anthropic/${slug}`,
+  displayName: `${name} (Anthropic)`,
+  modelProvider: 'anthropic',
+  attestationVendor: 'anthropic',
+  upstream,
+  inputPer1mUsd,
+  outputPer1mUsd,
+  maxContextTokens: 200_000,
+  privacy: 'standard',
+  teeAttested: false,
+  e2ee: false,
+  signedOutputs: false,
+  noDataRetention: false,
+}));
 
-/** xAI Grok — static reference rates (OpenAI-compatible https://api.x.ai/v1). */
+/** Current public xAI text API models and standard token rates. */
 const XAI_MODELS = [
-  {
-    modelId: 'grok-4.5',
-    displayName: 'Grok 4.5',
-    modelProvider: 'xai',
-    attestationVendor: 'xai',
-    upstream: 'grok-4.5',
-    inputPer1mUsd: 2,
-    outputPer1mUsd: 6,
-    maxContextTokens: 500_000,
-    privacy: 'standard',
-    teeAttested: false,
-    e2ee: false,
-    signedOutputs: false,
-    noDataRetention: false,
-  },
-  {
-    modelId: 'grok-4.3',
-    displayName: 'Grok 4.3',
-    modelProvider: 'xai',
-    attestationVendor: 'xai',
-    upstream: 'grok-4.3',
-    inputPer1mUsd: 1.5,
-    outputPer1mUsd: 4.5,
-    maxContextTokens: 1_000_000,
-    privacy: 'standard',
-    teeAttested: false,
-    e2ee: false,
-    signedOutputs: false,
-    noDataRetention: false,
-  },
-  {
-    modelId: 'grok-4.20-0309-reasoning',
-    displayName: 'Grok 4.20 Reasoning',
-    modelProvider: 'xai',
-    attestationVendor: 'xai',
-    upstream: 'grok-4.20-0309-reasoning',
-    inputPer1mUsd: 1.42,
-    outputPer1mUsd: 2.83,
-    maxContextTokens: 2_000_000,
-    privacy: 'standard',
-    teeAttested: false,
-    e2ee: false,
-    signedOutputs: false,
-    noDataRetention: false,
-  },
-  {
-    modelId: 'grok-4.20-0309-non-reasoning',
-    displayName: 'Grok 4.20',
-    modelProvider: 'xai',
-    attestationVendor: 'xai',
-    upstream: 'grok-4.20-0309-non-reasoning',
-    inputPer1mUsd: 1.42,
-    outputPer1mUsd: 2.83,
-    maxContextTokens: 2_000_000,
-    privacy: 'standard',
-    teeAttested: false,
-    e2ee: false,
-    signedOutputs: false,
-    noDataRetention: false,
-  },
-  {
-    modelId: 'grok-4.20-multi-agent-0309',
-    displayName: 'Grok 4.20 Multi-Agent',
-    modelProvider: 'xai',
-    attestationVendor: 'xai',
-    upstream: 'grok-4.20-multi-agent-0309',
-    inputPer1mUsd: 1.42,
-    outputPer1mUsd: 2.83,
-    maxContextTokens: 2_000_000,
-    privacy: 'standard',
-    teeAttested: false,
-    e2ee: false,
-    signedOutputs: false,
-    noDataRetention: false,
-  },
-  {
-    modelId: 'grok-build-0.1',
-    displayName: 'Grok Build 0.1',
-    modelProvider: 'xai',
-    attestationVendor: 'xai',
-    upstream: 'grok-build-0.1',
-    inputPer1mUsd: 1,
-    outputPer1mUsd: 2,
-    maxContextTokens: 500_000,
-    privacy: 'standard',
-    teeAttested: false,
-    e2ee: false,
-    signedOutputs: false,
-    noDataRetention: false,
-  },
-  {
-    modelId: 'grok-4-1-fast-reasoning',
-    displayName: 'Grok 4.1 Fast Reasoning',
-    modelProvider: 'xai',
-    attestationVendor: 'xai',
-    upstream: 'grok-4-1-fast-reasoning',
-    inputPer1mUsd: 0.2,
-    outputPer1mUsd: 0.5,
-    maxContextTokens: 2_000_000,
-    privacy: 'standard',
-    teeAttested: false,
-    e2ee: false,
-    signedOutputs: false,
-    noDataRetention: false,
-  },
-  {
-    modelId: 'grok-4-1-fast-non-reasoning',
-    displayName: 'Grok 4.1 Fast',
-    modelProvider: 'xai',
-    attestationVendor: 'xai',
-    upstream: 'grok-4-1-fast-non-reasoning',
-    inputPer1mUsd: 0.2,
-    outputPer1mUsd: 0.5,
-    maxContextTokens: 2_000_000,
-    privacy: 'standard',
-    teeAttested: false,
-    e2ee: false,
-    signedOutputs: false,
-    noDataRetention: false,
-  },
-];
+  ['grok-4.7', 'Grok 4.7', 4, 12, 500_000],
+  ['grok-4.6', 'Grok 4.6', 4, 12, 500_000],
+  ['grok-4.5', 'Grok 4.5', 4, 12, 500_000],
+  ['grok-4.3', 'Grok 4.3', 2.5, 5, 1_000_000],
+  ['grok-4.20-0309-reasoning', 'Grok 4.20 Reasoning', 2.5, 5, 1_000_000],
+  ['grok-4.20-0309-non-reasoning', 'Grok 4.20', 2.5, 5, 1_000_000],
+  ['grok-4.20-multi-agent-0309', 'Grok 4.20 Multi-Agent', 2.5, 5, 1_000_000],
+  ['grok-build-0.1', 'Grok Build 0.1', 2, 4, 256_000],
+].map(([upstream, name, inputPer1mUsd, outputPer1mUsd, maxContextTokens]) => ({
+  modelId: upstream,
+  displayName: name,
+  modelProvider: 'xai',
+  attestationVendor: 'xai',
+  upstream,
+  inputPer1mUsd,
+  outputPer1mUsd,
+  maxContextTokens,
+  privacy: 'standard',
+  teeAttested: false,
+  e2ee: false,
+  signedOutputs: false,
+  noDataRetention: false,
+}));
 
 function isTeeModelId(modelId) {
   const normalized = modelId.toLowerCase();
@@ -792,6 +672,82 @@ const DARKBLOOM_MODELS_FALLBACK = [
 ];
 
 /**
+ * Nebius Token Factory text-to-text models with published base-flavor prices.
+ * Rates are USD per 1M tokens from https://nebius.com/token-factory/prices.
+ */
+const NEBIUS_MODEL_RATES = [
+  ['openai/gpt-oss-120b', 'GPT-OSS 120B', 0.15, 0.6, 131_072],
+  ['openai/gpt-oss-20b', 'GPT-OSS 20B', 0.05, 0.2, 131_072],
+  ['moonshotai/Kimi-K2-Instruct', 'Kimi K2 Instruct', 0.5, 2.4, 128_000],
+  ['Qwen/Qwen3-Coder-480B-A35B-Instruct', 'Qwen3 Coder 480B A35B Instruct', 0.4, 1.8, 262_144],
+  ['Qwen/Qwen3-235B-A22B-Thinking-2507', 'Qwen3 235B A22B Thinking 2507', 0.2, 0.8, 262_144],
+  ['Qwen/Qwen3-235B-A22B-Instruct-2507', 'Qwen3 235B A22B Instruct 2507', 0.2, 0.6, 262_144],
+  ['Qwen/Qwen3-30B-A3B-Thinking-2507', 'Qwen3 30B A3B Thinking 2507', 0.1, 0.3, 262_144],
+  ['Qwen/Qwen3-30B-A3B-Instruct-2507', 'Qwen3 30B A3B Instruct 2507', 0.1, 0.3, 262_144],
+  ['Qwen/Qwen3-Coder-30B-A3B-Instruct', 'Qwen3 Coder 30B A3B Instruct', 0.1, 0.3, 262_144],
+  ['Qwen/Qwen3-30B-A3B', 'Qwen3 30B A3B', 0.1, 0.3, 262_144],
+  ['Qwen/Qwen3-32B', 'Qwen3 32B', 0.1, 0.3, 32_768],
+  ['Qwen/Qwen3-14B', 'Qwen3 14B', 0.08, 0.24, 32_768],
+  ['Qwen/Qwen2.5-Coder-7B', 'Qwen2.5 Coder 7B', 0.03, 0.09, 32_768],
+  ['Qwen/Qwen2.5-72B-Instruct', 'Qwen2.5 72B Instruct', 0.13, 0.4, 131_072],
+  ['Qwen/QwQ-32B', 'QwQ 32B', 0.15, 0.45, 131_072],
+  ['zai-org/GLM-4.5', 'GLM 4.5', 0.6, 2.2, 128_000],
+  ['zai-org/GLM-4.5-Air', 'GLM 4.5 Air', 0.2, 1.2, 128_000],
+  ['deepseek-ai/DeepSeek-R1-0528', 'DeepSeek R1 0528', 0.8, 2.4, 128_000],
+  ['deepseek-ai/DeepSeek-V3-0324', 'DeepSeek V3 0324', 0.5, 1.5, 128_000],
+  ['deepseek-ai/DeepSeek-V3', 'DeepSeek V3', 0.5, 1.5, 128_000],
+  ['meta-llama/Llama-3.3-70B-Instruct', 'Llama 3.3 70B Instruct', 0.13, 0.4, 128_000],
+  ['meta-llama/Llama-3.1-8B-Instruct', 'Llama 3.1 8B Instruct', 0.02, 0.06, 128_000],
+  ['meta-llama/Llama-3.1-405B-Instruct', 'Llama 3.1 405B Instruct', 1, 3, 128_000],
+  ['nvidia/Llama-3_1-Nemotron-Ultra-253B-v1', 'Llama 3.1 Nemotron Ultra 253B', 0.6, 1.8, 131_072],
+  ['google/gemma-2-2b-it', 'Gemma 2 2B IT', 0.02, 0.06, 8_192],
+  ['google/gemma-2-9b-it', 'Gemma 2 9B IT', 0.03, 0.09, 8_192],
+  ['mistralai/Devstral-Small-2505', 'Devstral Small 2505', 0.08, 0.24, 128_000],
+  ['NousResearch/Hermes-4-405B', 'Hermes 4 405B', 1, 3, 128_000],
+  ['NousResearch/Hermes-4-70B', 'Hermes 4 70B', 0.13, 0.4, 128_000],
+  ['NousResearch/Hermes-3-Llama-3.1-405B', 'Hermes 3 Llama 3.1 405B', 1, 3, 128_000],
+];
+
+const NEBIUS_MODELS = NEBIUS_MODEL_RATES.map(
+  ([upstream, name, inputPer1mUsd, outputPer1mUsd, maxContextTokens]) => ({
+    modelId: `nebius/${upstream}`,
+    displayName: `${name} (Nebius)`,
+    modelProvider: 'nebius',
+    attestationVendor: 'nebius',
+    upstream,
+    inputPer1mUsd,
+    outputPer1mUsd,
+    maxContextTokens,
+    privacy: 'standard',
+    teeAttested: false,
+    e2ee: false,
+    signedOutputs: false,
+    noDataRetention: false,
+  })
+);
+
+/** OpenAI first-party general chat models, standard short-context rates. */
+const OPENAI_MODELS = [
+  ['gpt-6-astra', 'GPT-6 Astra', 10, 50],
+  ['gpt-6-sol', 'GPT-6 Sol', 2, 10],
+  ['gpt-6-luna', 'GPT-6 Luna', 0.1, 0.5],
+].map(([upstream, name, inputPer1mUsd, outputPer1mUsd]) => ({
+  modelId: `openai/${upstream}`,
+  displayName: `${name} (OpenAI)`,
+  modelProvider: 'openai',
+  attestationVendor: 'openai',
+  upstream,
+  inputPer1mUsd,
+  outputPer1mUsd,
+  maxContextTokens: 1_050_000,
+  privacy: 'standard',
+  teeAttested: false,
+  e2ee: false,
+  signedOutputs: false,
+  noDataRetention: false,
+}));
+
+/**
  * Darkbloom public catalog. Source: https://api.darkbloom.dev/v1/models/catalog
  * @see https://www.darkbloom.dev/#api
  */
@@ -840,8 +796,8 @@ function writeCatalogTs(catalog) {
 export type InferenceCatalogEntry = {
   modelId: string;
   displayName: string;
-  modelProvider: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai' | 'zai' | 'anthropic' | 'darkbloom';
-  attestationVendor: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai' | 'zai' | 'anthropic' | 'darkbloom';
+  modelProvider: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai' | 'zai' | 'anthropic' | 'darkbloom' | 'nebius' | 'openai';
+  attestationVendor: 'venice' | 'phala' | 'redpill' | 'near' | 'chutes' | 'xai' | 'zai' | 'anthropic' | 'darkbloom' | 'nebius' | 'openai';
   upstreamModelId: string;
   inputPer1mUsd: number;
   outputPer1mUsd: number;
@@ -903,6 +859,8 @@ function writeCatalogPricingJson(catalog) {
       zai: 'scripts/sync-inference-catalog.mjs static rates (api.z.ai coding paas)',
       anthropic: 'scripts/sync-inference-catalog.mjs static rates (api.anthropic.com)',
       darkbloom: 'https://api.darkbloom.dev/v1/models/catalog (public; list rates from darkbloom.dev)',
+      nebius: 'https://nebius.com/token-factory/prices (all published base-flavor text-to-text rates; Token Factory API model ids)',
+      openai: 'https://developers.openai.com/api/docs/pricing (standard short-context text rates; https://api.openai.com/v1/models for key-scoped availability)',
     },
     providers,
     models: catalog
@@ -1011,6 +969,8 @@ async function main() {
     fetchDarkbloomModels,
     DARKBLOOM_MODELS_FALLBACK
   );
+  const nebiusModels = normalizeStaticModels(NEBIUS_MODELS);
+  const openaiModels = normalizeStaticModels(OPENAI_MODELS);
   const xaiModels = normalizeStaticModels(XAI_MODELS);
   const zaiModels = normalizeStaticModels(ZAI_MODELS);
   const anthropicModels = normalizeStaticModels(ANTHROPIC_MODELS);
@@ -1021,6 +981,8 @@ async function main() {
     ...chutesModels,
     ...phalaModels,
     ...darkbloomModels,
+    ...nebiusModels,
+    ...openaiModels,
     ...xaiModels,
     ...zaiModels,
     ...anthropicModels,
@@ -1054,7 +1016,7 @@ async function main() {
   writeProvidersJson(providers);
 
   console.log(
-    `[catalog] synced ${veniceModels.length} Venice + ${redpillModels.length} Redpill + ${nearModels.length} NEAR + ${chutesModels.length} Chutes + ${phalaModels.length} Phala + ${darkbloomModels.length} Darkbloom + ${xaiModels.length} xAI + ${zaiModels.length} Z.ai + ${anthropicModels.length} Anthropic models`
+    `[catalog] synced ${veniceModels.length} Venice + ${redpillModels.length} Redpill + ${nearModels.length} NEAR + ${chutesModels.length} Chutes + ${phalaModels.length} Phala + ${darkbloomModels.length} Darkbloom + ${nebiusModels.length} Nebius + ${openaiModels.length} OpenAI + ${xaiModels.length} xAI + ${zaiModels.length} Z.ai + ${anthropicModels.length} Anthropic models`
   );
   console.log(`[catalog] wrote packages/constants/src/inference-catalog.ts`);
   console.log(`[catalog] wrote examples/inference/inference-marketplace-providers.json (${providers.length} sellers)`);
