@@ -18,6 +18,7 @@ const children = providerProfiles.map((profile, index) => {
     cwd: rootDir,
     stdio: 'inherit',
     env: buildProviderChildEnv(profile, index, inheritedEnv, {
+      includeStubMode: true,
       includePrivacyFeatures: true,
     }),
   });

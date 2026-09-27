@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { loadLocalEnv } from '../env.mjs';
 import { runCommand, sleep, stopChild } from './process-harness.mjs';
 
@@ -23,9 +24,9 @@ export function createE2eEnv(options) {
   const explicitProvidersFile = process.env.BOSSRAID_PROVIDERS_FILE;
   const resolvedProvidersFile =
     explicitProvidersFile &&
-      explicitProvidersFile !== './examples/inference/inference-marketplace-providers.json'
+    explicitProvidersFile !== './examples/inference/inference-marketplace-providers.json'
       ? explicitProvidersFile
-      : providersFile ?? defaultProvidersFile;
+      : (providersFile ?? defaultProvidersFile);
   const explicitSqliteFile = process.env.BOSSRAID_SQLITE_FILE;
   const sqliteFile =
     explicitSqliteFile && explicitSqliteFile !== './temp/bossraid-state.sqlite'
@@ -70,7 +71,11 @@ export async function runRaidE2e(options) {
     await runCommand(rootDir, env, 'pnpm', ['build']);
 
     console.log(
-      JSON.stringify({ step: 'start_providers', providersFile: env.BOSSRAID_PROVIDERS_FILE }, null, 2)
+      JSON.stringify(
+        { step: 'start_providers', providersFile: env.BOSSRAID_PROVIDERS_FILE },
+        null,
+        2
+      )
     );
     providersChild = spawn('node', ['scripts/run-provider-set.mjs'], {
       cwd: rootDir,
@@ -87,11 +92,15 @@ export async function runRaidE2e(options) {
 
     await waitForHealth(apiBase, options.minReadyProviders ?? 3);
 
+    console.log(JSON.stringify({ step: 'authenticate_test_wallet' }, null, 2));
+    const sessionCookie = await createTestWalletSession(apiBase);
+
     console.log(JSON.stringify({ step: 'spawn_raid' }, null, 2));
     const spawnResponse = await fetch(new URL('/v1/raid', apiBase), {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
+        cookie: sessionCookie,
       },
       body: await readFixture(rootDir, options.raidFixture),
     });
@@ -121,6 +130,36 @@ export async function runRaidE2e(options) {
   }
 }
 
+async function createTestWalletSession(apiBase) {
+  const account = privateKeyToAccount(generatePrivateKey());
+  const nonceResponse = await fetch(new URL('/v1/auth/nonce', apiBase), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ wallet: account.address }),
+  });
+  if (!nonceResponse.ok) {
+    throw new Error(
+      `Auth nonce failed with ${nonceResponse.status}: ${await nonceResponse.text()}`
+    );
+  }
+
+  const nonce = await nonceResponse.json();
+  const signature = await account.signMessage({ message: nonce.message });
+  const verifyResponse = await fetch(new URL('/v1/auth/verify', apiBase), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ message: nonce.message, signature }),
+  });
+  const setCookie = verifyResponse.headers.get('set-cookie');
+  if (!verifyResponse.ok || !setCookie) {
+    throw new Error(
+      `Auth verification failed with ${verifyResponse.status}: ${await verifyResponse.text()}`
+    );
+  }
+
+  return setCookie.split(';', 1)[0];
+}
+
 export async function waitForHealth(apiBase, minReadyProviders = 3, timeoutMs = 90_000) {
   const url = `${apiBase}/health`;
   const deadline = Date.now() + timeoutMs;
@@ -146,10 +185,7 @@ export async function waitForResult(
   resultPath = '/v1/raid'
 ) {
   const deadline = Date.now() + timeoutMs;
-  const resultUrl = new URL(
-    `${resultPath}/${encodeURIComponent(raidId)}/result`,
-    apiBaseUrl
-  );
+  const resultUrl = new URL(`${resultPath}/${encodeURIComponent(raidId)}/result`, apiBaseUrl);
   while (Date.now() < deadline) {
     const response = await fetch(resultUrl, {
       headers: {
@@ -171,4 +207,3 @@ export async function waitForResult(
 export async function readFixture(rootDir, relativePath) {
   return readFile(resolve(rootDir, relativePath), 'utf8');
 }
-
