@@ -124,7 +124,24 @@ export async function runRaidE2e(options) {
     if (options.afterVerify) {
       await options.afterVerify({ apiBase, spawnBody, result });
     }
-    console.log(JSON.stringify({ step: 'verified', raidId: spawnBody.raidId, result }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          step: 'verified',
+          raidId: spawnBody.raidId,
+          status: result.status,
+          workstreams: result.synthesizedOutput?.workstreams?.length ?? 0,
+          artifactTypes: [
+            ...new Set(
+              (result.synthesizedOutput?.artifacts ?? []).map(({ outputType }) => outputType)
+            ),
+          ],
+          routedProviders: result.routingProof?.providers?.length ?? 0,
+        },
+        null,
+        2
+      )
+    );
   } finally {
     await teardown();
   }
