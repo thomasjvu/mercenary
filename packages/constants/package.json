@@ -15,7 +15,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node ../../scripts/sync-inference-catalog.mjs --cached && tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {}

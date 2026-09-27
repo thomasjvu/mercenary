@@ -1,3 +1,4 @@
+import type { TokenUsageDetails } from '@bossraid/constants';
 import { ApiContractError } from '@bossraid/api-contracts';
 import { estimateTokenMeteredUsd } from '@bossraid/raid-core';
 import { asSingleHeader, type RaidQuoteSnapshot } from '@bossraid/shared-types';
@@ -115,7 +116,7 @@ export function createManaBillingHandlers(ctx: ApiContext) {
 
   function calculateManaCaptureAmount(
     manaBilling: ManaBillingContext,
-    usage: { prompt_tokens?: number; completion_tokens?: number }
+    usage: { prompt_tokens?: number; token_details?: TokenUsageDetails; completion_tokens?: number }
   ): number {
     const quote = manaBilling.quoteSnapshot;
     const primary = quote?.providers.find((provider) => provider.phase === 'primary');
@@ -127,7 +128,7 @@ export function createManaBillingHandlers(ctx: ApiContext) {
     const completionTokens = Math.max(0, usage.completion_tokens ?? 0);
     const chargeUsd =
       pricing.mode === 'token_metered'
-        ? estimateTokenMeteredUsd(pricing, promptTokens, completionTokens)
+        ? estimateTokenMeteredUsd(pricing, promptTokens, completionTokens, usage.token_details)
         : (pricing.pricePerTaskUsd ?? quote.maxChargeUsd);
     return Math.max(
       1,
@@ -137,7 +138,12 @@ export function createManaBillingHandlers(ctx: ApiContext) {
 
   async function captureManaBilling(input: {
     manaBilling?: ManaBillingContext;
-    usage: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+    usage: {
+      prompt_tokens?: number;
+      token_details?: TokenUsageDetails;
+      completion_tokens?: number;
+      total_tokens?: number;
+    };
     raidId: string;
     receiptPath: string;
   }): Promise<{ capturedMana?: number; refundedMana?: number } | undefined> {
@@ -195,6 +201,7 @@ export function createManaBillingHandlers(ctx: ApiContext) {
     modelId?: string;
     paidPriceUsd?: number;
     quoteSnapshot?: RaidQuoteSnapshot;
+    usage?: { prompt_tokens: number; completion_tokens: number; token_details?: TokenUsageDetails };
   }) {
     const quote = input.manaBilling?.quoteSnapshot ?? input.quoteSnapshot;
     const selected = quote?.providers.find(
@@ -205,6 +212,9 @@ export function createManaBillingHandlers(ctx: ApiContext) {
         ? estimateBenchmarkPriceUsd({
             modelId: input.modelId,
             flatTaskUsd: input.paidPriceUsd,
+            inputTokens: input.usage?.prompt_tokens,
+            outputTokens: input.usage?.completion_tokens,
+            usageDetails: input.usage?.token_details,
           })
         : undefined;
     const savingsUsd =

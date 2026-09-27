@@ -42,17 +42,35 @@ Single-provider marketplace lane. API normalizes every request to `maxAgents: 1`
 
 ## Hosted upstream sellers
 
-Self-serve sellers connect a Venice API key in the web UI. The API stores the key encrypted in control state, materializes one provider profile per selected model, and routes inference through an embedded hosted gateway:
+Self-serve sellers connect an upstream API key in the web UI. The API stores the key encrypted in control state, materializes one provider profile per selected model, and routes inference through an embedded hosted gateway:
 
-1. Seller `POST /v1/seller/upstream/:provider/connect` validates the key against upstream `GET /models` (`openai`, `anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`, `darkbloom`, `nebius`).
-2. Seller `POST /v1/seller/upstream/:provider/offers` registers offers with `lane: "chat"` (`inference_hosted`) or `lane: "harness"` (`harness_hosted`) and `source.targetType = :provider`.
+1. Seller `POST /v1/seller/upstream/:provider/connect` validates the key against upstream `GET /models` and a completion probe (`openai`, `anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`, `darkbloom`, `nebius`).
+2. Seller `POST /v1/seller/upstream/:provider/offers` refreshes account availability and probes each selected model before registering offers with `lane: "chat"` (`inference_hosted`) or `lane: "harness"` (`harness_hosted`) and `source.targetType = :provider`.
 3. Each offer endpoint is `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`.
 4. Gateway `POST /v1/raid/accept` proxies the raid task to the upstream chat API (or platform agent-harness tool loop), verifies TEE attestation when privacy features are claimed, and records the provider submission in-process.
 5. Buyers and sellers verify upstream TEE via `POST /v1/marketplace/tee/attestation` (provider-specific nonce + Intel/NVIDIA evidence; explorer link to proof.t16z.com).
 
-**Platform liquidity:** ops can seed chat offers for catalog models with `POST /v1/ops/platform-liquidity/bootstrap` (admin token) when matching `BOSSRAID_*_API_KEY` values are set. Optional startup: `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1`. Platform seats use `source.externalRef = "platform"` and fall back to platform keys (no per-seller Phala). Phala defaults to platform seats only (empty seed + purge of demo workers `dottie` / `riko` / `gamma`). Provider coverage: [discount-inference.md](../buyers/discount-inference.md#platform-seats).
+**Platform liquidity:** ops can seed chat offers for available, priced catalog models that pass completion and required attestation probes with `POST /v1/ops/platform-liquidity/bootstrap` (admin token) when matching `BOSSRAID_*_API_KEY` values are set. Optional startup: `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1`. Platform seats use `source.externalRef = "platform"` and fall back to platform keys (no per-seller Phala). Phala defaults to platform seats only (empty seed + purge of demo workers `dottie` / `riko` / `gamma`). Provider coverage: [discount-inference.md](../buyers/discount-inference.md#platform-seats).
 
 Buyers still use `POST /v1/inference/chat/completions`. The static inference catalog fills discovery gaps when no live seller exists for a model. Chat is **stateless** — clients own multi-turn history.
+
+### Catalog and availability
+
+The catalog has three inputs:
+
+1. **Public metadata** — [models.dev models.json](https://models.dev/models.json) supplies model metadata; [api.json](https://models.dev/api.json) supplies provider-specific model IDs, prices, capabilities, and limits. Public provider feeds supplement serving-provider prices and model coverage.
+2. **Boss Raid policy** — `packages/constants/data/inference-overrides.json` owns exact ID aliases, reviewed price exceptions, and privacy/TEE/E2EE claims. Imported metadata cannot grant trust or reputation. A new provider still needs a protocol adapter and credential configuration.
+3. **Account availability** — the adapter fetches `/models` using the connected seller or platform key. Exact IDs and explicit aliases are joined to the priced catalog; a completion probe and any required attestation must pass before an offer becomes active.
+
+`pnpm build` and both Docker builds refresh public sources, validate and normalize them, then compile the generated catalog. `@bossraid/constants` can rebuild offline from the committed `inference-sources.json` snapshot. Fetch failures retain the last successful source and report its age/error; malformed fresh data never replaces a valid snapshot. Each source records its URL, retrieval/check times, ETag, and SHA-256. The drift workflow checks daily; deploying a newer catalog still requires a build and deployment.
+
+Only text completion models with known context limits and input/output prices enter the sellable catalog. Unsupported modalities, retired models, missing prices, and unsupported tier formats appear in `inference-catalog-report.json`. Zero prices remain zero. Unknown account models are visible as `live_unpriced`, with null prices and publishing disabled.
+
+Account lists refresh on connect, authenticated discovery, offer publishing, and platform bootstrap. Platform bootstrap pauses previous seats that lose availability or fail probes. Existing seller offers are paused when a selected model fails republication; dispatch failures also enter routing cooldown. There is no background paid completion loop. Explicit mock flags are required for simulated upstream responses, including in development.
+
+**Pricing:** `tokenPricing` stores USD per million tokens with context thresholds and optional cache, reasoning, and audio rates. A context tier applies to the whole request once prompt tokens exceed its threshold. Discounts apply to every tier, and the full rate card is included in quote hashing. Trusted hosted usage is retained for response metadata and Mana token capture; specialized counts are subsets of the input/output totals. Other settlement rails retain their existing quoted-budget behavior. Catalog reference prices expose source provenance; they do not establish account access or a seller's actual charge.
+
+OpenAI uses native Responses (`store: false`); Anthropic uses native Messages with paginated model discovery. Other configured providers use their existing compatible chat adapters. Buyer chat routes keep the OpenAI-compatible request/response shape.
 
 ### Production readiness (honest)
 

@@ -40,15 +40,15 @@ Valid API keys skip x402 and debit spend caps and/or prepaid balance in the same
 
 Successful responses include a `bossraid` object:
 
-| Field                 | Meaning                                              |
-| --------------------- | ---------------------------------------------------- |
-| `selected_seller`     | Provider id that served the call                     |
-| `paid_price_usd`      | Charged amount                                       |
-| `benchmark_price_usd` | Static catalog reference price for the model         |
-| `savings_usd`         | `benchmark_price_usd − paid_price_usd` when positive |
-| `rate_card_hash`      | Immutable quote snapshot used for settlement         |
-| `receipt_path`        | Link to verification receipt                         |
-| `routing_proof`       | Privacy and verification gates applied               |
+| Field                 | Meaning                                                           |
+| --------------------- | ----------------------------------------------------------------- |
+| `selected_seller`     | Provider id that served the call                                  |
+| `paid_price_usd`      | Charged amount                                                    |
+| `benchmark_price_usd` | Catalog reference price using reported token usage when available |
+| `savings_usd`         | `benchmark_price_usd − paid_price_usd` when positive              |
+| `rate_card_hash`      | Immutable quote snapshot used for settlement                      |
+| `receipt_path`        | Link to verification receipt                                      |
+| `routing_proof`       | Privacy and verification gates applied                            |
 
 Purchase history: `GET /v1/buyer/purchases`. Account UI: `/account`.
 
@@ -106,53 +106,33 @@ Requests that cannot satisfy the gate fail closed — no downgrade to weaker sel
 
 ## Inference catalog
 
-`packages/constants/src/inference-catalog.ts` is generated from upstream public model lists plus static reference rates:
+The generated catalog imports [models.dev metadata](https://models.dev/models.json), [provider pricing](https://models.dev/api.json), and public provider feeds at build time. Boss Raid overrides preserve public model IDs and reviewed privacy claims. Models with unknown prices or unsupported output types cannot be published.
 
 ```bash
 pnpm bossraid sync:inference-catalog
 ```
 
-Benchmark prices in `packages/constants/src/marketplace-benchmark.ts` drive `savings_usd` and marketplace discount displays. Catalog-only rows fill discovery when no seller is live.
+Discovery exposes `catalog_source` and `token_pricing` under the model's `bossraid` metadata. `/v1/prices` includes `catalogSource` and `tokenPricing`. Rates can include context thresholds, cached input, and reasoning tokens. `catalog_only` means there is no active seller for that model; it is not a claim that the account can serve it.
 
 ## Platform seats
 
-Operators publish **platform liquidity** seats (no in-CVM HTTP workers) when matching `BOSSRAID_*_API_KEY` values are set and bootstrap runs (`BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1` or `POST /v1/ops/platform-liquidity/bootstrap`).
+Platform bootstrap considers every priced, supported chat model for all 11 configured providers. Each model must appear in that key's live model list and pass a completion probe plus any required attestation. Operators configure keys and run `POST /v1/ops/platform-liquidity/bootstrap` or enable startup bootstrap.
 
-| Upstream      | Env key                      | Seat set                                                                                                                                              |
-| ------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Venice**    | `BOSSRAID_VENICE_API_KEY`    | **All** text models ([docs](https://docs.venice.ai/models/overview)) — request `model` is the Venice id (`google-gemma-4-31b-it`, `openai-gpt-55`, …) |
-| **Chutes**    | `BOSSRAID_CHUTES_API_KEY`    | **All** LLMs from `llm.chutes.ai` ([browse](https://chutes.ai/models?type=llm)) — `chutes-<slug>`                                                     |
-| **NEAR AI**   | `BOSSRAID_NEAR_API_KEY`      | **All** text models from `cloud-api.near.ai` ([browse](https://cloud.near.ai/#models)) — `near/<upstream-id>`                                         |
-| **Phala**     | `BOSSRAID_PHALA_API_KEY`     | **All** TEE chat models ([browse](https://phala.com/models)) — `phala/<upstream-id>`                                                                  |
-| **Redpill**   | `BOSSRAID_REDPILL_API_KEY`   | **All** chat models from `api.redpill.ai` ([browse](https://redpill.ai/models)) — `redpill/<upstream-id>`                                             |
-| **Darkbloom** | `BOSSRAID_DARKBLOOM_API_KEY` | **All** chat models from `api.darkbloom.dev` ([API](https://www.darkbloom.dev/#api)) — `darkbloom/<id>` (e.g. `darkbloom/gemma-4-26b`)                |
-| **Nebius**    | `BOSSRAID_NEBIUS_API_KEY`    | All priced text-to-text models in the catalog ([Token Factory pricing](https://nebius.com/token-factory/prices)) — `nebius/<upstream-id>`             |
-| **OpenAI**    | `BOSSRAID_OPENAI_API_KEY`    | GPT-6 Astra, Sol, and Luna ([API pricing](https://developers.openai.com/api/docs/pricing)); `/v1/models` shows key-scoped availability                |
-| **xAI**       | `BOSSRAID_XAI_API_KEY`       | Curated Grok / Grok Build ids (table below)                                                                                                           |
-| **Anthropic** | `BOSSRAID_ANTHROPIC_API_KEY` | All currently priced Claude text models in the catalog                                                                                                |
+| Provider  | Platform key                 | Public model ID                                      |
+| --------- | ---------------------------- | ---------------------------------------------------- |
+| Venice    | `BOSSRAID_VENICE_API_KEY`    | Existing Venice ID                                   |
+| Redpill   | `BOSSRAID_REDPILL_API_KEY`   | `redpill/<upstream-id>`                              |
+| NEAR AI   | `BOSSRAID_NEAR_API_KEY`      | `near/<upstream-id>`                                 |
+| Chutes    | `BOSSRAID_CHUTES_API_KEY`    | `chutes/<upstream-id>`; existing aliases retained    |
+| Phala     | `BOSSRAID_PHALA_API_KEY`     | `phala/<upstream-id>`                                |
+| Darkbloom | `BOSSRAID_DARKBLOOM_API_KEY` | `darkbloom/<upstream-id>`                            |
+| Nebius    | `BOSSRAID_NEBIUS_API_KEY`    | `nebius/<upstream-id>`                               |
+| OpenAI    | `BOSSRAID_OPENAI_API_KEY`    | `openai/<upstream-id>`                               |
+| xAI       | `BOSSRAID_XAI_API_KEY`       | Existing Grok ID                                     |
+| Z.ai      | `BOSSRAID_ZAI_API_KEY`       | Existing GLM ID                                      |
+| Anthropic | `BOSSRAID_ANTHROPIC_API_KEY` | `anthropic/<upstream-id>`; existing aliases retained |
 
-Refresh live catalogs (Venice, Chutes, NEAR, Phala TEE, Redpill, Darkbloom) and published static price lists:
-
-```bash
-pnpm bossraid sync:inference-catalog
-```
-
-Live provider ids look like `platform-venice-google-gemma-4-31b-it`, `platform-darkbloom-darkbloom-gemma-4-26b`, and `platform-openai-openai-gpt-6-luna`. Discover with `GET /v1/markets?model_provider=openai` (or any provider id) and `GET /v1/models`.
-
-Phala compose defaults to **platform-only** seed (`examples/inference/platform-only.providers.json`) and retires demo workers `dottie` / `riko` / `gamma`. Optional game-raid workers use compose profile `game-providers`.
-
-### xAI / Grok model ids
-
-| Model id                       | Notes                   |
-| ------------------------------ | ----------------------- |
-| `grok-4.7`                     | Flagship Grok           |
-| `grok-4.6`                     | Current Grok model      |
-| `grok-4.5`                     | Previous generation     |
-| `grok-4.3`                     | Previous generation     |
-| `grok-4.20-0309-reasoning`     | Reasoning variant       |
-| `grok-4.20-0309-non-reasoning` | Non-reasoning variant   |
-| `grok-4.20-multi-agent-0309`   | Multi-agent             |
-| `grok-build-0.1`               | Grok Build coding model |
+Use `GET /v1/models` or `GET /v1/markets?model_provider=nebius` for the deployed catalog and live seller counts. No fixed shortlist needs editing when a supported provider adds a model. Build-time catalog updates require deployment; account availability is refreshed when listing or publishing offers and during bootstrap. See [runtime](../operators/runtime.md#catalog-refresh) for offline snapshots and drift checks.
 
 ### Reasoning effort
 
@@ -173,7 +153,7 @@ OpenAI-compatible field on both chat routes:
 | `high`   | Deeper reasoning                  |
 | `xhigh`  | Maximum (alias of Grok CLI `max`) |
 
-Boss Raid embeds options in the raid task and the hosted gateway forwards `reasoning_effort`, `max_tokens`, and `temperature` to xAI when present. Unsupported upstreams ignore unknown fields safely where the provider allows.
+Boss Raid embeds options in the raid task. Compatible adapters forward chat options; OpenAI maps them to Responses fields and gates temperature/reasoning on model capabilities. Anthropic maps messages, system text, and the output limit to Messages; `reasoning_effort` is not forwarded to Anthropic. Individual models may reject unsupported reasoning levels.
 
 Grok CLI:
 
@@ -199,7 +179,7 @@ context_window = 1000000
 max_completion_tokens = 8192
 ```
 
-Repeat the `[model."bossraid-…"]` block for each model id above (quote table keys that contain dots). Set `[models] default = "bossraid-grok-4.5"`. Use a buyer `br_…` key for production traffic; admin bearer is for operator dogfood only.
+Repeat the `[model."bossraid-…"]` block for each model id returned by discovery (quote table keys that contain dots). Set `[models] default = "bossraid-grok-4.5"`. Use a buyer `br_…` key for production traffic; admin bearer is for operator dogfood only.
 
 ## Related docs
 

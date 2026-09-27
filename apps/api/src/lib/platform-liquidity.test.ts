@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { UPSTREAM_PROVIDER_IDS, INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import {
   PLATFORM_LIQUIDITY_FULL_CATALOG_PROVIDERS,
   PLATFORM_LIQUIDITY_WALLET,
@@ -19,14 +20,10 @@ test('listPlatformLiquidityModelIds includes full marketplace catalogs', () => {
   assert.ok(ids.some((id) => id.startsWith('phala/')));
   assert.ok(ids.some((id) => id.startsWith('darkbloom/')));
   assert.ok(ids.length >= 100);
-  assert.deepEqual([...PLATFORM_LIQUIDITY_FULL_CATALOG_PROVIDERS].sort(), [
-    'chutes',
-    'darkbloom',
-    'near',
-    'phala',
-    'redpill',
-    'venice',
-  ]);
+  assert.deepEqual(
+    [...PLATFORM_LIQUIDITY_FULL_CATALOG_PROVIDERS].sort(),
+    [...UPSTREAM_PROVIDER_IDS].sort()
+  );
 });
 
 test('listPlatformLiquidityCandidates marks keys from env', () => {
@@ -60,6 +57,7 @@ test('bootstrapPlatformLiquidity skips models without platform keys', async () =
   const upserted: string[] = [];
   const result = await bootstrapPlatformLiquidity({
     orchestrator: {
+      listProviders: () => [],
       async upsertRegisteredProvider(input: { agentId?: string; providerId?: string }) {
         const id = input.agentId ?? input.providerId ?? 'unknown';
         upserted.push(id);
@@ -80,6 +78,7 @@ test('bootstrapPlatformLiquidity publishes when platform keys present', async ()
   const upserted: string[] = [];
   const result = await bootstrapPlatformLiquidity({
     orchestrator: {
+      listProviders: () => [],
       async upsertRegisteredProvider(input: { agentId?: string }) {
         const id = input.agentId ?? 'unknown';
         upserted.push(id);
@@ -90,6 +89,7 @@ test('bootstrapPlatformLiquidity publishes when platform keys present', async ()
       },
     } as never,
     env: {
+      BOSSRAID_UPSTREAM_MOCK: '1',
       BOSSRAID_ANTHROPIC_API_KEY: 'sk-ant-test',
       BOSSRAID_VENICE_API_KEY: 'vn_test',
       BOSSRAID_CHUTES_API_KEY: 'ch_test',
@@ -100,4 +100,47 @@ test('bootstrapPlatformLiquidity publishes when platform keys present', async ()
   assert.ok(result.published.some((entry) => entry.upstream === 'venice'));
   assert.ok(result.published.some((entry) => entry.upstream === 'chutes'));
   assert.ok(upserted.length >= 50);
+});
+
+test('platform bootstrap publishes only listed models that pass completion and pauses failures', async (t) => {
+  const [good, bad] = INFERENCE_MODEL_CATALOG.filter((m) => m.modelProvider === 'openai');
+  const published: string[] = [];
+  const paused: string[] = [];
+  t.mock.method(globalThis, 'fetch', async (url: string, options: RequestInit) => {
+    if (String(url).endsWith('/models'))
+      return Response.json({
+        data: [{ id: good.upstreamModelId }, { id: bad.upstreamModelId }, { id: 'unknown-model' }],
+      });
+    const body = JSON.parse(String(options.body));
+    return body.model === good.upstreamModelId
+      ? Response.json({
+          output: [{ type: 'message', content: [{ type: 'output_text', text: 'ok' }] }],
+        })
+      : new Response('', { status: 403 });
+  });
+  const result = await bootstrapPlatformLiquidity({
+    orchestrator: {
+      listProviders: () => [
+        {
+          providerId: 'old-bad',
+          modelId: bad.modelId,
+          source: { externalRef: 'platform', targetType: 'openai' },
+        },
+      ],
+      pauseRegisteredProvider: async (id: string) => {
+        paused.push(id);
+      },
+      upsertRegisteredProvider: async (input: { agentId: string }) => {
+        published.push(input.agentId);
+        return { providerId: input.agentId };
+      },
+      removeRegisteredProvider: async () => false,
+    } as never,
+    env: { NODE_ENV: 'production', BOSSRAID_OPENAI_API_KEY: 'test-key' },
+  });
+  assert.equal(result.published.length, 1);
+  assert.equal(published.length, 1);
+  assert.ok(result.skipped.some((m) => m.reason === 'live_unpriced'));
+  assert.ok(result.skipped.some((m) => m.modelId === bad.modelId && m.reason === 'live_failed'));
+  assert.deepEqual(paused, ['old-bad']);
 });

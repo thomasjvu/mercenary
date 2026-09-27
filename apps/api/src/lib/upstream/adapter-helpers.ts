@@ -1,3 +1,4 @@
+import { readUpstreamUsage } from './usage.js';
 import type { UpstreamProviderId } from '@bossraid/constants';
 import { isProviderInferenceMock, isProviderTeeMock } from '../upstream-mock.js';
 import { fetchUpstreamJson } from './shared.js';
@@ -17,14 +18,7 @@ export async function fetchUpstreamModelsWithFallback(input: {
     return input.mockModels;
   }
 
-  try {
-    return await input.fetchModels();
-  } catch (error) {
-    if (env.NODE_ENV === 'production') {
-      throw error;
-    }
-    return input.mockModels;
-  }
+  return input.fetchModels();
 }
 
 export async function probeOpenAiStyleChatCompletion(input: {
@@ -43,6 +37,7 @@ export async function probeOpenAiStyleChatCompletion(input: {
 
   const payload = await fetchUpstreamJson<{
     id?: string;
+    usage?: unknown;
     choices?: Array<{ message?: { content?: string | null } }>;
   }>(input.url, {
     apiKey: input.apiKey,
@@ -58,6 +53,7 @@ export async function probeOpenAiStyleChatCompletion(input: {
   return {
     content,
     requestId: payload.id,
+    usage: readUpstreamUsage(payload.usage),
     ...input.mockExtras,
   };
 }

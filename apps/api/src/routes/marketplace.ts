@@ -90,7 +90,7 @@ export function registerMarketplaceRoutes(
       return {
         object: 'list',
         benchmark: {
-          source: 'models.dev',
+          source: 'catalog_snapshot',
           url: 'https://models.dev/api.json',
           mode: 'static_reference_only',
         },

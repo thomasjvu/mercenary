@@ -398,6 +398,8 @@ export async function deliverStreamingChatCompletion(
                   manaBilling: input.launchPayment.manaBilling,
                   settlement,
                   selectedSeller,
+                  usage,
+                  modelId: input.chatRequest.model,
                   receiptPath: input.spawn.receiptPath,
                 });
               }
@@ -436,6 +438,7 @@ export async function deliverStreamingChatCompletion(
                 receiptPath: input.spawn.receiptPath,
                 modelId: input.chatRequest.model,
                 paidPriceUsd: capturedCostUsd,
+                usage,
               });
             },
           }
@@ -578,6 +581,7 @@ export async function deliverBufferedChatCompletion(
     receiptPath: input.spawn.receiptPath,
     modelId: input.chatRequest.model,
     paidPriceUsd: capturedCostUsd,
+    usage: response.usage,
   });
   if (bossraid) {
     response.bossraid = bossraid;

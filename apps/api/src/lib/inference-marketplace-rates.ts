@@ -14,7 +14,7 @@ export function resolveProviderMarketModelId(provider: ProviderProfile): string 
 export function estimateTokenMeteredMarketRateUsd(
   pricing: Pick<
     ProviderPricing,
-    'pricePer1mInputTokensUsd' | 'pricePer1mOutputTokensUsd' | 'minimumChargeUsd'
+    'pricePer1mInputTokensUsd' | 'pricePer1mOutputTokensUsd' | 'minimumChargeUsd' | 'tokenPricing'
   >,
   referenceInputTokens = MARKETPLACE_REFERENCE_INPUT_TOKENS,
   referenceOutputTokens = MARKETPLACE_REFERENCE_OUTPUT_TOKENS

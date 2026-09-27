@@ -33,7 +33,7 @@ const COMMANDS = {
   'sync:inference-catalog': {
     category: 'sync',
     description: 'Refresh inference catalog and reference pricing JSON',
-    run: () => runNode('scripts/sync-inference-catalog.mjs'),
+    run: (extra) => runNode('scripts/sync-inference-catalog.mjs', extra),
   },
   'sync:docs-routes': {
     category: 'sync',
@@ -173,7 +173,10 @@ const COMMANDS = {
   'test:partyquest-bossraid:smoke': {
     category: 'test',
     description: 'Party Quest integration smoke',
-    run: () => runNode('examples/campaigns/bossraid-development/scripts/test-party-quest-bossraid-smoke.mjs'),
+    run: () =>
+      runNode(
+        'examples/campaigns/bossraid-development/scripts/test-party-quest-bossraid-smoke.mjs'
+      ),
   },
   'test:bounty-escrow:e2e': {
     category: 'test',

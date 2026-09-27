@@ -69,10 +69,16 @@ Worker env: see `examples/providers/harness-*.env.example`. Set `BOSSRAID_HARNES
 Sell model completions without running a worker:
 
 1. `POST /v1/seller/upstream/:provider/connect` — validates key via live `/models` **and** a cheap chat probe
-2. `GET /v1/seller/upstream/:provider/models/catalog` — catalog + reference rates
+2. `GET /v1/seller/upstream/:provider/models` — account availability joined to catalog prices. `/models/catalog` is a public preview.
 3. `POST /v1/seller/upstream/:provider/offers` — publish chat offers (`lane: "chat"` only in product UI)
 
-Keys are encrypted at rest. This is **API-key selling** for single-shot completions.
+Providers: `venice`, `redpill`, `near`, `chutes`, `phala`, `darkbloom`, `nebius`, `openai`, `xai`, `zai`, `anthropic`. Keys are encrypted at rest.
+
+The picker disables catalog-only models and live models without supported pricing. Publishing refreshes `/models`, probes each selected completion, and verifies required TEE/E2EE evidence. Probes consume upstream tokens. Partial success returns `providers` plus `rejected` entries with the failed model and reason; no successful selections returns `400 no_supported_models`. A selected existing offer is paused when its model loses availability or fails the probe.
+
+Discovery states are `catalog_only`, `live_unpriced`, and `live_unverified`. Successful publication reports `live_supported`; failed probes report `live_failed`. `offerable` means a selection is eligible to be probed, not already verified. `supported` means the catalog has supported metadata/prices. Live unpriced rows have null reference prices.
+
+See [hosted onboarding](../../../examples/onboarding/hosted-upstream.md) and [catalog architecture](../operators/architecture.md#catalog-and-availability).
 
 ```json
 {

@@ -10,19 +10,11 @@ Live offer counts, API health, and the Cloudflare 525 recovery procedure: [Marke
 
 1. **Local or Phala** — `pnpm dev` for local stack; Phala bootstrap via [Infisical](/dev-docs/operators/infisical).
 2. **Readiness** — `GET /v1/ops/production-readiness` must return `ok: true` for full production.
-3. **Liquidity (platform seats)** — set platform `BOSSRAID_*_API_KEY` values:
-   - `BOSSRAID_VENICE_API_KEY` → **all** Venice text models
-   - `BOSSRAID_CHUTES_API_KEY` → **all** Chutes LLMs
-   - `BOSSRAID_NEAR_API_KEY` → **all** NEAR AI Cloud text models
-   - `BOSSRAID_PHALA_API_KEY` → **all** Phala TEE chat models
-   - `BOSSRAID_REDPILL_API_KEY` → **all** Redpill chat models
-   - `BOSSRAID_DARKBLOOM_API_KEY` → **all** Darkbloom chat models (Apple Silicon private inference)
-   - `BOSSRAID_NEBIUS_API_KEY` → all priced Nebius Token Factory text-to-text models in the catalog
-   - `BOSSRAID_OPENAI_API_KEY` → OpenAI GPT-6 Astra, Sol, and Luna
-   - `BOSSRAID_XAI_API_KEY` → curated Grok models
-   - optional Anthropic as documented in [discount-inference.md](../buyers/discount-inference.md#platform-seats)
+3. **Liquidity (platform seats)** — configure any of the 11 provider keys: Venice, Redpill, NEAR, Chutes, Phala, Darkbloom, Nebius, OpenAI, xAI, Z.ai, or Anthropic. Key names and bases are in [env.md](../reference/env.md#catalog-upstream-platform-keys-optional).
 
-   Then `POST /v1/ops/platform-liquidity/bootstrap` with admin token (or `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1` on API start). Phala compose defaults to an empty provider seed (`platform-only.providers.json`) and retires demo workers `dottie` / `riko` / `gamma` via `BOSSRAID_DISABLED_PROVIDER_IDS`. Optional in-CVM game agents: `docker compose --profile game-providers up`.
+   Run `POST /v1/ops/platform-liquidity/bootstrap` with an admin token, or set `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1` on API start. Bootstrap refreshes each keyed account's model list, probes priced chat models (up to four concurrent probes per provider), and registers only passing seats. Probes consume upstream tokens. Inspect `published`, `skipped`, and `paused` in the result. Missing keys, removed models, or failed probes pause previous platform seats.
+
+   Phala compose uses an empty provider seed (`platform-only.providers.json`) and retires demo workers `dottie` / `riko` / `gamma` via `BOSSRAID_DISABLED_PROVIDER_IDS`. Optional game agents use `docker compose --profile game-providers up`.
 
 4. **Ops UI** — authenticate with `BOSSRAID_ADMIN_TOKEN`, monitor raids, toggle x402.
 5. **Ship** — gateway (`pnpm bossraid serve:gateway`) or Cloudflare Pages deploy.
@@ -34,7 +26,7 @@ Live offer counts, API health, and the Cloudflare 525 recovery procedure: [Marke
 - Complete and record a live Marian x402 transaction, confirm funded settlement balances and at least one ready seller, and require `GET /v1/ops/production-readiness` → `ok: true` before unrestricted paid traffic.
 - The shared-wallet transaction queue prevents overlap only among callers in the same Node process. It does not coordinate API replicas or standalone settlement commands; the control-state store remains single-writer and multi-process writes are unsupported.
 
-Contributor scripts (`check`, `build`, `dev`, `test:*`) live in root `package.json`. Operator, deploy, and integration commands use `pnpm bossraid <command>` — run `pnpm bossraid help` for the full list.
+Contributor scripts (`check`, `build`, `dev`, `test:*`) live in root `package.json`. Type checks, builds, and unit tests cap Turbo at two concurrent package jobs to keep local resource use predictable. Run expensive validation commands one at a time. Operator, deploy, and integration commands use `pnpm bossraid <command>` — run `pnpm bossraid help` for the full list.
 
 Regenerate OpenAPI specs after route or schema changes:
 
@@ -44,13 +36,22 @@ pnpm bossraid sync:openapi
 
 CI runs `pnpm bossraid check:openapi`. Specs are served from `apps/docs/public/` and browsable at [/api](/api).
 
-Refresh inference catalog + reference pricing JSON:
+### Catalog refresh
 
 ```bash
-pnpm bossraid sync:inference-catalog
+pnpm bossraid sync:inference-catalog                     # fetch and write snapshots + catalog
+pnpm bossraid sync:inference-catalog -- --cached          # regenerate offline
+pnpm bossraid sync:inference-catalog -- --check           # fetch, report drift; no writes
+pnpm bossraid sync:inference-catalog -- --cached --check  # compare saved inputs; no network
 ```
 
-Writes `packages/constants/src/inference-catalog.ts` and `packages/constants/data/inference-model-pricing.json`. Providers with public price metadata sync their live model lists; other providers use published rates and model ids maintained in the script. Nebius includes its published base-flavor text-to-text models; OpenAI includes its current general chat models. Models are offerable only when they have published input and output token rates.
+`pnpm build` refreshes before Turbo; both Docker builds do the same. Direct constants builds use the saved snapshot. Public downloads need no provider API keys. Sources have a 20-second timeout and ETag support. A failed download retains that source's previous successful payload and reports the failure. A first run without a usable snapshot fails.
+
+Outputs in `packages/constants/` include the typed catalog, provider prices, `data/inference-sources.json`, `data/inference-catalog-report.json`, and generated source status. The local marketplace fixture in `examples/inference/` is regenerated too. Edit `data/inference-overrides.json` for reviewed aliases, price exceptions, and privacy claims; do not edit generated files.
+
+`--check` exits nonzero for additions, removals, changed model metadata/prices, source failures, or sources not checked successfully in seven days. Review the report, refresh, and commit the generated snapshot with the importer/override changes. CI checks the committed inputs; the daily catalog drift workflow fetches current public sources without publishing offers or modifying files.
+
+`GET /v1/ops/platform-liquidity` exposes `catalogSources`, candidates, and `configuredCount`. The legacy `readyCount` also counts configured keys; successful runtime publication is reported by the bootstrap response. Inspect source timestamps/errors before deployment, then inspect the bootstrap results. Catalog inclusion alone does not prove model availability.
 
 Regenerate brand assets (Venice; requires `VENICE_API_KEY` in `.private/.env`):
 
@@ -187,6 +188,8 @@ Active hosted stack: Phala CVM on **raid.quest**. EigenCompute stays in-repo for
 Contracts package: [`packages/contracts/README.md`](../../../packages/contracts/README.md). Payments: [reference/payments.md](../reference/payments.md).
 
 ## Deploy checklist
+
+For provider changes: refresh the catalog, review exclusions/source errors, build the image, configure keys, and run platform bootstrap. Confirm the expected models are in `published`; inspect `skipped` and `paused`. Seller onboarding follows [the hosted key example](../../../examples/onboarding/hosted-upstream.md).
 
 ### 1. ACP registration (once)
 

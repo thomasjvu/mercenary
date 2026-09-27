@@ -20,7 +20,6 @@ const PROVIDER_BRANDS: Record<string, ProviderBrand> = {
   chutes: { icon: 'simple-icons:openstack', label: 'Chutes' },
   darkbloom: { icon: 'simple-icons:apple', label: 'Darkbloom' },
   nebius: { icon: 'simple-icons:nebius', label: 'Nebius' },
-  openai: { icon: 'simple-icons:openai', label: 'OpenAI' },
   near: { icon: 'simple-icons:near', label: 'NEAR AI' },
   deepseek: { icon: 'simple-icons:deepseek', label: 'DeepSeek' },
   qwen: { icon: 'simple-icons:alibabacloud', label: 'Qwen' },

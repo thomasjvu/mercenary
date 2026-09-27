@@ -1,4 +1,4 @@
-import type { UpstreamProviderId } from '@bossraid/constants';
+import type { UpstreamProviderId, InferenceTokenUsage } from '@bossraid/constants';
 
 export type UpstreamModelRecord = {
   id: string;
@@ -17,6 +17,9 @@ export type MergedUpstreamCatalogModel = {
   modelProvider: UpstreamProviderId;
   supported: boolean;
   upstreamFound: boolean;
+  upstreamModelId: string;
+  state: 'catalog_only' | 'live_unpriced' | 'live_unverified' | 'live_supported' | 'live_failed';
+  offerable: boolean;
   teeAttested: boolean;
   e2ee: boolean;
   maxContextTokens: number | null;
@@ -26,6 +29,7 @@ export type MergedUpstreamCatalogModel = {
 
 export type UpstreamChatResult = {
   content: string;
+  usage?: InferenceTokenUsage;
   requestId?: string;
   instanceId?: string;
 };

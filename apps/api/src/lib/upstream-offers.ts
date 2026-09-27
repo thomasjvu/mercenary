@@ -4,7 +4,12 @@ import {
   defaultModelBaseForHarness,
   type HarnessKind,
 } from '@bossraid/agent-harness';
-import { INFERENCE_MODEL_CATALOG, UPSTREAM_PROVIDER_CONFIG } from '@bossraid/constants';
+import {
+  INFERENCE_MODEL_CATALOG,
+  UPSTREAM_PROVIDER_CONFIG,
+  discountTokenPricing,
+  type TokenPricing,
+} from '@bossraid/constants';
 import type { UpstreamProviderId } from '@bossraid/constants';
 import {
   defaultApiChatHarnessProfile,
@@ -22,6 +27,7 @@ export function deriveDiscountedTokenRates(input: { modelId: string; discountPer
       minimumChargeUsd: number;
       maxContextTokens: number;
       upstreamModelId: string;
+      tokenPricing?: TokenPricing;
     }
   | undefined {
   const catalogEntry = INFERENCE_MODEL_CATALOG.find((entry) => entry.modelId === input.modelId);
@@ -40,6 +46,9 @@ export function deriveDiscountedTokenRates(input: { modelId: string; discountPer
     minimumChargeUsd,
     maxContextTokens: catalogEntry.maxContextTokens,
     upstreamModelId: catalogEntry.upstreamModelId,
+    tokenPricing: catalogEntry.tokenPricing
+      ? discountTokenPricing(catalogEntry.tokenPricing, multiplier)
+      : undefined,
   };
 }
 
@@ -56,6 +65,14 @@ export function buildHostedProviderRegistration(input: {
   /** chat = single completion; harness = multi-step tool loop on platform fleet (no per-seller Phala). */
   lane?: HostedOfferLane;
 }): ProviderRegistrationInput | undefined {
+  const catalogEntry = INFERENCE_MODEL_CATALOG.find((entry) => entry.modelId === input.modelId);
+  if (
+    catalogEntry?.modelProvider !== input.provider ||
+    !Number.isFinite(input.discountPercent) ||
+    input.discountPercent < 0 ||
+    input.discountPercent > 100
+  )
+    return undefined;
   const rates = deriveDiscountedTokenRates({
     modelId: input.modelId,
     discountPercent: input.discountPercent,
@@ -72,7 +89,6 @@ export function buildHostedProviderRegistration(input: {
 
   const agentIdBase = buildUpstreamSellerProviderId(input.provider, input.wallet, input.modelId);
   const providerId = lane === 'harness' ? `${agentIdBase}-harness`.slice(0, 96) : agentIdBase;
-  const catalogEntry = INFERENCE_MODEL_CATALOG.find((entry) => entry.modelId === input.modelId);
   const attestationVendor = catalogEntry?.attestationVendor ?? input.provider;
   const framework = resolveAgentFrameworkForUpstream(input.provider);
   const planProvider = catalogEntry?.modelProvider ?? input.provider;
@@ -139,6 +155,7 @@ export function buildHostedProviderRegistration(input: {
       minimumChargeUsd: rates.minimumChargeUsd,
       rateCardVersion: `${input.provider}-hosted-${lane}-v1`,
       upstreamModelId: rates.upstreamModelId,
+      tokenPricing: rates.tokenPricing,
       maxContextTokens: rates.maxContextTokens,
     },
     auth: {

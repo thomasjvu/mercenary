@@ -1,3 +1,4 @@
+import type { InferenceTokenUsage } from '@bossraid/constants';
 import type { RaidLaunchReservationRecord } from './marketplace.js';
 import type {
   AgentFramework,
@@ -177,6 +178,8 @@ export interface SubmissionArtifact {
 }
 
 export interface ProviderSubmission {
+  /** Usage reported by a trusted hosted gateway, never parsed from seller callbacks. */
+  inferenceUsage?: InferenceTokenUsage;
   raidId: string;
   providerId: string;
   providerRunId?: string;

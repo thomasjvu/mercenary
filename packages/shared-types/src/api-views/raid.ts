@@ -1,3 +1,4 @@
+import type { InferenceTokenUsage } from '@bossraid/constants';
 import type { PrivacyAttestationView } from './privacy.js';
 import type { SettlementExecutionResponse, SettlementSummaryResponse } from './settlement.js';
 
@@ -44,6 +45,7 @@ export type SubmissionArtifactView = {
 
 export type RankedSubmissionResponse = {
   submission: {
+    inferenceUsage?: InferenceTokenUsage;
     providerId: string;
     explanation: string;
     patchUnifiedDiff?: string;

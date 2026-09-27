@@ -74,10 +74,25 @@ export function useSellerUpstreamOnboarding() {
   const [publishResult, setPublishResult] = useState<string | null>(null);
 
   useEffect(() => {
-    if (catalogModels.data?.data) {
+    if (catalogModels.data?.data && !upstreamConfig.data?.configured) {
       setModels(catalogModels.data.data);
     }
-  }, [catalogModels.data, provider]);
+  }, [catalogModels.data, provider, upstreamConfig.data?.configured]);
+
+  useEffect(() => {
+    if (!upstreamConfig.data?.configured) return;
+    let active = true;
+    fetchSellerUpstreamModels(provider)
+      .then((result) => {
+        if (active) setModels(result.data);
+      })
+      .catch(() => {
+        if (active) setModels([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [provider, upstreamConfig.data?.configured]);
 
   const buyerPercent = Math.max(0, 100 - (Number(discountPercent) || 0));
   const providerConfig = UPSTREAM_PROVIDER_CONFIG[provider];
@@ -109,7 +124,7 @@ export function useSellerUpstreamOnboarding() {
       setModels(modelList.data);
       setSelectedModelIds(
         modelList.data
-          .filter((model) => model.upstreamFound)
+          .filter((model) => model.offerable)
           .slice(0, 5)
           .map((model) => model.modelId)
       );
@@ -143,7 +158,11 @@ export function useSellerUpstreamOnboarding() {
       setPublishResult(
         `Published ${result.providers.length} ${laneLabel} offer${result.providers.length === 1 ? '' : 's'}.`
       );
-      setStatus('Offers are live on the marketplace.');
+      setStatus(
+        result.rejected.length
+          ? `${result.providers.length} offers live; ${result.rejected.length} models failed availability or completion checks.`
+          : 'Offers are live on the marketplace.'
+      );
       await sellerStats.mutate();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Publish failed.');
@@ -154,6 +173,7 @@ export function useSellerUpstreamOnboarding() {
 
   function handleProviderChange(nextProvider: UpstreamProviderId) {
     setProvider(nextProvider);
+    setModels([]);
     setSelectedModelIds([]);
   }
 

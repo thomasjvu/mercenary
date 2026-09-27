@@ -204,6 +204,7 @@ function serializeRankedSubmission(entry: RankedSubmission): RankedSubmissionRes
       explanation: entry.submission.explanation,
       patchUnifiedDiff: entry.submission.patchUnifiedDiff,
       answerText: entry.submission.answerText,
+      inferenceUsage: entry.submission.inferenceUsage,
       artifacts: entry.submission.artifacts?.map(serializeSubmissionArtifact),
       confidence: entry.submission.confidence,
       contributionRole: entry.submission.contributionRole,

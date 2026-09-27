@@ -232,3 +232,14 @@ export function readTeeSocketPath(env: NodeJS.ProcessEnv = process.env): string 
 export const MISC = {
   RAID_ACCESS_TOKEN_LENGTH: 24, // bytes for random access token
 };
+
+export type {
+  TokenPricing,
+  TokenRates,
+  TokenPriceTier,
+  TokenUsageDetails,
+  InferenceTokenUsage,
+} from './inference-catalog-types.js';
+export { calculateTokenCostUsd, resolveTokenRates, discountTokenPricing } from './token-pricing.js';
+
+export { INFERENCE_CATALOG_SOURCE_STATUS } from './inference-catalog-status.js';

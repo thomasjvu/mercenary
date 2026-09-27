@@ -117,6 +117,10 @@ export class BossRaidOrchestrator {
     return this.raidLifecycle.removeRegisteredProvider(providerId);
   }
 
+  async pauseRegisteredProvider(providerId: string, reason: string): Promise<void> {
+    return this.providerRegistry.pauseRegisteredProvider(providerId, reason);
+  }
+
   async recordAgentHeartbeat(input: AgentHeartbeatInput): Promise<ProviderProfile | undefined> {
     return this.raidLifecycle.recordAgentHeartbeat(input);
   }

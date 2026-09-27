@@ -229,6 +229,12 @@ test('parseProviderRegistrationInput accepts token-metered rate cards', () => {
       rate_card_hash: 'rate-card-hash-v1',
       upstream_model_id: 'google/gemma-4-31b-it',
       max_context_tokens: 131_072,
+      token_pricing: {
+        input: 0.08,
+        output: 0.16,
+        cache_read: 0.01,
+        tiers: [{ aboveInputTokens: 200_000, input: 0.12, output: 0.24 }],
+      },
     },
   });
 
@@ -242,6 +248,29 @@ test('parseProviderRegistrationInput accepts token-metered rate cards', () => {
   assert.equal(registration.pricing?.rateCardHash, 'rate-card-hash-v1');
   assert.equal(registration.pricing?.upstreamModelId, 'google/gemma-4-31b-it');
   assert.equal(registration.pricing?.maxContextTokens, 131_072);
+  assert.deepEqual(registration.pricing?.tokenPricing, {
+    input: 0.08,
+    output: 0.16,
+    cache_read: 0.01,
+    tiers: [{ aboveInputTokens: 200_000, input: 0.12, output: 0.24 }],
+  });
+  assert.throws(() =>
+    parseProviderRegistrationInput({
+      agent_id: 'invalid-pricing-seller',
+      name: 'Invalid Pricing Seller',
+      endpoint: 'https://provider.example.com',
+      pricing: {
+        tokenPricing: {
+          input: 1,
+          output: 1,
+          tiers: [
+            { aboveInputTokens: 200_000, input: 2, output: 2 },
+            { aboveInputTokens: 200_000, input: 3, output: 3 },
+          ],
+        },
+      },
+    })
+  );
 });
 
 test('parseProviderRegistrationInput keeps Party Quest provider source metadata', () => {

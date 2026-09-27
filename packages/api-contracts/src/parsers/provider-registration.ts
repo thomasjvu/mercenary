@@ -1,4 +1,5 @@
 import type { ProviderRegistrationInput } from '@bossraid/shared-types';
+import { parseTokenPricing } from './token-pricing.js';
 import {
   ensureAgentFramework,
   ensureFiniteNumberLike,
@@ -192,6 +193,7 @@ export function parseProviderRegistrationInput(value: unknown): ProviderRegistra
           },
     pricing: pricing
       ? {
+          tokenPricing: parseTokenPricing(pricing.tokenPricing ?? pricing.token_pricing),
           mode:
             pricing.mode == null
               ? undefined

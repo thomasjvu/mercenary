@@ -8,7 +8,7 @@ WORKDIR /app
 
 COPY . .
 RUN pnpm install --frozen-lockfile
-RUN pnpm turbo run build --filter=@bossraid/api... --filter=@bossraid/evaluator... --filter=@bossraid/provider-agent... --filter=@bossraid/web... --filter=@bossraid/ops...
+RUN node scripts/sync-inference-catalog.mjs && pnpm turbo run build --filter=@bossraid/api... --filter=@bossraid/evaluator... --filter=@bossraid/provider-agent... --filter=@bossraid/web... --filter=@bossraid/ops...
 
 FROM docker:28-cli AS dockercli
 

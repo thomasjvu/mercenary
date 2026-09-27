@@ -37,6 +37,9 @@ jobs:
       - name: Dependency audit
         run: pnpm audit --audit-level=high
 
+      - name: Validate catalog snapshot
+        run: pnpm bossraid sync:inference-catalog -- --cached --check
+
       - name: Typecheck
         run: pnpm check
 

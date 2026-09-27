@@ -151,9 +151,13 @@ Onchain overlay template: `deploy/phala/secrets.onchain.env.example`.
 | `BOSSRAID_UPSTREAM_TEE_MOCK`            | `1` = mock upstream TEE attestation verification         |
 | `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND` | Dev-only: fund bounties without x402 (default off)       |
 
+Failed live fetches do not silently fall back to mock models in development. Use explicit mock flags only for local simulations.
+
 ### Catalog upstream platform keys (optional)
 
-`BOSSRAID_VENICE_API_KEY`, `BOSSRAID_REDPILL_API_KEY`, `BOSSRAID_NEAR_API_KEY`, `BOSSRAID_CHUTES_API_KEY`, `BOSSRAID_PHALA_API_KEY`, `BOSSRAID_XAI_API_KEY`, `BOSSRAID_ZAI_API_KEY`, `BOSSRAID_ANTHROPIC_API_KEY`, `BOSSRAID_DARKBLOOM_API_KEY`, `BOSSRAID_NEBIUS_API_KEY`, `BOSSRAID_OPENAI_API_KEY` — platform keys for catalog inference when sellers do not supply their own. TEE preflight is available only for supported upstreams. Optional `BOSSRAID_ZAI_API_BASE`, `BOSSRAID_ANTHROPIC_API_BASE`, `BOSSRAID_NEBIUS_API_BASE`, or `BOSSRAID_OPENAI_API_BASE` override default OpenAI-compatible base URLs. Nebius defaults to `https://api.tokenfactory.nebius.com/v1`; OpenAI defaults to `https://api.openai.com/v1`.
+Build-time catalog downloads use public sources and need no credentials or new environment variables. Source URLs and refresh policy are documented in [runtime](../operators/runtime.md#catalog-refresh).
+
+`BOSSRAID_VENICE_API_KEY`, `BOSSRAID_REDPILL_API_KEY`, `BOSSRAID_NEAR_API_KEY`, `BOSSRAID_CHUTES_API_KEY`, `BOSSRAID_PHALA_API_KEY`, `BOSSRAID_XAI_API_KEY`, `BOSSRAID_ZAI_API_KEY`, `BOSSRAID_ANTHROPIC_API_KEY`, `BOSSRAID_DARKBLOOM_API_KEY`, `BOSSRAID_NEBIUS_API_KEY`, `BOSSRAID_OPENAI_API_KEY` — platform keys for catalog inference when sellers do not supply their own. TEE preflight is available only for supported upstreams. Optional `BOSSRAID_ZAI_API_BASE`, `BOSSRAID_ANTHROPIC_API_BASE`, `BOSSRAID_NEBIUS_API_BASE`, or `BOSSRAID_OPENAI_API_BASE` override the provider API bases. Nebius defaults to `https://api.tokenfactory.nebius.com/v1`; OpenAI defaults to `https://api.openai.com/v1` and uses `/responses`; Anthropic uses `/messages`. Z.ai retains its coding-plan base; catalog benchmark prices come from the standard Z.ai token API and do not describe subscription billing. Account `/models` and completion probes determine which entries can publish.
 
 ### Evaluator
 
@@ -204,17 +208,17 @@ Outside `NODE_ENV=production`, `node_env_production`, `onchain_settlement`, and 
 
 ### Settlement / operator extras (commonly needed)
 
-| Variable                                         | Purpose                                                                                                     |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `BOSSRAID_SETTLEMENT_TREASURY_KEY`               | Signs onchain settlement fund txs                                                                           |
-| `BOSSRAID_EVALUATOR_ADDRESS`                     | Onchain evaluator address for job complete/reject                                                           |
-| `BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY`      | Optional evaluator signer for onchain complete                                                              |
-| `BOSSRAID_SETTLEMENT_PROVIDER_PRIVATE_KEYS_JSON` | Optional map of provider wallets for onchain job steps                                                      |
-| `BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS`      | `1` = allow private/loopback provider URLs in production (trusted compose networks only)                    |
-| `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY`          | `1` = on API start, register featured platform chat offers when `BOSSRAID_*_API_KEY` exists (Phala default) |
-| `BOSSRAID_TRUSTED_CLIENT_KEY`                    | Alias for trusted-client bearer (with `BOSSRAID_API_KEY`)                                                   |
-| `BOSSRAID_RAID_RETENTION_TTL_SEC`                | Raid record retention window                                                                                |
-| `BOSSRAID_X402_RECONCILIATION_INTERVAL_MS`       | x402 refund/reconcile worker interval                                                                       |
+| Variable                                         | Purpose                                                                                                                        |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `BOSSRAID_SETTLEMENT_TREASURY_KEY`               | Signs onchain settlement fund txs                                                                                              |
+| `BOSSRAID_EVALUATOR_ADDRESS`                     | Onchain evaluator address for job complete/reject                                                                              |
+| `BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY`      | Optional evaluator signer for onchain complete                                                                                 |
+| `BOSSRAID_SETTLEMENT_PROVIDER_PRIVATE_KEYS_JSON` | Optional map of provider wallets for onchain job steps                                                                         |
+| `BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS`      | `1` = allow private/loopback provider URLs in production (trusted compose networks only)                                       |
+| `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY`          | `1` = on API start, probe and publish available, priced chat models for configured `BOSSRAID_*_API_KEY` values (Phala default) |
+| `BOSSRAID_TRUSTED_CLIENT_KEY`                    | Alias for trusted-client bearer (with `BOSSRAID_API_KEY`)                                                                      |
+| `BOSSRAID_RAID_RETENTION_TTL_SEC`                | Raid record retention window                                                                                                   |
+| `BOSSRAID_X402_RECONCILIATION_INTERVAL_MS`       | x402 refund/reconcile worker interval                                                                                          |
 
 ## Dev & smoke only
 

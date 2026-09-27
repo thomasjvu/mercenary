@@ -1,5 +1,9 @@
-import { isUpstreamProviderId, type UpstreamProviderId } from '@bossraid/constants';
-import { mergeUpstreamCatalogModelsForProvider } from './catalog-merge.js';
+import {
+  INFERENCE_MODEL_CATALOG,
+  isUpstreamProviderId,
+  type UpstreamProviderId,
+} from '@bossraid/constants';
+import { isProviderInferenceMock } from '../upstream-mock.js';
 import {
   fetchChutesAttestationEvidence,
   fetchChutesUpstreamModels,
@@ -74,6 +78,12 @@ export async function fetchUpstreamModels(
   apiKey: string,
   options: { env?: NodeJS.ProcessEnv } = {}
 ): Promise<UpstreamModelRecord[]> {
+  if (isProviderInferenceMock(provider, options.env ?? process.env)) {
+    return INFERENCE_MODEL_CATALOG.filter((m) => m.modelProvider === provider).map((m) => ({
+      id: m.upstreamModelId,
+      displayName: m.displayName,
+    }));
+  }
   switch (provider) {
     case 'venice':
       return fetchVeniceUpstreamModels(apiKey, options);

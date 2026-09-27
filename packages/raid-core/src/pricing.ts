@@ -1,3 +1,4 @@
+import { calculateTokenCostUsd, type TokenUsageDetails } from '@bossraid/constants';
 import type { ProviderPricing, ProviderProfile, RaidTaskSpec } from '@bossraid/shared-types';
 import { clamp01, sha256 } from './utils.js';
 
@@ -24,6 +25,7 @@ export function buildRateCardHash(pricing: Omit<ProviderPricing, 'rateCardHash'>
       rateCardVersion: pricing.rateCardVersion,
       upstreamModelId: pricing.upstreamModelId,
       maxContextTokens: pricing.maxContextTokens,
+      tokenPricing: pricing.tokenPricing,
     })
   );
 }
@@ -66,11 +68,18 @@ export function estimateTaskOutputTokens(task: RaidTaskSpec): number {
 export function estimateTokenMeteredUsd(
   pricing: Pick<
     ProviderPricing,
-    'pricePer1mInputTokensUsd' | 'pricePer1mOutputTokensUsd' | 'minimumChargeUsd'
+    'pricePer1mInputTokensUsd' | 'pricePer1mOutputTokensUsd' | 'minimumChargeUsd' | 'tokenPricing'
   >,
   inputTokens: number,
-  outputTokens: number
+  outputTokens: number,
+  details?: TokenUsageDetails
 ): number {
+  if (pricing.tokenPricing) {
+    return Math.max(
+      calculateTokenCostUsd(pricing.tokenPricing, inputTokens, outputTokens, details),
+      pricing.minimumChargeUsd ?? 0
+    );
+  }
   const inputCost =
     (Math.max(0, inputTokens) / 1_000_000) * Math.max(pricing.pricePer1mInputTokensUsd ?? 0, 0);
   const outputCost =

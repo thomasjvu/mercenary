@@ -8,7 +8,9 @@ type UseModelPickerModalOptions = {
 
 export function useModelPickerModal({ models, selectedIds }: UseModelPickerModalOptions) {
   const [query, setQuery] = useState('');
-  const [selection, setSelection] = useState<Set<string>>(() => new Set(selectedIds));
+  const [selection, setSelection] = useState<Set<string>>(
+    () => new Set(selectedIds.filter((id) => models.some((m) => m.modelId === id && m.offerable)))
+  );
   const [onlyUpstream, setOnlyUpstream] = useState(false);
   const [onlyTee, setOnlyTee] = useState(false);
 
@@ -32,6 +34,7 @@ export function useModelPickerModal({ models, selectedIds }: UseModelPickerModal
   }, [models, onlyTee, onlyUpstream, query]);
 
   function toggleModel(modelId: string) {
+    if (!models.some((m) => m.modelId === modelId && m.offerable)) return;
     setSelection((current) => {
       const next = new Set(current);
       if (next.has(modelId)) {
@@ -46,7 +49,7 @@ export function useModelPickerModal({ models, selectedIds }: UseModelPickerModal
   function selectVisible() {
     setSelection((current) => {
       const next = new Set(current);
-      for (const model of filtered) {
+      for (const model of filtered.filter((m) => m.offerable)) {
         next.add(model.modelId);
       }
       return next;

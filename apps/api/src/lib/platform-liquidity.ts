@@ -1,3 +1,5 @@
+import { fetchUpstreamModels, mergeUpstreamCatalogModelsForProvider } from './upstream/index.js';
+import { verifyHostedModel } from './upstream/eligibility.js';
 import { INFERENCE_MODEL_CATALOG, isUpstreamProviderId } from '@bossraid/constants';
 import type { UpstreamProviderId } from '@bossraid/constants';
 import type { BossRaidOrchestrator } from '@bossraid/orchestrator';
@@ -9,7 +11,7 @@ import { resolveInferenceGatewayProviderEndpoint } from './inference-gateway.js'
 
 /**
  * When BOSSRAID_<PROVIDER>_API_KEY is set, publish a platform seat for every
- * inference-catalog row from these upstreams.
+ * priced catalog row that passes live availability and completion checks.
  * @see https://docs.venice.ai/models/overview
  * @see https://chutes.ai/models?type=llm
  * @see https://cloud.near.ai/#models
@@ -42,6 +44,7 @@ export type PlatformLiquidityBootstrapResult = {
   published: Array<{ modelId: string; providerId: string; upstream: UpstreamProviderId }>;
   skipped: Array<{ modelId: string; reason: string }>;
   removed: string[];
+  paused: string[];
 };
 
 /** Stable ordered model ids for platform liquidity bootstrap. */
@@ -91,47 +94,107 @@ export async function bootstrapPlatformLiquidity(input: {
   const skipped: PlatformLiquidityBootstrapResult['skipped'] = [];
   const candidates = listPlatformLiquidityCandidates(env);
 
-  for (const candidate of candidates) {
-    if (!candidate.hasPlatformKey) {
-      skipped.push({
-        modelId: candidate.modelId,
-        reason: `missing BOSSRAID_${candidate.upstream.toUpperCase()}_API_KEY`,
-      });
+  const paused: string[] = [];
+  const existing = input.orchestrator.listProviders().filter(isPlatformLiquidityProvider);
+  const pause = async (upstream: UpstreamProviderId, modelId?: string) => {
+    for (const profile of existing) {
+      if (profile.source?.targetType !== upstream || (modelId && profile.modelId !== modelId))
+        continue;
+      await input.orchestrator.pauseRegisteredProvider(
+        profile.providerId,
+        'Upstream availability or completion check failed.'
+      );
+      paused.push(profile.providerId);
+    }
+  };
+  for (const upstream of PLATFORM_LIQUIDITY_FULL_CATALOG_PROVIDERS) {
+    const apiKey = readPlatformUpstreamApiKey(upstream, env);
+    const providerCandidates = candidates.filter((c) => c.upstream === upstream);
+    if (!apiKey) {
+      for (const candidate of providerCandidates)
+        skipped.push({
+          modelId: candidate.modelId,
+          reason: `missing BOSSRAID_${upstream.toUpperCase()}_API_KEY`,
+        });
+      await pause(upstream);
       continue;
     }
-
-    const registration = buildHostedProviderRegistration({
-      provider: candidate.upstream,
-      wallet: PLATFORM_LIQUIDITY_WALLET,
-      modelId: candidate.modelId,
-      discountPercent,
-      payoutWallet: env.BOSSRAID_X402_PAY_TO?.trim() || PLATFORM_LIQUIDITY_WALLET,
-      env,
-      lane: 'chat',
-    });
-    if (!registration) {
-      skipped.push({ modelId: candidate.modelId, reason: 'unsupported_catalog_model' });
+    let models;
+    try {
+      models = mergeUpstreamCatalogModelsForProvider(
+        upstream,
+        await fetchUpstreamModels(upstream, apiKey, { env })
+      );
+    } catch {
+      for (const candidate of providerCandidates)
+        skipped.push({ modelId: candidate.modelId, reason: 'upstream_models_unavailable' });
+      await pause(upstream);
       continue;
     }
-
-    // Stable platform provider id for featured liquidity (overrides seller slug).
-    const providerId = `platform-${candidate.upstream}-${candidate.modelId
-      .replace(/[^a-z0-9]+/gi, '-')
-      .replace(/^-|-$/g, '')
-      .toLowerCase()}`.slice(0, 96);
-    registration.agentId = providerId;
-    registration.endpoint = resolveInferenceGatewayProviderEndpoint(providerId, env);
-    registration.name = `${registration.name ?? candidate.modelId} (platform)`;
-
-    const profile = await input.orchestrator.upsertRegisteredProvider(
-      parseProviderRegistrationInput(registration),
-      { allowTakeover: true }
+    for (const previous of existing.filter((p) => p.source?.targetType === upstream)) {
+      if (!models.some((m) => m.modelId === previous.modelId && m.offerable))
+        await pause(upstream, previous.modelId);
+    }
+    // Four completion probes at a time, bounded independently of catalog size.
+    let cursor = 0;
+    await Promise.all(
+      Array.from({ length: 4 }, async () => {
+        while (cursor < models.length) {
+          const model = models[cursor++];
+          if (!model.offerable) {
+            skipped.push({ modelId: model.modelId, reason: model.state });
+            continue;
+          }
+          try {
+            await verifyHostedModel({
+              provider: upstream,
+              apiKey,
+              modelId: model.modelId,
+              upstreamModelId: model.upstreamModelId,
+              env,
+            });
+          } catch {
+            skipped.push({ modelId: model.modelId, reason: 'live_failed' });
+            await pause(upstream, model.modelId);
+            continue;
+          }
+          const registration = buildHostedProviderRegistration({
+            provider: upstream,
+            wallet: PLATFORM_LIQUIDITY_WALLET,
+            modelId: model.modelId,
+            discountPercent,
+            payoutWallet: env.BOSSRAID_X402_PAY_TO?.trim() || PLATFORM_LIQUIDITY_WALLET,
+            env,
+            lane: 'chat',
+          });
+          if (!registration) {
+            skipped.push({ modelId: model.modelId, reason: 'unsupported_catalog_model' });
+            continue;
+          }
+          const providerId = `platform-${upstream}-${model.modelId
+            .replace(/[^a-z0-9]+/gi, '-')
+            .replace(/^-|-$/g, '')
+            .toLowerCase()}`.slice(0, 96);
+          registration.agentId = providerId;
+          registration.endpoint = resolveInferenceGatewayProviderEndpoint(providerId, env);
+          registration.name = `${registration.name ?? model.modelId} (platform)`;
+          if (registration.pricing) registration.pricing.upstreamModelId = model.upstreamModelId;
+          registration.verification = {
+            status: 'verified',
+            checkedAt: new Date().toISOString(),
+            apiVerified: true,
+            modelVerified: true,
+            frameworkVerified: true,
+            notes: ['Live model list and completion probe passed.'],
+          };
+          const profile = await input.orchestrator.upsertRegisteredProvider(
+            parseProviderRegistrationInput(registration),
+            { allowTakeover: true }
+          );
+          published.push({ modelId: model.modelId, providerId: profile.providerId, upstream });
+        }
+      })
     );
-    published.push({
-      modelId: candidate.modelId,
-      providerId: profile.providerId,
-      upstream: candidate.upstream,
-    });
   }
 
   const removed: string[] = [];
@@ -152,6 +215,7 @@ export async function bootstrapPlatformLiquidity(input: {
     published,
     skipped,
     removed,
+    paused: [...new Set(paused)],
   };
 }
 

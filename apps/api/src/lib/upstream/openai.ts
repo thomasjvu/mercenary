@@ -1,17 +1,12 @@
+import { readUpstreamUsage } from './usage.js';
+import { isProviderInferenceMock } from '../upstream-mock.js';
 import {
   INFERENCE_MODEL_CATALOG,
   UPSTREAM_PROVIDER_CONFIG,
   type UpstreamProviderId,
 } from '@bossraid/constants';
-import {
-  applyChatOptionsToBody,
-  resolveChatMessagesForUpstream,
-  type RaidChatOptions,
-} from '../chat-options.js';
-import {
-  fetchUpstreamModelsWithFallback,
-  probeOpenAiStyleChatCompletion,
-} from './adapter-helpers.js';
+import { resolveChatMessagesForUpstream, type RaidChatOptions } from '../chat-options.js';
+import { fetchUpstreamModelsWithFallback } from './adapter-helpers.js';
 import { fetchUpstreamJson } from './shared.js';
 import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
 
@@ -68,30 +63,35 @@ export async function probeOpenAIChatCompletion(input: {
   chatOptions?: RaidChatOptions;
 }): Promise<UpstreamChatResult> {
   const env = input.env ?? process.env;
-  const body = applyChatOptionsToBody(
-    {
-      model: input.modelId,
-      messages: resolveChatMessagesForUpstream({
-        prompt: input.prompt,
-        chatOptions: input.chatOptions,
-      }),
-      max_tokens: 16,
-    },
-    input.chatOptions
+  if (isProviderInferenceMock(PROVIDER, env))
+    return { content: `mock-openai-response:${input.modelId}` };
+  const entry = INFERENCE_MODEL_CATALOG.find(
+    (m) => m.modelProvider === PROVIDER && m.upstreamModelId === input.modelId
   );
-  // Current OpenAI chat models use max_completion_tokens; keep the shared option
-  // builder's max_tokens shape internal to the adapter.
-  body.max_completion_tokens = body.max_tokens;
-  delete body.max_tokens;
-
-  return probeOpenAiStyleChatCompletion({
-    provider: PROVIDER,
-    apiKey: input.apiKey,
-    url: `${resolveOpenAIBase(env)}/chat/completions`,
-    env,
-    mockContent: `mock-openai-response:${input.modelId}`,
-    body,
-  });
+  const body: Record<string, unknown> = {
+    model: input.modelId,
+    input: resolveChatMessagesForUpstream(input),
+    store: false,
+    max_output_tokens: input.chatOptions?.max_tokens ?? 1024,
+  };
+  if (input.chatOptions?.temperature != null && entry?.capabilities?.temperature !== false)
+    body.temperature = input.chatOptions.temperature;
+  if (input.chatOptions?.reasoning_effort && entry?.capabilities?.reasoning)
+    body.reasoning = { effort: input.chatOptions.reasoning_effort };
+  const payload = await fetchUpstreamJson<{
+    id?: string;
+    usage?: unknown;
+    output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }>;
+  }>(`${resolveOpenAIBase(env)}/responses`, { apiKey: input.apiKey, method: 'POST', body });
+  const content = (payload.output ?? [])
+    .filter((item) => item.type === 'message')
+    .flatMap((item) => item.content ?? [])
+    .filter((part) => part.type === 'output_text')
+    .map((part) => part.text ?? '')
+    .join('')
+    .trim();
+  if (!content) throw new Error('OpenAI response was empty.');
+  return { content, requestId: payload.id, usage: readUpstreamUsage(payload.usage) };
 }
 
 export async function fetchOpenAIAttestationReport(_input: {

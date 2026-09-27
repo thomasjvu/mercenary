@@ -1,3 +1,4 @@
+import type { TokenPricing } from '@bossraid/constants';
 import {
   INFERENCE_MODEL_CATALOG,
   MARKETPLACE_BENCHMARK_PRICING,
@@ -57,6 +58,7 @@ export interface InferenceMarketSeller {
     rateCardHash?: string;
     upstreamModelId?: string;
     maxContextTokens?: number;
+    tokenPricing?: TokenPricing;
   };
   status: ProviderProfile['status'];
   marketplaceOfferStatus: 'active' | 'paused';
@@ -90,8 +92,8 @@ export interface InferenceMarket {
   p95LatencyMs: number | null;
   cheapestRateUsd: number | null;
   pricing: {
-    benchmarkSource: 'models.dev';
-    benchmarkUrl: 'https://models.dev/api.json';
+    benchmarkSource: 'models.dev' | 'provider' | 'override' | 'catalog_snapshot';
+    benchmarkUrl: string;
     benchmarkMode: 'static_reference_only';
     declaredUnit: 'task' | 'token_metered';
     cheapestPricePerTaskUsd: number | null;
@@ -168,7 +170,8 @@ export function resolveDiscountInferenceDefaultMaxTotalCost(
           allowedModelProviders: modelProviders,
           allowedAgentFrameworks: agentFrameworks,
           requiredVerificationStatus: requiredVerificationStatus as
-            ProviderVerificationStatus | undefined,
+            | ProviderVerificationStatus
+            | undefined,
           privacyMode: privacyMode === 'strict' ? 'strict' : undefined,
           requirePrivacyFeatures:
             privacyMode === 'strict' ? [...STRICT_PRIVATE_PRIVACY_FEATURES] : undefined,
@@ -302,6 +305,8 @@ function applyCatalogReferencePricing(
     ...market,
     pricing: {
       ...market.pricing,
+      benchmarkSource: entry.source?.pricing ?? 'catalog_snapshot',
+      benchmarkUrl: entry.source?.pricingUrl ?? MARKETPLACE_BENCHMARK_PRICING.benchmarkUrl,
       pricePer1mInputTokensUsd: entry.inputPer1mUsd,
       pricePer1mOutputTokensUsd: entry.outputPer1mUsd,
       referenceInputTokens: MARKETPLACE_REFERENCE_INPUT_TOKENS,
@@ -336,6 +341,8 @@ function buildCatalogOnlyMarket(entry: InferenceCatalogEntry): InferenceMarket {
     cheapestRateUsd: referenceRateUsd,
     pricing: {
       ...MARKETPLACE_BENCHMARK_PRICING,
+      benchmarkSource: entry.source?.pricing ?? 'catalog_snapshot',
+      benchmarkUrl: entry.source?.pricingUrl ?? MARKETPLACE_BENCHMARK_PRICING.benchmarkUrl,
       declaredUnit: 'token_metered',
       cheapestPricePerTaskUsd: referenceRateUsd,
       pricePer1mInputTokensUsd: entry.inputPer1mUsd,
@@ -434,6 +441,7 @@ function buildInferenceMarketSeller(provider: ProviderProfile): InferenceMarketS
       rateCardHash: pricing.rateCardHash,
       upstreamModelId: pricing.upstreamModelId,
       maxContextTokens: pricing.maxContextTokens,
+      tokenPricing: pricing.tokenPricing,
     },
     status: provider.status,
     marketplaceOfferStatus: provider.marketplaceOfferStatus ?? 'active',
@@ -468,6 +476,9 @@ export function buildOpenAiCompatibleModelEntry(market: InferenceMarket) {
     pricing: market.pricing,
     bossraid: {
       display_name: catalogEntry?.displayName ?? market.modelId,
+      capabilities: catalogEntry?.capabilities,
+      catalog_source: catalogEntry?.source,
+      token_pricing: catalogEntry?.tokenPricing,
       provider_count: market.providerCount,
       active_provider_count: market.activeProviderCount,
       verified_seller_count: market.verifiedSellerCount,
@@ -487,6 +498,8 @@ export function buildInferencePriceEntry(market: InferenceMarket) {
   return {
     modelId: market.modelId,
     modelProvider: market.modelProvider,
+    catalogSource: INFERENCE_MODEL_CATALOG.find((m) => m.modelId === market.modelId)?.source,
+    tokenPricing: INFERENCE_MODEL_CATALOG.find((m) => m.modelId === market.modelId)?.tokenPricing,
     cheapestRateUsd: market.cheapestRateUsd,
     declaredUnit: market.pricing.declaredUnit,
     pricePer1mInputTokensUsd: market.pricing.pricePer1mInputTokensUsd,

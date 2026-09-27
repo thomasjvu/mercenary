@@ -110,3 +110,23 @@ test('buildRateCardHash is stable for equivalent pricing payloads', () => {
   assert.equal(hashA, hashB);
   assert.equal(pricing.rateCardHash, hashA);
 });
+
+test('context tier changes quotes, specialized usage is not counted twice, and tier changes change the hash', () => {
+  const tokenPricing = {
+    input: 1,
+    output: 2,
+    cache_read: 0.1,
+    tiers: [{ aboveInputTokens: 200_000, input: 3, output: 6, cache_read: 0.3 }],
+  };
+  const pricing = { mode: 'token_metered' as const, currency: 'USD' as const, tokenPricing };
+  assert.equal(estimateTokenMeteredUsd(pricing, 200_000, 1000), 0.202);
+  assert.equal(estimateTokenMeteredUsd(pricing, 200_001, 1000), 0.606003);
+  assert.equal(
+    estimateTokenMeteredUsd(pricing, 200_001, 1000, { cacheReadTokens: 100_000 }),
+    0.336003
+  );
+  assert.notEqual(
+    buildRateCardHash(pricing),
+    buildRateCardHash({ ...pricing, tokenPricing: { ...tokenPricing, tiers: [] } })
+  );
+});

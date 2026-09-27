@@ -567,7 +567,7 @@ paths:
                   - message
   /v1/ops/platform-liquidity:
     get:
-      summary: Featured model liquidity candidates and key coverage
+      summary: Catalog sources, liquidity candidates, and key coverage
       tags:
         - Ops
       x-bossraid-audience: internal
@@ -596,8 +596,7 @@ paths:
                   - message
   /v1/ops/platform-liquidity/bootstrap:
     post:
-      summary: Register platform-owned chat offers for featured models with platform
-        keys
+      summary: Probe and register available catalog models with platform keys
       tags:
         - Ops
       x-bossraid-audience: internal

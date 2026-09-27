@@ -4,6 +4,8 @@ Repo automation lives here. Contributor commands stay in root [`package.json`](.
 
 ## Contributor / CI (package.json)
 
+Workspace check, build, and unit test scripts limit Turbo to two package jobs at a time. Run CPU intensive local checks serially.
+
 | Script                             | Purpose                                  |
 | ---------------------------------- | ---------------------------------------- |
 | `dev-stack.mjs`                    | `pnpm dev` — API, web, ops, evaluator    |
@@ -23,6 +25,12 @@ pnpm bossraid sync:inference-catalog
 pnpm bossraid deploy:web:cloudflare
 pnpm bossraid test:strict-private:e2e
 ```
+
+### Inference catalog
+
+`sync:inference-catalog` imports public models.dev metadata/provider rates and provider catalogs. `--cached` regenerates from committed snapshots without network. `--check` reports additions, removals, changes, stale sources, and fetch failures without writing; combine both flags for CI. Pass options after `--`, for example `pnpm bossraid sync:inference-catalog -- --cached --check`.
+
+`pnpm build` and Docker refresh before compilation. Import code lives in `lib/inference-catalog/`; local policy lives in `packages/constants/data/inference-overrides.json`. Generated source snapshots and exclusion reports live alongside it. See [runtime](../content/docs/operators/runtime.md#catalog-refresh).
 
 ## Examples-only
 

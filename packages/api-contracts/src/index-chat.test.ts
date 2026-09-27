@@ -69,6 +69,7 @@ test('buildBossRaidRequestFromChatCompletion synthesizes the shared chat raid sh
     maxLatencySec: 45,
     maxTotalCost: 4.5,
     requiredCapabilities: undefined,
+    requiredProviderIds: undefined,
     requiredVerificationStatus: undefined,
     maxInputTokens: undefined,
     maxOutputTokens: undefined,

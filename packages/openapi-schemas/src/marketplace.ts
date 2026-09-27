@@ -3,6 +3,7 @@ export const openAiModelListSchema = {
   additionalProperties: false,
   properties: {
     object: { type: 'string', enum: ['list'] },
+    benchmark: { type: 'object', additionalProperties: true },
     data: {
       type: 'array',
       items: { type: 'object', additionalProperties: true },

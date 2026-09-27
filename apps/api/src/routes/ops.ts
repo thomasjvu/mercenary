@@ -1,3 +1,4 @@
+import { INFERENCE_CATALOG_SOURCE_STATUS } from '@bossraid/constants';
 import { type FastifyInstance } from 'fastify';
 import { apiErrorSchema } from '@bossraid/openapi-schemas';
 import { internalRouteSchema } from '../openapi/audience.js';
@@ -571,7 +572,7 @@ export function registerOpsRoutes(
     {
       schema: internalRouteSchema({
         tags: ['Ops'],
-        summary: 'Featured model liquidity candidates and key coverage',
+        summary: 'Catalog sources, liquidity candidates, and key coverage',
         response: {
           200: { type: 'object', additionalProperties: true },
           401: apiErrorSchema,
@@ -586,7 +587,10 @@ export function registerOpsRoutes(
       const candidates = listPlatformLiquidityCandidates(env);
       return {
         object: 'platform_liquidity_status',
+        catalogSources: INFERENCE_CATALOG_SOURCE_STATUS,
         candidates,
+        configuredCount: candidates.filter((entry) => entry.hasPlatformKey).length,
+        // Legacy field: counts configured keys, not successful completion probes.
         readyCount: candidates.filter((entry) => entry.hasPlatformKey).length,
       };
     }
@@ -597,7 +601,7 @@ export function registerOpsRoutes(
     {
       schema: internalRouteSchema({
         tags: ['Ops'],
-        summary: 'Register platform-owned chat offers for featured models with platform keys',
+        summary: 'Probe and register available catalog models with platform keys',
         response: {
           200: { type: 'object', additionalProperties: true },
           401: apiErrorSchema,

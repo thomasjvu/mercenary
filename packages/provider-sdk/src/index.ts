@@ -77,6 +77,7 @@ function normalizeProviderPricing(
     rateCardVersion: pricing?.rateCardVersion,
     upstreamModelId: pricing?.upstreamModelId ?? fallbackModelId,
     maxContextTokens: pricing?.maxContextTokens,
+    tokenPricing: pricing?.tokenPricing,
   };
 
   return {
@@ -469,7 +470,8 @@ function requestProviderEndpoint(
       callback(
         Object.assign(new Error('No pinned provider address matches the requested family.'), {
           code: 'ENOTFOUND',
-        })
+        }),
+        ''
       );
       return;
     }

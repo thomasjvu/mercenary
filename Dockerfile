@@ -14,7 +14,7 @@ RUN pnpm install --frozen-lockfile
 # concurrency=1 avoids flaky mkdir races under qemu/buildx (linux/amd64 on arm hosts)
 ARG TURBO_CONCURRENCY=1
 RUN mkdir -p "$TURBO_CACHE_DIR" \
-  && pnpm turbo run build --concurrency="${TURBO_CONCURRENCY}" \
+  && node scripts/sync-inference-catalog.mjs && pnpm turbo run build --concurrency="${TURBO_CONCURRENCY}" \
     --filter=@bossraid/api... \
     --filter=@bossraid/evaluator... \
     --filter=@bossraid/provider-agent... \

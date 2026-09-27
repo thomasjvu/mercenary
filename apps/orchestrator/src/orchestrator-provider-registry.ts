@@ -266,6 +266,20 @@ export class ProviderRegistryCoordinator {
     return true;
   }
 
+  async pauseRegisteredProvider(providerId: string, reason: string): Promise<void> {
+    this.deps.assertPersistenceWritable();
+    this.updateProviderProfile(providerId, (profile) => {
+      profile.marketplaceOfferStatus = 'paused';
+      profile.verification = {
+        status: 'failed',
+        checkedAt: new Date().toISOString(),
+        notes: [reason],
+      };
+    });
+    this.providerHealthCache.delete(providerId);
+    await this.deps.queuePersist();
+  }
+
   updateProviderProfile(providerId: string, update: (profile: ProviderProfile) => void): void {
     const profile = this.providers.get(providerId);
     if (!profile) {

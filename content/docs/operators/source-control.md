@@ -71,6 +71,10 @@ Jobs with `runs-on: spectre` must use **`spectre:host`** so steps run on the hos
 | `staging`     | Pre-prod                                     |
 | `main`        | Production-line; triggers image publish      |
 
+## Catalog drift
+
+The mirrored `catalog-drift.yml` workflows run daily at 07:23 UTC or manually. They fetch public catalogs and run `pnpm bossraid sync:inference-catalog -- --check`; price/model changes, fetch errors, and source age over seven days fail the job. No API keys, automatic commits, or deployment are involved. Refresh and review the snapshot on a development branch, then ship through the normal image workflow. Regular CI checks saved catalog inputs before building.
+
 ## Phala deploy after CI
 
 ```bash

@@ -37,7 +37,7 @@ export function ModelPickerModal({
             <h2>Select models to offer</h2>
             <p className="lede">
               {picker.selection.size} selected · {picker.filtered.length} visible · {models.length}{' '}
-              supported
+              in catalog
             </p>
           </div>
           <button className="button" onClick={onClose} type="button">
@@ -81,6 +81,7 @@ export function ModelPickerModal({
               <button
                 className={`seller-model-card${selected ? ' seller-model-card--selected' : ''}`}
                 key={model.modelId}
+                disabled={!model.offerable}
                 onClick={() => picker.toggleModel(model.modelId)}
                 type="button"
               >
@@ -98,10 +99,14 @@ export function ModelPickerModal({
                     : 'ctx n/a'}
                 </span>
                 <span className="seller-model-card__rate">
-                  ${model.referenceInputPer1mUsd?.toFixed(2) ?? '0.00'} / $
-                  {model.referenceOutputPer1mUsd?.toFixed(2) ?? '0.00'} per M
+                  ${model.referenceInputPer1mUsd?.toFixed(2) ?? '—'} / $
+                  {model.referenceOutputPer1mUsd?.toFixed(2) ?? '—'} per M
                 </span>
-                {!model.upstreamFound ? (
+                {!model.supported ? (
+                  <span className="seller-model-card__badge">
+                    Pricing or chat support unavailable
+                  </span>
+                ) : !model.upstreamFound ? (
                   <span className="seller-model-card__badge">not on account</span>
                 ) : (
                   <span className="seller-model-card__badge seller-model-card__badge--ok">

@@ -288,6 +288,7 @@ export async function runInferenceGatewayJob(input: {
       providerId: input.provider.providerId,
       providerRunId: input.providerRunId,
       answerText: chatResult.content,
+      inferenceUsage: chatResult.usage,
       explanation: `${upstream} hosted gateway completed ${upstreamModelId}.`,
       confidence: 0.92,
       filesTouched: [],

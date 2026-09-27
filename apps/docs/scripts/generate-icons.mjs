@@ -1,6 +1,7 @@
 import { existsSync, promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { format, resolveConfig } from 'prettier';
 
 import mingcuteData from '@iconify-json/mingcute/icons.json' with { type: 'json' };
 import pixelarticonsData from '@iconify-json/pixelarticons/icons.json' with { type: 'json' };
@@ -24,7 +25,7 @@ const iconSets = {
 const activeTheme = loadThemeManifest(viteEnv.VITE_PAPERS_THEME);
 if (activeTheme.manifest.iconSet && !(activeTheme.manifest.iconSet in iconSets)) {
   throw new Error(
-    `Theme "${activeTheme.id}" requests icon set "${activeTheme.manifest.iconSet}" but it is not installed.`,
+    `Theme "${activeTheme.id}" requests icon set "${activeTheme.manifest.iconSet}" but it is not installed.`
   );
 }
 
@@ -41,7 +42,7 @@ async function listSourceFiles(dir) {
         return listSourceFiles(entryPath);
       }
       return /\.(js|jsx|mjs|ts|tsx)$/.test(entry.name) ? [entryPath] : [];
-    }),
+    })
   );
   return files.flat();
 }
@@ -63,7 +64,9 @@ function collectIconNames(source) {
 
 function buildCollections(namesByPrefix) {
   const collections = [];
-  for (const [prefix, names] of [...namesByPrefix.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+  for (const [prefix, names] of [...namesByPrefix.entries()].sort(([a], [b]) =>
+    a.localeCompare(b)
+  )) {
     const iconSet = iconSets[prefix];
     const icons = {};
     for (const name of [...names].sort()) {
@@ -105,6 +108,11 @@ const mergedNames = sourceContents.reduce((acc, source) => {
 
 const collections = buildCollections(mergedNames);
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
-await fs.writeFile(outputPath, serializeCollections(collections));
+const prettierConfig = await resolveConfig(outputPath);
+const formatted = await format(serializeCollections(collections), {
+  ...prettierConfig,
+  filepath: outputPath,
+});
+await fs.writeFile(outputPath, formatted);
 
 console.log(`Generated ${collections.length} icon collection(s) at ${outputPath}`);

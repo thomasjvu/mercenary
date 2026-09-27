@@ -78,7 +78,7 @@ export const UPSTREAM_PROVIDER_CONFIG: Record<UpstreamProviderId, UpstreamProvid
   anthropic: {
     id: 'anthropic',
     displayName: 'Anthropic (Claude)',
-    // OpenAI-compatible surface for Claude models (Messages API also available).
+    // Native Messages API; model discovery supports pagination.
     upstreamBase: 'https://api.anthropic.com/v1',
     attestationVendor: 'anthropic',
     supportsE2ee: false,

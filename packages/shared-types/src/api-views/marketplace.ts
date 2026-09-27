@@ -1,3 +1,4 @@
+import type { TokenPricing } from '@bossraid/constants';
 import type { ProviderHealthViewResponse, ProviderViewResponse } from './provider.js';
 
 export type SellerEarningsView = {
@@ -38,6 +39,7 @@ export type InferenceMarketSellerView = {
     currency: string;
     upstreamModelId?: string;
     maxContextTokens?: number;
+    tokenPricing?: TokenPricing;
   };
 };
 
@@ -58,7 +60,7 @@ export type InferenceMarketView = {
   p95LatencyMs: number | null;
   cheapestRateUsd: number | null;
   pricing: {
-    benchmarkSource: 'models.dev';
+    benchmarkSource: 'models.dev' | 'provider' | 'override' | 'catalog_snapshot';
     benchmarkUrl: string;
     benchmarkMode: 'static_reference_only';
     declaredUnit: 'task' | 'token_metered';

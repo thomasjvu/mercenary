@@ -11,6 +11,8 @@ export type UpstreamCatalogModel = {
   modelProvider?: UpstreamProviderId;
   supported: boolean;
   upstreamFound: boolean;
+  offerable: boolean;
+  state: 'catalog_only' | 'live_unpriced' | 'live_unverified' | 'live_supported' | 'live_failed';
   teeAttested: boolean;
   e2ee: boolean;
   maxContextTokens: number | null;
@@ -94,6 +96,7 @@ export async function publishSellerUpstreamOffers(
     provider: UpstreamProviderId;
     discountPercent: number;
     payoutWallet: string;
+    rejected: Array<{ modelId: string; state: string; reason: string }>;
     providers: Array<{
       modelId: string;
       providerId: string;

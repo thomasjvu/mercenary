@@ -1,3 +1,4 @@
+import { readUpstreamUsage } from './usage.js';
 import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import { TIMEOUTS } from '@bossraid/constants';
 import {
@@ -98,13 +99,14 @@ export async function probeVeniceChatCompletion(input: {
 
     const payload = (await response.json()) as {
       id?: string;
+      usage?: unknown;
       choices?: Array<{ message?: { content?: string | null } }>;
     };
     const content = payload.choices?.[0]?.message?.content?.trim();
     if (!content) {
       throw new Error('Venice chat response was empty.');
     }
-    return { content, requestId: payload.id };
+    return { content, requestId: payload.id, usage: readUpstreamUsage(payload.usage) };
   } finally {
     clearTimeout(timeout);
   }

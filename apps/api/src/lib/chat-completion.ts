@@ -1,3 +1,4 @@
+import type { InferenceTokenUsage, TokenUsageDetails } from '@bossraid/constants';
 import { randomUUID } from 'node:crypto';
 import {
   type BossRaidResultOutput,
@@ -38,7 +39,9 @@ export function buildChatCompletionResponse(
       },
     ],
     raid: buildChatRaidMetadata(spawn, outcome),
-    usage: estimateChatUsage(chatRequest.messages, content),
+    usage:
+      readHostedChatUsage(outcome.result.approvedSubmissions) ??
+      estimateChatUsage(chatRequest.messages, content),
   };
 }
 
@@ -222,6 +225,7 @@ export function estimateChatUsage(messages: ChatCompletionRequest['messages'], c
     prompt_tokens: promptTokens,
     completion_tokens: completionTokens,
     total_tokens: promptTokens + completionTokens,
+    token_details: undefined as TokenUsageDetails | undefined,
   };
 }
 
@@ -240,3 +244,16 @@ export {
   waitForTerminalRaidOutput,
 } from './chat-terminal-wait.js';
 export { streamChatCompletionResponse, streamDirectChatCompletionResponse } from './chat-stream.js';
+
+export function readHostedChatUsage(
+  submissions?: Array<{ submission: { inferenceUsage?: InferenceTokenUsage } }>
+): ReturnType<typeof estimateChatUsage> | undefined {
+  if (submissions?.length !== 1 || !submissions[0].submission.inferenceUsage) return undefined;
+  const usage = submissions[0].submission.inferenceUsage;
+  return {
+    prompt_tokens: usage.inputTokens,
+    completion_tokens: usage.outputTokens,
+    total_tokens: usage.inputTokens + usage.outputTokens,
+    token_details: usage.details,
+  };
+}

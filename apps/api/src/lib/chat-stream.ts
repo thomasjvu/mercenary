@@ -1,3 +1,4 @@
+import { readHostedChatUsage } from './chat-completion.js';
 import { PassThrough } from 'node:stream';
 import { type FastifyReply, type FastifyRequest } from 'fastify';
 import { type BossRaidOrchestrator } from '@bossraid/orchestrator';
@@ -226,7 +227,9 @@ export async function streamChatCompletionResponse(
         finalOutcome,
         input.chatRequest
       );
-      const usage = estimateChatUsage(input.chatRequest.messages, content);
+      const usage =
+        readHostedChatUsage(finalOutcome.result.approvedSubmissions) ??
+        estimateChatUsage(input.chatRequest.messages, content);
       const selectedSeller =
         finalOutcome.result.synthesizedOutput?.baseSubmissionProviderId ??
         finalOutcome.result.approvedSubmissions?.[0]?.submission.providerId;

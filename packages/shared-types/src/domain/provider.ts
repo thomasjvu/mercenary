@@ -1,3 +1,4 @@
+import type { TokenPricing } from '@bossraid/constants';
 export type SupportedLanguage = 'csharp' | 'typescript' | 'python' | 'solidity' | 'text';
 export type SupportedFramework = 'unity' | 'node' | 'react' | 'foundry' | 'django' | 'fastapi';
 export type OutputType = 'text' | 'json' | 'image' | 'video' | 'patch' | 'bundle';
@@ -161,6 +162,7 @@ export interface ProviderPricing {
   pricePerTaskUsd?: number;
   pricePer1mInputTokensUsd?: number;
   pricePer1mOutputTokensUsd?: number;
+  tokenPricing?: TokenPricing;
   minimumChargeUsd?: number;
   validFrom?: string;
   validUntil?: string;
@@ -250,6 +252,7 @@ export interface ProviderRegistrationInput {
     pricePerTaskUsd?: number;
     pricePer1mInputTokensUsd?: number;
     pricePer1mOutputTokensUsd?: number;
+    tokenPricing?: TokenPricing;
     minimumChargeUsd?: number;
     currency?: ProviderPricingCurrency;
     validFrom?: string;

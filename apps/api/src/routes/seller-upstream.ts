@@ -16,10 +16,8 @@ import {
   fetchUpstreamModels,
   mergeUpstreamCatalogModelsForProvider,
   parseUpstreamProviderParam,
-  probeUpstreamChatCompletion,
 } from '../lib/upstream/index.js';
-import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
-import { verifyUpstreamTee } from '../lib/attestation-service.js';
+import { verifyHostedModel } from '../lib/upstream/eligibility.js';
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../handlers/index.js';
 
@@ -90,78 +88,48 @@ export function registerSellerUpstreamRoutes(
     );
 
     try {
-      await fetchUpstreamModels(provider, apiKey, { env });
+      const upstreamModels = await fetchUpstreamModels(provider, apiKey, { env });
+      const candidates = mergeUpstreamCatalogModelsForProvider(provider, upstreamModels)
+        .filter((model) => model.offerable)
+        .sort(
+          (a, b) =>
+            (a.referenceOutputPer1mUsd ?? Infinity) - (b.referenceOutputPer1mUsd ?? Infinity)
+        );
+      if (candidates.length === 0) {
+        reply.code(400);
+        return {
+          error: 'no_supported_models',
+          message:
+            'The key lists models, but none have supported chat metadata and pricing in the current catalog.',
+        };
+      }
+      // Try multiple accessible models so one retired alias cannot reject a valid key.
+      let verified = false;
+      for (const model of candidates.slice(0, 3)) {
+        try {
+          await verifyHostedModel({
+            provider,
+            apiKey,
+            modelId: model.modelId,
+            upstreamModelId: model.upstreamModelId,
+            env,
+          });
+          verified = true;
+          break;
+        } catch {
+          /* Try the next inexpensive model. */
+        }
+      }
+      if (!verified)
+        throw new Error(
+          'The accessible model probes failed. Check account credits and model access.'
+        );
     } catch (error) {
       reply.code(400);
       return {
         error: `invalid_${provider}_api_key`,
-        message: error instanceof Error ? error.message : `${provider} API key validation failed.`,
+        message: error instanceof Error ? error.message : 'Upstream validation failed.',
       };
-    }
-
-    // Cheap live completion proves the key can actually run inference (not only list models).
-    const chatProbeModel =
-      INFERENCE_MODEL_CATALOG.find(
-        (entry) => entry.modelProvider === provider || entry.attestationVendor === provider
-      )?.upstreamModelId ??
-      INFERENCE_MODEL_CATALOG.find((entry) => entry.modelProvider === provider)?.modelId;
-    if (chatProbeModel) {
-      try {
-        await probeUpstreamChatCompletion({
-          provider,
-          apiKey,
-          modelId: chatProbeModel,
-          prompt: 'Reply with the single word: ok',
-          env,
-          chatOptions: { max_tokens: 8 },
-        });
-      } catch (error) {
-        reply.code(400);
-        return {
-          error: `invalid_${provider}_api_key`,
-          message:
-            error instanceof Error
-              ? `Key listed models but chat probe failed: ${error.message}`
-              : `${provider} chat probe failed.`,
-        };
-      }
-    }
-
-    // Only TEE-capable catalog models need preflight. Plan providers (xAI, Z.ai, Anthropic)
-    // have no upstream TEE reports — do not fall back to a non-TEE model and throw.
-    const teeSampleModel = INFERENCE_MODEL_CATALOG.find(
-      (entry) =>
-        (entry.attestationVendor === provider || entry.modelProvider === provider) &&
-        entry.teeAttested
-    )?.upstreamModelId;
-
-    if (teeSampleModel) {
-      try {
-        const { attestation } = await verifyUpstreamTee({
-          provider,
-          modelId: teeSampleModel,
-          providerId: `seller:${session.wallet}:${provider}`,
-          apiKey,
-          env,
-        });
-        if (!attestation.valid) {
-          reply.code(400);
-          return {
-            error: 'tee_preflight_failed',
-            message: 'Upstream TEE attestation preflight failed for this API key.',
-            checks: attestation.checks,
-          };
-        }
-      } catch (error) {
-        reply.code(400);
-        return {
-          error: 'tee_preflight_failed',
-          message:
-            error instanceof Error
-              ? error.message
-              : 'Upstream TEE attestation preflight failed for this API key.',
-        };
-      }
     }
 
     try {
@@ -326,7 +294,60 @@ export function registerSellerUpstreamRoutes(
     const laneRaw = body.lane ?? body.offerLane ?? body.offer_lane;
     const lane = laneRaw === 'harness' || laneRaw === 'agent_harness' ? 'harness' : 'chat';
 
+    const pauseExisting = async (modelId: string, reason: string) => {
+      const existing = orchestrator
+        .listProviders()
+        .filter(
+          (p) =>
+            p.source?.externalRef === session.wallet.toLowerCase() &&
+            p.source?.targetType === provider &&
+            p.modelId === modelId
+        );
+      for (const profile of existing)
+        await orchestrator.pauseRegisteredProvider(profile.providerId, reason);
+    };
+    let availableModels;
+    try {
+      availableModels = mergeUpstreamCatalogModelsForProvider(
+        provider,
+        await fetchUpstreamModels(provider, apiKey, { env })
+      );
+    } catch {
+      reply.code(502);
+      return {
+        error: 'upstream_unavailable',
+        message: 'Could not refresh account models. No offers were published.',
+      };
+    }
+    const rejected: Array<{ modelId: string; state: string; reason: string }> = [];
     for (const modelId of modelIds) {
+      const available = availableModels.find((model) => model.modelId === modelId);
+      if (!available?.offerable) {
+        await pauseExisting(modelId, 'Model is no longer available or supported.');
+        rejected.push({
+          modelId,
+          state: available?.state ?? 'catalog_only',
+          reason: 'Model is unavailable or lacks supported pricing.',
+        });
+        continue;
+      }
+      try {
+        await verifyHostedModel({
+          provider,
+          apiKey,
+          modelId,
+          upstreamModelId: available.upstreamModelId,
+          env,
+        });
+      } catch {
+        await pauseExisting(modelId, 'Live completion or attestation probe failed.');
+        rejected.push({
+          modelId,
+          state: 'live_failed',
+          reason: 'Completion or attestation probe failed.',
+        });
+        continue;
+      }
       const registration = buildHostedProviderRegistration({
         provider,
         wallet: session.wallet,
@@ -337,9 +358,15 @@ export function registerSellerUpstreamRoutes(
         lane,
       });
       if (!registration) {
+        rejected.push({
+          modelId,
+          state: 'live_failed',
+          reason: 'The selected offer lane is not supported for this provider.',
+        });
         continue;
       }
 
+      if (registration.pricing) registration.pricing.upstreamModelId = available.upstreamModelId;
       const providerProfile = await orchestrator.upsertRegisteredProvider(
         parseProviderRegistrationInput(registration),
         { allowTakeover: false }
@@ -351,6 +378,18 @@ export function registerSellerUpstreamRoutes(
         providerProfile,
         { controlState }
       );
+      if (verifiedProvider.verification?.status !== 'verified') {
+        await orchestrator.pauseRegisteredProvider(
+          verifiedProvider.providerId,
+          'Hosted gateway health check failed.'
+        );
+        rejected.push({
+          modelId,
+          state: 'live_failed',
+          reason: 'Hosted gateway health check failed.',
+        });
+        continue;
+      }
       await ensureErc8004ProofState({ includeMercenary: false, providers: [verifiedProvider] });
 
       published.push({
@@ -364,7 +403,8 @@ export function registerSellerUpstreamRoutes(
       reply.code(400);
       return {
         error: 'no_supported_models',
-        message: 'None of the selected models are supported by Boss Raid.',
+        message: 'No selected model passed availability, pricing, and completion checks.',
+        rejected,
       };
     }
 
@@ -375,12 +415,14 @@ export function registerSellerUpstreamRoutes(
       lane,
       discountPercent,
       payoutWallet,
+      rejected,
       providers: published.map((entry) => {
         const profile = orchestrator
           .listProviders()
           .find((item) => item.providerId === entry.providerId);
         return {
           ...entry,
+          state: 'live_supported',
           provider: profile
             ? serializeProviderProfile(profile, { includeEndpoint: true })
             : undefined,

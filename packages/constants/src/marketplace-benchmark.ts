@@ -1,3 +1,7 @@
+import { INFERENCE_MODEL_CATALOG } from './inference-catalog.js';
+import { calculateTokenCostUsd } from './token-pricing.js';
+import type { TokenUsageDetails } from './inference-catalog-types.js';
+const catalogById = new Map(INFERENCE_MODEL_CATALOG.map((m) => [m.modelId, m]));
 import {
   CATALOG_BENCHMARK_INPUT_PER_1M_USD,
   CATALOG_BENCHMARK_OUTPUT_PER_1M_USD,
@@ -46,6 +50,7 @@ export function estimateBenchmarkPriceUsd(input: {
   inputTokens?: number;
   outputTokens?: number;
   flatTaskUsd?: number;
+  usageDetails?: TokenUsageDetails;
 }): number | undefined {
   const modelId = input.modelId?.trim();
   if (!modelId) {
@@ -54,6 +59,10 @@ export function estimateBenchmarkPriceUsd(input: {
 
   const inputTokens = Math.max(0, input.inputTokens ?? 0);
   const outputTokens = Math.max(0, input.outputTokens ?? 0);
+  const entry = catalogById.get(modelId);
+  if (entry?.tokenPricing && inputTokens + outputTokens > 0) {
+    return calculateTokenCostUsd(entry.tokenPricing, inputTokens, outputTokens, input.usageDetails);
+  }
   const inputRate =
     MODEL_BENCHMARK_INPUT_PER_1M_USD[modelId] ?? CATALOG_BENCHMARK_INPUT_PER_1M_USD[modelId];
   const outputRate =

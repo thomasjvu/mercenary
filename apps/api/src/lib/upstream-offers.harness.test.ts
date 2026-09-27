@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
 import { buildHostedProviderRegistration, harnessKindForUpstream } from './upstream-offers.js';
 
 test('harnessKindForUpstream maps plan providers', () => {
@@ -32,7 +33,7 @@ test('buildHostedProviderRegistration chat lane remains inference_hosted', () =>
   const reg = buildHostedProviderRegistration({
     provider: 'chutes',
     wallet: '0xabc1230000000000000000000000000000000001',
-    modelId: 'tee-qwen3-5-122b-chutes',
+    modelId: INFERENCE_MODEL_CATALOG.find((model) => model.modelProvider === 'chutes')!.modelId,
     discountPercent: 0,
     payoutWallet: '0xabc1230000000000000000000000000000000001',
     lane: 'chat',

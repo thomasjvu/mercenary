@@ -15,5 +15,10 @@
       "cache": false,
       "persistent": true
     }
-  }
+  },
+  "globalDependencies": [
+    "scripts/sync-inference-catalog.mjs",
+    "scripts/lib/inference-catalog/**",
+    "packages/constants/data/inference-*.json"
+  ]
 }

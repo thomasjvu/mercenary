@@ -126,3 +126,43 @@ test('seller venice offers publishes hosted gateway providers', async () => {
     await app.close();
   }
 });
+
+test('seller cannot publish a catalog model absent from the current account list', async (t) => {
+  const { INFERENCE_MODEL_CATALOG } = await import('@bossraid/constants');
+  const model = INFERENCE_MODEL_CATALOG.find((m) => m.modelProvider === 'openai')!;
+  const app = createTestApiServer([], {
+    ...process.env,
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+    BOSSRAID_UPSTREAM_MOCK: '0',
+    BOSSRAID_OPENAI_MOCK: '0',
+  });
+  let connected = true;
+  t.mock.method(globalThis, 'fetch', async (url: string) =>
+    String(url).endsWith('/models')
+      ? Response.json({ data: [{ id: connected ? model.upstreamModelId : 'unknown-new-model' }] })
+      : Response.json({
+          output: [{ type: 'message', content: [{ type: 'output_text', text: 'ok' }] }],
+        })
+  );
+  try {
+    const session = await createPublicSessionCookie(app);
+    const result = await app.inject({
+      method: 'POST',
+      url: '/v1/seller/upstream/openai/connect',
+      headers: { cookie: session.cookie },
+      payload: { apiKey: 'openai-test-key' },
+    });
+    assert.equal(result.statusCode, 200);
+    connected = false;
+    const offers = await app.inject({
+      method: 'POST',
+      url: '/v1/seller/upstream/openai/offers',
+      headers: { cookie: session.cookie },
+      payload: { modelIds: [model.modelId], discountPercent: 10 },
+    });
+    assert.equal(offers.statusCode, 400);
+    assert.equal(offers.json().rejected[0].state, 'catalog_only');
+  } finally {
+    await app.close();
+  }
+});
