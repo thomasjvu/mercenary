@@ -54,6 +54,8 @@ export async function runRaidE2e(options) {
   let providersChild;
   let apiChild;
   let teardownStarted = false;
+  const runController = new AbortController();
+  const abortRun = () => runController.abort();
 
   const teardown = async () => {
     if (teardownStarted) {
@@ -63,8 +65,8 @@ export async function runRaidE2e(options) {
     await Promise.all([stopChild(apiChild), stopChild(providersChild)]);
   };
 
-  process.on('SIGINT', () => void teardown());
-  process.on('SIGTERM', () => void teardown());
+  process.once('SIGINT', abortRun);
+  process.once('SIGTERM', abortRun);
 
   try {
     console.log(JSON.stringify({ step: 'build' }, null, 2));
@@ -90,20 +92,25 @@ export async function runRaidE2e(options) {
       env,
     });
 
-    await waitForHealth(apiBase, options.minReadyProviders ?? 3);
+    await waitForHealth(apiBase, options.minReadyProviders ?? 3, 90_000, runController.signal);
 
     console.log(JSON.stringify({ step: 'authenticate_test_wallet' }, null, 2));
-    const sessionCookie = await createTestWalletSession(apiBase);
+    const sessionCookie = await createTestWalletSession(apiBase, runController.signal);
 
     console.log(JSON.stringify({ step: 'spawn_raid' }, null, 2));
-    const spawnResponse = await fetch(new URL('/v1/raid', apiBase), {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        cookie: sessionCookie,
+    const spawnResponse = await fetchWithTimeout(
+      new URL('/v1/raid', apiBase),
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          cookie: sessionCookie,
+        },
+        body: await readFixture(rootDir, options.raidFixture),
       },
-      body: await readFixture(rootDir, options.raidFixture),
-    });
+      20_000,
+      runController.signal
+    );
     if (!spawnResponse.ok) {
       throw new Error(`Spawn failed with ${spawnResponse.status}: ${await spawnResponse.text()}`);
     }
@@ -118,7 +125,9 @@ export async function runRaidE2e(options) {
       apiBase,
       spawnBody.raidId,
       spawnBody.raidAccessToken,
-      options.resultTimeoutMs
+      options.resultTimeoutMs,
+      '/v1/raid',
+      runController.signal
     );
     await options.verifyResult(result);
     if (options.afterVerify) {
@@ -143,17 +152,24 @@ export async function runRaidE2e(options) {
       )
     );
   } finally {
+    process.off('SIGINT', abortRun);
+    process.off('SIGTERM', abortRun);
     await teardown();
   }
 }
 
-async function createTestWalletSession(apiBase) {
+async function createTestWalletSession(apiBase, signal) {
   const account = privateKeyToAccount(generatePrivateKey());
-  const nonceResponse = await fetch(new URL('/v1/auth/nonce', apiBase), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ wallet: account.address }),
-  });
+  const nonceResponse = await fetchWithTimeout(
+    new URL('/v1/auth/nonce', apiBase),
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ wallet: account.address }),
+    },
+    10_000,
+    signal
+  );
   if (!nonceResponse.ok) {
     throw new Error(
       `Auth nonce failed with ${nonceResponse.status}: ${await nonceResponse.text()}`
@@ -162,11 +178,16 @@ async function createTestWalletSession(apiBase) {
 
   const nonce = await nonceResponse.json();
   const signature = await account.signMessage({ message: nonce.message });
-  const verifyResponse = await fetch(new URL('/v1/auth/verify', apiBase), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ message: nonce.message, signature }),
-  });
+  const verifyResponse = await fetchWithTimeout(
+    new URL('/v1/auth/verify', apiBase),
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ message: nonce.message, signature }),
+    },
+    10_000,
+    signal
+  );
   const setCookie = verifyResponse.headers.get('set-cookie');
   if (!verifyResponse.ok || !setCookie) {
     throw new Error(
@@ -177,11 +198,19 @@ async function createTestWalletSession(apiBase) {
   return setCookie.split(';', 1)[0];
 }
 
-export async function waitForHealth(apiBase, minReadyProviders = 3, timeoutMs = 90_000) {
+export async function waitForHealth(apiBase, minReadyProviders = 3, timeoutMs = 90_000, signal) {
   const url = `${apiBase}/health`;
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    const response = await fetch(url).catch(() => undefined);
+    if (signal?.aborted) {
+      throw new Error('E2E smoke interrupted while waiting for provider health.');
+    }
+    const response = await fetchWithTimeout(url, {}, 5_000, signal).catch((error) => {
+      if (signal?.aborted) {
+        throw error;
+      }
+      return undefined;
+    });
     if (response?.ok) {
       const payload = await response.json();
       if (payload.readyProviders >= minReadyProviders) {
@@ -199,16 +228,34 @@ export async function waitForResult(
   raidId,
   raidAccessToken,
   timeoutMs = 120_000,
-  resultPath = '/v1/raid'
+  resultPath = '/v1/raid',
+  signal
 ) {
   const deadline = Date.now() + timeoutMs;
   const resultUrl = new URL(`${resultPath}/${encodeURIComponent(raidId)}/result`, apiBaseUrl);
   while (Date.now() < deadline) {
-    const response = await fetch(resultUrl, {
-      headers: {
-        'x-bossraid-raid-token': raidAccessToken,
+    if (signal?.aborted) {
+      throw new Error('E2E smoke interrupted while waiting for the raid result.');
+    }
+    const response = await fetchWithTimeout(
+      resultUrl,
+      {
+        headers: {
+          'x-bossraid-raid-token': raidAccessToken,
+        },
       },
+      10_000,
+      signal
+    ).catch((error) => {
+      if (signal?.aborted) {
+        throw error;
+      }
+      return undefined;
     });
+    if (!response) {
+      await sleep(1_000);
+      continue;
+    }
     if (!response.ok) {
       throw new Error(`Result poll failed with ${response.status}: ${await response.text()}`);
     }
@@ -219,6 +266,12 @@ export async function waitForResult(
     await sleep(1_000);
   }
   throw new Error(`Timed out waiting for final raid result for ${raidId}`);
+}
+
+function fetchWithTimeout(input, init, timeoutMs, parentSignal) {
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  const signal = parentSignal ? AbortSignal.any([parentSignal, timeoutSignal]) : timeoutSignal;
+  return fetch(input, { ...init, signal });
 }
 
 export async function readFixture(rootDir, relativePath) {
