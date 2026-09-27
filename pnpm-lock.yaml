@@ -299,6 +299,9 @@ importers:
       '@bossraid/constants':
         specifier: workspace:*
         version: link:../../packages/constants
+      '@bossraid/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@bossraid/sandbox-runner':
         specifier: workspace:*
         version: link:../../packages/sandbox-runner
@@ -317,6 +320,9 @@ importers:
       '@bossraid/constants':
         specifier: workspace:*
         version: link:../../packages/constants
+      '@bossraid/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@bossraid/proof-ui':
         specifier: workspace:*
         version: link:../../packages/proof-ui
@@ -418,6 +424,9 @@ importers:
       '@bossraid/constants':
         specifier: workspace:*
         version: link:../../packages/constants
+      '@bossraid/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@bossraid/privacy-engine':
         specifier: workspace:*
         version: link:../../packages/privacy-engine

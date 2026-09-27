@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@bossraid/constants": "workspace:*",
+    "@bossraid/logger": "workspace:*",
     "@bossraid/sandbox-runner": "workspace:*",
     "@bossraid/shared-types": "workspace:*",
     "fastify": "^5.12.5"

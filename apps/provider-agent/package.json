@@ -20,6 +20,7 @@
   "dependencies": {
     "@bossraid/agent-harness": "workspace:*",
     "@bossraid/constants": "workspace:*",
+    "@bossraid/logger": "workspace:*",
     "@bossraid/privacy-engine": "workspace:*",
     "@bossraid/proof-ui": "workspace:*",
     "@bossraid/provider-sdk": "workspace:*",
