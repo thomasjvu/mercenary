@@ -1,6 +1,9 @@
 import type { TokenPricing } from '@bossraid/constants';
 import {
   INFERENCE_MODEL_CATALOG,
+  getInferenceCatalogEntry,
+  isUpstreamProviderId,
+  listInferenceCatalogEntriesForProvider,
   MARKETPLACE_BENCHMARK_PRICING,
   MARKETPLACE_REFERENCE_INPUT_TOKENS,
   MARKETPLACE_REFERENCE_OUTPUT_TOKENS,
@@ -110,7 +113,7 @@ export function buildInferenceMarketSnapshot(
   options: MarketplaceQueryParams = {}
 ): InferenceMarket[] {
   const filteredProviders = filterEligibleMarketplaceProviders(providers, options);
-  const markets = mergeInferenceCatalogMarkets(buildInferenceMarkets(filteredProviders));
+  const markets = mergeInferenceCatalogMarkets(buildInferenceMarkets(filteredProviders), options);
   if (options.modelId) {
     return markets.filter((market) => market.modelId === options.modelId);
   }
@@ -195,7 +198,12 @@ export function buildInferenceMarkets(providers: ProviderProfile[]): InferenceMa
     if (!modelId) {
       continue;
     }
-    byModel.set(modelId, [...(byModel.get(modelId) ?? []), provider]);
+    const marketProviders = byModel.get(modelId);
+    if (marketProviders) {
+      marketProviders.push(provider);
+    } else {
+      byModel.set(modelId, [provider]);
+    }
   }
 
   return [...byModel.entries()]
@@ -356,40 +364,55 @@ function buildCatalogOnlyMarket(entry: InferenceCatalogEntry): InferenceMarket {
 
 /** Static catalog-only markets (no live sellers) — built once per process. */
 let catalogOnlyMarketsById: Map<string, InferenceMarket> | null = null;
-let catalogEntryByModelId: Map<string, InferenceCatalogEntry> | null = null;
-
-function getCatalogEntryByModelId(): Map<string, InferenceCatalogEntry> {
-  if (!catalogEntryByModelId) {
-    catalogEntryByModelId = new Map(INFERENCE_MODEL_CATALOG.map((entry) => [entry.modelId, entry]));
-  }
-  return catalogEntryByModelId;
-}
+const inferenceCatalogModelIds = INFERENCE_MODEL_CATALOG.map((entry) => entry.modelId);
 
 function getCatalogOnlyMarketsById(): Map<string, InferenceMarket> {
   if (!catalogOnlyMarketsById) {
-    catalogOnlyMarketsById = new Map(
-      INFERENCE_MODEL_CATALOG.map((entry) => [entry.modelId, buildCatalogOnlyMarket(entry)])
-    );
+    catalogOnlyMarketsById = new Map();
   }
   return catalogOnlyMarketsById;
+}
+
+function getCatalogOnlyMarket(modelId: string): InferenceMarket | undefined {
+  const markets = getCatalogOnlyMarketsById();
+  const cached = markets.get(modelId);
+  if (cached) return cached;
+  const entry = getInferenceCatalogEntry(modelId);
+  if (!entry) return undefined;
+  const market = buildCatalogOnlyMarket(entry);
+  markets.set(modelId, market);
+  return market;
 }
 
 /**
  * Overlay live seller markets onto the static catalog.
  * Catalog-only rows are cloned from a process-level cache (not rebuilt every request).
  */
-export function mergeInferenceCatalogMarkets(liveMarkets: InferenceMarket[]): InferenceMarket[] {
-  const catalogEntries = getCatalogEntryByModelId();
-  const catalogOnly = getCatalogOnlyMarketsById();
+export function mergeInferenceCatalogMarkets(
+  liveMarkets: InferenceMarket[],
+  options: Pick<MarketplaceQueryParams, 'modelId' | 'modelProvider'> = {}
+): InferenceMarket[] {
   const merged = new Map<string, InferenceMarket>();
 
   for (const market of liveMarkets) {
-    const entry = catalogEntries.get(market.modelId);
+    const entry = getInferenceCatalogEntry(market.modelId);
     merged.set(market.modelId, entry ? applyCatalogReferencePricing(market, entry) : market);
   }
 
-  for (const [modelId, catalogMarket] of catalogOnly) {
+  const catalogOnlyModelIds = options.modelId
+    ? [options.modelId]
+    : options.modelProvider
+      ? isUpstreamProviderId(options.modelProvider)
+        ? listInferenceCatalogEntriesForProvider(options.modelProvider).map(
+            (entry) => entry.modelId
+          )
+        : []
+      : inferenceCatalogModelIds;
+
+  for (const modelId of catalogOnlyModelIds) {
     if (!merged.has(modelId)) {
+      const catalogMarket = getCatalogOnlyMarket(modelId);
+      if (!catalogMarket) continue;
       // Shallow clone so callers cannot mutate the shared cache entry.
       merged.set(modelId, { ...catalogMarket, pricing: { ...catalogMarket.pricing }, sellers: [] });
     }
@@ -467,7 +490,7 @@ export function providerHasStrictPrivateMarketMetadata(provider: ProviderProfile
 }
 
 export function buildOpenAiCompatibleModelEntry(market: InferenceMarket) {
-  const catalogEntry = INFERENCE_MODEL_CATALOG.find((entry) => entry.modelId === market.modelId);
+  const catalogEntry = getInferenceCatalogEntry(market.modelId);
   return {
     id: market.modelId,
     object: 'model',
@@ -495,11 +518,12 @@ export function buildOpenAiCompatibleModelEntry(market: InferenceMarket) {
 }
 
 export function buildInferencePriceEntry(market: InferenceMarket) {
+  const catalogEntry = getInferenceCatalogEntry(market.modelId);
   return {
     modelId: market.modelId,
     modelProvider: market.modelProvider,
-    catalogSource: INFERENCE_MODEL_CATALOG.find((m) => m.modelId === market.modelId)?.source,
-    tokenPricing: INFERENCE_MODEL_CATALOG.find((m) => m.modelId === market.modelId)?.tokenPricing,
+    catalogSource: catalogEntry?.source,
+    tokenPricing: catalogEntry?.tokenPricing,
     cheapestRateUsd: market.cheapestRateUsd,
     declaredUnit: market.pricing.declaredUnit,
     pricePer1mInputTokensUsd: market.pricing.pricePer1mInputTokensUsd,

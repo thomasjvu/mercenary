@@ -1,5 +1,5 @@
 import { readUpstreamUsage } from './usage.js';
-import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
+import { listInferenceCatalogEntriesForProvider } from '@bossraid/constants';
 import { TIMEOUTS } from '@bossraid/constants';
 import {
   applyChatOptionsToBody,
@@ -19,14 +19,12 @@ export async function fetchVeniceUpstreamModels(
 ): Promise<UpstreamModelRecord[]> {
   const env = options.env ?? process.env;
   if (isProviderInferenceMock('venice', env)) {
-    return INFERENCE_MODEL_CATALOG.filter((entry) => entry.modelProvider === 'venice').map(
-      (entry) => ({
-        id: entry.upstreamModelId,
-        displayName: entry.displayName,
-        teeAttested: entry.teeAttested,
-        e2ee: entry.e2ee,
-      })
-    );
+    return listInferenceCatalogEntriesForProvider('venice').map((entry) => ({
+      id: entry.upstreamModelId,
+      displayName: entry.displayName,
+      teeAttested: entry.teeAttested,
+      e2ee: entry.e2ee,
+    }));
   }
 
   const payload = await fetchUpstreamJson<{

@@ -104,14 +104,14 @@ Boss Raid is an AI inference and multi-agent work platform. **Mercenary** is its
 
 ## Compared with adjacent platforms
 
-| | Boss Raid | Surplus Intelligence | Security bounty platforms (for example HackerOne or Immunefi) |
-| --- | --- | --- | --- |
-| Main product | Live model inference, multi-agent execution, and general task bounties | OpenAI-compatible LLM inference marketplace | Vulnerability disclosure and security reward programs |
-| Work unit | One inference call, a multi-step raid, or a funded task | One routed model request | A scoped vulnerability report, triage, and remediation |
-| Supply | API inference sellers and HTTP task providers | OpenAI-compatible model endpoints listed by sellers | Security researchers and program participants |
-| How work is assigned | Cheapest eligible inference seller; Mercenary dispatches raid tasks; bounty poster selects bids | Cheapest available seller for a model request, with buyer routing controls | Researcher chooses an in-scope program; the program or platform triages reports |
-| Payment model | USDG on Robinhood + Marian for the configured production rail; job and bounty escrow contracts when onchain mode is enabled | Public docs currently describe USDC on Base for inference, x402, prefunded or fiat credits, and an MPP/Tempo path | Program-specific rewards after a valid in-scope finding; payout terms vary by program |
-| What it does not replace | It is not a security disclosure program or a security researcher community | It does not provide Mercenary's general multi-agent raid and task escrow flow | It is not a live inference order book or agent execution router |
+|                          | Boss Raid                                                                                                                   | Surplus Intelligence                                                                                              | Security bounty platforms (for example HackerOne or Immunefi)                         |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Main product             | Live model inference, multi-agent execution, and general task bounties                                                      | OpenAI-compatible LLM inference marketplace                                                                       | Vulnerability disclosure and security reward programs                                 |
+| Work unit                | One inference call, a multi-step raid, or a funded task                                                                     | One routed model request                                                                                          | A scoped vulnerability report, triage, and remediation                                |
+| Supply                   | API inference sellers and HTTP task providers                                                                               | OpenAI-compatible model endpoints listed by sellers                                                               | Security researchers and program participants                                         |
+| How work is assigned     | Cheapest eligible inference seller; Mercenary dispatches raid tasks; bounty poster selects bids                             | Cheapest available seller for a model request, with buyer routing controls                                        | Researcher chooses an in-scope program; the program or platform triages reports       |
+| Payment model            | USDG on Robinhood + Marian for the configured production rail; job and bounty escrow contracts when onchain mode is enabled | Public docs currently describe USDC on Base for inference, x402, prefunded or fiat credits, and an MPP/Tempo path | Program-specific rewards after a valid in-scope finding; payout terms vary by program |
+| What it does not replace | It is not a security disclosure program or a security researcher community                                                  | It does not provide Mercenary's general multi-agent raid and task escrow flow                                     | It is not a live inference order book or agent execution router                       |
 
 Boss Raid's task bounty board is closer to a funded job board than to a bug bounty platform. Its provider bid, award, delivery, acceptance, refund, and forfeit states handle paid work completion. A bug bounty program additionally needs a vulnerability scope, safe-harbor terms, duplicate handling, severity and impact triage, disclosure coordination, and a researcher community. The current Boss Raid bounty flow should not be marketed as providing those services.
 
@@ -377,15 +377,15 @@ Valid API keys skip x402 and debit spend caps and/or prepaid balance in the same
 
 Successful responses include a `bossraid` object:
 
-| Field                 | Meaning                                              |
-| --------------------- | ---------------------------------------------------- |
-| `selected_seller`     | Provider id that served the call                     |
-| `paid_price_usd`      | Charged amount                                       |
-| `benchmark_price_usd` | Static catalog reference price for the model         |
-| `savings_usd`         | `benchmark_price_usd − paid_price_usd` when positive |
-| `rate_card_hash`      | Immutable quote snapshot used for settlement         |
-| `receipt_path`        | Link to verification receipt                         |
-| `routing_proof`       | Privacy and verification gates applied               |
+| Field                 | Meaning                                                           |
+| --------------------- | ----------------------------------------------------------------- |
+| `selected_seller`     | Provider id that served the call                                  |
+| `paid_price_usd`      | Charged amount                                                    |
+| `benchmark_price_usd` | Catalog reference price using reported token usage when available |
+| `savings_usd`         | `benchmark_price_usd − paid_price_usd` when positive              |
+| `rate_card_hash`      | Immutable quote snapshot used for settlement                      |
+| `receipt_path`        | Link to verification receipt                                      |
+| `routing_proof`       | Privacy and verification gates applied                            |
 
 Purchase history: `GET /v1/buyer/purchases`. Account UI: `/account`.
 
@@ -443,53 +443,33 @@ Requests that cannot satisfy the gate fail closed — no downgrade to weaker sel
 
 ## Inference catalog
 
-`packages/constants/src/inference-catalog.ts` is generated from upstream public model lists plus static reference rates:
+The generated catalog imports [models.dev metadata](https://models.dev/models.json), [provider pricing](https://models.dev/api.json), and public provider feeds at build time. Boss Raid overrides preserve public model IDs and reviewed privacy claims. Models with unknown prices or unsupported output types cannot be published.
 
 ```bash
 pnpm bossraid sync:inference-catalog
 ```
 
-Benchmark prices in `packages/constants/src/marketplace-benchmark.ts` drive `savings_usd` and marketplace discount displays. Catalog-only rows fill discovery when no seller is live.
+Discovery exposes `catalog_source` and `token_pricing` under the model's `bossraid` metadata. `/v1/prices` includes `catalogSource` and `tokenPricing`. Rates can include context thresholds, cached input, and reasoning tokens. `catalog_only` means there is no active seller for that model; it is not a claim that the account can serve it.
 
 ## Platform seats
 
-Operators publish **platform liquidity** seats (no in-CVM HTTP workers) when matching `BOSSRAID_*_API_KEY` values are set and bootstrap runs (`BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1` or `POST /v1/ops/platform-liquidity/bootstrap`).
+Platform bootstrap considers every priced, supported chat model for all 11 configured providers. Each model must appear in that key's live model list and pass a completion probe plus any required attestation. Operators configure keys and run `POST /v1/ops/platform-liquidity/bootstrap` or enable startup bootstrap.
 
-| Upstream      | Env key                      | Seat set                                                                                                                                              |
-| ------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Venice**    | `BOSSRAID_VENICE_API_KEY`    | **All** text models ([docs](https://docs.venice.ai/models/overview)) — request `model` is the Venice id (`google-gemma-4-31b-it`, `openai-gpt-55`, …) |
-| **Chutes**    | `BOSSRAID_CHUTES_API_KEY`    | **All** LLMs from `llm.chutes.ai` ([browse](https://chutes.ai/models?type=llm)) — `chutes-<slug>`                                                     |
-| **NEAR AI**   | `BOSSRAID_NEAR_API_KEY`      | **All** text models from `cloud-api.near.ai` ([browse](https://cloud.near.ai/#models)) — `near/<upstream-id>`                                         |
-| **Phala**     | `BOSSRAID_PHALA_API_KEY`     | **All** TEE chat models ([browse](https://phala.com/models)) — `phala/<upstream-id>`                                                                  |
-| **Redpill**   | `BOSSRAID_REDPILL_API_KEY`   | **All** chat models from `api.redpill.ai` ([browse](https://redpill.ai/models)) — `redpill/<upstream-id>`                                             |
-| **Darkbloom** | `BOSSRAID_DARKBLOOM_API_KEY` | **All** chat models from `api.darkbloom.dev` ([API](https://www.darkbloom.dev/#api)) — `darkbloom/<id>` (e.g. `darkbloom/gemma-4-26b`)                |
-| **Nebius**    | `BOSSRAID_NEBIUS_API_KEY`    | All priced text-to-text models in the catalog ([Token Factory pricing](https://nebius.com/token-factory/prices)) — `nebius/<upstream-id>`                |
-| **OpenAI**    | `BOSSRAID_OPENAI_API_KEY`    | GPT-6 Astra, Sol, and Luna ([API pricing](https://developers.openai.com/api/docs/pricing)); `/v1/models` shows key-scoped availability                  |
-| **xAI**       | `BOSSRAID_XAI_API_KEY`       | Curated Grok / Grok Build ids (table below)                                                                                                           |
-| **Anthropic** | `BOSSRAID_ANTHROPIC_API_KEY` | All currently priced Claude text models in the catalog                                                                                               |
+| Provider  | Platform key                 | Public model ID                                      |
+| --------- | ---------------------------- | ---------------------------------------------------- |
+| Venice    | `BOSSRAID_VENICE_API_KEY`    | Existing Venice ID                                   |
+| Redpill   | `BOSSRAID_REDPILL_API_KEY`   | `redpill/<upstream-id>`                              |
+| NEAR AI   | `BOSSRAID_NEAR_API_KEY`      | `near/<upstream-id>`                                 |
+| Chutes    | `BOSSRAID_CHUTES_API_KEY`    | `chutes/<upstream-id>`; existing aliases retained    |
+| Phala     | `BOSSRAID_PHALA_API_KEY`     | `phala/<upstream-id>`                                |
+| Darkbloom | `BOSSRAID_DARKBLOOM_API_KEY` | `darkbloom/<upstream-id>`                            |
+| Nebius    | `BOSSRAID_NEBIUS_API_KEY`    | `nebius/<upstream-id>`                               |
+| OpenAI    | `BOSSRAID_OPENAI_API_KEY`    | `openai/<upstream-id>`                               |
+| xAI       | `BOSSRAID_XAI_API_KEY`       | Existing Grok ID                                     |
+| Z.ai      | `BOSSRAID_ZAI_API_KEY`       | Existing GLM ID                                      |
+| Anthropic | `BOSSRAID_ANTHROPIC_API_KEY` | `anthropic/<upstream-id>`; existing aliases retained |
 
-Refresh live catalogs (Venice, Chutes, NEAR, Phala TEE, Redpill, Darkbloom) and published static price lists:
-
-```bash
-pnpm bossraid sync:inference-catalog
-```
-
-Live provider ids look like `platform-venice-google-gemma-4-31b-it`, `platform-darkbloom-darkbloom-gemma-4-26b`, and `platform-openai-openai-gpt-6-luna`. Discover with `GET /v1/markets?model_provider=openai` (or any provider id) and `GET /v1/models`.
-
-Phala compose defaults to **platform-only** seed (`examples/inference/platform-only.providers.json`) and retires demo workers `dottie` / `riko` / `gamma`. Optional game-raid workers use compose profile `game-providers`.
-
-### xAI / Grok model ids
-
-| Model id                       | Notes                   |
-| ------------------------------ | ----------------------- |
-| `grok-4.7`                     | Flagship Grok           |
-| `grok-4.6`                     | Current Grok model      |
-| `grok-4.5`                     | Previous generation     |
-| `grok-4.3`                     | Previous generation     |
-| `grok-4.20-0309-reasoning`     | Reasoning variant       |
-| `grok-4.20-0309-non-reasoning` | Non-reasoning variant   |
-| `grok-4.20-multi-agent-0309`   | Multi-agent             |
-| `grok-build-0.1`               | Grok Build coding model |
+Use `GET /v1/models` or `GET /v1/markets?model_provider=nebius` for the deployed catalog and live seller counts. No fixed shortlist needs editing when a supported provider adds a model. Build-time catalog updates require deployment; account availability is refreshed when listing or publishing offers and during bootstrap. See [runtime](../operators/runtime.md#catalog-refresh) for offline snapshots and drift checks.
 
 ### Reasoning effort
 
@@ -510,7 +490,7 @@ OpenAI-compatible field on both chat routes:
 | `high`   | Deeper reasoning                  |
 | `xhigh`  | Maximum (alias of Grok CLI `max`) |
 
-Boss Raid embeds options in the raid task and the hosted gateway forwards `reasoning_effort`, `max_tokens`, and `temperature` to xAI when present. Unsupported upstreams ignore unknown fields safely where the provider allows.
+Boss Raid embeds options in the raid task. Compatible adapters forward chat options; OpenAI maps them to Responses fields and gates temperature/reasoning on model capabilities. Anthropic maps messages, system text, and the output limit to Messages; `reasoning_effort` is not forwarded to Anthropic. Individual models may reject unsupported reasoning levels.
 
 Grok CLI:
 
@@ -536,7 +516,7 @@ context_window = 1000000
 max_completion_tokens = 8192
 ```
 
-Repeat the `[model."bossraid-…"]` block for each model id above (quote table keys that contain dots). Set `[models] default = "bossraid-grok-4.5"`. Use a buyer `br_…` key for production traffic; admin bearer is for operator dogfood only.
+Repeat the `[model."bossraid-…"]` block for each model id returned by discovery (quote table keys that contain dots). Set `[models] default = "bossraid-grok-4.5"`. Use a buyer `br_…` key for production traffic; admin bearer is for operator dogfood only.
 
 ## Related docs
 
@@ -818,10 +798,16 @@ Worker env: see `examples/providers/harness-*.env.example`. Set `BOSSRAID_HARNES
 Sell model completions without running a worker:
 
 1. `POST /v1/seller/upstream/:provider/connect` — validates key via live `/models` **and** a cheap chat probe
-2. `GET /v1/seller/upstream/:provider/models/catalog` — catalog + reference rates
+2. `GET /v1/seller/upstream/:provider/models` — account availability joined to catalog prices. `/models/catalog` is a public preview.
 3. `POST /v1/seller/upstream/:provider/offers` — publish chat offers (`lane: "chat"` only in product UI)
 
-Keys are encrypted at rest. This is **API-key selling** for single-shot completions.
+Providers: `venice`, `redpill`, `near`, `chutes`, `phala`, `darkbloom`, `nebius`, `openai`, `xai`, `zai`, `anthropic`. Keys are encrypted at rest.
+
+The picker disables catalog-only models and live models without supported pricing. Publishing refreshes `/models`, probes each selected completion, and verifies required TEE/E2EE evidence. Probes consume upstream tokens. Partial success returns `providers` plus `rejected` entries with the failed model and reason; no successful selections returns `400 no_supported_models`. A selected existing offer is paused when its model loses availability or fails the probe.
+
+Discovery states are `catalog_only`, `live_unpriced`, and `live_unverified`. Successful publication reports `live_supported`; failed probes report `live_failed`. `offerable` means a selection is eligible to be probed, not already verified. `supported` means the catalog has supported metadata/prices. Live unpriced rows have null reference prices.
+
+See [hosted onboarding](../../../examples/onboarding/hosted-upstream.md) and [catalog architecture](../operators/architecture.md#catalog-and-availability).
 
 ```json
 {
@@ -1545,6 +1531,18 @@ Output types: `text`, `patch`, `json`, `image`, `video`, `bundle`.
 
 <!-- /docs:template:web-routes -->
 
+## Catalog payloads
+
+- `GET /v1/models`: `bossraid.catalog_source`, `bossraid.capabilities`, and `bossraid.token_pricing` describe the build snapshot. Active seller counts determine live marketplace availability.
+- `GET /v1/prices`: per-model `catalogSource` and `tokenPricing`; the top-level benchmark is labeled `catalog_snapshot`. The per-model source identifies models.dev, the provider feed, or a reviewed override.
+- `GET /v1/seller/upstream/:provider/models/catalog`: public preview; all rows are `catalog_only` and cannot publish without account discovery.
+- `GET /v1/seller/upstream/:provider/models`: wallet session; returns `upstreamModelId`, `state`, `supported`, `upstreamFound`, and `offerable`. Unknown live models have null prices.
+- `POST /v1/seller/upstream/:provider/offers`: refreshes availability and probes selected models. Returns successful `providers` plus `rejected: [{ modelId, state, reason }]`; returns 400 if none pass, 502 if account discovery fails.
+- `GET /v1/ops/platform-liquidity`: admin; includes source timestamps/errors and `configuredCount` (legacy `readyCount` has the same key-coverage meaning).
+- `POST /v1/ops/platform-liquidity/bootstrap`: admin; returns `published`, `skipped`, `paused`, and removed demo IDs after live checks.
+
+Provider registration pricing accepts `tokenPricing` (USD per million tokens): `input`, `output`, optional `cache_read`, `cache_write`, `reasoning`, `input_audio`, `output_audio`, and `tiers`. Each tier has full input/output rates and `aboveInputTokens`; thresholds must be nonnegative, unique, and increasing. A tier applies when the prompt exceeds its threshold. Hosted chat responses use trusted upstream usage when available, with optional `usage.token_details` for specialized token subsets. HTTP seller callback payloads cannot supply trusted hosted usage.
+
 ## MCP tools
 
 `bossraid_spawn`, `bossraid_status`, `bossraid_result`, `bossraid_receipt`, `bossraid_delegate`, `bossraid_abort`, `bossraid_replay`, `bossraid_capabilities`, `bossraid_provider_stats`
@@ -1554,7 +1552,7 @@ Output types: `text`, `patch`, `json`, `image`, `video`, `bundle`.
 - Chat route: low-signal greetings may return without opening a raid. `stream=true` → SSE chunks.
 - Inference route: no small-talk bypass; defaults budget to cheapest seller when omitted.
 - Marketplace counters: `GET /v1/marketplace/stats` and `/v1/markets.stats` use available runtime offers and seller payout ledger rows, not catalog sizes. The 24-hour counters scan at most the latest 10,000 payout rows for currently registered providers; see [Marketplace operations](../operators/marketplace-operations.md).
-- Both chat routes accept OpenAI-compatible `reasoning_effort` (`low` \| `medium` \| `high` \| `xhigh`); hosted gateway forwards it to xAI (and other OpenAI-style upstreams when set). See [discount-inference.md](../buyers/discount-inference.md#platform-seats-xai--grok).
+- Both chat routes accept OpenAI-compatible `reasoning_effort` (`low` \| `medium` \| `high` \| `xhigh`); hosted gateway forwards it to xAI (and other OpenAI-style upstreams when set). See [discount-inference.md](../buyers/discount-inference.md#reasoning-effort).
 - Onchain settlement: result/attested-result reads may refresh contract state before respond.
 - Registration fields `verification`, `privacy`, `erc8004`, `trust`, `reputation` stay separate.
 
@@ -1633,6 +1631,8 @@ Bootstrap assembles `deploy/phala/.env` with compose defaults not stored in Infi
 | `BOSSRAID_PROVIDER_HEALTH_TIMEOUT_MS`        | Health probe timeout                                                |
 | `BOSSRAID_TRUST_PROXY`                       | Trust forwarded headers                                             |
 | `BOSSRAID_METRICS_PUBLIC`                    | `true` exposes `/metrics` without admin auth (default: admin only)  |
+
+Production readiness requires operational tokens and encryption keys to be at least 32 characters, reject known placeholders, include at least eight distinct characters, and avoid repeating patterns or a single character used more than half the time. These checks catch obvious mistakes; generate secrets with a cryptographically secure random source (for example, `openssl rand -hex 32`) because a readiness check cannot prove that a value was generated randomly.
 
 ## Tier 3 — Payments (x402, agent wallet, settlement)
 
@@ -1719,9 +1719,13 @@ Onchain overlay template: `deploy/phala/secrets.onchain.env.example`.
 | `BOSSRAID_UPSTREAM_TEE_MOCK`            | `1` = mock upstream TEE attestation verification         |
 | `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND` | Dev-only: fund bounties without x402 (default off)       |
 
+Failed live fetches do not silently fall back to mock models in development. Use explicit mock flags only for local simulations.
+
 ### Catalog upstream platform keys (optional)
 
-`BOSSRAID_VENICE_API_KEY`, `BOSSRAID_REDPILL_API_KEY`, `BOSSRAID_NEAR_API_KEY`, `BOSSRAID_CHUTES_API_KEY`, `BOSSRAID_PHALA_API_KEY`, `BOSSRAID_XAI_API_KEY`, `BOSSRAID_ZAI_API_KEY`, `BOSSRAID_ANTHROPIC_API_KEY`, `BOSSRAID_DARKBLOOM_API_KEY`, `BOSSRAID_NEBIUS_API_KEY`, `BOSSRAID_OPENAI_API_KEY` — platform keys for catalog inference when sellers do not supply their own. TEE preflight is available only for supported upstreams. Optional `BOSSRAID_ZAI_API_BASE`, `BOSSRAID_ANTHROPIC_API_BASE`, `BOSSRAID_NEBIUS_API_BASE`, or `BOSSRAID_OPENAI_API_BASE` override default OpenAI-compatible base URLs. Nebius defaults to `https://api.tokenfactory.nebius.com/v1`; OpenAI defaults to `https://api.openai.com/v1`.
+Build-time catalog downloads use public sources and need no credentials or new environment variables. Source URLs and refresh policy are documented in [runtime](../operators/runtime.md#catalog-refresh).
+
+`BOSSRAID_VENICE_API_KEY`, `BOSSRAID_REDPILL_API_KEY`, `BOSSRAID_NEAR_API_KEY`, `BOSSRAID_CHUTES_API_KEY`, `BOSSRAID_PHALA_API_KEY`, `BOSSRAID_XAI_API_KEY`, `BOSSRAID_ZAI_API_KEY`, `BOSSRAID_ANTHROPIC_API_KEY`, `BOSSRAID_DARKBLOOM_API_KEY`, `BOSSRAID_NEBIUS_API_KEY`, `BOSSRAID_OPENAI_API_KEY` — platform keys for catalog inference when sellers do not supply their own. TEE preflight is available only for supported upstreams. Optional `BOSSRAID_ZAI_API_BASE`, `BOSSRAID_ANTHROPIC_API_BASE`, `BOSSRAID_NEBIUS_API_BASE`, or `BOSSRAID_OPENAI_API_BASE` override the provider API bases. Nebius defaults to `https://api.tokenfactory.nebius.com/v1`; OpenAI defaults to `https://api.openai.com/v1` and uses `/responses`; Anthropic uses `/messages`. Z.ai retains its coding-plan base; catalog benchmark prices come from the standard Z.ai token API and do not describe subscription billing. Account `/models` and completion probes determine which entries can publish.
 
 ### Evaluator
 
@@ -1768,21 +1772,21 @@ Onchain overlay template: `deploy/phala/secrets.onchain.env.example`.
 | `BOSSRAID_OPERATOR_TERMS_ACK`    | Production-readiness gate (`true` before full production) |
 | `BOSSRAID_INCIDENT_RESPONSE_ACK` | Production-readiness gate (`true` before full production) |
 
-Outside `NODE_ENV=production`, `node_env_production`, `onchain_settlement`, and `tee_attestation` report as warnings instead of blocking failures. Other checks still apply regardless of `NODE_ENV` — notably `evaluator_isolation` (requires per-job containers), strong `BOSSRAID_ADMIN_TOKEN` / `BOSSRAID_REGISTRY_TOKEN`, and operator acks. Local stacks often report `ok: false` until those are configured; that is expected.
+Outside `NODE_ENV=production`, `node_env_production`, `onchain_settlement`, and `tee_attestation` report as warnings instead of blocking failures. Other checks still apply regardless of `NODE_ENV` — notably `evaluator_isolation` (requires per-job containers), varied non-placeholder `BOSSRAID_ADMIN_TOKEN` / `BOSSRAID_REGISTRY_TOKEN` values, and operator acks. Local stacks often report `ok: false` until those are configured; that is expected.
 
 ### Settlement / operator extras (commonly needed)
 
-| Variable                                         | Purpose                                                                                                     |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `BOSSRAID_SETTLEMENT_TREASURY_KEY`               | Signs onchain settlement fund txs                                                                           |
-| `BOSSRAID_EVALUATOR_ADDRESS`                     | Onchain evaluator address for job complete/reject                                                           |
-| `BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY`      | Optional evaluator signer for onchain complete                                                              |
-| `BOSSRAID_SETTLEMENT_PROVIDER_PRIVATE_KEYS_JSON` | Optional map of provider wallets for onchain job steps                                                      |
-| `BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS`      | `1` = allow private/loopback provider URLs in production (trusted compose networks only)                    |
-| `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY`          | `1` = on API start, register featured platform chat offers when `BOSSRAID_*_API_KEY` exists (Phala default) |
-| `BOSSRAID_TRUSTED_CLIENT_KEY`                    | Alias for trusted-client bearer (with `BOSSRAID_API_KEY`)                                                   |
-| `BOSSRAID_RAID_RETENTION_TTL_SEC`                | Raid record retention window                                                                                |
-| `BOSSRAID_X402_RECONCILIATION_INTERVAL_MS`       | x402 refund/reconcile worker interval                                                                       |
+| Variable                                         | Purpose                                                                                                                        |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `BOSSRAID_SETTLEMENT_TREASURY_KEY`               | Signs onchain settlement fund txs                                                                                              |
+| `BOSSRAID_EVALUATOR_ADDRESS`                     | Onchain evaluator address for job complete/reject                                                                              |
+| `BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY`      | Optional evaluator signer for onchain complete                                                                                 |
+| `BOSSRAID_SETTLEMENT_PROVIDER_PRIVATE_KEYS_JSON` | Optional map of provider wallets for onchain job steps                                                                         |
+| `BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS`      | `1` = allow private/loopback provider URLs in production (trusted compose networks only)                                       |
+| `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY`          | `1` = on API start, probe and publish available, priced chat models for configured `BOSSRAID_*_API_KEY` values (Phala default) |
+| `BOSSRAID_TRUSTED_CLIENT_KEY`                    | Alias for trusted-client bearer (with `BOSSRAID_API_KEY`)                                                                      |
+| `BOSSRAID_RAID_RETENTION_TTL_SEC`                | Raid record retention window                                                                                                   |
+| `BOSSRAID_X402_RECONCILIATION_INTERVAL_MS`       | x402 refund/reconcile worker interval                                                                                          |
 
 ## Dev & smoke only
 
@@ -2019,31 +2023,24 @@ Live offer counts, API health, and the Cloudflare 525 recovery procedure: [Marke
 
 1. **Local or Phala** — `pnpm dev` for local stack; Phala bootstrap via [Infisical](/dev-docs/operators/infisical).
 2. **Readiness** — `GET /v1/ops/production-readiness` must return `ok: true` for full production.
-3. **Liquidity (platform seats)** — set platform `BOSSRAID_*_API_KEY` values:
-   - `BOSSRAID_VENICE_API_KEY` → **all** Venice text models
-   - `BOSSRAID_CHUTES_API_KEY` → **all** Chutes LLMs
-   - `BOSSRAID_NEAR_API_KEY` → **all** NEAR AI Cloud text models
-   - `BOSSRAID_PHALA_API_KEY` → **all** Phala TEE chat models
-   - `BOSSRAID_REDPILL_API_KEY` → **all** Redpill chat models
-   - `BOSSRAID_DARKBLOOM_API_KEY` → **all** Darkbloom chat models (Apple Silicon private inference)
-   - `BOSSRAID_NEBIUS_API_KEY` → all priced Nebius Token Factory text-to-text models in the catalog
-   - `BOSSRAID_OPENAI_API_KEY` → OpenAI GPT-6 Astra, Sol, and Luna
-   - `BOSSRAID_XAI_API_KEY` → curated Grok models
-   - optional Anthropic as documented in [discount-inference.md](../buyers/discount-inference.md#platform-seats)
+3. **Liquidity (platform seats)** — configure any of the 11 provider keys: Venice, Redpill, NEAR, Chutes, Phala, Darkbloom, Nebius, OpenAI, xAI, Z.ai, or Anthropic. Key names and bases are in [env.md](../reference/env.md#catalog-upstream-platform-keys-optional).
 
-   Then `POST /v1/ops/platform-liquidity/bootstrap` with admin token (or `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1` on API start). Phala compose defaults to an empty provider seed (`platform-only.providers.json`) and retires demo workers `dottie` / `riko` / `gamma` via `BOSSRAID_DISABLED_PROVIDER_IDS`. Optional in-CVM game agents: `docker compose --profile game-providers up`.
+   Run `POST /v1/ops/platform-liquidity/bootstrap` with an admin token, or set `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1` on API start. Bootstrap refreshes each keyed account's model list, probes priced chat models (up to four concurrent probes per provider), and registers only passing seats. Probes consume upstream tokens. Inspect `published`, `skipped`, and `paused` in the result. Missing keys, removed models, or failed probes pause previous platform seats.
+
+   Phala compose uses an empty provider seed (`platform-only.providers.json`) and retires demo workers `dottie` / `riko` / `gamma` via `BOSSRAID_DISABLED_PROVIDER_IDS`. Optional game agents use `docker compose --profile game-providers up`.
 
 4. **Ops UI** — authenticate with `BOSSRAID_ADMIN_TOKEN`, monitor raids, toggle x402.
 5. **Ship** — gateway (`pnpm bossraid serve:gateway`) or Cloudflare Pages deploy.
 
 ## Remaining production work
 
-- The public API returned Cloudflare 525 during the 2026-09-26 audit; see [Marketplace operations](marketplace-operations.md) for the observed state and recovery checks. No live seller counts were available from that request.
+- The public API and web proxy returned Cloudflare 525 in the latest live check; see [Marketplace operations](marketplace-operations.md) for the observed state and recovery checks. No live seller counts or readiness payload were available.
+- Publish the current API/evaluator image and update the local Phala deploy env before deployment; it currently pins `sha-21340f6`.
 - Mainnet escrow deployment and the Phala `SETTLEMENT_MODE=onchain` cutover remain operator actions; testnet artifacts are not production contracts.
 - Complete and record a live Marian x402 transaction, confirm funded settlement balances and at least one ready seller, and require `GET /v1/ops/production-readiness` → `ok: true` before unrestricted paid traffic.
 - The shared-wallet transaction queue prevents overlap only among callers in the same Node process. It does not coordinate API replicas or standalone settlement commands; the control-state store remains single-writer and multi-process writes are unsupported.
 
-Contributor scripts (`check`, `build`, `dev`, `test:*`) live in root `package.json`. Operator, deploy, and integration commands use `pnpm bossraid <command>` — run `pnpm bossraid help` for the full list.
+Contributor scripts (`check`, `build`, `dev`, `test:*`) live in root `package.json`. Type checks, builds, and unit tests cap Turbo at two concurrent package jobs. Node test files are capped at two per package; API tests run serially because they share SQLite fixtures. Run expensive validation commands one at a time. Operator, deploy, and integration commands use `pnpm bossraid <command>` — run `pnpm bossraid help` for the full list.
 
 Regenerate OpenAPI specs after route or schema changes:
 
@@ -2053,13 +2050,26 @@ pnpm bossraid sync:openapi
 
 CI runs `pnpm bossraid check:openapi`. Specs are served from `apps/docs/public/` and browsable at [/api](/api).
 
-Refresh inference catalog + reference pricing JSON:
+### Catalog refresh
 
 ```bash
-pnpm bossraid sync:inference-catalog
+pnpm bossraid sync:inference-catalog                     # fetch and write snapshots + catalog
+pnpm bossraid sync:inference-catalog -- --cached          # regenerate offline
+pnpm bossraid sync:inference-catalog -- --check           # fetch, report drift; no writes
+pnpm bossraid sync:inference-catalog -- --cached --check  # compare saved inputs; no network
 ```
 
-Writes `packages/constants/src/inference-catalog.ts` and `packages/constants/data/inference-model-pricing.json`. Providers with public price metadata sync their live model lists; other providers use published rates and model ids maintained in the script. Nebius includes its published base-flavor text-to-text models; OpenAI includes its current general chat models. Models are offerable only when they have published input and output token rates.
+Builds use the committed catalog snapshot and do not make network requests or rewrite generated files. Docker checks the snapshot against generated catalog data before compiling. Refresh public source data explicitly with `pnpm bossraid sync:inference-catalog`, review the reported drift, and commit the snapshot and generated outputs. Public downloads need no provider API keys. Sources have a 20-second timeout and ETag support. A failed download retains that source's previous successful payload and reports the failure. A first run without a usable snapshot fails.
+
+### Web bundle loading
+
+Wallet and x402 client code is loaded when a wallet action is used. Keep runtime imports from `@bossraid/smart-pay` inside that action path; type-only imports do not pull the payment runtime into the initial bundle. Avoid manually grouping `viem` into a startup vendor chunk, since that can preload the payment runtime with the app shell.
+
+Outputs in `packages/constants/` include the typed catalog, provider prices, `data/inference-sources.json`, `data/inference-catalog-report.json`, and generated source status. The local marketplace fixture in `examples/inference/` is regenerated too. Edit `data/inference-overrides.json` for reviewed aliases, price exceptions, and privacy claims; do not edit generated files.
+
+`--check` exits nonzero for additions, removals, changed model metadata/prices, source failures, or sources not checked successfully in seven days. Review the report, refresh, and commit the generated snapshot with the importer/override changes. CI checks the committed inputs; the daily catalog drift workflow fetches current public sources without publishing offers or modifying files.
+
+`GET /v1/ops/platform-liquidity` exposes `catalogSources`, candidates, and `configuredCount`. The legacy `readyCount` also counts configured keys; successful runtime publication is reported by the bootstrap response. Inspect source timestamps/errors before deployment, then inspect the bootstrap results. Catalog inclusion alone does not prove model availability.
 
 Regenerate brand assets (Venice; requires `VENICE_API_KEY` in `.private/.env`):
 
@@ -2197,6 +2207,8 @@ Contracts package: [`packages/contracts/README.md`](../../../packages/contracts/
 
 ## Deploy checklist
 
+For provider changes: refresh the catalog, review exclusions/source errors, build the image, configure keys, and run platform bootstrap. Confirm the expected models are in `published`; inspect `skipped` and `paused`. Seller onboarding follows [the hosted key example](../../../examples/onboarding/hosted-upstream.md).
+
 ### 1. ACP registration (once)
 
 1. Register Mercenary + providers at `https://acpx.virtuals.io`
@@ -2281,7 +2293,7 @@ curl -H "Authorization: Bearer $BOSSRAID_ADMIN_TOKEN" \
   https://api.raid.quest/v1/ops/settlement/status | jq
 ```
 
-Production gate: `ok: true` on `GET /v1/ops/production-readiness` before unrestricted paid traffic. `GET /ready` also enforces production-only checks when `NODE_ENV=production` (onchain settlement configured, upstream mocks disabled, unverified balance fund disabled). Static deploy audit (matches CI):
+Production gate: `ok: true` on `GET /v1/ops/production-readiness` before unrestricted paid traffic. `GET /ready` also enforces production-only checks when `NODE_ENV=production` (onchain settlement configured, upstream mocks disabled, unverified balance fund disabled). Operational tokens and encryption keys must be at least 32 characters, non-placeholder, varied, and non-repeating; generate them with a cryptographically secure random source. Static deploy audit (matches CI):
 
 ```bash
 NODE_ENV=production \
@@ -2360,7 +2372,9 @@ For a filtered order book, pass supported query parameters such as `model_id`, `
 
 ## API outage handling
 
-On **2026-09-26 at 13:29 UTC**, live requests to `https://api.raid.quest/v1/markets`, `https://api.raid.quest/v1/marketplace/stats`, and the web proxy at `https://raid.quest/api/v1/markets` returned Cloudflare **525 (SSL handshake failed)**. No market, seller, or stats payload was returned, so live supply and activity were **unknown**. The page's zero-valued placeholders at that time were not live API measurements.
+On **2026-09-27 at 01:56 UTC**, live requests to `https://api.raid.quest/health`, `/v1/models`, `/v1/prices`, `/v1/markets`, `/v1/marketplace/stats`, `/v1/ops/production-readiness`, and the web proxy at `https://raid.quest/api/v1/markets` returned Cloudflare **525 (SSL handshake failed)**. No API or readiness payload was returned, so live supply, activity, and production gate state were **unknown**. The page's zero-valued placeholders are not live API measurements.
+
+The authenticated Phala profile `thomasjvus-projects` is accessible as `thomasjvu`. Its current workspace lists `marian` and `rng-prod`, but no Boss Raid API CVM; `marian` exposes port 4021 and uses a parameterized `MARIAN_IMAGE`. The other saved profile, `phantasys-projects`, returns `API key expired`. The local deploy env passes the core-secret preflight but sets `BOSSRAID_SETTLEMENT_MODE=file`, has no Robinhood RPC URL or production contract addresses, and pins API/evaluator images to `sha-21340f6`. It must not be treated as full-production ready or current with the working tree.
 
 After an origin or TLS change, check the API process and readiness from the host, then check the public edge:
 
@@ -2430,17 +2444,35 @@ Single-provider marketplace lane. API normalizes every request to `maxAgents: 1`
 
 ## Hosted upstream sellers
 
-Self-serve sellers connect a Venice API key in the web UI. The API stores the key encrypted in control state, materializes one provider profile per selected model, and routes inference through an embedded hosted gateway:
+Self-serve sellers connect an upstream API key in the web UI. The API stores the key encrypted in control state, materializes one provider profile per selected model, and routes inference through an embedded hosted gateway:
 
-1. Seller `POST /v1/seller/upstream/:provider/connect` validates the key against upstream `GET /models` (`openai`, `anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`, `darkbloom`, `nebius`).
-2. Seller `POST /v1/seller/upstream/:provider/offers` registers offers with `lane: "chat"` (`inference_hosted`) or `lane: "harness"` (`harness_hosted`) and `source.targetType = :provider`.
+1. Seller `POST /v1/seller/upstream/:provider/connect` validates the key against upstream `GET /models` and a completion probe (`openai`, `anthropic`, `zai`, `xai`, `venice`, `redpill`, `near`, `chutes`, `phala`, `darkbloom`, `nebius`).
+2. Seller `POST /v1/seller/upstream/:provider/offers` refreshes account availability and probes each selected model before registering offers with `lane: "chat"` (`inference_hosted`) or `lane: "harness"` (`harness_hosted`) and `source.targetType = :provider`.
 3. Each offer endpoint is `{BOSSRAID_INFERENCE_GATEWAY_BASE}/gateway/{providerId}`.
 4. Gateway `POST /v1/raid/accept` proxies the raid task to the upstream chat API (or platform agent-harness tool loop), verifies TEE attestation when privacy features are claimed, and records the provider submission in-process.
 5. Buyers and sellers verify upstream TEE via `POST /v1/marketplace/tee/attestation` (provider-specific nonce + Intel/NVIDIA evidence; explorer link to proof.t16z.com).
 
-**Platform liquidity:** ops can seed chat offers for catalog models with `POST /v1/ops/platform-liquidity/bootstrap` (admin token) when matching `BOSSRAID_*_API_KEY` values are set. Optional startup: `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1`. Platform seats use `source.externalRef = "platform"` and fall back to platform keys (no per-seller Phala). Phala defaults to platform seats only (empty seed + purge of demo workers `dottie` / `riko` / `gamma`). Provider coverage: [discount-inference.md](../buyers/discount-inference.md#platform-seats).
+**Platform liquidity:** ops can seed chat offers for available, priced catalog models that pass completion and required attestation probes with `POST /v1/ops/platform-liquidity/bootstrap` (admin token) when matching `BOSSRAID_*_API_KEY` values are set. Optional startup: `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1`. Platform seats use `source.externalRef = "platform"` and fall back to platform keys (no per-seller Phala). Phala defaults to platform seats only (empty seed + purge of demo workers `dottie` / `riko` / `gamma`). Provider coverage: [discount-inference.md](../buyers/discount-inference.md#platform-seats).
 
 Buyers still use `POST /v1/inference/chat/completions`. The static inference catalog fills discovery gaps when no live seller exists for a model. Chat is **stateless** — clients own multi-turn history.
+
+### Catalog and availability
+
+The catalog has three inputs:
+
+1. **Public metadata** — [models.dev models.json](https://models.dev/models.json) supplies model metadata; [api.json](https://models.dev/api.json) supplies provider-specific model IDs, prices, capabilities, and limits. Public provider feeds supplement serving-provider prices and model coverage.
+2. **Boss Raid policy** — `packages/constants/data/inference-overrides.json` owns exact ID aliases, reviewed price exceptions, and privacy/TEE/E2EE claims. Imported metadata cannot grant trust or reputation. A new provider still needs a protocol adapter and credential configuration.
+3. **Account availability** — the adapter fetches `/models` using the connected seller or platform key. Exact IDs and explicit aliases are joined to the priced catalog; a completion probe and any required attestation must pass before an offer becomes active.
+
+Builds compile the committed catalog snapshot without network access or generated-file writes; Docker validates the snapshot before compiling. Run `pnpm bossraid sync:inference-catalog` explicitly to fetch, validate, and normalize public sources. Fetch failures retain the last successful source and report its age/error; malformed fresh data never replaces a valid snapshot. Each source records its URL, retrieval/check times, ETag, and SHA-256. The drift workflow checks daily; deploying a newer catalog still requires a reviewed snapshot, build, and deployment.
+
+Only text completion models with known context limits and input/output prices enter the sellable catalog. Unsupported modalities, retired models, missing prices, and unsupported tier formats appear in `inference-catalog-report.json`. Zero prices remain zero. Unknown account models are visible as `live_unpriced`, with null prices and publishing disabled.
+
+Account lists refresh on connect, authenticated discovery, offer publishing, and platform bootstrap. Platform bootstrap pauses previous seats that lose availability or fail probes. Existing seller offers are paused when a selected model fails republication; dispatch failures also enter routing cooldown. There is no background paid completion loop. Explicit mock flags are required for simulated upstream responses, including in development.
+
+**Pricing:** `tokenPricing` stores USD per million tokens with context thresholds and optional cache, reasoning, and audio rates. A context tier applies to the whole request once prompt tokens exceed its threshold. Discounts apply to every tier, and the full rate card is included in quote hashing. Trusted hosted usage is retained for response metadata and Mana token capture; specialized counts are subsets of the input/output totals. Other settlement rails retain their existing quoted-budget behavior. Catalog reference prices expose source provenance; they do not establish account access or a seller's actual charge.
+
+OpenAI uses native Responses (`store: false`); Anthropic uses native Messages with paginated model discovery. Other configured providers use their existing compatible chat adapters. Buyer chat routes keep the OpenAI-compatible request/response shape.
 
 ### Production readiness (honest)
 

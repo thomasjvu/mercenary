@@ -14,16 +14,16 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
-    "test": "node --import tsx --test 'src/**/*.test.ts'"
+    "test": "node --import tsx --test --test-concurrency=2 'src/**/*.test.ts'"
   },
   "dependencies": {
     "@bossraid/persistence": "workspace:*",
     "@bossraid/shared-types": "workspace:*",
-    "pg": "^8.16.3"
+    "pg": "^8.22.0"
   },
   "devDependencies": {
     "@bossraid/test-fixtures": "workspace:*",
-    "@types/pg": "^8.15.5",
-    "tsx": "^4.19.3"
+    "@types/pg": "^8.20.0",
+    "tsx": "^4.21.0"
   }
 }

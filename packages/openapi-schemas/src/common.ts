@@ -5,7 +5,7 @@ export const apiErrorSchema = {
     error: { type: 'string' },
     message: { type: 'string' },
   },
-  required: ['error', 'message'],
+  required: ['error'],
 } as const;
 
 export const raidIdParamsSchema = {

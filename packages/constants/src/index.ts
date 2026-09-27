@@ -20,6 +20,9 @@ export {
 
 export {
   INFERENCE_MODEL_CATALOG,
+  getInferenceCatalogEntry,
+  getInferenceCatalogEntryByUpstreamId,
+  listInferenceCatalogEntriesForProvider,
   listInferenceCatalogModelIds,
   type InferenceCatalogEntry,
 } from './inference-catalog.js';
@@ -80,6 +83,8 @@ export {
   X402_BUILTIN_ASSETS,
   type BuiltInPaymentAsset,
 } from './payment-networks.js';
+
+export { DEFAULT_WEEKLY_BUDGET_USD } from './payment-policy.js';
 
 // Network Constants
 export const NETWORK = {

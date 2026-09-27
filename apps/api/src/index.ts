@@ -85,6 +85,20 @@ function wireApiServer(app: FastifyInstance, ctx: ApiContext, handlers: ApiHandl
   });
 
   app.setErrorHandler((error, _request, reply) => {
+    const validationError = error as Error & {
+      statusCode?: number;
+      validation?: unknown;
+    };
+
+    if (validationError.validation) {
+      apiMetrics.increment('requests.bad_request');
+      reply.code(validationError.statusCode ?? 400).send({
+        error: 'bad_request',
+        message: validationError.message,
+      });
+      return;
+    }
+
     if (isX402ProtocolError(error)) {
       apiMetrics.increment('x402.payment_required');
       sendX402Required(reply, error);

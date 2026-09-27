@@ -66,6 +66,8 @@ Bootstrap assembles `deploy/phala/.env` with compose defaults not stored in Infi
 | `BOSSRAID_TRUST_PROXY`                       | Trust forwarded headers                                             |
 | `BOSSRAID_METRICS_PUBLIC`                    | `true` exposes `/metrics` without admin auth (default: admin only)  |
 
+Production readiness requires operational tokens and encryption keys to be at least 32 characters, reject known placeholders, include at least eight distinct characters, and avoid repeating patterns or a single character used more than half the time. These checks catch obvious mistakes; generate secrets with a cryptographically secure random source (for example, `openssl rand -hex 32`) because a readiness check cannot prove that a value was generated randomly.
+
 ## Tier 3 — Payments (x402, agent wallet, settlement)
 
 ### x402
@@ -204,7 +206,7 @@ Build-time catalog downloads use public sources and need no credentials or new e
 | `BOSSRAID_OPERATOR_TERMS_ACK`    | Production-readiness gate (`true` before full production) |
 | `BOSSRAID_INCIDENT_RESPONSE_ACK` | Production-readiness gate (`true` before full production) |
 
-Outside `NODE_ENV=production`, `node_env_production`, `onchain_settlement`, and `tee_attestation` report as warnings instead of blocking failures. Other checks still apply regardless of `NODE_ENV` — notably `evaluator_isolation` (requires per-job containers), strong `BOSSRAID_ADMIN_TOKEN` / `BOSSRAID_REGISTRY_TOKEN`, and operator acks. Local stacks often report `ok: false` until those are configured; that is expected.
+Outside `NODE_ENV=production`, `node_env_production`, `onchain_settlement`, and `tee_attestation` report as warnings instead of blocking failures. Other checks still apply regardless of `NODE_ENV` — notably `evaluator_isolation` (requires per-job containers), varied non-placeholder `BOSSRAID_ADMIN_TOKEN` / `BOSSRAID_REGISTRY_TOKEN` values, and operator acks. Local stacks often report `ok: false` until those are configured; that is expected.
 
 ### Settlement / operator extras (commonly needed)
 

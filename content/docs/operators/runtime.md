@@ -21,12 +21,13 @@ Live offer counts, API health, and the Cloudflare 525 recovery procedure: [Marke
 
 ## Remaining production work
 
-- The public API returned Cloudflare 525 during the 2026-09-26 audit; see [Marketplace operations](marketplace-operations.md) for the observed state and recovery checks. No live seller counts were available from that request.
+- The public API and web proxy returned Cloudflare 525 in the latest live check; see [Marketplace operations](marketplace-operations.md) for the observed state and recovery checks. No live seller counts or readiness payload were available.
+- Publish the current API/evaluator image and update the local Phala deploy env before deployment; it currently pins `sha-21340f6`.
 - Mainnet escrow deployment and the Phala `SETTLEMENT_MODE=onchain` cutover remain operator actions; testnet artifacts are not production contracts.
 - Complete and record a live Marian x402 transaction, confirm funded settlement balances and at least one ready seller, and require `GET /v1/ops/production-readiness` → `ok: true` before unrestricted paid traffic.
 - The shared-wallet transaction queue prevents overlap only among callers in the same Node process. It does not coordinate API replicas or standalone settlement commands; the control-state store remains single-writer and multi-process writes are unsupported.
 
-Contributor scripts (`check`, `build`, `dev`, `test:*`) live in root `package.json`. Type checks, builds, and unit tests cap Turbo at two concurrent package jobs to keep local resource use predictable. Run expensive validation commands one at a time. Operator, deploy, and integration commands use `pnpm bossraid <command>` — run `pnpm bossraid help` for the full list.
+Contributor scripts (`check`, `build`, `dev`, `test:*`) live in root `package.json`. Type checks, builds, and unit tests cap Turbo at two concurrent package jobs. Node test files are capped at two per package; API tests run serially because they share SQLite fixtures. Run expensive validation commands one at a time. Operator, deploy, and integration commands use `pnpm bossraid <command>` — run `pnpm bossraid help` for the full list.
 
 Regenerate OpenAPI specs after route or schema changes:
 
@@ -45,7 +46,11 @@ pnpm bossraid sync:inference-catalog -- --check           # fetch, report drift;
 pnpm bossraid sync:inference-catalog -- --cached --check  # compare saved inputs; no network
 ```
 
-`pnpm build` refreshes before Turbo; both Docker builds do the same. Direct constants builds use the saved snapshot. Public downloads need no provider API keys. Sources have a 20-second timeout and ETag support. A failed download retains that source's previous successful payload and reports the failure. A first run without a usable snapshot fails.
+Builds use the committed catalog snapshot and do not make network requests or rewrite generated files. Docker checks the snapshot against generated catalog data before compiling. Refresh public source data explicitly with `pnpm bossraid sync:inference-catalog`, review the reported drift, and commit the snapshot and generated outputs. Public downloads need no provider API keys. Sources have a 20-second timeout and ETag support. A failed download retains that source's previous successful payload and reports the failure. A first run without a usable snapshot fails.
+
+### Web bundle loading
+
+Wallet and x402 client code is loaded when a wallet action is used. Keep runtime imports from `@bossraid/smart-pay` inside that action path; type-only imports do not pull the payment runtime into the initial bundle. Avoid manually grouping `viem` into a startup vendor chunk, since that can preload the payment runtime with the app shell.
 
 Outputs in `packages/constants/` include the typed catalog, provider prices, `data/inference-sources.json`, `data/inference-catalog-report.json`, and generated source status. The local marketplace fixture in `examples/inference/` is regenerated too. Edit `data/inference-overrides.json` for reviewed aliases, price exceptions, and privacy claims; do not edit generated files.
 
@@ -275,7 +280,7 @@ curl -H "Authorization: Bearer $BOSSRAID_ADMIN_TOKEN" \
   https://api.raid.quest/v1/ops/settlement/status | jq
 ```
 
-Production gate: `ok: true` on `GET /v1/ops/production-readiness` before unrestricted paid traffic. `GET /ready` also enforces production-only checks when `NODE_ENV=production` (onchain settlement configured, upstream mocks disabled, unverified balance fund disabled). Static deploy audit (matches CI):
+Production gate: `ok: true` on `GET /v1/ops/production-readiness` before unrestricted paid traffic. `GET /ready` also enforces production-only checks when `NODE_ENV=production` (onchain settlement configured, upstream mocks disabled, unverified balance fund disabled). Operational tokens and encryption keys must be at least 32 characters, non-placeholder, varied, and non-repeating; generate them with a cryptographically secure random source. Static deploy audit (matches CI):
 
 ```bash
 NODE_ENV=production \

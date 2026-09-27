@@ -22,10 +22,10 @@ Rerun `npm run generate:docs` while authoring instead of waiting until the end. 
 
 ## Lazy Feature Boundaries
 
-Heavy viewers (Mermaid, OpenAPI Scalar) are loaded with `React.lazy()`. Lazy feature modules must stay **leaf components**:
+Heavy viewers (Mermaid, OpenAPI Scalar) are loaded with `React.lazy()`. Mermaid's runtime import stays deferred until its placeholder approaches the viewport. Lazy feature modules must stay **leaf components**:
 
 - Do **not** import from `src/providers/` inside a lazy-loaded module. Pulling `ThemeProvider`, `CommandPaletteProvider`, or other app shells into an async chunk can break React chunk sharing and crash with `createContext` errors at runtime.
-- Do **not** add `manualChunks` rules in `vite.config.ts` that isolate `src/` app files by name. Keep `manualChunks` limited to `node_modules` vendors such as `vendor-mermaid` and `vendor-react`.
+- Do **not** add `manualChunks` rules in `vite.config.ts` that isolate `src/` app files by name. Keep `manualChunks` limited to shared `node_modules` vendors such as `vendor-react` and `vendor-router`; keep route-specific pages and heavy viewers such as Mermaid and `@scalar/api-reference-react` out of shared startup chunks.
 - Prefer CSS (`prefers-reduced-motion`), DOM APIs, or props passed from the parent shell instead of context hooks inside lazy modules.
 
 `npm test` runs `collectLazyFeatureBoundaryIssues()` to enforce these rules automatically.

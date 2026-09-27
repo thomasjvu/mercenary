@@ -18,7 +18,7 @@ test('resolveMinimumPayoutThresholdUsd uses inference floor for single-provider 
   assert.equal(resolveMinimumPayoutThresholdUsd(raid), 0.01);
 });
 
-test('resolveMinimumPayoutThresholdUsd keeps multi-agent threshold from env default', () => {
+test('resolveMinimumPayoutThresholdUsd uses the configured default for multi-agent raids', () => {
   const raid = {
     selectedProviders: ['provider-a', 'provider-b'],
     task: {
@@ -30,5 +30,5 @@ test('resolveMinimumPayoutThresholdUsd keeps multi-agent threshold from env defa
     },
   } as RaidRecord;
 
-  assert.equal(resolveMinimumPayoutThresholdUsd(raid), 0.25);
+  assert.equal(resolveMinimumPayoutThresholdUsd(raid), 1);
 });

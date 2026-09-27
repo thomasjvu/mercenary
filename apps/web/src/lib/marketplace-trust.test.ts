@@ -6,7 +6,7 @@ import { marketMatchesTrustFilter } from './marketplace-trust.js';
 function buildMarket(overrides: Partial<InferenceMarket> = {}): InferenceMarket {
   return {
     object: 'inference.market',
-    modelId: 'e2ee-gemma-4-31b',
+    modelId: 'e2ee-gemma-4-26b-a4b-uncensored-p',
     providerCount: 1,
     activeProviderCount: 1,
     verifiedSellerCount: 0,
@@ -37,7 +37,7 @@ test('marketMatchesTrustFilter uses catalog tee and e2ee flags', () => {
   assert.equal(marketMatchesTrustFilter(market, 'any'), true);
   assert.equal(marketMatchesTrustFilter(market, 'tee'), true);
   assert.equal(marketMatchesTrustFilter(market, 'e2ee'), true);
-  assert.equal(marketMatchesTrustFilter(market, 'private'), false);
+  assert.equal(marketMatchesTrustFilter(market, 'private'), true);
 });
 
 test('marketMatchesTrustFilter falls back to seller privacy flags', () => {

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { createServer } from 'node:http';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { mnemonicToAccount } from 'viem/accounts';
@@ -74,6 +76,26 @@ export function createX402PaidTestEnv(
     BOSSRAID_X402_FACILITATOR_URL: 'https://facilitator.test/x402',
     BOSSRAID_X402_PAY_TO: '0xabc',
     ...overrides,
+  };
+}
+
+export async function startMockProviderServer(payload: Record<string, unknown>) {
+  const server = createServer((_request, response) => {
+    response.writeHead(200, { 'content-type': 'application/json' });
+    response.end(JSON.stringify(payload));
+  });
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  const address = server.address() as AddressInfo;
+
+  return {
+    endpoint: `http://127.0.0.1:${address.port}`,
+    close: () =>
+      new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      }),
   };
 }
 

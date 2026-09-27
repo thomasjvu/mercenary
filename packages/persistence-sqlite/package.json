@@ -14,7 +14,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
-    "test": "node --import tsx --test 'src/**/*.test.ts'"
+    "test": "node --import tsx --test --test-concurrency=2 'src/**/*.test.ts'"
   },
   "dependencies": {
     "@bossraid/persistence": "workspace:*",
@@ -22,6 +22,6 @@
   },
   "devDependencies": {
     "@bossraid/test-fixtures": "workspace:*",
-    "tsx": "^4.19.3"
+    "tsx": "^4.21.0"
   }
 }

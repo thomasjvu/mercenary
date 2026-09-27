@@ -1,5 +1,5 @@
 import { type FastifyInstance } from 'fastify';
-import { INFERENCE_MODEL_CATALOG, isUpstreamProviderId } from '@bossraid/constants';
+import { getInferenceCatalogEntry, isUpstreamProviderId } from '@bossraid/constants';
 import { ensureRecordInput, ensureStringInput } from '../lib/account.js';
 import { generateAttestationNonce } from '../lib/upstream/index.js';
 import { verifyUpstreamTee } from '../lib/attestation-service.js';
@@ -60,7 +60,7 @@ export function registerMarketplaceTeeRoutes(
       };
     }
 
-    const catalogEntry = INFERENCE_MODEL_CATALOG.find((entry) => entry.modelId === modelId);
+    const catalogEntry = getInferenceCatalogEntry(modelId);
     const sellerId =
       typeof body.sellerId === 'string'
         ? body.sellerId
@@ -175,7 +175,7 @@ export function registerMarketplaceTeeRoutes(
         : typeof query.seller_id === 'string'
           ? query.seller_id
           : undefined;
-    const catalogEntry = INFERENCE_MODEL_CATALOG.find((entry) => entry.modelId === modelId);
+    const catalogEntry = getInferenceCatalogEntry(modelId);
     const provider = catalogEntry?.attestationVendor ?? catalogEntry?.modelProvider ?? 'venice';
     const cacheKey = `${provider}:${modelId}:${sellerId ?? 'platform'}`;
     const cached = attestationCache.get(cacheKey);

@@ -1,7 +1,8 @@
 import { readUpstreamUsage } from './usage.js';
 import { isProviderInferenceMock } from '../upstream-mock.js';
 import {
-  INFERENCE_MODEL_CATALOG,
+  getInferenceCatalogEntryByUpstreamId,
+  listInferenceCatalogEntriesForProvider,
   UPSTREAM_PROVIDER_CONFIG,
   type UpstreamProviderId,
 } from '@bossraid/constants';
@@ -13,8 +14,8 @@ import { resolveChatMessagesForUpstream, type RaidChatOptions } from '../chat-op
 const PROVIDER = 'anthropic' satisfies UpstreamProviderId;
 const ANTHROPIC_BASE = UPSTREAM_PROVIDER_CONFIG.anthropic.upstreamBase;
 
-const MOCK_ANTHROPIC_MODELS: UpstreamModelRecord[] = INFERENCE_MODEL_CATALOG.filter(
-  (model) => model.modelProvider === PROVIDER
+const MOCK_ANTHROPIC_MODELS: UpstreamModelRecord[] = listInferenceCatalogEntriesForProvider(
+  PROVIDER
 ).map((model) => ({
   id: model.upstreamModelId,
   displayName: model.displayName,
@@ -89,11 +90,7 @@ export async function probeAnthropicChatCompletion(input: {
     max_tokens: input.chatOptions?.max_tokens ?? 1024,
     ...(system ? { system } : {}),
   };
-  const entry = INFERENCE_MODEL_CATALOG.find(
-    (m) =>
-      m.modelProvider === PROVIDER &&
-      (m.upstreamModelId === input.modelId || m.upstreamAliases?.includes(input.modelId))
-  );
+  const entry = getInferenceCatalogEntryByUpstreamId(PROVIDER, input.modelId);
   if (input.chatOptions?.temperature != null && entry?.capabilities?.temperature !== false)
     body.temperature = input.chatOptions.temperature;
   const payload = await fetchUpstreamJson<{

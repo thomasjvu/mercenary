@@ -72,10 +72,11 @@ function main() {
       ...process.env,
       BOSSRAID_DEPLOYER_PRIVATE_KEY: deployerKey.trim(),
       BOSSRAID_CLIENT_PRIVATE_KEY: clientKey?.trim(),
-      BOSSRAID_RPC_URL: process.env.BOSSRAID_RPC_URL ?? 'https://mainnet.base.org',
+      BOSSRAID_RPC_URL:
+        process.env.BOSSRAID_RPC_URL ?? 'https://rpc.mainnet.chain.robinhood.com',
       BOSSRAID_CHAIN_ID: process.env.BOSSRAID_CHAIN_ID ?? '4663',
       BOSSRAID_TOKEN_ADDRESS:
-        process.env.BOSSRAID_TOKEN_ADDRESS ?? '0x833589fCD6eDb6B08d2E354A1d9441D5b2AaE4a5',
+        process.env.BOSSRAID_TOKEN_ADDRESS ?? '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168',
     };
 
     console.log(JSON.stringify({ step: 'deploy_contracts', chainId: deployEnv.BOSSRAID_CHAIN_ID }, null, 2));

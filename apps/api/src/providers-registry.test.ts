@@ -3,33 +3,23 @@ import test from 'node:test';
 import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-types';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
-import { NETWORK } from '@bossraid/constants';
 import { buildTestApiServer } from './test/helpers.js';
 import {
   createTestApiServer,
   createProviderProfile,
   createRaidRequestBody,
   readyHealth,
+  startMockProviderServer,
   waitFor,
 } from './test/helpers.js';
 
 test('registry write routes require the configured registry token', async () => {
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () =>
-    new Response(
-      JSON.stringify({
-        ready: true,
-        agentFramework: 'codex',
-        modelProvider: 'openai',
-        model: 'gpt-5.5',
-      }),
-      {
-        status: 200,
-        headers: {
-          'content-type': 'application/json',
-        },
-      }
-    );
+  const providerServer = await startMockProviderServer({
+    ready: true,
+    agentFramework: 'codex',
+    modelProvider: 'openai',
+    model: 'gpt-5.5',
+  });
   const app = createTestApiServer([], {
     BOSSRAID_REGISTRY_TOKEN: 'registry-secret',
   });
@@ -41,7 +31,7 @@ test('registry write routes require the configured registry token', async () => 
       payload: {
         agentId: 'secure-review-01',
         name: 'Secure Review',
-        endpoint: `http://${NETWORK.LOCALHOST}:${NETWORK.TEST_PROVIDER_PORT_START}`,
+        endpoint: providerServer.endpoint,
       },
     });
 
@@ -56,35 +46,25 @@ test('registry write routes require the configured registry token', async () => 
       payload: {
         agentId: 'secure-review-01',
         name: 'Secure Review',
-        endpoint: `http://${NETWORK.LOCALHOST}:${NETWORK.TEST_PROVIDER_PORT_START}`,
+        endpoint: providerServer.endpoint,
       },
     });
 
     assert.equal(authorized.statusCode, 200);
     assert.equal(authorized.json().providerId, 'secure-review-01');
   } finally {
-    globalThis.fetch = originalFetch;
     await app.close();
+    await providerServer.close();
   }
 });
 
 test('registry verification probes provider health and stores separate verification state', async () => {
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () =>
-    new Response(
-      JSON.stringify({
-        ready: true,
-        agentFramework: 'codex',
-        modelProvider: 'openai',
-        model: 'gpt-5.5',
-      }),
-      {
-        status: 200,
-        headers: {
-          'content-type': 'application/json',
-        },
-      }
-    );
+  const providerServer = await startMockProviderServer({
+    ready: true,
+    agentFramework: 'codex',
+    modelProvider: 'openai',
+    model: 'gpt-5.5',
+  });
   const app = createTestApiServer([], {
     BOSSRAID_REGISTRY_TOKEN: 'registry-secret',
   });
@@ -99,7 +79,7 @@ test('registry verification probes provider health and stores separate verificat
       payload: {
         agentId: 'seller-codex-gpt55',
         name: 'Seller Codex GPT-5.5',
-        endpoint: `http://${NETWORK.LOCALHOST}:${NETWORK.TEST_PROVIDER_PORT_START}`,
+        endpoint: providerServer.endpoint,
         supportedLanguages: ['text'],
         outputTypes: ['text', 'json'],
         agentFramework: 'codex',
@@ -132,8 +112,8 @@ test('registry verification probes provider health and stores separate verificat
     assert.equal(body.provider.auth, undefined);
     assert.equal(body.health.model, 'gpt-5.5');
   } finally {
-    globalThis.fetch = originalFetch;
     await app.close();
+    await providerServer.close();
   }
 });
 

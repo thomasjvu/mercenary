@@ -51,8 +51,10 @@ export function registerMarketplaceRoutes(
   _handlers: ApiHandlerGroups
 ): void {
   const { orchestrator, env, controlState } = ctx;
-  const listSnapshotMarkets = (query: ReturnType<typeof parseMarketplaceQuery>) =>
-    buildInferenceMarketSnapshot(orchestrator.listProviders(), query);
+  const listSnapshotMarkets = (
+    providers: ReturnType<ApiContext['orchestrator']['listProviders']>,
+    query: ReturnType<typeof parseMarketplaceQuery>
+  ) => buildInferenceMarketSnapshot(providers, query);
 
   app.get(
     '/v1/models',
@@ -66,7 +68,10 @@ export function registerMarketplaceRoutes(
       }),
     },
     async (request) => {
-      const markets = listSnapshotMarkets(parseMarketplaceQuery(request.query));
+      const markets = listSnapshotMarkets(
+        orchestrator.listProviders(),
+        parseMarketplaceQuery(request.query)
+      );
 
       return {
         object: 'list',
@@ -94,9 +99,10 @@ export function registerMarketplaceRoutes(
           url: 'https://models.dev/api.json',
           mode: 'static_reference_only',
         },
-        data: listSnapshotMarkets(parseMarketplaceQuery(request.query)).map((market) =>
-          buildInferencePriceEntry(market)
-        ),
+        data: listSnapshotMarkets(
+          orchestrator.listProviders(),
+          parseMarketplaceQuery(request.query)
+        ).map((market) => buildInferencePriceEntry(market)),
       };
     }
   );
@@ -121,8 +127,8 @@ export function registerMarketplaceRoutes(
       }),
     },
     async (request) => {
-      const marketData = listSnapshotMarkets(parseMarketplaceQuery(request.query));
       const providers = orchestrator.listProviders();
+      const marketData = listSnapshotMarkets(providers, parseMarketplaceQuery(request.query));
       const stats = buildPublicMarketplaceStats(providers, controlState);
 
       return {

@@ -1,7 +1,8 @@
 import { readUpstreamUsage } from './usage.js';
 import { isProviderInferenceMock } from '../upstream-mock.js';
 import {
-  INFERENCE_MODEL_CATALOG,
+  getInferenceCatalogEntryByUpstreamId,
+  listInferenceCatalogEntriesForProvider,
   UPSTREAM_PROVIDER_CONFIG,
   type UpstreamProviderId,
 } from '@bossraid/constants';
@@ -13,8 +14,8 @@ import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
 const PROVIDER = 'openai' satisfies UpstreamProviderId;
 const OPENAI_BASE = UPSTREAM_PROVIDER_CONFIG.openai.upstreamBase;
 
-const MOCK_OPENAI_MODELS: UpstreamModelRecord[] = INFERENCE_MODEL_CATALOG.filter(
-  (model) => model.modelProvider === PROVIDER
+const MOCK_OPENAI_MODELS: UpstreamModelRecord[] = listInferenceCatalogEntriesForProvider(
+  PROVIDER
 ).map((model) => ({
   id: model.upstreamModelId,
   displayName: model.displayName,
@@ -65,9 +66,7 @@ export async function probeOpenAIChatCompletion(input: {
   const env = input.env ?? process.env;
   if (isProviderInferenceMock(PROVIDER, env))
     return { content: `mock-openai-response:${input.modelId}` };
-  const entry = INFERENCE_MODEL_CATALOG.find(
-    (m) => m.modelProvider === PROVIDER && m.upstreamModelId === input.modelId
-  );
+  const entry = getInferenceCatalogEntryByUpstreamId(PROVIDER, input.modelId);
   const body: Record<string, unknown> = {
     model: input.modelId,
     input: resolveChatMessagesForUpstream(input),

@@ -112,7 +112,7 @@ export function buildProductionReadinessReport(input: {
     message:
       input.storageBackend === 'memory'
         ? 'Memory storage does not persist encrypted secrets.'
-        : 'BOSSRAID_SECRET_ENCRYPTION_KEY is required for persisted provider auth, sessions, nonces, and buyer key hashes.',
+        : 'BOSSRAID_SECRET_ENCRYPTION_KEY (or BOSSRAID_ENCRYPTION_KEY) must be long, varied, and non-placeholder for persisted provider auth, sessions, nonces, and buyer key hashes.',
     details: {
       keyId: input.env.BOSSRAID_SECRET_ENCRYPTION_KEY_ID ?? null,
       previousKeysConfigured: Boolean(input.env.BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS?.trim()),
@@ -123,14 +123,15 @@ export function buildProductionReadinessReport(input: {
     id: 'admin_auth',
     status: hasStrongOperationalSecret(input.env.BOSSRAID_ADMIN_TOKEN) ? 'pass' : 'fail',
     severity: 'blocking',
-    message: 'BOSSRAID_ADMIN_TOKEN must be a long non-placeholder secret.',
+    message: 'BOSSRAID_ADMIN_TOKEN must be long, varied, and non-placeholder.',
   });
 
   addCheck({
     id: 'registry_auth',
     status: hasStrongOperationalSecret(input.env.BOSSRAID_REGISTRY_TOKEN) ? 'pass' : 'fail',
     severity: 'blocking',
-    message: 'BOSSRAID_REGISTRY_TOKEN must be configured for authenticated registry operations.',
+    message:
+      'BOSSRAID_REGISTRY_TOKEN must be long, varied, and non-placeholder for authenticated registry operations.',
   });
 
   const x402BasicsOk =
@@ -480,15 +481,48 @@ export function readEnabledUpstreamMocks(env: NodeJS.ProcessEnv): string[] {
   return UPSTREAM_MOCK_ENV_KEYS.filter((key) => readBooleanEnv(env[key]));
 }
 
+/** Reject obvious weak operational secrets; this cannot prove cryptographic randomness. */
 export function hasStrongOperationalSecret(value: string | undefined, minLength = 32): boolean {
   if (!value?.trim()) {
     return false;
   }
 
   const trimmed = value.trim();
-  return (
-    trimmed.length >= minLength &&
-    !/^<.+>$/u.test(trimmed) &&
-    !/replace|changeme|todo|your-org/iu.test(trimmed)
-  );
+  if (
+    trimmed.length < minLength ||
+    /^<.+>$/u.test(trimmed) ||
+    /replace|changeme|todo|your-org/iu.test(trimmed)
+  ) {
+    return false;
+  }
+
+  const frequencies = new Map<string, number>();
+  let maxFrequency = 0;
+  for (let index = 0; index < trimmed.length; index += 1) {
+    const character = trimmed[index]!;
+    const frequency = (frequencies.get(character) ?? 0) + 1;
+    frequencies.set(character, frequency);
+    maxFrequency = Math.max(maxFrequency, frequency);
+  }
+
+  if (frequencies.size < Math.min(8, minLength) || maxFrequency > trimmed.length / 2) {
+    return false;
+  }
+
+  // Reject exact repeating units (for example, "abcd" repeated to meet the
+  // length check). The prefix table finds the shortest period in linear time.
+  const prefixLengths = new Uint32Array(trimmed.length);
+  for (let index = 1; index < trimmed.length; index += 1) {
+    let prefixLength = prefixLengths[index - 1]!;
+    while (prefixLength > 0 && trimmed[index] !== trimmed[prefixLength]) {
+      prefixLength = prefixLengths[prefixLength - 1]!;
+    }
+    if (trimmed[index] === trimmed[prefixLength]) {
+      prefixLength += 1;
+    }
+    prefixLengths[index] = prefixLength;
+  }
+
+  const shortestPeriod = trimmed.length - prefixLengths[trimmed.length - 1]!;
+  return shortestPeriod > trimmed.length / 2;
 }

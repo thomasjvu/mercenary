@@ -221,7 +221,9 @@ test('settlement execution receives registered provider operator wallets', async
   );
 
   const spawn = await orchestrator.spawnRaid(createSpawnInput());
-  await waitFor(() => orchestrator.getStatus(spawn.raidId).status === 'final');
+  await waitFor(
+    () => orchestrator.getStatus(spawn.raidId).status === 'final' && settlementCalls.length === 1
+  );
 
   assert.equal(settlementCalls.length, 1);
   assert.equal(settlementCalls[0]?.options?.providerAddressMap?.['provider-alpha'], providerWallet);

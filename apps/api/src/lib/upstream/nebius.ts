@@ -1,5 +1,5 @@
 import {
-  INFERENCE_MODEL_CATALOG,
+  listInferenceCatalogEntriesForProvider,
   UPSTREAM_PROVIDER_CONFIG,
   type UpstreamProviderId,
 } from '@bossraid/constants';
@@ -19,8 +19,8 @@ const PROVIDER = 'nebius' satisfies UpstreamProviderId;
 const NEBIUS_BASE = UPSTREAM_PROVIDER_CONFIG.nebius.upstreamBase;
 
 /** Use the complete priced catalog as the offline mock model list. */
-const MOCK_NEBIUS_MODELS: UpstreamModelRecord[] = INFERENCE_MODEL_CATALOG.filter(
-  (model) => model.modelProvider === PROVIDER
+const MOCK_NEBIUS_MODELS: UpstreamModelRecord[] = listInferenceCatalogEntriesForProvider(
+  PROVIDER
 ).map((model) => ({
   id: model.upstreamModelId,
   displayName: model.displayName,

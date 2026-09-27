@@ -82,7 +82,7 @@ test('public manifest route describes Mercenary and the native raid flow', async
     assert.deepEqual(body.providerPool.providerIds, ['provider-manifest']);
     assert.equal(body.providerPool.erc8004RegisteredProviders, 1);
     assert.equal(body.providerPool.trustScoredProviders, 1);
-    assert.equal(body.providerPool.averageTrustScore, 91);
+    assert.equal(body.providerPool.averageTrustScore, 100);
   } finally {
     await app.close();
   }
@@ -91,6 +91,7 @@ test('public manifest route describes Mercenary and the native raid flow', async
 test('per-raid agent log route accepts the raid access token as a query parameter', async () => {
   const provider = {
     profile: createProviderProfile('provider-agent-log', {
+      pricePerTaskUsd: 1,
       modelFamily: 'venice',
       privacy: {
         noDataRetention: true,
@@ -98,6 +99,10 @@ test('per-raid agent log route accepts the raid access token as a query paramete
       },
       erc8004: {
         agentId: 'erc8004-agent-log',
+        identityRegistry: '0xidentityregistry',
+        reputationRegistry: '0xreputationregistry',
+        validationRegistry: '0xvalidationregistry',
+        validationTxs: ['0xvalidationtx'],
         registrationTx: '0xagentlog',
         operatorWallet: '0xoperator',
         verification: {

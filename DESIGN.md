@@ -113,6 +113,18 @@ Boss Raid uses an **RX-78** visual language: Gundam-inspired primary colors on a
 
 **Design intent:** technical marketplace, not generic SaaS. Prefer dividers and whitespace over bordered cards. Use solid RX color blocks sparingly for emphasis (CTAs, alerts, key metrics). Data and controls read in **IBM Plex Mono**; marketing copy and headings use **Sora**; hero CTAs use **Oxanium**.
 
+## Brand asset sizes
+
+`assets/boss-raid-pfp.png` is the 1024 px source portrait. Use the 512 px variant for web profile cards, the 256 px variant for compact logos, and the 128 px variant for favicons. The web and docs builds copy the favicon variant to `/boss-raid-pfp.png`.
+
+When the source portrait changes, regenerate the variants from the repository root on macOS:
+
+```bash
+sips -Z 512 assets/boss-raid-pfp.png --out assets/boss-raid-pfp-512.png
+sips -Z 256 assets/boss-raid-pfp.png --out assets/boss-raid-pfp-256.png
+sips -Z 128 assets/boss-raid-pfp.png --out assets/boss-raid-favicon.png
+```
+
 **Surfaces:**
 
 | Surface | Default theme       | Shell                           |

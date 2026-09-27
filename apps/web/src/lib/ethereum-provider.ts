@@ -1,4 +1,4 @@
-import { createSmartAccountWalletClient, ROBINHOOD_CHAIN_ID_NUM } from '@bossraid/smart-pay';
+import { ROBINHOOD_CHAIN_ID } from '@bossraid/constants';
 
 export type EthereumProvider = {
   isMetaMask?: boolean;
@@ -78,7 +78,7 @@ export async function discoverWalletProvider(): Promise<EthereumProvider> {
 
 export async function ensureWalletChain(
   provider: EthereumProvider,
-  chainId = ROBINHOOD_CHAIN_ID_NUM
+  chainId = ROBINHOOD_CHAIN_ID
 ): Promise<void> {
   const hexChainId = `0x${chainId.toString(16)}`;
 
@@ -97,18 +97,19 @@ export async function ensureWalletChain(
       throw error instanceof Error ? error : new Error('Wallet chain switch failed.');
     }
 
-    throw new Error('Add Base network in MetaMask to use Smart Accounts payments.', {
+    throw new Error('Add Robinhood network in MetaMask to use Smart Accounts payments.', {
       cause: error,
     });
   }
 }
 
-async function connectWalletClient(chainId = ROBINHOOD_CHAIN_ID_NUM, switchChain = false) {
+async function connectWalletClient(chainId = ROBINHOOD_CHAIN_ID, switchChain = false) {
   const provider = await discoverWalletProvider();
   if (switchChain) {
     await ensureWalletChain(provider, chainId);
   }
 
+  const { createSmartAccountWalletClient } = await import('@bossraid/smart-pay');
   const client = createSmartAccountWalletClient(provider, chainId);
   const [address] = await client.requestAddresses();
 
@@ -119,11 +120,11 @@ async function connectWalletClient(chainId = ROBINHOOD_CHAIN_ID_NUM, switchChain
   return { provider, client, address: address as `0x${string}` };
 }
 
-export async function connectWalletForAuth(chainId = ROBINHOOD_CHAIN_ID_NUM) {
+export async function connectWalletForAuth(chainId = ROBINHOOD_CHAIN_ID) {
   return connectWalletClient(chainId, false);
 }
 
-export async function connectSmartAccountWallet(chainId = ROBINHOOD_CHAIN_ID_NUM) {
+export async function connectSmartAccountWallet(chainId = ROBINHOOD_CHAIN_ID) {
   return connectWalletClient(chainId, true);
 }
 

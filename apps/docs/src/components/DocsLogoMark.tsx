@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 
-import mercenaryPfp from '@assets/boss-raid-pfp.png';
+import mercenaryPfp from '@assets/boss-raid-pfp-256.png';
 
 type DocsLogoMarkProps = {
   size?: 'sm' | 'lg';

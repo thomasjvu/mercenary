@@ -1,13 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ROBINHOOD_CHAIN_ID_NUM,
-  createPaidFetch,
   DEFAULT_WEEKLY_BUDGET_USD,
-  encodeDelegationChain,
-  requestRaidSubscription,
-  type RaidSubscriptionGrant,
-  type SmartAccountWalletClient,
-} from '@bossraid/smart-pay';
+  ROBINHOOD_CHAIN_ID as ROBINHOOD_CHAIN_ID_NUM,
+} from '@bossraid/constants';
+import { type RaidSubscriptionGrant, type SmartAccountWalletClient } from '@bossraid/smart-pay';
 import type { DelegationChainEntry } from '@bossraid/shared-types';
 import {
   deleteAgentSession,
@@ -16,6 +12,15 @@ import {
   type AgentSessionGrant,
 } from '../api/smart-pay.js';
 import { connectSmartAccountWallet, formatWalletError } from '../lib/ethereum-provider.js';
+
+type SmartPayModule = typeof import('@bossraid/smart-pay');
+
+let smartPayModulePromise: Promise<SmartPayModule> | undefined;
+
+function loadSmartPayModule(): Promise<SmartPayModule> {
+  smartPayModulePromise ??= import('@bossraid/smart-pay');
+  return smartPayModulePromise;
+}
 
 function agentGrantToSubscription(grant: AgentSessionGrant): RaidSubscriptionGrant {
   return {
@@ -94,6 +99,7 @@ export function useSmartAccountPay(chainId = ROBINHOOD_CHAIN_ID_NUM) {
 
     setBusy(true);
     try {
+      const { requestRaidSubscription } = await loadSmartPayModule();
       const grant = await requestRaidSubscription(client, {
         sessionAccount: walletAddress as `0x${string}`,
         chainId,
@@ -107,7 +113,7 @@ export function useSmartAccountPay(chainId = ROBINHOOD_CHAIN_ID_NUM) {
         weeklyBudgetUsd: grant.weeklyBudgetUsd,
       });
       setStatus(
-        `Subscribed at $${grant.weeklyBudgetUsd.toFixed(2)} USDC/week. Use wallet top-up or paid launches — balance is not auto-credited.`
+        `Subscribed at $${grant.weeklyBudgetUsd.toFixed(2)} USDG/week. Use wallet top-up or paid launches — balance is not auto-credited.`
       );
       return grant;
     } catch (error) {
@@ -129,6 +135,7 @@ export function useSmartAccountPay(chainId = ROBINHOOD_CHAIN_ID_NUM) {
     if (!client) {
       throw new Error('Connect MetaMask before launching a paid raid.');
     }
+    const { createPaidFetch } = await loadSmartPayModule();
 
     const delegationChain: DelegationChainEntry[] = [
       ...(subscription?.delegationChain ?? []),
@@ -167,6 +174,14 @@ export function useSmartAccountPay(chainId = ROBINHOOD_CHAIN_ID_NUM) {
         credentials: 'include',
       });
   }, [chainId, connectWallet, subscription, walletAddress, walletClient]);
+
+  const encodeDelegationChain = useCallback(
+    async (chain: Parameters<SmartPayModule['encodeDelegationChain']>[0]) => {
+      const { encodeDelegationChain } = await loadSmartPayModule();
+      return encodeDelegationChain(chain);
+    },
+    []
+  );
 
   return {
     walletAddress,

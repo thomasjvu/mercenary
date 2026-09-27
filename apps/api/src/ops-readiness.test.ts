@@ -122,6 +122,7 @@ test('ops settings expose and toggle the runtime x402 gate', async () => {
     BOSSRAID_STORAGE_BACKEND: 'memory',
     BOSSRAID_X402_ENABLED: 'false',
     BOSSRAID_X402_PAY_TO: '0xabc',
+    BOSSRAID_X402_FACILITATOR_URL: 'http://127.0.0.1:4021',
   });
 
   try {
@@ -214,7 +215,7 @@ test('ops metrics are admin-gated and expose route counters', async () => {
 test('production readiness report surfaces full-production blockers', async () => {
   const app = createTestApiServer([], {
     ...process.env,
-    NODE_ENV: 'test',
+    NODE_ENV: 'production',
     BOSSRAID_ADMIN_TOKEN: 'admin-readiness-token-with-production-length',
     BOSSRAID_STORAGE_BACKEND: 'memory',
     BOSSRAID_X402_ENABLED: 'false',

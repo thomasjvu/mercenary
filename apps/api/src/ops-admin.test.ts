@@ -296,10 +296,6 @@ test('admin evaluator smoke route returns 503 when runtime execution is disabled
     assert.deepEqual(response.json(), {
       error: 'runtime_execution_disabled',
       message: 'Runtime execution must be enabled before evaluator smoke checks can run.',
-      evaluator: {
-        transport: 'disabled',
-        workerIsolation: 'per_job_process',
-      },
     });
   } finally {
     await app.close();

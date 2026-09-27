@@ -5,12 +5,12 @@ import { fetchAnthropicUpstreamModels, probeAnthropicChatCompletion } from './an
 test('Anthropic mock mode returns catalog-style models and chat content', async () => {
   const env = { BOSSRAID_ANTHROPIC_MOCK: '1' };
   const models = await fetchAnthropicUpstreamModels('test-key', { env });
-  assert.ok(models.some((model) => model.id === 'claude-sonnet-4-5'));
+  assert.ok(models.some((model) => model.id === 'claude-sonnet-4-5-20250929'));
 
   const chat = await probeAnthropicChatCompletion({
     apiKey: 'test-key',
-    modelId: 'claude-sonnet-4-5',
+    modelId: 'claude-sonnet-4-5-20250929',
     env,
   });
-  assert.equal(chat.content, 'mock-anthropic-response:claude-sonnet-4-5');
+  assert.equal(chat.content, 'mock-anthropic-response:claude-sonnet-4-5-20250929');
 });

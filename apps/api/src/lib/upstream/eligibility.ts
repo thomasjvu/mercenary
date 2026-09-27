@@ -1,4 +1,4 @@
-import { INFERENCE_MODEL_CATALOG, type UpstreamProviderId } from '@bossraid/constants';
+import { getInferenceCatalogEntry, type UpstreamProviderId } from '@bossraid/constants';
 import { verifyUpstreamTee } from '../attestation-service.js';
 import { probeUpstreamChatCompletion } from './index.js';
 
@@ -10,10 +10,8 @@ export async function verifyHostedModel(input: {
   upstreamModelId: string;
   env?: NodeJS.ProcessEnv;
 }): Promise<void> {
-  const entry = INFERENCE_MODEL_CATALOG.find(
-    (m) => m.modelId === input.modelId && m.modelProvider === input.provider
-  );
-  if (!entry) throw new Error('unsupported_catalog_model');
+  const entry = getInferenceCatalogEntry(input.modelId);
+  if (entry?.modelProvider !== input.provider) throw new Error('unsupported_catalog_model');
   await probeUpstreamChatCompletion({
     ...input,
     modelId: input.upstreamModelId,

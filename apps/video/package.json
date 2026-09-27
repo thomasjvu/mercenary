@@ -10,13 +10,13 @@
     "render": "remotion render src/index.ts BossRaidMercenary ../../temp/video/boss-raid-mercenary.mp4"
   },
   "dependencies": {
-    "@remotion/google-fonts": "^4.0.438",
-    "@remotion/transitions": "^4.0.438",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "remotion": "^4.0.438"
+    "@remotion/google-fonts": "^4.0.529",
+    "@remotion/transitions": "^4.0.529",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "remotion": "^4.0.529"
   },
   "devDependencies": {
-    "@remotion/cli": "^4.0.438"
+    "@remotion/cli": "^4.0.529"
   }
 }

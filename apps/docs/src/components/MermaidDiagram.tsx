@@ -69,15 +69,40 @@ export default function MermaidDiagram({ chart }: MermaidDiagramProps) {
   const id = useId().replace(/:/g, '-');
   const dialogRef = useRef<HTMLDialogElement>(null);
   const inlineCanvasRef = useRef<HTMLDivElement>(null);
+  const visibilityTargetRef = useRef<HTMLDivElement>(null);
   const lightboxCanvasRef = useRef<HTMLDivElement>(null);
 
   const [inlineSvg, setInlineSvg] = useState('');
   const [lightboxSvg, setLightboxSvg] = useState('');
   const [lightboxLoading, setLightboxLoading] = useState(false);
+  const [shouldRenderDiagram, setShouldRenderDiagram] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (shouldRenderDiagram) return undefined;
+    const target = visibilityTargetRef.current;
+    if (!target) return undefined;
+    if (typeof IntersectionObserver === 'undefined') {
+      setShouldRenderDiagram(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShouldRenderDiagram(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '300px' }
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [shouldRenderDiagram]);
+
+  useEffect(() => {
+    if (!shouldRenderDiagram) return undefined;
     let cancelled = false;
 
     async function renderInline() {
@@ -103,7 +128,7 @@ export default function MermaidDiagram({ chart }: MermaidDiagramProps) {
     return () => {
       cancelled = true;
     };
-  }, [chart, id]);
+  }, [chart, id, shouldRenderDiagram]);
 
   useEffect(() => {
     if (!isOpen || lightboxSvg) {
@@ -203,7 +228,15 @@ export default function MermaidDiagram({ chart }: MermaidDiagramProps) {
   }
 
   if (!inlineSvg) {
-    return <div className="mermaid-block mermaid-block--loading">Rendering diagram...</div>;
+    return (
+      <div
+        ref={visibilityTargetRef}
+        className="mermaid-block mermaid-block--loading"
+        aria-live="polite"
+      >
+        {shouldRenderDiagram ? 'Rendering diagram...' : 'Diagram loads near the viewport.'}
+      </div>
+    );
   }
 
   return (

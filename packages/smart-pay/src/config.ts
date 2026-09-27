@@ -1,4 +1,10 @@
-import { ROBINHOOD_CHAIN_ID, ROBINHOOD_USDG_ADDRESS } from '@bossraid/constants';
+import {
+  DEFAULT_WEEKLY_BUDGET_USD,
+  ROBINHOOD_CHAIN_ID,
+  ROBINHOOD_USDG_ADDRESS,
+} from '@bossraid/constants';
+
+export { DEFAULT_WEEKLY_BUDGET_USD };
 
 /** Production settlement / x402 chain (Robinhood). */
 export const ROBINHOOD_CHAIN_ID_NUM = ROBINHOOD_CHAIN_ID;
@@ -14,7 +20,6 @@ export const USDC_BASE = ROBINHOOD_USDG_ADDRESS;
 /** @deprecated */
 export const USDC_BASE_SEPOLIA = ROBINHOOD_USDG_ADDRESS;
 
-export const DEFAULT_WEEKLY_BUDGET_USD = 10;
 export const DEFAULT_SUBSCRIPTION_PERIOD_SECONDS = 604_800;
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const;

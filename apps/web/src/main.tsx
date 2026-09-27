@@ -1,6 +1,5 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import faviconUrl from '@assets/boss-raid-pfp.png';
 import { App } from './App';
 import './styles/index.css';
 
@@ -20,7 +19,7 @@ function setFavicon(href: string) {
   document.head.appendChild(link);
 }
 
-setFavicon(faviconUrl);
+setFavicon('/boss-raid-pfp.png');
 
 const root = document.getElementById('root');
 

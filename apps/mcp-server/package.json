@@ -15,14 +15,14 @@
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
     "dev": "tsx src/index.ts",
-    "test": "node --import tsx --test 'src/**/*.test.ts'",
+    "test": "node --import tsx --test --test-concurrency=2 'src/**/*.test.ts'",
     "test:e2e": "node scripts/test-e2e.mjs"
   },
   "dependencies": {
     "@bossraid/api-contracts": "workspace:*",
     "@bossraid/constants": "workspace:*",
-    "@bossraid/smart-pay": "workspace:*",
     "@bossraid/proof-ui": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.9.0"
+    "@bossraid/smart-pay": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.27.1"
   }
 }

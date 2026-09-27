@@ -140,6 +140,7 @@ test('reserved launch quotes fail closed after provider rate-card changes', asyn
         operatorWallet: '0x3333333333333333333333333333333333333333',
         registrationTx: '0xquotedgemma',
         identityRegistry: '0xidentityregistry',
+        reputationRegistry: '0xreputationregistry',
       },
       trust: {
         score: 91,

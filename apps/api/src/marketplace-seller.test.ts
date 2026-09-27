@@ -4,7 +4,6 @@ import test from 'node:test';
 import type { ProviderAcceptance } from '@bossraid/shared-types';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
-import { NETWORK } from '@bossraid/constants';
 import {
   createTestApiServer,
   buildApiServer,
@@ -15,26 +14,17 @@ import {
   readFile,
   readyHealth,
   rm,
+  startMockProviderServer,
   tmpdir,
 } from './test/helpers.js';
 
 test('seller self-serve registration verifies providers and adds them to marketplace', async () => {
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () =>
-    new Response(
-      JSON.stringify({
-        ready: true,
-        agentFramework: 'codex',
-        modelProvider: 'openai',
-        model: 'gpt-5.5',
-      }),
-      {
-        status: 200,
-        headers: {
-          'content-type': 'application/json',
-        },
-      }
-    );
+  const providerServer = await startMockProviderServer({
+    ready: true,
+    agentFramework: 'codex',
+    modelProvider: 'openai',
+    model: 'gpt-5.5',
+  });
   const app = createTestApiServer([], {
     ...process.env,
     BOSSRAID_STORAGE_BACKEND: 'memory',
@@ -51,7 +41,7 @@ test('seller self-serve registration verifies providers and adds them to marketp
       payload: {
         agentId: 'seller-self-serve-gpt55',
         name: 'Self-Serve GPT-5.5',
-        endpoint: `http://${NETWORK.LOCALHOST}:${NETWORK.TEST_PROVIDER_PORT_START}`,
+        endpoint: providerServer.endpoint,
         capabilities: ['analysis', 'text'],
         supportedLanguages: ['text'],
         outputTypes: ['text', 'json'],
@@ -59,7 +49,7 @@ test('seller self-serve registration verifies providers and adds them to marketp
         modelProvider: 'openai',
         modelId: 'gpt-5.5',
         pricing: {
-          pricePerTaskUsd: 0.25,
+          pricePerTaskUsd: 1,
         },
         auth: {
           type: 'none',
@@ -86,9 +76,9 @@ test('seller self-serve registration verifies providers and adds them to marketp
     });
     assert.equal(market.statusCode, 200);
     assert.equal(market.json().data[0].verifiedSellerCount, 1);
-    assert.equal(market.json().data[0].privateSellerCount, 0);
+    assert.equal(market.json().data[0].privateSellerCount, 1);
   } finally {
-    globalThis.fetch = originalFetch;
     await app.close();
+    await providerServer.close();
   }
 });

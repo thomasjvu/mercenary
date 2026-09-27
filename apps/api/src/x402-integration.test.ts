@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {
+  ROBINHOOD_USDG_ADDRESS,
+  ROBINHOOD_USDG_EIP712_NAME,
+  ROBINHOOD_USDG_EIP712_VERSION,
+} from '@bossraid/constants';
 import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-types';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
@@ -15,7 +20,7 @@ import {
   readyHealth,
 } from './test/helpers.js';
 
-test('POST /v1/chat/completions records escrow funding on the raid when x402 is enabled', async () => {
+test('POST /v1/chat/completions records escrow funding from prepaid API-key balance', async () => {
   const provider: RaidProvider = {
     profile: createProviderProfile('provider-chat-escrow', {
       outputTypes: ['text', 'json'],
@@ -48,12 +53,20 @@ test('POST /v1/chat/completions records escrow funding on the raid when x402 is 
   const app = buildTestApiServer(orchestrator, {
     ...process.env,
     BOSSRAID_STORAGE_BACKEND: 'memory',
-    BOSSRAID_X402_ENABLED: 'true',
+    BOSSRAID_X402_ENABLED: 'false',
+    BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND: 'true',
     BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST: '5',
   });
 
   try {
     const session = await createPublicSessionCookie(app, 9);
+    const funded = await app.inject({
+      method: 'POST',
+      url: '/v1/buyer/balance/fund',
+      headers: { cookie: session.cookie },
+      payload: { amountUsd: 5 },
+    });
+    assert.equal(funded.statusCode, 200, funded.body);
     const created = await app.inject({
       method: 'POST',
       url: '/v1/buyer/api-keys',
@@ -120,10 +133,10 @@ test('x402 returns a payment challenge before paid routes execute', async () => 
       accepts: Array<Record<string, unknown>>;
     };
     assert.equal(Array.isArray(paymentRequired.accepts), true);
-    assert.equal(paymentRequired.accepts[0]?.asset, '0x036CbD53842c5426634e7929541eC2318f3dCF7e');
+    assert.equal(paymentRequired.accepts[0]?.asset, ROBINHOOD_USDG_ADDRESS);
     assert.deepEqual(paymentRequired.accepts[0]?.extra, {
-      name: 'USDC',
-      version: '2',
+      name: ROBINHOOD_USDG_EIP712_NAME,
+      version: ROBINHOOD_USDG_EIP712_VERSION,
       reservationId: reservationHeader,
     });
     assert.equal(paymentRequired.accepts[0]?.maxAmountRequired, '10110100');

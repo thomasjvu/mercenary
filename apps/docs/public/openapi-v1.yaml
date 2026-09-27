@@ -49,7 +49,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
   /ready:
     get:
       summary: Readiness and production gate snapshot
@@ -103,7 +102,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
   /metrics:
     get:
       summary: Prometheus metrics
@@ -131,7 +129,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
   /v1/host/attestation:
     get:
       responses:
@@ -188,7 +185,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
   /v1/auth/verify:
     post:
       summary: Verify wallet signature and open session
@@ -247,7 +243,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "401":
           description: Default Response
           content:
@@ -262,7 +257,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
   /v1/session:
     get:
       summary: Read current public session
@@ -344,7 +338,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
     post:
       summary: Create buyer API key
       tags:
@@ -372,7 +365,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
   /v1/buyer/api-keys/{keyId}:
     delete:
       parameters:
@@ -703,7 +695,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "401":
           description: Default Response
           content:
@@ -718,7 +709,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "402":
           description: Default Response
           content:
@@ -733,7 +723,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "409":
           description: Default Response
           content:
@@ -748,7 +737,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "503":
           description: Default Response
           content:
@@ -763,7 +751,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
   /v1/raid/{raidId}:
     get:
       summary: Get raid status
@@ -815,7 +802,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "404":
           description: Default Response
           content:
@@ -830,7 +816,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
   /v1/raid/{raidId}/result:
     get:
       summary: Get raid result
@@ -885,7 +870,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "404":
           description: Default Response
           content:
@@ -900,7 +884,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
   /v1/raid/{raidId}/agent_log.json:
     get:
       summary: Download Mercenary agent log JSON
@@ -936,7 +919,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "404":
           description: Default Response
           content:
@@ -951,7 +933,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
   /v1/raid/{raidId}/attested-result:
     get:
       summary: Get TEE-attested raid result proof
@@ -987,7 +968,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "404":
           description: Default Response
           content:
@@ -1002,7 +982,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "503":
           description: Default Response
           content:
@@ -1017,7 +996,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
   /v1/raid/{raidId}/provider-settlement:
     get:
       summary: Get provider settlement payload for a raid
@@ -1063,7 +1041,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "401":
           description: Default Response
           content:
@@ -1078,7 +1055,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "404":
           description: Default Response
           content:
@@ -1093,7 +1069,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
   /v1/inference/chat/completions:
     post:
       summary: Discount inference chat completion
@@ -1199,7 +1174,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "401":
           description: Default Response
           content:
@@ -1214,7 +1188,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "402":
           description: Default Response
           content:
@@ -1229,7 +1202,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "409":
           description: Default Response
           content:
@@ -1244,7 +1216,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "503":
           description: Default Response
           content:
@@ -1259,7 +1230,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
   /v1/chat/completions:
     post:
       summary: OpenAI-compatible chat completion
@@ -1364,7 +1334,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "401":
           description: Default Response
           content:
@@ -1379,7 +1348,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "402":
           description: Default Response
           content:
@@ -1394,7 +1362,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "409":
           description: Default Response
           content:
@@ -1409,7 +1376,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
         "503":
           description: Default Response
           content:
@@ -1424,7 +1390,6 @@ paths:
                     type: string
                 required:
                   - error
-                  - message
   /v1/providers/{providerId}/heartbeat:
     post:
       parameters:

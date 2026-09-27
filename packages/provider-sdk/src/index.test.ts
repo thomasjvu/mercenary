@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { once } from 'node:events';
 import { mkdtemp, writeFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -414,47 +416,47 @@ async function withInviteTimeoutEnv<T>(inviteAcceptMs: string, fn: () => Promise
   }
 }
 
-async function withMockedAcceptFetch<T>(responseDelayMs: number, fn: () => Promise<T>): Promise<T> {
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
-    const url =
-      typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-    assert.equal(url, 'http://127.0.0.1:19001/v1/raid/accept');
-    await new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(resolve, responseDelayMs);
-      const onAbort = () => {
-        clearTimeout(timer);
-        reject(new DOMException('The operation was aborted.', 'AbortError'));
-      };
+async function withMockedAcceptServer<T>(
+  responseDelayMs: number,
+  fn: (endpoint: string) => Promise<T>
+): Promise<T> {
+  const server = createServer((request, response) => {
+    if (request.method !== 'POST' || request.url !== '/v1/raid/accept') {
+      response.writeHead(404).end();
+      return;
+    }
 
-      if (init?.signal?.aborted) {
-        onAbort();
-        return;
+    const timer = setTimeout(() => {
+      if (!response.destroyed) {
+        response
+          .writeHead(200, { 'content-type': 'application/json' })
+          .end(JSON.stringify({ accepted: true, providerRunId: 'run-test' }));
       }
-
-      init?.signal?.addEventListener('abort', onAbort, { once: true });
-    });
-    return new Response(JSON.stringify({ accepted: true, providerRunId: 'run-test' }), {
-      status: 200,
-      headers: {
-        'content-type': 'application/json',
-      },
-    });
-  }) as typeof fetch;
+    }, responseDelayMs);
+    response.once('close', () => clearTimeout(timer));
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const address = server.address();
+  if (!address || typeof address === 'string') {
+    throw new Error('Expected the accept test server to bind to a TCP port.');
+  }
 
   try {
-    return await fn();
+    return await fn(`http://127.0.0.1:${address.port}`);
   } finally {
-    globalThis.fetch = originalFetch;
+    server.closeAllConnections();
+    server.close();
+    await once(server, 'close');
   }
 }
 
-function createTestProvider(): HttpRaidProvider {
+function createTestProvider(endpoint: string): HttpRaidProvider {
   return new HttpRaidProvider(
     buildProviderProfileFromRegistration({
       agentId: 'probe-provider',
       name: 'Probe Provider',
-      endpoint: 'http://127.0.0.1:19001',
+      endpoint,
       auth: {
         type: 'none',
       },
@@ -492,9 +494,9 @@ function createTestTask(): ProviderTaskPackage {
 }
 
 test('HttpRaidProvider accept honors BOSSRAID_INVITE_ACCEPT_MS when the provider is slow', async () => {
-  await withMockedAcceptFetch(100, async () => {
+  await withMockedAcceptServer(100, async (endpoint) => {
     await withInviteTimeoutEnv('50', async () => {
-      const provider = createTestProvider();
+      const provider = createTestProvider(endpoint);
       await assert.rejects(
         () => provider.accept(createTestTask()),
         /request timed out after 50 ms/
@@ -504,9 +506,9 @@ test('HttpRaidProvider accept honors BOSSRAID_INVITE_ACCEPT_MS when the provider
 });
 
 test('HttpRaidProvider accept succeeds when BOSSRAID_INVITE_ACCEPT_MS exceeds provider latency', async () => {
-  await withMockedAcceptFetch(50, async () => {
+  await withMockedAcceptServer(50, async (endpoint) => {
     await withInviteTimeoutEnv('250', async () => {
-      const provider = createTestProvider();
+      const provider = createTestProvider(endpoint);
       const acceptance = await provider.accept(createTestTask());
       assert.equal(acceptance.accepted, true);
       assert.equal(acceptance.providerRunId, 'run-test');

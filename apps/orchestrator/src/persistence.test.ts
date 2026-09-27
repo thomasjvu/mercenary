@@ -171,7 +171,7 @@ test('restoreState merges persisted provider aliases into seeded providers by en
   assert.equal(providers[0]?.reputation.totalRaids, 21);
 });
 
-test('upsertRegisteredProvider replaces aliased providers with the canonical agent id', async () => {
+test('upsertRegisteredProvider rejects a different agent claiming an existing endpoint', async () => {
   const orchestrator = new BossRaidOrchestrator([
     {
       profile: createProviderProfile('minimal-diff-hunter', {
@@ -192,17 +192,20 @@ test('upsertRegisteredProvider replaces aliased providers with the canonical age
     },
   ]);
 
-  const provider = await orchestrator.upsertRegisteredProvider({
-    agentId: 'riko',
-    name: 'Riko',
-    endpoint: 'http://provider-b:9002/',
-    outputTypes: ['video', 'text', 'bundle'],
-  });
+  await assert.rejects(
+    () =>
+      orchestrator.upsertRegisteredProvider({
+        agentId: 'riko',
+        name: 'Riko',
+        endpoint: 'http://provider-b:9002/',
+        outputTypes: ['video', 'text', 'bundle'],
+      }),
+    /Endpoint is already registered to provider "minimal-diff-hunter"/
+  );
 
   const providers = orchestrator.listProviders();
-  assert.equal(provider.providerId, 'riko');
   assert.equal(providers.length, 1);
-  assert.equal(providers[0]?.providerId, 'riko');
+  assert.equal(providers[0]?.providerId, 'minimal-diff-hunter');
 });
 
 test('spawnRaid fails closed when persistence cannot save the new raid', async () => {

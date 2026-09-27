@@ -1,4 +1,4 @@
-import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
+import { getInferenceCatalogEntry } from '@bossraid/constants';
 import type { SellerPayoutEntry } from './control-state.js';
 
 export const MARKETPLACE_PUBLIC_PAYOUT_SCAN_LIMIT = 10_000;
@@ -42,7 +42,6 @@ export function computeSellerModelDemand(input: {
 }> {
   const nowMs = input.nowMs ?? Date.now();
   const since24h = nowMs - MARKETPLACE_STATS_WINDOW_MS;
-  const catalogById = new Map(INFERENCE_MODEL_CATALOG.map((entry) => [entry.modelId, entry]));
   const providerById = new Map(input.providers.map((entry) => [entry.providerId, entry]));
   const routedRaidsByModel = new Map<string, Set<string>>();
   const byModel = new Map<
@@ -62,7 +61,7 @@ export function computeSellerModelDemand(input: {
     if (!provider.modelId) {
       continue;
     }
-    const catalog = catalogById.get(provider.modelId);
+    const catalog = getInferenceCatalogEntry(provider.modelId);
     byModel.set(provider.modelId, {
       modelId: provider.modelId,
       displayName: provider.displayName ?? catalog?.displayName ?? provider.modelId,

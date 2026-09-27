@@ -5,7 +5,7 @@ import {
   type HarnessKind,
 } from '@bossraid/agent-harness';
 import {
-  INFERENCE_MODEL_CATALOG,
+  getInferenceCatalogEntry,
   UPSTREAM_PROVIDER_CONFIG,
   discountTokenPricing,
   type TokenPricing,
@@ -30,7 +30,7 @@ export function deriveDiscountedTokenRates(input: { modelId: string; discountPer
       tokenPricing?: TokenPricing;
     }
   | undefined {
-  const catalogEntry = INFERENCE_MODEL_CATALOG.find((entry) => entry.modelId === input.modelId);
+  const catalogEntry = getInferenceCatalogEntry(input.modelId);
   if (!catalogEntry) {
     return undefined;
   }
@@ -65,7 +65,7 @@ export function buildHostedProviderRegistration(input: {
   /** chat = single completion; harness = multi-step tool loop on platform fleet (no per-seller Phala). */
   lane?: HostedOfferLane;
 }): ProviderRegistrationInput | undefined {
-  const catalogEntry = INFERENCE_MODEL_CATALOG.find((entry) => entry.modelId === input.modelId);
+  const catalogEntry = getInferenceCatalogEntry(input.modelId);
   if (
     catalogEntry?.modelProvider !== input.provider ||
     !Number.isFinite(input.discountPercent) ||

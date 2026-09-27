@@ -1,4 +1,4 @@
-import mercenaryPfp from '@assets/boss-raid-pfp.png';
+import mercenaryPfp from '@assets/boss-raid-pfp-512.png';
 import { MERCENARY_ORCHESTRATOR } from '../../lib/orchestrators.js';
 
 type OrchestratorFeaturedProps = {

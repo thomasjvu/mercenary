@@ -1,4 +1,4 @@
-import { INFERENCE_MODEL_CATALOG } from '@bossraid/constants';
+import { getInferenceCatalogEntry } from '@bossraid/constants';
 import type { ChatCompletionRequest } from '@bossraid/shared-types';
 
 export type ChatE2eeRoute = {
@@ -16,7 +16,7 @@ export function resolveChatE2eeRoute(
     return undefined;
   }
 
-  const catalogEntry = INFERENCE_MODEL_CATALOG.find((entry) => entry.modelId === chatRequest.model);
+  const catalogEntry = getInferenceCatalogEntry(chatRequest.model);
   if (!catalogEntry?.e2ee) {
     return undefined;
   }

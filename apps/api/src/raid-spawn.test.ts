@@ -44,7 +44,7 @@ test('malformed raid requests return 400', async () => {
     assert.equal(response.statusCode, 400);
     assert.deepEqual(response.json(), {
       error: 'bad_request',
-      message: 'Expected object for task.',
+      message: "body must have required property 'task'",
     });
   } finally {
     await app.close();

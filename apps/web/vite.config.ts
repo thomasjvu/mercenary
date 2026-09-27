@@ -14,7 +14,7 @@ function syncBossRaidPublicAssets(): Plugin {
     name: 'sync-boss-raid-public-assets',
     buildStart() {
       copyFileSync(
-        resolve(repoAssetsDir, 'boss-raid-pfp.png'),
+        resolve(repoAssetsDir, 'boss-raid-favicon.png'),
         resolve(webPublicDir, 'boss-raid-pfp.png')
       );
       copyFileSync(repoSkillPath, resolve(webPublicDir, 'skill.md'));
@@ -54,9 +54,6 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('smart-pay') || id.includes('viem')) {
-                return 'wallet';
-              }
               if (id.includes('@iconify/react')) {
                 return 'icons';
               }

@@ -1,6 +1,10 @@
 import { fetchUpstreamModels, mergeUpstreamCatalogModelsForProvider } from './upstream/index.js';
 import { verifyHostedModel } from './upstream/eligibility.js';
-import { INFERENCE_MODEL_CATALOG, isUpstreamProviderId } from '@bossraid/constants';
+import {
+  INFERENCE_MODEL_CATALOG,
+  getInferenceCatalogEntry,
+  isUpstreamProviderId,
+} from '@bossraid/constants';
 import type { UpstreamProviderId } from '@bossraid/constants';
 import type { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import { parseProviderRegistrationInput } from '@bossraid/api-contracts';
@@ -66,7 +70,7 @@ export function listPlatformLiquidityCandidates(env: NodeJS.ProcessEnv = process
 }> {
   const out: Array<{ modelId: string; upstream: UpstreamProviderId; hasPlatformKey: boolean }> = [];
   for (const modelId of listPlatformLiquidityModelIds()) {
-    const entry = INFERENCE_MODEL_CATALOG.find((row) => row.modelId === modelId);
+    const entry = getInferenceCatalogEntry(modelId);
     if (!entry || !isUpstreamProviderId(entry.modelProvider)) {
       continue;
     }

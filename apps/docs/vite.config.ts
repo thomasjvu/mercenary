@@ -13,7 +13,7 @@ function syncBossRaidFavicon(): Plugin {
     name: 'sync-boss-raid-favicon',
     buildStart() {
       copyFileSync(
-        resolve(repoAssetsDir, 'boss-raid-pfp.png'),
+        resolve(repoAssetsDir, 'boss-raid-favicon.png'),
         resolve(docsPublicDir, 'boss-raid-pfp.png')
       );
     },
@@ -72,20 +72,20 @@ export default defineConfig({
             if (id.includes('framer-motion')) {
               return 'vendor-motion';
             }
-            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
-              return 'vendor-react';
-            }
             if (id.includes('react-router')) {
               return 'vendor-router';
+            }
+            if (id.includes('@scalar/api-reference-react')) {
+              return;
+            }
+            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+              return 'vendor-react';
             }
             if (id.includes('@iconify')) {
               return 'vendor-iconify';
             }
             if (id.includes('dompurify')) {
               return 'vendor-sanitize';
-            }
-            if (id.includes('mermaid')) {
-              return 'vendor-mermaid';
             }
           }
         },
