@@ -8,7 +8,8 @@ Boss Raid is **Forgejo-first**. GitHub is a public/operator mirror, not the cano
 | ------------------- | ---------------------------------------- | ------------------------------------------------------------------------ |
 | **Source of truth** | [Forgejo](https://forgejo.thomasjvu.com) | [`bossraid/mercenary`](https://forgejo.thomasjvu.com/bossraid/mercenary) |
 | **Mirror**          | GitHub                                   | [`thomasjvu/mercenary`](https://github.com/thomasjvu/mercenary)          |
-| **Build server**    | `spectre` (native `linux/amd64`)         | Forgejo Actions `act_runner` label `spectre`                             |
+| **CI runner**       | `spectre` (native `linux/amd64`)         | Forgejo Actions `act_runner`                                             |
+| **Image publisher** | GitHub Actions mirror                    | GHCR images from `main` and version tags                                 |
 
 Do **not** build production images with QEMU/buildx on Apple Silicon. Phala CVM pulls **amd64** only.
 
@@ -38,19 +39,14 @@ If mirror sync fails with `Could not resolve host: github.com` inside the Forgej
 
 ## CI layout
 
-| Path                                                                                  | Runs where             | Purpose                               |
-| ------------------------------------------------------------------------------------- | ---------------------- | ------------------------------------- |
-| [`.forgejo/workflows/ci.yml`](../../../.forgejo/workflows/ci.yml)                     | Forgejo Actions        | Verify (check, lint, tests, smoke)    |
-| [`.forgejo/workflows/docker-image.yml`](../../../.forgejo/workflows/docker-image.yml) | **`runs-on: spectre`** | Native amd64 image build → GHCR       |
-| [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml)                       | GitHub Actions         | Mirror / public CI parity             |
-| [`.github/workflows/docker-image.yml`](../../../.github/workflows/docker-image.yml)   | GitHub `ubuntu-latest` | Backup amd64 publish on `main` / tags |
+| Path                                                                                | Runs where             | Purpose                               |
+| ----------------------------------------------------------------------------------- | ---------------------- | ------------------------------------- |
+| [`.forgejo/workflows/ci.yml`](../../../.forgejo/workflows/ci.yml)                   | Forgejo Actions        | Verify (check, lint, tests, smoke)    |
+| [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml)                     | GitHub Actions         | Mirror / public CI parity             |
+| [`.github/workflows/docker-image.yml`](../../../.github/workflows/docker-image.yml) | GitHub `ubuntu-latest` | GHCR publish on `main` / version tags |
 
-### Forgejo secrets (repo or org)
-
-| Secret          | Used by                                            |
-| --------------- | -------------------------------------------------- |
-| `GHCR_TOKEN`    | Docker workflow — GitHub PAT with `write:packages` |
-| `GHCR_USERNAME` | Optional; default `thomasjvu`                      |
+GitHub Actions is the sole GHCR publisher. Its built-in `GITHUB_TOKEN` avoids a separate
+`GHCR_TOKEN` secret in Forgejo; Forgejo does not build or push duplicate images.
 
 ### Spectre runner
 
@@ -58,10 +54,11 @@ Host: `spectre.thomasjvu.com` (native x86_64 Docker).
 
 ```bash
 # on spectre — see deploy/ops-local.example/spectre/act-runner.md
-# registers labels: spectre:host, ubuntu-latest:docker://node:22-bookworm
+# registers label: ubuntu-latest:docker://node:22-bookworm
 ```
 
-Jobs with `runs-on: spectre` must use **`spectre:host`** so steps run on the host Docker daemon (required for Phala-bound amd64 images). If the runner is registered as `spectre:docker://…`, image builds fail — re-register per the act-runner runbook.
+The Forgejo verification workflow uses the `ubuntu-latest` container label. The `spectre:host`
+label is available for operator maintenance and is not used to publish images.
 
 ## Branch model
 
@@ -78,8 +75,8 @@ The mirrored `catalog-drift.yml` workflows run daily at 07:23 UTC or manually. T
 ## Phala deploy after CI
 
 ```bash
-# image published by Forgejo docker workflow, e.g.:
-# ghcr.io/thomasjvu/boss-raid:development
+# image published by the GitHub mirror workflow, e.g.:
+# ghcr.io/thomasjvu/boss-raid:sha-<commit>
 # ghcr.io/thomasjvu/boss-raid:main | :latest
 
 pnpm bossraid bootstrap:phala:env

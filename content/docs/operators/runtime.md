@@ -22,7 +22,7 @@ Live offer counts, API health, and the Cloudflare 525 recovery procedure: [Marke
 ## Remaining production work
 
 - The public API and web proxy returned Cloudflare 525 in the latest live check; see [Marketplace operations](marketplace-operations.md) for the observed state and recovery checks. No live seller counts or readiness payload were available.
-- Publish the current API/evaluator image and update the local Phala deploy env before deployment; it currently pins `sha-21340f6`.
+- Publish the API, evaluator, and evaluator-job images from the current `main` commit. Pin all three local Phala image refs to that same verified `sha-<commit>` before deployment.
 - Mainnet escrow deployment and the Phala `SETTLEMENT_MODE=onchain` cutover remain operator actions; testnet artifacts are not production contracts.
 - Complete and record a live Marian x402 transaction, confirm funded settlement balances and at least one ready seller, and require `GET /v1/ops/production-readiness` → `ok: true` before unrestricted paid traffic.
 - The shared-wallet transaction queue prevents overlap only among callers in the same Node process. It does not coordinate API replicas or standalone settlement commands; the control-state store remains single-writer and multi-process writes are unsupported.
