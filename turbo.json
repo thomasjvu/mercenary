@@ -17,6 +17,7 @@
     }
   },
   "globalDependencies": [
+    "tsconfig.base.json",
     "scripts/sync-inference-catalog.mjs",
     "scripts/lib/inference-catalog/**",
     "packages/constants/data/inference-*.json"

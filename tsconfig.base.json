@@ -29,6 +29,7 @@
       "@bossraid/oneshot-relayer": ["packages/oneshot-relayer/src/index.ts"],
       "@bossraid/venice-client": ["packages/venice-client/src/index.ts"],
       "@bossraid/agent-harness": ["packages/agent-harness/src/index.ts"],
+      "@bossraid/constants/workspace": ["packages/constants/src/workspace-entry.ts"],
       "@bossraid/logger": ["packages/logger/src/index.ts"]
     },
     "strict": true,
