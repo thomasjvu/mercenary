@@ -18,13 +18,7 @@ const PATCH_HAS_CHANGES_SCORE = 0.8;
 const PATCH_MIN_SANE_SCORE = 0.55;
 const EXPLANATION_STRENGTH_DIVISOR = 220;
 const MAX_ANSWER_LENGTH_FOR_SCORING = 800;
-const MAX_REGRESSION_TESTS_SCORED = 3;
 const REGRESSION_PASS_THRESHOLD = 0.55;
-const HEURISTIC_WEIGHT = 0.25;
-const EVIDENCE_WEIGHT = 0.45;
-const BUILD_WEIGHT = 0.3;
-const TEST_WEIGHT = 0.15;
-const LATENCY_WEIGHT = 0.1;
 
 export function invalid(reason: string, summary?: string): EvaluationBreakdown {
   return {

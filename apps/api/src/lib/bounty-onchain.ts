@@ -17,7 +17,7 @@ import {
   ERC20_MINIMAL_ABI,
   withWalletTransactionLock,
 } from '@bossraid/raid-core';
-import { resolveApiSettlementMode } from './settlement-mode.js';
+import { readSettlementMode } from '@bossraid/constants';
 
 /** USDG and USDC both use 6 decimals; name kept for test compatibility. */
 export const USDC_ATOMIC_MULTIPLIER = 1_000_000n;
@@ -46,7 +46,7 @@ export class BountyOnchainError extends Error {
 }
 
 export function isBountyOnchainConfigured(env: NodeJS.ProcessEnv = process.env): boolean {
-  const mode = resolveApiSettlementMode(env);
+  const mode = readSettlementMode(env);
   if (mode !== 'onchain') {
     return false;
   }
@@ -61,7 +61,7 @@ export function isBountyOnchainConfigured(env: NodeJS.ProcessEnv = process.env):
 }
 
 export function requiresProductionBountyEscrow(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env.NODE_ENV === 'production' && resolveApiSettlementMode(env) === 'onchain';
+  return env.NODE_ENV === 'production' && readSettlementMode(env) === 'onchain';
 }
 
 export function readBountyOnchainConfig(env: NodeJS.ProcessEnv = process.env): BountyOnchainConfig {

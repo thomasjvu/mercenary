@@ -3,7 +3,6 @@ import type { HostAttestationResponse } from '../../api/host-attestation.js';
 import type { ReadyResponse } from '../../api/health.js';
 import { buildAgentManifestUrl, buildHostAttestationUrl } from '../../lib/receipt-url.js';
 import type { AttestationInspectorContextInput } from '../../contexts/AttestationInspectorContext.js';
-import type { ReceiptUpstreamAttestationRow } from '../../lib/receipt-attestation-view.js';
 import {
   buildHostAttestationInspectorView,
   type HostInspectorChip,

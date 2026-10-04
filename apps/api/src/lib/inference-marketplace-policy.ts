@@ -17,7 +17,7 @@ export function readPolicyStringArray(value: unknown): string[] | undefined {
   return undefined;
 }
 
-function readPrivacyMode(
+export function readPrivacyMode(
   value: unknown
 ): NonNullable<ChatCompletionRequest['raidPolicy']>['privacyMode'] {
   return value === 'off' || value === 'prefer' || value === 'strict' ? value : undefined;

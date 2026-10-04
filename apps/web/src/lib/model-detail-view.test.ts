@@ -20,8 +20,8 @@ const market = {
   cheapestRateUsd: 0.2,
   pricing: {
     declaredUnit: 'task',
-    baseInputPer1mUsd: 1,
-    baseOutputPer1mUsd: 2,
+    pricePer1mInputTokensUsd: 1,
+    pricePer1mOutputTokensUsd: 2,
   },
   sellers: [
     { providerId: 'a', privacy: { teeAttested: true } },
@@ -57,5 +57,7 @@ test('buildModelDetailStats maps market metrics to stat rows', () => {
   assert.equal(stats[0]?.label, 'sellers');
   assert.equal(stats[0]?.value, '2/3');
   assert.equal(stats.find((entry) => entry.label === 'tee')?.value, '1');
+  assert.equal(stats.find((entry) => entry.label === 'base in')?.value, '$1.00');
+  assert.equal(stats.find((entry) => entry.label === 'base out')?.value, '$2.00');
   assert.match(stats.find((entry) => entry.label === 'success')?.value ?? '', /92/);
 });

@@ -54,7 +54,7 @@ export function resolveUpstreamApiKey(input: {
 export function resolveMarketplaceTeeApiKey(input: {
   provider: string;
   env: NodeJS.ProcessEnv;
-  controlState: ApiControlState;
+  controlState: Pick<ApiControlState, 'readSellerUpstreamApiKey'>;
   sellerId?: string;
   sellerWallet?: string;
   sessionWallet?: string;
@@ -72,11 +72,7 @@ export function resolveMarketplaceTeeApiKey(input: {
     );
   }
 
-  if (!apiKey && input.sessionWallet) {
-    return input.controlState.readSellerUpstreamApiKey(input.sessionWallet, provider, input.env);
-  }
-
-  if (apiKey && input.sessionWallet) {
+  if (input.sessionWallet) {
     return (
       input.controlState.readSellerUpstreamApiKey(input.sessionWallet, provider, input.env) ??
       apiKey

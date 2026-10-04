@@ -1,13 +1,11 @@
 import {
   buildErc8004ProofLabel,
   buildRoutingDecisionSummary,
-  countProvidersMatchingSignal,
   formatMs,
   formatScore,
   formatTimestamp,
   formatUsd,
   hasErc8004Registration,
-  shortValue,
 } from '@bossraid/proof-ui';
 
 export { buildRoutingDecisionSummary, formatMs, formatScore, formatTimestamp, formatUsd };

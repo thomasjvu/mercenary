@@ -1,4 +1,4 @@
-import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { request as requestHttp, type RequestOptions as HttpRequestOptions } from 'node:http';
 import { request as requestHttps } from 'node:https';

@@ -53,7 +53,6 @@ export function ProviderCombobox({ options, value, onChange, placeholder }: Prov
       onChange={onChange}
       onEnterSelect={(query) => buildFilteredProviderOptions(options, allCount, query)[0]?.id}
       placeholder={placeholder ?? 'Search providers...'}
-      value={value}
     >
       {({ query, handleSelect }) => {
         const filtered = buildFilteredProviderOptions(options, allCount, query);

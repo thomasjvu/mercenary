@@ -68,7 +68,6 @@ async function runProcess(input: {
 /** Dynamic import of optional image deps without hard package.json dependency. */
 async function importOptionalModule(specifier: string): Promise<Record<string, unknown> | null> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval -- intentional optional runtime load
     const dynamicImport = new Function('s', 'return import(s)') as (
       s: string
     ) => Promise<Record<string, unknown>>;

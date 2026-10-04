@@ -6,7 +6,7 @@ import {
   fetchHostAttestationOptional,
   type HostAttestationResponse,
 } from '../api/host-attestation.js';
-import { isTerminalRaidStatus, readErrorMessage } from '../mercenary-format';
+import { readErrorMessage } from '../mercenary-format';
 import { buildAbsolutePath, type LiveRaidRun } from '../mercenary-result';
 import { buildMercenaryRaidViewState } from '../mercenary-specialists';
 import {

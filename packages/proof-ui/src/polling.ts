@@ -29,20 +29,11 @@ export async function pollRaidSnapshot<TStatus, TResult, TAgentLog = unknown>(in
   result: PromiseSettledResult<TResult>;
   agentLog?: PromiseSettledResult<TAgentLog>;
 }> {
-  const requests: [Promise<TStatus>, Promise<TResult>, ...(Promise<TAgentLog> | [])[]] = [
+  const [status, result, agentLog] = await Promise.allSettled([
     input.fetchStatus(),
     input.fetchResult(),
-  ];
+    ...(input.fetchAgentLog ? [input.fetchAgentLog()] : []),
+  ] as const);
 
-  if (input.fetchAgentLog) {
-    requests.push(input.fetchAgentLog());
-  }
-
-  const settled = await Promise.allSettled(requests);
-
-  return {
-    status: settled[0] as PromiseSettledResult<TStatus>,
-    result: settled[1] as PromiseSettledResult<TResult>,
-    agentLog: settled[2] as PromiseSettledResult<TAgentLog> | undefined,
-  };
+  return { status, result, agentLog };
 }

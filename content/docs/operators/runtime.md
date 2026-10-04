@@ -2,7 +2,7 @@
 
 Verification, deploy, and operator workflows. Env tables: [reference/env.md](../reference/env.md). Local install and default URLs: [Local development](/dev-docs/operators/local-development) in dev-docs.
 
-**Source of truth is Forgejo** ([`bossraid/mercenary`](https://forgejo.thomasjvu.com/bossraid/mercenary)); GitHub is a mirror. CI, image builds on spectre, and remotes: [source-control.md](source-control.md).
+**Source of truth is Forgejo** ([`bossraid/mercenary`](https://forgejo.thomasjvu.com/bossraid/mercenary)); GitHub is a mirror. CI on spectre, image publishing through the GitHub mirror, and remotes: [source-control.md](source-control.md).
 
 Live offer counts, API health, and the Cloudflare 525 recovery procedure: [Marketplace operations](marketplace-operations.md).
 
@@ -248,7 +248,7 @@ pnpm bossraid test:bounty-escrow:e2e                 # against running API; defa
 pnpm bossraid test:bounty-escrow:production          # wallet mode; caps reward via BOSSRAID_BOUNTY_E2E_REWARD_USD
 ```
 
-`test:bounty-escrow:local` spins an ephemeral API, uses `bounty-e2e-provider` from [`examples/settlement/bounty-e2e.providers.json`](../../examples/settlement/bounty-e2e.providers.json), and skips x402 unless bootstrap settlement env is present. Optional overrides: [`examples/settlement/bounty-e2e.env.example`](../../examples/settlement/bounty-e2e.env.example). Provider/agent curl flow: [sellers/bounties.md](../sellers/bounties.md).
+`test:bounty-escrow:local` spins an ephemeral API, uses `bounty-e2e-provider` from [`examples/settlement/bounty-e2e.providers.json`](../../../examples/settlement/bounty-e2e.providers.json), and skips x402 unless bootstrap settlement env is present. Optional overrides: [`examples/settlement/bounty-e2e.env.example`](../../../examples/settlement/bounty-e2e.env.example). Provider/agent curl flow: [sellers/bounties.md](../sellers/bounties.md).
 
 ### 3. Phala deploy
 

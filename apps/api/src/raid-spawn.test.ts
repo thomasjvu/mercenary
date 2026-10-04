@@ -7,7 +7,6 @@ import {
   createTestApiServer,
   createProviderProfile,
   createRaidRequestBody,
-  createX402PaidTestEnv,
   readyHealth,
 } from './test/helpers.js';
 

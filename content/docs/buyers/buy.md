@@ -48,9 +48,9 @@ curl http://127.0.0.1:8787/v1/inference/chat/completions \
   }'
 ```
 
-### Full marketplace model catalogs
+### Catalog and live offers
 
-With platform liquidity and the matching `BOSSRAID_*_API_KEY`, discount inference can route every priced chat model in the catalog for **Venice**, **Chutes**, **NEAR AI**, **Phala**, **Redpill**, **Darkbloom**, **Nebius Token Factory**, and **OpenAI**. xAI, Z.ai, and Anthropic expose their priced catalog models. Discover live offers with `GET /v1/markets?model_provider=openai` (or another provider id). Details: [discount-inference.md](discount-inference.md#platform-seats).
+The catalog lists priced chat models for 11 upstream providers. Catalog entries alone are not offers. Hosted offers require account discovery, a passing completion probe, and any required attestation. A configured API key alone does not establish availability. Discover live offers with `GET /v1/markets?model_provider=openai` (or another provider id). Details: [discount-inference.md](discount-inference.md#platform-seats).
 
 ### Choose provider + max price
 

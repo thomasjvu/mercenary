@@ -2,7 +2,6 @@ import { Icon } from '@iconify/react';
 import { LiveMarketPulse } from '../marketplace/LiveMarketPulse.js';
 import {
   HERO_BY_WORKFLOW,
-  HERO_EYE_GLOWS_BY_WORKFLOW,
   HERO_COLOR_IMAGE_BY_WORKFLOW,
   HERO_MANGA_IMAGE_BY_WORKFLOW,
   HERO_SLICE_POSITIONS,
@@ -113,24 +112,6 @@ function LandingHeroArt({ workflowTab }: { workflowTab: WorkflowTabId }) {
                   ['--hero-slice-position' as string]: `${position}% 50%`,
                 }}
               />
-            ))}
-            {WORKFLOW_TAB_ORDER.map((tab) => (
-              <div
-                className={`hero__eye-glow-set ${workflowLayerClass(tab, workflowTab)}`}
-                key={tab}
-              >
-                {(HERO_EYE_GLOWS_BY_WORKFLOW[tab][index] ?? []).map((eye, eyeIndex) => (
-                  <span
-                    className={`hero__eye-glow${eye.variant === 'sensor' ? ' hero__eye-glow--sensor' : ''}`}
-                    key={eyeIndex}
-                    style={{
-                      top: eye.top,
-                      left: eye.left,
-                      ['--hero-eye-width' as string]: eye.width,
-                    }}
-                  />
-                ))}
-              </div>
             ))}
           </div>
         ))}

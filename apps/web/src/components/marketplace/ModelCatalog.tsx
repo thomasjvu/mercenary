@@ -7,11 +7,7 @@ import {
 } from '../../lib/marketplace-benchmark.js';
 import { formatUsd } from '@bossraid/proof-ui';
 import { formatLatency, formatPercent, formatSavingsLabel } from '../../lib/marketplace-format.js';
-import {
-  formatPer1mTokenPrice,
-  resolveMarketBaseInputPer1mUsd,
-  resolveMarketBaseOutputPer1mUsd,
-} from '../../lib/marketplace-pricing.js';
+import { formatPer1mTokenPrice } from '../../lib/marketplace-pricing.js';
 import type { MarketplaceSortKey } from '../../lib/marketplace-filters.js';
 import { resolveTeeTrustLevel } from '../../lib/tee-trust-badge.js';
 import { ProviderBrandIcon } from '../ProviderBrandIcon.js';
@@ -91,8 +87,8 @@ function useMarketPresentation(market: InferenceMarket) {
 
 function ModelRow({ market, onOpen }: { market: InferenceMarket; onOpen: () => void }) {
   const { teeSellerCount, savingsPercent, savingsLabel } = useMarketPresentation(market);
-  const baseInputPer1mUsd = resolveMarketBaseInputPer1mUsd(market);
-  const baseOutputPer1mUsd = resolveMarketBaseOutputPer1mUsd(market);
+  const baseInputPer1mUsd = market.pricing.pricePer1mInputTokensUsd;
+  const baseOutputPer1mUsd = market.pricing.pricePer1mOutputTokensUsd;
 
   return (
     <tr>
@@ -140,8 +136,8 @@ function ModelRow({ market, onOpen }: { market: InferenceMarket; onOpen: () => v
 
 function ModelCard({ market, onOpen }: { market: InferenceMarket; onOpen: () => void }) {
   const { teeSellerCount, savingsPercent, savingsLabel } = useMarketPresentation(market);
-  const baseInputPer1mUsd = resolveMarketBaseInputPer1mUsd(market);
-  const baseOutputPer1mUsd = resolveMarketBaseOutputPer1mUsd(market);
+  const baseInputPer1mUsd = market.pricing.pricePer1mInputTokensUsd;
+  const baseOutputPer1mUsd = market.pricing.pricePer1mOutputTokensUsd;
 
   return (
     <article className="model-catalog__card">

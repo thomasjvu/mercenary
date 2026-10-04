@@ -2,10 +2,6 @@ import { readSettlementMode } from '@bossraid/constants';
 
 export type SettlementMode = ReturnType<typeof readSettlementMode>;
 
-export function resolveApiSettlementMode(env: NodeJS.ProcessEnv = process.env): SettlementMode {
-  return readSettlementMode(env);
-}
-
 export function isFullOnchainSettlementConfigured(env: NodeJS.ProcessEnv = process.env): boolean {
   return Boolean(
     env.BOSSRAID_RPC_URL &&
@@ -27,11 +23,5 @@ export function isSettlementGateConfigured(
     return true;
   }
 
-  if (mode === 'onchain') {
-    return isFullOnchainSettlementConfigured(env);
-  }
-
-  return Boolean(
-    env.BOSSRAID_RPC_URL && env.BOSSRAID_REGISTRY_ADDRESS && env.BOSSRAID_ESCROW_ADDRESS
-  );
+  return isFullOnchainSettlementConfigured(env);
 }

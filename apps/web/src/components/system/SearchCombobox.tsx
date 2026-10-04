@@ -2,7 +2,6 @@ import type { KeyboardEvent, ReactNode } from 'react';
 import { useSearchCombobox } from '../../hooks/useSearchCombobox.js';
 
 type SearchComboboxProps = {
-  value: string;
   onChange: (value: string) => void;
   placeholder: string;
   closedPlaceholder?: string;
@@ -18,7 +17,6 @@ type SearchComboboxProps = {
 };
 
 export function SearchCombobox({
-  value,
   onChange,
   placeholder,
   closedPlaceholder,

@@ -2,7 +2,6 @@ import type { FastifyBaseLogger } from 'fastify';
 import { buildProviderAuthHeaders } from '@bossraid/provider-sdk';
 import { providerConfig } from './config.js';
 import type { AcceptBody } from './types.js';
-import { NETWORK } from '@bossraid/constants';
 
 export function resolveCallbackUrl(
   path: string,

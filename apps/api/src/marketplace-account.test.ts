@@ -5,7 +5,6 @@ import test from 'node:test';
 import type { ProviderAcceptance } from '@bossraid/shared-types';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
-import { NETWORK } from '@bossraid/constants';
 import {
   createTestApiServer,
   buildTestApiServer,
@@ -13,7 +12,6 @@ import {
   createPublicSessionCookie,
   join,
   mkdtemp,
-  readFile,
   readyHealth,
   rm,
   tmpdir,

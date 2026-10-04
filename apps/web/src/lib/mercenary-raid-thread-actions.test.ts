@@ -9,8 +9,6 @@ import {
 } from './mercenary-raid-thread-actions.js';
 
 test('buildSelectThreadStore persists the active snapshot and switches threads', () => {
-  const existing = createMercenaryThread({ id: 'thread-a', title: 'Existing' });
-  const store = { activeThreadId: 'thread-a', threads: [existing] };
   const snapshot = createMercenaryThread({
     id: 'thread-a',
     title: 'Updated',

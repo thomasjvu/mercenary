@@ -3,11 +3,7 @@ import { isUpstreamProviderId } from '@bossraid/constants';
 import type { UpstreamProviderId } from '@bossraid/constants';
 import type { InferenceMarket } from '../api/marketplace.js';
 import { formatLatency, formatPercent } from './marketplace-format.js';
-import {
-  formatPer1mTokenPrice,
-  resolveMarketBaseInputPer1mUsd,
-  resolveMarketBaseOutputPer1mUsd,
-} from './marketplace-pricing.js';
+import { formatPer1mTokenPrice } from './marketplace-pricing.js';
 
 export type ModelDetailStat = {
   label: string;
@@ -45,11 +41,11 @@ export function buildModelDetailStats(market: InferenceMarket): ModelDetailStat[
     { label: 'unit', value: market.pricing.declaredUnit },
     {
       label: 'base in',
-      value: formatPer1mTokenPrice(resolveMarketBaseInputPer1mUsd(market)),
+      value: formatPer1mTokenPrice(market.pricing.pricePer1mInputTokensUsd),
     },
     {
       label: 'base out',
-      value: formatPer1mTokenPrice(resolveMarketBaseOutputPer1mUsd(market)),
+      value: formatPer1mTokenPrice(market.pricing.pricePer1mOutputTokensUsd),
     },
   ];
 }

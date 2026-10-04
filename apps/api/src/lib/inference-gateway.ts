@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto';
 import {
   defaultModelBaseForHarness,
   runAgentHarnessLoop,
-  type HarnessKind,
   type HarnessRuntimeConfig,
 } from '@bossraid/agent-harness';
 import { NETWORK, UPSTREAM_PROVIDER_CONFIG } from '@bossraid/constants';

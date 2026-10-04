@@ -1,6 +1,6 @@
 import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify';
 import { type BossRaidOrchestrator } from '@bossraid/orchestrator';
-import { DEFAULTS } from '@bossraid/constants';
+import { DEFAULTS, readSettlementMode } from '@bossraid/constants';
 import { type Erc8004Identity } from '@bossraid/shared-types';
 import { createApiControlState, type ApiControlState } from './control-state.js';
 import { createErc8004Verifier } from './erc8004.js';
@@ -13,7 +13,7 @@ import {
   readBooleanEnv,
   resolveChatTerminalSettleGraceMs,
 } from './lib/env.js';
-import { resolveApiSettlementMode, type SettlementMode } from './lib/settlement-mode.js';
+import type { SettlementMode } from './lib/settlement-mode.js';
 import { readTeeSigner, readMercenaryErc8004Identity } from './lib/tee.js';
 import { InferenceReceiptStore } from './lib/inference-receipt-store.js';
 import { findWorkspaceRoot, resolveWorkspacePath } from '@bossraid/constants/workspace';
@@ -131,7 +131,7 @@ function createApiContextWithControlState(
   );
   const chatDefaultMaxTotalCost = readPositiveNumber(env.BOSSRAID_CHAT_DEFAULT_MAX_TOTAL_COST);
   const chatTerminalSettleGraceMs = resolveChatTerminalSettleGraceMs(env);
-  const settlementMode = resolveApiSettlementMode(env);
+  const settlementMode = readSettlementMode(env);
   const evaluatorMaxConcurrentJobs = readPositiveInteger(env.BOSSRAID_EVAL_MAX_CONCURRENT_JOBS, 2);
   const registryToken = env.BOSSRAID_REGISTRY_TOKEN;
   const mercenaryIdentity = readMercenaryErc8004Identity(env);

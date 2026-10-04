@@ -67,7 +67,6 @@ export function ModelCombobox({ options, value, onChange, placeholder }: ModelCo
       onChange={onChange}
       onEnterSelect={(query) => buildFilteredModelGroups(options, query)[0]?.[1][0]?.modelId}
       placeholder={placeholder ?? 'Search models...'}
-      value={value}
     >
       {({ query, handleSelect }) => {
         const filtered = buildFilteredModelGroups(options, query);

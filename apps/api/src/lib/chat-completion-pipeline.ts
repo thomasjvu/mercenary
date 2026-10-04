@@ -16,7 +16,6 @@ import {
 } from './inference-marketplace.js';
 import {
   buildChatCompletionResponse,
-  streamDirectChatCompletionResponse,
   streamChatCompletionResponse,
   ChatTerminalWaitError,
   waitForTerminalRaidOutput,

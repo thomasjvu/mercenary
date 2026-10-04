@@ -7,11 +7,7 @@ import {
   computeSavingsPercent,
   resolveMarketBenchmarkTaskUsd,
 } from '../../lib/marketplace-benchmark.js';
-import {
-  formatPer1mTokenPrice,
-  resolveMarketBaseInputPer1mUsd,
-  resolveMarketBaseOutputPer1mUsd,
-} from '../../lib/marketplace-pricing.js';
+import { formatPer1mTokenPrice } from '../../lib/marketplace-pricing.js';
 import { resolveTeeTrustLevel } from '../../lib/tee-trust-badge.js';
 import { TeeTrustBadge } from '../trust/TeeTrustBadge.js';
 
@@ -43,11 +39,11 @@ export function FeaturedModels({ markets, onOpenModel }: FeaturedModelsProps) {
             market?.sellers.filter((seller) => seller.privacy.teeAttested).length ?? 0;
           const baseInputPer1mUsd =
             market != null
-              ? resolveMarketBaseInputPer1mUsd(market)
+              ? market.pricing.pricePer1mInputTokensUsd
               : (catalog?.inputPer1mUsd ?? null);
           const baseOutputPer1mUsd =
             market != null
-              ? resolveMarketBaseOutputPer1mUsd(market)
+              ? market.pricing.pricePer1mOutputTokensUsd
               : (catalog?.outputPer1mUsd ?? null);
 
           return (

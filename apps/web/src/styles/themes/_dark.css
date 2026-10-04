@@ -61,10 +61,6 @@
   filter: saturate(0) contrast(1.12) brightness(0.94);
 }
 
-.app-frame--theme-dark .app-shell--landing .hero__eye-glow {
-  opacity: 1;
-}
-
 .app-frame--theme-dark .button {
   background: rgba(18, 20, 27, 0.46);
   border-color: rgba(241, 244, 251, 0.18);

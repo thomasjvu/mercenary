@@ -1,7 +1,5 @@
 import type { InferenceMarket } from '../api/marketplace.js';
 import {
-  computeSavingsPercent,
-  computeSavingsUsd,
   estimateBenchmarkPriceUsd,
   estimateBenchmarkTaskUsd,
   normalizeBenchmarkModelId,

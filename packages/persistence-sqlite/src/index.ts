@@ -1,23 +1,15 @@
-import { createHash } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { createEmptyPersistenceSnapshot, type BossRaidPersistence } from '@bossraid/persistence';
+import {
+  createEmptyPersistenceSnapshot,
+  raidPersistRevision,
+  providerPersistRevision,
+  type BossRaidPersistence,
+} from '@bossraid/persistence';
 import type { BossRaidPersistenceSnapshot } from '@bossraid/shared-types';
 
 const META_KEY = 1;
-
-function raidPersistRevision(raid: BossRaidPersistenceSnapshot['raids'][number]): string {
-  const { updatedAt: _updatedAt, ...rest } = raid;
-  return createHash('sha256').update(JSON.stringify(rest)).digest('hex');
-}
-
-function providerPersistRevision(
-  provider: BossRaidPersistenceSnapshot['providers'][number]
-): string {
-  const { lastSeenAt: _lastSeenAt, ...rest } = provider;
-  return createHash('sha256').update(JSON.stringify(rest)).digest('hex');
-}
 
 export class SqliteBossRaidPersistence implements BossRaidPersistence {
   private db?: DatabaseSync;

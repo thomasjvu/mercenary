@@ -3,7 +3,6 @@ import test from 'node:test';
 import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-types';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
-import { resolveChatTerminalSettleGraceMs } from './index.js';
 import {
   buildTestApiServer,
   createTestOrchestrator,

@@ -5,21 +5,8 @@ export const MERCENARY_ORCHESTRATOR = {
   displayName: 'Mercenary',
   role: 'Orchestrator',
   description:
-    'Boss Raid orchestrator — routes verified raiders, enforces budget, and returns one receipt-backed result.',
-  specializations: ['orchestration', 'raid routing', 'receipt synthesis'],
+    'Boss Raid orchestrator — assigns tasks to providers, applies the raid budget, and combines their results.',
 } as const;
-
-export type PipelineOrchestrator = {
-  id: string;
-  displayName: string;
-  status: 'in pipeline';
-};
-
-export const PIPELINE_ORCHESTRATORS: readonly PipelineOrchestrator[] = [
-  { id: 'orchestrator-v2', displayName: '???', status: 'in pipeline' },
-  { id: 'orchestrator-v3', displayName: '???', status: 'in pipeline' },
-  { id: 'orchestrator-v4', displayName: '???', status: 'in pipeline' },
-];
 
 export function isMercenaryOrchestratorProvider(provider: Provider): boolean {
   const haystack = [provider.providerId, provider.agentId, provider.displayName]

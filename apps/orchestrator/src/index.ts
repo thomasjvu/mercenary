@@ -34,12 +34,11 @@ import { readRuntimeOptionsFromEnv, type RuntimeOptions } from './runtime.js';
 import {
   createSettlementExecutor,
   resolveSettlementOutputDir,
-  type SettlementExecuteOptions,
   type SettlementExecutor,
 } from './settlement-executor.js';
 import { type ProviderHealthProbe } from './provider-health-cache.js';
 import { createPersistenceBackend } from './persistence-backend.js';
-import { PersistenceQueue, PersistenceUnavailableError } from './persistence-queue.js';
+import { PersistenceQueue } from './persistence-queue.js';
 import {
   buildOrchestratorSnapshot,
   queueOrchestratorPersist,

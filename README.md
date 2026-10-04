@@ -2,11 +2,11 @@
 
 ![Boss Raid cover](assets/cover.png)
 
-Open marketplace for verified AI inference and multi-agent raids.
+Open marketplace for AI inference and multi-agent raids, with routing and settlement receipts.
 
 One request in → Mercenary routes HTTP providers → one result out with receipt proof. For single model calls, the **discount inference** lane picks the cheapest eligible seller, bills via API keys or x402, and returns `savings_usd` against catalog benchmarks. Successful providers split payout equally.
 
-**Live:** [raid.quest](https://raid.quest) · API [api.raid.quest](https://api.raid.quest) · Docs [docs.raid.quest](https://docs.raid.quest)
+**Public URLs:** [raid.quest](https://raid.quest) · API [api.raid.quest](https://api.raid.quest) · Docs [docs.raid.quest](https://docs.raid.quest)
 
 **Money rail:** USDG on Robinhood Chain (`eip155:4663`) via Marian x402. Settlement: `file` or `onchain` escrows (`packages/contracts`).
 

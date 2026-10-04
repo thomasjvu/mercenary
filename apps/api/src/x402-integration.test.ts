@@ -199,6 +199,7 @@ test('x402 reservations hold provider capacity until payment completes', async (
     ) as {
       accepts: Array<Record<string, unknown>>;
     };
+    assert.ok(paymentRequired.accepts.length > 0);
     const reservationId = String(unpaid.headers['x-bossraid-launch-reservation']);
 
     const secondRequest = createRaidRequestBody();

@@ -10,7 +10,7 @@ import {
   isValidSellerPayoutEntry,
   isValidSellerUpstreamConfigEntry,
 } from './validators.js';
-import type { ApiControlStateSnapshot, SellerUpstreamConfigEntry } from './types.js';
+import type { ApiControlStateSnapshot } from './types.js';
 
 export function createEmptyApiControlState(): ApiControlStateSnapshot {
   return {

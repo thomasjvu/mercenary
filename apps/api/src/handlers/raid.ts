@@ -7,7 +7,6 @@ import {
   persistSettlementExecutionArtifact,
   settlementExecutionChanged,
 } from '../settlement-proof.js';
-
 import { readX402ConfigForContext } from '../lib/x402-runtime.js';
 import { buildRaidPaymentProof } from '../lib/payment-proof.js';
 import { type ApiContext } from '../api-context.js';
@@ -24,8 +23,7 @@ export function createRaidHandlers(
   payment: ReturnType<typeof createPaymentHandlers>
 ) {
   const { adminIsAuthorized, requireRateLimit } = auth;
-  const { requireReservedLaunchPayment, recordMarketplaceLedgersFromRaid, reconcileLaunchPayment } =
-    payment;
+  const { requireReservedLaunchPayment, reconcileLaunchPayment } = payment;
 
   async function ensureErc8004ProofState(
     options: {

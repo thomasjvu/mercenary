@@ -1,5 +1,5 @@
 import type { SubmissionArtifact } from '@bossraid/shared-types';
-import { selectApprovedProviderIds as selectApprovedProviderIdsShared } from '@bossraid/proof-ui';
+export { selectApprovedProviderIds } from '@bossraid/proof-ui';
 import type { ChatCompletionResponse, RaidResult } from '../api';
 
 export function selectResultText(result: RaidResult | undefined): string | undefined {
@@ -29,10 +29,6 @@ export function selectArtifacts(result: RaidResult | undefined): SubmissionArtif
   return (result?.synthesizedOutput?.artifacts ??
     result?.primarySubmission?.submission.artifacts ??
     []) as SubmissionArtifact[];
-}
-
-export function selectApprovedProviderIds(result: RaidResult | undefined): string[] {
-  return selectApprovedProviderIdsShared(result);
 }
 
 export function selectPrimaryOutputType(result: RaidResult | undefined): string {

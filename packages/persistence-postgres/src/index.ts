@@ -1,5 +1,9 @@
-import { createHash } from 'node:crypto';
-import { createEmptyPersistenceSnapshot, type BossRaidPersistence } from '@bossraid/persistence';
+import {
+  createEmptyPersistenceSnapshot,
+  raidPersistRevision,
+  providerPersistRevision,
+  type BossRaidPersistence,
+} from '@bossraid/persistence';
 import type { BossRaidPersistenceSnapshot } from '@bossraid/shared-types';
 import pg from 'pg';
 import { ORCHESTRATOR_SCHEMA_SQL } from './schema.js';
@@ -8,18 +12,6 @@ const { Pool } = pg;
 const META_KEY = 1;
 
 export { API_CONTROL_STATE_SCHEMA_SQL, ORCHESTRATOR_SCHEMA_SQL } from './schema.js';
-
-function raidPersistRevision(raid: BossRaidPersistenceSnapshot['raids'][number]): string {
-  const { updatedAt: _updatedAt, ...rest } = raid;
-  return createHash('sha256').update(JSON.stringify(rest)).digest('hex');
-}
-
-function providerPersistRevision(
-  provider: BossRaidPersistenceSnapshot['providers'][number]
-): string {
-  const { lastSeenAt: _lastSeenAt, ...rest } = provider;
-  return createHash('sha256').update(JSON.stringify(rest)).digest('hex');
-}
 
 export type PostgresPool = pg.Pool;
 

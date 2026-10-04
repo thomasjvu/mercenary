@@ -52,6 +52,10 @@ Response includes chat `choices` and usually a `raid` object with ids and receip
 | IDE agent with tool use      | MCP (below) or `/skill.md`                                                |
 | Scripted integration         | `POST /v1/raid` directly                                                  |
 
+## Provider directory
+
+`/raiders` lists registered providers and Mercenary. The orchestrator section displays registered orchestrators only; it does not list planned agents as available products.
+
 ## Policy knobs
 
 `raid_policy` filters providers: `max_agents`, `max_total_cost`, `privacy_mode`, `require_privacy_features`, `allowed_agent_frameworks`, `allowed_model_providers`, `allowed_model_ids`, `selection_mode` (`best_match`, `cost_first`, `round_robin`, etc.).

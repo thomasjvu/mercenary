@@ -1,5 +1,6 @@
 import { isUpstreamProviderId } from '@bossraid/constants';
 import { useEffect, useMemo, useState } from 'react';
+import { useCopyFeedback } from './useCopyFeedback.js';
 import useSWR from 'swr';
 import { API_BASE } from '../api/client.js';
 import { verifyMarketplaceTeeAttestation } from '../api/marketplace-tee.js';
@@ -65,7 +66,7 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
   const [error, setError] = useState<PlaygroundUserMessage | null>(null);
   const [responseText, setResponseText] = useState<string | null>(null);
   const [rawResponse, setRawResponse] = useState<unknown>(null);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const { copiedKey, copyText } = useCopyFeedback();
   const [activePanel, setActivePanel] = useState<'curl' | 'response'>('curl');
   const [teeStatus, setTeeStatus] = useState<string | null>(null);
   const [inferenceReceiptId, setInferenceReceiptId] = useState<string | null>(null);
@@ -169,15 +170,6 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
       setModel(initialModelId);
     }
   }, [initialModelId]);
-
-  useEffect(() => {
-    if (!copiedKey) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => setCopiedKey(null), 1200);
-    return () => window.clearTimeout(timer);
-  }, [copiedKey]);
 
   const strictE2ee = privacyMode === 'strict' && selectedModel?.e2ee;
   const curlSnippet = buildInferenceCurlSnippet({
@@ -326,15 +318,6 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
     }
   }
 
-  async function copySnippet(key: string, value: string) {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopiedKey(key);
-    } catch {
-      setCopiedKey(null);
-    }
-  }
-
   return {
     markets,
     providerChoices,
@@ -379,7 +362,7 @@ export function useInferencePlayground({ initialModelId }: UseInferencePlaygroun
     modelPlaceholder,
     privacyModeOptions: PRIVACY_MODE_OPTIONS,
     handleRun,
-    copySnippet,
+    copyText,
   };
 }
 

@@ -8,7 +8,6 @@ import {
   defineChain,
   getAddress,
   http,
-  type Address,
   type Hex,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';

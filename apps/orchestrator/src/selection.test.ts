@@ -12,9 +12,6 @@ import { selectProviders } from '@bossraid/raid-core';
 import { BossRaidOrchestrator, NoEligibleProvidersError } from './index.js';
 import { buildSettlementSummary } from './settlement.js';
 import {
-  collectRaidTree,
-  createDeferred,
-  createGameSpawnInput,
   createProviderProfile,
   createSpawnInput,
   readyHealth,

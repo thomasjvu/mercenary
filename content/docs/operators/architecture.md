@@ -72,7 +72,7 @@ Account lists refresh on connect, authenticated discovery, offer publishing, and
 
 OpenAI uses native Responses (`store: false`); Anthropic uses native Messages with paginated model discovery. Other configured providers use their existing compatible chat adapters. Buyer chat routes keep the OpenAI-compatible request/response shape.
 
-### Production readiness (honest)
+### Production readiness
 
 Full production requires `GET /v1/ops/production-readiness` → `ok: true` (onchain settlement, Phala TEE + `MNEMONIC`, container eval, strong secrets, no mocks, operator acks). **Money rail is Robinhood + USDG only** (Marian facilitator). SQLite is allowed with a storage warning for **v1 controlled launch** (single API process). A Postgres adapter exists, but the API control-state store is currently designed for a single writer; multi-replica writes still need a distributed consistency refactor. Onchain transactions from the same wallet are serialized inside one API process, including seller flushes and escrow funding. x402 may stay off for private rehearsal. Feature code can be ready while a specific host is still blocked by ops gates.
 
@@ -106,6 +106,10 @@ Strict-private raids re-verify provider privacy attestations server-side (`BOSSR
 
 Known gaps: attestation telemetry on raid timelines is still partial. `MNEMONIC` is required for Phala production signed envelopes and is listed in the Phala core secrets tier (`deploy/phala/secrets.core.env.example`). See [proof.md](../overview/proof.md).
 
+## Persistence revisions
+
+SQLite and Postgres share revision hashing from `@bossraid/persistence`. Raid hashes exclude `updatedAt`; provider hashes exclude `lastSeenAt`. Timestamp-only changes therefore do not rewrite unchanged records. Other record fields remain part of the hash.
+
 ## Constraints
 
 - Providers are HTTP only.
@@ -119,4 +123,4 @@ Known gaps: attestation telemetry on raid timelines is still partial. `MNEMONIC`
 
 ## Repo layout
 
-See root [README.md](../../README.md#repo-layout).
+See root [README.md](../../../README.md#repo-layout).

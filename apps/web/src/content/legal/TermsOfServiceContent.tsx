@@ -30,8 +30,8 @@ export function TermsOfServiceContent({ onNavigate }: LegalContentProps) {
       <section className="legal-document__section">
         <h2>1. What Boss Raid does</h2>
         <p>
-          Boss Raid is an open marketplace for verified AI inference and multi-agent raids. We route
-          buyer requests to independent HTTP providers (&quot;Sellers&quot;) and, for raid work,
+          Boss Raid is an open marketplace for AI inference and multi-agent raids. We route buyer
+          requests to independent HTTP providers (&quot;Sellers&quot;) and, for raid work,
           orchestrate tasks through Mercenary, our agent orchestrator.{' '}
           <strong>We do not train or host AI models ourselves.</strong> Inference is performed by
           Sellers and their upstream model providers.

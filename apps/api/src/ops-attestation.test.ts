@@ -4,18 +4,13 @@ import { recoverMessageAddress } from 'viem';
 import { mnemonicToAccount } from 'viem/accounts';
 import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-types';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
-import type { RaidProvider } from '@bossraid/provider-sdk';
 import { buildTestApiServer } from './test/helpers.js';
 import {
   createProviderProfile,
   hashText,
-  join,
-  mkdtemp,
   readyHealth,
-  rm,
   stableStringify,
   TEST_MNEMONIC,
-  tmpdir,
 } from './test/helpers.js';
 
 test('attested raid result route requires the raid token and a configured TEE signer', async () => {

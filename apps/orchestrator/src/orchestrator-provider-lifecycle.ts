@@ -1,4 +1,3 @@
-import { probeProviderHealth } from '@bossraid/provider-sdk';
 import {
   providerHeartbeatAgeMs,
   providerIsFresh,

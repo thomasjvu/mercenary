@@ -108,12 +108,8 @@ export function isNavGroupSectionActive(path: AppRoute, pathname: string): boole
 }
 
 export function isSidebarNavActive(path: AppRoute, pathname: string): boolean {
-  if (path === '/marketplace') {
-    return isMarketplaceSectionActive(pathname);
-  }
-
-  if (path === '/legal') {
-    return isLegalSectionActive(pathname);
+  if (isNavGroupSectionActive(path, pathname)) {
+    return true;
   }
 
   if (path === '/onboarding/seller') {

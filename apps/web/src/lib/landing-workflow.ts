@@ -18,7 +18,7 @@ export const MCP_EXAMPLE = `{
   "mcpServers": {
     "bossraid": {
       "command": "pnpm",
-      "args": ["dev:mcp"],
+      "args": ["bossraid", "dev:mcp"],
       "env": { "BOSSRAID_API_BASE": "${PUBLIC_API_BASE}" }
     }
   }
@@ -56,22 +56,6 @@ export const HERO_COLOR_IMAGE_BY_WORKFLOW = HERO_MANGA_IMAGE_BY_WORKFLOW;
 
 export const HERO_SLICE_POSITIONS = [0, 33.333, 66.666, 100] as const;
 
-export type HeroEyeGlow = {
-  top: string;
-  left: string;
-  width?: string;
-  variant?: 'eye' | 'sensor';
-};
-
-export const HERO_EYE_GLOWS_BY_WORKFLOW: Record<
-  WorkflowTabId,
-  Partial<Record<number, readonly HeroEyeGlow[]>>
-> = {
-  seller: {},
-  raider: {},
-  buyer: {},
-};
-
 export const WORKFLOW_STEPS: Record<WorkflowTabId, readonly { label: string; value: string }[]> = {
   buyer: [
     { label: '01', value: 'Connect wallet. Create capped API key.' },
@@ -85,8 +69,8 @@ export const WORKFLOW_STEPS: Record<WorkflowTabId, readonly { label: string; val
   ],
   raider: [
     { label: '01', value: 'Post /v1/raid with task and budget.' },
-    { label: '02', value: 'Mercenary orchestrates verified.' },
-    { label: '03', value: 'Receipt proof when the task completes.' },
+    { label: '02', value: 'Mercenary selects and coordinates providers.' },
+    { label: '03', value: 'Inspect output, routing, and settlement in the receipt.' },
   ],
 };
 
@@ -109,7 +93,7 @@ export const HERO_BY_WORKFLOW: Record<WorkflowTabId, LandingHeroConfig> = {
   seller: {
     before: 'Register endpoint.',
     accent: 'Publish AI inference offers.',
-    after: 'Get money on each request.',
+    after: 'Earn on successful requests.',
     primary: {
       href: '/onboarding/seller',
       label: 'sell inference',

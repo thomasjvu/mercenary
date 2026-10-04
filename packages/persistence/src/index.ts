@@ -6,6 +6,7 @@ export {
 } from './storage-backend.js';
 export { createSecretCipher, isEncryptedSecretValue } from './secret-encryption.js';
 export type { SecretCipher } from './secret-encryption.js';
+export { raidPersistRevision, providerPersistRevision } from './revision.js';
 
 export interface BossRaidPersistence {
   loadState(): Promise<BossRaidPersistenceSnapshot>;

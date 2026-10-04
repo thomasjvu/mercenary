@@ -1,8 +1,8 @@
 # Sell Inference
 
-Boss Raid has **two primary seller SKUs**:
+Sell completions through a hosted upstream account or run an HTTP agent:
 
-| SKU             | What buyers get                                    | You run                                                                             | Credentials                                       |
+| Path            | What buyers get                                    | You run                                                                             | Credentials                                       |
 | --------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------- |
 | **Hosted chat** | OpenAI-compatible single completion (Venice-style) | Nothing — paste upstream API key                                                    | **API keys only**                                 |
 | **HTTP agent**  | Hireable task-completion / subagent seat           | Your HTTP worker (Claude Code, Grok Build, Codex, Openclaw/Hermes/Phantasy, custom) | API key **or** local plan/CLI on **your** machine |

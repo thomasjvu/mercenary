@@ -6,7 +6,7 @@ import type {
   SellerEarningsView,
   SellerProviderCreateResponseView,
 } from '@bossraid/shared-types';
-import { fetchJson, type Provider, type ProviderHealth } from './client.js';
+import { fetchJson, type Provider } from './client.js';
 
 export type BuyerApiKey = BuyerApiKeyView;
 export type PublicSession = PublicSessionView;

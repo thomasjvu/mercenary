@@ -1,6 +1,6 @@
 # Discount inference
 
-Boss Raid's **discount inference** lane is the single-model marketplace path: one OpenAI-compatible call, cheapest eligible seller, instant settlement. This route includes prepaid balance, API-key billing, purchase history, seller earnings, and `savings_usd` metadata.
+Boss Raid's **discount inference** lane is the single-model marketplace path: one OpenAI-compatible call routed to the cheapest eligible seller. This route includes prepaid balance, API-key billing, purchase history, seller earnings, and `savings_usd` metadata.
 
 **Route:** `POST /v1/inference/chat/completions`
 

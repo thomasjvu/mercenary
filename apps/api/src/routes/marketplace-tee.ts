@@ -99,11 +99,6 @@ export function registerMarketplaceTeeRoutes(
       sessionWallet = session.wallet;
       providerId = sellerId;
     } else {
-      const platformKey = resolveMarketplaceTeeApiKey({
-        provider,
-        env,
-        controlState,
-      });
       const session = requirePublicSession(reply, request.headers);
       if ('error' in session) {
         return session;

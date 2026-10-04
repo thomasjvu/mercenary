@@ -8,16 +8,8 @@ import {
   mapJobLifecycleStatus,
 } from '@bossraid/raid-core';
 import type { SettlementExecutionRecord } from '@bossraid/shared-types';
-import {
-  createPublicClient,
-  getAddress,
-  http,
-  type Address,
-  type Hex,
-  type PublicClient,
-} from 'viem';
+import { createPublicClient, getAddress, http, type Address, type Hex } from 'viem';
 
-type SettlementChildJob = SettlementExecutionRecord['childJobs'][number];
 type SettlementProofReadClient = {
   readContract(input: {
     address: Address;

@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { ApiContractError } from '@bossraid/api-contracts';
-import { type ProviderProfile, type ProviderRegistrationInput } from '@bossraid/shared-types';
+import { type ProviderProfile } from '@bossraid/shared-types';
 import { type ApiControlState } from '../control-state.js';
 
 export function buildPublicAuthMessage(nonce: string): string {

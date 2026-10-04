@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-types';
 import type { RaidProvider } from '@bossraid/provider-sdk';
-import { resolveChatTerminalSettleGraceMs } from './index.js';
 import { createTestApiServer, createProviderProfile } from './test/helpers.js';
 
 test('chat completion requests require an explicit payout budget', async () => {

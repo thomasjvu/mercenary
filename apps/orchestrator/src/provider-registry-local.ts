@@ -1,10 +1,5 @@
-import type { RaidProvider } from '@bossraid/provider-sdk';
 import { providerMatchesDiscoveryQuery } from '@bossraid/provider-registry';
-import type {
-  ProviderDiscoveryQuery,
-  ProviderHealthStatus,
-  ProviderProfile,
-} from '@bossraid/shared-types';
+import type { ProviderDiscoveryQuery, ProviderProfile } from '@bossraid/shared-types';
 import type { SecretCipher } from '@bossraid/persistence';
 
 export function normalizeProviderEndpoint(endpoint: string | undefined): string | undefined {

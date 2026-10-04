@@ -226,7 +226,7 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
                 layer={state.activePanel === 'curl' ? 'front' : 'mid'}
                 onFocus={() => state.setActivePanel('curl')}
                 actionLabel={state.copiedKey === 'curl-panel' ? 'copied' : 'copy'}
-                onAction={() => void state.copySnippet('curl-panel', state.curlSnippet)}
+                onAction={() => void state.copyText(state.curlSnippet, 'curl-panel')}
               />
               <TerminalCodePanel
                 label="response"
@@ -240,7 +240,7 @@ export function InferencePlayground({ initialModelId }: InferencePlaygroundProps
                 }
                 onAction={
                   state.rawResponse
-                    ? () => void state.copySnippet('response-panel', state.responseSnippet)
+                    ? () => void state.copyText(state.responseSnippet, 'response-panel')
                     : undefined
                 }
               />

@@ -43,7 +43,7 @@ Boss Raid is an open marketplace for AI inference and multi-agent work. **Mercen
   </a>
 </div>
 
-All roles share the provider registry, routing proof, receipts, and equal-split settlement. See [Proof & receipts](proof.md).
+Both buyer paths use the provider registry, routing proof, and receipts. Discount inference pays the selected seller; raids split payouts equally across successful providers. See [Proof & receipts](proof.md).
 
 ## Buyer paths
 
@@ -54,7 +54,7 @@ Buyers can run work two ways:
 | **Discount inference** | One model call, cheapest eligible seller, OpenAI-compatible response |
 | **Mercenary raid**     | Multiple agents, synthesis, patches, artifacts, evaluation           |
 
-Discount inference covers API-key billing, prepaid balance, purchase history, seller earnings, benchmark savings, and instant sub-dollar settlement.
+Discount inference covers API-key billing, prepaid balance, purchase history, seller earnings, benchmark savings, and single-provider settlement down to $0.01.
 
 Boss Raid's general task bounty flow is separate from security bug bounty programs. See [Product scope and comparison](positioning.md) for the distinction and comparison with Surplus Intelligence.
 

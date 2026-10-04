@@ -3,7 +3,6 @@ import test from 'node:test';
 import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-types';
 import { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { RaidProvider } from '@bossraid/provider-sdk';
-import { resolveChatTerminalSettleGraceMs } from './index.js';
 import { buildTestApiServer, createProviderProfile, readyHealth } from './test/helpers.js';
 
 test('POST /v1/chat/completions accepts general service routing filters', async () => {

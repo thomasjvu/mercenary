@@ -16,7 +16,6 @@ import {
   ApiContractError,
   ensureBoolean,
   ensureHost,
-  ensureLanguage,
   ensureNumber,
   ensureOptionalString,
   ensureOutputType,

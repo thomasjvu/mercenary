@@ -19,7 +19,7 @@ type LandingSurfacesSectionProps = {
 };
 
 export function LandingSurfacesSection({ state, onNavigate }: LandingSurfacesSectionProps) {
-  const { workflowTab, setWorkflowTab, copiedKey, copySnippet, infoPanelRef } = state;
+  const { workflowTab, setWorkflowTab, copiedKey, copyText, infoPanelRef } = state;
   const primary = HERO_BY_WORKFLOW[workflowTab].primary;
 
   return (
@@ -28,7 +28,7 @@ export function LandingSurfacesSection({ state, onNavigate }: LandingSurfacesSec
         copiedKey={copiedKey}
         defaultPanelId="chat"
         eyebrow="api routes"
-        onCopy={(panelId, code) => void copySnippet(panelId, code)}
+        onCopy={(panelId, code) => void copyText(code, panelId)}
         panels={TERMINAL_PANELS}
       />
 

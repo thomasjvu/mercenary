@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import type { ProviderAcceptance, ProviderTaskPackage } from '@bossraid/shared-types';
+import type { ProviderAcceptance } from '@bossraid/shared-types';
 import type { RaidProvider } from '@bossraid/provider-sdk';
 import {
   createProviderProfile,
@@ -81,7 +81,7 @@ test('off-chain bounty lifecycle works over HTTP with unverified fund bypass', a
   });
 
   try {
-    const session = await createPublicSessionCookie(app, 4);
+    await createPublicSessionCookie(app, 4);
     const created = await injectWithPublicSession(
       app,
       {

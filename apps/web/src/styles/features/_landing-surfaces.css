@@ -299,33 +299,6 @@
   }
 }
 
-.app-shell--landing .hero__eye-glow {
-  position: absolute;
-  z-index: 2;
-  height: 3%;
-  width: var(--hero-eye-width, 10%);
-  border-radius: 2px;
-  background: var(--hero-eye-glow, var(--rx-blue));
-  box-shadow:
-    0 0 8px var(--hero-eye-glow, var(--rx-blue)),
-    0 0 16px var(--hero-eye-halo, color-mix(in srgb, var(--rx-blue) 62%, transparent)),
-    0 0 32px var(--hero-eye-halo, color-mix(in srgb, var(--rx-blue) 62%, transparent));
-  mix-blend-mode: screen;
-  opacity: 0.96;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  transition:
-    background 320ms ease,
-    box-shadow 320ms ease,
-    opacity 320ms ease;
-}
-
-.app-shell--landing .hero__eye-glow--sensor {
-  height: 2.2%;
-  width: var(--hero-eye-width, 4%);
-  border-radius: 1px;
-}
-
 .app-shell--landing .live-market-pulse {
   margin-top: clamp(6px, 0.8vh, 10px);
   padding-top: clamp(6px, 0.8vh, 8px);

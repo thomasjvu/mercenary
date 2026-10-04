@@ -21,6 +21,7 @@ import {
 import {
   forceDiscountInferenceChatPolicy,
   readPolicyStringArray,
+  readPrivacyMode,
   readTrustedAlkahestClient,
   STRICT_PRIVATE_PRIVACY_FEATURES,
 } from './inference-marketplace-policy.js';
@@ -121,12 +122,6 @@ export function buildInferenceMarketSnapshot(
     return markets.filter((market) => market.modelProvider === options.modelProvider);
   }
   return markets;
-}
-
-function readPrivacyMode(
-  value: unknown
-): NonNullable<ChatCompletionRequest['raidPolicy']>['privacyMode'] {
-  return value === 'off' || value === 'prefer' || value === 'strict' ? value : undefined;
 }
 
 export function resolveDiscountInferenceDefaultMaxTotalCost(

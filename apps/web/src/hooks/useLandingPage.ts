@@ -32,16 +32,12 @@ export function useLandingPage() {
     return () => window.clearInterval(timer);
   }, []);
 
-  async function copySnippet(key: string, value: string) {
-    await copyText(value, key);
-  }
-
   return {
     copiedKey,
     workflowTab,
     setWorkflowTab,
     infoPanelRef,
-    copySnippet,
+    copyText,
   };
 }
 

@@ -20,7 +20,6 @@ export function ApiReadinessBanner({ error }: ApiReadinessBannerProps) {
 
   const readyData = ready.data;
   const readyFetchFailed = Boolean(ready.error);
-  const readyNotOk = readyData?.ok === false;
   const hasPageError = Boolean(error);
   const isLoading = !hasPageError && !readyFetchFailed && readyData === undefined && !ready.error;
 

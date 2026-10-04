@@ -368,24 +368,16 @@ button.action-steps__value {
   width: 100%;
 }
 
-.app-shell--landing .hero__slice-layer.workflow-crossfade__layer,
-.app-shell--landing .hero__eye-glow-set.workflow-crossfade__layer {
+.app-shell--landing .hero__slice-layer.workflow-crossfade__layer {
   transition:
     opacity 820ms ease-in-out,
     visibility 0ms linear 820ms;
 }
 
-.app-shell--landing .hero__slice-layer.workflow-crossfade__layer--active,
-.app-shell--landing .hero__eye-glow-set.workflow-crossfade__layer--active {
+.app-shell--landing .hero__slice-layer.workflow-crossfade__layer--active {
   transition:
     opacity 820ms ease-in-out,
     visibility 0ms linear 0ms;
-}
-
-.app-shell--landing .hero__eye-glow-set {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
 }
 
 .app-shell--landing .hero[class*='hero--workflow-'] .hero__actions .button--primary,
@@ -398,25 +390,15 @@ button.action-steps__value {
     border-color 780ms ease-in-out;
 }
 
-.app-shell--landing .hero__eye-glow {
-  transition:
-    opacity 780ms ease-in-out,
-    background 780ms ease-in-out,
-    box-shadow 780ms ease-in-out;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .workflow-crossfade__layer,
   .workflow-crossfade__layer--active,
   .app-shell--landing .hero__slice-layer.workflow-crossfade__layer,
   .app-shell--landing .hero__slice-layer.workflow-crossfade__layer--active,
-  .app-shell--landing .hero__eye-glow-set.workflow-crossfade__layer,
-  .app-shell--landing .hero__eye-glow-set.workflow-crossfade__layer--active,
   .app-shell--landing .hero[class*='hero--workflow-'] .hero__actions .button--primary,
   .app-shell--landing .info-panel--landing-flow .info-panel__head .eyebrow,
   .app-shell--landing .info-panel--landing-flow .info-spec__label,
-  .app-shell--landing .info-panel--landing-flow .info-panel__cta,
-  .app-shell--landing .hero__eye-glow {
+  .app-shell--landing .info-panel--landing-flow .info-panel__cta {
     transition-duration: 1ms;
     transform: none;
   }
