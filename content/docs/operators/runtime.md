@@ -138,7 +138,7 @@ Build and deploy docs with the same Cloudflare account credentials:
 
 ```bash
 pnpm build:docs
-pnpm --filter @bossraid/docs deploy
+pnpm --filter @bossraid/docs run deploy
 ```
 
 Public surfaces:
