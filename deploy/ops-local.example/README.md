@@ -17,7 +17,7 @@ deploy/ops-local/
       # act-runner: see tracked deploy/ops-local.example/spectre/act-runner.md
 ```
 
-Forgejo Actions runner (native amd64 image builds): [spectre/act-runner.md](spectre/act-runner.md). Source-control model: [content/docs/operators/source-control.md](../../content/docs/operators/source-control.md).
+Forgejo Actions verification runner (native amd64): [spectre/act-runner.md](spectre/act-runner.md). Source-control model: [content/docs/operators/source-control.md](../../content/docs/operators/source-control.md).
 
 ## What these scripts do
 

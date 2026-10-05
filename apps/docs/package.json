@@ -24,7 +24,7 @@
     "generate:route-html": "node scripts/generate-route-html.mjs",
     "sync:docs-tree": "node scripts/sync-documentation-tree.mjs",
     "check:docs-tree": "node scripts/sync-documentation-tree.mjs --check",
-    "deploy": "npx wrangler pages deploy dist --project-name boss-raid-docs"
+    "deploy": "npx wrangler pages deploy dist --project-name raid-quest-docs --branch development"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -188,7 +188,7 @@ Build-time catalog downloads use public sources and need no credentials or new e
 | `VITE_BOSSRAID_*`                   | Web/ops Vite prefixes                                                  |
 | `VITE_BOSSRAID_PUBLIC_WEB_ORIGIN`   | Ops deep links to buyer web when web and ops run on different origins  |
 | `BOSSRAID_CLOUDFLARE_PAGES_PROJECT` | Pages deploy (default project: `bossraid-web`)                         |
-| `BOSSRAID_CLOUDFLARE_PAGES_BRANCH`  | Optional Pages preview branch                                          |
+| `BOSSRAID_CLOUDFLARE_PAGES_BRANCH`  | Pages deployment branch; `development` is production for raid.quest    |
 
 ### Mana Core (trusted clients)
 

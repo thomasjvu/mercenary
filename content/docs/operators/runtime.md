@@ -127,8 +127,18 @@ Cloudflare Pages deploy (raid.quest account; requires Wrangler OAuth or `CLOUDFL
 ```bash
 export CLOUDFLARE_ACCOUNT_ID=6db98f8dda871156612f54b3fd35bc2d
 export BOSSRAID_CLOUDFLARE_PAGES_PROJECT=raid-quest
+export BOSSRAID_CLOUDFLARE_PAGES_BRANCH=development
 export BOSSRAID_API_ORIGIN=https://api.raid.quest/api
 pnpm bossraid deploy:web:cloudflare
+```
+
+Cloudflare Pages uses `development` as the production branch for both `raid-quest` and `raid-quest-docs`. Deploying with `--branch main` creates a preview and does not update the custom domains. This Pages setting is separate from the Git `main` branch used for image publication.
+
+Build and deploy docs with the same Cloudflare account credentials:
+
+```bash
+pnpm build:docs
+pnpm --filter @bossraid/docs deploy
 ```
 
 Public surfaces:

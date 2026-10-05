@@ -24,6 +24,5 @@ export function marketplaceModelPath(modelId: string): string {
 }
 
 export function readPlaygroundModelId(search = window.location.search): string | undefined {
-  const model = new URLSearchParams(search).get('model')?.trim();
-  return model && model.length > 0 ? model : undefined;
+  return new URLSearchParams(search).get('model')?.trim() || undefined;
 }
