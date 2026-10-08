@@ -30,8 +30,8 @@ export function PaymentFeesCallout({ role }: PaymentFeesCalloutProps) {
       <p className="eyebrow">payouts</p>
       <p>Successful providers split escrow equally. Invalid or rejected work gets $0.</p>
       <p>
-        Minimum payout: $0.25 for multi-agent raids; $0.01 for single-provider discount inference.
-        Onchain settlement requires a funded treasury.{' '}
+        Small earnings accrue in the ledger until the configured payout threshold is met. Onchain
+        settlement requires a funded treasury.{' '}
         <a href={PAYMENTS_HREF} rel="noreferrer" target="_blank">
           Payout rules
         </a>

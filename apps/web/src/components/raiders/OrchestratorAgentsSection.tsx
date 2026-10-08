@@ -4,7 +4,7 @@ import type { AppRoute } from '../../lib/app-routes.js';
 
 type OrchestratorAgentsSectionProps = {
   orchestratorRaiders: RaiderRecord[];
-  onNavigate: (path: AppRoute, options?: { mode?: 'inference' | 'raid'; modelId?: string }) => void;
+  onNavigate: (path: AppRoute, options?: { mode?: 'raid'; modelId?: string }) => void;
 };
 
 export function OrchestratorAgentsSection({

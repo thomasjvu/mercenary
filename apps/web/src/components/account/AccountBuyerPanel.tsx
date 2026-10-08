@@ -113,9 +113,6 @@ export function AccountBuyerPanel({ state }: AccountBuyerPanelProps) {
             {(state.purchases.data?.totalRefundedOrReleasedUsd ?? 0) > 0
               ? ` · $${state.purchases.data?.totalRefundedOrReleasedUsd?.toFixed(2)} released/refunded`
               : ''}
-            {(state.purchases.data?.totalSavingsUsd ?? 0) > 0
-              ? ` · $${state.purchases.data?.totalSavingsUsd.toFixed(2)} benchmark savings`
-              : ''}
           </p>
         ) : null}
       </article>

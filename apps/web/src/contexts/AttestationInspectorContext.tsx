@@ -14,7 +14,6 @@ import {
   fetchHostAttestationOptional,
   type HostAttestationResponse,
 } from '../api/host-attestation.js';
-import { fetchModelTeeSummary } from '../api/marketplace-tee.js';
 import type { ReceiptUpstreamAttestationRow } from '../lib/receipt-attestation-view.js';
 import { AttestationInspectorSidebar } from '../components/trust/AttestationInspectorSidebar.js';
 
@@ -71,12 +70,6 @@ export function AttestationInspectorProvider({ children }: { children: ReactNode
     revalidateOnFocus: false,
     shouldRetryOnError: false,
   });
-  const modelTee = useSWR(
-    isOpen && context.modelId ? ['attestation-inspector-model-tee', context.modelId] : null,
-    ([, modelId]: [string, string]) => fetchModelTeeSummary(modelId),
-    { shouldRetryOnError: false }
-  );
-
   const openInspector = useCallback((nextContext: AttestationInspectorContextInput = {}) => {
     setContext(nextContext);
     if (hasInspectorContext(nextContext)) {
@@ -152,9 +145,6 @@ export function AttestationInspectorProvider({ children }: { children: ReactNode
         hostAttestationError={hostAttestation.error}
         hostAttestationLoading={hostAttestation.isLoading}
         isOpen={isOpen}
-        modelTee={modelTee.data}
-        modelTeeError={modelTee.error}
-        modelTeeLoading={modelTee.isLoading}
         onClose={closeInspector}
         ready={ready.data}
         readyError={ready.error}

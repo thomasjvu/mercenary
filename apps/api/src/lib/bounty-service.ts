@@ -62,7 +62,7 @@ export class BountyService {
       description: input.description.trim(),
       requirements: input.requirements.trim(),
       rewardAmountUsd: input.rewardAmountUsd,
-      currency: (input.currency ?? 'USDC').toUpperCase(),
+      currency: (input.currency ?? 'USDG').toUpperCase(),
       maxAwards: Math.max(1, Math.min(input.maxAwards ?? 1, this.config.autoAwardMax)),
       status: 'draft',
       deadlines,

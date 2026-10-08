@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { type FastifyReply, type FastifyRequest } from 'fastify';
 import {
   ApiContractError,
@@ -6,14 +5,9 @@ import {
   parseChatCompletionRequest,
   parseBossRaidRequest,
 } from '@bossraid/api-contracts';
-import { estimateBenchmarkTaskUsd, TIMEOUTS } from '@bossraid/constants';
+import { TIMEOUTS } from '@bossraid/constants';
 import type { BossRaidSpawnInput, ChatCompletionRequest } from '@bossraid/shared-types';
 import { applyX402Headers } from '../x402.js';
-import {
-  forceDiscountInferenceChatPolicy,
-  readTrustedAlkahestClient,
-  resolveDiscountInferenceDefaultMaxTotalCost,
-} from './inference-marketplace.js';
 import {
   buildChatCompletionResponse,
   streamChatCompletionResponse,
@@ -21,14 +15,11 @@ import {
   waitForTerminalRaidOutput,
 } from './chat-completion.js';
 import { enforceBuyerBudget } from './account.js';
-import { executeE2eeChatRelay } from './e2ee-chat-relay.js';
 import {
   applyMercenaryPlannerOverrides,
   buildPlannerDirectChatCompletionResponse,
   planMercenaryChatResponse,
 } from './mercenary-planner.js';
-import { resolveChatE2eeRoute } from './e2ee-chat-route.js';
-import { readUpstreamApiKeyFromHeaders } from './upstream/credentials.js';
 import { type ApiContext } from '../api-context.js';
 import { type createAuthHandlers } from '../handlers/auth.js';
 import { type createManaBillingHandlers } from '../handlers/billing-mana.js';
@@ -41,10 +32,6 @@ type ManaBillingHandlers = ReturnType<typeof createManaBillingHandlers>;
 type PaymentHandlers = ReturnType<typeof createPaymentHandlers>;
 type RaidHandlers = ReturnType<typeof createRaidHandlers>;
 
-export type ChatCompletionRouteOptions = {
-  discountInference?: boolean;
-};
-
 export type ChatCompletionPipelineDeps = {
   ctx: ApiContext;
   auth: AuthHandlers;
@@ -53,191 +40,24 @@ export type ChatCompletionPipelineDeps = {
   raid: RaidHandlers;
 };
 
-function readTrustedAlkahestStrictLane(
-  headers: Record<string, string | string[] | undefined>,
-  env: NodeJS.ProcessEnv
-): boolean {
-  return (
-    readTrustedAlkahestClient(headers, {
-      trustedKey: env.BOSSRAID_API_KEY || env.BOSSRAID_TRUSTED_CLIENT_KEY,
-    }) != null
-  );
-}
-
 export function prepareChatCompletionRequest(
   request: FastifyRequest,
-  deps: ChatCompletionPipelineDeps,
-  options: ChatCompletionRouteOptions = {}
+  deps: ChatCompletionPipelineDeps
 ) {
-  const parsedChatRequest = parseChatCompletionRequest(request.body);
-  const strictAlkahestLane = readTrustedAlkahestStrictLane(request.headers, deps.ctx.env);
-  // Cheapest seller rate alone is too tight for agent CLIs (large system/tool prompts).
-  // Floor with chatDefaultMaxTotalCost so token-metered selection stays eligible.
-  const discountCheapestRate = options.discountInference
-    ? resolveDiscountInferenceDefaultMaxTotalCost(
-        parsedChatRequest,
-        deps.ctx.orchestrator.listProviders()
-      )
-    : undefined;
-  const discountDefaultMaxTotalCost = options.discountInference
-    ? Math.max(discountCheapestRate ?? 0.01, deps.ctx.chatDefaultMaxTotalCost ?? 0.01, 1)
-    : undefined;
-  const chatRequest = options.discountInference
-    ? forceDiscountInferenceChatPolicy(parsedChatRequest, {
-        defaultMaxTotalCost: discountDefaultMaxTotalCost,
-        strictAlkahestLane,
+  const chatRequest = parseChatCompletionRequest(request.body);
+  const raidRequest =
+    chatRequest.raidRequest ??
+    parseBossRaidRequest(
+      buildBossRaidRequestFromChatCompletion(chatRequest, {
+        defaultMaxTotalCost: deps.ctx.chatDefaultMaxTotalCost,
       })
-    : parsedChatRequest;
-  const e2eeRoute = options.discountInference ? resolveChatE2eeRoute(chatRequest) : undefined;
-  const raidRequest = e2eeRoute
-    ? undefined
-    : (chatRequest.raidRequest ??
-      parseBossRaidRequest(
-        buildBossRaidRequestFromChatCompletion(chatRequest, {
-          defaultMaxTotalCost: discountDefaultMaxTotalCost ?? deps.ctx.chatDefaultMaxTotalCost,
-        })
-      ));
-
+    );
   return {
     chatRequest,
     raidRequest,
     created: Math.floor(Date.now() / 1000),
-    paymentRoute: options.discountInference ? ('inference' as const) : ('chat' as const),
-    e2eeRoute,
+    paymentRoute: 'chat' as const,
   };
-}
-
-/**
- * Catalog flat-task estimate for pure E2EE relay billing.
- * Full requireReservedLaunchPayment reserves a raid (needs eligible providers); E2EE
- * does not spawn, so platform-key path uses thinner API-key prepaid holds only.
- */
-function resolveE2eeLaunchBudgetUsd(
-  chatRequest: ChatCompletionRequest,
-  deps: ChatCompletionPipelineDeps
-): number {
-  const fromProviders = resolveDiscountInferenceDefaultMaxTotalCost(
-    chatRequest,
-    deps.ctx.orchestrator.listProviders()
-  );
-  if (fromProviders != null && Number.isFinite(fromProviders) && fromProviders > 0) {
-    return fromProviders;
-  }
-
-  const fromCatalog = estimateBenchmarkTaskUsd(chatRequest.model);
-  if (fromCatalog != null && Number.isFinite(fromCatalog) && fromCatalog > 0) {
-    return fromCatalog;
-  }
-
-  const fromEnv = deps.ctx.chatDefaultMaxTotalCost;
-  if (fromEnv != null && Number.isFinite(fromEnv) && fromEnv > 0) {
-    return fromEnv;
-  }
-
-  return 0.01;
-}
-
-export async function tryE2eeChatRelay(
-  input: {
-    chatRequest: ChatCompletionRequest;
-    route: NonNullable<ReturnType<typeof resolveChatE2eeRoute>>;
-    request: FastifyRequest;
-    reply: FastifyReply;
-    created: number;
-  },
-  deps: ChatCompletionPipelineDeps
-) {
-  const budgetUsd = resolveE2eeLaunchBudgetUsd(input.chatRequest, deps);
-  const raidRequest = parseBossRaidRequest(
-    buildBossRaidRequestFromChatCompletion(input.chatRequest, {
-      defaultMaxTotalCost: budgetUsd,
-    })
-  );
-
-  const authorization = authorizeChatCompletionRequest(
-    input.request,
-    input.reply,
-    deps,
-    raidRequest
-  );
-  if ('error' in authorization) {
-    return authorization.error;
-  }
-
-  const byoUpstreamKey = readUpstreamApiKeyFromHeaders(input.request.headers);
-  const isAdmin = deps.auth.adminIsAuthorized(input.request.headers);
-  let launchPayment: LaunchPaymentContext = {};
-
-  if (!byoUpstreamKey && !isAdmin) {
-    // Platform Venice key requires a prepaid buyer API-key hold (no free session drain).
-    const buyerApiKey = deps.auth.readBuyerApiKey(input.request.headers);
-    if (!buyerApiKey) {
-      input.reply.code(402);
-      return {
-        error: 'payment_required',
-        message:
-          'Strict E2EE with the platform upstream key requires a prepaid buyer API key. Pass X-BossRaid-Upstream-Api-Key to use your own Venice key, or fund a buyer API key.',
-      };
-    }
-
-    const amountUsd = raidRequest.constraints.maxBudgetUsd;
-    const apiKeyReservation = deps.ctx.controlState.reserveBuyerApiKeyLaunch(
-      buyerApiKey.id,
-      buyerApiKey.wallet,
-      amountUsd
-    );
-    if (!apiKeyReservation) {
-      input.reply.code(402);
-      return {
-        error: 'insufficient_prepaid_balance',
-        message: 'Insufficient API key spend limit or prepaid balance for this request.',
-      };
-    }
-
-    launchPayment = {
-      apiKeyBilling: apiKeyReservation,
-      escrowFundingUsd: amountUsd,
-    };
-  }
-
-  // BYO header key: no platform spend. Admin: free platform-key escape hatch. Paid: hold taken above.
-  const allowPlatformKey = !byoUpstreamKey && (isAdmin || Boolean(launchPayment.apiKeyBilling));
-
-  try {
-    const result = await executeE2eeChatRelay({
-      chatRequest: input.chatRequest,
-      route: input.route,
-      request: input.request,
-      reply: input.reply,
-      inferenceReceiptStore: deps.ctx.inferenceReceiptStore,
-      env: deps.ctx.env,
-      created: input.created,
-      allowPlatformKey,
-    });
-
-    if (launchPayment.apiKeyBilling) {
-      const actualCostUsd =
-        launchPayment.escrowFundingUsd ?? launchPayment.apiKeyBilling.reservedUsd;
-      deps.payment.captureApiKeyBilling({
-        apiKeyBilling: launchPayment.apiKeyBilling,
-        actualCostUsd,
-        route: 'inference',
-        raidId: `e2ee_${randomUUID()}`,
-        modelId: input.chatRequest.model,
-      });
-    }
-
-    return result;
-  } catch (error) {
-    if (launchPayment.apiKeyBilling) {
-      await deps.payment.releaseLaunchPaymentHold({ launchPayment });
-    }
-    input.reply.code(400);
-    return {
-      error: 'e2ee_relay_failed',
-      message: error instanceof Error ? error.message : String(error),
-    };
-  }
 }
 
 export function authorizeChatCompletionRequest(
@@ -278,13 +98,8 @@ export function authorizeChatCompletionRequest(
 export async function tryMercenaryPlannerDirectResponse(
   chatRequest: ChatCompletionRequest,
   created: number,
-  options: ChatCompletionRouteOptions = {},
   env: NodeJS.ProcessEnv = process.env
 ) {
-  if (options.discountInference) {
-    return null;
-  }
-
   const decision = await planMercenaryChatResponse({ chatRequest, env });
   if (decision.action !== 'direct' || !decision.reply) {
     return { decision };
@@ -311,7 +126,7 @@ export async function launchPaidChatRaid(
   input: {
     request: FastifyRequest;
     raidRequest: BossRaidSpawnInput;
-    paymentRoute: 'chat' | 'inference';
+    paymentRoute: 'chat';
   },
   deps: ChatCompletionPipelineDeps
 ) {
@@ -494,7 +309,7 @@ export async function deliverBufferedChatCompletion(
     created: number;
     launchPayment: Awaited<ReturnType<PaymentHandlers['requireReservedLaunchPayment']>>;
     publicAuth: ReturnType<AuthHandlers['readPublicAuth']>;
-    paymentRoute: 'chat' | 'inference';
+    paymentRoute: 'chat';
   },
   deps: ChatCompletionPipelineDeps
 ) {

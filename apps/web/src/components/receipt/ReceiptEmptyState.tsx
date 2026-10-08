@@ -9,7 +9,7 @@ const PINNED_PROOF_RECEIPT_URL =
 
 type ReceiptEmptyStateProps = {
   state: ReceiptPageState;
-  onNavigate: (path: AppRoute, options?: { mode?: 'inference' | 'raid' }) => void;
+  onNavigate: (path: AppRoute, options?: { mode?: 'raid' }) => void;
 };
 
 export function ReceiptEmptyState({ state, onNavigate }: ReceiptEmptyStateProps) {

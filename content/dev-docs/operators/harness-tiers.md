@@ -1,34 +1,15 @@
-# Harness tiers & Phala sizing
+# HTTP worker harnesses and Phala sizing
 
-## Auto-provision per seller?
-
-**No.** Default is a **shared always-on Phala CVM** (or small fleet). Per-seller CVM auto-provision is out of scope for the marketplace path (cost, boot time, ops blast radius). Use BYO only for exclusive capacity.
+Boss Raid schedules registered HTTP workers. Each worker owns its harness, credentials, workspace, and capacity. The API does not host seller inference keys or provision seller seats.
 
 ## Topology
 
-```
-Seller key (encrypted) ──┐
-                         ├─► Platform gateway on Phala CVM
-Buyer raid ──────────────┘         │
-                                   ├ chat: single completion
-                                   └ harness: ephemeral workspace + tool loop → wipe
+```text
+Buyer raid → Mercenary → registered HTTP workers → evaluated submissions → equal successful-provider payouts
 ```
 
-## Self-serve seats
+Register through `POST /v1/seller/providers`, verify the endpoint, and publish a task rate and capabilities. See [HTTP agent guide](/docs/sellers/http-agent-guide).
 
-| Lane    | API                                     | source.type        |
-| ------- | --------------------------------------- | ------------------ |
-| Chat    | `POST …/offers` default                 | `inference_hosted` |
-| Harness | `POST …/offers` with `"lane":"harness"` | `harness_hosted`   |
+Dedicated workers may use `BOSSRAID_HARNESS_MODE=codex|grok|glm|chutes`. Size workers for their task concurrency and evaluator requirements. Run the API in Phala with real host attestation for production privacy requirements.
 
-Both use the seller’s stored upstream key. Harness runs in-process on the API host via `@bossraid/agent-harness`.
-
-## Ops workers (optional)
-
-`BOSSRAID_HARNESS_MODE=codex|grok|glm|chutes` still supported for dedicated processes with platform keys.
-
-## Modes
-
-codex · grok · glm · chutes (+ OpenAI-compatible upstreams map harness seats to codex-style tools)
-
-Offline verify: `pnpm bossraid verify:proof-bundle`.
+Offline verification: `pnpm bossraid verify:proof-bundle`.

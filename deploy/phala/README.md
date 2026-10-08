@@ -17,11 +17,7 @@ Production Phala secrets are **tiered** in Infisical and assembled locally befor
 | `acp-sellers.docker-compose.yml`    | yes     | ACP seller sidecars (separate env)                  |
 | `acp-sellers.env.example`           | yes     | ACP seller credentials                              |
 
-**Default ready providers** are platform liquidity seats (e.g. `platform-xai-grok-4-5`), not in-CVM
-demo agents. Compose seeds `examples/inference/platform-only.providers.json` (empty array), sets
-`BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1`, and removes `dottie` / `riko` / `gamma` via
-`BOSSRAID_DISABLED_PROVIDER_IDS`. Demo HTTP workers (`provider-a/b/c`) are under compose profile
-`game-providers` only.
+Compose starts with `examples/providers/empty.providers.json`. Register and verify real HTTP workers before launching raids. Demo HTTP workers (`provider-a/b/c`) are available under the `game-providers` compose profile for local rehearsal.
 
 Other compose defaults (x402 network, rate limits) live in
 [`scripts/lib/phala-secret-tiers.mjs`](../../scripts/lib/phala-secret-tiers.mjs) and are written into

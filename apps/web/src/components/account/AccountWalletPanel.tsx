@@ -17,13 +17,9 @@ export function AccountWalletPanel({ state }: AccountWalletPanelProps) {
         <p className="eyebrow">balance</p>
         <p className="account-balance__amount">${(session.account?.balanceUsd ?? 0).toFixed(2)}</p>
         <p className="quiet-note">{session.wallet}</p>
-        {(session.account?.totalSavingsUsd ?? 0) > 0 ? (
-          <p className="quiet-note">
-            ${session.account?.totalSavingsUsd?.toFixed(2)} benchmark savings
-          </p>
-        ) : null}
         <p className="quiet-note">
-          Top-ups require x402 USDC payment. Connect MetaMask, then approve the wallet transaction.
+          Top-ups require x402 USDG payment on Robinhood Chain. Connect MetaMask, then approve the
+          wallet transaction.
         </p>
         {!state.smartPay.walletAddress ? (
           <button
@@ -64,9 +60,7 @@ export function AccountWalletPanel({ state }: AccountWalletPanelProps) {
 
       <article className="flow-card">
         <p className="eyebrow">account subscription</p>
-        <p className="quiet-note">
-          Weekly MetaMask permission authorizes x402 payments for marketplace inference and raids.
-        </p>
+        <p className="quiet-note">Weekly MetaMask permission authorizes x402 payments for raids.</p>
         <p className="quiet-note">{state.smartPay.status}</p>
         <div className="mercenary-action-row">
           <button

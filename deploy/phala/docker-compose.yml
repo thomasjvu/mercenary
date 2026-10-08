@@ -59,10 +59,9 @@ services:
       BOSSRAID_SQLITE_FILE: '/data/bossraid-state.sqlite'
       # In-CVM compose providers (provider-a/b/c) use private Docker DNS + HTTP.
       BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS: '${BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS:-1}'
-      # Platform seats only by default (bootstrap via BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY).
+      # The default registry is empty. Register real HTTP endpoints.
       # Game-raid HTTP workers (dottie/riko/gamma) live under compose profile `game-providers`.
-      BOSSRAID_PROVIDERS_FILE: '${BOSSRAID_PROVIDERS_FILE:-/app/examples/inference/platform-only.providers.json}'
-      BOSSRAID_DISABLED_PROVIDER_IDS: '${BOSSRAID_DISABLED_PROVIDER_IDS:-dottie,riko,gamma}'
+      BOSSRAID_PROVIDERS_FILE: '${BOSSRAID_PROVIDERS_FILE:-/app/examples/providers/empty.providers.json}'
       BOSSRAID_SECRET_ENCRYPTION_KEY: '${BOSSRAID_SECRET_ENCRYPTION_KEY}'
       BOSSRAID_SECRET_ENCRYPTION_KEY_ID: '${BOSSRAID_SECRET_ENCRYPTION_KEY_ID:-phala-current}'
       BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS: '${BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS:-}'
@@ -142,8 +141,6 @@ services:
       BOSSRAID_NEBIUS_API_BASE: '${BOSSRAID_NEBIUS_API_BASE:-https://api.tokenfactory.nebius.com/v1}'
       BOSSRAID_OPENAI_API_KEY: '${BOSSRAID_OPENAI_API_KEY:-}'
       BOSSRAID_OPENAI_API_BASE: '${BOSSRAID_OPENAI_API_BASE:-https://api.openai.com/v1}'
-      # Seed featured chat offers when platform keys exist (shared seats, no per-seller Phala).
-      BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY: '${BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY:-1}'
       BOSSRAID_SETTLEMENT_MODE: '${BOSSRAID_SETTLEMENT_MODE:-file}'
       BOSSRAID_RPC_URL: '${BOSSRAID_RPC_URL:-}'
       BOSSRAID_CHAIN_ID: '${BOSSRAID_CHAIN_ID:-}'

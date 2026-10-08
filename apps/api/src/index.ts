@@ -22,16 +22,11 @@ import { registerHealthRoutes } from './routes/health.js';
 import { registerHostAttestationRoutes } from './routes/host-attestation.js';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerAccountRoutes } from './routes/account.js';
-import { registerMarketplaceRoutes } from './routes/marketplace.js';
 import { registerRaidRoutes } from './routes/raid.js';
 import { registerChatRoutes } from './routes/chat.js';
 import { registerOpsRoutes } from './routes/ops.js';
 import { registerProviderRoutes } from './routes/providers.js';
 import { registerAgentRoutes } from './routes/agents.js';
-import { registerInferenceGatewayRoutes } from './routes/inference-gateway.js';
-import { registerSellerUpstreamRoutes } from './routes/seller-upstream.js';
-import { registerMarketplaceTeeRoutes } from './routes/marketplace-tee.js';
-import { registerInferenceReceiptRoutes } from './routes/inference-receipts.js';
 import { registerRelayerRoutes } from './routes/relayer.js';
 import { registerBountyRoutes } from './routes/bounties.js';
 import { startX402ReconciliationWorker } from './lib/x402-reconciliation.js';
@@ -50,16 +45,11 @@ function registerApiRoutes(
   registerHostAttestationRoutes(app, ctx, handlers);
   registerAuthRoutes(app, ctx, handlers);
   registerAccountRoutes(app, ctx, handlers);
-  registerMarketplaceRoutes(app, ctx, handlers);
   registerRaidRoutes(app, ctx, handlers);
   registerChatRoutes(app, ctx, handlers);
   registerOpsRoutes(app, ctx, handlers);
   registerProviderRoutes(app, ctx, handlers);
   registerAgentRoutes(app, ctx, handlers);
-  registerInferenceGatewayRoutes(app, ctx);
-  registerSellerUpstreamRoutes(app, ctx, handlers);
-  registerMarketplaceTeeRoutes(app, ctx, handlers);
-  registerInferenceReceiptRoutes(app, ctx);
   registerRelayerRoutes(app, ctx, handlers);
   registerBountyRoutes(app, ctx, handlers);
 }
@@ -202,18 +192,6 @@ export async function prepareApiServer(
 async function main() {
   const orchestrator = await createDefaultOrchestrator(runtimeOptionsFromEnv());
   const app = await prepareApiServer(orchestrator);
-  if (process.env.BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY === '1') {
-    const { bootstrapPlatformLiquidity } = await import('./lib/platform-liquidity.js');
-    const result = await bootstrapPlatformLiquidity({ orchestrator, env: process.env });
-    logger.info(
-      {
-        published: result.published.length,
-        skipped: result.skipped.length,
-        removed: result.removed.length,
-      },
-      'platform liquidity bootstrap complete'
-    );
-  }
   const port = Number(process.env.PORT || NETWORK.LOCAL_API_PORT.toString());
   const host = process.env.BOSSRAID_API_HOST ?? process.env.HOST ?? NETWORK.LOCALHOST;
   await app.listen({ port, host });

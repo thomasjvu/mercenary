@@ -4,10 +4,7 @@ export type AppRoute =
   | '/'
   | '/mercenary'
   | '/bounties'
-  | '/marketplace'
   | '/playground'
-  | '/onboarding/buyer'
-  | '/onboarding/seller'
   | '/onboarding/seller/http'
   | '/sell/offers'
   | '/account'
@@ -42,18 +39,16 @@ export const SIDEBAR_NAV_LINKS: SidebarNavItem[] = [
   { path: '/', label: 'home', icon: 'pixel:home-solid' },
   { path: '/mercenary', label: 'Mercenary', icon: 'pixel:message-dots-solid' },
   { path: '/bounties', label: 'bounties', icon: 'pixel:trophy-solid' },
+  { path: '/playground', label: 'raid playground', icon: 'pixel:sparkles-solid' },
   {
-    path: '/marketplace',
-    label: 'marketplace',
-    icon: 'pixel:shop-solid',
+    path: '/raiders',
+    label: 'raiders',
+    icon: 'pixel:crown-solid',
     children: [
-      { path: '/onboarding/buyer', label: 'buy', icon: 'pixel:shopping-cart-solid' },
-      { path: '/onboarding/seller', label: 'new offer', icon: 'pixel:plus-solid' },
-      { path: '/sell/offers', label: 'my offers', icon: 'pixel:clipboard-solid' },
+      { path: '/onboarding/seller/http', label: 'register worker', icon: 'pixel:plus-solid' },
+      { path: '/sell/offers', label: 'manage offers', icon: 'pixel:clipboard-solid' },
     ],
   },
-  { path: '/playground', label: 'playground', icon: 'pixel:sparkles-solid' },
-  { path: '/raiders', label: 'raiders', icon: 'pixel:crown-solid' },
   { path: '/verification', label: 'verification', icon: 'pixel:receipt-solid' },
   {
     path: '/legal',
@@ -69,16 +64,9 @@ export const SIDEBAR_NAV_LINKS: SidebarNavItem[] = [
       },
     ],
   },
+  { href: 'https://alkahest.ai', label: 'Alkahest inference', icon: 'pixel:shop-solid' },
   { href: BOSSRAID_DOCS_URL, label: 'docs', icon: 'pixel:bookmark-solid' },
 ];
-
-const MARKETPLACE_CHILD_PATHS = new Set<AppRoute>([
-  '/marketplace',
-  '/onboarding/buyer',
-  '/onboarding/seller',
-  '/onboarding/seller/http',
-  '/sell/offers',
-]);
 
 const LEGAL_CHILD_PATHS = new Set<AppRoute>([
   '/legal',
@@ -87,17 +75,17 @@ const LEGAL_CHILD_PATHS = new Set<AppRoute>([
   '/acceptable-use-policy',
 ]);
 
-export function isMarketplaceSectionActive(pathname: string): boolean {
-  return MARKETPLACE_CHILD_PATHS.has(pathname as AppRoute) || pathname.startsWith('/marketplace/');
-}
-
 export function isLegalSectionActive(pathname: string): boolean {
   return LEGAL_CHILD_PATHS.has(pathname as AppRoute);
 }
 
 export function isNavGroupSectionActive(path: AppRoute, pathname: string): boolean {
-  if (path === '/marketplace') {
-    return isMarketplaceSectionActive(pathname);
+  if (path === '/raiders') {
+    return (
+      pathname === '/raiders' ||
+      pathname === '/onboarding/seller/http' ||
+      pathname === '/sell/offers'
+    );
   }
 
   if (path === '/legal') {
@@ -110,10 +98,6 @@ export function isNavGroupSectionActive(path: AppRoute, pathname: string): boole
 export function isSidebarNavActive(path: AppRoute, pathname: string): boolean {
   if (isNavGroupSectionActive(path, pathname)) {
     return true;
-  }
-
-  if (path === '/onboarding/seller') {
-    return pathname === '/onboarding/seller' || pathname === '/onboarding/seller/http';
   }
 
   return pathname === path;

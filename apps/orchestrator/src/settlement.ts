@@ -1,9 +1,6 @@
 import { computeRewards, hashSubmission } from '@bossraid/raid-core';
 import type { RaidRecord, SettlementAllocation, SettlementSummary } from '@bossraid/shared-types';
-import {
-  isSingleProviderGeneralServiceRaid,
-  resolveMinimumPayoutThresholdUsd,
-} from './settlement-threshold.js';
+import { resolveMinimumPayoutThresholdUsd } from './settlement-threshold.js';
 
 function computeSettlementRewards(raid: RaidRecord) {
   return computeRewards(
@@ -67,18 +64,5 @@ function readSettlementBudgetUsd(raid: RaidRecord): number {
       ? raid.escrowFundingUsd
       : requestedBudget;
 
-  if (!isSingleProviderGeneralServiceRaid(raid)) {
-    return paidBudget;
-  }
-
-  const providerId = raid.selectedProviders[0];
-  const providerRate = raid.routingProof?.providers.find(
-    (provider) => provider.providerId === providerId && provider.phase === 'primary'
-  )?.rateUsd;
-
-  if (typeof providerRate !== 'number' || !Number.isFinite(providerRate) || providerRate <= 0) {
-    return paidBudget;
-  }
-
-  return Math.min(paidBudget, providerRate);
+  return paidBudget;
 }

@@ -21,6 +21,12 @@ Buyer walkthroughs: [buy.md](../buyers/buy.md), [raids.md](../raiders/raids.md).
 
 Output types: `text`, `patch`, `json`, `image`, `video`, `bundle`.
 
+## Production gates
+
+`GET /v1/ops/production-readiness` requires admin auth and returns `ok: false` for development mode, file/off settlement, invalid settlement configuration, or production x402 testnet settings. `GET /ready` rejects production file/off settlement and non-Phala hosts. These endpoints report configuration readiness, not verified live contract balances or TDX quotes.
+
+`PATCH /v1/ops/settings` with `{ "x402Enabled": true }` rechecks full production readiness on the server when `NODE_ENV=production`. Blocking checks return HTTP 400 with `error: "production_not_ready"`; payment state stays disabled. Disabling x402 remains available for incident response.
+
 ## Web & gateway
 
 <!-- docs:template:web-routes -->
@@ -29,10 +35,9 @@ Output types: `text`, `patch`, `json`, `image`, `video`, `bundle`.
 | -------------------------------------------------------------------- | ---------------------------------------------- |
 | `/mercenary`                                                         | Mercenary chat and raid launcher               |
 | `/bounties`                                                          | Paid bounty marketplace                        |
-| `/marketplace`                                                       | Model marketplace                              |
-| `/playground`                                                        | Inference playground and raid mode             |
-| `/onboarding/buyer`, `/onboarding/seller`, `/onboarding/seller/http` | Buyer and seller onboarding                    |
-| `/sell/offers`                                                       | Seller offer management                        |
+| `/playground`                                                        | Mercenary raid playground                      |
+| `/onboarding/seller/http`                                            | HTTP agent worker registration                 |
+| `/sell/offers`                                                       | Agent worker offer management                  |
 | `/account`                                                           | Keys, sellers, balance                         |
 | `/raiders`                                                           | Provider directory                             |
 | `/verification`                                                      | Public proof (`/receipt` redirects here)       |
@@ -45,25 +50,8 @@ Output types: `text`, `patch`, `json`, `image`, `video`, `bundle`.
 
 ## Catalog payloads
 
-- `GET /v1/models`: `bossraid.catalog_source`, `bossraid.capabilities`, and `bossraid.token_pricing` describe the build snapshot. Active seller counts determine live marketplace availability.
-- `GET /v1/prices`: per-model `catalogSource` and `tokenPricing`; the top-level benchmark is labeled `catalog_snapshot`. The per-model source identifies models.dev, the provider feed, or a reviewed override.
-- `GET /v1/seller/upstream/:provider/models/catalog`: public preview; all rows are `catalog_only` and cannot publish without account discovery.
-- `GET /v1/seller/upstream/:provider/models`: wallet session; returns `upstreamModelId`, `state`, `supported`, `upstreamFound`, and `offerable`. Unknown live models have null prices.
-- `POST /v1/seller/upstream/:provider/offers`: refreshes availability and probes selected models. Returns successful `providers` plus `rejected: [{ modelId, state, reason }]`; returns 400 if none pass, 502 if account discovery fails.
-- `GET /v1/ops/platform-liquidity`: admin; includes source timestamps/errors and `configuredCount` (legacy `readyCount` has the same key-coverage meaning).
-- `POST /v1/ops/platform-liquidity/bootstrap`: admin; returns `published`, `skipped`, `paused`, and removed demo IDs after live checks.
+## Work integrations
 
-Provider registration pricing accepts `tokenPricing` (USD per million tokens): `input`, `output`, optional `cache_read`, `cache_write`, `reasoning`, `input_audio`, `output_audio`, and `tiers`. Each tier has full input/output rates and `aboveInputTokens`; thresholds must be nonnegative, unique, and increasing. A tier applies when the prompt exceeds its threshold. Hosted chat responses use trusted upstream usage when available, with optional `usage.token_details` for specialized token subsets. HTTP seller callback payloads cannot supply trusted hosted usage.
+Use `POST /v1/raid` or Mercenary `POST /v1/chat/completions`. HTTP provider workers implement health, accept, heartbeat, submit, and failure callbacks. Buyer prepaid charges and successful provider payouts are work ledgers.
 
-## MCP tools
-
-`bossraid_spawn`, `bossraid_status`, `bossraid_result`, `bossraid_receipt`, `bossraid_delegate`, `bossraid_abort`, `bossraid_replay`, `bossraid_capabilities`, `bossraid_provider_stats`
-
-## Footnotes
-
-- Chat route: low-signal greetings may return without opening a raid. `stream=true` → SSE chunks.
-- Inference route: no small-talk bypass; defaults budget to cheapest seller when omitted.
-- Marketplace counters: `GET /v1/marketplace/stats` and `/v1/markets.stats` use available runtime offers and seller payout ledger rows, not catalog sizes. The 24-hour counters scan at most the latest 10,000 payout rows for currently registered providers; see [Marketplace operations](../operators/marketplace-operations.md).
-- Both chat routes accept OpenAI-compatible `reasoning_effort` (`low` \| `medium` \| `high` \| `xhigh`); hosted gateway forwards it to xAI (and other OpenAI-style upstreams when set). See [discount-inference.md](../buyers/discount-inference.md#reasoning-effort).
-- Onchain settlement: result/attested-result reads may refresh contract state before respond.
-- Registration fields `verification`, `privacy`, `erc8004`, `trust`, `reputation` stay separate.
+The inference chat endpoint, model/price/market discovery, marketplace TEE endpoints, embedded gateway, seller upstream endpoints, and platform liquidity operations have been removed. There is no compatibility proxy or cutover mode. Use Alkahest for standalone inference.

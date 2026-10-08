@@ -19,12 +19,6 @@ export type { ProviderViewResponse, ProviderHealthViewResponse } from './api-vie
 
 export type {
   SellerEarningsView,
-  InferenceMarketSellerView,
-  InferenceMarketView,
-  MarketplaceStatsView,
-  MarketsResponseView,
-  OpenAiModelEntryView,
-  ModelsResponseView,
   BuyerPurchaseView,
   BuyerPurchasesResponseView,
   SellerStatsView,
@@ -37,8 +31,6 @@ export type {
 } from './api-views/settlement.js';
 
 export type {
-  MarketplaceModelTeeSummaryView,
-  MarketplaceTeeAttestationView,
   TeeAttestationCheckView,
   TeeAttestationView,
   PrivacyAttestationView,

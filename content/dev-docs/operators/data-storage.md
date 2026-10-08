@@ -87,15 +87,12 @@ One encrypted snapshot row:
 | `buyerApiKeys`                               | Key id, wallet, **keyHash**, prefix, spend limits |
 | `buyerPurchases`                             | Per-call purchase ledger                          |
 | `sellerPayouts`                              | Seller earnings records                           |
-| `sellerUpstreamConfigs`                      | Encrypted upstream API keys + catalog offers      |
 | `agentPaymentSessions`                       | MCP / ERC-7710 agent payment grants               |
 | `opsSessions`                                | Admin ops UI tokens                               |
 | `rateLimits`                                 | Per-key rate limit counters                       |
 | `relayerTasks`                               | 1Shot relayer task tracking                       |
 | `x402Reconciliations`, `x402SettledPayments` | Payment reconciliation                            |
 | `settings`                                   | Runtime toggles (`x402Enabled`, etc.)             |
-
-Seller upstream keys are encrypted with `BOSSRAID_SECRET_ENCRYPTION_KEY` before landing in the snapshot.
 
 ## Bounty tables (`apps/api/src/lib/bounty-store.ts`)
 
@@ -108,14 +105,6 @@ Seller upstream keys are encrypted with `BOSSRAID_SECRET_ENCRYPTION_KEY` before 
 | `bounty_funding_locks`        | Concurrent fund guard   |
 | `bounty_award_payment_claims` | Payout claim dedup      |
 | `bounty_worker_locks`         | Background worker locks |
-
-## Inference receipts (`apps/api/src/lib/inference-receipt-store.ts`)
-
-| Table                            | Purpose                                                |
-| -------------------------------- | ------------------------------------------------------ |
-| `inference_attestation_receipts` | `receipt_id`, `completed_at`, attestation payload JSON |
-
-Served at `GET /v1/inference/receipts/:receiptId`.
 
 ## What is not in SQLite
 

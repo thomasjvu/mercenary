@@ -15,8 +15,8 @@ type CurlQuickstartProps = {
 
 export function CurlQuickstart({
   code,
-  label = '/v1/inference/chat/completions',
-  note = 'discount inference',
+  label = '/v1/raid',
+  note = 'agent work raid',
   theme = 'chat',
   runHref,
   runLabel = 'run in playground',

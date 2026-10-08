@@ -1,4 +1,4 @@
-import type { TokenPricing, TokenRates, TokenUsageDetails } from './inference-catalog-types.js';
+import type { TokenPricing, TokenRates, TokenUsageDetails } from './token-pricing-types.js';
 
 export function resolveTokenRates(pricing: TokenPricing, inputTokens: number): TokenRates {
   let rates: TokenRates = pricing;

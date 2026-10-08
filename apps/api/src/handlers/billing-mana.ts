@@ -2,9 +2,8 @@ import type { TokenUsageDetails } from '@bossraid/constants';
 import { ApiContractError } from '@bossraid/api-contracts';
 import { estimateTokenMeteredUsd } from '@bossraid/raid-core';
 import { asSingleHeader, type RaidQuoteSnapshot } from '@bossraid/shared-types';
-import { readTrustedAlkahestClient } from '../lib/inference-marketplace.js';
+import { readTrustedAlkahestClient } from '../lib/trusted-client.js';
 import { safeEqualString } from '../lib/http.js';
-import { computeSavingsUsd, estimateBenchmarkPriceUsd } from '@bossraid/constants';
 import { type ApiContext } from '../api-context.js';
 
 export interface ManaBillingContext {
@@ -81,7 +80,7 @@ export function createManaBillingHandlers(ctx: ApiContext) {
   }
 
   async function reserveManaBilling(input: {
-    route: 'raid' | 'chat' | 'inference';
+    route: 'raid' | 'chat';
     manaAccountId: string;
     amount: number;
     requestKey: string;
@@ -207,21 +206,6 @@ export function createManaBillingHandlers(ctx: ApiContext) {
     const selected = quote?.providers.find(
       (provider) => provider.providerId === input.selectedSeller || provider.phase === 'primary'
     );
-    const benchmarkPriceUsd =
-      input.modelId != null || input.paidPriceUsd != null
-        ? estimateBenchmarkPriceUsd({
-            modelId: input.modelId,
-            flatTaskUsd: input.paidPriceUsd,
-            inputTokens: input.usage?.prompt_tokens,
-            outputTokens: input.usage?.completion_tokens,
-            usageDetails: input.usage?.token_details,
-          })
-        : undefined;
-    const savingsUsd =
-      input.paidPriceUsd != null
-        ? computeSavingsUsd(benchmarkPriceUsd, input.paidPriceUsd)
-        : undefined;
-
     if (!input.manaBilling && !quote && input.paidPriceUsd == null) {
       return undefined;
     }
@@ -233,8 +217,6 @@ export function createManaBillingHandlers(ctx: ApiContext) {
       mana_reserved: input.manaBilling?.reservedMana,
       mana_captured: input.settlement?.capturedMana,
       mana_refunded: input.settlement?.refundedMana,
-      benchmark_price_usd: benchmarkPriceUsd,
-      savings_usd: savingsUsd,
       paid_price_usd: input.paidPriceUsd,
       receipt_path: input.receiptPath,
       attestation_result: selected?.attestationSummary,

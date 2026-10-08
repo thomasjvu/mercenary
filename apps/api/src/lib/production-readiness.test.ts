@@ -14,6 +14,8 @@ const baseInput = {
     BOSSRAID_SETTLEMENT_FUND_JOBS: 'true',
     BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS: 'true',
     BOSSRAID_BOUNTY_ESCROW_ADDRESS: '0x0000000000000000000000000000000000000201',
+    BOSSRAID_CLIENT_PRIVATE_KEY: `0x${'12'.repeat(32)}`,
+    BOSSRAID_RPC_URL: 'https://rpc.example',
     MNEMONIC: 'test test test test test test test test test test test junk',
     BOSSRAID_TEE_PLATFORM: 'phala',
   },
@@ -46,6 +48,7 @@ const baseInput = {
     buyerMaxRequestBudgetUsd: 10,
   },
   workerIsolation: 'per_job_container' as const,
+  evaluatorEnabled: true,
 };
 
 test('production readiness blocks missing settlement fund jobs', () => {
@@ -143,7 +146,7 @@ test('production readiness passes storage check for postgres backend', () => {
   assert.match(check?.message ?? '', /Postgres storage is configured/);
 });
 
-test('production readiness warns on infra gates outside production', () => {
+test('production readiness blocks rehearsal configuration from production approval', () => {
   const report = buildProductionReadinessReport({
     ...baseInput,
     env: {
@@ -160,10 +163,80 @@ test('production readiness warns on infra gates outside production', () => {
     },
   });
 
-  assert.equal(report.checks.find((entry) => entry.id === 'node_env_production')?.status, 'warn');
-  assert.equal(report.checks.find((entry) => entry.id === 'onchain_settlement')?.status, 'warn');
-  assert.equal(report.checks.find((entry) => entry.id === 'tee_attestation')?.status, 'warn');
-  assert.equal(report.ok, true);
+  assert.equal(report.checks.find((entry) => entry.id === 'node_env_production')?.status, 'fail');
+  assert.equal(report.checks.find((entry) => entry.id === 'onchain_settlement')?.status, 'fail');
+  assert.equal(report.checks.find((entry) => entry.id === 'tee_attestation')?.status, 'fail');
+  assert.equal(report.ok, false);
+});
+
+test('valid controlled production configuration passes with x402 enabled or disabled', () => {
+  assert.equal(buildProductionReadinessReport(baseInput).ok, true);
+  assert.equal(
+    buildProductionReadinessReport({
+      ...baseInput,
+      x402: { ...baseInput.x402, enabled: false },
+    }).ok,
+    true
+  );
+});
+
+test('production approval requires onchain mode even with populated configuration', () => {
+  for (const mode of ['file', 'off']) {
+    const report = buildProductionReadinessReport({
+      ...baseInput,
+      settlement: { mode, configured: true },
+    });
+    assert.equal(report.ok, false);
+    assert.equal(report.checks.find((check) => check.id === 'onchain_settlement')?.status, 'fail');
+  }
+});
+
+test('production x402 rejects testnet and chain IDs sharing the mainnet prefix', () => {
+  for (const network of ['eip155:46630', 'eip155:46631', 'eip155:4663junk']) {
+    const report = buildProductionReadinessReport({
+      ...baseInput,
+      x402: { ...baseInput.x402, network },
+    });
+    assert.equal(report.ok, false, network);
+    assert.equal(report.checks.find((check) => check.id === 'x402_robinhood_usdg')?.status, 'fail');
+  }
+});
+
+test('production approval rejects an invalid signing mnemonic and treasury key', () => {
+  const report = buildProductionReadinessReport({
+    ...baseInput,
+    env: { ...baseInput.env, MNEMONIC: 'placeholder', BOSSRAID_CLIENT_PRIVATE_KEY: 'placeholder' },
+  });
+  assert.equal(report.ok, false);
+  assert.equal(report.checks.find((check) => check.id === 'mnemonic_configured')?.status, 'fail');
+  assert.equal(
+    report.checks.find((check) => check.id === 'settlement_treasury_flush')?.status,
+    'fail'
+  );
+});
+
+test('production approval rejects missing facilitator credentials and invalid spend caps', () => {
+  assert.equal(
+    buildProductionReadinessReport({
+      ...baseInput,
+      x402: { ...baseInput.x402, facilitatorApiKeyConfigured: false },
+    }).ok,
+    false
+  );
+  for (const value of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+    const report = buildProductionReadinessReport({
+      ...baseInput,
+      limits: { ...baseInput.limits, buyerMaxRequestBudgetUsd: value },
+    });
+    assert.equal(report.ok, false);
+    assert.equal(report.checks.find((check) => check.id === 'abuse_controls')?.status, 'fail');
+  }
+});
+
+test('container isolation configuration cannot approve a disabled evaluator', () => {
+  const report = buildProductionReadinessReport({ ...baseInput, evaluatorEnabled: false });
+  assert.equal(report.ok, false);
+  assert.equal(report.checks.find((check) => check.id === 'evaluator_isolation')?.status, 'fail');
 });
 
 test('production readiness still blocks missing Phala tee socket in production', () => {

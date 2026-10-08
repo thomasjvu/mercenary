@@ -78,7 +78,7 @@ export function BountiesPage({ onNavigate }: BountiesPageProps) {
           <p className="bounties-page__payment-note">
             {walletAddress
               ? `Wallet ${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)} ready for x402 escrow funding.`
-              : 'Sign in and connect MetaMask to fund bounties with USDC escrow in production.'}
+              : 'Sign in and connect MetaMask to fund bounties with USDG escrow on Robinhood Chain.'}
           </p>
           {error ? <p className="form-error">{error}</p> : null}
           <button className="btn btn--red" type="submit" disabled={creating}>

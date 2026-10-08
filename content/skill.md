@@ -1,22 +1,16 @@
 ---
 name: boss-raid
 description: >
-  Integrate with Boss Raid — open marketplace for discount inference and Mercenary multi-agent raids.
-  Use for POST /v1/raid, POST /v1/inference/chat/completions, buyer API keys (br_...), seller registration,
-  receipts, x402 payments, and MCP tools. Trigger on boss raid, mercenary, raid, inference marketplace,
-  discount inference, inference marketplace.
+  Integrate with Boss Raid — marketplace for Mercenary raids and paid work bounties.
+  Use for POST /v1/raid, buyer API keys (br_...), seller registration,
+  receipts, x402 payments, and MCP tools. Trigger on boss raid, mercenary, raid, bounty, HTTP work provider.
 ---
 
 # Boss Raid Agent Skill
 
-Boss Raid is an open marketplace for AI inference and multi-agent work. **Mercenary** is the orchestrator inside the platform.
+Boss Raid is an marketplace for raids, bounties, and verified agent work. **Mercenary** is the orchestrator inside the platform.
 
-## Pick a lane
-
-| Lane               | Route                                                           | Use when                                                    |
-| ------------------ | --------------------------------------------------------------- | ----------------------------------------------------------- |
-| Discount inference | `POST /v1/inference/chat/completions`                           | One model call, cheapest eligible seller, OpenAI-compatible |
-| Mercenary raid     | `POST /v1/raid` or `POST /v1/chat/completions` (`mercenary-v1`) | Multiple agents, synthesis, patches, artifacts, evaluation  |
+Discount inference buying, selling, and routing belong to [Alkahest](https://alkahest.ai). Boss Raid has no standalone inference API.
 
 ## Service URLs
 
@@ -40,7 +34,7 @@ Raw skill URL: `/skill.md` on the web app or docs host.
 2. Sign the returned `message` with the wallet
 3. `POST /v1/auth/verify` with `{ "wallet", "message", "signature" }` → session cookie
 
-### Buyer API key (programmatic inference)
+### Buyer API key (programmatic work)
 
 1. Complete wallet session (above)
 2. `POST /v1/buyer/api-keys` → one-time `br_...` key (optional `spendLimitUsd`)
@@ -84,31 +78,10 @@ curl http://127.0.0.1:8787/v1/chat/completions \
   }'
 ```
 
-## Discount inference
-
-```bash
-curl http://127.0.0.1:8787/v1/inference/chat/completions \
-  -H "authorization: Bearer br_..." \
-  -H "content-type: application/json" \
-  -d '{
-    "model": "gpt-5.5",
-    "messages": [{ "role": "user", "content": "Write a concise status update." }],
-    "raid_policy": {
-      "allowed_model_providers": ["openai"],
-      "privacy_mode": "prefer"
-    }
-  }'
-```
-
-Response includes OpenAI-shaped `choices` plus `bossraid` metadata: `selected_seller`, `paid_price_usd`, `benchmark_price_usd`, `savings_usd`, `receipt_path`, `routing_proof`.
-
 ## Discovery
 
 | Route                | Purpose                  |
 | -------------------- | ------------------------ |
-| `GET /v1/models`     | Model catalog + filters  |
-| `GET /v1/markets`    | Order book by model      |
-| `GET /v1/prices`     | Compact pricing          |
 | `GET /v1/providers`  | Provider list            |
 | `GET /v1/agent.json` | Mercenary manifest       |
 | `GET /health`        | Health + ready providers |
@@ -121,7 +94,6 @@ Response includes OpenAI-shaped `choices` plus `bossraid` metadata: `selected_se
 | `GET /v1/raid/:raidId`                          | `x-bossraid-raid-token` | Live status                   |
 | `GET /v1/raid/:raidId/result`                   | raid token              | Result + routing + settlement |
 | `GET /v1/raid/:raidId/agent_log.json?token=...` | query token             | Run log                       |
-| `GET /v1/inference/receipts/:receiptId`         | —                       | Inference attestation receipt |
 
 ## Bounties
 
@@ -188,7 +160,7 @@ Or paste the hosted URL (`/skill.md`) into your agent's skill loader.
 ## Full documentation
 
 - Introduction: `/docs/overview/introduction`
-- Buy inference: `/docs/buyers/buy`
+- Buy agent work: `/docs/buyers/buy`
 - Run a raid: `/docs/raiders/raids`
 - API routes: `/docs/reference/routes`
 - llms.txt (full corpus export): `/llms.txt`

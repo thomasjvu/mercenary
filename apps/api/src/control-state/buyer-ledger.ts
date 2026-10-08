@@ -186,8 +186,6 @@ export function captureBuyerApiKeyBillingWithPurchase(
     modelId?: string;
     sellerId?: string;
     route: BuyerPurchaseEntry['route'];
-    benchmarkPriceUsd?: number;
-    savingsUsd?: number;
   },
   nowMs = Date.now()
 ): boolean {
@@ -232,8 +230,6 @@ export function captureBuyerApiKeyBillingWithPurchase(
         sellerId: input.sellerId,
         costUsd: actual,
         reservedUsd: reservation.reservedUsd,
-        benchmarkPriceUsd: input.benchmarkPriceUsd,
-        savingsUsd: input.savingsUsd,
         route: input.route,
         status: 'charged',
         createdAt: new Date(nowMs).toISOString(),
@@ -367,8 +363,6 @@ export function recordBuyerPurchase(
       sellerId: input.sellerId,
       costUsd: Math.max(0, input.costUsd),
       reservedUsd: input.reservedUsd,
-      benchmarkPriceUsd: input.benchmarkPriceUsd,
-      savingsUsd: input.savingsUsd,
       route: input.route,
       status: input.status ?? 'charged',
       reason: input.reason,

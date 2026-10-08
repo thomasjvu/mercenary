@@ -1,4 +1,3 @@
-import { getInferenceCatalogEntry } from '@bossraid/constants';
 import type { SellerPayoutEntry } from './control-state.js';
 
 export const MARKETPLACE_PUBLIC_PAYOUT_SCAN_LIMIT = 10_000;
@@ -36,8 +35,6 @@ export function computeSellerModelDemand(input: {
   displayName: string;
   routedRequests24h: number;
   routedValue24hUsd: number;
-  referenceInputPer1mUsd: number | null;
-  referenceOutputPer1mUsd: number | null;
   offerStatus: 'active' | 'paused';
 }> {
   const nowMs = input.nowMs ?? Date.now();
@@ -51,8 +48,6 @@ export function computeSellerModelDemand(input: {
       displayName: string;
       routedRequests24h: number;
       routedValue24hUsd: number;
-      referenceInputPer1mUsd: number | null;
-      referenceOutputPer1mUsd: number | null;
       offerStatus: 'active' | 'paused';
     }
   >();
@@ -61,14 +56,11 @@ export function computeSellerModelDemand(input: {
     if (!provider.modelId) {
       continue;
     }
-    const catalog = getInferenceCatalogEntry(provider.modelId);
     byModel.set(provider.modelId, {
       modelId: provider.modelId,
-      displayName: provider.displayName ?? catalog?.displayName ?? provider.modelId,
+      displayName: provider.displayName ?? provider.modelId,
       routedRequests24h: 0,
       routedValue24hUsd: 0,
-      referenceInputPer1mUsd: catalog?.inputPer1mUsd ?? null,
-      referenceOutputPer1mUsd: catalog?.outputPer1mUsd ?? null,
       offerStatus: provider.marketplaceOfferStatus ?? 'active',
     });
   }

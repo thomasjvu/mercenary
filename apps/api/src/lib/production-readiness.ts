@@ -7,6 +7,8 @@ import {
 import { type ProviderHealthStatus, type ProviderProfile } from '@bossraid/shared-types';
 import { readBooleanEnv } from './env.js';
 import { readPlatformUpstreamApiKey } from './upstream/credentials.js';
+import { isNonzeroAddress, isRpcUrlConfigured, isSignerKeyConfigured } from './settlement-mode.js';
+import { readTeeSigner } from './tee.js';
 
 type ProductionReadinessStatus = 'pass' | 'warn' | 'fail';
 type ProductionReadinessSeverity = 'blocking' | 'warning' | 'info';
@@ -53,6 +55,7 @@ export function buildProductionReadinessReport(input: {
     buyerMaxRequestBudgetUsd?: number;
   };
   workerIsolation: 'per_job_process' | 'per_job_container';
+  evaluatorEnabled: boolean;
 }) {
   const checks: ProductionReadinessCheck[] = [];
   const verifiedProviders = input.providers.filter(
@@ -69,7 +72,7 @@ export function buildProductionReadinessReport(input: {
 
   addCheck({
     id: 'node_env_production',
-    status: productionEnv ? 'pass' : 'warn',
+    status: productionEnv ? 'pass' : 'fail',
     severity: 'blocking',
     message: productionEnv
       ? 'API is running with NODE_ENV=production.'
@@ -135,19 +138,21 @@ export function buildProductionReadinessReport(input: {
   });
 
   const x402BasicsOk =
-    !input.x402.enabled || (input.x402.facilitatorConfigured && input.x402.payToConfigured);
+    !input.x402.enabled ||
+    (input.x402.facilitatorConfigured &&
+      input.x402.payToConfigured &&
+      (!productionEnv || input.x402.facilitatorApiKeyConfigured));
   addCheck({
     id: 'x402_payment',
     status: x402BasicsOk ? 'pass' : 'fail',
     severity: 'blocking',
     message: input.x402.enabled
-      ? 'x402 must have facilitator URL and non-zero pay-to wallet configured.'
+      ? 'x402 requires a facilitator URL, non-zero pay-to wallet, and a facilitator API key in production.'
       : 'x402 is disabled; only use this for private rehearsal environments.',
     details: input.x402,
   });
 
-  const rhNetwork =
-    input.x402.network === ROBINHOOD_CHAIN_CAIP2 || input.x402.network.startsWith('eip155:4663');
+  const rhNetwork = input.x402.network === ROBINHOOD_CHAIN_CAIP2;
   const assetLower = (input.x402.asset ?? '').toLowerCase();
   const rhAsset = assetLower === 'usdg' || assetLower === ROBINHOOD_USDG_ADDRESS.toLowerCase();
   const payaiHost =
@@ -236,7 +241,7 @@ export function buildProductionReadinessReport(input: {
 
   addCheck({
     id: 'onchain_settlement',
-    status: input.settlement.configured ? 'pass' : productionEnv ? 'fail' : 'warn',
+    status: input.settlement.mode === 'onchain' && input.settlement.configured ? 'pass' : 'fail',
     severity: 'blocking',
     message:
       input.settlement.mode === 'onchain'
@@ -280,7 +285,7 @@ export function buildProductionReadinessReport(input: {
     },
   });
 
-  const bountyEscrowConfigured = Boolean(input.env.BOSSRAID_BOUNTY_ESCROW_ADDRESS?.trim());
+  const bountyEscrowConfigured = isNonzeroAddress(input.env.BOSSRAID_BOUNTY_ESCROW_ADDRESS);
   addCheck({
     id: 'bounty_escrow_configured',
     status: input.settlement.mode !== 'onchain' || bountyEscrowConfigured ? 'pass' : 'fail',
@@ -296,11 +301,11 @@ export function buildProductionReadinessReport(input: {
 
   // Marketplace seller cash-out (ledger → USDG flush) needs treasury key + RPC.
   // Distinct from job escrow onchain settlement.
-  const treasuryKeyConfigured = Boolean(
+  const treasuryKeyConfigured = isSignerKeyConfigured(
     input.env.BOSSRAID_SETTLEMENT_TREASURY_KEY?.trim() ||
-    input.env.BOSSRAID_CLIENT_PRIVATE_KEY?.trim()
+      input.env.BOSSRAID_CLIENT_PRIVATE_KEY?.trim()
   );
-  const rpcConfigured = Boolean(
+  const rpcConfigured = isRpcUrlConfigured(
     input.env.BOSSRAID_RPC_URL?.trim() || input.env.BOSSRAID_ROBINHOOD_RPC_URL?.trim()
   );
   const marketplaceFlushReady = treasuryKeyConfigured && rpcConfigured;
@@ -320,18 +325,12 @@ export function buildProductionReadinessReport(input: {
 
   const phalaTeeSocketReady =
     input.tee.platform === 'phala' && input.tee.pathExists && input.tee.socketMounted;
-  const mnemonicConfigured = Boolean(input.env.MNEMONIC?.trim());
+  const mnemonicConfigured = Boolean(readTeeSigner(input.env).account);
   const requiresPhalaTee = teePlatform === 'phala';
 
   addCheck({
     id: 'tee_attestation',
-    status: requiresPhalaTee
-      ? phalaTeeSocketReady
-        ? 'pass'
-        : 'fail'
-      : productionEnv
-        ? 'fail'
-        : 'warn',
+    status: requiresPhalaTee ? (phalaTeeSocketReady ? 'pass' : 'fail') : 'fail',
     severity: 'blocking',
     message: requiresPhalaTee
       ? 'Phala production requires BOSSRAID_TEE_PLATFORM=phala with a mounted dstack guest agent socket.'
@@ -355,15 +354,17 @@ export function buildProductionReadinessReport(input: {
   addCheck({
     id: 'evaluator_isolation',
     status:
+      input.evaluatorEnabled &&
       input.workerIsolation === 'per_job_container' &&
       !readBooleanEnv(input.env.BOSSRAID_EVAL_ALLOW_UNSAFE_HOST_EXECUTION)
         ? 'pass'
         : 'fail',
     severity: 'blocking',
     message:
-      'Production evaluator jobs must run in per-job containers without unsafe host execution.',
+      'Production requires an enabled evaluator transport with per-job containers and no unsafe host execution.',
     details: {
       workerIsolation: input.workerIsolation,
+      evaluatorEnabled: input.evaluatorEnabled,
       unsafeHostExecution: readBooleanEnv(input.env.BOSSRAID_EVAL_ALLOW_UNSAFE_HOST_EXECUTION),
     },
   });
@@ -388,13 +389,16 @@ export function buildProductionReadinessReport(input: {
 
   addCheck({
     id: 'abuse_controls',
-    status:
-      input.limits.publicRateLimitMax > 0 &&
-      input.limits.buyerKeyRateLimitMax > 0 &&
-      input.limits.buyerKeyDefaultSpendLimitUsd != null &&
-      input.limits.buyerMaxRequestBudgetUsd != null
-        ? 'pass'
-        : 'fail',
+    status: [
+      input.limits.publicRateLimitMax,
+      input.limits.publicRateLimitWindowMs,
+      input.limits.buyerKeyRateLimitMax,
+      input.limits.buyerKeyRateLimitWindowMs,
+      input.limits.buyerKeyDefaultSpendLimitUsd,
+      input.limits.buyerMaxRequestBudgetUsd,
+    ].every((value) => value != null && Number.isFinite(value) && value > 0)
+      ? 'pass'
+      : 'fail',
     severity: 'blocking',
     message:
       'Public launch requires IP limits, per-key limits, default spend caps, and max request budget.',

@@ -9,7 +9,7 @@ import {
 
 export function useLandingPage() {
   const { copiedKey, copyText } = useCopyFeedback();
-  const [workflowTab, setWorkflowTab] = useState<WorkflowTabId>('seller');
+  const [workflowTab, setWorkflowTab] = useState<WorkflowTabId>('buyer');
   const infoPanelRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {

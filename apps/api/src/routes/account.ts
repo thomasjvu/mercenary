@@ -119,8 +119,7 @@ export function registerAccountRoutes(
     controlState.linkSellerProvider(session.wallet, provider.providerId);
     const { provider: verifiedProvider, health } = await verifyProviderByHealthProbe(
       orchestrator,
-      provider,
-      { controlState }
+      provider
     );
     await ensureErc8004ProofState({ includeMercenary: false, providers: [verifiedProvider] });
     reply.code(201);
@@ -195,8 +194,7 @@ export function registerAccountRoutes(
     }
     const { provider: updatedProvider, health } = await verifyProviderByHealthProbe(
       orchestrator,
-      provider,
-      { controlState }
+      provider
     );
     await ensureErc8004ProofState({ includeMercenary: false, providers: [updatedProvider] });
     return {
@@ -347,14 +345,12 @@ export function registerAccountRoutes(
     const released = withStatus.filter((entry) => entry.status === 'hold_released');
     const refunded = withStatus.filter((entry) => entry.status === 'refunded');
     const totalSpentUsd = charged.reduce((sum, entry) => sum + entry.costUsd, 0);
-    const totalSavingsUsd = charged.reduce((sum, entry) => sum + (entry.savingsUsd ?? 0), 0);
     const totalRefundedOrReleasedUsd =
       released.reduce((sum, entry) => sum + (entry.reservedUsd ?? 0), 0) +
       refunded.reduce((sum, entry) => sum + (entry.costUsd || entry.reservedUsd || 0), 0);
     return {
       object: 'list',
       totalSpentUsd,
-      totalSavingsUsd,
       totalRefundedOrReleasedUsd,
       chargedCount: charged.length,
       releasedCount: released.length,

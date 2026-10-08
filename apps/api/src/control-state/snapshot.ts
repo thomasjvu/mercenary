@@ -8,7 +8,6 @@ import {
   isValidPublicSessionEntry,
   isValidRateLimitEntry,
   isValidSellerPayoutEntry,
-  isValidSellerUpstreamConfigEntry,
 } from './validators.js';
 import type { ApiControlStateSnapshot } from './types.js';
 
@@ -23,7 +22,6 @@ export function createEmptyApiControlState(): ApiControlStateSnapshot {
     buyerApiKeys: [],
     buyerPurchases: [],
     sellerPayouts: [],
-    sellerUpstreamConfigs: [],
     rateLimits: [],
     relayerTasks: [],
     x402Reconciliations: [],
@@ -65,9 +63,6 @@ export function normalizeApiControlState(
       : [],
     sellerPayouts: Array.isArray(snapshot?.sellerPayouts)
       ? snapshot.sellerPayouts.filter(isValidSellerPayoutEntry)
-      : [],
-    sellerUpstreamConfigs: Array.isArray(snapshot?.sellerUpstreamConfigs)
-      ? snapshot.sellerUpstreamConfigs.filter(isValidSellerUpstreamConfigEntry)
       : [],
     rateLimits: Array.isArray(snapshot?.rateLimits)
       ? snapshot.rateLimits.filter(isValidRateLimitEntry)
@@ -115,10 +110,6 @@ export function encryptApiControlStateSnapshot(
       ...key,
       keyHash: cipher.encrypt(key.keyHash),
     })),
-    sellerUpstreamConfigs: snapshot.sellerUpstreamConfigs.map((config) => ({
-      ...config,
-      apiKeyCiphertext: cipher.encrypt(config.apiKeyCiphertext),
-    })),
     x402Reconciliations: snapshot.x402Reconciliations.map((entry) => ({
       ...entry,
       paymentSignature: cipher.encrypt(entry.paymentSignature),
@@ -133,16 +124,6 @@ export function decryptApiControlStateSnapshot(
   if (!snapshot) {
     return snapshot;
   }
-
-  const sellerUpstreamConfigs = Array.isArray(snapshot.sellerUpstreamConfigs)
-    ? snapshot.sellerUpstreamConfigs.map((config) => ({
-        ...config,
-        apiKeyCiphertext:
-          typeof config.apiKeyCiphertext === 'string'
-            ? cipher.decrypt(config.apiKeyCiphertext)
-            : config.apiKeyCiphertext,
-      }))
-    : snapshot.sellerUpstreamConfigs;
 
   return {
     ...snapshot,
@@ -170,7 +151,6 @@ export function decryptApiControlStateSnapshot(
           keyHash: typeof key.keyHash === 'string' ? cipher.decrypt(key.keyHash) : key.keyHash,
         }))
       : snapshot.buyerApiKeys,
-    sellerUpstreamConfigs,
     x402Reconciliations: Array.isArray(snapshot.x402Reconciliations)
       ? snapshot.x402Reconciliations.map((entry) => ({
           ...entry,

@@ -1,4 +1,3 @@
-import type { TokenPricing } from '@bossraid/constants';
 import type { ProviderHealthViewResponse, ProviderViewResponse } from './provider.js';
 
 export type SellerEarningsView = {
@@ -13,106 +12,6 @@ export type SellerEarningsView = {
   }>;
 };
 
-export type InferenceMarketSellerView = {
-  sellerId: string;
-  displayName: string;
-  modelProvider?: string;
-  agentFramework?: ProviderViewResponse['agentFramework'];
-  rateUsd: number;
-  status: string;
-  marketplaceOfferStatus?: 'active' | 'paused';
-  verificationStatus?: 'pending' | 'verified' | 'failed' | 'error';
-  privacy: {
-    teeAttested?: boolean;
-    e2ee?: boolean;
-    signedOutputs?: boolean;
-    noDataRetention?: boolean;
-  };
-  outputTypes?: string[];
-  maxConcurrency: number;
-  pricing: {
-    unit: 'task' | 'token_metered';
-    pricePerTaskUsd: number | null;
-    pricePer1mInputTokensUsd: number | null;
-    pricePer1mOutputTokensUsd: number | null;
-    minimumChargeUsd: number | null;
-    currency: string;
-    upstreamModelId?: string;
-    maxContextTokens?: number;
-    tokenPricing?: TokenPricing;
-  };
-};
-
-export type InferenceMarketView = {
-  object: 'inference.market';
-  modelId: string;
-  modelProvider?: string;
-  /** Buyer privacy taxonomy: standard | anonymous_private | upstream_tee | e2ee */
-  privacyTier?: 'standard' | 'anonymous_private' | 'upstream_tee' | 'e2ee';
-  providerCount: number;
-  activeProviderCount: number;
-  verifiedSellerCount: number;
-  privateSellerCount: number;
-  teeSellerCount?: number;
-  anonymousSellerCount?: number;
-  recentSuccessRate: number | null;
-  p50LatencyMs: number | null;
-  p95LatencyMs: number | null;
-  cheapestRateUsd: number | null;
-  pricing: {
-    benchmarkSource: 'models.dev' | 'provider' | 'override' | 'catalog_snapshot';
-    benchmarkUrl: string;
-    benchmarkMode: 'static_reference_only';
-    declaredUnit: 'task' | 'token_metered';
-    cheapestPricePerTaskUsd: number | null;
-    pricePer1mInputTokensUsd: number | null;
-    pricePer1mOutputTokensUsd: number | null;
-    referenceInputTokens: number | null;
-    referenceOutputTokens: number | null;
-  };
-  sellers: InferenceMarketSellerView[];
-};
-
-export type MarketplaceStatsView = {
-  activeOffers: number;
-  modelsLive: number;
-  routedRequests24h: number;
-  earnedBySellers24hUsd: number;
-};
-
-export type MarketsResponseView = {
-  object: 'list';
-  stats: MarketplaceStatsView;
-  settlement: {
-    asset: string;
-    network: string;
-    rule: string;
-  };
-  custody: {
-    sellerCredentialPolicy: string;
-    privacyPolicy: string;
-  };
-  data: InferenceMarketView[];
-};
-
-export type OpenAiModelEntryView = {
-  id: string;
-  object: 'model';
-  created: number;
-  owned_by: string;
-  bossraid?: {
-    cheapest_rate_usd?: number | null;
-    active_seller_count?: number;
-    verified_seller_count?: number;
-    model_provider?: string;
-  };
-};
-
-export type ModelsResponseView = {
-  object: 'list';
-  data: OpenAiModelEntryView[];
-};
-
 export type BuyerPurchaseView = {
   id: string;
   wallet: string;
@@ -122,9 +21,7 @@ export type BuyerPurchaseView = {
   sellerId?: string;
   costUsd: number;
   reservedUsd?: number;
-  benchmarkPriceUsd?: number;
-  savingsUsd?: number;
-  route: 'raid' | 'chat' | 'inference' | 'balance' | 'bounty';
+  route: 'raid' | 'chat' | 'balance' | 'bounty';
   /** charged | hold_released | refunded — missing treated as charged */
   status?: 'charged' | 'hold_released' | 'refunded';
   reason?: string;
@@ -134,7 +31,6 @@ export type BuyerPurchaseView = {
 export type BuyerPurchasesResponseView = {
   object: 'list';
   totalSpentUsd: number;
-  totalSavingsUsd: number;
   totalRefundedOrReleasedUsd?: number;
   chargedCount?: number;
   releasedCount?: number;
@@ -147,8 +43,6 @@ export type SellerModelDemandView = {
   displayName: string;
   routedRequests24h: number;
   routedValue24hUsd: number;
-  referenceInputPer1mUsd: number | null;
-  referenceOutputPer1mUsd: number | null;
   offerStatus: 'active' | 'paused';
 };
 

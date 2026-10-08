@@ -11,7 +11,6 @@ import {
 } from '../x402.js';
 import { readX402ConfigForContext } from '../lib/x402-runtime.js';
 import { buildLaunchRequestKey } from '../lib/http.js';
-import { computeSavingsUsd, estimateBenchmarkPriceUsd } from '@bossraid/constants';
 import { attemptX402Refund, readPaymentSignature } from '../lib/x402-reconciliation.js';
 import { buildX402SettlementFingerprint } from '../control-state/x402-settled-payments.js';
 import { type ApiContext } from '../api-context.js';
@@ -77,7 +76,7 @@ export function createPaymentHandlers(
 
   function recordMarketplaceLedgersFromRaid(input: {
     raidId: string;
-    route: 'raid' | 'chat' | 'inference';
+    route: 'raid' | 'chat';
     buyerWallet?: string;
     apiKeyId?: string;
     modelId?: string;
@@ -91,10 +90,6 @@ export function createPaymentHandlers(
       result.settlement?.escrowFundingUsd ??
       0;
     if (!input.skipBuyerPurchase && input.buyerWallet && costUsd > 0) {
-      const benchmarkPriceUsd = estimateBenchmarkPriceUsd({
-        modelId: input.modelId,
-        flatTaskUsd: costUsd,
-      });
       ctx.controlState.recordBuyerPurchase({
         wallet: input.buyerWallet,
         apiKeyId: input.apiKeyId,
@@ -104,8 +99,6 @@ export function createPaymentHandlers(
           result.synthesizedOutput?.baseSubmissionProviderId ??
           result.approvedSubmissions?.[0]?.submission.providerId,
         costUsd,
-        benchmarkPriceUsd,
-        savingsUsd: computeSavingsUsd(benchmarkPriceUsd, costUsd),
         route: input.route,
       });
     }
@@ -136,7 +129,7 @@ export function createPaymentHandlers(
   function captureApiKeyBilling(input: {
     apiKeyBilling?: ApiKeyBillingContext;
     actualCostUsd: number;
-    route: 'raid' | 'chat' | 'inference';
+    route: 'raid' | 'chat';
     raidId: string;
     modelId?: string;
     sellerId?: string;
@@ -165,18 +158,12 @@ export function createPaymentHandlers(
       }
       return;
     }
-    const benchmarkPriceUsd = estimateBenchmarkPriceUsd({
-      modelId: input.modelId,
-      flatTaskUsd: input.actualCostUsd,
-    });
     const captured = ctx.controlState.captureBuyerApiKeyBillingWithPurchase(input.apiKeyBilling, {
       actualCostUsd: input.actualCostUsd,
       raidId: input.raidId,
       modelId: input.modelId,
       sellerId: input.sellerId,
       route: input.route,
-      benchmarkPriceUsd,
-      savingsUsd: computeSavingsUsd(benchmarkPriceUsd, input.actualCostUsd),
     });
     if (!captured) {
       ctx.controlState.releaseBuyerApiKeyReservation(input.apiKeyBilling);
@@ -193,7 +180,7 @@ export function createPaymentHandlers(
   }
 
   async function reconcileLaunchPayment(input: {
-    route: 'raid' | 'chat' | 'inference';
+    route: 'raid' | 'chat';
     request: FastifyRequest;
     raidRequest: BossRaidSpawnInput;
     launchPayment: LaunchPaymentContext;
@@ -314,7 +301,7 @@ export function createPaymentHandlers(
   }
 
   async function requireReservedLaunchPayment(
-    route: 'raid' | 'chat' | 'inference',
+    route: 'raid' | 'chat',
     request: FastifyRequest,
     input: BossRaidSpawnInput
   ): Promise<LaunchPaymentContext> {

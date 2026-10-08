@@ -26,7 +26,7 @@ export class InvalidRaidLaunchReservationError extends Error {
 }
 
 export type LaunchReservationOptions = {
-  route: 'raid' | 'chat' | 'inference';
+  route: 'raid' | 'chat';
   requestKey: string;
   holdUntilUnix?: number;
 };

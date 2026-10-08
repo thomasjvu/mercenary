@@ -7,13 +7,21 @@ import {
 import { publicRouteSchema } from '../openapi/audience.js';
 import { readSettlementMode, readStorageBackend, readTeeSocketPath } from '@bossraid/constants';
 import { readBooleanEnv } from '../lib/env.js';
-import { readEnabledUpstreamMocks } from '../lib/production-readiness.js';
+import {
+  hasStrongOperationalSecret,
+  readEnabledUpstreamMocks,
+} from '../lib/production-readiness.js';
 import {
   isFullOnchainSettlementConfigured,
   isSettlementGateConfigured,
+  isNonzeroAddress,
 } from '../lib/settlement-mode.js';
 import { isTeeProductionConfigured, readTeeSocketState } from '../lib/tee.js';
-import { readX402ConfigForContext } from '../lib/x402-runtime.js';
+import {
+  readX402ConfigForContext,
+  isRobinhoodUsdGRail,
+  x402PayToConfigured,
+} from '../lib/x402-runtime.js';
 
 import { type ApiContext } from '../api-context.js';
 import { type ApiHandlerGroups } from '../handlers/index.js';
@@ -75,22 +83,23 @@ export function registerHealthRoutes(
       const settlementConfigured = isSettlementGateConfigured(settlementMode, env);
       const teeSocketPath = readTeeSocketPath(env);
       const tee = await readTeeSocketState(teeSocketPath);
-      const secretsEncrypted =
-        readStorageBackend(env) === 'memory' ||
-        Boolean((env.BOSSRAID_SECRET_ENCRYPTION_KEY ?? env.BOSSRAID_ENCRYPTION_KEY)?.trim());
+      const isProduction = env.NODE_ENV === 'production';
+      const encryptionKey = env.BOSSRAID_SECRET_ENCRYPTION_KEY ?? env.BOSSRAID_ENCRYPTION_KEY;
+      const secretsEncrypted = isProduction
+        ? hasStrongOperationalSecret(encryptionKey)
+        : readStorageBackend(env) === 'memory' || Boolean(encryptionKey?.trim());
       const x402Configured =
         !x402Config.enabled ||
         (Boolean(x402Config.facilitatorUrl) &&
-          x402Config.payTo !== '0x0000000000000000000000000000000000000000');
-      const isProduction = env.NODE_ENV === 'production';
+          x402PayToConfigured(x402Config) &&
+          (!isProduction ||
+            (isRobinhoodUsdGRail(x402Config) &&
+              isNonzeroAddress(x402Config.payTo) &&
+              Boolean(x402Config.facilitatorApiKey))));
       const upstreamMocksDisabled = readEnabledUpstreamMocks(env).length === 0;
       const onchainSettlementReady =
         settlementMode === 'onchain' && isFullOnchainSettlementConfigured(env);
-      const productionSettlementReady =
-        !isProduction ||
-        settlementMode === 'file' ||
-        settlementMode === 'off' ||
-        onchainSettlementReady;
+      const productionSettlementReady = !isProduction || onchainSettlementReady;
       const productionMocksReady = !isProduction || upstreamMocksDisabled;
       const productionBalanceFundReady =
         !isProduction || !readBooleanEnv(env.BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND);
@@ -106,10 +115,14 @@ export function registerHealthRoutes(
         readBooleanEnv(env.BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS);
       const bountyEscrowReady =
         settlementMode !== 'onchain' || Boolean(env.BOSSRAID_BOUNTY_ESCROW_ADDRESS?.trim());
-      const teeProductionReady = !isProduction || isTeeProductionConfigured(env, tee);
+      const teeProductionReady =
+        !isProduction ||
+        (isTeeProductionConfigured(env, tee) &&
+          env.BOSSRAID_HOST_TEE_SKIP_CLOUD_VERIFY !== '1' &&
+          env.BOSSRAID_PRIVACY_SERVER_VERIFY !== '0');
       const gates = {
         api: true,
-        storage: persistence.healthy,
+        storage: persistence.healthy && (!isProduction || readStorageBackend(env) !== 'memory'),
         secretsEncrypted,
         providers: providerHealth.length > 0 && providerHealth.some((provider) => provider.ready),
         x402: x402Configured,

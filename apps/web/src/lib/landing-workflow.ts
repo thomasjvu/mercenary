@@ -2,7 +2,7 @@ import type { FlowTab } from '../components/system/FlowTabs.js';
 import heroMangaBuyerImage from '../assets/hero-manga-buyer.webp';
 import heroMangaImage from '../assets/hero-manga.webp';
 import heroMangaRaidersImage from '../assets/hero-manga-raiders.webp';
-import { buildInferenceCurlSnippet, resolvePublicApiBase } from './inference-curl.js';
+import { resolvePublicApiBase } from './public-api-base.js';
 import type { AppRoute } from './app-routes.js';
 
 export const PUBLIC_API_BASE = resolvePublicApiBase(
@@ -35,9 +35,9 @@ bossraid_delegate({
 })`;
 
 export const WORKFLOW_TABS = [
-  { id: 'seller', label: 'seller', tone: 'blue' },
-  { id: 'raider', label: 'raider', tone: 'yellow' },
-  { id: 'buyer', label: 'buyer', tone: 'red' },
+  { id: 'seller', label: 'provider', tone: 'blue' },
+  { id: 'raider', label: 'bounties', tone: 'yellow' },
+  { id: 'buyer', label: 'raids', tone: 'red' },
 ] as const satisfies readonly FlowTab[];
 
 export const WORKFLOW_TAB_ORDER = WORKFLOW_TABS.map((tab) => tab.id);
@@ -58,14 +58,14 @@ export const HERO_SLICE_POSITIONS = [0, 33.333, 66.666, 100] as const;
 
 export const WORKFLOW_STEPS: Record<WorkflowTabId, readonly { label: string; value: string }[]> = {
   buyer: [
-    { label: '01', value: 'Connect wallet. Create capped API key.' },
-    { label: '02', value: 'Buy discounted inference or fund raid bounties.' },
-    { label: '03', value: 'Balance tracks spend, savings, and receipts.' },
+    { label: '01', value: 'Describe the work and set a budget.' },
+    { label: '02', value: 'Mercenary coordinates eligible agents.' },
+    { label: '03', value: 'Review the result, evidence, and settlement.' },
   ],
   seller: [
-    { label: '01', value: 'Register upstream or HTTP endpoint.' },
-    { label: '02', value: 'Publish discounted offers to marketplace.' },
-    { label: '03', value: 'Collect payout on routed raids.' },
+    { label: '01', value: 'Register an HTTP agent worker.' },
+    { label: '02', value: 'Accept tasks and submit verifiable outputs.' },
+    { label: '03', value: 'Successful providers split raid payouts equally.' },
   ],
   raider: [
     { label: '01', value: 'Post /v1/raid with task and budget.' },
@@ -78,7 +78,7 @@ type LandingHeroAction = {
   href: string;
   label: string;
   path: AppRoute;
-  mode?: 'inference' | 'raid';
+  mode?: 'raid';
 };
 
 type LandingHeroConfig = {
@@ -91,15 +91,15 @@ type LandingHeroConfig = {
 
 export const HERO_BY_WORKFLOW: Record<WorkflowTabId, LandingHeroConfig> = {
   seller: {
-    before: 'Register endpoint.',
-    accent: 'Publish AI inference offers.',
-    after: 'Earn on successful requests.',
+    before: 'Register your worker.',
+    accent: 'Complete agent work.',
+    after: 'Earn on approved contributions.',
     primary: {
-      href: '/onboarding/seller',
-      label: 'sell inference',
-      path: '/onboarding/seller',
+      href: '/onboarding/seller/http',
+      label: 'register worker',
+      path: '/onboarding/seller/http',
     },
-    secondary: [{ href: '/marketplace', label: 'buy inference', path: '/marketplace' }],
+    secondary: [{ href: '/raiders', label: 'view raiders', path: '/raiders' }],
   },
   raider: {
     before: 'Post a paid bounty.',
@@ -113,34 +113,19 @@ export const HERO_BY_WORKFLOW: Record<WorkflowTabId, LandingHeroConfig> = {
     secondary: [{ href: '/raiders', label: 'view raiders', path: '/raiders' }],
   },
   buyer: {
-    before: 'Load up wallet.',
-    accent: 'Buy inference or raids.',
-    after: 'Discounted. Capped budget.',
+    before: 'Describe the task.',
+    accent: 'Hire a team of agents.',
+    after: 'Set a budget. Inspect the result.',
     primary: {
-      href: '/marketplace',
-      label: 'browse marketplace',
-      path: '/marketplace',
+      href: '/mercenary',
+      label: 'launch a raid',
+      path: '/mercenary',
     },
-    secondary: [{ href: '/mercenary', label: 'hire Mercenary', path: '/mercenary' }],
+    secondary: [{ href: '/bounties', label: 'browse bounties', path: '/bounties' }],
   },
 };
 
 export const TERMINAL_PANELS = [
-  {
-    id: 'chat',
-    tabLabel: 'tool',
-    tabClass: 'deck-tab--chat',
-    label: '/v1/inference/chat/completions',
-    theme: 'chat' as const,
-    code: buildInferenceCurlSnippet({
-      apiBase: PUBLIC_API_BASE,
-      model: 'venice-uncensored-1-2',
-      prompt: 'Cheapest Venice inference.',
-      privacyMode: 'prefer',
-      includeAuth: false,
-      relativePath: !PUBLIC_API_BASE.startsWith('http'),
-    }),
-  },
   {
     id: 'raid',
     tabLabel: 'raid',

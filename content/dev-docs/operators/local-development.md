@@ -12,7 +12,7 @@ cp .env.example .env
 pnpm dev
 ```
 
-`pnpm dev` starts evaluator, API, web, and ops. The API loads the inference marketplace catalog from `examples/inference/inference-marketplace-providers.json` by default. Local provider workers are off unless you set `BOSSRAID_DEV_SPAWN_PROVIDERS=true`.
+`pnpm dev` starts evaluator, API, web, and ops. The API starts with an empty provider registry from `examples/providers/empty.providers.json` by default. Local provider workers are off unless you set `BOSSRAID_DEV_SPAWN_PROVIDERS=true`.
 
 | Service   | Default URL                                                                                   |
 | --------- | --------------------------------------------------------------------------------------------- |

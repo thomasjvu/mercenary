@@ -25,11 +25,11 @@ if (args.has('help')) {
     [
       'Usage:',
       '  pnpm test:x402:e2e -- --mode wallet --route raid',
-      '  pnpm test:x402:e2e -- --mode mock --route inference --api-base http://127.0.0.1:8788',
+      '  pnpm test:x402:e2e -- --mode mock --route chat --api-base http://127.0.0.1:8788',
       '',
       'Options:',
       '  --mode wallet|mock',
-      '  --route raid|chat|inference',
+      '  --route raid|chat',
       '  --api-base <url>',
       '  --payload-file <path>',
     ].join('\n')
@@ -46,8 +46,8 @@ const apiBase = resolveApiBase(readCliArg(args, 'api-base'), {
 const payloadFile =
   readCliArg(args, 'payload-file') ?? resolve(rootDir, defaultPayloadForRoute(route));
 
-if (route !== 'raid' && route !== 'chat' && route !== 'inference') {
-  throw new Error(`Unsupported --route "${route}". Use "raid", "chat", or "inference".`);
+if (route !== 'raid' && route !== 'chat') {
+  throw new Error(`Unsupported --route "${route}". Use "raid" or "chat".`);
 }
 
 if (mode !== 'wallet' && mode !== 'mock') {
@@ -128,36 +128,11 @@ const settlement = paymentResponseHeader
 const responseBody = await readBody(paidResponse);
 
 if (!paidResponse.ok) {
-  throw new Error(
-    `Paid request failed with ${paidResponse.status}: ${formatBody(responseBody)}`
-  );
+  throw new Error(`Paid request failed with ${paidResponse.status}: ${formatBody(responseBody)}`);
 }
 
 if (!paymentResponseHeader) {
   throw new Error('Paid response succeeded but did not include PAYMENT-RESPONSE.');
-}
-
-const routerProof =
-  route === 'inference'
-    ? {
-        selectedSeller: responseBody?.bossraid?.selected_seller,
-        savingsUsd: responseBody?.bossraid?.savings_usd,
-        agentsInvited: responseBody?.raid?.agents_invited,
-        model: responseBody?.model,
-      }
-    : undefined;
-
-if (route === 'inference') {
-  if (!routerProof?.selectedSeller) {
-    throw new Error(
-      `Inference route did not return bossraid.selected_seller: ${JSON.stringify(responseBody)}`
-    );
-  }
-  if (routerProof.agentsInvited !== 1) {
-    throw new Error(
-      `Expected one-agent inference raid, got agents_invited=${routerProof.agentsInvited}`
-    );
-  }
 }
 
 console.log(
@@ -166,7 +141,6 @@ console.log(
       step: 'success',
       status: paidResponse.status,
       settlement,
-      routerProof,
       body: responseBody,
     },
     null,
@@ -215,17 +189,11 @@ function routePathFor(route) {
   if (route === 'chat') {
     return 'v1/chat/completions';
   }
-  if (route === 'inference') {
-    return 'v1/inference/chat/completions';
-  }
   return 'v1/raid';
 }
 
 function defaultPayloadForRoute(route) {
-  if (route === 'inference') {
-    return 'examples/inference/inference-chat-completion-request.json';
-  }
   return route === 'chat'
-    ? 'examples/inference/chat-completion-request.json'
+    ? 'examples/raids/chat-completion-request.json'
     : 'examples/raids/unity-bug/task.json';
 }

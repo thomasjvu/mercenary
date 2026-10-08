@@ -9,7 +9,7 @@ export async function registerOpenApi(app: FastifyInstance): Promise<void> {
         title: 'Boss Raid API',
         version: '0.1.0',
         description:
-          'Open marketplace API for discount inference, Mercenary raids, seller onboarding, and operator runtime.',
+          'Open marketplace API for Mercenary raids, bounties, seller onboarding, and operator runtime.',
       },
       servers: [
         {

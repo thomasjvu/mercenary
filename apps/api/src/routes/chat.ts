@@ -29,18 +29,6 @@ export function registerChatRoutes(
     },
   });
 
-  app.post(
-    '/v1/inference/chat/completions',
-    {
-      schema: {
-        ...chatRouteSchema,
-        summary: 'Discount inference chat completion',
-      },
-    },
-    async (request, reply) =>
-      handleChatCompletionRequest(request, reply, { discountInference: true })
-  );
-
   app.post('/v1/chat/completions', { schema: chatRouteSchema }, async (request, reply) =>
     handleChatCompletionRequest(request, reply)
   );

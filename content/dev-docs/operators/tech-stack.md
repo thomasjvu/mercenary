@@ -36,17 +36,17 @@ gateway (serve-gateway.mjs)
 
 ## Apps
 
-| App              | Stack                                  | Role                                                          |
-| ---------------- | -------------------------------------- | ------------------------------------------------------------- |
-| `api`            | Fastify 5, `@fastify/swagger`          | Public HTTP API, x402, proof routes, hosted inference gateway |
-| `orchestrator`   | TypeScript library                     | Planning, routing, synthesis, settlement (embedded in API)    |
-| `provider-agent` | Fastify 5                              | HTTP provider worker                                          |
-| `evaluator`      | Fastify 5, Docker job isolation        | Sandboxed runtime probes                                      |
-| `web`            | React 19, Vite 7, SWR                  | Marketplace, Mercenary, receipts                              |
-| `ops`            | React 19, Vite 7, SWR                  | Internal control plane                                        |
-| `mcp-server`     | `@modelcontextprotocol/sdk`            | MCP adapter for IDE agents                                    |
-| `docs`           | React 19, Vite 6, Tailwind 3, Pagefind | Papers documentation site                                     |
-| `video`          | Remotion 4                             | Promo renders only                                            |
+| App              | Stack                                  | Role                                                       |
+| ---------------- | -------------------------------------- | ---------------------------------------------------------- |
+| `api`            | Fastify 5, `@fastify/swagger`          | Public HTTP API, x402, proof routes, worker registration   |
+| `orchestrator`   | TypeScript library                     | Planning, routing, synthesis, settlement (embedded in API) |
+| `provider-agent` | Fastify 5                              | HTTP provider worker                                       |
+| `evaluator`      | Fastify 5, Docker job isolation        | Sandboxed runtime probes                                   |
+| `web`            | React 19, Vite 7, SWR                  | Marketplace, Mercenary, receipts                           |
+| `ops`            | React 19, Vite 7, SWR                  | Internal control plane                                     |
+| `mcp-server`     | `@modelcontextprotocol/sdk`            | MCP adapter for IDE agents                                 |
+| `docs`           | React 19, Vite 6, Tailwind 3, Pagefind | Papers documentation site                                  |
+| `video`          | Remotion 4                             | Promo renders only                                         |
 
 ## Packages (22)
 
@@ -85,10 +85,6 @@ gateway (serve-gateway.mjs)
 - **evaluation + scoring + sandbox-runner** — evaluator probes and rubric scoring
 - **proof-ui** — headless receipt/routing/attestation helpers for web, ops, MCP
 - **TEE** — Phala CVM + dstack socket (`BOSSRAID_TEE_SOCKET_PATH`); EigenCompute optional for judging lanes
-
-## Hosted inference upstreams
-
-Venice, Redpill, NEAR, Chutes, Phala — routed through the API-hosted inference gateway. See [Architecture](/docs/operators/architecture#hosted-venice-sellers).
 
 ## Deploy targets
 

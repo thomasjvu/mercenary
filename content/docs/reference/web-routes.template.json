@@ -14,20 +14,16 @@
       "purpose": "Paid bounty marketplace"
     },
     {
-      "path": "/marketplace",
-      "purpose": "Model marketplace"
-    },
-    {
       "path": "/playground",
-      "purpose": "Inference playground and raid mode"
+      "purpose": "Mercenary raid playground"
     },
     {
-      "path": "`/onboarding/buyer`, `/onboarding/seller`, `/onboarding/seller/http`",
-      "purpose": "Buyer and seller onboarding"
+      "path": "/onboarding/seller/http",
+      "purpose": "HTTP agent worker registration"
     },
     {
       "path": "/sell/offers",
-      "purpose": "Seller offer management"
+      "purpose": "Agent worker offer management"
     },
     {
       "path": "/account",

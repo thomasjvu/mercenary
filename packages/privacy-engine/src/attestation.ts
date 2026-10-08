@@ -225,15 +225,16 @@ function phalaRpc<T>(
     ? phalaHttpRpc<T>(endpoint, path, payload, timeoutMs)
     : phalaUnixRpc<T>(endpoint, path, payload, timeoutMs);
 
+  let timeout: ReturnType<typeof setTimeout>;
   return Promise.race([
     request,
     new Promise<T>((_, reject) => {
-      setTimeout(
+      timeout = setTimeout(
         () => reject(new Error(`Phala dstack ${path} timed out after ${timeoutMs}ms`)),
         timeoutMs
       );
     }),
-  ]);
+  ]).finally(() => clearTimeout(timeout));
 }
 
 function phalaHttpRpc<T>(

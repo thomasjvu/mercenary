@@ -4,24 +4,18 @@ Verification, deploy, and operator workflows. Env tables: [reference/env.md](../
 
 **Source of truth is Forgejo** ([`bossraid/mercenary`](https://forgejo.thomasjvu.com/bossraid/mercenary)); GitHub is a mirror. CI on spectre, image publishing through the GitHub mirror, and remotes: [source-control.md](source-control.md).
 
-Live offer counts, API health, and the Cloudflare 525 recovery procedure: [Marketplace operations](marketplace-operations.md).
+Model inference operations belong to Alkahest. Boss Raid deploys HTTP workers, evaluator, raid API, and bounty market.
 
 ## Operator path
 
 1. **Local or Phala** — `pnpm dev` for local stack; Phala bootstrap via [Infisical](/dev-docs/operators/infisical).
 2. **Readiness** — `GET /v1/ops/production-readiness` must return `ok: true` for full production.
-3. **Liquidity (platform seats)** — configure any of the 11 provider keys: Venice, Redpill, NEAR, Chutes, Phala, Darkbloom, Nebius, OpenAI, xAI, Z.ai, or Anthropic. Key names and bases are in [env.md](../reference/env.md#catalog-upstream-platform-keys-optional).
-
-   Run `POST /v1/ops/platform-liquidity/bootstrap` with an admin token, or set `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1` on API start. Bootstrap refreshes each keyed account's model list, probes priced chat models (up to four concurrent probes per provider), and registers only passing seats. Probes consume upstream tokens. Inspect `published`, `skipped`, and `paused` in the result. Missing keys, removed models, or failed probes pause previous platform seats.
-
-   Phala compose uses an empty provider seed (`platform-only.providers.json`) and retires demo workers `dottie` / `riko` / `gamma` via `BOSSRAID_DISABLED_PROVIDER_IDS`. Optional game agents use `docker compose --profile game-providers up`.
-
+3. **Workers** — register HTTP agent workers and verify health before accepting paid work.
 4. **Ops UI** — authenticate with `BOSSRAID_ADMIN_TOKEN`, monitor raids, toggle x402.
 5. **Ship** — gateway (`pnpm bossraid serve:gateway`) or Cloudflare Pages deploy.
 
 ## Remaining production work
 
-- The public API and web proxy returned Cloudflare 525 in the latest live check; see [Marketplace operations](marketplace-operations.md) for the observed state and recovery checks. No live seller counts or readiness payload were available.
 - Publish the API, evaluator, and evaluator-job images from the current `main` commit. Pin all three local Phala image refs to that same verified `sha-<commit>` before deployment.
 - Mainnet escrow deployment and the Phala `SETTLEMENT_MODE=onchain` cutover remain operator actions; testnet artifacts are not production contracts.
 - Complete and record a live Marian x402 transaction, confirm funded settlement balances and at least one ready seller, and require `GET /v1/ops/production-readiness` → `ok: true` before unrestricted paid traffic.
@@ -37,42 +31,7 @@ pnpm bossraid sync:openapi
 
 CI runs `pnpm bossraid check:openapi`. Specs are served from `apps/docs/public/` and browsable at [/api](/api).
 
-### Catalog refresh
-
-```bash
-pnpm bossraid sync:inference-catalog                     # fetch and write snapshots + catalog
-pnpm bossraid sync:inference-catalog -- --cached          # regenerate offline
-pnpm bossraid sync:inference-catalog -- --check           # fetch, report drift; no writes
-pnpm bossraid sync:inference-catalog -- --cached --check  # compare saved inputs; no network
-```
-
-Builds use the committed catalog snapshot and do not make network requests or rewrite generated files. Docker checks the snapshot against generated catalog data before compiling. Refresh public source data explicitly with `pnpm bossraid sync:inference-catalog`, review the reported drift, and commit the snapshot and generated outputs. Public downloads need no provider API keys. Sources have a 20-second timeout and ETag support. A failed download retains that source's previous successful payload and reports the failure. A first run without a usable snapshot fails.
-
-### Web bundle loading
-
-Wallet and x402 client code is loaded when a wallet action is used. Keep runtime imports from `@bossraid/smart-pay` inside that action path; type-only imports do not pull the payment runtime into the initial bundle. Avoid manually grouping `viem` into a startup vendor chunk, since that can preload the payment runtime with the app shell.
-
-Outputs in `packages/constants/` include the typed catalog, provider prices, `data/inference-sources.json`, `data/inference-catalog-report.json`, and generated source status. The local marketplace fixture in `examples/inference/` is regenerated too. Edit `data/inference-overrides.json` for reviewed aliases, price exceptions, and privacy claims; do not edit generated files.
-
-`--check` exits nonzero for additions, removals, changed model metadata/prices, source failures, or sources not checked successfully in seven days. Review the report, refresh, and commit the generated snapshot with the importer/override changes. CI checks the committed inputs; the daily catalog drift workflow fetches current public sources without publishing offers or modifying files.
-
-`GET /v1/ops/platform-liquidity` exposes `catalogSources`, candidates, and `configuredCount`. The legacy `readyCount` also counts configured keys; successful runtime publication is reported by the bootstrap response. Inspect source timestamps/errors before deployment, then inspect the bootstrap results. Catalog inclusion alone does not prove model availability.
-
-Regenerate brand assets (Venice; requires `VENICE_API_KEY` in `.private/.env`):
-
-```bash
-pnpm bossraid sync:oc-references
-pnpm bossraid generate:pfp          # Mercenary bust portrait → assets/boss-raid-pfp.png
-pnpm bossraid generate:landing-hero   # seller / raider / buyer manga panels → apps/web/src/assets/
-```
-
-Gateway (built web + ops on one origin):
-
-```bash
-pnpm bossraid serve:gateway
-```
-
-Serves `/`, `/ops/`, proxies `/api/*` and `/ops-api/*`, exposes `/healthz`.
+#
 
 ## Ops UI
 
@@ -94,9 +53,9 @@ Dangerous actions require confirmation:
 - **Abort raid** — confirm with raid id and status
 - **Launch (ops)** — confirm budget/agents; uses `POST /v1/raid` via admin session (payment bypass when x402 is on)
 
-Consumer tandem: ops links to web routes (`/verification`, `/mercenary`, `/playground?mode=raid`, `/marketplace`) and compares `GET /ready` `payment.enabled` with ops x402 state. Buyer receipt links need `raidAccessToken` from spawn (stored in session for the ops session).
+Consumer tandem: ops links to web routes (`/verification`, `/mercenary`, `/playground?mode=raid`) and compares `GET /ready` `payment.enabled` with ops x402 state. Buyer receipt links need `raidAccessToken` from spawn (stored in session for the ops session).
 
-Mercenary and inference launches from the public web require a wallet session cookie on `POST /v1/raid`, `POST /v1/chat/completions`, and `POST /v1/inference/chat/completions` unless the caller uses a buyer API key or mana billing headers. Admin bearer and ops session still bypass payment for internal launches.
+Mercenary launches from the public web require a wallet session cookie on `POST /v1/raid`, `POST /v1/chat/completions` unless the caller uses a buyer API key or mana billing headers. Admin bearer and ops session still bypass payment for internal launches.
 
 Point local web at a hosted API:
 
@@ -112,10 +71,11 @@ pnpm build
 pnpm dev
 pnpm bossraid serve:gateway
 pnpm test:unit
+pnpm test:dependency-security
 pnpm test:money-path
-pnpm --filter @bossraid/api test src/marketplace-inference.test.ts
+pnpm --filter @bossraid/api exec node --import tsx --test --test-concurrency=1 src/product-boundary.test.ts
 pnpm --filter @bossraid/api test:all
-pnpm --filter @bossraid/web test src/lib/*.test.ts
+pnpm --filter @bossraid/web exec node --import tsx --test --test-concurrency=2 'src/lib/*.test.ts'
 pnpm bossraid mercenary:rehearse
 pnpm bossraid export:proof-bundle -- --raid-id <raidId>
 pnpm bossraid verify:attestation
@@ -290,11 +250,17 @@ curl -H "Authorization: Bearer $BOSSRAID_ADMIN_TOKEN" \
   https://api.raid.quest/v1/ops/settlement/status | jq
 ```
 
-Production gate: `ok: true` on `GET /v1/ops/production-readiness` before unrestricted paid traffic. `GET /ready` also enforces production-only checks when `NODE_ENV=production` (onchain settlement configured, upstream mocks disabled, unverified balance fund disabled). Operational tokens and encryption keys must be at least 32 characters, non-placeholder, varied, and non-repeating; generate them with a cryptographically secure random source. Static deploy audit (matches CI):
+Production gate: `ok: true` on `GET /v1/ops/production-readiness` before unrestricted paid traffic. Development mode and `file`/`off` settlement cannot pass this gate. Production settlement configuration must use chain `4663`, the mainnet USDG token, non-zero EVM addresses, a valid signer key, and an HTTP(S) RPC URL. `/ready` also rejects production `file`/`off` settlement and non-Phala hosts. Enabling x402 through `PATCH /v1/ops/settings` rechecks production readiness server-side with payments enabled; disabling remains available while blocked.
+
+Readiness validates configuration and provider health; it does not prove RPC chain identity, deployed bytecode, funded signers, allowances, a fresh verified TDX quote, or completed payouts. Check those separately before launch. Static deploy audit rejects every supported upstream mock plus server privacy/Phala Cloud verification bypasses.
+
+`GET /ready` also enforces production-only checks when `NODE_ENV=production` (onchain settlement configured, upstream mocks disabled, unverified balance fund disabled). Operational tokens and encryption keys must be at least 32 characters, non-placeholder, varied, and non-repeating; generate them with a cryptographically secure random source. Static deploy audit (matches CI):
 
 ```bash
 NODE_ENV=production \
 BOSSRAID_SETTLEMENT_MODE=onchain \
+BOSSRAID_CHAIN_ID=4663 \
+BOSSRAID_TOKEN_ADDRESS=0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168 \
 BOSSRAID_X402_ENABLED=true \
 BOSSRAID_SETTLEMENT_FUND_JOBS=true \
 BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS=true \
@@ -326,3 +292,9 @@ Ops UI (`/ops/`) surfaces the same admin routes after login:
 - Settlement: `file` by default until mainnet contracts are wired; `onchain` only with funded signers and contract env.
 - Successful providers split payout equally.
 - Browser API traffic stays same-origin via `/api/*` (gateway or Cloudflare Pages proxy).
+
+## Empty worker registry
+
+The default `examples/providers/empty.providers.json` contains no workers. The API starts so operators and sellers can register real HTTP endpoints. Worker readiness and raid eligibility remain false until verified workers are available; an empty registry never provides simulated capacity.
+
+Raid smoke profiles use their checked-in provider fixture before local `BOSSRAID_PROVIDERS_FILE` overrides, so stale workstation defaults cannot replace the test topology.

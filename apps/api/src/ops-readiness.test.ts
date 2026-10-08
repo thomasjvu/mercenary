@@ -85,7 +85,7 @@ test('GET /ready reports buyer request budget limit', async () => {
   }
 });
 
-test('GET /ready passes settlement gate for production file settlement mode', async () => {
+test('GET /ready blocks settlement gate for production file settlement mode', async () => {
   const app = createTestApiServer([], {
     ...process.env,
     NODE_ENV: 'production',
@@ -100,7 +100,9 @@ test('GET /ready passes settlement gate for production file settlement mode', as
       url: '/ready',
     });
     assert.equal(response.statusCode, 200);
-    assert.equal(response.json().gates?.settlement, true);
+    assert.equal(response.json().gates?.settlement, false);
+    assert.equal(response.json().gates?.storage, false);
+    assert.equal(response.json().ok, false);
   } finally {
     await app.close();
   }
@@ -238,6 +240,67 @@ test('production readiness report surfaces full-production blockers', async () =
         .nextActions.some((action: { check: string }) => action.check === 'tee_attestation'),
       true
     );
+  } finally {
+    await app.close();
+  }
+});
+
+test('production x402 enablement is blocked server-side by production readiness', async () => {
+  const token = 'admin-production-toggle-token-with-length';
+  const app = createTestApiServer([], {
+    NODE_ENV: 'production',
+    BOSSRAID_ADMIN_TOKEN: token,
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+    BOSSRAID_SETTLEMENT_MODE: 'file',
+    BOSSRAID_X402_ENABLED: 'false',
+    BOSSRAID_X402_PAY_TO: '0x0000000000000000000000000000000000000001',
+    BOSSRAID_X402_FACILITATOR_URL: 'https://marian.example.com',
+    BOSSRAID_X402_FACILITATOR_API_KEY: 'test-key',
+  });
+  try {
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/v1/ops/settings',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { x402Enabled: true },
+    });
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.json().error, 'production_not_ready');
+    const settings = await app.inject({
+      method: 'GET',
+      url: '/v1/ops/settings',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    assert.equal(settings.json().x402.enabled, false);
+    const disabled = await app.inject({
+      method: 'PATCH',
+      url: '/v1/ops/settings',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { x402Enabled: false },
+    });
+    assert.equal(disabled.statusCode, 200);
+  } finally {
+    await app.close();
+  }
+});
+
+test('settlement status reports invalid RPC configuration without throwing', async () => {
+  const token = 'admin-invalid-rpc-token';
+  const app = createTestApiServer([], {
+    BOSSRAID_STORAGE_BACKEND: 'memory',
+    BOSSRAID_ADMIN_TOKEN: token,
+    BOSSRAID_SETTLEMENT_MODE: 'onchain',
+    BOSSRAID_RPC_URL: 'invalid-url',
+  });
+  try {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/v1/ops/settlement/status',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().configured, false);
+    assert.equal(response.json().rpcUrl, null);
   } finally {
     await app.close();
   }

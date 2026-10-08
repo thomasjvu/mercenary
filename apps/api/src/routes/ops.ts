@@ -1,4 +1,3 @@
-import { INFERENCE_CATALOG_SOURCE_STATUS } from '@bossraid/constants';
 import { type FastifyInstance } from 'fastify';
 import { apiErrorSchema } from '@bossraid/openapi-schemas';
 import { internalRouteSchema } from '../openapi/audience.js';
@@ -10,12 +9,10 @@ import {
 } from '@bossraid/constants';
 import { buildProductionReadinessReport } from '../lib/production-readiness.js';
 import {
-  bootstrapPlatformLiquidity,
-  listPlatformLiquidityCandidates,
-} from '../lib/platform-liquidity.js';
-import {
   isFullOnchainSettlementConfigured,
   isSettlementGateConfigured,
+  isNonzeroAddress,
+  isRpcUrlConfigured,
 } from '../lib/settlement-mode.js';
 import {
   cleanupWorkspace,
@@ -71,6 +68,54 @@ export function registerOpsRoutes(
   const { requireAdmin, requireRateLimit, readOpsSession, issueOpsSession, clearOpsSession } =
     handlers.auth;
   const { collectProviderHealth, ensureErc8004ProofState } = handlers.raid;
+
+  async function collectProductionReadiness(x402Enabled?: boolean) {
+    const providerHealth = await collectProviderHealth();
+    const persistence = orchestrator.getPersistenceStatus();
+    const x402Config = readX402ConfigForContext(ctx);
+    const settlementMode = readSettlementMode(env);
+    const teeSocketPath = readTeeSocketPath(env);
+    const tee = await readTeeSocketState(teeSocketPath);
+    return buildProductionReadinessReport({
+      env,
+      storageBackend: readStorageBackend(env),
+      persistenceHealthy: persistence.healthy,
+      providers: orchestrator.listProviders(),
+      providerHealth,
+      x402: {
+        enabled: x402Enabled ?? x402Config.enabled,
+        facilitatorConfigured: Boolean(x402Config.facilitatorUrl),
+        payToConfigured:
+          env.NODE_ENV === 'production'
+            ? isNonzeroAddress(x402Config.payTo)
+            : Boolean(x402Config.payTo?.trim()) &&
+              x402Config.payTo.toLowerCase() !== '0x0000000000000000000000000000000000000000',
+        network: x402Config.network,
+        asset: x402Config.asset,
+        facilitatorUrl: x402Config.facilitatorUrl ?? null,
+        facilitatorApiKeyConfigured: Boolean(x402Config.facilitatorApiKey),
+      },
+      settlement: {
+        mode: settlementMode,
+        configured: isFullOnchainSettlementConfigured(env),
+      },
+      tee: {
+        configured: isTeeProductionConfigured(env, tee),
+        platform: env.BOSSRAID_TEE_PLATFORM ?? null,
+        ...tee,
+      },
+      limits: {
+        publicRateLimitMax,
+        publicRateLimitWindowMs,
+        buyerKeyRateLimitMax,
+        buyerKeyRateLimitWindowMs,
+        buyerKeyDefaultSpendLimitUsd,
+        buyerMaxRequestBudgetUsd,
+      },
+      workerIsolation,
+      evaluatorEnabled: runtimeExecutionEnabled(env),
+    });
+  }
 
   app.get(
     '/v1/agent.json',
@@ -422,6 +467,16 @@ export function registerOpsRoutes(
       }
 
       if (body.x402Enabled) {
+        if (env.NODE_ENV === 'production') {
+          const readiness = await collectProductionReadiness(true);
+          if (!readiness.ok) {
+            reply.code(400);
+            return {
+              error: 'production_not_ready',
+              message: `Production readiness blocked x402 enablement: ${readiness.nextActions.map((action) => action.check).join(', ')}.`,
+            };
+          }
+        }
         const settingsView = buildX402SettingsView(ctx);
         if (!settingsView.canEnable) {
           reply.code(400);
@@ -477,7 +532,7 @@ export function registerOpsRoutes(
           bountyEscrow: bountyEscrowAddress ?? null,
           token: tokenAddress ?? null,
         },
-        rpcUrl: rpcUrl ? new URL(rpcUrl).host : null,
+        rpcUrl: rpcUrl && isRpcUrlConfigured(rpcUrl) ? new URL(rpcUrl).host : null,
       };
     }
   );
@@ -522,106 +577,7 @@ export function registerOpsRoutes(
         return adminError;
       }
 
-      const providerHealth = await collectProviderHealth();
-      const persistence = orchestrator.getPersistenceStatus();
-      const x402Config = readX402ConfigForContext(ctx);
-      const settlementMode = readSettlementMode(env);
-      const teeSocketPath = readTeeSocketPath(env);
-      const tee = await readTeeSocketState(teeSocketPath);
-      return buildProductionReadinessReport({
-        env,
-        storageBackend: readStorageBackend(env),
-        persistenceHealthy: persistence.healthy,
-        providers: orchestrator.listProviders(),
-        providerHealth,
-        x402: {
-          enabled: x402Config.enabled,
-          facilitatorConfigured: Boolean(x402Config.facilitatorUrl),
-          payToConfigured:
-            Boolean(x402Config.payTo?.trim()) &&
-            x402Config.payTo.toLowerCase() !== '0x0000000000000000000000000000000000000000',
-          network: x402Config.network,
-          asset: x402Config.asset,
-          facilitatorUrl: x402Config.facilitatorUrl ?? null,
-          facilitatorApiKeyConfigured: Boolean(x402Config.facilitatorApiKey),
-        },
-        settlement: {
-          mode: settlementMode,
-          configured: isFullOnchainSettlementConfigured(env),
-        },
-        tee: {
-          configured: isTeeProductionConfigured(env, tee),
-          platform: env.BOSSRAID_TEE_PLATFORM ?? null,
-          ...tee,
-        },
-        limits: {
-          publicRateLimitMax,
-          publicRateLimitWindowMs,
-          buyerKeyRateLimitMax,
-          buyerKeyRateLimitWindowMs,
-          buyerKeyDefaultSpendLimitUsd,
-          buyerMaxRequestBudgetUsd,
-        },
-        workerIsolation,
-      });
-    }
-  );
-
-  app.get(
-    '/v1/ops/platform-liquidity',
-    {
-      schema: internalRouteSchema({
-        tags: ['Ops'],
-        summary: 'Catalog sources, liquidity candidates, and key coverage',
-        response: {
-          200: { type: 'object', additionalProperties: true },
-          401: apiErrorSchema,
-        },
-      }),
-    },
-    async (request, reply) => {
-      const adminError = requireAdmin(reply, request.headers);
-      if (adminError) {
-        return adminError;
-      }
-      const candidates = listPlatformLiquidityCandidates(env);
-      return {
-        object: 'platform_liquidity_status',
-        catalogSources: INFERENCE_CATALOG_SOURCE_STATUS,
-        candidates,
-        configuredCount: candidates.filter((entry) => entry.hasPlatformKey).length,
-        // Legacy field: counts configured keys, not successful completion probes.
-        readyCount: candidates.filter((entry) => entry.hasPlatformKey).length,
-      };
-    }
-  );
-
-  app.post(
-    '/v1/ops/platform-liquidity/bootstrap',
-    {
-      schema: internalRouteSchema({
-        tags: ['Ops'],
-        summary: 'Probe and register available catalog models with platform keys',
-        response: {
-          200: { type: 'object', additionalProperties: true },
-          401: apiErrorSchema,
-        },
-      }),
-    },
-    async (request, reply) => {
-      const adminError = requireAdmin(reply, request.headers);
-      if (adminError) {
-        return adminError;
-      }
-      const body = (request.body ?? {}) as { discountPercent?: number };
-      const result = await bootstrapPlatformLiquidity({
-        orchestrator,
-        env,
-        discountPercent:
-          typeof body.discountPercent === 'number' ? body.discountPercent : undefined,
-      });
-      reply.code(200);
-      return result;
+      return collectProductionReadiness();
     }
   );
 }

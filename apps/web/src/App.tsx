@@ -3,19 +3,11 @@ import useSWR from 'swr';
 import { ensureIconCollections } from './lib/iconify-collections.js';
 import { bindAsciiRipple } from './ascii-ripple';
 import { fetchJson, type Provider, type ProviderHealth } from './api';
-import { fetchMarkets } from './api/marketplace.js';
 import { AppSidebar } from './components/AppSidebar';
 import { ApiReadinessBanner } from './components/system/ApiReadinessBanner.js';
 import { AttestationInspectorProvider } from './contexts/AttestationInspectorContext.js';
 import type { AppRoute } from './lib/app-routes.js';
-import {
-  isMarketplaceDetailPath,
-  isMarketplaceListPath,
-  marketplaceModelPath,
-  readMarketplaceModelId,
-  readPlaygroundModelId,
-} from './lib/routing.js';
-import { buildPlaygroundUrl, readPlaygroundMode } from './lib/playground-routing.js';
+import { buildPlaygroundUrl } from './lib/playground-routing.js';
 import { useLocationKey, useLocationPathname } from './lib/use-location.js';
 import {
   bountyDetailPath,
@@ -29,12 +21,7 @@ import type { LegalPageKind } from './pages/LegalPage';
 const LandingPage = lazy(() =>
   import('./pages/LandingPage').then((module) => ({ default: module.LandingPage }))
 );
-const MarketplacePage = lazy(() =>
-  import('./pages/MarketplacePage').then((module) => ({ default: module.MarketplacePage }))
-);
-const ModelDetailPage = lazy(() =>
-  import('./pages/ModelDetailPage').then((module) => ({ default: module.ModelDetailPage }))
-);
+
 const RaidersPage = lazy(() =>
   import('./pages/RaidersPage').then((module) => ({ default: module.RaidersPage }))
 );
@@ -50,9 +37,7 @@ const LegalPage = lazy(() =>
 const AccountPage = lazy(() =>
   import('./pages/AccountPage').then((module) => ({ default: module.AccountPage }))
 );
-const BuyerOnboardingPage = lazy(() =>
-  import('./pages/BuyerOnboardingPage').then((module) => ({ default: module.BuyerOnboardingPage }))
-);
+
 const MercenaryPage = lazy(() =>
   import('./pages/MercenaryPage').then((module) => ({ default: module.MercenaryPage }))
 );
@@ -62,11 +47,7 @@ const PlaygroundPage = lazy(() =>
 const ReceiptPage = lazy(() =>
   import('./pages/ReceiptPage').then((module) => ({ default: module.ReceiptPage }))
 );
-const SellerOnboardingPage = lazy(() =>
-  import('./pages/SellerOnboardingPage').then((module) => ({
-    default: module.SellerOnboardingPage,
-  }))
-);
+
 const HttpSellerWizardPage = lazy(() =>
   import('./pages/HttpSellerWizardPage').then((module) => ({
     default: module.HttpSellerWizardPage,
@@ -83,6 +64,7 @@ const ChangelogReleasePage = lazy(() =>
     default: module.ChangelogReleasePage,
   }))
 );
+
 type AppTheme = 'light' | 'dark';
 
 const LANDING_THEME_STORAGE_KEY = 'bossraid.landing-theme';
@@ -104,12 +86,7 @@ export function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => getInitialSidebarCollapsed());
   const isLandingRoute = pathname === '/';
   const isMercenaryRoute = pathname === '/mercenary';
-  const isMarketplaceListRoute = isMarketplaceListPath(pathname);
-  const marketplaceModelId = readMarketplaceModelId(pathname);
-  const isMarketplaceDetailRoute = isMarketplaceDetailPath(pathname);
   const isPlaygroundRoute = pathname === '/playground';
-  const isBuyerOnboardingRoute = pathname === '/onboarding/buyer';
-  const isSellerOnboardingRoute = pathname === '/onboarding/seller';
   const isHttpSellerOnboardingRoute = pathname === '/onboarding/seller/http';
   const isManageOffersRoute = pathname === '/sell/offers';
   const isAccountRoute = pathname === '/account';
@@ -123,20 +100,10 @@ export function App() {
   const isChangelogIndexRoute = pathname === '/changelog';
   const isChangelogReleaseRoute = changelogVersion !== null;
   const legalPageKind = readLegalPageKind(pathname);
-  const playgroundMode = isPlaygroundRoute ? readPlaygroundMode(search) : 'inference';
   const usesDirectoryLayout =
-    isMercenaryRoute ||
-    (isPlaygroundRoute && playgroundMode === 'raid') ||
-    isVerificationRoute ||
-    isLegacyReceiptRoute;
-  const playgroundModelId = isPlaygroundRoute ? readPlaygroundModelId(search) : undefined;
+    isMercenaryRoute || isPlaygroundRoute || isVerificationRoute || isLegacyReceiptRoute;
 
-  const shouldLoadProviderData =
-    isMercenaryRoute ||
-    isPlaygroundRoute ||
-    isRaidersRoute ||
-    isMarketplaceListRoute ||
-    isMarketplaceDetailRoute;
+  const shouldLoadProviderData = isMercenaryRoute || isPlaygroundRoute || isRaidersRoute;
   const providers = useSWR<Provider[]>(
     shouldLoadProviderData ? '/v1/providers?onlineOnly=false' : null,
     (path: string) => fetchJson(path),
@@ -149,12 +116,7 @@ export function App() {
     (path: string) => fetchJson(path),
     { refreshInterval: 10_000 }
   );
-  const markets = useSWR(
-    isMarketplaceListRoute || isMarketplaceDetailRoute ? 'markets-api-banner' : null,
-    () => fetchMarkets(),
-    { refreshInterval: 15_000 }
-  );
-  const apiError = providers.error ?? providerHealth.error ?? markets.error;
+  const apiError = providers.error ?? providerHealth.error;
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -207,16 +169,13 @@ export function App() {
     path: AppRoute,
     options?: {
       modelId?: string;
-      marketplaceModelId?: string;
       bountyId?: string;
-      mode?: 'inference' | 'raid';
+      mode?: 'raid';
     }
   ) {
     let nextUrl: string = path;
     if (path === '/bounties' && options?.bountyId) {
       nextUrl = bountyDetailPath(options.bountyId);
-    } else if (path === '/marketplace' && options?.marketplaceModelId) {
-      nextUrl = marketplaceModelPath(options.marketplaceModelId);
     } else if (path === '/playground') {
       nextUrl = buildPlaygroundUrl({
         mode: options?.mode,
@@ -256,7 +215,7 @@ export function App() {
 
         <div className="app-main">
           <main
-            className={`app-shell ${isLandingRoute ? 'app-shell--landing' : ''} ${usesDirectoryLayout ? 'app-shell--directory' : ''} ${isMercenaryRoute || (isPlaygroundRoute && playgroundMode === 'raid') ? 'app-shell--mercenary-route' : ''} ${isVerificationRoute || isLegacyReceiptRoute ? 'app-shell--receipt-route' : ''}`}
+            className={`app-shell ${isLandingRoute ? 'app-shell--landing' : ''} ${usesDirectoryLayout ? 'app-shell--directory' : ''} ${isMercenaryRoute || isPlaygroundRoute ? 'app-shell--mercenary-route' : ''} ${isVerificationRoute || isLegacyReceiptRoute ? 'app-shell--receipt-route' : ''}`}
             ref={appShellRef}
           >
             <Suspense fallback={<div className="app-route-loading">Loading…</div>}>
@@ -270,19 +229,6 @@ export function App() {
                   providerHealth={providerHealth.data ?? []}
                   onNavigate={navigate}
                 />
-              ) : isMarketplaceDetailRoute && marketplaceModelId ? (
-                <ModelDetailPage
-                  modelId={marketplaceModelId}
-                  onBack={() => navigate('/marketplace')}
-                  onTryModel={(modelId) => navigate('/playground', { modelId })}
-                  providerHealth={providerHealth.data ?? []}
-                />
-              ) : isMarketplaceListRoute ? (
-                <MarketplacePage
-                  onOpenModel={(modelId) =>
-                    navigate('/marketplace', { marketplaceModelId: modelId })
-                  }
-                />
               ) : isMercenaryRoute ? (
                 <MercenaryPage
                   providerHealth={providerHealth.data ?? []}
@@ -290,16 +236,9 @@ export function App() {
                 />
               ) : isPlaygroundRoute ? (
                 <PlaygroundPage
-                  initialModelId={playgroundModelId}
-                  mode={playgroundMode}
-                  onModeChange={(mode) => navigate('/playground', { mode })}
                   providerHealth={providerHealth.data ?? []}
                   providers={providers.data ?? []}
                 />
-              ) : isBuyerOnboardingRoute ? (
-                <BuyerOnboardingPage />
-              ) : isSellerOnboardingRoute ? (
-                <SellerOnboardingPage onNavigate={navigate} />
               ) : isHttpSellerOnboardingRoute ? (
                 <HttpSellerWizardPage onNavigate={navigate} />
               ) : isManageOffersRoute ? (

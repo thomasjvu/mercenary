@@ -59,9 +59,9 @@ export const homepageConfig = {
   enabled: false,
   hero: {
     title: 'Boss Raid',
-    subtitle: 'Verified inference and multi-agent raids',
+    subtitle: 'Verified agent work and multi-agent raids',
     description:
-      'Open marketplace docs for discount inference, Mercenary raids, seller onboarding, receipts, and operator runtime.',
+      'Open marketplace docs for Mercenary raids, bounties, seller onboarding, receipts, and operator runtime.',
     artwork: {
       src: '/images/docs/placeholders/template-hero-banner.svg',
       alt: 'Boss Raid documentation',
@@ -81,12 +81,12 @@ export const homepageConfig = {
   features: [
     {
       title: 'Buyers',
-      description: 'Discount inference, API keys, prepaid balance, and purchase receipts.',
+      description: 'Agent work, API keys, prepaid balance, and purchase receipts.',
       icon: 'mingcute:shopping-cart-1-line',
     },
     {
       title: 'Sellers',
-      description: 'Register HTTP endpoints, upstream hosting, verification, and payouts.',
+      description: 'Register HTTP endpoints, verification, and payouts.',
       icon: 'mingcute:store-line',
     },
     {
@@ -162,13 +162,7 @@ export const documentationTree = [
     children: [
       {
         type: 'file',
-        name: 'Discount Inference.md',
-        path: 'buyers/discount-inference',
-        tags: ['buyer', 'inference', 'marketplace'],
-      },
-      {
-        type: 'file',
-        name: 'Buy Inference.md',
+        name: 'Buy Agent Work.md',
         path: 'buyers/buy',
         tags: ['buyer', 'api-keys'],
       },
@@ -187,7 +181,7 @@ export const documentationTree = [
     children: [
       {
         type: 'file',
-        name: 'Sell Inference.md',
+        name: 'Sell Agent Work.md',
         path: 'sellers/sell',
         tags: ['seller', 'upstream'],
       },
@@ -252,12 +246,6 @@ export const documentationTree = [
     path: 'operators',
     children: [
       { type: 'file', name: 'Runtime.md', path: 'operators/runtime', tags: ['runtime', 'deploy'] },
-      {
-        type: 'file',
-        name: 'Marketplace Operations.md',
-        path: 'operators/marketplace-operations',
-        tags: ['marketplace', 'api', 'operations'],
-      },
       {
         type: 'file',
         name: 'Architecture.md',

@@ -1,5 +1,4 @@
 import { Icon } from '@iconify/react';
-import { LiveMarketPulse } from '../marketplace/LiveMarketPulse.js';
 import {
   HERO_BY_WORKFLOW,
   HERO_COLOR_IMAGE_BY_WORKFLOW,
@@ -14,7 +13,7 @@ import type { LandingPageState } from '../../hooks/useLandingPage.js';
 
 type LandingHeroSectionProps = {
   state: LandingPageState;
-  onNavigate: (path: AppRoute, options?: { mode?: 'inference' | 'raid'; modelId?: string }) => void;
+  onNavigate: (path: AppRoute, options?: { mode?: 'raid'; modelId?: string }) => void;
 };
 
 export function LandingHeroSection({ state, onNavigate }: LandingHeroSectionProps) {
@@ -87,8 +86,6 @@ export function LandingHeroSection({ state, onNavigate }: LandingHeroSectionProp
             );
           })}
         </div>
-
-        <LiveMarketPulse compact />
       </div>
 
       <LandingHeroArt workflowTab={workflowTab} />

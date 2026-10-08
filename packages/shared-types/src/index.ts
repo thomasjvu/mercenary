@@ -4,7 +4,6 @@ export * from './domain/bounty.js';
 export * from './domain/raid.js';
 export * from './domain/settlement.js';
 export * from './domain/delegation.js';
-export * from './domain/inference-receipt.js';
 
 export function asSingleHeader(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) {
@@ -30,12 +29,6 @@ export type {
   BuyerPurchaseView,
   BuyerPurchasesResponseView,
   ChatCompletionResponseView,
-  InferenceMarketSellerView,
-  InferenceMarketView,
-  MarketplaceStatsView,
-  MarketsResponseView,
-  ModelsResponseView,
-  OpenAiModelEntryView,
   OpsSessionStatusResponse,
   OpsSettingsResponse,
   OpsX402SettingsResponse,
@@ -61,8 +54,6 @@ export type {
   SettlementExecutionResponse,
   SettlementSummaryResponse,
   SubmissionArtifactView,
-  MarketplaceModelTeeSummaryView,
-  MarketplaceTeeAttestationView,
   TeeAttestationCheckView,
   TeeAttestationView,
   PrivacyAttestationView,

@@ -1,14 +1,11 @@
 import { useState } from 'react';
 import useSWR from 'swr';
-import type { UpstreamProviderId } from '@bossraid/constants';
 import {
   fetchSession,
   listSellerProviders,
   updateSellerProvider,
   verifySellerProvider,
 } from '../api';
-import { pauseSellerUpstreamOffer } from '../api/seller-upstream.js';
-import { filterHostedInferenceOffers, resolveHostedOfferUpstream } from '../lib/seller-offers.js';
 import { useWalletAuth } from './useWalletAuth.js';
 
 export function useManageOffers() {
@@ -16,7 +13,7 @@ export function useManageOffers() {
   const sellers = useSWR(isAuthenticated ? '/v1/seller/providers' : null, listSellerProviders);
   const [actionStatus, setActionStatus] = useState<Record<string, string>>({});
 
-  const hostedOffers = filterHostedInferenceOffers(sellers.data?.data ?? []);
+  const workerOffers = sellers.data?.data ?? [];
 
   async function refresh() {
     await Promise.all([sellers.mutate(), fetchSession()]);
@@ -54,35 +51,12 @@ export function useManageOffers() {
     }
   }
 
-  async function removeOffer(
-    modelId: string | undefined,
-    providerId: string,
-    upstream: UpstreamProviderId
-  ) {
-    if (!modelId) {
-      return;
-    }
-    setActionStatus((current) => ({ ...current, [providerId]: 'pausing...' }));
-    try {
-      await pauseSellerUpstreamOffer(upstream, modelId);
-      await refresh();
-      setActionStatus((current) => ({ ...current, [providerId]: 'paused' }));
-    } catch (error) {
-      setActionStatus((current) => ({
-        ...current,
-        [providerId]: error instanceof Error ? error.message : 'remove failed',
-      }));
-    }
-  }
-
   return {
     isAuthenticated,
-    hostedOffers,
+    workerOffers,
     actionStatus,
     toggleOffer,
     verifyOffer,
-    removeOffer,
-    resolveHostedOfferUpstream,
   };
 }
 

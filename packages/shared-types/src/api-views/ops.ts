@@ -91,7 +91,6 @@ export type PublicSessionView = {
     balanceUsd?: number;
     sellerProviderIds: string[];
     apiKeys: BuyerApiKeyView[];
-    totalSavingsUsd?: number;
   };
 };
 

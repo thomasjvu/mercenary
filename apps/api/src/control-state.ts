@@ -1,9 +1,7 @@
 import { DEFAULTS } from '@bossraid/constants';
-import { createSecretCipher } from '@bossraid/persistence';
 import * as buyerLedger from './control-state/buyer-ledger.js';
 import * as rateLimits from './control-state/rate-limits.js';
 import * as sellerLedger from './control-state/seller-ledger.js';
-import * as sellerUpstream from './control-state/seller-upstream.js';
 import * as agentSessions from './control-state/agent-sessions.js';
 import * as relayerTasks from './control-state/relayer-tasks.js';
 import * as x402Reconciliations from './control-state/x402-reconciliations.js';
@@ -27,7 +25,6 @@ import type {
   RelayerTaskEntry,
   X402ReconciliationEntry,
   SellerPayoutEntry,
-  SellerUpstreamConfigEntry,
 } from './control-state/types.js';
 
 export type {
@@ -38,7 +35,6 @@ export type {
   PublicAuthNonceEntry,
   PublicSessionEntry,
   SellerPayoutEntry,
-  SellerUpstreamConfigEntry,
 };
 
 export function createApiControlStateFromStore(store: ApiControlStateStore) {
@@ -291,63 +287,6 @@ export function createApiControlStateFromStore(store: ApiControlStateStore) {
 
     ensureRuntimeSettingsSeeded(env: NodeJS.ProcessEnv, nowMs = Date.now()): ApiRuntimeSettings {
       return sessions.ensureRuntimeSettingsSeeded(ctx, env, nowMs);
-    },
-
-    upsertSellerUpstreamConfig(
-      wallet: string,
-      provider: import('@bossraid/constants').UpstreamProviderId,
-      apiKey: string,
-      env: NodeJS.ProcessEnv = process.env,
-      nowMs = Date.now()
-    ): SellerUpstreamConfigEntry {
-      return sellerUpstream.upsertSellerUpstreamConfig(
-        ctx,
-        {
-          wallet,
-          provider,
-          apiKey,
-          cipher: createSecretCipher(env),
-          requireEncryption:
-            env.NODE_ENV === 'production' ||
-            (env.BOSSRAID_STORAGE_BACKEND ?? 'sqlite') !== 'memory',
-        },
-        nowMs
-      );
-    },
-
-    readSellerUpstreamConfig(
-      wallet: string,
-      provider: import('@bossraid/constants').UpstreamProviderId,
-      nowMs = Date.now()
-    ): SellerUpstreamConfigEntry | undefined {
-      return sellerUpstream.readSellerUpstreamConfig(ctx, wallet, provider, nowMs);
-    },
-
-    listSellerUpstreamConfigs(wallet: string, nowMs = Date.now()): SellerUpstreamConfigEntry[] {
-      return sellerUpstream.listSellerUpstreamConfigs(ctx, wallet, nowMs);
-    },
-
-    readSellerUpstreamApiKey(
-      wallet: string,
-      provider: import('@bossraid/constants').UpstreamProviderId,
-      env: NodeJS.ProcessEnv = process.env,
-      nowMs = Date.now()
-    ): string | undefined {
-      return sellerUpstream.readSellerUpstreamApiKey(
-        ctx,
-        wallet,
-        provider,
-        createSecretCipher(env),
-        nowMs
-      );
-    },
-
-    deleteSellerUpstreamConfig(
-      wallet: string,
-      provider: import('@bossraid/constants').UpstreamProviderId,
-      nowMs = Date.now()
-    ): boolean {
-      return sellerUpstream.deleteSellerUpstreamConfig(ctx, wallet, provider, nowMs);
     },
 
     upsertAgentPaymentSession(entry: AgentPaymentSessionEntry): AgentPaymentSessionEntry {

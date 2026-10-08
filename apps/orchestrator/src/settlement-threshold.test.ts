@@ -3,7 +3,7 @@ import test from 'node:test';
 import type { RaidRecord } from '@bossraid/shared-types';
 import { resolveMinimumPayoutThresholdUsd } from './settlement-threshold.js';
 
-test('resolveMinimumPayoutThresholdUsd uses inference floor for single-provider marketplace raids', () => {
+test('resolveMinimumPayoutThresholdUsd uses the configured floor for single-provider raids', () => {
   const raid = {
     selectedProviders: ['provider-a'],
     task: {
@@ -15,7 +15,7 @@ test('resolveMinimumPayoutThresholdUsd uses inference floor for single-provider 
     },
   } as RaidRecord;
 
-  assert.equal(resolveMinimumPayoutThresholdUsd(raid), 0.01);
+  assert.equal(resolveMinimumPayoutThresholdUsd(raid), 1);
 });
 
 test('resolveMinimumPayoutThresholdUsd uses the configured default for multi-agent raids', () => {

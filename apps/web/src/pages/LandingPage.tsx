@@ -4,7 +4,7 @@ import { useLandingPage } from '../hooks/useLandingPage.js';
 import type { AppRoute } from '../lib/app-routes.js';
 
 type LandingPageProps = {
-  onNavigate: (path: AppRoute, options?: { mode?: 'inference' | 'raid'; modelId?: string }) => void;
+  onNavigate: (path: AppRoute, options?: { mode?: 'raid'; modelId?: string }) => void;
 };
 
 export function LandingPage({ onNavigate }: LandingPageProps) {

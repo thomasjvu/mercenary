@@ -18,7 +18,7 @@ export function registerAgentRoutes(
   ctx: ApiContext,
   handlers: ApiHandlerGroups
 ): void {
-  const { orchestrator, registryToken, controlState } = ctx;
+  const { orchestrator, registryToken } = ctx;
   const { registryIsAuthorized } = handlers.auth;
   const { ensureErc8004ProofState } = handlers.raid;
   app.post('/agents/register', async (request, reply) => {
@@ -32,7 +32,7 @@ export function registerAgentRoutes(
     }
     const registration = parseProviderRegistrationInput(request.body);
     const candidate = buildProviderProfileFromRegistration(registration);
-    const health = await probeProviderHealthForRegistration(candidate, { controlState });
+    const health = await probeProviderHealthForRegistration(candidate);
     if (health.ready !== true) {
       reply.code(503);
       return {

@@ -60,7 +60,6 @@ export interface X402Config {
   routeSurchargeUsd: {
     raid: number;
     chat: number;
-    inference: number;
     balance: number;
     bounty: number;
   };
@@ -76,7 +75,7 @@ export interface X402Config {
   facilitatorApiKey?: string;
 }
 
-export type X402RouteName = 'raid' | 'chat' | 'inference' | 'balance' | 'bounty';
+export type X402RouteName = 'raid' | 'chat' | 'balance' | 'bounty';
 
 export const METAMASK_X402_FACILITATORS = {
   base_mainnet: 'https://tx-sentinel-base-mainnet.dev-api.cx.metamask.io/platform/v2/x402',
@@ -209,7 +208,6 @@ export function readX402Config(env: NodeJS.ProcessEnv = process.env): X402Config
     routeSurchargeUsd: {
       raid: raidSurchargeUsd,
       chat: chatSurchargeUsd,
-      inference: chatSurchargeUsd,
       balance: 0,
       bounty: 0,
     },
@@ -328,15 +326,13 @@ function buildPaymentRequired(
   const resourcePath =
     route === 'chat'
       ? '/v1/chat/completions'
-      : route === 'inference'
-        ? '/v1/inference/chat/completions'
-        : route === 'balance'
-          ? '/v1/buyer/balance/fund'
-          : route === 'bounty'
-            ? bountyId
-              ? `/v1/bounties/${bountyId}/fund`
-              : '/v1/bounties/fund'
-            : '/v1/raid';
+      : route === 'balance'
+        ? '/v1/buyer/balance/fund'
+        : route === 'bounty'
+          ? bountyId
+            ? `/v1/bounties/${bountyId}/fund`
+            : '/v1/bounties/fund'
+          : '/v1/raid';
   const price = computeChargeUsd(config, route, budgetUsd);
   const assetConfig = resolveAssetConfig(config);
   const transferExtra =
@@ -356,13 +352,11 @@ function buildPaymentRequired(
         description:
           route === 'chat'
             ? 'Boss Raid chat completion request'
-            : route === 'inference'
-              ? 'Boss Raid discount inference request'
-              : route === 'balance'
-                ? 'Boss Raid prepaid balance top-up'
-                : route === 'bounty'
-                  ? 'Boss Raid bounty escrow funding'
-                  : 'Boss Raid native raid request',
+            : route === 'balance'
+              ? 'Boss Raid prepaid balance top-up'
+              : route === 'bounty'
+                ? 'Boss Raid bounty escrow funding'
+                : 'Boss Raid native raid request',
         mimeType: 'application/json',
         payTo: config.payTo,
         maxTimeoutSeconds: options.maxTimeoutSeconds ?? config.maxTimeoutSeconds,

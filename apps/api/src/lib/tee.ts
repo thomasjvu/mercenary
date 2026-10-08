@@ -53,12 +53,15 @@ export function isTeeProductionConfigured(
   env: NodeJS.ProcessEnv,
   tee: { pathExists: boolean; socketMounted: boolean }
 ): boolean {
+  if (env.NODE_ENV === 'production' && env.BOSSRAID_TEE_PLATFORM !== 'phala') {
+    return false;
+  }
   if (env.BOSSRAID_TEE_PLATFORM === 'phala') {
     const socketReady = tee.pathExists && tee.socketMounted;
     if (env.NODE_ENV !== 'production') {
       return socketReady;
     }
-    return socketReady && Boolean(env.MNEMONIC?.trim());
+    return socketReady && Boolean(readTeeSigner(env).account);
   }
 
   return Boolean(env.MNEMONIC?.trim());

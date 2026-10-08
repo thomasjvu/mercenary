@@ -428,7 +428,7 @@ test('round_robin selection rotates among verified general service providers', (
   assert.deepEqual(new Set([first, second]), new Set(['provider-rr-a', 'provider-rr-b']));
 });
 
-test('single-provider general service raids settle at the selected provider rate', async () => {
+test('single-provider work raids settle the funded escrow pool', async () => {
   const provider: RaidProvider = {
     profile: createProviderProfile('provider-general-rate', {
       pricePerTaskUsd: 0.75,
@@ -493,9 +493,10 @@ test('single-provider general service raids settle at the selected provider rate
   await waitFor(() => orchestrator.getRaid(spawn.raidId)?.status === 'final');
   const raid = orchestrator.getRaid(spawn.raidId);
   assert.ok(raid);
+  raid.escrowFundingUsd = 2;
   const settlement = buildSettlementSummary(raid);
-  assert.equal(settlement?.payoutPerSuccessfulProvider, 0.75);
-  assert.equal(settlement?.successfulProvidersPaid, 0.75);
+  assert.equal(settlement?.payoutPerSuccessfulProvider, 2);
+  assert.equal(settlement?.successfulProvidersPaid, 2);
 });
 
 test('provider selection respects active maxConcurrency across raids', async () => {

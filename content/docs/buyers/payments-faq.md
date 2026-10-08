@@ -10,7 +10,7 @@ See also: [payments.md](../reference/payments.md), [buy.md](buy.md), [bounties.m
 | ---------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | **Buyer**  | `GET /v1/buyer/purchases` and **Account → buyer → billing activity** | Rows with `status`: `charged`, `hold_released`, or `refunded`, plus `reason`, `costUsd` / `reservedUsd`, `raidId`, route |
 | **Buyer**  | `GET /v1/buyer/balance`                                              | Prepaid balance after holds and releases                                                                                 |
-| **Buyer**  | Response `bossraid` on chat/inference                                | `paid_price_usd`, receipt path; on cancel/zero-success stream: `billing_status`                                          |
+| **Buyer**  | Response `bossraid` on raid chat                                     | `paid_price_usd`, receipt path; on cancel/zero-success stream: `billing_status`                                          |
 | **Seller** | `GET /v1/seller/earnings` and **Sell / Account → seller**            | Accrued / settled payouts per `raidId` with `status` and optional `txHash`                                               |
 | **Either** | Raid receipt / verification                                          | Work outcome; money detail is on account APIs above                                                                      |
 
@@ -18,7 +18,7 @@ See also: [payments.md](../reference/payments.md), [buy.md](buy.md), [bounties.m
 
 ---
 
-## Chat, raid, and discount inference
+## Chat and native raids
 
 ### What do I pay when a request succeeds?
 

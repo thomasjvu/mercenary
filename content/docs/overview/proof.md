@@ -1,6 +1,6 @@
 # Proof & Receipts
 
-After a raid or inference call finishes, verify what ran, who served it, and how it was paid.
+After a raid finishes, verify what ran, who served it, and how it was paid.
 
 ## 1. Open the public receipt
 
@@ -38,24 +38,19 @@ Inspect these fields on the result or receipt page:
 - **Settlement** — equal split across successful providers, child-job lifecycle, onchain tx hashes when enabled
 - **Agent log** — `GET /v1/raid/:raidId/agent_log.json?token=...` for workstreams, retries, evaluation, and settlement tool calls
 
-Discount inference responses carry the same proof in the `bossraid` metadata block (`routing_proof`, `receipt_path`, `rate_card_hash`).
-
 ## 4. Optional: TEE and signed envelopes
 
 Keep three claims separate (see also [privacy-and-data](privacy-and-data.mdx#privacy-tiers-marketplace-models)):
 
-| Claim                         | How to check                                                   | Proves                                                                   |
-| ----------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| **Host Phala CVM**            | `GET /v1/host/attestation`                                     | Where Boss Raid runs (not model vendor TEE)                              |
-| **Anonymous / private model** | Catalog `privacyTier: anonymous_private` / markets metadata    | End user not attributed at vendor via platform/seller keys — **not** TEE |
-| **Upstream TEE model**        | Catalog `teeAttested` + `POST /v1/marketplace/tee/attestation` | Model-side TEE quote when the vendor supports it                         |
+| Claim                         | How to check                                                | Proves                                                                   |
+| ----------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Host Phala CVM**            | `GET /v1/host/attestation`                                  | Where Boss Raid runs (not model vendor TEE)                              |
+| **Anonymous / private model** | Catalog `privacyTier: anonymous_private` / markets metadata | End user not attributed at vendor via platform/seller keys — **not** TEE |
 
 For strict-private or attested runs, add these checks:
 
 1. **Host TEE quote** — `GET /v1/host/attestation` returns Phala TDX quote + optional signed runtime envelope (`teeVerified` / `verified`)
 2. **Signed raid result** — `GET /v1/raid/:raidId/attested-result` with raid token (requires `MNEMONIC` on the host)
-3. **Inference receipt** — `GET /v1/inference/receipts/:receiptId/verify` for upstream attestation receipts
-4. **Upstream marketplace TEE** — `POST /v1/marketplace/tee/attestation` for hosted seller quotes (unsupported vendors return fail-closed)
 
 `signedRuntime` proves the host signed an envelope — it does not by itself prove TEE hardware. Cloud verification runs when `BOSSRAID_HOST_TEE_SKIP_CLOUD_VERIFY` is unset.
 
@@ -70,8 +65,6 @@ For strict-private or attested runs, add these checks:
 | `GET /v1/host/attestation`                      | none                    | Host TEE proof (Phala TDX quote + optional signed runtime envelope) |
 | `GET /v1/raid/:raidId/attested-result`          | raid token              | Signed raid result envelope (`MNEMONIC`)                            |
 | `GET /v1/attested-runtime`                      | admin                   | Signed runtime envelope (`MNEMONIC`)                                |
-| `GET /v1/inference/receipts/:receiptId`         | none                    | Inference attestation receipt                                       |
-| `GET /v1/inference/receipts/:receiptId/verify`  | none                    | Receipt verification summary                                        |
 
 ## 5. Offline proof export + verify
 

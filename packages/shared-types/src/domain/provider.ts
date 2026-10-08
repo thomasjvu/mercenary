@@ -334,7 +334,6 @@ export interface PrivacyAttestation {
   featuresClaimed: PrivacyFeatureKey[];
   featuresVerified: PrivacyFeatureKey[];
   teeAttestation?: TeeAttestationResult;
-  inferenceReceiptId?: string;
   externalApiCalls: string[];
   dataRetained: boolean;
   signedDeclaration: string;

@@ -6,7 +6,7 @@ import {
   startMockProviderServer,
 } from './test/helpers.js';
 
-test('seller self-serve registration verifies providers and adds them to marketplace', async () => {
+test('seller self-serve registration verifies providers and lists HTTP workers', async () => {
   const providerServer = await startMockProviderServer({
     ready: true,
     agentFramework: 'codex',
@@ -60,11 +60,10 @@ test('seller self-serve registration verifies providers and adds them to marketp
 
     const market = await app.inject({
       method: 'GET',
-      url: '/v1/markets?model_id=gpt-5.5',
+      url: '/v1/providers',
     });
     assert.equal(market.statusCode, 200);
-    assert.equal(market.json().data[0].verifiedSellerCount, 1);
-    assert.equal(market.json().data[0].privateSellerCount, 1);
+    assert.ok(JSON.stringify(market.json()).includes('seller-self-serve-gpt55'));
   } finally {
     await app.close();
     await providerServer.close();

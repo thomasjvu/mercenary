@@ -7,7 +7,7 @@ import type { ReceiptPageState } from '../../hooks/useReceiptPage.js';
 
 type ReceiptPageHeroProps = {
   state: ReceiptPageState;
-  onNavigate: (path: AppRoute, options?: { mode?: 'inference' | 'raid' }) => void;
+  onNavigate: (path: AppRoute, options?: { mode?: 'raid' }) => void;
 };
 
 export function ReceiptPageHero({ state, onNavigate }: ReceiptPageHeroProps) {

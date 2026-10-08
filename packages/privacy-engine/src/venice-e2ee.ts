@@ -1,9 +1,7 @@
 import { gcm } from '@noble/ciphers/aes.js';
 import { hkdf } from '@noble/hashes/hkdf.js';
 import { sha256 } from '@noble/hashes/sha2.js';
-import elliptic from 'elliptic';
-
-const EC = elliptic.ec;
+import { secp256k1 } from '@noble/curves/secp256k1';
 
 const HKDF_INFO = new TextEncoder().encode('ecdsa_encryption');
 
@@ -15,11 +13,10 @@ export type E2eeSession = {
 };
 
 export function generateE2eeSession(modelPublicKey: string, signingAddress?: string): E2eeSession {
-  const ec = new EC('secp256k1');
-  const keyPair = ec.genKeyPair();
+  const privateKey = secp256k1.utils.randomPrivateKey();
   return {
-    privateKey: new Uint8Array(keyPair.getPrivate().toArray('be', 32)),
-    publicKeyHex: keyPair.getPublic('hex'),
+    privateKey,
+    publicKeyHex: Buffer.from(secp256k1.getPublicKey(privateKey, false)).toString('hex'),
     modelPublicKey,
     signingAddress,
   };
@@ -33,16 +30,16 @@ function normalizePublicKeyHex(modelPublicKeyHex: string): string {
 }
 
 export function encryptMessage(plaintext: string, modelPublicKeyHex: string): string {
-  const ec = new EC('secp256k1');
-  const modelPublicKey = ec.keyFromPublic(normalizePublicKeyHex(modelPublicKeyHex), 'hex');
-  const ephemeralKeyPair = ec.genKeyPair();
-  const sharedSecret = ephemeralKeyPair.derive(modelPublicKey.getPublic());
-  const sharedSecretBytes = new Uint8Array(sharedSecret.toArray('be', 32));
+  const ephemeralPrivateKey = secp256k1.utils.randomPrivateKey();
+  // Venice derives AES material from the ECDH x-coordinate, not the encoded point.
+  const sharedSecretBytes = secp256k1
+    .getSharedSecret(ephemeralPrivateKey, normalizePublicKeyHex(modelPublicKeyHex), false)
+    .slice(1, 33);
   const aesKey = hkdf(sha256, sharedSecretBytes, undefined, HKDF_INFO, 32);
   const nonce = crypto.getRandomValues(new Uint8Array(12));
   const cipher = gcm(aesKey, nonce);
   const encrypted = cipher.encrypt(new TextEncoder().encode(plaintext));
-  const ephemeralPublic = new Uint8Array(ephemeralKeyPair.getPublic(false, 'array'));
+  const ephemeralPublic = secp256k1.getPublicKey(ephemeralPrivateKey, false);
   const result = new Uint8Array(65 + 12 + encrypted.length);
   result.set(ephemeralPublic, 0);
   result.set(nonce, 65);
@@ -55,11 +52,9 @@ export function decryptChunk(ciphertextHex: string, clientPrivateKey: Uint8Array
   const serverEphemeralPubKey = raw.subarray(0, 65);
   const nonce = raw.subarray(65, 77);
   const ciphertext = raw.subarray(77);
-  const ec = new EC('secp256k1');
-  const clientKey = ec.keyFromPrivate(Buffer.from(clientPrivateKey));
-  const serverKey = ec.keyFromPublic(Buffer.from(serverEphemeralPubKey));
-  const sharedSecret = clientKey.derive(serverKey.getPublic());
-  const sharedSecretBytes = new Uint8Array(sharedSecret.toArray('be', 32));
+  const sharedSecretBytes = secp256k1
+    .getSharedSecret(clientPrivateKey, serverEphemeralPubKey, false)
+    .slice(1, 33);
   const aesKey = hkdf(sha256, sharedSecretBytes, undefined, HKDF_INFO, 32);
   const cipher = gcm(aesKey, nonce);
   const plaintext = cipher.decrypt(ciphertext);

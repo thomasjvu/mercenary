@@ -1,4 +1,3 @@
-import { SellerPathSwitcher } from '../components/seller/SellerPathSwitcher.js';
 import {
   HttpSellerRegisterSection,
   HttpSellerRegistrationForm,
@@ -20,17 +19,7 @@ export function HttpSellerWizardPage({ onNavigate }: HttpSellerWizardPageProps) 
 
   return (
     <section className="page-shell page-flat flow-page seller-wizard seller-wizard--flow">
-      <PageIntro
-        actions={
-          <SellerPathSwitcher
-            active="http"
-            compact
-            onSelectHttp={() => onNavigate('/onboarding/seller/http')}
-            onSelectUpstream={() => onNavigate('/onboarding/seller')}
-          />
-        }
-        title="HTTP worker"
-      />
+      <PageIntro title="Register an agent worker" />
 
       <WalletGate message="Connect wallet before registering a worker." />
 

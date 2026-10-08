@@ -6,11 +6,6 @@ import type {
   ProviderProfile,
   ProviderRegistrationInput,
 } from '@bossraid/shared-types';
-import type { ApiControlState } from '../control-state.js';
-import {
-  isHostedInferenceProvider,
-  probeHostedInferenceProviderHealth,
-} from './inference-gateway.js';
 
 export function buildProviderVerificationFromHealth(
   provider: ProviderProfile,
@@ -102,12 +97,8 @@ export function buildProviderVerificationRegistrationInput(
 }
 
 export async function probeProviderHealthForRegistration(
-  provider: ProviderProfile,
-  options?: { controlState?: ApiControlState }
+  provider: ProviderProfile
 ): Promise<ProviderHealthStatus> {
-  if (options?.controlState && isHostedInferenceProvider(provider)) {
-    return probeHostedInferenceProviderHealth(options.controlState, provider);
-  }
   return probeProviderHealth(provider);
 }
 
@@ -125,10 +116,9 @@ export async function verifyProviderFromHealth(
 
 export async function verifyProviderByHealthProbe(
   orchestrator: BossRaidOrchestrator,
-  provider: ProviderProfile,
-  options?: { controlState?: ApiControlState }
+  provider: ProviderProfile
 ): Promise<{ provider: ProviderProfile; health: ProviderHealthStatus }> {
-  const health = await probeProviderHealthForRegistration(provider, options);
+  const health = await probeProviderHealthForRegistration(provider);
   const verifiedProvider = await verifyProviderFromHealth(orchestrator, provider, health);
   return { provider: verifiedProvider, health };
 }

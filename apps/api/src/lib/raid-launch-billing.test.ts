@@ -129,7 +129,7 @@ function buildBillingDeps(input: {
         ...payment,
         captureApiKeyBilling,
         reconcileLaunchPayment: async (reconcileInput: {
-          route: 'raid' | 'chat' | 'inference';
+          route: 'raid' | 'chat';
           request: FastifyRequest;
           raidRequest: ReturnType<typeof createSpawnInput>;
           launchPayment: LaunchPaymentContext;

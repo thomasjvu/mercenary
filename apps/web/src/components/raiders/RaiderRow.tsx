@@ -82,10 +82,7 @@ export function RaiderRow({ raider, rank, onTry, onMarket }: RaiderRowProps) {
               label={String(raider.provider.agentFramework).replace(/_/g, ' ')}
             />
           ) : null}
-          {raider.provider.harnessProfile?.installation === 'fresh' ||
-          (!raider.provider.harnessProfile &&
-            (raider.provider.source?.type === 'inference_hosted' ||
-              raider.provider.source?.type === 'venice_hosted')) ? (
+          {raider.provider.harnessProfile?.installation === 'fresh' ? (
             <RaiderBadge icon="pixel:checkmark-solid" label="vanilla / fresh" />
           ) : null}
           {raider.provider.harnessProfile?.installation === 'skill_augmented' ? (

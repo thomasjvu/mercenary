@@ -160,7 +160,7 @@ export class BossRaidOrchestrator {
 
   async reserveRaidLaunch(
     input: BossRaidSpawnInput,
-    options: { route: 'raid' | 'chat' | 'inference'; requestKey: string; holdUntilUnix?: number }
+    options: { route: 'raid' | 'chat'; requestKey: string; holdUntilUnix?: number }
   ): Promise<RaidLaunchReservationRecord> {
     return this.raidLifecycle.reserveRaidLaunch(input, options);
   }
@@ -393,15 +393,6 @@ export async function createDefaultOrchestrator(
   }
 
   const profiles = await loadProviderProfilesFromFiles(providerFiles);
-  const allowEmptySeed =
-    process.env.BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY === '1' ||
-    process.env.BOSSRAID_ALLOW_EMPTY_PROVIDERS === '1';
-  if (profiles.length === 0 && !allowEmptySeed) {
-    throw new Error(
-      `No providers found in ${providerFiles.join(', ')}. Configure at least one HTTP provider, or set BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY=1 for platform seats only.`
-    );
-  }
-
   const settlementExecutor = createSettlementExecutor(process.env, workspaceCwd);
   const orchestrator = new BossRaidOrchestrator(
     createProvidersFromProfiles(profiles),

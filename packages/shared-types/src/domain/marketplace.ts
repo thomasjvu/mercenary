@@ -53,18 +53,6 @@ export interface ChatCompletionRequest {
   user?: string;
   /** Passed through to xAI when supported (Grok CLI: /model … high|medium|low). */
   reasoning_effort?: ChatReasoningEffort;
-  /**
-   * Discount-inference ergonomic filter: `auto` (default) or upstream id
-   * (`venice` | `xai` | `darkbloom` | `nebius` | `openai` | …) → raid_policy.allowed_model_providers.
-   */
-  provider?: string;
-  /** Absolute max spend USD for this call (alias for raid_policy.max_total_cost). */
-  max_price_usd?: number;
-  /**
-   * Cap spend as a fraction of catalog reference task price (0–1).
-   * Applied when resolving max_total_cost; fails closed if no seller within budget.
-   */
-  max_price_ratio?: number;
   raidRequest?: BossRaidSpawnInput;
   raidPolicy?: BossRaidRequest['raidPolicy'];
 }
@@ -107,7 +95,7 @@ export interface ReservedRaidNode {
 
 export interface RaidLaunchReservationRecord {
   id: string;
-  route: 'raid' | 'chat' | 'inference';
+  route: 'raid' | 'chat';
   requestKey: string;
   createdAt: string;
   expiresAt: string;

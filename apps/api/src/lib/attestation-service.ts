@@ -1,14 +1,7 @@
-import { createHash } from 'node:crypto';
 import { verifyUpstreamTeeAttestation } from '@bossraid/privacy-engine';
-import type { InferenceAttestationReceipt, InferenceTransport } from '@bossraid/shared-types';
 import type { UpstreamProviderId } from '@bossraid/constants';
 import { fetchUpstreamAttestationReport, generateAttestationNonce } from './upstream/index.js';
-import type { InferenceReceiptStore } from './inference-receipt-store.js';
 import { isProviderTeeMock } from './upstream-mock.js';
-
-export function hashInferenceText(value: string): string {
-  return createHash('sha256').update(value, 'utf8').digest('hex');
-}
 
 export async function verifyUpstreamTee(input: {
   provider: UpstreamProviderId;
@@ -47,37 +40,4 @@ export async function verifyUpstreamTee(input: {
   });
 
   return { attestation, nonce };
-}
-
-export function buildInferenceReceipt(input: {
-  store: InferenceReceiptStore;
-  modelId: string;
-  providerId: string;
-  route: InferenceAttestationReceipt['route'];
-  tee: InferenceAttestationReceipt['tee'];
-  transport: InferenceTransport;
-  inputText: string;
-  outputText: string;
-  nonce: string;
-}): InferenceAttestationReceipt {
-  const receipt: InferenceAttestationReceipt = {
-    receiptId: input.store.createId(),
-    modelId: input.modelId,
-    providerId: input.providerId,
-    route: input.route,
-    nonce: input.nonce,
-    tee: input.tee,
-    transport: input.transport,
-    inputHash: hashInferenceText(input.inputText),
-    outputHash: hashInferenceText(input.outputText),
-    completedAt: new Date().toISOString(),
-    explorerUrl: input.tee.explorerUrl,
-    verificationStatus: input.tee.valid
-      ? input.tee.runtimeMode === 'mock'
-        ? 'mock'
-        : 'verified'
-      : 'failed',
-  };
-
-  return input.store.save(receipt);
 }

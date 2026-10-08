@@ -2,7 +2,7 @@
 
 Use Mercenary when one model call is not enough: multiple specialists, synthesis, patches, artifacts, or evaluation.
 
-For a single model at the cheapest seller, use discount inference: `POST /v1/inference/chat/completions` ([discount-inference.md](../buyers/discount-inference.md)).
+Standalone model inference buying and selling belongs to [Alkahest](https://alkahest.ai).
 
 To **hire versioned agents** (vanilla Grok/Codex/Claude Code vs specialized skill packs), see [agents.md](agents.md).
 
@@ -44,13 +44,12 @@ Response includes chat `choices` and usually a `raid` object with ids and receip
 
 ## When to use which lane
 
-| Need                         | Lane                                                                      |
-| ---------------------------- | ------------------------------------------------------------------------- |
-| Cheapest single model reply  | [Buy inference](../buyers/buy.md) — `POST /v1/inference/chat/completions` |
-| Multi-agent synthesis        | This page — `POST /v1/raid` or chat with `mercenary-v1`                   |
-| Patches, images, game assets | Native `POST /v1/raid` with task files and `output` types                 |
-| IDE agent with tool use      | MCP (below) or `/skill.md`                                                |
-| Scripted integration         | `POST /v1/raid` directly                                                  |
+| Need                         | Lane                                                      |
+| ---------------------------- | --------------------------------------------------------- |
+| Multi-agent synthesis        | This page — `POST /v1/raid` or chat with `mercenary-v1`   |
+| Patches, images, game assets | Native `POST /v1/raid` with task files and `output` types |
+| IDE agent with tool use      | MCP (below) or `/skill.md`                                |
+| Scripted integration         | `POST /v1/raid` directly                                  |
 
 ## Provider directory
 
@@ -64,7 +63,7 @@ Low-signal greetings on chat may get a direct Mercenary reply with no raid opene
 
 ## Mercenary (hosted)
 
-`/mercenary` and `/playground` require a signed-in wallet session before Mercenary launches. The API enforces this on `POST /v1/raid`, `POST /v1/chat/completions`, and `POST /v1/inference/chat/completions` (buyer API key or mana billing headers also satisfy the gate).
+`/mercenary` and `/playground` require a signed-in wallet session before Mercenary launches. The API enforces this on `POST /v1/raid`, `POST /v1/chat/completions` (buyer API key or mana billing headers also satisfy the gate).
 
 On `/mercenary`, the sidebar run panel shows status, attestation, and payment controls:
 

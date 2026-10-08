@@ -43,12 +43,12 @@ We do not use your prompts for advertising or unrelated profiling.
 
 These labels describe **model / vendor** claims. They are **not** the same as host Phala CVM attestation.
 
-| Tier | Meaning | Examples |
-| ---- | ------- | -------- |
-| **Standard** | No special privacy claim | Some open proxies without policy labels |
+| Tier                    | Meaning                                                                                                                                   | Examples                                                                   |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| **Standard**            | No special privacy claim                                                                                                                  | Some open proxies without policy labels                                    |
 | **Anonymous / private** | End user is **not tied to a specific identity at the model vendor**. Traffic uses platform or seller upstream keys. **Not** hardware TEE. | xAI Grok, Anthropic, Darkbloom, Venice `anonymized`/`private` catalog rows |
-| **Upstream TEE** | Model is claimed (and optionally live-verified) to run in a hardware TEE at the **upstream** | Chutes TEE, NEAR Cloud TEE, Phala TEE catalogs, Redpill TEE rows |
-| **E2EE** | End-to-end encrypted path when `privacy_mode: strict` | Venice E2EE catalog models |
+| **Upstream TEE**        | Model is claimed (and optionally live-verified) to run in a hardware TEE at the **upstream**                                              | Chutes TEE, NEAR Cloud TEE, Phala TEE catalogs, Redpill TEE rows           |
+| **E2EE**                | End-to-end encrypted path when `privacy_mode: strict`                                                                                     | Venice E2EE catalog models                                                 |
 
 ### Host Phala CVM TEE (separate claim)
 

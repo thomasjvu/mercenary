@@ -125,5 +125,16 @@ export async function fetchSellerEarnings(): Promise<SellerEarnings> {
   return fetchJson<SellerEarnings>('/v1/seller/earnings');
 }
 
-export type { BuyerPurchase, BuyerPurchasesResponse, SellerStats } from './marketplace.js';
-export { fetchBuyerPurchases, fetchSellerStats } from './marketplace.js';
+export type {
+  BuyerPurchaseView as BuyerPurchase,
+  BuyerPurchasesResponseView as BuyerPurchasesResponse,
+  SellerStatsView as SellerStats,
+} from '@bossraid/shared-types';
+export async function fetchBuyerPurchases(limit = 50) {
+  return fetchJson<import('@bossraid/shared-types').BuyerPurchasesResponseView>(
+    `/v1/buyer/purchases?limit=${limit}`
+  );
+}
+export async function fetchSellerStats() {
+  return fetchJson<import('@bossraid/shared-types').SellerStatsView>('/v1/seller/stats');
+}

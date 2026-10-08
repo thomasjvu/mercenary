@@ -21,16 +21,11 @@ Workspace check, build, and unit test scripts limit Turbo to two package jobs at
 Deploy, sync, extended e2e, Phala/Infisical, settlement, and asset pipelines are registered in [`bossraid.mjs`](bossraid.mjs). Examples:
 
 ```bash
-pnpm bossraid sync:inference-catalog
 pnpm bossraid deploy:web:cloudflare
 pnpm bossraid test:strict-private:e2e
 ```
 
 ### Inference catalog
-
-`sync:inference-catalog` imports public models.dev metadata/provider rates and provider catalogs. `--cached` regenerates from committed snapshots without network. `--check` reports additions, removals, changes, stale sources, and fetch failures without writing; combine both flags for CI. Pass options after `--`, for example `pnpm bossraid sync:inference-catalog -- --cached --check`.
-
-Builds use the committed catalog and do not fetch public data. Import code lives in `lib/inference-catalog/`; local policy lives in `packages/constants/data/inference-overrides.json`. Generated source snapshots and exclusion reports live alongside it. See [runtime](../content/docs/operators/runtime.md#catalog-refresh).
 
 ## Examples-only
 

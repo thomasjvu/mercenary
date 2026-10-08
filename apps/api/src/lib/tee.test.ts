@@ -45,7 +45,7 @@ test('Phala development allows socket-only readiness without MNEMONIC', () => {
   );
 });
 
-test('non-Phala production still requires MNEMONIC', () => {
+test('non-Phala production cannot pass with a signing mnemonic', () => {
   assert.equal(
     isTeeProductionConfigured(
       {
@@ -67,6 +67,6 @@ test('non-Phala production still requires MNEMONIC', () => {
       },
       socketMissing
     ),
-    true
+    false
   );
 });

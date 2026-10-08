@@ -3,6 +3,13 @@ packages:
   - packages/*
 
 overrides:
+  '@vue/server-renderer@<3.5.42': ^3.5.42
+  fast-copy@>=3.0.0 <3.1.0: ^3.1.0
+  katex@>=0.11.0 <0.18.2: 0.18.2
+  postcss-selector-parser@<7.1.6: ^7.1.6
+  proxy-addr@>=1.1.0 <2.0.8: ^2.0.8
+  source-map-js@>=1.0.0 <1.2.2: ^1.2.2
+  vue@<3.5.42: ^3.5.42
   '@ai-sdk/provider-utils@>=4.0.0-beta.10 <4.0.33': ^4.0.33
   fast-uri: '>=3.1.2'
   fastify: '>=5.8.5'
@@ -20,3 +27,12 @@ overrides:
 allowBuilds:
   esbuild: true
   vue-demi: true
+
+patchedDependencies:
+  braces@3.0.3: patches/braces@3.0.3.patch
+
+# No upstream fix is published. The committed braces patch bounds parser and AST
+# recursion; CI runs test:dependency-security before accepting this exception.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-vfj7-8cjw-p6xm

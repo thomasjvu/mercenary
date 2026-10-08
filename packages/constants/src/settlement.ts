@@ -6,8 +6,6 @@ import { readPositiveNumber } from './env.js';
  * Robinhood USDG default: $1 (was $0.25 for Base micro-settlement).
  */
 export const DEFAULT_SETTLEMENT_MIN_PAYOUT_USD = 1;
-/** Discount-inference ledger credit floor (not on-chain flush). */
-export const INFERENCE_SETTLEMENT_MIN_PAYOUT_USD = 0.01;
 
 export function readSettlementMinPayoutUsd(
   env: NodeJS.ProcessEnv = process.env,

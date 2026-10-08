@@ -284,6 +284,5 @@ export function buildPublicAccountResponse(controlState: ApiControlState, wallet
     sellerProviderIds: account.sellerProviderIds,
     apiKeys: controlState.listBuyerApiKeys(wallet).map((key) => sanitizeBuyerApiKey(key)),
     recentPurchases: purchases,
-    totalSavingsUsd: purchases.reduce((sum, entry) => sum + (entry.savingsUsd ?? 0), 0),
   };
 }

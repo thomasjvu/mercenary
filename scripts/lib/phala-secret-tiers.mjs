@@ -32,7 +32,6 @@ export const PHALA_OPTIONAL_PLAN_KEYS = [
   'BOSSRAID_NEAR_API_KEY',
   'BOSSRAID_PHALA_API_KEY',
   'BOSSRAID_REDPILL_API_KEY',
-  'BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY',
 ];
 
 export const PHALA_ONCHAIN_KEYS = [
@@ -237,9 +236,18 @@ export function buildDeployDefaults(merged = {}) {
     BOSSRAID_PROVIDER_A_MODEL_API_BASE: providerModelBase,
     BOSSRAID_PROVIDER_B_MODEL_API_BASE: providerModelBase,
     BOSSRAID_PROVIDER_C_MODEL_API_BASE: providerModelBase,
-    BOSSRAID_PROVIDER_A_MODEL: resolveProviderModel(merged.BOSSRAID_PROVIDER_A_MODEL, providerModel),
-    BOSSRAID_PROVIDER_B_MODEL: resolveProviderModel(merged.BOSSRAID_PROVIDER_B_MODEL, providerModel),
-    BOSSRAID_PROVIDER_C_MODEL: resolveProviderModel(merged.BOSSRAID_PROVIDER_C_MODEL, providerModel),
+    BOSSRAID_PROVIDER_A_MODEL: resolveProviderModel(
+      merged.BOSSRAID_PROVIDER_A_MODEL,
+      providerModel
+    ),
+    BOSSRAID_PROVIDER_B_MODEL: resolveProviderModel(
+      merged.BOSSRAID_PROVIDER_B_MODEL,
+      providerModel
+    ),
+    BOSSRAID_PROVIDER_C_MODEL: resolveProviderModel(
+      merged.BOSSRAID_PROVIDER_C_MODEL,
+      providerModel
+    ),
   };
 
   if (veniceApiKey) {
@@ -293,9 +301,6 @@ export function assembleDeployEnv(core = {}, onchain = {}, options = {}) {
     } else if (isRealValue(merged[key])) {
       merged[key] = merged[key].trim();
     }
-  }
-  if (!isRealValue(merged.BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY)) {
-    merged.BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY = '1';
   }
 
   return merged;

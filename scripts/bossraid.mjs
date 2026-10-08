@@ -30,11 +30,6 @@ const COMMANDS = {
   },
 
   // Sync & docs
-  'sync:inference-catalog': {
-    category: 'sync',
-    description: 'Refresh inference catalog and reference pricing JSON',
-    run: (extra) => runNode('scripts/sync-inference-catalog.mjs', extra),
-  },
   'sync:docs-routes': {
     category: 'sync',
     description: 'Regenerate API route table in content/docs/reference/routes.md',

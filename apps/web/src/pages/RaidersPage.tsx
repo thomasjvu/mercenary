@@ -14,7 +14,7 @@ import { useRaidersDirectory } from '../lib/use-raiders-directory.js';
 type RaidersPageProps = {
   providers: Provider[];
   providerHealth: ProviderHealth[];
-  onNavigate: (path: AppRoute, options?: { mode?: 'inference' | 'raid'; modelId?: string }) => void;
+  onNavigate: (path: AppRoute, options?: { mode?: 'raid'; modelId?: string }) => void;
 };
 
 export function RaidersPage({ providers, providerHealth, onNavigate }: RaidersPageProps) {

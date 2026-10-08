@@ -73,14 +73,6 @@ export function buildAttestedRuntimeUrl(): string {
   return `${API_BASE}/v1/attested-runtime`;
 }
 
-export function buildInferenceReceiptUrl(receiptId: string): string {
-  return `${API_BASE}/v1/inference/receipts/${encodeURIComponent(receiptId)}`;
-}
-
-export function buildInferenceReceiptVerifyUrl(receiptId: string): string {
-  return `${API_BASE}/v1/inference/receipts/${encodeURIComponent(receiptId)}/verify`;
-}
-
 export function buildAttestedResultUrl(query: ReceiptQuery): string {
   return `${API_BASE}/v1/raid/${encodeURIComponent(query.raidId)}/attested-result?token=${encodeURIComponent(query.token)}`;
 }

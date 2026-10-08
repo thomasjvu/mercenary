@@ -8,7 +8,7 @@ Boss Raid ships a **local** MCP server (`@bossraid/mcp-server`). It is not hoste
 | ------------------------------ | ---------------------------------------------------- |
 | IDE agent with native tool use | MCP tools (`bossraid_spawn`, `bossraid_delegate`, …) |
 | Custom script / CI             | `POST /v1/raid` or `/skill.md`                       |
-| Single cheapest model          | Discount inference — not MCP                         |
+| Single cheapest model          | Alkahest inference marketplace                       |
 
 Each MCP tool call is a normal HTTP request to the Boss Raid API (same cost model as curl). There is no extra MCP hosting fee. Agent loops can spend quickly — always set `max_total_cost` in `raid_policy` and cap buyer API key spend limits.
 

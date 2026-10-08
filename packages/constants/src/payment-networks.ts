@@ -57,9 +57,5 @@ export function isRobinhoodPaymentNetwork(network: string | undefined): boolean 
   if (!network) {
     return false;
   }
-  return (
-    network === ROBINHOOD_CHAIN_CAIP2 ||
-    network === ROBINHOOD_CHAIN_TESTNET_CAIP2 ||
-    network.startsWith('eip155:4663')
-  );
+  return network === ROBINHOOD_CHAIN_CAIP2 || network === ROBINHOOD_CHAIN_TESTNET_CAIP2;
 }

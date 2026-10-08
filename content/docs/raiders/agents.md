@@ -101,4 +101,4 @@ Sellers may set `harnessProfile.runtimeVersion` (e.g. Hermes `1.23.3`). Buyers s
 - [HTTP agent guide](../sellers/http-agent-guide.md)
 - [Sell inference](../sellers/sell.md)
 - [Harness verification](../operators/harness-verification.md)
-- [Discount inference](../buyers/discount-inference.md)
+- [Alkahest inference marketplace](https://alkahest.ai)

@@ -15,7 +15,7 @@ import type { LandingPageState } from '../../hooks/useLandingPage.js';
 
 type LandingSurfacesSectionProps = {
   state: LandingPageState;
-  onNavigate: (path: AppRoute, options?: { mode?: 'inference' | 'raid'; modelId?: string }) => void;
+  onNavigate: (path: AppRoute, options?: { mode?: 'raid'; modelId?: string }) => void;
 };
 
 export function LandingSurfacesSection({ state, onNavigate }: LandingSurfacesSectionProps) {
@@ -26,7 +26,7 @@ export function LandingSurfacesSection({ state, onNavigate }: LandingSurfacesSec
     <section className="api-grid" id="surfaces">
       <TerminalDeck
         copiedKey={copiedKey}
-        defaultPanelId="chat"
+        defaultPanelId="raid"
         eyebrow="api routes"
         onCopy={(panelId, code) => void copyText(code, panelId)}
         panels={TERMINAL_PANELS}

@@ -19,7 +19,7 @@ export type X402ReconciliationEntry = {
   kind: 'spawn_refund' | 'bounty_fund_refund' | 'balance_fund_refund';
   status: 'pending' | 'completed' | 'failed';
   reason: string;
-  route: 'raid' | 'chat' | 'inference' | 'balance' | 'bounty';
+  route: 'raid' | 'chat' | 'balance' | 'bounty';
   paymentSignature: string;
   paymentRequiredJson: string;
   bountyId?: string;
@@ -83,9 +83,7 @@ export type BuyerPurchaseEntry = {
   costUsd: number;
   /** Amount that was reserved before capture/release (when known). */
   reservedUsd?: number;
-  benchmarkPriceUsd?: number;
-  savingsUsd?: number;
-  route: 'raid' | 'chat' | 'inference' | 'balance' | 'bounty';
+  route: 'raid' | 'chat' | 'balance' | 'bounty';
   /** Defaults to charged when missing (legacy rows). */
   status?: BuyerPurchaseStatus;
   /** Human/machine reason: zero_success_refund, raid_aborted, terminal_wait_timeout, … */
@@ -156,21 +154,10 @@ export type UpstreamProviderKind =
   | 'nebius'
   | 'openai';
 
-export type SellerUpstreamConfigEntry = {
-  configId: string;
-  wallet: string;
-  provider: UpstreamProviderKind;
-  apiKeyCiphertext: string;
-  keyPrefix: string;
-  upstreamBase: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
 export type X402SettledPaymentEntry = {
   fingerprint: string;
   wallet: string;
-  route: 'balance' | 'bounty' | 'raid' | 'chat' | 'inference';
+  route: 'balance' | 'bounty' | 'raid' | 'chat';
   amountUsd: number;
   createdAt: string;
   /** Optional launch reservation id for raid/chat/inference idempotent re-entry after crash. */
@@ -187,7 +174,6 @@ export type ApiControlStateSnapshot = {
   buyerApiKeys: BuyerApiKeyEntry[];
   buyerPurchases: BuyerPurchaseEntry[];
   sellerPayouts: SellerPayoutEntry[];
-  sellerUpstreamConfigs: SellerUpstreamConfigEntry[];
   rateLimits: ApiRateLimitEntry[];
   relayerTasks: RelayerTaskEntry[];
   x402Reconciliations: X402ReconciliationEntry[];

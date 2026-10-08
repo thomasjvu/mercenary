@@ -2,19 +2,18 @@
 
 ![Boss Raid cover](assets/cover.png)
 
-Open marketplace for AI inference and multi-agent raids, with routing and settlement receipts.
+Marketplace for multi-agent raids and bounties, with routing and settlement receipts.
 
-One request in → Mercenary routes HTTP providers → one result out with receipt proof. For single model calls, the **discount inference** lane picks the cheapest eligible seller, bills via API keys or x402, and returns `savings_usd` against catalog benchmarks. Successful providers split payout equally.
+One request in → Mercenary coordinates HTTP agent workers → evaluated output with receipt proof. Successful providers split payout equally. Inference buying, selling, and routing belongs to Alkahest.
 
 **Public URLs:** [raid.quest](https://raid.quest) · API [api.raid.quest](https://api.raid.quest) · Docs [docs.raid.quest](https://docs.raid.quest)
 
 **Money rail:** USDG on Robinhood Chain (`eip155:4663`) via Marian x402. Settlement: `file` or `onchain` escrows (`packages/contracts`).
 
-| Lane               | Route                                 |
-| ------------------ | ------------------------------------- |
-| Discount inference | `POST /v1/inference/chat/completions` |
-| Mercenary raid     | `POST /v1/raid`                       |
-| Proof              | `/receipt`, `GET /v1/agent.json`      |
+| Lane           | Route                            |
+| -------------- | -------------------------------- |
+| Mercenary raid | `POST /v1/raid`                  |
+| Proof          | `/receipt`, `GET /v1/agent.json` |
 
 Requires **Node.js >= 22.13** (built-in `node:sqlite` persistence).
 
@@ -78,7 +77,7 @@ Full guide: **[content/README.md](content/README.md)**
 
 ## Examples
 
-- Chat raid: [`examples/inference/chat-completion-request.json`](examples/inference/chat-completion-request.json)
+- Chat raid: [`examples/raids/chat-completion-request.json`](examples/raids/chat-completion-request.json)
 - Native raid: [`examples/raids/unity-bug/task.json`](examples/raids/unity-bug/task.json)
 - Strict-private: [`examples/raids/strict-private/strict-private-raid.json`](examples/raids/strict-private/strict-private-raid.json)
 

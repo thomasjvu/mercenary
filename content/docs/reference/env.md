@@ -21,6 +21,10 @@ Template: `deploy/phala/secrets.core.env.example`. Workflow: [Infisical secrets]
 
 Bootstrap assembles `deploy/phala/.env` with compose defaults not stored in Infisical: `pnpm bossraid bootstrap:phala:env`.
 
+Production approval requires `NODE_ENV=production` and `BOSSRAID_SETTLEMENT_MODE=onchain`. `BOSSRAID_CHAIN_ID` must be `4663` and `BOSSRAID_TOKEN_ADDRESS` must be the mainnet USDG address. Testnet `46630` is for development rehearsal only. Settlement addresses must be valid non-zero EVM addresses; signer keys and `MNEMONIC` must derive valid signing accounts. x402 may remain off for private rehearsal; when enabled in production, exact mainnet network/asset, a non-zero recipient, facilitator URL, and facilitator API key are required.
+
+Static `pnpm bossraid audit:production-env` fails unless `NODE_ENV=production`, settlement uses mainnet USDG, and the x402 network/asset matches that rail. It blocks all supported upstream mock flags, `BOSSRAID_EVAL_ALLOW_UNSAFE_HOST_EXECUTION`, unverified balance/bounty funding, `BOSSRAID_PRIVACY_SERVER_VERIFY=0`, and `BOSSRAID_HOST_TEE_SKIP_CLOUD_VERIFY=1`. Configuration approval does not verify live balances, bytecode, RPC identity, or hardware quotes.
+
 ## Tier 1 — Core runtime
 
 | Variable                                 | Values / notes                                                                                                 |
@@ -28,7 +32,6 @@ Bootstrap assembles `deploy/phala/.env` with compose defaults not stored in Infi
 | `BOSSRAID_STORAGE_BACKEND`               | `sqlite` (default), `memory`, or `postgres`                                                                    |
 | `BOSSRAID_DATABASE_URL` / `DATABASE_URL` | Postgres connection string when backend is `postgres`                                                          |
 | `BOSSRAID_SQLITE_FILE`                   | SQLite path for orchestrator + API state                                                                       |
-| `BOSSRAID_INFERENCE_RECEIPTS_FILE`       | Optional SQLite path for inference attestation receipts                                                        |
 | `BOSSRAID_BOUNTY_SQLITE_FILE`            | SQLite path for bounty marketplace state                                                                       |
 | `BOSSRAID_BOUNTY_DEADLINE_INTERVAL_MS`   | Bounty deadline worker: default **top of each hour**; set a ms interval for tests (e.g. `60000`); `0` disables |
 | `BOSSRAID_BOUNTY_DEFAULT_BIDDING_DAYS`   | Default bidding window (default 7)                                                                             |
@@ -37,8 +40,6 @@ Bootstrap assembles `deploy/phala/.env` with compose defaults not stored in Infi
 | `BOSSRAID_BOUNTY_DEFAULT_ACCEPT_DAYS`    | Permissionless claim window (default 7)                                                                        |
 | `BOSSRAID_BOUNTY_AUTO_AWARD_MAX`         | Max bids auto-awarded (default 3)                                                                              |
 | `BOSSRAID_PROVIDERS_FILE`                | Provider seed file(s), comma-separated                                                                         |
-| `BOSSRAID_DISABLED_PROVIDER_IDS`         | Comma ids removed on platform-liquidity bootstrap (default `dottie,riko,gamma`)                                |
-| `BOSSRAID_ALLOW_EMPTY_PROVIDERS`         | `1` = allow empty seed file (platform seats only)                                                              |
 | `BOSSRAID_PROVIDER_FRESH_MS`             | Routing freshness window                                                                                       |
 | `BOSSRAID_INVITE_ACCEPT_MS`              | Invite timeout; chat settle grace (5s–30s)                                                                     |
 | `BOSSRAID_FIRST_HEARTBEAT_MS`            | First heartbeat deadline                                                                                       |
@@ -61,7 +62,6 @@ Bootstrap assembles `deploy/phala/.env` with compose defaults not stored in Infi
 | `BOSSRAID_BUYER_MAX_REQUEST_BUDGET_USD`      | Server max request budget (default `50`; production-readiness gate) |
 | `BOSSRAID_SECRET_ENCRYPTION_KEY`             | Encrypt secrets at rest (required for Venice seller keys in prod)   |
 | `BOSSRAID_SECRET_ENCRYPTION_PREVIOUS_KEYS`   | Key rotation decrypt                                                |
-| `BOSSRAID_INFERENCE_GATEWAY_BASE`            | Public base URL for hosted seller gateway (`/gateway/:providerId`)  |
 | `BOSSRAID_PROVIDER_HEALTH_TIMEOUT_MS`        | Health probe timeout                                                |
 | `BOSSRAID_TRUST_PROXY`                       | Trust forwarded headers                                             |
 | `BOSSRAID_METRICS_PUBLIC`                    | `true` exposes `/metrics` without admin auth (default: admin only)  |
@@ -77,7 +77,7 @@ Production readiness requires operational tokens and encryption keys to be at le
 | `BOSSRAID_X402_ENABLED`                                   | Default `false`; ops toggle overrides live                                                                   |
 | `BOSSRAID_X402_PAY_TO`                                    | Treasury wallet                                                                                              |
 | `BOSSRAID_X402_RAID_SURCHARGE_USD`                        | Flat raid surcharge (default `0.01`)                                                                         |
-| `BOSSRAID_X402_CHAT_SURCHARGE_USD`                        | Flat chat/inference surcharge (default `0.002`)                                                              |
+| `BOSSRAID_X402_CHAT_SURCHARGE_USD`                        | Flat raid chat surcharge (default `0.002`)                                                                   |
 | `BOSSRAID_X402_PLATFORM_MARKUP_BPS`                       | Platform markup (default `100` = 1%)                                                                         |
 | `BOSSRAID_X402_NETWORK`, `BOSSRAID_X402_ASSET`            | **Required rail:** `eip155:4663` + `usdg` (Robinhood / USDG) only                                            |
 | `BOSSRAID_X402_ASSET_NAME`, `BOSSRAID_X402_ASSET_VERSION` | USDG EIP-712: `Global Dollar` / `1`                                                                          |
@@ -133,7 +133,7 @@ Onchain overlay template: `deploy/phala/secrets.onchain.env.example`.
 | `BOSSRAID_TEE_RUNTIME_MODE`           | Runtime mode recorded in TEE attestations (default `phala-cvm`)                                                                                                                                                                                                                                     |
 | `BOSSRAID_TEE_SOCKET_PATH`            | Phala dstack guest agent socket (default `/var/run/dstack.sock`; set `/var/run/tappd.sock` on legacy tappd-only hosts)                                                                                                                                                                              |
 | `BOSSRAID_HOST_TEE_SKIP_CLOUD_VERIFY` | `1` = structural TDX verify only on host route; unset = Phala Cloud verify. **Blocked in production** (`NODE_ENV=production` + production-readiness)                                                                                                                                                |
-| `BOSSRAID_UPSTREAM_TEE_CLOUD_VERIFY`  | `0` disables cloud verify for marketplace/upstream TEE paths                                                                                                                                                                                                                                        |
+| `BOSSRAID_UPSTREAM_TEE_CLOUD_VERIFY`  | `0` disables cloud verify for worker upstream TEE verification                                                                                                                                                                                                                                      |
 | `BOSSRAID_PRIVACY_SERVER_VERIFY`      | `0` = dev-only: skip server-side provider privacy attestation re-verify. **Blocked in production**                                                                                                                                                                                                  |
 | `PHALA_CLOUD_ATTESTATION_VERIFY_URL`  | Override Phala Cloud quote verify endpoint                                                                                                                                                                                                                                                          |
 
@@ -149,17 +149,11 @@ Onchain overlay template: `deploy/phala/secrets.onchain.env.example`.
 | `BOSSRAID_ANTHROPIC_MOCK`               | `1` = mock Anthropic/Claude upstream for local/tests     |
 | `BOSSRAID_NEBIUS_MOCK`                  | `1` = mock Nebius Token Factory upstream for local/tests |
 | `BOSSRAID_OPENAI_MOCK`                  | `1` = mock OpenAI upstream for local/tests               |
-| `BOSSRAID_UPSTREAM_MOCK`                | `1` = mock all hosted upstreams                          |
+| `BOSSRAID_UPSTREAM_MOCK`                | `1` = mock worker upstream calls                         |
 | `BOSSRAID_UPSTREAM_TEE_MOCK`            | `1` = mock upstream TEE attestation verification         |
 | `BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND` | Dev-only: fund bounties without x402 (default off)       |
 
 Failed live fetches do not silently fall back to mock models in development. Use explicit mock flags only for local simulations.
-
-### Catalog upstream platform keys (optional)
-
-Build-time catalog downloads use public sources and need no credentials or new environment variables. Source URLs and refresh policy are documented in [runtime](../operators/runtime.md#catalog-refresh).
-
-`BOSSRAID_VENICE_API_KEY`, `BOSSRAID_REDPILL_API_KEY`, `BOSSRAID_NEAR_API_KEY`, `BOSSRAID_CHUTES_API_KEY`, `BOSSRAID_PHALA_API_KEY`, `BOSSRAID_XAI_API_KEY`, `BOSSRAID_ZAI_API_KEY`, `BOSSRAID_ANTHROPIC_API_KEY`, `BOSSRAID_DARKBLOOM_API_KEY`, `BOSSRAID_NEBIUS_API_KEY`, `BOSSRAID_OPENAI_API_KEY` — platform keys for catalog inference when sellers do not supply their own. TEE preflight is available only for supported upstreams. Optional `BOSSRAID_ZAI_API_BASE`, `BOSSRAID_ANTHROPIC_API_BASE`, `BOSSRAID_NEBIUS_API_BASE`, or `BOSSRAID_OPENAI_API_BASE` override the provider API bases. Nebius defaults to `https://api.tokenfactory.nebius.com/v1`; OpenAI defaults to `https://api.openai.com/v1` and uses `/responses`; Anthropic uses `/messages`. Z.ai retains its coding-plan base; catalog benchmark prices come from the standard Z.ai token API and do not describe subscription billing. Account `/models` and completion probes determine which entries can publish.
 
 ### Evaluator
 
@@ -210,17 +204,16 @@ Outside `NODE_ENV=production`, `node_env_production`, `onchain_settlement`, and 
 
 ### Settlement / operator extras (commonly needed)
 
-| Variable                                         | Purpose                                                                                                                        |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `BOSSRAID_SETTLEMENT_TREASURY_KEY`               | Signs onchain settlement fund txs                                                                                              |
-| `BOSSRAID_EVALUATOR_ADDRESS`                     | Onchain evaluator address for job complete/reject                                                                              |
-| `BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY`      | Optional evaluator signer for onchain complete                                                                                 |
-| `BOSSRAID_SETTLEMENT_PROVIDER_PRIVATE_KEYS_JSON` | Optional map of provider wallets for onchain job steps                                                                         |
-| `BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS`      | `1` = allow private/loopback provider URLs in production (trusted compose networks only)                                       |
-| `BOSSRAID_BOOTSTRAP_PLATFORM_LIQUIDITY`          | `1` = on API start, probe and publish available, priced chat models for configured `BOSSRAID_*_API_KEY` values (Phala default) |
-| `BOSSRAID_TRUSTED_CLIENT_KEY`                    | Alias for trusted-client bearer (with `BOSSRAID_API_KEY`)                                                                      |
-| `BOSSRAID_RAID_RETENTION_TTL_SEC`                | Raid record retention window                                                                                                   |
-| `BOSSRAID_X402_RECONCILIATION_INTERVAL_MS`       | x402 refund/reconcile worker interval                                                                                          |
+| Variable                                         | Purpose                                                                                  |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `BOSSRAID_SETTLEMENT_TREASURY_KEY`               | Signs onchain settlement fund txs                                                        |
+| `BOSSRAID_EVALUATOR_ADDRESS`                     | Onchain evaluator address for job complete/reject                                        |
+| `BOSSRAID_SETTLEMENT_EVALUATOR_PRIVATE_KEY`      | Optional evaluator signer for onchain complete                                           |
+| `BOSSRAID_SETTLEMENT_PROVIDER_PRIVATE_KEYS_JSON` | Optional map of provider wallets for onchain job steps                                   |
+| `BOSSRAID_ALLOW_PRIVATE_PROVIDER_ENDPOINTS`      | `1` = allow private/loopback provider URLs in production (trusted compose networks only) |
+| `BOSSRAID_TRUSTED_CLIENT_KEY`                    | Alias for trusted-client bearer (with `BOSSRAID_API_KEY`)                                |
+| `BOSSRAID_RAID_RETENTION_TTL_SEC`                | Raid record retention window                                                             |
+| `BOSSRAID_X402_RECONCILIATION_INTERVAL_MS`       | x402 refund/reconcile worker interval                                                    |
 
 ## Dev & smoke only
 

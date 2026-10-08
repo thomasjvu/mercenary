@@ -48,6 +48,14 @@ If mirror sync fails with `Could not resolve host: github.com` inside the Forgej
 GitHub Actions is the sole GHCR publisher. Its built-in `GITHUB_TOKEN` avoids a separate
 `GHCR_TOKEN` secret in Forgejo; Forgejo does not build or push duplicate images.
 
+### Dependency security
+
+CI runs `pnpm test:dependency-security` before `pnpm audit --audit-level=high`. Security overrides and the lockfile select patched upstream releases.
+
+`braces@3.0.3` has no published fix for `GHSA-vfj7-8cjw-p6xm`. `patches/braces@3.0.3.patch` limits parser nesting and recursive compile/expand/stringify AST walks to 128 levels. Regression tests cover ordinary globs, deeply nested brace/parenthesis strings, supplied ASTs, and cycles. The workspace audit exception applies only to this locally mitigated advisory; remove the patch and exception when an upstream fix is available. No other advisory is suppressed.
+
+The MCP server requires `@modelcontextprotocol/sdk >=1.31.0` to keep the dependency graph on the patched OAuth implementation. Boss Raid serves MCP over stdio and does not configure an SDK OAuth client. Receipt tests and a stdio client handshake verify the work-tool contract after upgrades.
+
 ### Spectre runner
 
 Host: `spectre.thomasjvu.com` (native x86_64 Docker).
@@ -67,10 +75,6 @@ label is available for operator maintenance and is not used to publish images.
 | `development` | Default integration branch (Forgejo default) |
 | `staging`     | Pre-prod                                     |
 | `main`        | Production-line; triggers image publish      |
-
-## Catalog drift
-
-The mirrored `catalog-drift.yml` workflows run daily at 07:23 UTC or manually. They fetch public catalogs and run `pnpm bossraid sync:inference-catalog -- --check`; price/model changes, fetch errors, and source age over seven days fail the job. No API keys, automatic commits, or deployment are involved. Refresh and review the snapshot on a development branch, then ship through the normal image workflow. Regular CI checks saved catalog inputs before building.
 
 ## Phala deploy after CI
 

@@ -1,5 +1,4 @@
 import { readUpstreamUsage } from './usage.js';
-import { listInferenceCatalogEntriesForProvider } from '@bossraid/constants';
 import { TIMEOUTS } from '@bossraid/constants';
 import {
   applyChatOptionsToBody,
@@ -9,39 +8,9 @@ import {
 import { isProviderInferenceMock, isProviderTeeMock } from '../upstream-mock.js';
 import { buildMockVeniceTeeReport } from './adapter-helpers.js';
 import { fetchUpstreamJson, isE2eeModelId, isTeeModelId } from './shared.js';
-import type { UpstreamChatResult, UpstreamModelRecord } from './types.js';
+import type { UpstreamChatResult } from './types.js';
 
 const VENICE_BASE = 'https://api.venice.ai/api/v1';
-
-export async function fetchVeniceUpstreamModels(
-  apiKey: string,
-  options: { timeoutMs?: number; env?: NodeJS.ProcessEnv } = {}
-): Promise<UpstreamModelRecord[]> {
-  const env = options.env ?? process.env;
-  if (isProviderInferenceMock('venice', env)) {
-    return listInferenceCatalogEntriesForProvider('venice').map((entry) => ({
-      id: entry.upstreamModelId,
-      displayName: entry.displayName,
-      teeAttested: entry.teeAttested,
-      e2ee: entry.e2ee,
-    }));
-  }
-
-  const payload = await fetchUpstreamJson<{
-    data?: Array<{ id: string; model_spec?: Record<string, unknown> }>;
-  }>(`${VENICE_BASE}/models`, { apiKey, timeoutMs: options.timeoutMs });
-
-  return (payload.data ?? []).map((model) => {
-    const capabilities = (model.model_spec?.capabilities ?? {}) as Record<string, unknown>;
-    return {
-      id: model.id,
-      displayName: typeof model.model_spec?.name === 'string' ? model.model_spec.name : model.id,
-      teeAttested: isTeeModelId(model.id),
-      e2ee: isE2eeModelId(model.id) || capabilities.supportsE2EE === true,
-      supportsE2ee: capabilities.supportsE2EE === true,
-    };
-  });
-}
 
 export async function probeVeniceChatCompletion(input: {
   apiKey: string;

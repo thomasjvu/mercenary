@@ -13,7 +13,7 @@ type SpecialistRaidersSectionProps = {
   isActive: boolean;
   onPatch: (patch: Partial<RaidersDirectoryState>) => void;
   onReset: () => void;
-  onNavigate: (path: AppRoute, options?: { mode?: 'inference' | 'raid'; modelId?: string }) => void;
+  onNavigate: (path: AppRoute, options?: { mode?: 'raid'; modelId?: string }) => void;
 };
 
 export function SpecialistRaidersSection({
@@ -34,7 +34,7 @@ export function SpecialistRaidersSection({
         <p className="raiders-section__meta">{summaryLabel}</p>
       </div>
 
-      <div className="marketplace-layout raiders-section__layout">
+      <div className="provider directory-layout raiders-section__layout">
         <RaidersDirectoryToolbar
           isActive={isActive}
           onPatch={onPatch}
@@ -61,7 +61,7 @@ export function SpecialistRaidersSection({
               filteredRaiders.map((raider, index) => (
                 <RaiderRow
                   key={raider.provider.providerId}
-                  onMarket={() => onNavigate('/marketplace')}
+                  onMarket={() => onNavigate('/raiders')}
                   onTry={() =>
                     onNavigate('/playground', {
                       modelId: raider.provider.modelId ?? undefined,

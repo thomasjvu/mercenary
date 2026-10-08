@@ -26,8 +26,8 @@ export function HttpSellerPublishSuccess({
         >
           manage offers
         </button>
-        <button className="button" onClick={() => onNavigate('/marketplace')} type="button">
-          view marketplace
+        <button className="button" onClick={() => onNavigate('/raiders')} type="button">
+          view provider directory
         </button>
       </div>
     </FlowSection>

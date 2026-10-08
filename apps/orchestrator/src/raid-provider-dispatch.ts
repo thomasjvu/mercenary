@@ -364,23 +364,12 @@ export async function dispatchProvider(
     });
     deps.queuePersistBestEffort();
 
-    const hostedProvider =
-      provider.profile.source?.type === 'inference_hosted' ||
-      provider.profile.source?.type === 'venice_hosted' ||
-      provider.profile.source?.type === 'harness_hosted';
-    if (!hostedProvider) {
-      deps.timers.setFirstHeartbeatTimeout(
-        raidId,
-        providerId,
-        deps.options.firstHeartbeatMs,
-        () => {
-          const current = deps.requireRaid(raidId).assignments[providerId];
-          if (!current.firstHeartbeatAt && !TERMINAL_ASSIGNMENT_STATUSES.has(current.status)) {
-            markTimedOut(raidId, providerId, 'first heartbeat timeout', deps);
-          }
-        }
-      );
-    }
+    deps.timers.setFirstHeartbeatTimeout(raidId, providerId, deps.options.firstHeartbeatMs, () => {
+      const current = deps.requireRaid(raidId).assignments[providerId];
+      if (!current.firstHeartbeatAt && !TERMINAL_ASSIGNMENT_STATUSES.has(current.status)) {
+        markTimedOut(raidId, providerId, 'first heartbeat timeout', deps);
+      }
+    });
 
     void Promise.resolve(
       provider.run(taskPackage, {

@@ -14,12 +14,15 @@ export function ManageOffersPage() {
 
       {state.isAuthenticated ? (
         <div className="manage-offers">
-          {state.hostedOffers.length === 0 ? (
+          {state.workerOffers.length === 0 ? (
             <article className="page-panel">
-              <p>No hosted offers yet. Create one from the sell wizard.</p>
+              <p>No worker offers. Register an agent worker to provide raid services.</p>
+              <a className="button" href="/onboarding/seller/http">
+                Register worker
+              </a>
             </article>
           ) : (
-            state.hostedOffers.map((provider) => (
+            state.workerOffers.map((provider) => (
               <ManageOfferCard key={provider.providerId} provider={provider} state={state} />
             ))
           )}

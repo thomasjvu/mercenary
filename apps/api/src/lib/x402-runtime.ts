@@ -22,8 +22,7 @@ export function x402PayToConfigured(config: X402Config): boolean {
 }
 
 export function isRobinhoodUsdGRail(config: X402Config): boolean {
-  const networkOk =
-    config.network === ROBINHOOD_CHAIN_CAIP2 || config.network.startsWith('eip155:4663');
+  const networkOk = config.network === ROBINHOOD_CHAIN_CAIP2;
   const asset = config.asset?.toLowerCase() ?? '';
   const assetOk = asset === 'usdg' || asset === ROBINHOOD_USDG_ADDRESS.toLowerCase();
   return networkOk && assetOk;

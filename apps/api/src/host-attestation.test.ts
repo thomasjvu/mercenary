@@ -34,6 +34,7 @@ function startMockDstackSocket(socketPath: string): net.Server {
       const response = [
         'HTTP/1.1 200 OK',
         'Content-Type: application/json',
+        'Connection: close',
         `Content-Length: ${Buffer.byteLength(payload)}`,
         '',
         payload,

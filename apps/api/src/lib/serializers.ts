@@ -148,7 +148,6 @@ function serializePrivacyAttestation(attestation: PrivacyAttestation): PrivacyAt
     teeAttestation: attestation.teeAttestation
       ? serializeTeeAttestation(attestation.teeAttestation)
       : undefined,
-    inferenceReceiptId: attestation.inferenceReceiptId,
     externalApiCalls: attestation.externalApiCalls,
     dataRetained: attestation.dataRetained,
     signedDeclaration: attestation.signedDeclaration,

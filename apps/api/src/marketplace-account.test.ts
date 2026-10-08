@@ -149,7 +149,7 @@ test('public session tokens and buyer key hashes are encrypted in API control st
     try {
       const response = await restored.inject({
         method: 'POST',
-        url: '/v1/inference/chat/completions',
+        url: '/v1/chat/completions',
         headers: {
           authorization: `Bearer ${apiKey}`,
         },
@@ -173,7 +173,7 @@ test('public session tokens and buyer key hashes are encrypted in API control st
   }
 });
 
-test('buyer API keys enforce spend caps on discount inference requests', async () => {
+test('buyer API keys enforce spend caps on raid chat requests', async () => {
   const provider: RaidProvider = {
     profile: createProviderProfile('provider-spend-cap', {
       modelProvider: 'openai',
@@ -210,7 +210,7 @@ test('buyer API keys enforce spend caps on discount inference requests', async (
     });
     const response = await app.inject({
       method: 'POST',
-      url: '/v1/inference/chat/completions',
+      url: '/v1/chat/completions',
       headers: {
         authorization: `Bearer ${created.json().apiKey}`,
       },
@@ -219,7 +219,7 @@ test('buyer API keys enforce spend caps on discount inference requests', async (
         messages: [
           {
             role: 'user',
-            content: 'Use the discount inference lane.',
+            content: 'Use the raid chat lane.',
           },
         ],
         raid_policy: {
@@ -285,7 +285,7 @@ test('buyer API keys enforce per-key rate limits before paid execution', async (
       messages: [
         {
           role: 'user',
-          content: 'Use the discount inference lane.',
+          content: 'Use the raid chat lane.',
         },
       ],
       raid_policy: {
@@ -294,7 +294,7 @@ test('buyer API keys enforce per-key rate limits before paid execution', async (
     };
     await app.inject({
       method: 'POST',
-      url: '/v1/inference/chat/completions',
+      url: '/v1/chat/completions',
       headers: {
         authorization: `Bearer ${created.json().apiKey}`,
       },
@@ -303,7 +303,7 @@ test('buyer API keys enforce per-key rate limits before paid execution', async (
 
     const rateLimited = await app.inject({
       method: 'POST',
-      url: '/v1/inference/chat/completions',
+      url: '/v1/chat/completions',
       headers: {
         authorization: `Bearer ${created.json().apiKey}`,
       },
@@ -313,153 +313,6 @@ test('buyer API keys enforce per-key rate limits before paid execution', async (
     assert.equal(rateLimited.statusCode, 429);
     assert.equal(rateLimited.json().error, 'rate_limited');
   } finally {
-    await app.close();
-  }
-});
-
-test('discount inference: API key skips x402, funds balance, records purchases and seller ledger', async () => {
-  const receivedProviders: string[] = [];
-  const cheapProvider: RaidProvider = {
-    profile: createProviderProfile('provider-parity-cheap', {
-      modelProvider: 'openai',
-      modelId: 'gpt-5.5',
-      pricePerTaskUsd: 0.25,
-      outputTypes: ['text', 'json'],
-      supportedLanguages: ['text'],
-    }),
-    async accept(): Promise<ProviderAcceptance> {
-      return { accepted: true, providerRunId: 'run-parity-cheap' };
-    },
-    async run(task, callbacks): Promise<void> {
-      receivedProviders.push('provider-parity-cheap');
-      await callbacks.onSubmit({
-        raidId: task.raidId,
-        providerId: 'provider-parity-cheap',
-        providerRunId: 'run-parity-cheap',
-        answerText: 'Parity lane response.',
-        explanation: 'Cheap seller served the API-key inference request.',
-        confidence: 0.91,
-        filesTouched: [],
-        submittedAt: new Date().toISOString(),
-      });
-    },
-  };
-  const pausedCheapProvider: RaidProvider = {
-    profile: createProviderProfile('provider-parity-paused', {
-      modelProvider: 'openai',
-      modelId: 'gpt-5.5',
-      pricePerTaskUsd: 0.05,
-      marketplaceOfferStatus: 'paused',
-      outputTypes: ['text', 'json'],
-      supportedLanguages: ['text'],
-    }),
-    async accept(): Promise<ProviderAcceptance> {
-      return { accepted: true, providerRunId: 'run-parity-paused' };
-    },
-    async run(): Promise<void> {
-      receivedProviders.push('provider-parity-paused');
-    },
-  };
-  const orchestrator = new BossRaidOrchestrator(
-    [pausedCheapProvider, cheapProvider],
-    undefined,
-    undefined,
-    undefined,
-    async (profile) => readyHealth(profile.providerId)
-  );
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () =>
-    new Response(
-      JSON.stringify({
-        ready: true,
-        agentFramework: 'codex',
-        modelProvider: 'openai',
-        model: 'gpt-5.5',
-      }),
-      { status: 200, headers: { 'content-type': 'application/json' } }
-    );
-  const app = buildTestApiServer(orchestrator, {
-    ...process.env,
-    BOSSRAID_STORAGE_BACKEND: 'memory',
-    BOSSRAID_X402_ENABLED: 'false',
-    BOSSRAID_ALLOW_UNVERIFIED_BALANCE_FUND: 'true',
-  });
-
-  try {
-    const session = await createPublicSessionCookie(app, 7);
-    const funded = await app.inject({
-      method: 'POST',
-      url: '/v1/buyer/balance/fund',
-      headers: { cookie: session.cookie },
-      payload: { amountUsd: 5 },
-    });
-    assert.equal(funded.statusCode, 200);
-    assert.equal(funded.json().balanceUsd, 5);
-
-    const created = await app.inject({
-      method: 'POST',
-      url: '/v1/buyer/api-keys',
-      headers: { cookie: session.cookie },
-      payload: { name: 'Parity key', spendLimitUsd: 10 },
-    });
-    const apiKey = created.json().apiKey as string;
-
-    const inference = await app.inject({
-      method: 'POST',
-      url: '/v1/inference/chat/completions',
-      headers: { authorization: `Bearer ${apiKey}` },
-      payload: {
-        model: 'gpt-5.5',
-        messages: [{ role: 'user', content: 'Route through the parity lane.' }],
-      },
-    });
-    assert.equal(inference.statusCode, 200, inference.body);
-    assert.deepEqual(receivedProviders, ['provider-parity-cheap']);
-    assert.equal(inference.json().bossraid?.selected_seller, 'provider-parity-cheap');
-    assert.equal(typeof inference.json().bossraid?.savings_usd, 'number');
-
-    const balance = await app.inject({
-      method: 'GET',
-      url: '/v1/buyer/balance',
-      headers: { cookie: session.cookie },
-    });
-    assert.equal(balance.statusCode, 200);
-    assert.ok(balance.json().balanceUsd < 5);
-
-    const purchases = await app.inject({
-      method: 'GET',
-      url: '/v1/buyer/purchases',
-      headers: { cookie: session.cookie },
-    });
-    assert.equal(purchases.statusCode, 200);
-    assert.equal(purchases.json().data.length, 1);
-    assert.equal(purchases.json().data[0].route, 'inference');
-
-    const stats = await app.inject({ method: 'GET', url: '/v1/marketplace/stats' });
-    assert.equal(stats.statusCode, 200);
-    assert.ok(stats.json().modelsLive >= 1);
-
-    const markets = await app.inject({ method: 'GET', url: '/v1/markets?model_id=gpt-5.5' });
-    const listedSellerIds = markets
-      .json()
-      .data[0].sellers.map((seller: { sellerId: string }) => seller.sellerId);
-    assert.equal(listedSellerIds.includes('provider-parity-paused'), false);
-
-    // Seller earnings shape (pending/settled/flush) — Surplus-style ledger fields.
-    const sellerSession = await createPublicSessionCookie(app, 8);
-    const earnings = await app.inject({
-      method: 'GET',
-      url: '/v1/seller/earnings',
-      headers: { cookie: sellerSession.cookie },
-    });
-    assert.equal(earnings.statusCode, 200);
-    assert.equal(typeof earnings.json().pendingUsd, 'number');
-    assert.equal(typeof earnings.json().settledUsd, 'number');
-    assert.equal(typeof earnings.json().flushEligible, 'boolean');
-    assert.equal(earnings.json().currency, 'USDG');
-    assert.equal(earnings.json().chain, 'eip155:4663');
-  } finally {
-    globalThis.fetch = originalFetch;
     await app.close();
   }
 });

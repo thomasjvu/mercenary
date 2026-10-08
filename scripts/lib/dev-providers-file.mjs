@@ -1,10 +1,4 @@
-export const defaultProvidersFile = './examples/inference/inference-marketplace-providers.json';
-
-const removedProviderFiles = [
-  'providers.http.json',
-  'providers.compose.json',
-  'providers.eigencompute.json',
-];
+export const defaultProvidersFile = './examples/providers/empty.providers.json';
 
 export function resolveDevProvidersFile(env = process.env) {
   const raw = env.BOSSRAID_PROVIDERS_FILE?.trim();
@@ -15,8 +9,7 @@ export function resolveDevProvidersFile(env = process.env) {
   const entries = raw
     .split(',')
     .map((entry) => entry.trim())
-    .filter(Boolean)
-    .filter((entry) => !removedProviderFiles.some((legacy) => entry.includes(legacy)));
+    .filter(Boolean);
 
   return entries.length > 0 ? entries.join(',') : defaultProvidersFile;
 }

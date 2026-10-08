@@ -8,9 +8,7 @@ import {
   launchPaidChatRaid,
   prepareChatCompletionRequest,
   tryMercenaryPlannerDirectResponse,
-  tryE2eeChatRelay,
   type ChatCompletionPipelineDeps,
-  type ChatCompletionRouteOptions,
 } from '../lib/chat-completion-pipeline.js';
 import { type ApiContext } from '../api-context.js';
 import { requireMercenaryAccess } from './auth/mercenary-access.js';
@@ -35,11 +33,7 @@ export function createChatHandlers(
     raid,
   };
 
-  async function handleChatCompletionRequest(
-    request: FastifyRequest,
-    reply: FastifyReply,
-    options: ChatCompletionRouteOptions = {}
-  ) {
+  async function handleChatCompletionRequest(request: FastifyRequest, reply: FastifyReply) {
     const rateLimitError = requireRateLimit(
       request,
       reply,
@@ -56,24 +50,7 @@ export function createChatHandlers(
       return accessError.error;
     }
 
-    const prepared = prepareChatCompletionRequest(request, pipelineDeps, options);
-    if (prepared.e2eeRoute) {
-      return tryE2eeChatRelay(
-        {
-          chatRequest: prepared.chatRequest,
-          route: prepared.e2eeRoute,
-          request,
-          reply,
-          created: prepared.created,
-        },
-        pipelineDeps
-      );
-    }
-
-    if (!prepared.raidRequest) {
-      throw new Error('Chat completion request is missing raid routing context.');
-    }
-
+    const prepared = prepareChatCompletionRequest(request, pipelineDeps);
     const authorization = authorizeChatCompletionRequest(
       request,
       reply,
@@ -87,7 +64,6 @@ export function createChatHandlers(
     const plannerResult = await tryMercenaryPlannerDirectResponse(
       prepared.chatRequest,
       prepared.created,
-      options,
       pipelineDeps.ctx.env
     );
     if (plannerResult?.response) {

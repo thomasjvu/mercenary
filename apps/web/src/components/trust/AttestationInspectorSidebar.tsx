@@ -1,4 +1,3 @@
-import type { MarketplaceModelTeeSummaryView } from '@bossraid/shared-types';
 import type { HostAttestationResponse } from '../../api/host-attestation.js';
 import type { ReadyResponse } from '../../api/health.js';
 import { buildAgentManifestUrl, buildHostAttestationUrl } from '../../lib/receipt-url.js';
@@ -20,9 +19,6 @@ type AttestationInspectorSidebarProps = {
   hostAttestation: HostAttestationResponse | undefined;
   hostAttestationLoading: boolean;
   hostAttestationError: unknown;
-  modelTee: MarketplaceModelTeeSummaryView | undefined;
-  modelTeeError: unknown;
-  modelTeeLoading: boolean;
 };
 
 function SignalRow({ label, value }: { label: string; value: string }) {
@@ -81,9 +77,6 @@ export function AttestationInspectorSidebar({
   hostAttestation,
   hostAttestationLoading,
   hostAttestationError,
-  modelTee,
-  modelTeeError,
-  modelTeeLoading,
 }: AttestationInspectorSidebarProps) {
   const tee = hostAttestation?.teeAttestation;
   const signedRuntime = hostAttestation?.signedRuntime;
@@ -229,70 +222,6 @@ export function AttestationInspectorSidebar({
             </a>
           </div>
         </section>
-
-        {context.modelId ? (
-          <section className="attestation-inspector__panel">
-            <p className="attestation-inspector__section-label">upstream tee</p>
-            <p className="attestation-inspector__note">
-              {context.provider ?? modelTee?.provider ?? 'upstream'} · {context.modelId}
-            </p>
-            {modelTeeLoading && !modelTee && !modelTeeError ? (
-              <p className="attestation-inspector__note attestation-inspector__note--loading">
-                Loading upstream TEE summary…
-              </p>
-            ) : null}
-            {modelTee?.lastAttestation ? (
-              <>
-                <div className="attestation-inspector__signal-strip">
-                  <SignalRow
-                    label="status"
-                    value={modelTee.lastAttestation.valid ? 'verified' : 'failed'}
-                  />
-                </div>
-                {modelTee.lastAttestation.signingAddress ? (
-                  <CopyableAddress
-                    label="signing address"
-                    value={modelTee.lastAttestation.signingAddress}
-                  />
-                ) : null}
-                {modelTee.lastAttestation.checks && modelTee.lastAttestation.checks.length > 0 ? (
-                  <ul className="upstream-tee-panel__checks">
-                    {modelTee.lastAttestation.checks.map((check) => (
-                      <li
-                        className={
-                          check.passed
-                            ? 'upstream-tee-panel__check--pass'
-                            : 'upstream-tee-panel__check--fail'
-                        }
-                        key={check.id}
-                      >
-                        {check.passed ? '✓' : '✗'} {check.detail ?? check.id}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-                {modelTee.lastAttestation.explorerUrl ? (
-                  <a
-                    className="upstream-tee-panel__link"
-                    href={modelTee.lastAttestation.explorerUrl}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    open upstream proof explorer
-                  </a>
-                ) : null}
-              </>
-            ) : modelTeeError ? (
-              <p className="attestation-inspector__note">
-                {modelTeeError instanceof Error
-                  ? modelTeeError.message
-                  : 'Upstream TEE summary unavailable.'}
-              </p>
-            ) : modelTeeLoading ? null : (
-              <p className="attestation-inspector__note">No cached upstream TEE summary yet.</p>
-            )}
-          </section>
-        ) : null}
 
         {upstreamRows.length > 0 ? (
           <section className="attestation-inspector__panel">
