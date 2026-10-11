@@ -36,6 +36,7 @@ export function raidHeaders(raidAccessToken?: string): Record<string, string> | 
 }
 
 export async function paidApiRequest(path: string, init?: RequestInit): Promise<unknown> {
+  if (process.env.BOSSRAID_BUYER_API_KEY) return apiRequest(path, init);
   const paidFetch = createAgentPaidFetch();
   if (!paidFetch) {
     return apiRequest(path, init);
@@ -43,6 +44,8 @@ export async function paidApiRequest(path: string, init?: RequestInit): Promise<
 
   const response = await paidFetch(new URL(path, apiBase).toString(), {
     ...init,
+    redirect: 'error',
+    signal: init?.signal ?? AbortSignal.timeout(60_000),
     headers: {
       'content-type': 'application/json',
       ...(init?.headers ?? {}),
@@ -75,11 +78,36 @@ export async function paidApiRequest(path: string, init?: RequestInit): Promise<
   return payload ?? { ok: true };
 }
 
-export async function apiRequest(path: string, init?: RequestInit): Promise<unknown> {
+export type ApiAuth = 'buyer' | 'wallet' | 'provider' | 'none';
+
+export async function apiRequest(
+  path: string,
+  init?: RequestInit,
+  auth: ApiAuth = 'buyer'
+): Promise<unknown> {
+  const credentials: Record<string, string> = {};
+  if (auth === 'wallet') {
+    const session = process.env.BOSSRAID_WALLET_SESSION;
+    if (!session)
+      throw new Error(
+        'Connect a wallet and configure BOSSRAID_WALLET_SESSION for account operations.'
+      );
+    credentials.cookie = `bossraid_session=${encodeURIComponent(session)}`;
+  } else if (auth === 'provider') {
+    const token = process.env.BOSSRAID_PROVIDER_TOKEN;
+    if (!token)
+      throw new Error('Configure BOSSRAID_PROVIDER_TOKEN for seller bid and delivery operations.');
+    credentials.authorization = `Bearer ${token}`;
+  } else if (auth === 'buyer' && process.env.BOSSRAID_BUYER_API_KEY) {
+    credentials.authorization = `Bearer ${process.env.BOSSRAID_BUYER_API_KEY}`;
+  }
   const response = await fetch(new URL(path, apiBase), {
     ...init,
+    redirect: 'error',
+    signal: init?.signal ?? AbortSignal.timeout(60_000),
     headers: {
       'content-type': 'application/json',
+      ...credentials,
       ...(init?.headers ?? {}),
     },
   });

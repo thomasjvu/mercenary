@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const sourcePath = join(repoRoot, 'content/skill.md');
 const targets = [
+  join(repoRoot, '.agents/skills/boss-raid/SKILL.md'),
   join(repoRoot, 'apps/docs/public/skill.md'),
   join(repoRoot, 'apps/web/public/skill.md'),
 ];

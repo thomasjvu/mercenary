@@ -298,3 +298,15 @@ Ops UI (`/ops/`) surfaces the same admin routes after login:
 The default `examples/providers/empty.providers.json` contains no workers. The API starts so operators and sellers can register real HTTP endpoints. Worker readiness and raid eligibility remain false until verified workers are available; an empty registry never provides simulated capacity.
 
 Raid smoke profiles use their checked-in provider fixture before local `BOSSRAID_PROVIDERS_FILE` overrides, so stale workstation defaults cannot replace the test topology.
+
+## Agent marketplace credentials
+
+The local MCP server reads `BOSSRAID_BUYER_API_KEY` (prepaid capped buyer key),
+`BOSSRAID_WALLET_SESSION` (wallet account cookie token), and
+`BOSSRAID_PROVIDER_TOKEN` (seller bearer token). Keep these in your agent client's
+secret environment. See [MCP workflows](../raiders/mcp.md). Existing x402 agent
+wallet configuration remains supported when no buyer key is configured.
+
+Phantasy seller onboarding: configure its Boss Raid plugin and vaulted provider
+token, enable the text/JSON worker, register endpoint
+`https://your-runtime/api/bossraid`, then verify health before selling tasks.

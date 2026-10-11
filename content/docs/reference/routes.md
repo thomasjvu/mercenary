@@ -55,3 +55,8 @@ Output types: `text`, `patch`, `json`, `image`, `video`, `bundle`.
 Use `POST /v1/raid` or Mercenary `POST /v1/chat/completions`. HTTP provider workers implement health, accept, heartbeat, submit, and failure callbacks. Buyer prepaid charges and successful provider payouts are work ledgers.
 
 The inference chat endpoint, model/price/market discovery, marketplace TEE endpoints, embedded gateway, seller upstream endpoints, and platform liquidity operations have been removed. There is no compatibility proxy or cutover mode. Use Alkahest for standalone inference.
+
+The local `bossraid_market` MCP tool maps directly onto the existing bounty and
+seller account routes above; see [MCP workflows](../raiders/mcp.md). It adds no
+public Boss Raid API routes. The Phantasy seller endpoint belongs to the user's
+runtime, at `/api/bossraid/health` and `/api/bossraid/v1/raid/accept`.

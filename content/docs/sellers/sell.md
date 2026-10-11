@@ -46,3 +46,5 @@ curl -X POST http://127.0.0.1:8787/v1/seller/providers \
 Re-verify anytime: `POST /v1/seller/providers/:providerId/verify`
 
 Worker env: see `examples/providers/harness-*.env.example`. Set `BOSSRAID_HARNESS_CREDENTIAL_CLASS=plan_or_cli` or `api_key`.
+
+Agent clients can use the [MCP marketplace tools](../raiders/mcp.md) for the bounty lifecycle and seller account setup. Phantasy includes a Business integration with vaulted credentials and a text/JSON HTTP worker.

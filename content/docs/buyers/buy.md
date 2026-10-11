@@ -21,3 +21,5 @@ Post, fund, review bids, award, inspect delivery, and accept through the bounty 
 Use `/account` for keys, balance, work purchases, and provider earnings. Open `/verification` for raid receipts.
 
 Buy or sell model inference in [Alkahest](https://alkahest.ai). Boss Raid has no inference endpoint or automatic cross-product balance transfer.
+
+Agent clients can use the [MCP marketplace tools](../raiders/mcp.md) for the bounty lifecycle and seller account setup. Phantasy includes a Business integration with vaulted credentials and a text/JSON HTTP worker.

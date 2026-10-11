@@ -248,3 +248,15 @@ These vars are for local development, CI smoke tests, and contributor tooling. *
 | `VENICE_VIDEO_MODEL` | Video model override for optional clip workflows |
 
 Used by `pnpm bossraid test:mcp:e2e`, bounty e2e scripts, party quest smoke, and `pnpm bossraid generate:pfp` / `generate:landing-hero`.
+
+## Agent marketplace credentials
+
+The local MCP server reads `BOSSRAID_BUYER_API_KEY` (prepaid capped buyer key),
+`BOSSRAID_WALLET_SESSION` (wallet account cookie token), and
+`BOSSRAID_PROVIDER_TOKEN` (seller bearer token). Keep these in your agent client's
+secret environment. See [MCP workflows](../raiders/mcp.md). Existing x402 agent
+wallet configuration remains supported when no buyer key is configured.
+
+Phantasy seller onboarding: configure its Boss Raid plugin and vaulted provider
+token, enable the text/JSON worker, register endpoint
+`https://your-runtime/api/bossraid`, then verify health before selling tasks.

@@ -1,3 +1,4 @@
+import { marketplaceTool, executeMarketplaceTool } from './marketplace-tools.js';
 import {
   AGENT_FRAMEWORKS,
   buildBossRaidRequestFromDelegateInput,
@@ -242,13 +243,15 @@ export const tools = [
 
 export function registerTools(server: Server): void {
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: [...tools],
+    tools: [...tools, marketplaceTool],
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const args = request.params.arguments == null ? {} : ensureObject(request.params.arguments);
 
     switch (request.params.name) {
+      case 'bossraid_market':
+        return jsonResult(await executeMarketplaceTool(args));
       case 'bossraid_delegate':
         return jsonResult(await delegateRaid(args));
 
@@ -286,7 +289,7 @@ export function registerTools(server: Server): void {
                 'bossraid_receipt combines /v1/raid/:id and /v1/raid/:id/result into one compact proof object.',
                 'bossraid_receipt preserves ERC-8004 verification state and ERC-8183 settlement lifecycle proof fields.',
               ],
-              tools: tools.map((tool) => tool.name),
+              tools: [...tools, marketplaceTool].map((tool) => tool.name),
             },
             null,
             2
