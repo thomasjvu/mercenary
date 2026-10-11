@@ -65,3 +65,44 @@ test('SqliteBossRaidPersistence stores raids and providers in normalized tables'
 
   await rm(dir, { recursive: true, force: true });
 });
+
+for (const table of ['provider_records', 'launch_reservation_records', 'commit']) {
+  test(`SQLite retries identical revisions after rollback at ${table}`, async (t) => {
+    const { DatabaseSync } = await import('node:sqlite');
+    const dir = await mkdtemp(join(tmpdir(), 'bossraid-rollback-'));
+    t.after(() => rm(dir, { recursive: true, force: true }));
+    const path = join(dir, 'state.sqlite');
+    const persistence = new SqliteBossRaidPersistence(path);
+    await persistence.loadState();
+    const db = new DatabaseSync(path);
+    t.after(() => db.close());
+    if (table === 'commit') {
+      db.exec(
+        'create table parent (id integer primary key); create table child (parent_id integer references parent(id) deferrable initially deferred); create trigger fail_write after insert on launch_reservation_records begin insert into child values (1); end'
+      );
+    } else {
+      db.exec(
+        `create trigger fail_write before insert on ${table} begin select raise(abort, 'injected failure'); end`
+      );
+    }
+    const snapshot = createEmptyPersistenceSnapshot();
+    snapshot.raids = [buildRaid({ id: 'raid', status: 'queued', updatedAt: snapshot.savedAt })];
+    snapshot.providers = [createProviderProfile('provider')];
+    snapshot.launchReservations = [{ id: 'reservation' } as RaidLaunchReservationRecord];
+    await assert.rejects(
+      persistence.saveState(snapshot),
+      /injected failure|FOREIGN KEY constraint failed/
+    );
+    assert.equal((await persistence.loadState()).raids.length, 0);
+    db.exec('drop trigger fail_write');
+    await persistence.saveState(snapshot);
+    let loaded = await persistence.loadState();
+    assert.deepEqual(loaded.raids, snapshot.raids);
+    assert.deepEqual(loaded.providers, snapshot.providers);
+    await persistence.saveState(createEmptyPersistenceSnapshot());
+    await persistence.saveState(snapshot);
+    loaded = await persistence.loadState();
+    assert.deepEqual(loaded.raids, snapshot.raids);
+    assert.deepEqual(loaded.providers, snapshot.providers);
+  });
+}

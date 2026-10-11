@@ -30,8 +30,8 @@ export function createPostgresPool(databaseUrl: string): PostgresPool {
 export class PostgresBossRaidPersistence implements BossRaidPersistence {
   private readonly pool: PostgresPool;
   private initPromise?: Promise<void>;
-  private readonly raidRevisionCache = new Map<string, string>();
-  private readonly providerRevisionCache = new Map<string, string>();
+  private raidRevisionCache = new Map<string, string>();
+  private providerRevisionCache = new Map<string, string>();
 
   constructor(databaseUrlOrPool: string | PostgresPool) {
     this.pool =
@@ -102,8 +102,18 @@ export class PostgresBossRaidPersistence implements BossRaidPersistence {
         (reservation) => reservation.id
       );
 
+      const nextRaidRevisions = new Map(
+        snapshot.raids.map((raid) => [raid.id, raidPersistRevision(raid)])
+      );
+      const nextProviderRevisions = new Map(
+        snapshot.providers.map((provider) => [
+          provider.providerId,
+          providerPersistRevision(provider),
+        ])
+      );
+
       for (const raid of snapshot.raids) {
-        const revision = raidPersistRevision(raid);
+        const revision = nextRaidRevisions.get(raid.id);
         if (this.raidRevisionCache.get(raid.id) === revision) {
           continue;
         }
@@ -117,11 +127,10 @@ export class PostgresBossRaidPersistence implements BossRaidPersistence {
           ].join(' '),
           [raid.id, snapshot.savedAt, JSON.stringify(raid)]
         );
-        this.raidRevisionCache.set(raid.id, revision);
       }
 
       for (const provider of snapshot.providers) {
-        const revision = providerPersistRevision(provider);
+        const revision = nextProviderRevisions.get(provider.providerId);
         if (this.providerRevisionCache.get(provider.providerId) === revision) {
           continue;
         }
@@ -135,7 +144,6 @@ export class PostgresBossRaidPersistence implements BossRaidPersistence {
           ].join(' '),
           [provider.providerId, snapshot.savedAt, JSON.stringify(provider)]
         );
-        this.providerRevisionCache.set(provider.providerId, revision);
       }
 
       for (const reservation of snapshot.launchReservations ?? []) {
@@ -178,6 +186,8 @@ export class PostgresBossRaidPersistence implements BossRaidPersistence {
       }
 
       await client.query('commit');
+      this.raidRevisionCache = nextRaidRevisions;
+      this.providerRevisionCache = nextProviderRevisions;
     } catch (error) {
       await client.query('rollback');
       throw error;
