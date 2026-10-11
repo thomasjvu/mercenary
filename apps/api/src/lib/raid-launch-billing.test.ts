@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { type TestContext } from 'node:test';
 import type { FastifyRequest } from 'fastify';
 import type { BossRaidOrchestrator } from '@bossraid/orchestrator';
 import type { BossRaidResultOutput, BossRaidStatusOutput } from '@bossraid/shared-types';
@@ -83,7 +83,7 @@ function buildRunningOrchestrator(): BossRaidOrchestrator {
 
 function buildBillingDeps(input: {
   orchestrator: BossRaidOrchestrator;
-  captureApiKeyBilling?: () => void;
+  captureApiKeyBilling?: ReturnType<typeof createPaymentHandlers>['captureApiKeyBilling'];
   reconcileLaunchPayment?: () => Promise<void>;
 }) {
   const controlState = createApiControlState({
@@ -104,7 +104,7 @@ function buildBillingDeps(input: {
   const payment = createPaymentHandlers(ctx, auth, manaBilling);
 
   let reconcileCalled = false;
-  const captureApiKeyBilling =
+  const captureApiKeyBilling: ReturnType<typeof createPaymentHandlers>['captureApiKeyBilling'] =
     input.captureApiKeyBilling ??
     (() => {
       payment.captureApiKeyBilling({
@@ -339,3 +339,204 @@ test('captureRaidLaunchBilling refunds api-key hold when raid is cancelled', asy
   assert.equal(wasReconcileCalled(), true);
   assert.equal(controlState.readPublicAccount(account.wallet)?.balanceUsd, 5);
 });
+
+function manaContext(reservedMana = 2000): NonNullable<LaunchPaymentContext['manaBilling']> {
+  return {
+    manaAccountId: 'account-test',
+    sourceAppId: 'alkahest',
+    reservationId: 'reservation-test',
+    reservedMana,
+  };
+}
+
+function stubManaCore(t: TestContext, fail = false) {
+  const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
+  t.mock.method(globalThis, 'fetch', async (url: string | URL | Request, init?: RequestInit) => {
+    calls.push({ url: String(url), body: JSON.parse(String(init?.body)) });
+    return new Response(JSON.stringify(fail ? { error: 'capture unavailable' } : {}), {
+      status: fail ? 503 : 200,
+    });
+  });
+  return calls;
+}
+
+function manaDeps(orchestrator = buildTerminalOrchestrator()) {
+  const built = buildBillingDeps({ orchestrator });
+  built.deps.ctx.env = {
+    ...built.deps.ctx.env,
+    BOSSRAID_MANA_CORE_URL: 'https://mana.test',
+    BOSSRAID_MANA_CORE_KEY: 'test-only-key',
+  };
+  return built;
+}
+
+for (const [reservedMana, expected] of [
+  [2000, 1250],
+  [1000, 1000],
+] as const) {
+  test(`native Mana captures settled provider cost capped to ${reservedMana}`, async (t) => {
+    const calls = stubManaCore(t);
+    const { deps, wasReconcileCalled } = manaDeps();
+    await captureRaidLaunchBilling({
+      deps,
+      request: { headers: {} } as FastifyRequest,
+      raidRequest: createSpawnInput(),
+      raidId: 'raid-billing',
+      launchPayment: { manaBilling: manaContext(reservedMana) },
+    });
+    assert.equal(calls.length, 1);
+    assert.match(calls[0]!.url, /reservations\/reservation-test\/capture$/);
+    assert.equal(calls[0]!.body.amount, expected);
+    assert.deepEqual(calls[0]!.body.metadata, {
+      sourceAppId: 'alkahest',
+      raidId: 'raid-billing',
+      receiptPath: '/verification?raidId=raid-billing',
+      settledCostUsd: 1.25,
+      refundedMana: reservedMana! - expected!,
+    });
+    assert.equal(wasReconcileCalled(), false);
+  });
+}
+
+test('native Mana honors quote conversion without chat token pricing', async (t) => {
+  const calls = stubManaCore(t);
+  const { deps } = manaDeps();
+  const manaBilling = manaContext();
+  manaBilling.quoteSnapshot = {
+    quoteId: 'quote-test',
+    manaQuote: { manaPerUsd: 400 },
+    providers: [],
+  } as unknown as NonNullable<typeof manaBilling.quoteSnapshot>;
+  await captureRaidLaunchBilling({
+    deps,
+    request: { headers: {} } as FastifyRequest,
+    raidRequest: createSpawnInput(),
+    raidId: 'raid-billing',
+    launchPayment: { manaBilling },
+  });
+  assert.equal(calls[0]?.body.amount, 500);
+  assert.equal((calls[0]?.body.metadata as Record<string, unknown>).refundedMana, 1500);
+});
+
+for (const [reason, orchestrator] of [
+  ['cancelled', buildCancelledOrchestrator],
+  ['zero success', buildZeroSuccessOrchestrator],
+] as const) {
+  test(`native Mana fully refunds ${reason}`, async (t) => {
+    const calls = stubManaCore(t);
+    const { deps, wasReconcileCalled } = manaDeps(orchestrator());
+    await captureRaidLaunchBilling({
+      deps,
+      request: { headers: {} } as FastifyRequest,
+      raidRequest: createSpawnInput(),
+      raidId: 'raid-billing',
+      launchPayment: { manaBilling: manaContext() },
+    });
+    assert.equal(calls.length, 1);
+    assert.match(calls[0]!.url, /\/refund$/);
+    assert.equal(wasReconcileCalled(), true);
+  });
+}
+
+test('native Mana capture errors remain visible without refunding completed work', async (t) => {
+  const calls = stubManaCore(t, true);
+  const { deps, wasReconcileCalled } = manaDeps();
+  await assert.rejects(
+    captureRaidLaunchBilling({
+      deps,
+      request: { headers: {} } as FastifyRequest,
+      raidRequest: createSpawnInput(),
+      raidId: 'raid-billing',
+      launchPayment: { manaBilling: manaContext() },
+    }),
+    /capture unavailable/
+  );
+  assert.equal(calls.length, 1);
+  assert.equal(wasReconcileCalled(), false);
+});
+
+for (const amount of [undefined, NaN, Infinity, -Infinity]) {
+  test(`native Mana rejects invalid settlement amount ${amount} without capture or refund`, async (t) => {
+    const calls = stubManaCore(t);
+    const orchestrator = buildTerminalOrchestrator();
+    orchestrator.getResult('raid-billing').settlement!.successfulProvidersPaid = amount as number;
+    const { deps, wasReconcileCalled } = manaDeps(orchestrator);
+    await assert.rejects(
+      captureRaidLaunchBilling({
+        deps,
+        request: { headers: {} } as FastifyRequest,
+        raidRequest: createSpawnInput(),
+        raidId: 'raid-billing',
+        launchPayment: { manaBilling: manaContext() },
+      }),
+      /settled provider cost/
+    );
+    assert.equal(calls.length, 0);
+    assert.equal(wasReconcileCalled(), false);
+  });
+}
+
+test('native x402 stays settled without a Mana debit or reconciliation', async (t) => {
+  const calls = stubManaCore(t);
+  const { deps, wasReconcileCalled } = manaDeps();
+  const ledger = t.mock.method(deps.payment, 'recordMarketplaceLedgersFromRaid');
+  await captureRaidLaunchBilling({
+    deps,
+    request: { headers: {} } as FastifyRequest,
+    raidRequest: createSpawnInput(),
+    raidId: 'raid-billing',
+    launchPayment: {
+      settlement: { success: true } as NonNullable<LaunchPaymentContext['settlement']>,
+      escrowFundingUsd: 2,
+    },
+  });
+  assert.equal(calls.length, 0);
+  assert.equal(wasReconcileCalled(), false);
+  assert.equal(ledger.mock.calls[0]?.arguments[0].costUsd, 1.25);
+  assert.equal(ledger.mock.calls[0]?.arguments[0].skipBuyerPurchase, true);
+});
+
+test('native API-key captures settled provider cost without Mana request', async (t) => {
+  const calls = stubManaCore(t);
+  const { deps, wasReconcileCalled } = manaDeps();
+  const capture = t.mock.method(
+    deps.payment,
+    'captureApiKeyBilling',
+    (_input: Parameters<typeof deps.payment.captureApiKeyBilling>[0]) => {}
+  );
+  await captureRaidLaunchBilling({
+    deps,
+    request: { headers: {} } as FastifyRequest,
+    raidRequest: createSpawnInput(),
+    raidId: 'raid-billing',
+    launchPayment: {
+      apiKeyBilling: { apiKeyId: 'key-test', wallet: '0xbuyer', reservedUsd: 2, useBalance: true },
+    },
+  });
+  assert.equal(capture.mock.calls[0]?.arguments[0].actualCostUsd, 1.25);
+  assert.equal(calls.length, 0);
+  assert.equal(wasReconcileCalled(), false);
+});
+
+for (const manaPerUsd of [0, -1, NaN, Infinity]) {
+  test(`native Mana rejects invalid quote conversion ${manaPerUsd}`, async (t) => {
+    const calls = stubManaCore(t);
+    const { deps, wasReconcileCalled } = manaDeps();
+    const manaBilling = manaContext();
+    manaBilling.quoteSnapshot = { manaQuote: { manaPerUsd } } as NonNullable<
+      typeof manaBilling.quoteSnapshot
+    >;
+    await assert.rejects(
+      captureRaidLaunchBilling({
+        deps,
+        request: { headers: {} } as FastifyRequest,
+        raidRequest: createSpawnInput(),
+        raidId: 'raid-billing',
+        launchPayment: { manaBilling },
+      }),
+      /valid quote conversion/
+    );
+    assert.equal(calls.length, 0);
+    assert.equal(wasReconcileCalled(), false);
+  });
+}

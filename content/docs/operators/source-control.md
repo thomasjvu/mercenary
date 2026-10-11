@@ -39,6 +39,8 @@ If mirror sync fails with `Could not resolve host: github.com` inside the Forgej
 
 ## CI layout
 
+OpenAPI drift checks run before builds in both CI workflows. Builds regenerate tracked specs; checking first compares exported routes against the committed schemas and catches stale specs. Regression coverage: `node --test scripts/lib/openapi-ci.test.mjs`.
+
 | Path                                                                                | Runs where             | Purpose                               |
 | ----------------------------------------------------------------------------------- | ---------------------- | ------------------------------------- |
 | [`.forgejo/workflows/ci.yml`](../../../.forgejo/workflows/ci.yml)                   | Forgejo Actions        | Verify (check, lint, tests, smoke)    |

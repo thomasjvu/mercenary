@@ -477,6 +477,7 @@ export function createPaymentHandlers(
 
   return {
     recordMarketplaceLedgersFromRaid,
+    captureNativeManaBilling: manaBilling.captureNativeManaBilling,
     captureApiKeyBilling,
     requireReservedLaunchPayment,
     releaseLaunchPaymentHold,

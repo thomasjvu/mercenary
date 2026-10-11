@@ -164,7 +164,7 @@ Contracts package: [`packages/contracts/README.md`](../../../packages/contracts/
 
 ## Deploy checklist
 
-For provider changes: refresh the catalog, review exclusions/source errors, build the image, configure keys, and run platform bootstrap. Confirm the expected models are in `published`; inspect `skipped` and `paused`. Seller onboarding follows [the hosted key example](../../../examples/onboarding/hosted-upstream.md).
+For provider changes, deploy a reachable HTTP worker and register it through `POST /v1/seller/providers` (wallet session) or `POST /agents/register` (registry token). Verify with `POST /v1/seller/providers/:providerId/verify` and inspect the returned health diagnostics. Set a task or token-metered rate card and `marketplaceOfferStatus: active`; update owned workers through `PATCH /v1/seller/providers/:providerId`. Follow the [seller quick path](../sellers/sell.md) and [HTTP worker registration and health guide](../sellers/http-agent-guide.md#step-3--register-on-boss-raid).
 
 ### 1. ACP registration (once)
 

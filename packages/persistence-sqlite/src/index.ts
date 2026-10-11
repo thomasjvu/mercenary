@@ -14,8 +14,8 @@ const META_KEY = 1;
 export class SqliteBossRaidPersistence implements BossRaidPersistence {
   private db?: DatabaseSync;
   private initPromise?: Promise<DatabaseSync>;
-  private readonly raidRevisionCache = new Map<string, string>();
-  private readonly providerRevisionCache = new Map<string, string>();
+  private raidRevisionCache = new Map<string, string>();
+  private providerRevisionCache = new Map<string, string>();
 
   constructor(private readonly path: string) {}
 
@@ -106,21 +106,29 @@ export class SqliteBossRaidPersistence implements BossRaidPersistence {
         ].join(' ')
       );
 
+      const nextRaidRevisions = new Map(
+        snapshot.raids.map((raid) => [raid.id, raidPersistRevision(raid)])
+      );
+      const nextProviderRevisions = new Map(
+        snapshot.providers.map((provider) => [
+          provider.providerId,
+          providerPersistRevision(provider),
+        ])
+      );
+
       for (const raid of snapshot.raids) {
-        const revision = raidPersistRevision(raid);
+        const revision = nextRaidRevisions.get(raid.id);
         if (this.raidRevisionCache.get(raid.id) === revision) {
           continue;
         }
         upsertRaid.run(raid.id, snapshot.savedAt, JSON.stringify(raid));
-        this.raidRevisionCache.set(raid.id, revision);
       }
       for (const provider of snapshot.providers) {
-        const revision = providerPersistRevision(provider);
+        const revision = nextProviderRevisions.get(provider.providerId);
         if (this.providerRevisionCache.get(provider.providerId) === revision) {
           continue;
         }
         upsertProvider.run(provider.providerId, snapshot.savedAt, JSON.stringify(provider));
-        this.providerRevisionCache.set(provider.providerId, revision);
       }
       for (const reservation of snapshot.launchReservations ?? []) {
         upsertReservation.run(reservation.id, snapshot.savedAt, JSON.stringify(reservation));
@@ -160,6 +168,8 @@ export class SqliteBossRaidPersistence implements BossRaidPersistence {
       }
 
       db.exec('commit');
+      this.raidRevisionCache = nextRaidRevisions;
+      this.providerRevisionCache = nextProviderRevisions;
     } catch (error) {
       db.exec('rollback');
       throw error;

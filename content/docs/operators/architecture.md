@@ -60,6 +60,8 @@ Known gaps: attestation telemetry on raid timelines is still partial. `MNEMONIC`
 
 ## Persistence revisions
 
+Best-effort persistence coalesces updates against the first scheduled flush deadline; continuous events do not postpone it. Writes remain serialized, and updates during a save queue a later snapshot of the latest state. Raid snapshot caches belong to each orchestrator, reuse unchanged clones, and evict absent or retention-pruned raids on every snapshot.
+
 SQLite and Postgres share revision hashing from `@bossraid/persistence`. Raid hashes exclude `updatedAt`; provider hashes exclude `lastSeenAt`. Timestamp-only changes therefore do not rewrite unchanged records. Other record fields remain part of the hash.
 
 ## Constraints

@@ -85,6 +85,13 @@ export async function captureRaidLaunchBilling(input: {
       maxBudgetUsd: input.raidRequest.constraints.maxBudgetUsd,
     });
 
+    if (
+      input.launchPayment.manaBilling &&
+      (typeof successfulProvidersPaid !== 'number' || !Number.isFinite(successfulProvidersPaid))
+    ) {
+      throw new ApiContractError('Native Mana capture requires a settled provider cost.', 502);
+    }
+
     // Zero successful work: release API-key hold and refund x402/mana — do not keep budget.
     if (
       (typeof successfulProvidersPaid === 'number' && successfulProvidersPaid <= 0) ||
@@ -97,6 +104,22 @@ export async function captureRaidLaunchBilling(input: {
         launchPayment: input.launchPayment,
         reason: 'zero_success_refund',
         raidId: input.raidId,
+      });
+      return;
+    }
+
+    if (input.launchPayment.manaBilling) {
+      await payment.captureNativeManaBilling({
+        manaBilling: input.launchPayment.manaBilling,
+        settledCostUsd: successfulProvidersPaid!,
+        raidId: input.raidId,
+        receiptPath: `/verification?raidId=${encodeURIComponent(input.raidId)}`,
+      });
+      recordMarketplaceLedgersFromRaid({
+        raidId: input.raidId,
+        route: 'raid',
+        costUsd: successfulProvidersPaid!,
+        skipBuyerPurchase: true,
       });
       return;
     }

@@ -38,7 +38,6 @@ jobs:
       - name: Dependency audit
         run: pnpm audit --audit-level=high
 
-
       - name: Typecheck
         run: pnpm check
 
@@ -48,11 +47,14 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Build
-        run: pnpm build
+      - name: OpenAPI CI regressions
+        run: node --test scripts/lib/openapi-ci.test.mjs
 
       - name: OpenAPI drift check
         run: pnpm --filter @bossraid/docs check:openapi
+
+      - name: Build
+        run: pnpm build
 
       - name: Docs build
         run: pnpm build:docs
