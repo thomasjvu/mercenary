@@ -170,6 +170,45 @@ export function createManaBillingHandlers(ctx: ApiContext) {
     };
   }
 
+  async function captureNativeManaBilling(input: {
+    manaBilling: ManaBillingContext;
+    settledCostUsd: number;
+    raidId: string;
+    receiptPath: string;
+  }): Promise<{ capturedMana: number; refundedMana: number }> {
+    if (!Number.isFinite(input.settledCostUsd) || input.settledCostUsd <= 0) {
+      throw new ApiContractError(
+        'Native Mana capture requires a positive settled provider cost.',
+        502
+      );
+    }
+    const manaPerUsd = input.manaBilling.quoteSnapshot?.manaQuote.manaPerUsd ?? 1_000;
+    if (!Number.isFinite(manaPerUsd) || manaPerUsd <= 0) {
+      throw new ApiContractError('Native Mana capture requires a valid quote conversion.', 502);
+    }
+    const capturedMana = Math.min(
+      input.manaBilling.reservedMana,
+      Math.ceil(input.settledCostUsd * manaPerUsd)
+    );
+    const refundedMana = Math.max(0, input.manaBilling.reservedMana - capturedMana);
+    await callManaCore(
+      `/reservations/${encodeURIComponent(input.manaBilling.reservationId)}/capture`,
+      {
+        manaAccountId: input.manaBilling.manaAccountId,
+        amount: capturedMana,
+        metadata: {
+          sourceAppId: input.manaBilling.sourceAppId,
+          raidId: input.raidId,
+          receiptPath: input.receiptPath,
+          quoteId: input.manaBilling.quoteSnapshot?.quoteId,
+          settledCostUsd: input.settledCostUsd,
+          refundedMana,
+        },
+      }
+    );
+    return { capturedMana, refundedMana };
+  }
+
   async function refundManaBilling(input: {
     manaBilling?: ManaBillingContext;
     reason: string;
@@ -237,6 +276,7 @@ export function createManaBillingHandlers(ctx: ApiContext) {
     reserveManaBilling,
     calculateManaCaptureAmount,
     captureManaBilling,
+    captureNativeManaBilling,
     refundManaBilling,
     buildBossRaidBillingMetadata,
   };

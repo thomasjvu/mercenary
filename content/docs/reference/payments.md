@@ -59,6 +59,7 @@ After x402 `/settle`, production requires **on-chain receipt verification** (USD
 
 - Clients pay via Marian facilitator (USDG on Robinhood).
 - Buyer API keys (`br_...`) skip x402 and debit spend caps / prepaid balance in the same request.
+- Native `POST /v1/raid` with trusted Mana billing captures successful provider settlement cost at terminal completion, rounded up using the reserved quote’s `manaPerUsd` (1000 without a quote) and capped to reserved Mana. Capture metadata records unused Mana released by Mana Core. Cancelled or zero-success raids receive a full refund. Missing or invalid settlement cost and capture failures are logged for reconciliation; completed work is not automatically refunded. Native capture does not use chat token pricing.
 - Platform markup defaults to 1% (`BOSSRAID_X402_PLATFORM_MARKUP_BPS=100`).
 - Successful providers split escrow equally. Invalid work gets $0.
 - **Closed-loop refund policy:** abort / cancel before terminal, spawn failure, client disconnect mid-stream, and **zero successful providers** release the API-key hold and attempt x402/mana refund. Buyer is charged only for successful provider payouts (capped by reserved escrow). Platform markup is retained only on captured success, not on failed work.
