@@ -25,7 +25,11 @@ const encryptedProviderSnapshotCache = new WeakMap<
   Map<string, { revision: string; persisted: ProviderProfile }>
 >();
 
-const raidPersistSnapshotCache = new Map<string, { revision: string; persisted: RaidRecord }>();
+type RaidSnapshotCache = Map<string, { revision: string; persisted: RaidRecord }>;
+const raidPersistSnapshotCaches = new WeakMap<
+  Map<string, RaidLaunchReservationRecord>,
+  RaidSnapshotCache
+>();
 
 function providerPersistRevision(provider: ProviderProfile): string {
   const { lastSeenAt: _lastSeenAt, ...rest } = provider;
@@ -37,14 +41,14 @@ function raidPersistRevision(raid: RaidRecord): string {
   return createHash('sha256').update(JSON.stringify(rest)).digest('hex');
 }
 
-function persistRaidRecord(raid: RaidRecord): RaidRecord {
+function persistRaidRecord(raid: RaidRecord, cache: RaidSnapshotCache): RaidRecord {
   const revision = raidPersistRevision(raid);
-  const cached = raidPersistSnapshotCache.get(raid.id);
+  const cached = cache.get(raid.id);
   if (cached?.revision === revision) {
     return cached.persisted;
   }
   const persisted = structuredClone(raid);
-  raidPersistSnapshotCache.set(raid.id, { revision, persisted });
+  cache.set(raid.id, { revision, persisted });
   return persisted;
 }
 
@@ -108,10 +112,20 @@ export function buildOrchestratorSnapshot(input: {
     raids = retention.raids;
   }
 
+  let cache = raidPersistSnapshotCaches.get(input.launchReservations);
+  if (!cache) {
+    cache = new Map();
+    raidPersistSnapshotCaches.set(input.launchReservations, cache);
+  }
+  const retainedIds = new Set(raids.map((raid) => raid.id));
+  for (const id of cache.keys()) {
+    if (!retainedIds.has(id)) cache.delete(id);
+  }
+
   return {
     version: 1,
     savedAt: new Date().toISOString(),
-    raids: raids.map((raid) => persistRaidRecord(raid)),
+    raids: raids.map((raid) => persistRaidRecord(raid, cache)),
     providers: input
       .listProviders()
       .map((provider) => persistProviderProfile(provider, input.secretCipher)),
@@ -217,7 +231,7 @@ export function queueOrchestratorPersistBestEffort(
   state.dirty = true;
 
   if (state.timer) {
-    clearTimeout(state.timer);
+    return;
   }
 
   state.timer = setTimeout(() => {
