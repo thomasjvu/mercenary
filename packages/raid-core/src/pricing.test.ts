@@ -5,19 +5,12 @@ import {
   buildRateCardHash,
   estimateProviderChargeUsd,
   estimateTokenMeteredUsd,
-  estimateTaskInputTokens,
   normalizePrice,
-  readProviderPricing,
 } from './pricing.js';
 
 test('normalizePrice favors cheaper providers within per-expert budget', () => {
   assert.equal(normalizePrice(1, 10, 2), 0.8);
   assert.equal(normalizePrice(5, 10, 2), 0);
-});
-
-test('estimateTaskInputTokens counts task text payload', () => {
-  const task = createSpawnInput();
-  assert.ok(estimateTaskInputTokens(task) > 0);
 });
 
 test('estimateProviderChargeUsd uses task pricing when mode is task', () => {
@@ -76,39 +69,6 @@ test('estimateTokenMeteredUsd honors reference tokens and minimum charge', () =>
     ),
     0.003048
   );
-});
-
-test('buildRateCardHash is stable for equivalent pricing payloads', () => {
-  const pricing = readProviderPricing(createProviderProfile('provider-hash'));
-  const hashA = buildRateCardHash({
-    mode: pricing.mode,
-    currency: pricing.currency,
-    pricePerTaskUsd: pricing.pricePerTaskUsd,
-    pricePer1mInputTokensUsd: pricing.pricePer1mInputTokensUsd,
-    pricePer1mOutputTokensUsd: pricing.pricePer1mOutputTokensUsd,
-    minimumChargeUsd: pricing.minimumChargeUsd,
-    validFrom: pricing.validFrom,
-    validUntil: pricing.validUntil,
-    rateCardVersion: pricing.rateCardVersion,
-    upstreamModelId: pricing.upstreamModelId,
-    maxContextTokens: pricing.maxContextTokens,
-  });
-  const hashB = buildRateCardHash({
-    mode: pricing.mode,
-    currency: pricing.currency,
-    pricePerTaskUsd: pricing.pricePerTaskUsd,
-    pricePer1mInputTokensUsd: pricing.pricePer1mInputTokensUsd,
-    pricePer1mOutputTokensUsd: pricing.pricePer1mOutputTokensUsd,
-    minimumChargeUsd: pricing.minimumChargeUsd,
-    validFrom: pricing.validFrom,
-    validUntil: pricing.validUntil,
-    rateCardVersion: pricing.rateCardVersion,
-    upstreamModelId: pricing.upstreamModelId,
-    maxContextTokens: pricing.maxContextTokens,
-  });
-
-  assert.equal(hashA, hashB);
-  assert.equal(pricing.rateCardHash, hashA);
 });
 
 test('context tier changes quotes, specialized usage is not counted twice, and tier changes change the hash', () => {

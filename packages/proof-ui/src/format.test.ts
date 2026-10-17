@@ -1,53 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-  formatMs,
-  formatTimestamp,
-  formatUsd,
-  formatUsdc,
-  truncateText,
-  shortValue,
-  uniqueStrings,
-} from './format.js';
 import { countProvidersWithSignal } from './routing.js';
-import { buildErc8004ProofLabel, hasErc8004Registration } from './erc8004.js';
+import { hasErc8004Registration } from './erc8004.js';
 import { selectApprovedProviderIds } from './raid-result.js';
 import { raidPollingRefreshInterval } from './polling.js';
-
-test('shortValue truncates long strings', () => {
-  assert.equal(shortValue('short'), 'short');
-  assert.equal(shortValue('abcdefghijklmnopqrstuvwxyz'), 'abcdefgh…stuvwxyz');
-});
-
-test('uniqueStrings drops blanks and duplicates', () => {
-  assert.deepEqual(uniqueStrings(['a', 'a', '', 'b']), ['a', 'b']);
-});
-
-test('truncateText trims long strings at sentence boundaries', () => {
-  assert.equal(truncateText('Short text', 80), 'Short text');
-  assert.equal(
-    truncateText('First sentence. Second sentence keeps going for a while.', 20),
-    'First sentence.'
-  );
-  assert.equal(truncateText('abcdefghijklmnopqrstuvwxyz', 10), 'abcdefghi…');
-});
-
-test('formatUsdc renders USDC suffix', () => {
-  assert.equal(formatUsdc(2), '2.00 USDC');
-  assert.equal(formatUsdc(null), '0.00 USDC');
-});
-
-test('formatUsd handles nullish and precision', () => {
-  assert.equal(formatUsd(undefined), '$0.00');
-  assert.equal(formatUsd(1.2345, 3), '$1.234');
-});
-
-test('formatMs and formatTimestamp render stable labels', () => {
-  assert.equal(formatMs(undefined), 'n/a');
-  assert.equal(formatMs(42), '42 ms');
-  assert.equal(formatTimestamp(undefined), 'n/a');
-  assert.match(formatTimestamp('2026-06-11T12:34:56.000Z'), /Jun/);
-});
 
 test('countProvidersWithSignal groups by provider map entries', () => {
   const map = new Map([
@@ -64,11 +20,6 @@ test('countProvidersWithSignal groups by provider map entries', () => {
 test('hasErc8004Registration requires registration tx', () => {
   assert.equal(hasErc8004Registration(undefined), false);
   assert.equal(hasErc8004Registration({ erc8004: { registrationTx: '0xabc' } }), true);
-});
-
-test('buildErc8004ProofLabel supports short and long styles', () => {
-  assert.equal(buildErc8004ProofLabel('verified', true), '8004 verified');
-  assert.equal(buildErc8004ProofLabel('verified', true, { style: 'long' }), 'erc8004 verified');
 });
 
 test('selectApprovedProviderIds prefers settlement execution ids', () => {

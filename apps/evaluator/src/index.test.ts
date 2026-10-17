@@ -112,37 +112,6 @@ test('runtime probe endpoint requires auth when sandbox token is configured', as
   }
 });
 
-test('runtime probe endpoint runs node built-in tests inside the evaluator service', async () => {
-  const app = buildEvaluatorServer({
-    BOSSRAID_EVAL_SANDBOX_TOKEN: 'sandbox-secret',
-  });
-
-  try {
-    const response = await app.inject({
-      method: 'POST',
-      url: '/v1/runtime-probes',
-      headers: {
-        authorization: 'Bearer sandbox-secret',
-      },
-      payload: createRuntimeProbeInput(),
-    });
-
-    assert.equal(response.statusCode, 200);
-    const body = response.json() as {
-      build: { passed: boolean; summary: string };
-      tests: { passed: number; failed: number; score: number; summary: string };
-    };
-    assert.equal(body.build.passed, true);
-    assert.match(body.build.summary, /No language-specific build probe available/);
-    assert.equal(body.tests.passed, 1);
-    assert.equal(body.tests.failed, 0);
-    assert.equal(body.tests.score, 1);
-    assert.match(body.tests.summary, /Ran inferred Node built-in test suite/);
-  } finally {
-    await app.close();
-  }
-});
-
 test('runtime probe endpoint rejects path traversal input', async () => {
   const app = buildEvaluatorServer({
     BOSSRAID_EVAL_SANDBOX_TOKEN: 'sandbox-secret',

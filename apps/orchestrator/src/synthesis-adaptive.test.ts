@@ -15,10 +15,12 @@ import {
   createSpawnInput,
   FAST_TEST_TIMING,
   readyHealth,
-  waitFor,
+  waitForWithFrozenClock,
 } from './index.test-helpers.js';
 
-test('Mercenary can revise the raid graph with an adaptive repair child raid', async () => {
+test('Mercenary can revise the raid graph with an adaptive repair child raid', async (t) => {
+  // Async evaluation/imports must not consume the raid's one-second deadlines.
+  t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: Date.UTC(2026, 0, 1) });
   const receivedTasks: ProviderTaskPackage[] = [];
   const input = {
     ...createSpawnInput(),
@@ -122,7 +124,7 @@ test('Mercenary can revise the raid graph with an adaptive repair child raid', a
   );
 
   const spawn = await orchestrator.spawnRaid(input);
-  await waitFor(() => orchestrator.getStatus(spawn.raidId).status === 'final', 10_000);
+  await waitForWithFrozenClock(() => orchestrator.getStatus(spawn.raidId).status === 'final');
 
   const rootRaid = orchestrator.getRaid(spawn.raidId)!;
   const allRaids = collectRaidTree(orchestrator, spawn.raidId);
@@ -140,7 +142,9 @@ test('Mercenary can revise the raid graph with an adaptive repair child raid', a
   assert.equal(orchestrator.getResult(spawn.raidId).approvedSubmissions?.length, 6);
 });
 
-test('Mercenary can deepen a weak workstream into an adaptive expansion subgraph', async () => {
+test('Mercenary can deepen a weak workstream into an adaptive expansion subgraph', async (t) => {
+  // Async evaluation/imports must not consume the raid's one-second deadlines.
+  t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: Date.UTC(2026, 0, 1) });
   const receivedTasks: ProviderTaskPackage[] = [];
   const input = {
     ...createSpawnInput(),
@@ -212,7 +216,7 @@ test('Mercenary can deepen a weak workstream into an adaptive expansion subgraph
   );
 
   const spawn = await orchestrator.spawnRaid(input);
-  await waitFor(() => orchestrator.getStatus(spawn.raidId).status === 'final', 10_000);
+  await waitForWithFrozenClock(() => orchestrator.getStatus(spawn.raidId).status === 'final');
 
   const rootRaid = orchestrator.getRaid(spawn.raidId)!;
   const allRaids = collectRaidTree(orchestrator, spawn.raidId);

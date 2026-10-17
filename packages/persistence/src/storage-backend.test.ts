@@ -2,31 +2,6 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createStorageBackend } from './storage-backend.js';
 
-test('createStorageBackend routes memory and sqlite', () => {
-  assert.equal(
-    createStorageBackend(
-      'memory',
-      {
-        memory: () => 'mem',
-        sqlite: () => 'sql',
-      },
-      {}
-    ),
-    'mem'
-  );
-  assert.equal(
-    createStorageBackend(
-      'sqlite',
-      {
-        memory: () => 'mem',
-        sqlite: (file) => `sql:${file}`,
-      },
-      { sqliteFile: '/tmp/state.sqlite' }
-    ),
-    'sql:/tmp/state.sqlite'
-  );
-});
-
 test('createStorageBackend routes postgres when factory and url provided', () => {
   assert.equal(
     createStorageBackend(

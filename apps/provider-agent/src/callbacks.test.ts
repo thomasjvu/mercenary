@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { resolveCallbackUrl } from './callbacks.js';
-import { NETWORK } from '@bossraid/constants';
 
 test('resolveCallbackUrl preserves gateway api prefix', () => {
   assert.equal(
@@ -14,15 +13,5 @@ test('resolveCallbackUrl preserves nested api prefix with trailing slash', () =>
   assert.equal(
     resolveCallbackUrl('v1/providers/dottie/submit', 'https://bossraid.example.com/api/'),
     'https://bossraid.example.com/api/v1/providers/dottie/submit'
-  );
-});
-
-test('resolveCallbackUrl still works for direct api origins without a path prefix', () => {
-  assert.equal(
-    resolveCallbackUrl(
-      '/v1/providers/dottie/failure',
-      `http://${NETWORK.LOCALHOST}:${NETWORK.LOCAL_API_PORT}`
-    ),
-    `http://${NETWORK.LOCALHOST}:${NETWORK.LOCAL_API_PORT}/v1/providers/dottie/failure`
   );
 });

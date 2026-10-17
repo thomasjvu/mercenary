@@ -1,3 +1,4 @@
+import { setImmediate } from 'node:timers/promises';
 import type { RaidRecord } from '@bossraid/shared-types';
 import {
   createDeferred,
@@ -33,4 +34,20 @@ export function collectRaidTree(orchestrator: BossRaidOrchestrator, raidId: stri
       collectRaidTree(orchestrator, childRaidId)
     ),
   ];
+}
+
+// Failure modes: mocked setTimeout stalls timer-based polling, while wall-clock
+// deadlines can expire during async imports/evaluation on a busy test runner.
+// Yield real event-loop turns without moving the scenario's virtual clock.
+export async function waitForWithFrozenClock(
+  predicate: () => boolean,
+  timeoutMs = 30_000
+): Promise<void> {
+  const deadline = performance.now() + timeoutMs;
+  while (!predicate()) {
+    if (performance.now() >= deadline) {
+      throw new Error('Timed out waiting for condition with frozen clock.');
+    }
+    await setImmediate();
+  }
 }

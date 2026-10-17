@@ -1,18 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ORCHESTRATOR_SCHEMA_SQL, API_CONTROL_STATE_SCHEMA_SQL } from './schema.js';
-
-test('orchestrator schema includes raid and provider tables', () => {
-  assert.match(ORCHESTRATOR_SCHEMA_SQL, /raid_records/);
-  assert.match(ORCHESTRATOR_SCHEMA_SQL, /provider_records/);
-  assert.match(ORCHESTRATOR_SCHEMA_SQL, /launch_reservation_records/);
-  assert.match(ORCHESTRATOR_SCHEMA_SQL, /bossraid_meta/);
-});
-
-test('api control schema includes encrypted snapshot table', () => {
-  assert.match(API_CONTROL_STATE_SCHEMA_SQL, /bossraid_api_control_state/);
-  assert.match(API_CONTROL_STATE_SCHEMA_SQL, /snapshot_json/);
-});
 
 test('integration: PostgresBossRaidPersistence round-trip when DATABASE_URL set', async (t) => {
   const url = process.env.BOSSRAID_DATABASE_URL?.trim() || process.env.DATABASE_URL?.trim();

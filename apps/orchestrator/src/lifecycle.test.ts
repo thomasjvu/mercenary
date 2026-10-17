@@ -1,3 +1,4 @@
+import { setImmediate } from 'node:timers/promises';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type {
@@ -14,6 +15,7 @@ import {
   createSpawnInput,
   readyHealth,
   waitFor,
+  waitForWithFrozenClock,
 } from './index.test-helpers.js';
 
 test('spawnRaid fails fast when no providers are eligible', async () => {
@@ -55,7 +57,8 @@ test('cancelled raids ignore late provider activity', async () => {
     providerRunId: 'run-late',
   });
 
-  await new Promise((resolve) => setTimeout(resolve, 25));
+  // Let the released acceptance continuation observe cancellation.
+  await setImmediate();
 
   const lateHeartbeat: ProviderHeartbeat = {
     raidId: spawn.raidId,
@@ -134,7 +137,11 @@ test('spawnRaid filters out providers that are reachable but not ready', async (
   assert.equal(orchestrator.listProviders()[0]?.status, 'degraded');
 });
 
-test('heartbeat stale timeout expires runs that stop heartbeating', async () => {
+test('heartbeat stale timeout expires runs that stop heartbeating', async (t) => {
+  // Advance only the stale-heartbeat clock after acceptance; other deadlines
+  // must not win because the test runner was busy before its next poll.
+  t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: Date.UTC(2026, 0, 1) });
+  const running = createDeferred<void>();
   const provider = {
     profile: createProviderProfile('provider-alpha'),
     async accept(_task: ProviderTaskPackage): Promise<ProviderAcceptance> {
@@ -144,7 +151,7 @@ test('heartbeat stale timeout expires runs that stop heartbeating', async () => 
       };
     },
     async run(): Promise<void> {
-      return;
+      running.resolve();
     },
   };
 
@@ -164,11 +171,7 @@ test('heartbeat stale timeout expires runs that stop heartbeating', async () => 
 
   const spawn = await orchestrator.spawnRaid(createSpawnInput());
 
-  await waitFor(
-    () =>
-      orchestrator.getRaid(spawn.raidId)?.assignments['provider-alpha']?.providerRunId ===
-      'run-alpha'
-  );
+  await running.promise;
 
   orchestrator.recordProviderHeartbeat(spawn.raidId, 'provider-alpha', {
     raidId: spawn.raidId,
@@ -179,7 +182,10 @@ test('heartbeat stale timeout expires runs that stop heartbeating', async () => 
     timestamp: new Date().toISOString(),
   });
 
-  await waitFor(
+  t.mock.timers.tick(49);
+  assert.equal(orchestrator.getStatus(spawn.raidId).experts[0]?.status, 'running');
+  t.mock.timers.tick(1);
+  await waitForWithFrozenClock(
     () => orchestrator.getRaid(spawn.raidId)?.assignments['provider-alpha']?.status === 'timed_out'
   );
 
@@ -188,7 +194,11 @@ test('heartbeat stale timeout expires runs that stop heartbeating', async () => 
   assert.match(status.experts[0]?.message ?? '', /heartbeat stale/i);
 });
 
-test('absolute raid deadline disqualifies non-responding providers and penalizes routing', async () => {
+test('absolute raid deadline disqualifies non-responding providers and penalizes routing', async (t) => {
+  // Unix-second rounding and scheduler load must not expire the raid before
+  // the provider accepts, which exercises a different reputation path.
+  t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: Date.UTC(2026, 0, 1) });
+  const running = createDeferred<void>();
   const provider = {
     profile: createProviderProfile('provider-alpha'),
     async accept(_task: ProviderTaskPackage): Promise<ProviderAcceptance> {
@@ -198,6 +208,7 @@ test('absolute raid deadline disqualifies non-responding providers and penalizes
       };
     },
     async run(): Promise<void> {
+      running.resolve();
       return new Promise(() => {});
     },
   };
@@ -216,7 +227,12 @@ test('absolute raid deadline disqualifies non-responding providers and penalizes
   );
 
   const spawn = await orchestrator.spawnRaid(createSpawnInput());
-  await waitFor(() => orchestrator.getStatus(spawn.raidId).status === 'final');
+  await running.promise;
+  const raid = orchestrator.getRaid(spawn.raidId)!;
+  t.mock.timers.tick(raid.deadlineUnix * 1_000 - Date.now() - 1);
+  assert.equal(orchestrator.getStatus(spawn.raidId).status, 'running');
+  t.mock.timers.tick(1);
+  await waitForWithFrozenClock(() => orchestrator.getStatus(spawn.raidId).status === 'final');
 
   const status = orchestrator.getStatus(spawn.raidId);
   assert.equal(status.status, 'final');

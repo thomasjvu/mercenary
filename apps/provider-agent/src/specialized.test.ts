@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import childProcess from 'node:child_process';
+import { syncBuiltinESMExports } from 'node:module';
 import { mkdtemp, chmod, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -120,7 +122,10 @@ test('Riko remotion fallback still returns a video artifact when ffmpeg is unava
   }
 });
 
-test('Riko remotion fallback does not block on a slow ffmpeg binary', async () => {
+// Failure modes: a hung encoder never terminates, termination uses the wrong signal,
+// or timeout fallback loses the requested video artifact. Total rendering time varies
+// with host load, so observe the child process outcome instead of the render duration.
+test('Riko remotion fallback kills a timed-out ffmpeg binary', async (t) => {
   const { maybeRequestSpecializedSubmission, submissionSupportsRequestedOutput } =
     await loadSpecializedModule();
   const task = createVideoTask();
@@ -128,28 +133,40 @@ test('Riko remotion fallback does not block on a slow ffmpeg binary', async () =
   const fakeBinDir = await mkdtemp(join(tmpdir(), 'bossraid-riko-ffmpeg-'));
   const fakeFfmpegPath = join(fakeBinDir, 'ffmpeg');
 
-  await writeFile(fakeFfmpegPath, '#!/bin/sh\nsleep 5\nexit 1\n');
+  await writeFile(fakeFfmpegPath, `#!${process.execPath}\nsetInterval(() => {}, 1000);\n`);
   await chmod(fakeFfmpegPath, 0o755);
 
   process.env.PATH = originalPath ? `${fakeBinDir}:${originalPath}` : fakeBinDir;
 
+  const spawnSync = childProcess.spawnSync;
+  const encoderResults: ReturnType<typeof spawnSync>[] = [];
+  const spawnMock = t.mock.method(
+    childProcess,
+    'spawnSync',
+    (...args: Parameters<typeof spawnSync>) => {
+      const result = spawnSync(...args);
+      if (args[0] === 'ffmpeg') encoderResults.push(result);
+      return result;
+    }
+  );
+  syncBuiltinESMExports();
+
   try {
-    const startedAt = Date.now();
     const submission = await maybeRequestSpecializedSubmission(task);
-    const elapsedMs = Date.now() - startedAt;
     const previewArtifact = submission?.artifacts?.find(
       (artifact) => artifact.outputType === 'video'
     );
 
     assert.ok(submission);
-    assert.ok(
-      elapsedMs < 3_000,
-      `expected slow ffmpeg fallback in under 3000ms, got ${elapsedMs}ms`
-    );
+    assert.equal(encoderResults.length, 1);
+    assert.equal((encoderResults[0]?.error as NodeJS.ErrnoException)?.code, 'ETIMEDOUT');
+    assert.equal(encoderResults[0]?.signal, 'SIGKILL');
     assert.equal(previewArtifact?.mimeType, 'image/gif');
     assert.equal(submissionSupportsRequestedOutput(submission, task), true);
   } finally {
     process.env.PATH = originalPath;
+    spawnMock.mock.restore();
+    syncBuiltinESMExports();
     await rm(fakeBinDir, { recursive: true, force: true });
   }
 });

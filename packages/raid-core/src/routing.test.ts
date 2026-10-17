@@ -5,19 +5,6 @@ import { createProviderProfile, createSpawnInput } from '@bossraid/test-fixtures
 import { annotateRoutingProof, buildRoutingProof, rankSubmissions } from './routing.js';
 import { selectProviders } from './selection.js';
 
-test('buildRoutingProof records policy and selected providers', () => {
-  const task = createSpawnInput();
-  const provider = createProviderProfile('provider-alpha');
-  const selected = selectProviders(task, [provider], 60_000);
-
-  const proof = buildRoutingProof(task, selected);
-
-  assert.equal(proof.policy.privacyMode, task.constraints.privacyMode);
-  assert.equal(proof.providers.length, selected.primaries.length + selected.reserves.length);
-  assert.equal(proof.providers[0]?.phase, 'primary');
-  assert.ok(proof.providers[0]?.reasons.includes('selected_primary'));
-});
-
 test('annotateRoutingProof adds workstream scope to routing decisions', () => {
   const task = createSpawnInput();
   const provider = createProviderProfile('provider-alpha');

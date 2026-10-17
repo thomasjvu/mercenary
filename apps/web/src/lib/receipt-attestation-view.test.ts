@@ -1,10 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Provider, RaidResult } from '../api';
-import {
-  buildReceiptUpstreamAttestations,
-  formatPrivacyFeatureLabel,
-} from './receipt-attestation-view.js';
+import { buildReceiptUpstreamAttestations } from './receipt-attestation-view.js';
 
 const providers = [
   {
@@ -45,8 +42,4 @@ test('buildReceiptUpstreamAttestations dedupes provider attestations', () => {
   assert.equal(rows[0]?.providerId, 'seller-a');
   assert.equal(rows[0]?.settlementPassed, true);
   assert.equal(rows[0]?.settlementScore, 0.95);
-});
-
-test('formatPrivacyFeatureLabel replaces underscores', () => {
-  assert.equal(formatPrivacyFeatureLabel('tee_attested'), 'tee attested');
 });

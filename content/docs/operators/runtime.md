@@ -21,7 +21,7 @@ Model inference operations belong to Alkahest. Boss Raid deploys HTTP workers, e
 - Complete and record a live Marian x402 transaction, confirm funded settlement balances and at least one ready seller, and require `GET /v1/ops/production-readiness` → `ok: true` before unrestricted paid traffic.
 - The shared-wallet transaction queue prevents overlap only among callers in the same Node process. It does not coordinate API replicas or standalone settlement commands; the control-state store remains single-writer and multi-process writes are unsupported.
 
-Contributor scripts (`check`, `build`, `dev`, `test:*`) live in root `package.json`. Type checks, builds, and unit tests cap Turbo at two concurrent package jobs. Node test files are capped at two per package; API tests run serially because they share SQLite fixtures. Run expensive validation commands one at a time. Operator, deploy, and integration commands use `pnpm bossraid <command>` — run `pnpm bossraid help` for the full list.
+Contributor scripts (`check`, `build`, `dev`, `test:*`) live in root `package.json`. Type checks, builds, and unit tests cap Turbo at two concurrent package jobs. Node test files are capped at two per package; API tests run serially because they share SQLite fixtures. Run expensive validation commands one at a time. Prefer E2E coverage with verifiable, repeatable artifacts; isolated tests must cover documented failure modes that E2E misses. The ops and smart-pay packages have no standalone test command; their basic routing and encoding paths are exercised through integration coverage. Operator, deploy, and integration commands use `pnpm bossraid <command>` — run `pnpm bossraid help` for the full list.
 
 Regenerate OpenAPI specs after route or schema changes:
 

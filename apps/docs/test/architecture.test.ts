@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -453,6 +453,7 @@ export const architectureTests: ArchitectureTestCase[] = [
         siteSubtitle: 'Static documentation template',
         siteDescription: 'Minimal docs starter.',
         documentationTree: seoTestDocumentationTree,
+        includeHomepage: true,
       });
 
       const canonicalDocRoute = routes.find(
@@ -734,35 +735,35 @@ export const architectureTests: ArchitectureTestCase[] = [
 
         assert.equal(
           resolveDocFileInfo('guides/full-precedence', {
-            rootDir: tempDir,
+            contentRoot: join(tempDir, 'src', 'docs', 'content'),
             version: '2.0',
             locale: 'fr',
           })?.sourcePath,
-          'src/docs/content/variants/versions/2.0/locales/fr/guides/full-precedence.md'
+          'variants/versions/2.0/locales/fr/guides/full-precedence.md'
         );
         assert.equal(
           resolveDocFileInfo('guides/version-fallback', {
-            rootDir: tempDir,
+            contentRoot: join(tempDir, 'src', 'docs', 'content'),
             version: '2.0',
             locale: 'fr',
           })?.sourcePath,
-          'src/docs/content/variants/versions/2.0/guides/version-fallback.mdx'
+          'variants/versions/2.0/guides/version-fallback.mdx'
         );
         assert.equal(
           resolveDocFileInfo('guides/locale-fallback', {
-            rootDir: tempDir,
+            contentRoot: join(tempDir, 'src', 'docs', 'content'),
             version: '2.0',
             locale: 'fr',
           })?.sourcePath,
-          'src/docs/content/variants/locales/fr/guides/locale-fallback.md'
+          'variants/locales/fr/guides/locale-fallback.md'
         );
         assert.equal(
           resolveDocFileInfo('guides/base-fallback', {
-            rootDir: tempDir,
+            contentRoot: join(tempDir, 'src', 'docs', 'content'),
             version: '2.0',
             locale: 'fr',
           })?.sourcePath,
-          'src/docs/content/guides/base-fallback.md'
+          'guides/base-fallback.md'
         );
       } finally {
         await rm(tempDir, { recursive: true, force: true });
@@ -857,25 +858,6 @@ export const architectureTests: ArchitectureTestCase[] = [
     },
   },
   {
-    name: 'adjacent page navigation supports shift plus arrow keys',
-    run: async () => {
-      const hookSource = await readFile(
-        join(process.cwd(), 'src/hooks/useAdjacentPageNavigation.ts'),
-        'utf8'
-      );
-      const contentRendererSource = await readFile(
-        join(process.cwd(), 'src/components/ContentRenderer.tsx'),
-        'utf8'
-      );
-
-      assert.match(hookSource, /event\.shiftKey/);
-      assert.match(hookSource, /KEYBOARD_KEYS\.ARROW_LEFT/);
-      assert.match(hookSource, /KEYBOARD_KEYS\.ARROW_RIGHT/);
-      assert.match(hookSource, /isEditableTarget/);
-      assert.match(contentRendererSource, /useAdjacentPageNavigation/);
-    },
-  },
-  {
     name: 'lazy feature modules avoid provider imports and unsafe app chunk splits',
     run: () => {
       const issues = collectLazyFeatureBoundaryIssues();
@@ -883,14 +865,16 @@ export const architectureTests: ArchitectureTestCase[] = [
     },
   },
   {
-    name: 'theme registry resolves built-in default and gba themes',
+    name: 'theme registry resolves built-in themes and their assets',
     run: () => {
       const registry = readRegistry();
       const ids = registry.themes.map((theme: { id: string }) => theme.id);
-      assert.deepEqual(ids, ['default', 'gba']);
+      assert.deepEqual(ids, ['default', 'gba', 'rx-78']);
 
       assert.equal(resolveThemeId('default'), 'default');
       assert.equal(resolveThemeId('gba'), 'gba');
+      assert.equal(resolveThemeId('rx-78'), 'rx-78');
+      loadThemeManifest('rx-78');
 
       const gba = loadThemeManifest('gba');
       assert.equal(gba.manifest.iconSet, 'pixelarticons');

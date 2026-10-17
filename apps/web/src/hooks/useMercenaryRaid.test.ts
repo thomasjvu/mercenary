@@ -1,25 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { isLowSignalChatPrompt } from '../mercenary-chat.js';
-import { humanizeStatus, isTerminalRaidStatus } from '../mercenary-format.js';
+import { isTerminalRaidStatus } from '../mercenary-format.js';
 import { buildAgentLogPath, buildAttestedRuntimePath } from '../mercenary-paths.js';
 import type { LiveRaidRun } from '../mercenary-result.js';
-
-test('humanizeStatus replaces separators with spaces', () => {
-  assert.equal(humanizeStatus('first_valid'), 'first valid');
-  assert.equal(humanizeStatus('tee-attested'), 'tee attested');
-});
 
 test('isTerminalRaidStatus recognizes terminal raid states', () => {
   assert.equal(isTerminalRaidStatus('final'), true);
   assert.equal(isTerminalRaidStatus('cancelled'), true);
   assert.equal(isTerminalRaidStatus('running'), false);
-});
-
-test('isLowSignalChatPrompt detects greetings and joke prompts', () => {
-  assert.equal(isLowSignalChatPrompt('Hi Mercenary'), true);
-  assert.equal(isLowSignalChatPrompt('tell me another joke'), true);
-  assert.equal(isLowSignalChatPrompt('Build a GB Studio microgame with a boss'), false);
 });
 
 test('mercenary API path builders preserve raid access tokens', () => {

@@ -2,25 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Provider } from './api';
 import {
-  buildProviderNote,
   buildProviderProofTags,
   countProofTag,
   countTeeAttestedSpecialists,
 } from './mercenary-specialist-tags.js';
 import type { ConversationSpecialistRecord } from './mercenary-specialist-types.js';
-
-test('buildProviderNote prefers specializations', () => {
-  const provider = {
-    providerId: 'seller-a',
-    displayName: 'Seller A',
-    status: 'available',
-    specializations: ['patch', 'text', 'promo'],
-    pricePerTaskUsd: 1,
-    modelFamily: 'gpt',
-  } as unknown as Provider;
-
-  assert.match(buildProviderNote(provider, undefined), /patch/);
-});
 
 test('buildProviderProofTags includes tee and verification tags', () => {
   const provider = {

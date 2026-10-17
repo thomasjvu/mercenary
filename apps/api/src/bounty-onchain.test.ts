@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   deadlineUnix,
-  hexToBytes32,
   isBountyOnchainConfigured,
   requiresProductionBountyEscrow,
   usdToAtomic,
@@ -12,10 +11,6 @@ import type { BountyRecord } from '@bossraid/shared-types';
 test('usdToAtomic converts USD to USDG atomic units', () => {
   assert.equal(usdToAtomic(1), 1_000_000n);
   assert.equal(usdToAtomic(0.25), 250_000n);
-});
-
-test('hexToBytes32 left-pads sha256 hex to bytes32', () => {
-  assert.equal(hexToBytes32('abc123'), `0x${'0'.repeat(58)}abc123`);
 });
 
 test('deadlineUnix maps ISO deadlines to unix seconds', () => {

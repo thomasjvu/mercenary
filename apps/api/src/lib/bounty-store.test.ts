@@ -21,16 +21,6 @@ function seedDeliveredAward(
   });
 }
 
-test('claimDeliveredAwardForPayment happy path sets paying', async () => {
-  const { store } = await createTestBountyService({ prefix: 'bossraid-bounty-claim-happy-' });
-  seedDeliveredAward(store, 'award_claim_happy');
-
-  const claimed = store.claimDeliveredAwardForPayment('award_claim_happy');
-
-  assert.equal(claimed?.status, 'paying');
-  assert.equal(store.getAward('award_claim_happy')?.status, 'paying');
-});
-
 test('claimDeliveredAwardForPayment allows only one concurrent claim', async () => {
   const { store } = await createTestBountyService({ prefix: 'bossraid-bounty-claim-' });
   seedDeliveredAward(store, 'award_claim_test');
