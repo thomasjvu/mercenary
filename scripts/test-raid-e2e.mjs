@@ -30,12 +30,12 @@ const config = PROFILES[profile];
 if (!config) {
   console.error(`Unknown profile: ${profile}`);
   console.error(
-    `Usage: node scripts/test-raid-e2e.mjs --profile ${Object.keys(PROFILES).join('|')}`
+    `Usage: node scripts/test-raid-e2e.mjs --profile ${Object.keys(PROFILES).join('|')} [--skip-build]`
   );
   process.exit(1);
 }
 
-await runRaidE2e(config);
+await runRaidE2e({ ...config, profile });
 
 function parseProfile(argv) {
   const flagIndex = argv.indexOf('--profile');

@@ -38,6 +38,9 @@ jobs:
       - name: Dependency audit
         run: pnpm audit --audit-level=high
 
+      - name: Production deploy env audit
+        run: NODE_ENV=production BOSSRAID_SETTLEMENT_MODE=onchain BOSSRAID_CHAIN_ID=4663 BOSSRAID_TOKEN_ADDRESS=0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168 BOSSRAID_X402_ENABLED=true BOSSRAID_SETTLEMENT_FUND_JOBS=true BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS=true BOSSRAID_BOUNTY_ESCROW_ADDRESS=0x0000000000000000000000000000000000000201 BOSSRAID_ONESHOT_RELAYER_WEBHOOK_SECRET=ci-audit-secret BOSSRAID_SECRET_ENCRYPTION_KEY=ci-audit-encryption-key pnpm bossraid audit:production-env
+
       - name: Typecheck
         run: pnpm check
 
@@ -47,17 +50,14 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: OpenAPI CI regressions
-        run: node --test scripts/lib/openapi-ci.test.mjs
+      - name: CI regressions
+        run: node --test scripts/lib/openapi-ci.test.mjs scripts/lib/e2e-build.test.mjs
 
       - name: OpenAPI drift check
         run: pnpm --filter @bossraid/docs check:openapi
 
       - name: Build
         run: pnpm build
-
-      - name: Docs build
-        run: pnpm build:docs
 
       - name: Unit tests
         run: pnpm test:unit
@@ -69,12 +69,18 @@ jobs:
         run: pnpm test:attestation
 
       - name: Bounty escrow smoke
-        run: pnpm test:bounty-escrow:local
+        run: pnpm test:bounty-escrow:local --skip-build
         timeout-minutes: 15
 
       - name: E2E smoke
-        run: pnpm test:smoke:e2e
+        run: pnpm test:smoke:e2e --skip-build
         timeout-minutes: 15
 
-      - name: Production deploy env audit
-        run: NODE_ENV=production BOSSRAID_SETTLEMENT_MODE=onchain BOSSRAID_CHAIN_ID=4663 BOSSRAID_TOKEN_ADDRESS=0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168 BOSSRAID_X402_ENABLED=true BOSSRAID_SETTLEMENT_FUND_JOBS=true BOSSRAID_SETTLEMENT_REQUIRE_TERMINAL_JOBS=true BOSSRAID_BOUNTY_ESCROW_ADDRESS=0x0000000000000000000000000000000000000201 BOSSRAID_ONESHOT_RELAYER_WEBHOOK_SECRET=ci-audit-secret BOSSRAID_SECRET_ENCRYPTION_KEY=ci-audit-encryption-key pnpm bossraid audit:production-env
+      - name: Upload smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-evidence
+          path: temp/ci/*.json
+          if-no-files-found: ignore
+          retention-days: 14

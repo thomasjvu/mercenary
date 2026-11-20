@@ -200,3 +200,69 @@ test('submitResult keeps compliant strict privacy submissions eligible when serv
     }
   }
 });
+
+for (const status of [
+  'selected',
+  'invited',
+  'submitted',
+  'invalid',
+  'timed_out',
+  'failed',
+  'disqualified',
+  'paid',
+] as const) {
+  test(`submitResult ignores ${status} assignments`, async () => {
+    const raid = createStrictPrivacyRaid();
+    const providerId = raid.selectedProviders[0]!;
+    raid.assignments[providerId]!.status = status;
+    const before = structuredClone(raid);
+    const deps = createDispatchDeps(raid);
+    deps.applyReputationEvent = () => assert.fail('unexpected reputation event');
+    deps.clearProviderTimers = () => assert.fail('unexpected timer mutation');
+    await submitResult(raid.id, createSubmission(raid.id, providerId), deps);
+    assert.deepEqual(raid, before);
+  });
+}
+
+for (const transition of ['cancelled', 'final', 'timed_out', 'run_replaced', 'deadline'] as const) {
+  test(`submitResult discards evaluation after ${transition}`, async () => {
+    const raid = createStrictPrivacyRaid();
+    const providerId = raid.selectedProviders[0]!;
+    const deps = createDispatchDeps(raid);
+    deps.applyReputationEvent = () => assert.fail('unexpected reputation event');
+    deps.clearProviderTimers = () => assert.fail('unexpected timer mutation');
+    const pending = submitResult(raid.id, createSubmission(raid.id, providerId), deps);
+    if (transition === 'cancelled' || transition === 'final') {
+      raid.status = transition;
+    } else if (transition === 'timed_out') {
+      raid.assignments[providerId]!.status = 'timed_out';
+    } else if (transition === 'run_replaced') {
+      raid.assignments[providerId]!.providerRunId = 'replacement-run';
+    } else {
+      deps.raidDeadlineReached = () => true;
+    }
+    const before = structuredClone(raid);
+    await pending;
+    assert.deepEqual(raid, before);
+  });
+}
+
+test('concurrent submissions commit one result and one reputation event', async () => {
+  const raid = createStrictPrivacyRaid();
+  const providerId = raid.selectedProviders[0]!;
+  const deps = createDispatchDeps(raid);
+  let events = 0;
+  deps.applyReputationEvent = () => {
+    events += 1;
+  };
+  await Promise.all([
+    submitResult(raid.id, createSubmission(raid.id, providerId), deps),
+    submitResult(
+      raid.id,
+      { ...createSubmission(raid.id, providerId), answerText: 'Another answer.' },
+      deps
+    ),
+  ]);
+  assert.equal(raid.rankedSubmissions.length, 1);
+  assert.equal(events, 1);
+});

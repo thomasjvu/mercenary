@@ -1,10 +1,13 @@
 import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { loadLocalEnv } from '../env.mjs';
-import { runCommand, sleep, stopChild } from './process-harness.mjs';
+import { sleep, stopChild } from './process-harness.mjs';
+import { prepareE2eBuild } from './e2e-build.mjs';
+import { clearE2eEvidence, writeE2eEvidence } from './e2e-evidence.mjs';
 
 const defaultRootDir = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -65,8 +68,17 @@ export async function runRaidE2e(options) {
   process.once('SIGTERM', abortRun);
 
   try {
-    console.log(JSON.stringify({ step: 'build' }, null, 2));
-    await runCommand(rootDir, env, 'pnpm', ['build']);
+    await clearE2eEvidence(rootDir, 'raid');
+    const build = await prepareE2eBuild({
+      rootDir,
+      env,
+      args: ['build'],
+      requiredFiles: [
+        'apps/api/dist/apps/api/src/index.js',
+        'apps/provider-agent/dist/apps/provider-agent/src/index.js',
+      ],
+    });
+    const fixture = await readFixture(rootDir, options.raidFixture);
 
     console.log(
       JSON.stringify(
@@ -102,7 +114,7 @@ export async function runRaidE2e(options) {
           'content-type': 'application/json',
           cookie: sessionCookie,
         },
-        body: await readFixture(rootDir, options.raidFixture),
+        body: fixture,
       },
       20_000,
       runController.signal
@@ -129,6 +141,19 @@ export async function runRaidE2e(options) {
     if (options.afterVerify) {
       await options.afterVerify({ apiBase, spawnBody, result });
     }
+    await writeE2eEvidence(rootDir, 'raid', {
+      outcome: 'passed',
+      fixture: options.raidFixture,
+      fixtureSha256: createHash('sha256').update(fixture).digest('hex'),
+      build,
+      status: result.status,
+      workstreams: result.synthesizedOutput?.workstreams?.length ?? 0,
+      artifactTypes: [
+        ...new Set((result.synthesizedOutput?.artifacts ?? []).map(({ outputType }) => outputType)),
+      ],
+      routedProviders: result.routingProof?.providers?.length ?? 0,
+      reproduce: `node scripts/test-raid-e2e.mjs --profile ${options.profile ?? 'game'}`,
+    });
     console.log(
       JSON.stringify(
         {

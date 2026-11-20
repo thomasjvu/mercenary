@@ -441,9 +441,18 @@ export async function submitResult(
     return;
   }
   const assignment = raid.assignments[submission.providerId];
-  if (!assignment?.providerRunId) {
+  if (
+    !assignment?.providerRunId ||
+    (assignment.status !== 'accepted' && assignment.status !== 'running') ||
+    raid.rankedSubmissions.some((entry) => entry.submission.providerId === submission.providerId)
+  ) {
     return;
   }
+  if (deps.raidDeadlineReached(raid)) {
+    deps.expireRaidAtDeadline(raidId);
+    return;
+  }
+  const providerRunId = assignment.providerRunId;
   if (submission.providerRunId && submission.providerRunId !== assignment.providerRunId) {
     markAssignmentFailed(
       raidId,
@@ -509,6 +518,24 @@ export async function submitResult(
         .filter(Boolean)
         .join(' ');
     }
+  }
+
+  // Evaluation yields to cancellation, timeouts, replacement runs, and other submissions.
+  // Revalidate and commit synchronously so only one result can consume this assignment.
+  const currentRaid = deps.requireRaid(raidId);
+  if (
+    currentRaid !== raid ||
+    TERMINAL_RAID_STATUSES.has(raid.status) ||
+    raid.assignments[submission.providerId] !== assignment ||
+    assignment.providerRunId !== providerRunId ||
+    (assignment.status !== 'accepted' && assignment.status !== 'running') ||
+    raid.rankedSubmissions.some((entry) => entry.submission.providerId === submission.providerId)
+  ) {
+    return;
+  }
+  if (deps.raidDeadlineReached(raid)) {
+    deps.expireRaidAtDeadline(raidId);
+    return;
   }
 
   deps.clearProviderTimers(raidId, submission.providerId);

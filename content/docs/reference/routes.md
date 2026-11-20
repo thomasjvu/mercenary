@@ -21,6 +21,8 @@ Buyer walkthroughs: [buy.md](../buyers/buy.md), [raids.md](../raiders/raids.md).
 
 Output types: `text`, `patch`, `json`, `image`, `video`, `bundle`.
 
+`POST /v1/providers/:providerId/submit` commits at most one result per assignment. The assignment must be accepted or running, with the same active run when evaluation finishes, and the raid must remain active before its deadline. Repeated or stale submissions return the current raid result without changing rankings or reputation.
+
 ## Production gates
 
 `GET /v1/ops/production-readiness` requires admin auth and returns `ok: false` for development mode, file/off settlement, invalid settlement configuration, or production x402 testnet settings. `GET /ready` rejects production file/off settlement and non-Phala hosts. These endpoints report configuration readiness, not verified live contract balances or TDX quotes.

@@ -1,0 +1,102 @@
+{
+  "url": "file:///Users/area/repos/boss-raid/docs/guidebook/boss-raid-field-guide.html",
+  "viewports": [
+    {
+      "width": 320,
+      "height": 740,
+      "overflow": false,
+      "headingsOverflow": false,
+      "assetsLoaded": true,
+      "unlabeled": 0,
+      "externalAssets": 0,
+      "chapters": 8
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "headingsOverflow": false,
+      "assetsLoaded": true,
+      "unlabeled": 0,
+      "externalAssets": 0,
+      "chapters": 8
+    },
+    {
+      "width": 834,
+      "height": 1112,
+      "overflow": false,
+      "headingsOverflow": false,
+      "assetsLoaded": true,
+      "unlabeled": 0,
+      "externalAssets": 0,
+      "chapters": 8
+    },
+    {
+      "width": 1440,
+      "height": 1000,
+      "overflow": false,
+      "headingsOverflow": false,
+      "assetsLoaded": true,
+      "unlabeled": 0,
+      "externalAssets": 0,
+      "chapters": 8
+    },
+    {
+      "width": 2560,
+      "height": 1440,
+      "overflow": false,
+      "headingsOverflow": false,
+      "assetsLoaded": true,
+      "unlabeled": 0,
+      "externalAssets": 0,
+      "chapters": 8
+    }
+  ],
+  "screenshots": [
+    "hero-320.png",
+    "hero-390.png",
+    "stage-1-390.png",
+    "stage-3-390.png",
+    "stage-6-390.png",
+    "stage-8-390.png",
+    "hero-834.png",
+    "hero-1440.png",
+    "stage-1-1440.png",
+    "stage-3-1440.png",
+    "stage-6-1440.png",
+    "stage-8-1440.png",
+    "hero-2560.png",
+    "visor-blink-desktop.png",
+    "reduced-motion-mobile.png",
+    "footer-mobile.png"
+  ],
+  "fonts": {
+    "loaded": true,
+    "count": 2
+  },
+  "poses": ["ready", "ready", "dispatch", "dispatch", "dispatch", "ready", "dispatch", "salute"],
+  "parallaxAndSpeedLines": true,
+  "keyboardSkip": true,
+  "keyboardDetails": true,
+  "reducedMotion": {
+    "preference": true,
+    "animations": 0,
+    "scroll": "auto",
+    "parallax": "0px",
+    "speedHidden": true,
+    "signal": "1"
+  },
+  "mobileClosingEffectVisible": true,
+  "design": {
+    "noEyebrows": true,
+    "noPause": true,
+    "noShirtOverlay": true,
+    "icons": 24,
+    "rail": "rgb(0, 0, 0)",
+    "blend": "screen",
+    "paper": "rgb(255, 255, 255)"
+  },
+  "browserErrors": "",
+  "htmlSha256": "83aa777fbab16ec8065038a71e2e9bc72326f3effbe78c72d9b309111c0c3418",
+  "result": "PASS"
+}

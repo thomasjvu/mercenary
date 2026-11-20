@@ -6,7 +6,7 @@ on:
     branches:
       - main
     tags:
-      - "v*"
+      - 'v*'
 
 jobs:
   publish:
@@ -57,5 +57,7 @@ jobs:
           target: ${{ matrix.docker_target }}
           push: true
           platforms: linux/amd64
+          cache-from: type=gha,scope=${{ matrix.image_name }}-amd64
+          cache-to: type=gha,mode=max,scope=${{ matrix.image_name }}-amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

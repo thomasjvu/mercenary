@@ -23,6 +23,14 @@ Model inference operations belong to Alkahest. Boss Raid deploys HTTP workers, e
 
 Contributor scripts (`check`, `build`, `dev`, `test:*`) live in root `package.json`. Type checks, builds, and unit tests cap Turbo at two concurrent package jobs. Node test files are capped at two per package; API tests run serially because they share SQLite fixtures. Run expensive validation commands one at a time. Prefer E2E coverage with verifiable, repeatable artifacts; isolated tests must cover documented failure modes that E2E misses. The ops and smart-pay packages have no standalone test command; their basic routing and encoding paths are exercised through integration coverage. Operator, deploy, and integration commands use `pnpm bossraid <command>` — run `pnpm bossraid help` for the full list.
 
+CI builds the full workspace once, including docs, before smoke tests. For an
+already-built checkout, use `pnpm test:smoke:e2e --skip-build` or
+`pnpm test:bounty-escrow:local --skip-build`; omit the flag to build first.
+Use the flag only with outputs built from the current source. Missing entrypoints
+fail immediately. Successful runs write `temp/ci/raid.json` and
+`temp/ci/bounty.json` with results, build reuse, and repeat commands. CI stores
+these as the `smoke-evidence` artifact for 14 days. See [source control](source-control.md#build-reuse-and-smoke-evidence).
+
 Regenerate OpenAPI specs after route or schema changes:
 
 ```bash
@@ -310,3 +318,13 @@ wallet configuration remains supported when no buyer key is configured.
 Phantasy seller onboarding: configure its Boss Raid plugin and vaulted provider
 token, enable the text/JSON worker, register endpoint
 `https://your-runtime/api/bossraid`, then verify health before selling tasks.
+
+## Standalone visual manual
+
+The offline manual and its reproducible source live in `docs/guidebook/`.
+Build with `python3 docs/guidebook/build.py`; verify with
+`python3 docs/guidebook/verify.py` (requires `agent-browser` and Chrome).
+Open `docs/guidebook/boss-raid-field-guide.html` locally. See
+[`docs/guidebook/README.md`](../../../docs/guidebook/README.md) for evidence,
+asset provenance, and verification prerequisites. No runtime service or new
+Boss Raid environment variable is required.

@@ -17,7 +17,7 @@ Use this skill when a task involves:
 - [content/docs/operators/runtime.md](/Users/area/repos/boss-raid/content/docs/operators/runtime.md) — deploy checklist and ACP registration
 - [examples/onboarding/virtuals-acp-capture-sheet.md](/Users/area/repos/boss-raid/examples/onboarding/virtuals-acp-capture-sheet.md)
 - [examples/providers/provider-registration.base-mainnet.example.json](examples/providers/provider-registration.base-mainnet.example.json)
-- [references/provider-specializations.md](/Users/area/Desktop/boss-raid/skills/bossraid-provider-acp-registration/references/provider-specializations.md)
+- [references/provider-specializations.md](references/provider-specializations.md)
 
 ## Rules
 
@@ -38,7 +38,8 @@ Use this skill when a task involves:
 ## Workflow
 
 1. Confirm the ACP agents exist and identify their agent wallets.
-2. Confirm the active ACP repo copy is [temp/openclaw-acp-work](/Users/area/Desktop/boss-raid/temp/openclaw-acp-work).
+2. Confirm the active ACP repo copy is `temp/openclaw-acp-work` inside the boss-raid checkout (~/repos/boss-raid).
+   > **Dead path (2026-10-28):** the repo moved from ~/Desktop/boss-raid to ~/repos/boss-raid, and `~/repos/boss-raid/temp/openclaw-acp-work` does not exist. No replacement target is known; ask Thomas where the ACP work copy lives before relying on this step.
 3. Edit the offering files under `src/seller/offerings/<agent>/<offering>/`.
 4. If fees are still unknown, keep the offerings local-only and do not publish them.
 5. Capture ERC-8004 references from the ACP UI or another official Virtuals surface.

@@ -50,6 +50,42 @@ OpenAPI drift checks run before builds in both CI workflows. Builds regenerate t
 GitHub Actions is the sole GHCR publisher. Its built-in `GITHUB_TOKEN` avoids a separate
 `GHCR_TOKEN` secret in Forgejo; Forgejo does not build or push duplicate images.
 
+### Build reuse and smoke evidence
+
+Both verification workflows build the workspace once. That includes the docs site;
+there is no second direct docs build. Bounty and raid smoke commands use
+`--skip-build` only after that job's successful build. The flag checks required
+executables exist; it does not validate freshness or authorize reuse from another
+commit or job. Standalone smoke commands still build by default. No checks are
+reused across promotion branches.
+
+The production deploy-env audit runs before typecheck and builds. CI regression
+coverage runs with `node --test scripts/lib/openapi-ci.test.mjs scripts/lib/e2e-build.test.mjs`.
+Money-path, attestation, dependency checks, and both smoke flows remain separate gates.
+
+Successful smoke flows write allowlisted JSON reports to `temp/ci/raid.json` and
+`temp/ci/bounty.json`, including build execution/reuse, result assertions, and a
+repeat command. Raid evidence includes the fixture SHA-256. Reports exclude auth
+responses, tokens, private keys, databases, and artifact bodies. Each smoke run
+removes its previous report before starting, so an earlier success cannot survive
+a failed rerun. CI uploads these files as `smoke-evidence` for 14 days, including
+any completed report when a later step fails. Forgejo uses its v3 artifact action;
+GitHub uses v4. These reports are diagnostic evidence, not promotion authorization.
+
+Image publishing imports and exports BuildKit's GitHub Actions cache with a
+separate `<image_name>-amd64` scope per target. Cache misses run the full build;
+source, lockfile, dependency patches, and Dockerfile changes still invalidate their
+layers. This cache is separate from the runner's pnpm store. Image publishing
+remains on GitHub and targets native `linux/amd64`.
+
+Measured baseline: [main CI run 39071353248](https://github.com/thomasjvu/mercenary/actions/runs/39071353248)
+took 8m18s on October 17, 2026: build 89s, duplicate docs build 36s,
+bounty smoke 13s, raid smoke 41s, package tests 167s, money-path tests 30s.
+[Image publishing](https://github.com/thomasjvu/mercenary/actions/runs/39071353427)
+took up to 3m45s across parallel targets. Removing the second docs build eliminates
+that measured 36s step; other savings require comparable hosted cold/warm runs.
+The last failed verification run stopped at dependency audit; that gate remains.
+
 ### Dependency security
 
 CI runs `pnpm test:dependency-security` before `pnpm audit --audit-level=high`. Security overrides and the lockfile select patched upstream releases.

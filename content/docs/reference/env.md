@@ -219,6 +219,10 @@ Outside `NODE_ENV=production`, `node_env_production`, `onchain_settlement`, and 
 
 These vars are for local development, CI smoke tests, and contributor tooling. **Do not set in production.**
 
+Smoke build reuse uses the explicit `--skip-build` CLI flag, not an environment
+variable. CI sets it after a successful workspace build. See
+[runtime commands](../operators/runtime.md).
+
 | Variable                       | Purpose                                               |
 | ------------------------------ | ----------------------------------------------------- |
 | `BOSSRAID_DEV_SPAWN_PROVIDERS` | When `true`, `pnpm dev` spawns local provider workers |

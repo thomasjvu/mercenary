@@ -12,7 +12,9 @@ import {
   resolveRewardUsd,
 } from './lib/bounty-e2e-env.mjs';
 import { runBountyEscrowE2e } from './lib/bounty-e2e-run.mjs';
-import { runCommand, sleep, stopChild } from './lib/process-harness.mjs';
+import { sleep, stopChild } from './lib/process-harness.mjs';
+import { prepareE2eBuild } from './lib/e2e-build.mjs';
+import { clearE2eEvidence, writeE2eEvidence } from './lib/e2e-evidence.mjs';
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 loadBountyE2eEnv(rootDir);
@@ -47,7 +49,8 @@ const env = {
   BOSSRAID_STORAGE_BACKEND: 'sqlite',
   BOSSRAID_SQLITE_FILE: sqliteFile,
   BOSSRAID_BOUNTY_SQLITE_FILE: sqliteFile,
-  BOSSRAID_PROVIDERS_FILE: process.env.BOSSRAID_PROVIDERS_FILE ?? './examples/settlement/bounty-e2e.providers.json',
+  BOSSRAID_PROVIDERS_FILE:
+    process.env.BOSSRAID_PROVIDERS_FILE ?? './examples/settlement/bounty-e2e.providers.json',
   BOSSRAID_ALLOW_INSECURE_PROVIDER_AUTH: process.env.BOSSRAID_ALLOW_INSECURE_PROVIDER_AUTH ?? '1',
   BOSSRAID_CALLBACK_BASE: apiBase,
   BOSSRAID_EVAL_SANDBOX_MODE: process.env.BOSSRAID_EVAL_SANDBOX_MODE ?? 'socket',
@@ -62,7 +65,8 @@ if (onchainBootstrap) {
   Object.assign(env, {
     BOSSRAID_SETTLEMENT_MODE: 'onchain',
     BOSSRAID_X402_ENABLED: 'true',
-    BOSSRAID_X402_PAY_TO: process.env.BOSSRAID_X402_PAY_TO ?? '0x0000000000000000000000000000000000000001',
+    BOSSRAID_X402_PAY_TO:
+      process.env.BOSSRAID_X402_PAY_TO ?? '0x0000000000000000000000000000000000000001',
     BOSSRAID_X402_FACILITATOR_URL: mockFacilitatorUrl,
     BOSSRAID_ALLOW_UNVERIFIED_BOUNTY_FUND: 'false',
   });
@@ -105,11 +109,18 @@ console.log(
 );
 
 try {
-  console.log(JSON.stringify({ step: 'build' }, null, 2));
-  await runCommand(rootDir, env, 'pnpm', ['--filter', '@bossraid/api', 'build']);
+  await clearE2eEvidence(rootDir, 'bounty');
+  const build = await prepareE2eBuild({
+    rootDir,
+    env,
+    args: ['--filter', '@bossraid/api', 'build'],
+    requiredFiles: ['apps/api/dist/apps/api/src/index.js'],
+  });
 
   if (onchainBootstrap) {
-    console.log(JSON.stringify({ step: 'start_mock_facilitator', url: mockFacilitatorUrl }, null, 2));
+    console.log(
+      JSON.stringify({ step: 'start_mock_facilitator', url: mockFacilitatorUrl }, null, 2)
+    );
     facilitatorChild = spawn('node', ['scripts/mock-x402-facilitator.mjs'], {
       cwd: rootDir,
       stdio: 'inherit',
@@ -127,7 +138,7 @@ try {
 
   await waitForHealth(apiBase);
 
-  await runBountyEscrowE2e({
+  const result = await runBountyEscrowE2e({
     apiBase,
     mode,
     providerId,
@@ -135,6 +146,15 @@ try {
     rewardUsd,
     posterPrivateKey,
     onchainVerify: onchainBootstrap && canVerifyOnchain(),
+  });
+  await writeE2eEvidence(rootDir, 'bounty', {
+    outcome: 'passed',
+    build,
+    mode,
+    onchainVerify: onchainBootstrap && canVerifyOnchain(),
+    deliveredStatus: result.deliveredStatus,
+    acceptedStatus: result.acceptedStatus,
+    reproduce: 'pnpm test:bounty-escrow:local',
   });
 } finally {
   await teardown();

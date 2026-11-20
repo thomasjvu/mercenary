@@ -1,3 +1,5 @@
+> **Dead paths (2026-10-28):** links below point at the old ~/Desktop/boss-raid/temp/... checkout. The repo is now ~/repos/boss-raid, but its temp/openclaw-acp-work, temp/gb-studio-agent and temp/pixel-plugin do not exist, so the links were left as-is. No replacement target is known.
+
 # Provider Specializations
 
 ## Current Offering Paths
